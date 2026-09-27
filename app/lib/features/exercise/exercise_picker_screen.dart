@@ -7,28 +7,10 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/labels.dart';
 import '../../core/theme.dart';
 import '../../data/db.dart';
 import '../../data/exercise_repository.dart';
-
-/// 与 `seed/exercises.json` 顶层的 meta 对应。
-/// 只在前端展示用，所以直接内置一份，不为了 11 个标签把 metadata 穿一整条链路。
-const Map<String, String> _muscleLabels = <String, String>{
-  'chest': '胸',
-  'back': '背',
-  'legs': '腿',
-  'shoulders': '肩',
-  'arms': '手臂',
-  'core': '核心',
-};
-
-const Map<String, String> _equipmentLabels = <String, String>{
-  'barbell': '杠铃',
-  'dumbbell': '哑铃',
-  'machine': '器械',
-  'cable': '绳索',
-  'bodyweight': '自重',
-};
 
 class ExercisePickerScreen extends StatefulWidget {
   const ExercisePickerScreen({super.key, required this.repository});
@@ -145,7 +127,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                       _muscleGroup = null;
                       _load();
                     }),
-                    for (final MapEntry<String, String> e in _muscleLabels.entries)
+                    for (final MapEntry<String, String> e in kMuscleLabels.entries)
                       _chip(e.value, _muscleGroup == e.key, () {
                         _muscleGroup = e.key;
                         _load();
@@ -190,8 +172,8 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                               ),
                               subtitle: Text(
                                 <String>[
-                                  _muscleLabels[e.muscleGroup] ?? e.muscleGroup,
-                                  _equipmentLabels[e.equipment] ?? e.equipment,
+                                  muscleLabel(e.muscleGroup),
+                                  equipmentLabel(e.equipment),
                                 ].join(' · '),
                                 style: const TextStyle(color: Tokens.text3, fontSize: 13),
                               ),

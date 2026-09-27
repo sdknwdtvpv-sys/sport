@@ -162,11 +162,24 @@ enum SetType {
 
 /// 一次训练。
 class Workout {
-  Workout({required this.id, required this.startedAtMs});
+  Workout({required this.id, required this.startedAtMs, this.endedAtMs});
 
   final String id;
   final int startedAtMs;
+
+  /// 结束时间。null = 还在进行中（S7 训练结束总结会把它填上）。
+  int? endedAtMs;
+
   final List<SetRecord> sets = <SetRecord>[];
+
+  bool get isFinished => endedAtMs != null;
+
+  /// 训练时长。算不出来时返回 null —— UI 要显示「—」而不是 0。
+  Duration? get duration {
+    final int? end = endedAtMs;
+    if (end == null || end <= startedAtMs) return null;
+    return Duration(milliseconds: end - startedAtMs);
+  }
 
   int get totalSets => sets.where((s) => s.setType == SetType.normal).length;
 

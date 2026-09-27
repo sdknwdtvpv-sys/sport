@@ -101,7 +101,56 @@ class SetRecord extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
-@DriftDatabase(tables: <Type>[Exercise, Workout, WorkoutItem, SetRecord])
+/// 用户档案。单行（本地只有一个用户），存设置项。
+///
+/// 只有 `progression_mode` 现在真的被用到（S10「我」的渐进建议开关）；
+/// 其余列照 `docs/data-model.md` 先建好，等对应功能落地时再用。
+class UserProfile extends Table {
+  TextColumn get userId => text()();
+  TextColumn get goal => text().nullable()();
+  IntColumn get weeklyFrequency => integer().nullable()();
+
+  /// kg | lb（单位切换还没做，先留着）
+  TextColumn get unitPref => text().withDefault(const Constant('kg'))();
+  IntColumn get defaultRestSec => integer().withDefault(const Constant(90))();
+
+  /// double | linear | off
+  TextColumn get progressionMode => text().withDefault(const Constant('double'))();
+
+  /// 「帮助改进产品」开关。关掉后除崩溃外一律不上报（见 analytics-sdk.md §10）。
+  BoolColumn get analyticsEnabled => boolean().withDefault(const Constant(true))();
+  IntColumn get createdAt => integer()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{userId};
+}
+
+/// 埋点 outbox。字段照 `docs/analytics-sdk.md` §4 的 DDL。
+///
+/// 与训练数据分开：埋点丢了不影响用户，训练数据丢一条都不行。
+/// 所以两者是两条独立的通道、两套重试策略。
+class AnalyticsOutbox extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get payload => text()();
+  IntColumn get priority => integer()();
+  IntColumn get createdAt => integer()();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+@DriftDatabase(tables: <Type>[
+  Exercise,
+  Workout,
+  WorkoutItem,
+  SetRecord,
+  UserProfile,
+  AnalyticsOutbox,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 

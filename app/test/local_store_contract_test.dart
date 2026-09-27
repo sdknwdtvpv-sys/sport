@@ -186,6 +186,70 @@ void runContractTests(StoreHarness harness) {
       expect((await store.lastSessionFor('row'))!.reps, <int>[12]);
     });
 
+    test('allSets：返回全部正式组，跨训练、按时间升序', () async {
+      await store.saveSet(_set(id: 'b', workoutId: 'w2', exerciseId: 'row', setIndex: 1, reps: 10, atMs: 5000));
+      await store.saveSet(_set(id: 'a', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(id: 'c', workoutId: 'w1', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 3000));
+      await store.saveSet(_set(id: 'wu', workoutId: 'w1', exerciseId: 'bench', setIndex: 9, reps: 15, atMs: 500, setType: SetType.warmup));
+
+      final sets = await store.allSets();
+      expect(sets.map((SetRecord s) => s.id).toList(), <String>['a', 'c', 'b'],
+          reason: '按时间升序，且不含热身组');
+    });
+
+    test('allSets：软删除的不算', () async {
+      await store.saveSet(_set(id: 'a', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(id: 'b', workoutId: 'w1', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 2000));
+      await store.deleteSet('a');
+
+      expect((await store.allSets()).map((SetRecord s) => s.id).toList(), <String>['b']);
+    });
+
+    test('setsForExercise：返回该动作跨训练的全部正式组', () async {
+      await store.saveSet(_set(id: 'a1', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(id: 'a2', workoutId: 'w2', exerciseId: 'bench', setIndex: 1, reps: 10, atMs: 5000));
+      await store.saveSet(_set(id: 'b1', workoutId: 'w1', exerciseId: 'row', setIndex: 1, reps: 12, atMs: 2000));
+      await store.saveSet(_set(id: 'wu', workoutId: 'w1', exerciseId: 'bench', setIndex: 9, reps: 15, atMs: 500, setType: SetType.warmup));
+
+      final sets = await store.setsForExercise('bench');
+      expect(sets.map((SetRecord s) => s.id).toList(), <String>['a1', 'a2'],
+          reason: '只含正式组，按时间升序，且不含别的动作');
+    });
+
+    test('setsForExercise：excludeWorkoutId 能排除本次训练', () async {
+      await store.saveSet(_set(id: 'old', workoutId: 'w_old', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000, weightKg: 60));
+      await store.saveSet(_set(id: 'now', workoutId: 'w_now', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 5000, weightKg: 65));
+
+      final history = await store.setsForExercise('bench', excludeWorkoutId: 'w_now');
+      expect(history.map((SetRecord s) => s.id).toList(), <String>['old'],
+          reason: '判定破纪录必须排除本次，否则每次都是纪录');
+    });
+
+    test('setsForExercise：没练过时是空', () async {
+      expect(await store.setsForExercise('nope'), isEmpty);
+    });
+
+    test('recentExerciseIds：没练过时是空', () async {
+      expect(await store.recentExerciseIds(), isEmpty);
+    });
+
+    test('recentExerciseIds：只取最近一次训练的动作，去重且保持顺序', () async {
+      // 更早的一次训练：不该出现
+      await store.saveSet(_set(id: 'o1', workoutId: 'w1', exerciseId: 'squat', setIndex: 1, reps: 8, atMs: 1000));
+      // 最近的一次：bench → row → bench（去重后应是 bench, row）
+      await store.saveSet(_set(id: 'n1', workoutId: 'w2', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 5000));
+      await store.saveSet(_set(id: 'n2', workoutId: 'w2', exerciseId: 'row', setIndex: 1, reps: 10, atMs: 6000));
+      await store.saveSet(_set(id: 'n3', workoutId: 'w2', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 7000));
+
+      expect(await store.recentExerciseIds(), <String>['bench', 'row']);
+    });
+
+    test('recentExerciseIds：热身组不算（没练正式组就是没练）', () async {
+      await store.saveSet(_set(id: 'wu', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 15, atMs: 1000, setType: SetType.warmup));
+
+      expect(await store.recentExerciseIds(), isEmpty);
+    });
+
     test('自重动作的重量为 null 也能往返', () async {
       await store.saveSet(_set(id: 's1', workoutId: 'w1', exerciseId: 'pullup', setIndex: 1, reps: 8, atMs: 1000, weightKg: null));
 

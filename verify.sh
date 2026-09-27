@@ -121,6 +121,11 @@ else
   # drift 的 .g.dart 是 part 文件，缺了它 analyze 必然报 URI 不存在
   if grep -q '^  drift:' app/pubspec.yaml 2>/dev/null; then
     (cd app && "$DART_BIN" run build_runner build >>"$LOG" 2>&1)
+    # 带 withDefault() 的列在 Dart 数据类里仍是 required —— 少传一个就编译失败。
+    # 这个错犯过两次（isPr、unitPref），所以固化成检查。
+    if command -v python3 >/dev/null 2>&1; then
+      python3 app/tool/check_drift_params.py | sed 's/^/    /'
+    fi
   fi
   (cd app && "$DART_BIN" analyze --fatal-infos >"$LOG" 2>&1); rc=$?
   strip "$LOG" | tail -30
@@ -151,7 +156,7 @@ echo
 # ── 产物完整性 ──────────────────────────────────────────────────────────
 echo "${BOLD}[附] 产物完整性${OFF}"
 missing=0
-for f in README.md PRODUCT.md ROADMAP.md \
+for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          docs/tech-decisions.md docs/data-model.md docs/screens.md \
          docs/interaction-spec.md docs/usability-test.md docs/usability-test-kit.md \
          docs/analytics.md docs/analytics-sdk.md \
@@ -164,6 +169,21 @@ for f in README.md PRODUCT.md ROADMAP.md \
          app/lib/data/db.dart app/lib/data/drift_local_store.dart \
          app/lib/data/exercise_repository.dart app/assets/exercises.json \
          app/lib/features/exercise/exercise_picker_screen.dart \
+         app/lib/features/today/today_planner.dart \
+         app/lib/features/today/today_suggestion_screen.dart \
+         app/lib/core/labels.dart \
+         app/lib/core/app_tab_bar.dart app/lib/data/profile_repository.dart \
+         app/lib/analytics/outbox.dart app/lib/analytics/flusher.dart \
+         app/lib/analytics/transport.dart app/lib/analytics/outbox_analytics.dart \
+         app/lib/features/progress/progress_data.dart \
+         app/lib/features/progress/progress_screen.dart \
+         app/lib/features/profile/training_stats.dart \
+         app/lib/features/profile/profile_screen.dart \
+         app/lib/features/summary/workout_summary.dart \
+         app/lib/features/summary/workout_summary_screen.dart \
+         app/test/today_planner_test.dart app/test/today_suggestion_test.dart \
+         app/test/workout_summary_test.dart app/test/profile_test.dart \
+         app/test/progress_test.dart app/test/analytics_test.dart \
          app/test/exercise_repository_test.dart app/test/multi_exercise_test.dart \
          app/test/exercise_picker_test.dart app/test/widget_test.dart \
          app/test/local_store_contract_test.dart \

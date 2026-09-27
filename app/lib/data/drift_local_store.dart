@@ -82,12 +82,14 @@ class DriftLocalStore implements LocalStore {
     await _db.into(_db.workout).insertOnConflictUpdate(
           WorkoutData(
             id: w.id,
-            status: 'in_progress',
+            // 结束时间与状态都要回写，否则 S7 之后再来一组就会把结束时间抹掉
+            status: w.isFinished ? 'finished' : 'in_progress',
             startedAt: w.startedAtMs,
+            endedAt: w.endedAtMs,
             totalVolume: w.totalVolume,
             totalSets: w.totalSets,
             createdAt: w.startedAtMs,
-            updatedAt: w.startedAtMs,
+            updatedAt: w.endedAtMs ?? w.startedAtMs,
           ),
         );
   }
@@ -99,8 +101,59 @@ class DriftLocalStore implements LocalStore {
         .getSingleOrNull();
     if (row == null) return null;
     final sets = await setsFor(id);
-    return domain.Workout(id: row.id, startedAtMs: row.startedAt)
-      ..sets.addAll(sets);
+    return domain.Workout(
+      id: row.id,
+      startedAtMs: row.startedAt,
+      endedAtMs: row.endedAt,
+    )..sets.addAll(sets);
+  }
+
+  @override
+  Future<List<domain.SetRecord>> allSets() async {
+    final rows = await (_db.select(_db.setRecord)
+          ..where((t) => t.setType.equals('normal') & t.deletedAt.isNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]))
+        .get();
+    return rows.map(_toDomain).toList();
+  }
+
+  @override
+  Future<List<domain.SetRecord>> setsForExercise(
+    String exerciseId, {
+    String? excludeWorkoutId,
+  }) async {
+    final rows = await (_db.select(_db.setRecord)
+          ..where((t) =>
+              t.exerciseId.equals(exerciseId) &
+              t.setType.equals('normal') &
+              t.deletedAt.isNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]))
+        .get();
+    // 排除本次训练放在 Dart 里做：SQL 层的"取反"要用到 .not() / Constant(true)，
+    // 而我无法在本机编译验证这些 API。筛选逻辑本身极便宜（单个动作的历史不过几十条），
+    // 用确定能跑的形式换掉一次可能的编译失败是划算的。
+    final filtered = excludeWorkoutId == null
+        ? rows
+        : rows.where((SetRecordData r) => r.workoutId != excludeWorkoutId).toList();
+    return filtered.map(_toDomain).toList();
+  }
+
+  @override
+  Future<List<String>> recentExerciseIds() async {
+    final rows = await (_db.select(_db.setRecord)
+          ..where((t) => t.setType.equals('normal') & t.deletedAt.isNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]))
+        .get();
+    if (rows.isEmpty) return const <String>[];
+
+    final latestWorkoutId = rows.last.workoutId;
+    final ids = <String>[];
+    for (final SetRecordData r in rows) {
+      if (r.workoutId == latestWorkoutId && !ids.contains(r.exerciseId)) {
+        ids.add(r.exerciseId);
+      }
+    }
+    return ids;
   }
 
   @override

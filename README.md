@@ -1,6 +1,6 @@
 # 练了么
 
-[![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+**v1.0.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
 
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
@@ -32,11 +32,16 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | JS 规则引擎（28 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 35/35 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 41/41 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter 测试（引擎 + 交互红线 + 持久化契约 + 动作库 + 启动冒烟） | `cd app && flutter test` | ✅ **96/96** |
+| Flutter 测试（引擎 + 持久化契约 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **209/209** |
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
-`flutter test` 的 75 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 9 项 widget 交互测试
-+ **26 项持久化契约测试**（13 条断言 × 2 个实现：内存版与 drift 版）。
+`flutter test` 的 209 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 9 项 widget 交互测试
++ **42 项持久化契约测试**（21 条断言 × 2 个实现：内存版与 drift 版）
++ 10 项动作库 + 4 项多动作 + 5 项动作选择页 + 2 项启动冒烟 + 13 项今日规划
++ 6 项今日建议卡 + 18 项训练总结 + 18 项「我」页 + 16 项「进步」页 + **26 项埋点上报**。
+
+> 契约那 38 项容易数错：**每条断言都会在两个实现上各跑一遍**，
+> 所以加 3 条断言等于加 6 项测试。
 
 那 26 项是"换实现 UI 零改动"这句话的证明：同一组断言同时跑在 `InMemoryLocalStore` 和
 `DriftLocalStore` 上，两者行为必须完全一致（组序、跨训练隔离、重复保存幂等、热身组排除、
@@ -48,6 +53,9 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 
 **尚未验证**：真实埋点上报、iOS/Android 构建都还没接线。drift 持久化已接入并通过契约测试与 CI，
 但「杀掉 App 重开、记录还在」这条要等装到真机才能确认（阶段 2）。
+
+> ⚠️ **改过 `db.dart` 的表结构后，必须先重跑代码生成**，否则分析与测试都会报
+> "Target of URI doesn't exist"：`cd app && dart run build_runner build`
 
 > **下一步做什么** → [`ROADMAP.md`](ROADMAP.md)：6 个阶段，每步都有命令与可验收的完成标准。
 > 其中**阶段 3「自己练一次」不要跳过** —— 成本是一次训练，产出是核心假设的第一个真实信号。

@@ -19,6 +19,22 @@ abstract class LocalStore {
 
   /// 引擎的输入：某动作上一次训练的表现（只含正式组，最近一次训练的全部正式组）。
   Future<LastSession?> lastSessionFor(String exerciseId);
+
+  /// 全部正式组，按完成时间升序。用于「我」页的训练统计与数据导出。
+  Future<List<SetRecord>> allSets();
+
+  /// 某动作的正式组（跨训练）。[excludeWorkoutId] 用来排除本次训练 ——
+  /// S7 判定"这次破纪录了吗"必须排除本次，否则每次都是纪录。
+  Future<List<SetRecord>> setsForExercise(
+    String exerciseId, {
+    String? excludeWorkoutId,
+  });
+
+  /// 最近一次训练里练到的动作 id（去重，按首次出现顺序）。
+  ///
+  /// "今天练什么"要做部位轮转，就必须知道上次练了哪些部位 ——
+  /// 而部位要拿动作 id 去动作库换，所以这里只返回 id。
+  Future<List<String>> recentExerciseIds();
 }
 
 /// 内存实现。写入**同步生效**（先改内存再返回 Future），
@@ -58,6 +74,48 @@ class InMemoryLocalStore implements LocalStore {
     // 契约测试会立刻抓到（这正是那份契约存在的意义）。
     final sets = await setsFor(id);
     return Workout(id: w.id, startedAtMs: w.startedAtMs)..sets.addAll(sets);
+  }
+
+  @override
+  Future<List<SetRecord>> allSets() async {
+    final all = _sets.values
+        .where((s) => s.setType == SetType.normal)
+        .toList()
+      ..sort((a, b) => a.completedAtMs.compareTo(b.completedAtMs));
+    return all;
+  }
+
+  @override
+  Future<List<SetRecord>> setsForExercise(
+    String exerciseId, {
+    String? excludeWorkoutId,
+  }) async {
+    final all = _sets.values
+        .where((s) =>
+            s.exerciseId == exerciseId &&
+            s.setType == SetType.normal &&
+            (excludeWorkoutId == null || s.workoutId != excludeWorkoutId))
+        .toList()
+      ..sort((a, b) => a.completedAtMs.compareTo(b.completedAtMs));
+    return all;
+  }
+
+  @override
+  Future<List<String>> recentExerciseIds() async {
+    final all = _sets.values
+        .where((s) => s.setType == SetType.normal)
+        .toList()
+      ..sort((a, b) => a.completedAtMs.compareTo(b.completedAtMs));
+    if (all.isEmpty) return const <String>[];
+
+    final latestWorkoutId = all.last.workoutId;
+    final ids = <String>[];
+    for (final s in all) {
+      if (s.workoutId == latestWorkoutId && !ids.contains(s.exerciseId)) {
+        ids.add(s.exerciseId);
+      }
+    }
+    return ids;
   }
 
   @override

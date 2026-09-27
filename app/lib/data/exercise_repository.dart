@@ -73,6 +73,11 @@ class ExerciseRepository {
     return sel.get();
   }
 
+  /// 按 id 取单个动作（部位轮转要靠它把动作 id 换成部位）
+  Future<ExerciseData?> byId(String id) => (_db.select(_db.exercise)
+        ..where((t) => t.id.equals(id) & t.deletedAt.isNull()))
+      .getSingleOrNull();
+
   /// 已导入的内置动作数
   Future<int> builtinCount() async {
     final rows = await (_db.select(_db.exercise)

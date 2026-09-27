@@ -31,6 +31,10 @@ void main() {
     expect(find.text('练'), findsOneWidget);
     expect(find.text('进步'), findsOneWidget);
     expect(find.text('我'), findsOneWidget);
+
+    // 必须销毁页面：外壳里有两个埋点上报定时器（冷启动 5 秒 + 前台每 60 秒），
+    // 不销毁的话 testWidgets 会因 pending timer 直接判失败。
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('空态不要求先做计划——没有任何前置弹窗或授权请求',
@@ -46,5 +50,7 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.textContaining('登录'), findsNothing);
     expect(find.textContaining('注册'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink()); // 同上：销毁定时器
   });
 }

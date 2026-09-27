@@ -20,6 +20,11 @@ class AnalyticsEvent {
 
 abstract class Analytics {
   void track(String event, [Map<String, Object?> props = const <String, Object?>{}]);
+
+  /// 「帮助改进产品」开关。关掉后除崩溃（独立通道）外不得记录任何事件。
+  ///
+  /// 做成方法而不是可变字段：`NoopAnalytics` 是 const 类，加可变字段会破坏它。
+  void setEnabled(bool value);
   void beginSetInteraction();
   void countTap(TapKind kind);
   TapMeterReading flushTap();
@@ -31,11 +36,18 @@ class RecordingAnalytics implements Analytics {
   final TapMeter _meter = TapMeter();
   final List<AnalyticsEvent> events = <AnalyticsEvent>[];
 
+  /// 与真身一样遵守隐私开关 —— 否则测不到"关掉之后确实不记了"
+  bool enabled = true;
+
+  @override
+  void setEnabled(bool value) => enabled = value;
+
   /// 所有 track 调用里抛出的异常计数 —— 用于验证"埋点抛异常不影响记录"。
   int swallowedErrors = 0;
 
   @override
   void track(String event, [Map<String, Object?> props = const <String, Object?>{}]) {
+    if (!enabled) return;
     try {
       events.add(AnalyticsEvent(event, Map<String, Object?>.unmodifiable(props)));
     } catch (_) {
@@ -67,6 +79,9 @@ class RecordingAnalytics implements Analytics {
 /// 隐私开关关闭后使用的实现：除了崩溃上报（独立通道），什么都不记。
 class NoopAnalytics implements Analytics {
   const NoopAnalytics();
+
+  @override
+  void setEnabled(bool value) {}
 
   @override
   void track(String event, [Map<String, Object?> props = const <String, Object?>{}]) {}

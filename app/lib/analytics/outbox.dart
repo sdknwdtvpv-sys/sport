@@ -1,0 +1,160 @@
+/// 练了么 · 埋点 outbox（本地队列）
+///
+/// 一条铁律：**训练进行中不发任何网络请求**。所以事件先落本地，
+/// 由 `AnalyticsFlusher` 在合适的时机批量送出去。
+///
+/// 与训练数据的同步队列是两条独立通道：埋点丢几条无所谓，
+/// 训练数据丢一条都不行 —— 所以优先级、重试、丢弃策略都不一样。
+library;
+
+import 'dart:convert';
+
+import 'package:drift/drift.dart';
+
+// db.dart（drift 表）与 models.dart（领域模型）有同名类，这里用不到领域模型。
+import '../data/db.dart';
+
+/// 一条待上报的事件
+class AnalyticsEventPayload {
+  const AnalyticsEventPayload({
+    required this.id,
+    required this.name,
+    required this.props,
+    required this.priority,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String name;
+  final Map<String, Object?> props;
+  final int priority;
+  final int createdAt;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+        'id': id,
+        'event': name,
+        'ts': createdAt,
+        'priority': priority,
+        ...props,
+      };
+}
+
+class AnalyticsOutboxStore {
+  AnalyticsOutboxStore(this._db, {this.maxRows = defaultMaxRows});
+
+  final AppDatabase _db;
+
+  /// 容量上限：超过就按优先级丢（见 analytics-sdk.md §5）。
+  /// 可注入 —— 否则测试溢出策略要插一万条。
+  final int maxRows;
+
+  static const int defaultMaxRows = 10000;
+
+  /// 一次最多送多少条
+  static const int maxBatch = 100;
+
+  /// 连续失败多少次之后不再自动重试
+  static const int maxAttempts = 3;
+
+  int _seq = 0;
+
+  /// 入队。**纯本地写入，绝不联网。**
+  Future<void> enqueue({
+    required String name,
+    required Map<String, Object?> props,
+    required int priority,
+    required int nowMs,
+  }) async {
+    _seq++;
+    await _db.into(_db.analyticsOutbox).insert(
+          AnalyticsOutboxData(
+            id: 'ev_${nowMs}_$_seq',
+            name: name,
+            payload: jsonEncode(props),
+            priority: priority,
+            createdAt: nowMs,
+            // 第三次踩同一个坑了：withDefault 的列在 Dart 数据类里仍是 required。
+            // 这次是 tool/check_drift_params.py 抓到的，没等到你跑测试。
+            attempts: 0,
+          ),
+        );
+  }
+
+  /// 取一批待发送的：优先级高的先送（0 = P0），同级按时间先进先出。
+  /// 已连续失败 3 次的（parked）不再返回 —— 等下次冷启动由 [resetParked] 放出来。
+  Future<List<AnalyticsEventPayload>> takeBatch({int limit = maxBatch}) async {
+    final rows = await (_db.select(_db.analyticsOutbox)
+          ..where((t) => t.attempts.isSmallerThanValue(maxAttempts))
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.priority),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ])
+          ..limit(limit))
+        .get();
+
+    return rows
+        .map((AnalyticsOutboxData r) => AnalyticsEventPayload(
+              id: r.id,
+              name: r.name,
+              props: (jsonDecode(r.payload) as Map<String, dynamic>)
+                  .cast<String, Object?>(),
+              priority: r.priority,
+              createdAt: r.createdAt,
+            ))
+        .toList();
+  }
+
+  Future<void> markSent(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (_db.delete(_db.analyticsOutbox)..where((t) => t.id.isIn(ids))).go();
+  }
+
+  Future<void> markFailed(List<String> ids, String error) async {
+    for (final String id in ids) {
+      final row = await (_db.select(_db.analyticsOutbox)
+            ..where((t) => t.id.equals(id)))
+          .getSingleOrNull();
+      if (row == null) continue;
+      await (_db.update(_db.analyticsOutbox)..where((t) => t.id.equals(id)))
+          .write(AnalyticsOutboxCompanion(
+        attempts: Value<int>(row.attempts + 1),
+        lastError: Value<String>(error),
+      ));
+    }
+  }
+
+  /// 下次冷启动时放行之前 parked 的事件（§5：等下次冷启动）
+  Future<int> resetParked() async {
+    final rows = await (_db.select(_db.analyticsOutbox)
+          ..where((t) => t.attempts.isBiggerOrEqualValue(maxAttempts)))
+        .get();
+    if (rows.isEmpty) return 0;
+    await (_db.update(_db.analyticsOutbox)
+          ..where((t) => t.attempts.isBiggerOrEqualValue(maxAttempts)))
+        .write(const AnalyticsOutboxCompanion(attempts: Value<int>(0)));
+    return rows.length;
+  }
+
+  Future<int> pending() async {
+    final rows = await _db.select(_db.analyticsOutbox).get();
+    return rows.length;
+  }
+
+  /// 超出上限时丢弃：**低优先级先丢，同级旧的先丢**，返回丢弃条数。
+  Future<int> dropOverflow() async {
+    final int total = await pending();
+    if (total <= maxRows) return 0;
+    final int excess = total - maxRows;
+
+    // priority 数字越大优先级越低 → 倒序取，就是"最后该留的"
+    final rows = await (_db.select(_db.analyticsOutbox)
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.priority),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ])
+          ..limit(excess))
+        .get();
+    await markSent(rows.map((AnalyticsOutboxData r) => r.id).toList());
+    return rows.length;
+  }
+}
