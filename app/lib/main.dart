@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 
 import 'analytics/analytics.dart';
 import 'core/theme.dart';
+import 'data/db.dart';
+import 'data/drift_local_store.dart';
 import 'data/local_store.dart';
 import 'data/sync_queue.dart';
 import 'domain/models.dart';
@@ -59,8 +61,18 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   final Analytics _analytics = RecordingAnalytics();
-  final LocalStore _store = InMemoryLocalStore();
   final SyncQueue _syncQueue = InMemorySyncQueue();
+
+  /// 持久化：drift（SQLite）。数据活过重启 —— 见 ROADMAP 阶段 1。
+  /// 换回内存实现只需把下面两行改成 `InMemoryLocalStore()`。
+  final AppDatabase _db = openAppDatabase();
+  late final LocalStore _store = DriftLocalStore(_db);
+
+  @override
+  void dispose() {
+    _db.close();
+    super.dispose();
+  }
 
   Future<void> _startWorkout() async {
     final controller = WorkoutController(

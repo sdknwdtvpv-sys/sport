@@ -63,6 +63,11 @@ jobs:
       - name: 拉取依赖
         run: flutter pub get
 
+      - name: 代码生成（drift）
+        # 必须早于 analyze：db.g.dart 是 part 文件，缺了它 analyze 必然报
+        # "Target of URI doesn't exist"。
+        run: dart run build_runner build
+
       - name: 静态分析（dart analyze --fatal-infos）
         # 刻意不用 `flutter analyze`：Flutter 3.47 的它遇到**非 ASCII 路径**会崩
         # （flutter/flutter#191309，FormatException / analysis server exit 255）。

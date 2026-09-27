@@ -1,4 +1,10 @@
 # 生成物与本地环境
+#
+# *.g.dart 是 build_runner（drift）的产物，**刻意不提交**：
+# 提交了就可能悄悄过期 —— 改了 db.dart 忘了重新生成时，分析与测试会继续用旧 schema 静默通过。
+# 忽略掉的话，忘了生成会直接报 "Target of URI doesn't exist"，不可能静默。
+# 重新生成：dart run build_runner build
+*.g.dart
 .dart_tool/
 .packages
 build/

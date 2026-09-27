@@ -29,6 +29,7 @@ test/
 ```bash
 cd app
 flutter pub get           # 受限环境下这步可能失败（pub 要清临时目录）
+dart run build_runner build   # 生成 db.g.dart（*.g.dart 不提交，必须先跑这步）
 flutter test              # 全部测试 —— 已验证 49/49 通过
 dart analyze --fatal-infos  # 静态分析，必须零问题
                           # （不要用 flutter analyze：Flutter 3.47 在中文路径下会崩，

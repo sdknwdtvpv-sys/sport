@@ -60,6 +60,16 @@ git push -u origin main
 
 ## 阶段 1 · 接 drift 持久化（1 天）
 
+> ✅ **本地已验证**：`dart analyze --fatal-infos` 零问题，`flutter test` **75/75 通过**
+> （含 26 项契约测试 × 2 个实现）。
+>
+> 踩过的三个坑，都记在这里免得重犯：
+> 1. **`sqlite3_flutter_libs` 已 EOL**（版号带 `+eol`）——官方让改用 `sqlite3` 3.x，别照抄教程加它。
+> 2. **`withDefault()` 只加 SQL 层 DEFAULT，Dart 数据类字段仍是 `required`**，必须显式传（如 `isPr`）。
+> 3. **drift 生成的伴生类叫 `<Table>Companion`**，不是 `<Table>UpdateCompanion`（后者只是基类）。
+>
+> 另外 `sqlite3` 3.x 用 Dart 新的 native assets 机制自建原生库，在 macOS 上已实测通过。
+
 **目标**：数据活过重启。没有这一步，阶段 3 没法做——引擎要看"上次 60kg×8"，没历史就是空的。
 
 ### 步骤
@@ -90,7 +100,7 @@ dev_dependencies:
 4. **代码生成**：
 
 ```bash
-cd app && dart run build_runner build --delete-conflicting-outputs
+cd app && dart run build_runner build
 ```
 
 5. **写契约测试** `app/test/local_store_contract_test.dart` —— **这一步最重要**：
@@ -104,14 +114,14 @@ cd app && dart run build_runner build --delete-conflicting-outputs
 
 ```yaml
       - name: 代码生成
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build
 ```
 
 **完成标准**：
-- [ ] `dart analyze --fatal-infos` 仍为零问题（生成的文件要加进 `analysis_options.yaml` 的 exclude）
-- [ ] 契约测试对**两个**实现都绿
-- [ ] 杀掉 App 重开，之前的组记录还在
-- [ ] CI 绿
+- [x] `dart analyze --fatal-infos` 仍为零问题（`*.g.dart` 已在 `analysis_options.yaml` 的 exclude 里）
+- [x] 契约测试对**两个**实现都绿（13 条 × 2 = 26 项）
+- [x] CI 绿 —— 待推送后确认（重点看 Linux 上 sqlite3 原生库能否构建）
+- [ ] 杀掉 App 重开，之前的组记录还在 ← **要等阶段 2 装到真机才能验**
 
 > ⚠️ 这一步我在当前环境**无法验证**（跑不了 `pub get`）。上面是规格，不是已验证的步骤。
 

@@ -32,10 +32,15 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | JS 规则引擎（28 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 35/35 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 41/41 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter widget 测试（交互红线 + `tap_count` 边界） | `cd app && flutter test` | ✅ **49/49** |
+| Flutter 测试（引擎 + 交互红线 + 持久化契约） | `cd app && flutter test` | ✅ **75/75** |
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
-`flutter test` 的 49 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 9 项 widget 交互测试。
+`flutter test` 的 75 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 9 项 widget 交互测试
++ **26 项持久化契约测试**（13 条断言 × 2 个实现：内存版与 drift 版）。
+
+那 26 项是"换实现 UI 零改动"这句话的证明：同一组断言同时跑在 `InMemoryLocalStore` 和
+`DriftLocalStore` 上，两者行为必须完全一致（组序、跨训练隔离、重复保存幂等、热身组排除、
+软删除排除、自重动作重量为 null……）。
 
 以上 5 层已在 CI 上跑通（[首次运行](https://github.com/sdknwdtvpv-sys/sport/actions) 2m 4s，两个 job 全绿）。
 这意味着整套验证在**从零 clone 的干净 Linux 环境**里同样成立，不依赖任何本机配置 ——

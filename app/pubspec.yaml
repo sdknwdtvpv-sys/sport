@@ -6,16 +6,23 @@ version: 0.1.0+1
 environment:
   sdk: '>=3.5.0 <4.0.0'
 
-# 刻意不引入任何第三方依赖。
-# 理由：MVP 阶段最先要保证的是"契约可执行、CI 能跑"，而不是功能完整。
-# 持久化层（drift）留了接口与 DDL，等有真机调试环境时再接（见 lib/data/local_store.dart）。
+# 依赖保持最小：除持久化必需的 drift 外不加任何东西。
+#
+# ⚠️ 不要加 sqlite3_flutter_libs —— 它已终止维护（最新版号 0.6.0+eol），
+#    pub.dev 上的描述明确写着 "Not used anymore, update to version 3.x of package:sqlite3 instead"。
+#    原生库现在由 sqlite3 3.x 自己构建，而 drift_flutter 已经传递依赖它。
+#    （几乎所有 drift 教程都还在教你加这个包，别照抄。）
 dependencies:
   flutter:
     sdk: flutter
+  drift: ^2.35.0
+  drift_flutter: ^0.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  build_runner: ^2.16.1
+  drift_dev: ^2.35.0
 
 flutter:
   uses-material-design: true

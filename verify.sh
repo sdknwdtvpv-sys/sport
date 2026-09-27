@@ -104,6 +104,10 @@ if [ -z "$DART_BIN" ]; then
 elif [ ! -f app/.dart_tool/package_config.json ]; then
   echo "${YELLOW}⊘ 阻塞${OFF} —— 尚无 app/.dart_tool/package_config.json，需先成功跑过一次 pub get。"; blocked=1
 else
+  # drift 的 .g.dart 是 part 文件，缺了它 analyze 必然报 URI 不存在
+  if grep -q '^  drift:' app/pubspec.yaml 2>/dev/null; then
+    (cd app && "$DART_BIN" run build_runner build >>"$LOG" 2>&1)
+  fi
   (cd app && "$DART_BIN" analyze --fatal-infos >"$LOG" 2>&1); rc=$?
   strip "$LOG" | tail -30
   [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 静态分析零问题" || { echo "${RED}✗ 静态分析有问题（退出码 $rc）${OFF}"; fail=1; }
@@ -143,6 +147,8 @@ for f in README.md PRODUCT.md ROADMAP.md \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
          app/lib/features/workout/workout_controller.dart \
+         app/lib/data/db.dart app/lib/data/drift_local_store.dart \
+         app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \
          app/test/workout_flow_test.dart \

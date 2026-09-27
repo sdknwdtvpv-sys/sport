@@ -51,7 +51,14 @@ class InMemoryLocalStore implements LocalStore {
   }
 
   @override
-  Future<Workout?> loadWorkout(String id) async => _workouts[id];
+  Future<Workout?> loadWorkout(String id) async {
+    final w = _workouts[id];
+    if (w == null) return null;
+    // 必须把组记录一并带回 —— 否则与 DriftLocalStore 的行为不一致，
+    // 契约测试会立刻抓到（这正是那份契约存在的意义）。
+    final sets = await setsFor(id);
+    return Workout(id: w.id, startedAtMs: w.startedAtMs)..sets.addAll(sets);
+  }
 
   @override
   Future<LastSession?> lastSessionFor(String exerciseId) async {
