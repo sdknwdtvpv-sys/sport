@@ -60,6 +60,75 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 > **下一步做什么** → [`ROADMAP.md`](ROADMAP.md)：6 个阶段，每步都有命令与可验收的完成标准。
 > 其中**阶段 3「自己练一次」不要跳过** —— 成本是一次训练，产出是核心假设的第一个真实信号。
 
+## 在新机器上继续
+
+**这个仓库是唯一真源。** 换一台电脑只需要重新装工具链 —— 项目本身没有任何东西
+只存在于某一台机器上（`db.g.dart`、`.dart_tool/` 是生成物，刻意不提交）。
+
+### 一次性准备
+
+| 需要 | 版本 | 用途 |
+|---|---|---|
+| Git | 任意 | |
+| Node.js | **18+** | 动作库构建脚本 + JS 引擎测试 |
+| Flutter SDK | **3.47.5**（stable） | 应用层。CI 也锁这一版，别用别的 |
+| Android Studio | 最新 | **只在要跑真机 / 模拟器时需要**，写代码不需要 |
+
+Flutter 的官方 zip 装法（arm64 Mac）：
+
+```bash
+mkdir -p ~/development
+cd ~/development
+curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.47.5-stable.zip
+unzip -q flutter_macos_arm64_3.47.5-stable.zip
+export PATH="$HOME/development/flutter/bin:$PATH"
+flutter --version
+```
+
+### 拉下来之后
+
+```bash
+git clone git@github.com:sdknwdtvpv-sys/sport.git
+cd sport
+
+node seed/build.mjs
+./verify.sh --fast
+```
+
+`./verify.sh` 会自己判断缺什么：**Flutter 没装就跳过应用层并明确标注"阻塞"，
+不会假装通过。**
+
+### 要跑 App 时
+
+```bash
+cd app
+flutter pub get
+dart run build_runner build
+dart analyze --fatal-infos
+flutter test
+```
+
+`db.g.dart` 刻意不提交，所以 `build_runner` 那步不能跳 —— 但**忘了生成会大声报错**
+（`Target of URI doesn't exist`），不会静默用旧 schema 通过。
+
+### 三个环境坑（都踩过，记下来）
+
+1. **`flutter analyze` 在中文路径下必崩** —— 上游 bug
+   ([flutter/flutter#191309](https://github.com/flutter/flutter/issues/191309))，
+   本仓库目录名是中文。**本项目一律用 `dart analyze`**，`verify.sh` 与 CI 都是。
+2. **zsh 默认不把 `#` 当注释**，而且 `[...]` 会被当通配符（`zsh: no matches found`）。
+   从文档里复制命令时**连同尾随注释一起粘**会报奇怪的错 —— 本仓库的命令都不带尾随注释。
+3. **受限环境下 `flutter pub get` 可能失败**（它要清自己的临时目录、还要访问 pub.dev）。
+   这时 `./verify.sh` 会把应用层标为"阻塞"而不是"通过"。
+
+### 这台机器上没有、也不需要带走的东西
+
+| | |
+|---|---|
+| `~/development/flutter`（4.1G） | 新机器按上面的命令重装 |
+| `.pub-cache` | 新机器 `flutter pub get` 时会重新下 |
+| 这段开发过程的对话记录 | **不在仓库里**。但结论都落进了 `CHANGELOG.md`、`ROADMAP.md` 的教训清单、以及 `docs/` |
+
 ## 这个仓库现在是什么
 
 **它不是一份文档，也不是一个完整产品。它是一个"契约仓库"：每一层都用可执行的东西锁住。**
