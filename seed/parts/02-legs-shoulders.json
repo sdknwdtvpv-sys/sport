@@ -1,0 +1,1094 @@
+[
+  {
+    "id": "ex_bb_squat",
+    "name": "杠铃深蹲",
+    "name_en": "Barbell Back Squat",
+    "aliases": [
+      "深蹲",
+      "后蹲",
+      "squat"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "core",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 180,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 100
+  },
+  {
+    "id": "ex_front_squat",
+    "name": "前蹲",
+    "name_en": "Front Squat",
+    "aliases": [
+      "颈前深蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "abs"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 180,
+    "default_weight_kg": 30,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_goblet_squat",
+    "name": "高脚杯深蹲",
+    "name_en": "Goblet Squat",
+    "aliases": [
+      "杯式深蹲",
+      "哑铃深蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "abs"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 16,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_smith_squat",
+    "name": "史密斯深蹲",
+    "name_en": "Smith Machine Squat",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 58
+  },
+  {
+    "id": "ex_hack_squat",
+    "name": "哈克深蹲",
+    "name_en": "Hack Squat",
+    "aliases": [
+      "倒蹬深蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 60
+  },
+  {
+    "id": "ex_box_squat",
+    "name": "箱式深蹲",
+    "name_en": "Box Squat",
+    "aliases": [
+      "坐箱深蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 150,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 40
+  },
+  {
+    "id": "ex_pause_squat",
+    "name": "暂停深蹲",
+    "name_en": "Pause Squat",
+    "aliases": [
+      "停顿深蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "abs"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 180,
+    "default_weight_kg": 35,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 38
+  },
+  {
+    "id": "ex_bodyweight_squat",
+    "name": "徒手深蹲",
+    "name_en": "Bodyweight Squat",
+    "aliases": [
+      "自重深蹲",
+      "空蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_leg_press",
+    "name": "腿举",
+    "name_en": "Leg Press",
+    "aliases": [
+      "倒蹬",
+      "腿推"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "quads",
+      "glutes"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 60,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 88
+  },
+  {
+    "id": "ex_single_leg_press",
+    "name": "单腿腿举",
+    "name_en": "Single-Leg Press",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "quads",
+      "glutes"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_bulgarian_split_squat",
+    "name": "保加利亚分腿蹲",
+    "name_en": "Bulgarian Split Squat",
+    "aliases": [
+      "分腿蹲",
+      "保加利亚蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "quads"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 70
+  },
+  {
+    "id": "ex_static_lunge",
+    "name": "静态分腿蹲",
+    "name_en": "Static Lunge",
+    "aliases": [
+      "原地弓步蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "core"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 44
+  },
+  {
+    "id": "ex_walking_lunge",
+    "name": "箭步蹲",
+    "name_en": "Walking Lunge",
+    "aliases": [
+      "行走箭步蹲",
+      "弓步蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "quads",
+      "abs"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 65
+  },
+  {
+    "id": "ex_reverse_lunge",
+    "name": "反向箭步蹲",
+    "name_en": "Reverse Lunge",
+    "aliases": [
+      "后撤步箭步蹲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "core"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 48
+  },
+  {
+    "id": "ex_bb_lunge",
+    "name": "杠铃箭步蹲",
+    "name_en": "Barbell Lunge",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "core"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 30,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 40
+  },
+  {
+    "id": "ex_lateral_lunge",
+    "name": "侧向弓步",
+    "name_en": "Lateral Lunge",
+    "aliases": [
+      "侧弓步"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 8,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 38
+  },
+  {
+    "id": "ex_leg_extension",
+    "name": "腿屈伸",
+    "name_en": "Leg Extension",
+    "aliases": [
+      "坐姿腿屈伸",
+      "腿伸展"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "quads"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 25,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_single_leg_extension",
+    "name": "单腿腿屈伸",
+    "name_en": "Single-Leg Extension",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "quads"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 15,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 34
+  },
+  {
+    "id": "ex_lying_leg_curl",
+    "name": "俯卧腿弯举",
+    "name_en": "Lying Leg Curl",
+    "aliases": [
+      "腿弯举"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "hamstrings"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 25,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 76
+  },
+  {
+    "id": "ex_seated_leg_curl",
+    "name": "坐姿腿弯举",
+    "name_en": "Seated Leg Curl",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "hamstrings"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 25,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_rdl",
+    "name": "罗马尼亚硬拉",
+    "name_en": "Romanian Deadlift",
+    "aliases": [
+      "rdl",
+      "直腿罗马尼亚"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "hamstrings",
+      "glutes",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 85
+  },
+  {
+    "id": "ex_stiff_leg_deadlift",
+    "name": "直腿硬拉",
+    "name_en": "Stiff-Leg Deadlift",
+    "aliases": [
+      "直腿拉"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "hamstrings",
+      "glutes",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 58
+  },
+  {
+    "id": "ex_single_leg_rdl",
+    "name": "单腿罗马尼亚硬拉",
+    "name_en": "Single-Leg RDL",
+    "aliases": [
+      "单腿硬拉"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "hamstrings",
+      "glutes",
+      "obliques"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 45
+  },
+  {
+    "id": "ex_hip_thrust",
+    "name": "臀推",
+    "name_en": "Barbell Hip Thrust",
+    "aliases": [
+      "杠铃臀推",
+      "臀冲"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 80
+  },
+  {
+    "id": "ex_machine_hip_thrust",
+    "name": "器械臀推",
+    "name_en": "Machine Hip Thrust",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 46
+  },
+  {
+    "id": "ex_glute_bridge",
+    "name": "臀桥",
+    "name_en": "Glute Bridge",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 50
+  },
+  {
+    "id": "ex_weighted_glute_bridge",
+    "name": "负重臀桥",
+    "name_en": "Weighted Glute Bridge",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 30,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 36
+  },
+  {
+    "id": "ex_single_leg_glute_bridge",
+    "name": "单腿臀桥",
+    "name_en": "Single-Leg Glute Bridge",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 35
+  },
+  {
+    "id": "ex_hip_abduction",
+    "name": "髋外展",
+    "name_en": "Hip Abduction",
+    "aliases": [
+      "器械外展",
+      "坐姿外展"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "abductors"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_hip_adduction",
+    "name": "髋内收",
+    "name_en": "Hip Adduction",
+    "aliases": [
+      "器械内收",
+      "坐姿内收"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "adductors"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 45
+  },
+  {
+    "id": "ex_standing_calf_raise",
+    "name": "站姿提踵",
+    "name_en": "Standing Calf Raise",
+    "aliases": [
+      "提踵"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "calves"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 40,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 72
+  },
+  {
+    "id": "ex_seated_calf_raise",
+    "name": "坐姿提踵",
+    "name_en": "Seated Calf Raise",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "calves"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_leg_press_calf_raise",
+    "name": "腿举提踵",
+    "name_en": "Leg Press Calf Raise",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "calves"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 60,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 45
+  },
+  {
+    "id": "ex_single_leg_calf_raise",
+    "name": "单腿站姿提踵",
+    "name_en": "Single-Leg Calf Raise",
+    "aliases": [
+      "单腿提踵"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "calves"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 40
+  },
+  {
+    "id": "ex_smith_calf_raise",
+    "name": "史密斯提踵",
+    "name_en": "Smith Machine Calf Raise",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "calves"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 40,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 40
+  },
+  {
+    "id": "ex_bb_ohp",
+    "name": "杠铃站姿推举",
+    "name_en": "Overhead Press",
+    "aliases": [
+      "站姿推举",
+      "推举",
+      "ohp",
+      "实力举",
+      "军事推举"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps",
+      "abs"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 150,
+    "default_weight_kg": 25,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 90
+  },
+  {
+    "id": "ex_seated_bb_press",
+    "name": "坐姿杠铃推举",
+    "name_en": "Seated Barbell Press",
+    "aliases": [
+      "颈前推举"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 150,
+    "default_weight_kg": 25,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_db_shoulder_press",
+    "name": "哑铃推举",
+    "name_en": "Dumbbell Shoulder Press",
+    "aliases": [
+      "坐姿哑铃推举",
+      "肩推",
+      "哑铃肩推"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 8,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 92
+  },
+  {
+    "id": "ex_single_arm_db_press",
+    "name": "单臂哑铃推举",
+    "name_en": "One-Arm Dumbbell Press",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "obliques"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 40
+  },
+  {
+    "id": "ex_arnold_press",
+    "name": "阿诺德推举",
+    "name_en": "Arnold Press",
+    "aliases": [
+      "阿诺德"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "side_delts",
+      "triceps"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 8,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 60
+  },
+  {
+    "id": "ex_smith_shoulder_press",
+    "name": "史密斯推举",
+    "name_en": "Smith Machine Shoulder Press",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 20,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 50
+  },
+  {
+    "id": "ex_machine_shoulder_press",
+    "name": "器械推肩",
+    "name_en": "Machine Shoulder Press",
+    "aliases": [
+      "推肩机"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 25,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 58
+  },
+  {
+    "id": "ex_handstand_push_up",
+    "name": "倒立撑",
+    "name_en": "Handstand Push-up",
+    "aliases": [
+      "靠墙倒立撑"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps",
+      "abs"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
+    "id": "ex_db_lateral_raise",
+    "name": "哑铃侧平举",
+    "name_en": "Dumbbell Lateral Raise",
+    "aliases": [
+      "侧平举",
+      "侧举"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "side_delts"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 5,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 95
+  },
+  {
+    "id": "ex_cable_lateral_raise",
+    "name": "绳索侧平举",
+    "name_en": "Cable Lateral Raise",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "side_delts"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 5,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_machine_lateral_raise",
+    "name": "器械侧平举",
+    "name_en": "Machine Lateral Raise",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "side_delts"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 15,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 48
+  },
+  {
+    "id": "ex_single_arm_cable_lateral",
+    "name": "单臂绳索侧平举",
+    "name_en": "Single-Arm Cable Lateral Raise",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "side_delts"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 5,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_lean_away_lateral",
+    "name": "斜托侧平举",
+    "name_en": "Lean-Away Lateral Raise",
+    "aliases": [
+      "单手斜托侧平举"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "side_delts"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 6,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 38
+  },
+  {
+    "id": "ex_smith_lateral_raise",
+    "name": "史密斯侧平举",
+    "name_en": "Smith Machine Lateral Raise",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "side_delts"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 10,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 32
+  },
+  {
+    "id": "ex_db_front_raise",
+    "name": "哑铃前平举",
+    "name_en": "Dumbbell Front Raise",
+    "aliases": [
+      "前平举"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 6,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 72
+  },
+  {
+    "id": "ex_bb_front_raise",
+    "name": "杠铃前平举",
+    "name_en": "Barbell Front Raise",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 15,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 48
+  },
+  {
+    "id": "ex_cable_front_raise",
+    "name": "绳索前平举",
+    "name_en": "Cable Front Raise",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 7.5,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 44
+  },
+  {
+    "id": "ex_single_arm_cable_front",
+    "name": "单臂绳索前平举",
+    "name_en": "Single-Arm Cable Front Raise",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 5,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 34
+  },
+  {
+    "id": "ex_bent_over_db_fly",
+    "name": "俯身哑铃飞鸟",
+    "name_en": "Bent-Over Reverse Fly",
+    "aliases": [
+      "反向飞鸟",
+      "后束飞鸟"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "rear_delts",
+      "traps"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 5,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_bent_over_cable_fly",
+    "name": "俯身绳索飞鸟",
+    "name_en": "Bent-Over Cable Fly",
+    "aliases": [
+      "绳索反向飞鸟"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "rear_delts",
+      "traps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 5,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 40
+  },
+  {
+    "id": "ex_reverse_pec_deck",
+    "name": "反向蝴蝶机",
+    "name_en": "Reverse Pec Deck",
+    "aliases": [
+      "反向蝴蝶机飞鸟",
+      "后束器械"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "rear_delts",
+      "traps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 15,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 66
+  },
+  {
+    "id": "ex_upright_row",
+    "name": "直立划船",
+    "name_en": "Upright Row",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "traps",
+      "side_delts",
+      "biceps"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 20,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 52
+  }
+]

@@ -1,0 +1,21 @@
+name: lianleme
+description: 练了么 —— 一次点击记一组的力量训练记录工具
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+# 刻意不引入任何第三方依赖。
+# 理由：MVP 阶段最先要保证的是"契约可执行、CI 能跑"，而不是功能完整。
+# 持久化层（drift）留了接口与 DDL，等有真机调试环境时再接（见 lib/data/local_store.dart）。
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

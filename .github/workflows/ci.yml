@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # ── 契约层：动作库 + JS 引擎 ────────────────────────────────────────────
+  # 这一层不需要 Flutter，跑得快，所以先跑，快速失败。
+  contracts:
+    name: 契约自检（动作库 + JS 规则引擎）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 重建动作库种子（校验失败即退出非 0）
+        run: node seed/build.mjs
+
+      - name: 生成物必须与提交一致
+        run: |
+          if ! git diff --quiet -- seed/exercises.json seed/exercises.sql; then
+            echo "::error::seed/exercises.json 或 exercises.sql 与 seed/parts/*.json 不一致。请本地执行 node seed/build.mjs 后一并提交。"
+            git diff --stat -- seed/exercises.json seed/exercises.sql
+            exit 1
+          fi
+
+      - name: JS 规则引擎测试向量
+        run: node engine/run-tests.mjs
+
+  # ── 应用层：Flutter 分析 + 测试 ─────────────────────────────────────────
+  # Dart 端引擎读的是仓库根目录的 engine/vectors.json（与 JS 同一份规格）。
+  # 这一步绿了，才说明"移植完成"。
+  app:
+    name: Flutter 分析 + 测试（含 Dart 引擎向量）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # 锁定版本：CI 必须验证"我验证过的那一版"。
+          # 用 channel: stable 会让 lint 规则与格式随上游漂移，突然红掉却与本仓库无关。
+          flutter-version: '3.47.5'
+          cache: true
+
+      - name: 纯 Dart 领域校验（零依赖，放在 pub get 之前做快速失败）
+        run: dart tool/check_domain.dart
+
+      - name: 拉取依赖
+        run: flutter pub get
+
+      - name: 静态分析（dart analyze --fatal-infos）
+        # 刻意不用 `flutter analyze`：Flutter 3.47 的它遇到**非 ASCII 路径**会崩
+        # （flutter/flutter#191309，FormatException / analysis server exit 255）。
+        # 两者读同一套 analysis_options.yaml，dart analyze 不经过 flutter_tools 的 LSP 客户端。
+        # --fatal-infos 比默认更严格：info 级也不放过。
+        run: dart analyze --fatal-infos
+
+      - name: 单元测试 + widget 测试
+        run: flutter test --reporter expanded

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "project": "练了么",
+  "purpose": "MVP 内置动作库种子数据",
+  "unit": "kg",
+  "muscle_groups": {
+    "chest": "胸",
+    "back": "背",
+    "legs": "腿",
+    "shoulders": "肩",
+    "arms": "手臂",
+    "core": "核心"
+  },
+  "equipment": {
+    "barbell": "杠铃",
+    "dumbbell": "哑铃",
+    "machine": "器械",
+    "cable": "绳索",
+    "bodyweight": "自重"
+  },
+  "field_notes": {
+    "id": "稳定标识，进库后不可变更（用户历史数据引用它）",
+    "default_weight_kg": "首次使用的建议起始重量，按 70kg 男性新手基准估算，仅作为无历史数据时的兜底；有历史后一律由规则引擎接管。后续版本应按用户体重比例缩放。null = 自重动作。",
+    "weight_increment": "加重步长。barbell=2.5（最小杠铃片对），dumbbell=2，cable=2.5，machine=5（配重片档位），bodyweight=0（引擎必须改为加次数推进，不能回落次数）",
+    "popularity": "0-100，用于『常用动作』排序与动作选择器默认排序",
+    "track_type": "MVP 全部为 weight_reps；reps_only / time 预留给后续版本",
+    "default_rest_sec": "默认组间休息秒数：复合动作 90-180，孤立动作 60，核心 45",
+    "secondary_muscles": "细粒度词汇（见 fine_muscles），用于肌群热力图；主部位仍是 muscle_group 的 6 个粗粒度分组，用于部位轮转"
+  },
+  "fine_muscles": {
+    "triceps": "肱三头肌",
+    "biceps": "肱二头肌",
+    "forearms": "前臂",
+    "lats": "背阔肌",
+    "traps": "斜方肌",
+    "lower_back": "下背",
+    "front_delts": "三角肌前束",
+    "side_delts": "三角肌中束",
+    "rear_delts": "三角肌后束",
+    "quads": "股四头肌",
+    "hamstrings": "腘绳肌",
+    "glutes": "臀大肌",
+    "calves": "小腿",
+    "adductors": "内收肌",
+    "abductors": "外展肌",
+    "abs": "腹直肌",
+    "obliques": "腹斜肌",
+    "hip_flexors": "髂腰肌"
+  }
+}

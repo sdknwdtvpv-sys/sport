@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>练了么 · 核心屏高保真原型</title>
+<style>
+/* ============================================================
+   设计令牌（与 docs/interaction-spec.md 一一对应）
+   ============================================================ */
+:root{
+  /* 背景层级 */
+  --bg:#0B0B0D;          /* 页面底色 */
+  --surface:#16161A;     /* 卡片 */
+  --elevated:#1F1F24;    /* 抬升表面：弹层、输入 */
+  --line:#2A2A31;        /* 分隔线 */
+  --line-strong:#3A3A44; /* 强调分隔：步进器、边框 */
+
+  /* 前景层级 */
+  --text:#F5F5F7;
+  --text-2:#9A9AA5;
+  --text-3:#5E5E68;
+
+  /* 强调色 */
+  --volt:#D8FF47;        /* 主操作：记录一组 */
+  --volt-press:#C2E63A;
+  --volt-ink:#12180A;    /* volt 上的文字 */
+  --pr:#F5C451;          /* PR / 破纪录 */
+  --danger:#FF5A5F;
+
+  /* 字号 / 行高 */
+  --fs-display:44px; --lh-display:48px;
+  --fs-title:28px;   --lh-title:34px;
+  --fs-headline:20px;--lh-headline:26px;
+  --fs-body:17px;    --lh-body:24px;
+  --fs-sub:15px;     --lh-sub:21px;
+  --fs-cap:13px;     --lh-cap:18px;
+  --fs-micro:11px;   --lh-micro:14px;
+
+  /* 间距 */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px;
+
+  /* 圆角 */
+  --r-card:20px; --r-sheet:28px; --r-pill:999px;
+
+  /* 关键尺寸 */
+  --h-primary:88px;      /* 主按钮高度，单手可达的硬约束 */
+  --safe-bottom:34px;    /* home indicator */
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  background:#08080A;
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  padding:var(--s8) var(--s6) 64px;
+  display:flex;flex-direction:column;align-items:center;gap:var(--s6);
+}
+.page-head{max-width:1180px;text-align:left;width:100%}
+.page-head h1{font-size:var(--fs-title);line-height:var(--lh-title);font-weight:700;letter-spacing:-.02em}
+.page-head p{color:var(--text-2);font-size:var(--fs-sub);line-height:var(--lh-sub);margin-top:var(--s2);max-width:760px}
+.page-head code{background:var(--elevated);padding:2px 6px;border-radius:6px;font-size:var(--fs-cap);color:var(--volt)}
+.stage{display:flex;gap:var(--s8);flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.frame-wrap{display:flex;flex-direction:column;gap:var(--s3);width:390px}
+.frame-cap{font-size:var(--fs-cap);line-height:var(--lh-cap);color:var(--text-2)}
+.frame-cap b{color:var(--text);font-weight:600}
+.frame-cap span{display:block;color:var(--text-3);font-size:var(--fs-micro);line-height:var(--lh-micro);margin-top:2px}
+.phone{
+  position:relative;width:390px;height:844px;background:var(--bg);
+  border-radius:44px;border:1px solid var(--line);overflow:hidden;
+  display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.55);
+}
+/* 状态栏 */
+.statusbar{height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--s6) 0 var(--s8);font-size:var(--fs-sub);font-weight:600;letter-spacing:.01em}
+.statusbar .icons{display:flex;align-items:center;gap:5px}
+.sig{display:flex;align-items:flex-end;gap:2px;height:11px}
+.sig i{width:3px;background:var(--text);border-radius:1px;display:block}
+.sig i:nth-child(1){height:4px}.sig i:nth-child(2){height:6px}
+.sig i:nth-child(3){height:9px}.sig i:nth-child(4){height:11px}
+.batt{width:24px;height:12px;border:1.5px solid var(--text);border-radius:3px;position:relative;opacity:.9}
+.batt::after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:13px;background:var(--text);border-radius:1px}
+.batt::before{content:"";position:absolute;right:-4px;top:3.5px;width:2px;height:5px;background:var(--text);border-radius:0 1px 1px 0}
+/* 屏幕主体 */
+.screen{flex:1;display:flex;flex-direction:column;min-height:0}
+.tabbar{flex:none;height:calc(56px + var(--safe-bottom));padding-bottom:var(--safe-bottom);
+  display:flex;border-top:1px solid var(--line);background:var(--bg)}
+.tabbar div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  font-size:var(--fs-micro);line-height:1;color:var(--text-3)}
+.tabbar div.on{color:var(--volt)}
+.gl{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- 通用组件 ---------- */
+.btn-primary{
+  height:var(--h-primary);border:none;border-radius:var(--r-pill);background:var(--volt);color:var(--volt-ink);
+  font-size:var(--fs-headline);line-height:1;font-weight:700;font-family:inherit;letter-spacing:-.01em;
+  width:100%;cursor:pointer;transition:transform .12s ease, background .12s ease;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn-primary:active{transform:scale(.97);background:var(--volt-press)}
+.btn-ghost{
+  height:48px;border:none;border-radius:var(--r-pill);background:transparent;color:var(--text-2);
+  font-size:var(--fs-sub);font-family:inherit;flex:1;cursor:pointer;
+}
+.btn-ghost:active{background:var(--elevated)}
+
+/* ---------- S1 空态 ---------- */
+.s1-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 var(--s5);gap:var(--s6)}
+.s1-hero{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:700;letter-spacing:-.03em}
+.s1-sub{color:var(--text-2);font-size:var(--fs-body);line-height:var(--lh-body);margin-top:var(--s3)}
+.s1-meta{color:var(--text-3);font-size:var(--fs-cap);line-height:var(--lh-cap);text-align:center;margin-top:var(--s2)}
+
+/* ---------- S2 建议卡 ---------- */
+.s2-head{padding:var(--s3) var(--s5) var(--s4);display:flex;align-items:center;justify-content:space-between}
+.s2-head h2{font-size:var(--fs-title);line-height:var(--lh-title);font-weight:700;letter-spacing:-.02em}
+.icon-btn{width:36px;height:36px;border-radius:var(--r-pill);background:var(--elevated);border:none;
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);cursor:pointer}
+.s2-card{margin:0 var(--s5);background:var(--surface);border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line)}
+.s2-row{padding:var(--s4) var(--s5);border-bottom:1px solid var(--line)}
+.s2-row:last-child{border-bottom:none}
+.s2-row-top{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3)}
+.s2-name{font-size:var(--fs-body);line-height:var(--lh-body);font-weight:600}
+.s2-load{font-size:var(--fs-body);line-height:var(--lh-body);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.s2-reason{margin-top:6px;font-size:var(--fs-cap);line-height:var(--lh-cap);color:var(--volt);opacity:.85;display:flex;gap:6px;align-items:flex-start}
+.s2-reason::before{content:"↳";flex:none;opacity:.7}
+.s2-reason.plain{color:var(--text-3)}
+.s2-foot{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s2);margin-top:auto}
+.s2-actions{display:flex;gap:var(--s2)}
+
+/* ---------- S4 训练主屏 ---------- */
+.s4-head{padding:var(--s2) var(--s5) 0;display:flex;align-items:center;gap:var(--s3)}
+.s4-back{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--text-2);background:none;border:none;cursor:pointer}
+.s4-title{font-size:var(--fs-headline);line-height:var(--lh-headline);font-weight:700;flex:1}
+.s4-count{font-size:var(--fs-cap);color:var(--text-3);font-variant-numeric:tabular-nums}
+.s4-mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 var(--s5);gap:var(--s2)}
+.s4-last{color:var(--text-3);font-size:var(--fs-sub);line-height:var(--lh-sub);text-align:center}
+.s4-setno{font-size:var(--fs-title);line-height:var(--lh-title);font-weight:700;text-align:center;letter-spacing:-.02em;margin-bottom:var(--s3)}
+.biglog{
+  height:var(--h-primary);width:100%;border:none;border-radius:var(--r-pill);background:var(--volt);color:var(--volt-ink);
+  font-size:30px;line-height:1;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+  cursor:pointer;transition:transform .1s ease,background .1s ease;user-select:none;touch-action:manipulation}
+.biglog:active{transform:scale(.975)}
+.biglog .tick{font-size:24px;margin-left:8px}
+.donelist{margin-top:var(--s5);display:flex;flex-direction:column;gap:var(--s2);padding:0 var(--s5)}
+.donerow{display:flex;align-items:center;gap:var(--s3);color:var(--text-3);font-size:var(--fs-sub);
+  line-height:var(--lh-sub);font-variant-numeric:tabular-nums}
+.donerow b{color:var(--text-2);font-weight:600}
+.donerow .ok{color:var(--volt);font-weight:700}
+.donerow .idx{width:16px;text-align:right;color:var(--text-3);font-size:var(--fs-cap)}
+.donerow.fresh{animation:pop .28s ease}
+@keyframes pop{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
+.s4-rest{
+  margin:0 var(--s5) var(--s3);height:56px;border-radius:var(--r-card);background:var(--surface);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;padding:0 var(--s5)}
+.rest-left{display:flex;align-items:baseline;gap:var(--s3)}
+.rest-label{font-size:var(--fs-cap);color:var(--text-3)}
+.rest-time{font-size:var(--fs-headline);line-height:1;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.rest-time.done{color:var(--volt);font-size:var(--fs-body)}
+.btn-skip{height:34px;padding:0 var(--s4);border-radius:var(--r-pill);background:var(--elevated);
+  border:none;color:var(--text-2);font-size:var(--fs-cap);font-family:inherit;cursor:pointer}
+.s4-switch{flex:none;height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--s3);border-top:1px solid var(--line);font-size:var(--fs-sub);color:var(--text-2)}
+.s4-switch button{background:none;border:none;color:var(--text-2);font-family:inherit;font-size:var(--fs-sub);
+  display:flex;align-items:center;gap:6px;padding:var(--s3);cursor:pointer}
+.s4-switch .cur{color:var(--text-3);font-size:var(--fs-cap)}
+.hint{padding:0 var(--s5) var(--s4);font-size:var(--fs-micro);line-height:var(--lh-micro);color:var(--text-3);text-align:center}
+
+/* ---------- S5 修改弹层 ---------- */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:10}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;z-index:11;background:var(--elevated);
+  border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding:var(--s3) var(--s5) calc(var(--s6) + var(--safe-bottom));
+  transform:translateY(102%);transition:transform .26s cubic-bezier(.32,.72,0,1)}
+.sheet.show{transform:none}
+.sheet-grab{width:36px;height:5px;border-radius:3px;background:var(--line-strong);margin:0 auto var(--s5)}
+.stepper-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);margin-bottom:var(--s5)}
+.stepper-row .val{font-size:36px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stepper-row .unit{font-size:var(--fs-body);color:var(--text-3);font-weight:600;margin-left:4px}
+.stepper-ctl{display:flex;gap:var(--s2)}
+.step-btn{width:56px;height:56px;border-radius:var(--r-card);background:var(--surface);border:1px solid var(--line-strong);
+  color:var(--text);font-size:var(--fs-headline);font-family:inherit;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.step-btn:active{background:var(--line)}
+.sheet-meta{display:flex;gap:var(--s2);margin-bottom:var(--s5)}
+.chip{height:36px;padding:0 var(--s4);border-radius:var(--r-pill);background:transparent;border:1px dashed var(--line-strong);
+  color:var(--text-3);font-size:var(--fs-cap);font-family:inherit;cursor:pointer}
+.legend{max-width:1180px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--s5)}
+.legend h3{font-size:var(--fs-body);margin-bottom:var(--s3)}
+.legend table{width:100%;border-collapse:collapse;font-size:var(--fs-cap);line-height:var(--lh-cap)}
+.legend td,.legend th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.legend th{color:var(--text-3);font-weight:500}
+.legend code{color:var(--volt);font-size:var(--fs-micro)}
+.chip-color{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+/* 手机端：排成单列并铺满宽度，方便直接把手机递给别人演示 */
+@media (max-width:520px){
+  body{padding:10px 0 40px;gap:18px}
+  .page-head{padding:0 16px}
+  .page-head h1{font-size:22px;line-height:28px}
+  .page-head p{font-size:13px;line-height:19px}
+  .stage{gap:18px}
+  .frame-wrap{width:100%;padding:0 10px}
+  .phone{width:100%;border-radius:32px;box-shadow:none}
+  .legend{margin:0 12px;width:auto;padding:16px;border-radius:16px}
+  .legend table{font-size:11px;line-height:1.5}
+  .legend td,.legend th{padding:5px 6px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>练了么 · 核心屏高保真原型</h1>
+  <p>四张屏覆盖产品的完整主张：<code>0 次注册 → 0 次打字 → 1 次点击记一组</code>。
+     第 3 屏可交互：点大按钮记录一组并开始休息计时，<b>长按</b>大按钮打开修改弹层。<br>手机上打开会自动排成单列，可直接把手机递给别人演示。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ==================== S1 空态 ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S1 ·「练」空态</b>
+      <span>冷启动第一屏。无注册、无引导、无授权请求，唯一动作是开始。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:14</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="s1-body">
+          <div>
+            <div class="s1-hero">今天<br>练点什么？</div>
+            <div class="s1-sub">不需要先做计划。点一下就开始记录。</div>
+          </div>
+          <button class="btn-primary">开始今天的训练</button>
+          <div class="s1-meta">我上周练了 4 次 · 共 38 组</div>
+        </div>
+        <div class="tabbar">
+          <div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M4 9.5v5M20 9.5v5M6.5 12h11"/></svg>练</div>
+          <div><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>进步</div>
+          <div><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== S2 今日建议 ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S2 · 今日建议卡</b>
+      <span>建议必须带一行理由——放不下理由的建议不合法。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:15</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="s2-head">
+          <h2>今天练 胸 + 三头</h2>
+          <button class="icon-btn"><svg class="gl" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg></button>
+        </div>
+        <div class="s2-card">
+          <div class="s2-row">
+            <div class="s2-row-top"><span class="s2-name">杠铃卧推</span><span class="s2-load">62.5kg × 8</span></div>
+            <div class="s2-reason">上次 3 组全部达标，线性加重 +2.5kg</div>
+          </div>
+          <div class="s2-row">
+            <div class="s2-row-top"><span class="s2-name">上斜哑铃卧推</span><span class="s2-load">22kg × 8</span></div>
+            <div class="s2-reason">上次差一点达标，先把每组次数补到 8</div>
+          </div>
+          <div class="s2-row">
+            <div class="s2-row-top"><span class="s2-name">绳索下压</span><span class="s2-load">25kg × 10</span></div>
+            <div class="s2-reason">上次 3 组全部达标，线性加重 +2.5kg</div>
+          </div>
+          <div class="s2-row">
+            <div class="s2-row-top"><span class="s2-name">悬垂举腿</span><span class="s2-load">自重 × 12</span></div>
+            <div class="s2-reason plain">自重动作，先加次数，加到 15 次再考虑负重</div>
+          </div>
+        </div>
+        <div class="s2-foot">
+          <button class="btn-primary">开始训练</button>
+          <div class="s2-actions">
+            <button class="btn-ghost">换一批</button>
+            <button class="btn-ghost">我自己选</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== S4 训练主屏（可交互） ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S4 · 训练中主屏</b>
+      <span>可交互：点大按钮 = 记一组并开始休息计时；长按 = 打开修改弹层。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:31</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="s4-head">
+          <button class="s4-back"><svg class="gl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="s4-title">杠铃卧推</div>
+          <div class="s4-count" id="s4-count">第 3 组 / 共 3 组</div>
+        </div>
+        <div class="s4-mid">
+          <div class="s4-last">上次 60kg × 8</div>
+          <div class="s4-setno" id="s4-setno">第 3 组</div>
+          <button class="biglog" id="s4-big"><span id="s4-label">60kg × 8</span><span class="tick">✓</span></button>
+        </div>
+        <div class="donelist" id="s4-done">
+          <div class="donerow"><span class="idx">1</span><b>60kg × 8</b><span class="ok">✓</span></div>
+          <div class="donerow"><span class="idx">2</span><b>60kg × 8</b><span class="ok">✓</span></div>
+        </div>
+        <div class="s4-rest">
+          <div class="rest-left">
+            <span class="rest-label">休息</span>
+            <span class="rest-time" id="s4-rest">01:30</span>
+          </div>
+          <button class="btn-skip" id="s4-skip">跳过</button>
+        </div>
+        <div class="s4-switch">
+          <button>‹ 绳索下压</button>
+          <span class="cur">动作 1 / 3</span>
+          <button>上斜哑铃卧推 ›</button>
+        </div>
+        <div class="hint" id="s4-hint">点大按钮记录一组 · 长按可以改重量</div>
+      </div>
+
+      <!-- 修改弹层（长按唤起） -->
+      <div class="scrim" id="s4-scrim"></div>
+      <div class="sheet" id="s4-sheet">
+        <div class="sheet-grab"></div>
+        <div class="stepper-row">
+          <div><span class="val" id="sh-val">60</span><span class="unit" id="sh-unit">kg</span></div>
+          <div class="stepper-ctl">
+            <button class="step-btn" data-d="-2.5">−2.5</button>
+            <button class="step-btn" data-d="2.5">+2.5</button>
+          </div>
+        </div>
+        <div class="stepper-row">
+          <div><span class="val" id="sh-reps">8</span><span class="unit">次</span></div>
+          <div class="stepper-ctl">
+            <button class="step-btn" data-r="-1">−1</button>
+            <button class="step-btn" data-r="1">+1</button>
+          </div>
+        </div>
+        <div class="sheet-meta">
+          <button class="chip">RPE</button>
+          <button class="chip">标记热身组</button>
+        </div>
+        <button class="btn-primary" id="sh-ok">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== S5 修改弹层（静态态） ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S5 · 修改一组</b>
+      <span>修改是例外而非默认：步进按钮，永远不弹全键盘。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:31</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="s4-head">
+          <button class="s4-back"><svg class="gl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="s4-title">杠铃卧推</div>
+          <div class="s4-count">第 3 组 / 共 3 组</div>
+        </div>
+        <div class="s4-mid">
+          <div class="s4-last">上次 60kg × 8</div>
+          <div class="s4-setno">第 3 组</div>
+          <button class="biglog"><span>62.5kg × 8</span><span class="tick">✓</span></button>
+        </div>
+        <div class="donelist">
+          <div class="donerow"><span class="idx">1</span><b>62.5kg × 8</b><span class="ok">✓</span></div>
+          <div class="donerow"><span class="idx">2</span><b>62.5kg × 8</b><span class="ok">✓</span></div>
+        </div>
+        <div class="s4-rest">
+          <div class="rest-left"><span class="rest-label">休息</span><span class="rest-time">01:04</span></div>
+          <button class="btn-skip">跳过</button>
+        </div>
+        <div class="s4-switch">
+          <button>‹ 绳索下压</button><span class="cur">动作 1 / 3</span><button>上斜哑铃卧推 ›</button>
+        </div>
+      </div>
+      <div class="scrim show"></div>
+      <div class="sheet show">
+        <div class="sheet-grab"></div>
+        <div class="stepper-row">
+          <div><span class="val">60</span><span class="unit">kg</span></div>
+          <div class="stepper-ctl">
+            <button class="step-btn">−2.5</button><button class="step-btn">+2.5</button>
+          </div>
+        </div>
+        <div class="stepper-row">
+          <div><span class="val">8</span><span class="unit">次</span></div>
+          <div class="stepper-ctl">
+            <button class="step-btn">−1</button><button class="step-btn">+1</button>
+          </div>
+        </div>
+        <div class="sheet-meta">
+          <button class="chip">RPE</button>
+          <button class="chip">标记热身组</button>
+        </div>
+        <button class="btn-primary">确定</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <h3>设计令牌（完整规范见 docs/interaction-spec.md）</h3>
+  <table>
+    <tr><th>令牌</th><th>值</th><th>用途</th></tr>
+    <tr><td><span class="chip-color" style="background:#D8FF47"></span><code>--volt</code></td><td>#D8FF47</td><td>唯一主操作色。<b>一屏内只允许出现一次</b>，出现两次即说明主次不分</td></tr>
+    <tr><td><span class="chip-color" style="background:#F5C451"></span><code>--pr</code></td><td>#F5C451</td><td>仅用于破纪录，不用于普通成功态</td></tr>
+    <tr><td><code>--h-primary</code></td><td>88px</td><td>主按钮高度，单手可达硬约束</td></tr>
+    <tr><td><code>--r-pill</code></td><td>999px</td><td>主操作按钮；卡片用 20px，弹层顶部 28px</td></tr>
+    <tr><td><code>--fs-display / title</code></td><td>44 / 28</td><td>空态主文案 / 屏标题</td></tr>
+    <tr><td><code>--fs-body / cap</code></td><td>17 / 13</td><td>正文 / 次要说明（建议理由、灰字）</td></tr>
+  </table>
+</div>
+
+<script>
+(() => {
+  const big = document.getElementById('s4-big');
+  const label = document.getElementById('s4-label');
+  const setno = document.getElementById('s4-setno');
+  const count = document.getElementById('s4-count');
+  const done = document.getElementById('s4-done');
+  const rest = document.getElementById('s4-rest');
+  const hint = document.getElementById('s4-hint');
+  const scrim = document.getElementById('s4-scrim');
+  const sheet = document.getElementById('s4-sheet');
+  const valEl = document.getElementById('sh-val');
+  const repsEl = document.getElementById('sh-reps');
+  const okBtn = document.getElementById('sh-ok');
+
+  let weight = 60, reps = 8, sets = 2, timer = null, remain = 90, longPress = null, longFired = false;
+
+  const two = (n) => String(n).padStart(2, '0');
+  const paintLabel = () => { label.textContent = weight + 'kg × ' + reps; };
+  const paintRest = () => {
+    if (remain <= 0) { rest.textContent = '休息结束'; rest.classList.add('done'); return; }
+    rest.classList.remove('done');
+    rest.textContent = two(Math.floor(remain / 60)) + ':' + two(remain % 60);
+  };
+  const stopTimer = () => { if (timer) { clearInterval(timer); timer = null; } };
+  const startTimer = () => {
+    stopTimer(); remain = 90; paintRest();
+    timer = setInterval(() => { remain -= 1; paintRest(); if (remain <= 0) stopTimer(); }, 1000);
+  };
+
+  function logSet() {
+    if (sets >= 3) {                       // 计划 3 组已满：提示但不阻止自由加组
+      hint.textContent = '已超出计划组数，再点会继续记录（不加限制）';
+    }
+    sets += 1;
+    const row = document.createElement('div');
+    row.className = 'donerow fresh';
+    row.innerHTML = '<span class="idx">' + sets + '</span><b>' + weight + 'kg × ' + reps +
+                    '</b><span class="ok">✓</span>';
+    done.appendChild(row);
+    setno.textContent = '第 ' + (sets + 1) + ' 组';
+    count.textContent = '第 ' + (sets + 1) + ' 组 / 共 3 组';
+    startTimer();
+  }
+
+  // 点按 = 记一组；长按 500ms = 打开修改弹层（并吞掉随后的点按）
+  big.addEventListener('pointerdown', () => {
+    longFired = false;
+    longPress = setTimeout(() => { longFired = true; openSheet(); }, 500);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) =>
+    big.addEventListener(ev, () => { clearTimeout(longPress); }));
+  big.addEventListener('click', () => { if (!longFired) logSet(); });
+
+  function openSheet() {
+    valEl.textContent = weight; repsEl.textContent = reps;
+    scrim.classList.add('show'); sheet.classList.add('show');
+    hint.textContent = '步进调整，不需要键盘';
+  }
+  function closeSheet() {
+    scrim.classList.remove('show'); sheet.classList.remove('show');
+    hint.textContent = '点大按钮记录一组 · 长按可以改重量';
+  }
+
+  sheet.querySelectorAll('.step-btn').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.d) weight = Math.max(0, +(weight + parseFloat(b.dataset.d)).toFixed(1));
+    if (b.dataset.r) reps = Math.max(1, reps + parseInt(b.dataset.r, 10));
+    valEl.textContent = weight; repsEl.textContent = reps;
+  }));
+  okBtn.addEventListener('click', () => { paintLabel(); closeSheet(); });
+  scrim.addEventListener('click', closeSheet);
+  document.getElementById('s4-skip').addEventListener('click', () => { stopTimer(); remain = 0; paintRest(); });
+})();
+</script>
+</body>
+</html>

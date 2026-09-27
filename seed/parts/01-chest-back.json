@@ -1,0 +1,1131 @@
+[
+  {
+    "id": "ex_bb_bench_press",
+    "name": "杠铃卧推",
+    "name_en": "Barbell Bench Press",
+    "aliases": [
+      "平板卧推",
+      "卧推",
+      "bp",
+      "bench"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 100
+  },
+  {
+    "id": "ex_bb_incline_bench_press",
+    "name": "上斜杠铃卧推",
+    "name_en": "Incline Barbell Bench Press",
+    "aliases": [
+      "上斜卧推",
+      "上斜杠铃推胸"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 35,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 88
+  },
+  {
+    "id": "ex_bb_decline_bench_press",
+    "name": "下斜杠铃卧推",
+    "name_en": "Decline Barbell Bench Press",
+    "aliases": [
+      "下斜卧推"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 35,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_smith_bench_press",
+    "name": "史密斯卧推",
+    "name_en": "Smith Machine Bench Press",
+    "aliases": [
+      "史密斯平板卧推"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 65
+  },
+  {
+    "id": "ex_smith_incline_press",
+    "name": "史密斯上斜卧推",
+    "name_en": "Smith Machine Incline Press",
+    "aliases": [],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 25,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 48
+  },
+  {
+    "id": "ex_bb_floor_press",
+    "name": "地板卧推",
+    "name_en": "Barbell Floor Press",
+    "aliases": [
+      "地板推胸"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 46
+  },
+  {
+    "id": "ex_db_bench_press",
+    "name": "哑铃卧推",
+    "name_en": "Dumbbell Bench Press",
+    "aliases": [
+      "平板哑铃卧推",
+      "哑铃平板卧推"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 12,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 95
+  },
+  {
+    "id": "ex_db_incline_press",
+    "name": "上斜哑铃卧推",
+    "name_en": "Incline Dumbbell Press",
+    "aliases": [
+      "上斜哑铃推举"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 90
+  },
+  {
+    "id": "ex_db_decline_press",
+    "name": "下斜哑铃卧推",
+    "name_en": "Decline Dumbbell Press",
+    "aliases": [],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 50
+  },
+  {
+    "id": "ex_db_close_grip_press",
+    "name": "窄距哑铃卧推",
+    "name_en": "Close-Grip Dumbbell Press",
+    "aliases": [
+      "窄距哑铃推胸"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 44
+  },
+  {
+    "id": "ex_db_swissball_press",
+    "name": "瑞士球哑铃卧推",
+    "name_en": "Swiss Ball Dumbbell Press",
+    "aliases": [
+      "健身球卧推"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "core"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 32
+  },
+  {
+    "id": "ex_db_fly",
+    "name": "哑铃飞鸟",
+    "name_en": "Dumbbell Fly",
+    "aliases": [
+      "平板飞鸟",
+      "飞鸟"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "shoulders"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 8,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 85
+  },
+  {
+    "id": "ex_db_incline_fly",
+    "name": "上斜哑铃飞鸟",
+    "name_en": "Incline Dumbbell Fly",
+    "aliases": [
+      "上斜飞鸟"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "shoulders"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 6,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 70
+  },
+  {
+    "id": "ex_cable_crossover",
+    "name": "绳索夹胸",
+    "name_en": "Cable Crossover",
+    "aliases": [
+      "龙门架夹胸",
+      "绳索飞鸟",
+      "龙门架飞鸟"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "shoulders"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 82
+  },
+  {
+    "id": "ex_cable_low_fly",
+    "name": "低位绳索夹胸",
+    "name_en": "Low Cable Crossover",
+    "aliases": [
+      "低位夹胸",
+      "下斜绳索夹胸"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_cable_high_fly",
+    "name": "高位绳索夹胸",
+    "name_en": "High Cable Crossover",
+    "aliases": [
+      "高位夹胸",
+      "上斜绳索夹胸"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 52
+  },
+  {
+    "id": "ex_machine_pec_deck",
+    "name": "蝴蝶机夹胸",
+    "name_en": "Pec Deck Fly",
+    "aliases": [
+      "蝴蝶机",
+      "夹胸机"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "shoulders"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 25,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 80
+  },
+  {
+    "id": "ex_machine_chest_press",
+    "name": "器械推胸",
+    "name_en": "Chest Press Machine",
+    "aliases": [
+      "坐姿推胸"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_machine_incline_press",
+    "name": "上斜器械推胸",
+    "name_en": "Incline Chest Press Machine",
+    "aliases": [],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 25,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 52
+  },
+  {
+    "id": "ex_machine_single_chest_press",
+    "name": "单臂器械推胸",
+    "name_en": "Single-Arm Chest Press",
+    "aliases": [],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "core"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 15,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 30
+  },
+  {
+    "id": "ex_dip",
+    "name": "双杠臂屈伸",
+    "name_en": "Chest Dip",
+    "aliases": [
+      "双杠",
+      "臂屈伸",
+      "双杠撑"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 72
+  },
+  {
+    "id": "ex_weighted_dip",
+    "name": "负重双杠臂屈伸",
+    "name_en": "Weighted Dip",
+    "aliases": [
+      "负重双杠"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 10,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_push_up",
+    "name": "俯卧撑",
+    "name_en": "Push-up",
+    "aliases": [
+      "伏地挺身",
+      "掌上压"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts",
+      "abs"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 88
+  },
+  {
+    "id": "ex_incline_push_up",
+    "name": "上斜俯卧撑",
+    "name_en": "Incline Push-up",
+    "aliases": [
+      "高台俯卧撑"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 45
+  },
+  {
+    "id": "ex_decline_push_up",
+    "name": "下斜俯卧撑",
+    "name_en": "Decline Push-up",
+    "aliases": [
+      "脚抬高俯卧撑"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_db_pullover",
+    "name": "哑铃仰卧屈臂上拉",
+    "name_en": "Dumbbell Pullover",
+    "aliases": [
+      "仰卧上拉",
+      "上拉"
+    ],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "lats",
+      "triceps"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 15,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 50
+  },
+  {
+    "id": "ex_pull_up",
+    "name": "引体向上",
+    "name_en": "Pull-up",
+    "aliases": [
+      "正握引体",
+      "引体"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 95
+  },
+  {
+    "id": "ex_weighted_pull_up",
+    "name": "负重引体向上",
+    "name_en": "Weighted Pull-up",
+    "aliases": [
+      "负重引体"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 10,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 60
+  },
+  {
+    "id": "ex_chin_up",
+    "name": "反握引体向上",
+    "name_en": "Chin-up",
+    "aliases": [
+      "反手引体",
+      "窄握引体"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 72
+  },
+  {
+    "id": "ex_assisted_pull_up",
+    "name": "辅助引体向上",
+    "name_en": "Assisted Pull-up",
+    "aliases": [
+      "引体辅助",
+      "器械引体"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 45
+  },
+  {
+    "id": "ex_lat_pulldown",
+    "name": "高位下拉",
+    "name_en": "Lat Pulldown",
+    "aliases": [
+      "下拉",
+      "宽握下拉"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 92
+  },
+  {
+    "id": "ex_close_grip_pulldown",
+    "name": "窄握高位下拉",
+    "name_en": "Close-Grip Lat Pulldown",
+    "aliases": [
+      "窄距下拉",
+      "V把下拉"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 64
+  },
+  {
+    "id": "ex_reverse_grip_pulldown",
+    "name": "反握高位下拉",
+    "name_en": "Reverse-Grip Lat Pulldown",
+    "aliases": [
+      "反手下拉"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 35,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 50
+  },
+  {
+    "id": "ex_single_arm_pulldown",
+    "name": "单臂高位下拉",
+    "name_en": "Single-Arm Lat Pulldown",
+    "aliases": [],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 20,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_seated_cable_row",
+    "name": "坐姿绳索划船",
+    "name_en": "Seated Cable Row",
+    "aliases": [
+      "坐姿划船",
+      "绳索划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "traps",
+      "biceps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 35,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 90
+  },
+  {
+    "id": "ex_single_arm_cable_row",
+    "name": "单臂绳索划船",
+    "name_en": "Single-Arm Cable Row",
+    "aliases": [
+      "单臂坐姿划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 20,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_wide_cable_row",
+    "name": "宽握坐姿划船",
+    "name_en": "Wide-Grip Cable Row",
+    "aliases": [
+      "宽握划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "traps",
+      "rear_delts",
+      "lats"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 35,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 48
+  },
+  {
+    "id": "ex_bb_row",
+    "name": "杠铃划船",
+    "name_en": "Barbell Row",
+    "aliases": [
+      "俯身划船",
+      "划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "traps",
+      "biceps",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 92
+  },
+  {
+    "id": "ex_reverse_grip_bb_row",
+    "name": "反握杠铃划船",
+    "name_en": "Reverse-Grip Barbell Row",
+    "aliases": [
+      "反手划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 35,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 46
+  },
+  {
+    "id": "ex_pendlay_row",
+    "name": "潘德雷划船",
+    "name_en": "Pendlay Row",
+    "aliases": [
+      "触地划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "traps",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 45
+  },
+  {
+    "id": "ex_t_bar_row",
+    "name": "T杠划船",
+    "name_en": "T-Bar Row",
+    "aliases": [
+      "T杆划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "traps",
+      "biceps"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 30,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 68
+  },
+  {
+    "id": "ex_wide_t_bar_row",
+    "name": "宽握T杠划船",
+    "name_en": "Wide-Grip T-Bar Row",
+    "aliases": [],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "shoulders"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 30,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 38
+  },
+  {
+    "id": "ex_one_arm_db_row",
+    "name": "单臂哑铃划船",
+    "name_en": "One-Arm Dumbbell Row",
+    "aliases": [
+      "哑铃划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps",
+      "obliques"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 12,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 85
+  },
+  {
+    "id": "ex_two_arm_db_row",
+    "name": "双臂哑铃划船",
+    "name_en": "Two-Arm Dumbbell Row",
+    "aliases": [
+      "俯身双臂划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "arms"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 10,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 50
+  },
+  {
+    "id": "ex_chest_supported_row",
+    "name": "胸托划船",
+    "name_en": "Chest-Supported Row",
+    "aliases": [
+      "海豹划船",
+      "上斜凳划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "traps",
+      "biceps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 30,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_machine_row",
+    "name": "器械划船",
+    "name_en": "Seated Row Machine",
+    "aliases": [
+      "坐姿器械划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 35,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 60
+  },
+  {
+    "id": "ex_single_arm_machine_row",
+    "name": "单臂器械划船",
+    "name_en": "Single-Arm Machine Row",
+    "aliases": [],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "arms"
+    ],
+    "equipment": "machine",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 20,
+    "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 34
+  },
+  {
+    "id": "ex_inverted_row",
+    "name": "澳式划船",
+    "name_en": "Inverted Row",
+    "aliases": [
+      "反向划船",
+      "自重划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "biceps",
+      "abs"
+    ],
+    "equipment": "bodyweight",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 48
+  },
+  {
+    "id": "ex_deadlift",
+    "name": "硬拉",
+    "name_en": "Deadlift",
+    "aliases": [
+      "屈腿硬拉",
+      "传统硬拉",
+      "dl"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "hamstrings",
+      "glutes",
+      "lower_back",
+      "traps"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 180,
+    "default_weight_kg": 50,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 98
+  },
+  {
+    "id": "ex_sumo_deadlift",
+    "name": "相扑硬拉",
+    "name_en": "Sumo Deadlift",
+    "aliases": [
+      "宽站距硬拉"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "glutes",
+      "quads",
+      "lower_back"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 180,
+    "default_weight_kg": 50,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 55
+  },
+  {
+    "id": "ex_rack_pull",
+    "name": "架上硬拉",
+    "name_en": "Rack Pull",
+    "aliases": [
+      "半程硬拉"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "traps",
+      "lower_back",
+      "glutes"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 180,
+    "default_weight_kg": 60,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_straight_arm_pulldown",
+    "name": "直臂下压",
+    "name_en": "Straight-Arm Pulldown",
+    "aliases": [
+      "直臂下拉"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "lats",
+      "triceps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 20,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 58
+  },
+  {
+    "id": "ex_face_pull",
+    "name": "面拉",
+    "name_en": "Face Pull",
+    "aliases": [
+      "绳索面拉"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "rear_delts",
+      "traps"
+    ],
+    "equipment": "cable",
+    "track_type": "weight_reps",
+    "default_rest_sec": 60,
+    "default_weight_kg": 15,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 66
+  },
+  {
+    "id": "ex_bb_shrug",
+    "name": "杠铃耸肩",
+    "name_en": "Barbell Shrug",
+    "aliases": [
+      "耸肩"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "traps",
+      "forearms"
+    ],
+    "equipment": "barbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 40,
+    "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_db_shrug",
+    "name": "哑铃耸肩",
+    "name_en": "Dumbbell Shrug",
+    "aliases": [],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "traps",
+      "forearms"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 90,
+    "default_weight_kg": 20,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 52
+  },
+  {
+    "id": "ex_farmer_walk",
+    "name": "农夫行走",
+    "name_en": "Farmer's Walk",
+    "aliases": [
+      "农夫走",
+      "负重行走"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "forearms",
+      "traps",
+      "abs"
+    ],
+    "equipment": "dumbbell",
+    "track_type": "weight_reps",
+    "default_rest_sec": 120,
+    "default_weight_kg": 20,
+    "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 40
+  }
+]

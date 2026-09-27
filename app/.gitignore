@@ -1,0 +1,16 @@
+# 生成物与本地环境
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 平台目录由 `flutter create --platforms=ios,android .` 生成（见 app/README.md）。
+# 生成后如果决定提交，把下面两行的注释去掉。
+# ios/
+# android/

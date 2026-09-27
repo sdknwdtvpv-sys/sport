@@ -1,0 +1,15 @@
+# 刻意不依赖 flutter_lints：少一个外部依赖，CI 首次运行就少一个失败点。
+# 规则由 Dart SDK 自带的 linter 提供，不引入第三方包。
+analyzer:
+  errors:
+    todo: ignore
+    # 生成的种子数据与向量是数据文件，不参与分析
+  exclude:
+    - "**/*.g.dart"
+    - build/**
+
+linter:
+  rules:
+    - avoid_print
+    - avoid_empty_else
+    - unrelated_type_equality_checks
