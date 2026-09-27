@@ -191,6 +191,45 @@ body{
 .legend th{color:var(--text-3);font-weight:500}
 .legend code{color:var(--volt);font-size:var(--fs-micro)}
 .chip-color{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+/* ---------- S7 训练结束总结 ---------- */
+.stat3{display:flex;padding:var(--s5) var(--s4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
+.stat3 > div{flex:1;text-align:center;border-right:1px solid var(--line)}
+.stat3 > div:last-child{border-right:none}
+.stat3 b{display:block;font-size:22px;font-weight:700;letter-spacing:-.02em}
+.stat3 span{display:block;margin-top:4px;color:var(--text-3);font-size:13px}
+.prbox{margin-top:var(--s5);padding:var(--s5);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
+.prbox h3{color:var(--pr);font-size:15px;font-weight:700;margin-bottom:var(--s3)}
+.prrow{display:flex;justify-content:space-between;gap:var(--s3);padding-bottom:var(--s2)}
+.prrow b{font-weight:600;font-size:15px}
+.prrow span{color:var(--text-2);font-size:13px}
+
+/* ---------- S8 进步 ---------- */
+.pv{margin-top:var(--s5);padding:var(--s5);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
+.pv .cap{color:var(--text-3);font-size:13px}
+.pv .big{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.pv .sub{color:var(--text-3);font-size:13px}
+.spark{display:block;width:100%;height:56px;margin-top:var(--s4)}
+.pv .axis{display:flex;justify-content:space-between;color:var(--text-3);font-size:11px;margin-top:var(--s2)}
+.prwall{margin-top:var(--s5);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+.prwall .row{display:flex;justify-content:space-between;padding:var(--s4);border-bottom:1px solid var(--line)}
+.prwall .row:last-child{border-bottom:none}
+.prwall .row i{font-style:normal;color:var(--text);font-size:15px}
+.prwall .row b{color:var(--pr);font-size:17px;font-weight:700}
+
+/* ---------- S10 我 ---------- */
+.sect{margin:var(--s5) 0 var(--s2) 4px;color:var(--text-3);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+.card .row{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding:var(--s4);border-bottom:1px solid var(--line)}
+.card .row:last-child{border-bottom:none}
+.card .row .t{flex:1}
+.card .row .t b{display:block;font-size:15px;font-weight:400;color:var(--text)}
+.card .row .t span{display:block;margin-top:2px;color:var(--text-3);font-size:13px;line-height:1.4}
+.card .row .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.sw{width:46px;height:28px;border-radius:999px;background:var(--volt);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:999px;background:var(--volt-ink)}
+.sw.off{background:var(--line-strong)}
+.sw.off::after{right:auto;left:3px;background:var(--text-2)}
+
 /* 手机端：排成单列并铺满宽度，方便直接把手机递给别人演示 */
 @media (max-width:520px){
   body{padding:10px 0 40px;gap:18px}
@@ -210,8 +249,8 @@ body{
 <body>
 
 <div class="page-head">
-  <h1>练了么 · 核心屏高保真原型</h1>
-  <p>四张屏覆盖产品的完整主张：<code>0 次注册 → 0 次打字 → 1 次点击记一组</code>。
+  <h1>练了么 · 高保真原型（6 屏）</h1>
+  <p>六张屏覆盖已实现的全部界面：<code>0 次注册 → 0 次打字 → 1 次点击记一组</code>。
      第 3 屏可交互：点大按钮记录一组并开始休息计时，<b>长按</b>大按钮打开修改弹层。<br>手机上打开会自动排成单列，可直接把手机递给别人演示。</p>
 </div>
 
@@ -406,6 +445,110 @@ body{
   </div>
 
 </div>
+
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S7 · 训练结束总结</b>
+      <span>三项大数 + 破纪录。破纪录用专属色，且<b>不只靠颜色</b>表达（有 ★ 字符）。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:47</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span></div>
+      <div class="screen">
+        <div style="flex:1;padding:var(--s6) var(--s5) var(--s4);overflow:hidden">
+          <div style="font-size:28px;font-weight:700;letter-spacing:-.02em">训练完成</div>
+          <div class="stat3" style="margin-top:var(--s5)">
+            <div><b>2,240 kg</b><span>容量</span></div>
+            <div><b>42 分钟</b><span>时长</span></div>
+            <div><b>4</b><span>组数</span></div>
+          </div>
+          <div class="prbox">
+            <h3>★ 破纪录</h3>
+            <div class="prrow"><b>杠铃卧推</b><span>65kg（上次最好 60kg）</span></div>
+          </div>
+        </div>
+        <div style="padding:var(--s2) var(--s5) var(--s5)">
+          <button class="btn-primary" style="width:100%">完成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S8 · 进步</b>
+      <span>只有三块内容（规格就是这么定的）。曲线自绘，不引图表库。体重没做——它需要另一张表。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:52</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span></div>
+      <div class="screen">
+        <div style="flex:1;padding:var(--s4) var(--s5);overflow:hidden">
+          <div style="font-size:28px;font-weight:700;letter-spacing:-.02em">进步</div>
+          <div class="pv">
+            <div class="cap">本周容量</div>
+            <div class="big">12,400 kg</div>
+            <div class="sub">这 7 天练了 3 次</div>
+            <svg class="spark" viewBox="0 0 100 56" preserveAspectRatio="none">
+              <line x1="0" y1="55" x2="100" y2="55" stroke="#2A2A31" stroke-width="1"/>
+              <polyline points="0,52 16.7,52 33.3,36.6 50,52 66.7,19.4 83.3,52 100,4"
+                        fill="none" stroke="#D8FF47" stroke-width="2"
+                        stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+              <circle cx="0" cy="52" r="2.4" fill="#D8FF47"/><circle cx="16.7" cy="52" r="2.4" fill="#D8FF47"/>
+              <circle cx="33.3" cy="36.6" r="2.4" fill="#D8FF47"/><circle cx="50" cy="52" r="2.4" fill="#D8FF47"/>
+              <circle cx="66.7" cy="19.4" r="2.4" fill="#D8FF47"/><circle cx="83.3" cy="52" r="2.4" fill="#D8FF47"/>
+              <circle cx="100" cy="4" r="2.4" fill="#D8FF47"/>
+            </svg>
+            <div class="axis"><span>9/21</span><span>今天</span></div>
+          </div>
+          <div class="sect" style="margin-left:0">PR 墙</div>
+          <div class="prwall">
+            <div class="row"><i>杠铃深蹲</i><b>100kg</b></div>
+            <div class="row"><i>杠铃卧推</i><b>80kg</b></div>
+            <div class="row"><i>引体向上</i><b>15 次</b></div>
+          </div>
+        </div>
+        <div class="tabbar"><div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>练</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>进步</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>我</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S10 ·「我」</b>
+      <span>每一行都真的有用。刻意没放单位切换、默认休息、会员入口——占位入口比没有更糟。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:58</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span></div>
+      <div class="screen">
+        <div style="flex:1;padding:var(--s4) var(--s5);overflow:hidden">
+          <div style="font-size:28px;font-weight:700;letter-spacing:-.02em">我</div>
+          <div class="sect">训练统计</div>
+          <div class="card">
+            <div class="row"><div class="t"><b>训练次数</b></div><span class="v">3 次</span></div>
+            <div class="row"><div class="t"><b>总组数</b></div><span class="v">28 组</span></div>
+            <div class="row"><div class="t"><b>总容量</b></div><span class="v">12,400 kg</span></div>
+          </div>
+          <div class="sect">渐进建议</div>
+          <div class="card">
+            <div class="row">
+              <div class="t"><b>根据历史提示重量</b><span>关掉后只记录，不再提示该上多少重量</span></div>
+              <div class="sw"></div>
+            </div>
+          </div>
+          <div class="sect">隐私</div>
+          <div class="card">
+            <div class="row">
+              <div class="t"><b>帮助改进产品</b><span>关掉后不再上报任何使用数据，功能完全不受影响</span></div>
+              <div class="sw"></div>
+            </div>
+          </div>
+          <div class="sect">数据</div>
+          <div class="card">
+            <div class="row"><div class="t"><b>导出全部记录</b><span>复制成 CSV 到剪贴板，可贴进表格</span></div>
+              <svg class="gl" viewBox="0 0 24 24" style="color:var(--text-3)"><path d="M12 3v12M8 11l4 4 4-4M4 19h16"/></svg>
+            </div>
+          </div>
+          <div class="sect">关于</div>
+          <div class="card"><div class="row"><div class="t"><span>版本 1.0.0 · 数据只存在这台设备上，不上传任何人。</span></div></div></div>
+        </div>
+        <div class="tabbar"><div class="on"><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>练</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>进步</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div></div>
+      </div>
+    </div>
+  </div>
+
 
 <div class="legend">
   <h3>设计令牌（完整规范见 docs/interaction-spec.md）</h3>

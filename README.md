@@ -14,7 +14,7 @@
 
 ```bash
 ./verify.sh                        # 自检全部产物（契约层 + 领域层 + 应用层）
-open prototype/index.html          # 看 4 张核心屏（第 3 屏可交互）
+open prototype/index.html          # 看全部 6 屏（训练主屏可交互）
 
 dart app/tool/check_domain.dart    # 验证 Dart 引擎与 JS 引擎一致（零依赖，不需要 pub）
 cd app && flutter test             # 再加上 widget 测试（需要能跑通 pub get）
@@ -67,7 +67,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | 层 | 产物 | 可执行？ | 谁验收 |
 |---|---|---|---|
 | 产品定义 | `PRODUCT.md` | 散文 | 创始人 / 合伙人 |
-| 交互 | `prototype/index.html` + `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
+| 交互 | `prototype/index.html`（**6 屏，零依赖**）+ `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
 | 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：165 条种子可直接导入；drift 落库有 26 项契约测试 | 客户端 / 后端 |
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 28 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
@@ -87,7 +87,7 @@ engine/vectors.json ──┬──> engine/run-tests.mjs        （Node）
 
 ### 你是产品 / 创始人 —— 要当面说服别人
 
-1. 打开 `prototype/index.html`，**当面演示第 3 屏**：点大按钮记一组 → 倒计时跑起来 → 长按 → 弹层改重量。40 秒胜过任何 PPT。
+1. 打开 `prototype/index.html`（**不需要任何工具链，双击就行**），当面演示训练主屏：点大按钮记一组 → 倒计时跑起来 → 长按 → 弹层改重量。40 秒胜过任何 PPT。全套 6 屏都在同一页，往右滑就是结束总结、进步页、我。
 2. 电梯陈述在 `PRODUCT.md` §0–§6。
 3. 要拿真实数据说话：按 `docs/usability-test-kit.md` 招 5 个人。**第 6 节"训记对照环节"是关键** —— 让被试用自己的训记做同一件事，直接比出省事程度。
 
