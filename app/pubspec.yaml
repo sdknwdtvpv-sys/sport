@@ -26,3 +26,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    # 由 node seed/build.mjs 生成；唯一真源是 seed/parts/*.json
+    - assets/exercises.json

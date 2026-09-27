@@ -32,7 +32,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | JS 规则引擎（28 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 35/35 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 41/41 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter 测试（引擎 + 交互红线 + 持久化契约） | `cd app && flutter test` | ✅ **75/75** |
+| Flutter 测试（引擎 + 交互红线 + 持久化契约 + 动作库 + 启动冒烟） | `cd app && flutter test` | ✅ **96/96** |
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
 `flutter test` 的 75 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 9 项 widget 交互测试
@@ -46,7 +46,8 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 这意味着整套验证在**从零 clone 的干净 Linux 环境**里同样成立，不依赖任何本机配置 ——
 中文目录只影响本机的 `flutter analyze`，不影响 CI。
 
-**尚未验证**：drift 持久化、真实埋点上报、iOS/Android 构建都还没接线。
+**尚未验证**：真实埋点上报、iOS/Android 构建都还没接线。drift 持久化已接入并通过契约测试与 CI，
+但「杀掉 App 重开、记录还在」这条要等装到真机才能确认（阶段 2）。
 
 > **下一步做什么** → [`ROADMAP.md`](ROADMAP.md)：6 个阶段，每步都有命令与可验收的完成标准。
 > 其中**阶段 3「自己练一次」不要跳过** —— 成本是一次训练，产出是核心假设的第一个真实信号。
@@ -59,7 +60,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 |---|---|---|---|
 | 产品定义 | `PRODUCT.md` | 散文 | 创始人 / 合伙人 |
 | 交互 | `prototype/index.html` + `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
-| 数据 | `docs/data-model.md` + `seed/exercises.sql` | **可执行**：sqlite3 直接导入 165 条 | 客户端 / 后端 |
+| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：165 条种子可直接导入；drift 落库有 26 项契约测试 | 客户端 / 后端 |
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 28 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
 | 验证 | `docs/usability-test.md` + `-kit.md` | 流程手册，可照做 | 你本人 |

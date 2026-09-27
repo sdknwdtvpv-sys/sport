@@ -29,9 +29,9 @@ jobs:
 
       - name: 生成物必须与提交一致
         run: |
-          if ! git diff --quiet -- seed/exercises.json seed/exercises.sql; then
-            echo "::error::seed/exercises.json 或 exercises.sql 与 seed/parts/*.json 不一致。请本地执行 node seed/build.mjs 后一并提交。"
-            git diff --stat -- seed/exercises.json seed/exercises.sql
+          if ! git diff --quiet -- seed/exercises.json seed/exercises.sql app/assets/exercises.json; then
+            echo "::error::生成的种子文件与 seed/parts/*.json 不一致。请本地执行 node seed/build.mjs 后一并提交。"
+            git diff --stat -- seed/exercises.json seed/exercises.sql app/assets/exercises.json
             exit 1
           fi
 

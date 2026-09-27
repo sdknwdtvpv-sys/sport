@@ -20,6 +20,9 @@ import '../../domain/models.dart';
 import '../../domain/progression.dart';
 import '../../domain/tap_meter.dart';
 
+/// 单动作训练时的默认 id。多动作场景由调用方传入同一个 id。
+const String kLocalWorkoutId = 'w_local_1';
+
 class WorkoutController extends ChangeNotifier {
   WorkoutController({
     required this.exercise,
@@ -27,12 +30,15 @@ class WorkoutController extends ChangeNotifier {
     required this.analytics,
     required this.store,
     required this.syncQueue,
+    /// 同一次训练里的多个动作**共享同一个 workoutId**，
+    /// 这样记录会挂在一条 workout 下，而不是被拆成多次训练。
+    String workoutId = kLocalWorkoutId,
     LastSession? lastSession,
     List<ManualOverride> overrides = const <ManualOverride>[],
     UserProfile profile = const UserProfile(),
     int Function()? clock,
   }) : _clock = clock ?? (() => DateTime.now().millisecondsSinceEpoch) {
-    workout = Workout(id: 'w_local_1', startedAtMs: _clock());
+    workout = Workout(id: workoutId, startedAtMs: _clock());
     _suggestion = suggestNext(
       exercise: exercise,
       plan: plan,
@@ -148,7 +154,13 @@ class WorkoutController extends ChangeNotifier {
     _normalSets++;
 
     final record = SetRecord(
-      id: 's_${workout.sets.length + 1}',
+      // 确定性 id，包含 workout + 动作 + 组序 —— 三者确定唯一一条记录。
+      //
+      // 之前写的是 's_${workout.sets.length + 1}'：那是**每个控制器各自计数**的，
+      // 所以同一次训练里两个动作都会生成 's_1'，后者把前者覆盖掉 —— 直接丢数据。
+      // set_record.id 是全局主键，id 就不能按局部计数器生成。
+      // 确定性还有个好处：同一组重复写入是幂等的。
+      id: 's_${workout.id}_${exercise.id}_$_normalSets',
       workoutId: workout.id,
       exerciseId: exercise.id,
       setIndex: _normalSets,
@@ -161,6 +173,9 @@ class WorkoutController extends ChangeNotifier {
 
     // 本地优先：先落本地库、再进队列。训练中绝不发网络请求。
     unawaited(store.saveSet(record));
+    // 训练行本身也必须落库（totalSets / totalVolume 随之更新）。
+    // 之前只写了 set_record，导致重启后 loadWorkout 找不到这次训练。
+    unawaited(store.saveWorkout(workout));
     syncQueue.enqueue('set_record', <String, Object?>{
       'id': record.id,
       'workout_id': record.workoutId,

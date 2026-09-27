@@ -12,7 +12,7 @@
  *
  * 任何校验失败都会以非 0 退出码结束，不产生输出文件。
  */
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -168,7 +168,16 @@ COMMIT;
 `;
 writeFileSync(join(ROOT, 'exercises.sql'), sql, 'utf8');
 
-// ---------- 5. 摘要 ----------
+// ---------- 5. 同步一份到 app/assets/ ----------
+// Flutter 只能打包**包目录内**的资源，而动作库的唯一真源是 seed/parts/*.json。
+// 所以在这里生成，避免同一份数据两处维护。
+// 产物提交进仓库（App 构建不需要 node），由 CI 的 contracts job 校验它与 parts 一致
+// —— 跟 exercises.sql 是同一套做法。
+const assetDir = join(ROOT, '..', 'app', 'assets');
+mkdirSync(assetDir, { recursive: true });
+writeFileSync(join(assetDir, 'exercises.json'), json, 'utf8');
+
+// ---------- 6. 摘要 ----------
 
 const byGroup = {};
 const byEquip = {};
@@ -186,4 +195,4 @@ console.log('  自重动作（走"加次数"推进）：' + exercises.filter((e)
 if (warnings.length) {
   console.log(`\n⚠ ${warnings.length} 条提示：\n` + warnings.map((s) => '  · ' + s).join('\n'));
 }
-console.log('\n  已写入 seed/exercises.json 与 seed/exercises.sql');
+console.log('\n  已写入 seed/exercises.json、seed/exercises.sql、app/assets/exercises.json');

@@ -60,13 +60,23 @@ git push -u origin main
 
 ## 阶段 1 · 接 drift 持久化（1 天）
 
-> ✅ **本地已验证**：`dart analyze --fatal-infos` 零问题，`flutter test` **75/75 通过**
-> （含 26 项契约测试 × 2 个实现）。
+> ✅ **本地 + CI 双验证**：`dart analyze --fatal-infos` 零问题，`flutter test` **75/75**，
+> CI #3 在 ubuntu-24.04 上同样全绿（含 26 项契约测试 × 2 个实现、以及 Linux 上的原生库构建）。
 >
 > 踩过的三个坑，都记在这里免得重犯：
 > 1. **`sqlite3_flutter_libs` 已 EOL**（版号带 `+eol`）——官方让改用 `sqlite3` 3.x，别照抄教程加它。
 > 2. **`withDefault()` 只加 SQL 层 DEFAULT，Dart 数据类字段仍是 `required`**，必须显式传（如 `isPr`）。
 > 3. **drift 生成的伴生类叫 `<Table>Companion`**，不是 `<Table>UpdateCompanion`（后者只是基类）。
+> 4. **`where` / `orderBy` / `limit` 全部返回 `void`**（就地修改语句），不能链式 `.get()`，必须分两句。
+> 5. **`Value` 只在 `package:drift/drift.dart` 里**；`drift/native.dart` 不导出它。
+>
+> 6. **`flutter test` 在本机跑不了时，用 Python 照着 SQL 逻辑推演真实种子文件**。
+>    这一条抓到了「按名称检索」断言里漏判"别名命中"的错 —— 编译器与分析器都抓不到这类错。
+>
+> **方法论**：
+> * drift 的 API 已经猜错三次了。**别再猜** —— 源码在
+>   `~/.pub-cache/hosted/pub.dev/drift-<版本>/lib/`，签名一行 grep 就有。
+> * 断言涉及具体数据的，**先拿真实数据推演一遍再交给别人跑**。
 >
 > 另外 `sqlite3` 3.x 用 Dart 新的 native assets 机制自建原生库，在 macOS 上已实测通过。
 
@@ -120,7 +130,8 @@ cd app && dart run build_runner build
 **完成标准**：
 - [x] `dart analyze --fatal-infos` 仍为零问题（`*.g.dart` 已在 `analysis_options.yaml` 的 exclude 里）
 - [x] 契约测试对**两个**实现都绿（13 条 × 2 = 26 项）
-- [x] CI 绿 —— 待推送后确认（重点看 Linux 上 sqlite3 原生库能否构建）
+- [x] CI 绿（CI #3，ubuntu-24.04）—— **sqlite3 3.x 的原生库在 Linux 上同样构建成功**，
+      代码生成步骤与 75 项测试在干净环境全部通过
 - [ ] 杀掉 App 重开，之前的组记录还在 ← **要等阶段 2 装到真机才能验**
 
 > ⚠️ 这一步我在当前环境**无法验证**（跑不了 `pub get`）。上面是规格，不是已验证的步骤。
@@ -137,18 +148,76 @@ flutter run           # 接上手机
 
 `flutter create` 只补缺失文件，**不会覆盖已有的 `lib/` 与 `test/`**。生成后决定是否提交 `ios/`、`android/`（`.gitignore` 里已备好注释行）。
 
-**完成标准**：
-- [ ] 手机上出现 App，能点「开始今天的训练」进训练屏
-- [ ] 点大按钮能记一组（这时还是内存存储，重启即失）
-- [ ] 阶段 1 完成后：重启 App，记录还在
+### ⚠️ 先提交快照再动手
 
-**注意**：iOS 真机需要 Apple 开发者账号配置签名；只想验证交互的话 Android 或模拟器更快。
+我读了 flutter_tools 的源码：模板渲染确实有"存在就删掉重写"的分支
+（`template.dart` 里 `finalDestinationFile.deleteSync(recursive: true)`），
+但 App 项目走哪条路径我没能彻底定位。**所以不要赌**——先提交，跑完用 `git diff` 看它动了什么：
+
+```bash
+cd /Users/elliot/Harness/练了么
+git add -A
+git commit -m "chore: 阶段 2 前的快照"
+
+cd app
+flutter create --org com.你的反域名 --project-name lianleme --platforms=ios,android .
+
+cd ..
+git status --short             # 它新建/改动了哪些文件
+git diff app/pubspec.yaml      # 最关键：assets 声明与 drift 依赖还在吗？
+```
+
+如果 `pubspec.yaml` 被重写了（丢掉 `assets:` 或 drift 依赖），直接回退：
+
+```bash
+git checkout -- app/pubspec.yaml
+cd app && flutter pub get
+```
+
+`--org` 换成**你自己的反向域名**（如 `com.sdknwdtvpv`）——它会写进 iOS bundle id 与
+Android applicationId，后期改很麻烦。
+
+`test/widget_test.dart` 我已提前占位。如果 `flutter create` 覆盖了它（换成引用 `MyApp`
+的模板测试，会编译失败），`git checkout -- app/test/widget_test.dart` 恢复即可。
+
+**完成标准**（后两条是专门验证今天修的两个 bug，别跳过）：
+
+- [ ] 手机上出现 App，点「开始今天的训练」进到动作选择页
+- [ ] 搜索能筛（试 `bp`、`rdl`），点一个动作进训练屏，点大按钮能记一组
+- [ ] **练两个动作**（卧推 → 返回 → 深蹲），两组都在
+- [ ] **杀掉 App 重开** —— 前面练的组**一条不少**（验证 id 撞主键的修复）
+- [ ] 重开后进同一动作，训练屏上方能显示「上次 xx kg × n」（验证 workout 行落库的修复）
+
+**注意**：
+- iOS 真机需要 Apple 开发者账号配置签名；**先用 Android 或模拟器更快**
+- 生成后决定是否提交 `ios/`、`android/`（`app/.gitignore` 里有注释行）
+- 生成完先跑一次 `dart analyze --fatal-infos && flutter test`，确认脚手架没碰坏什么
 
 ---
 
 ## 阶段 3 · 自己练一次（关键里程碑，0 成本）
 
 **这是整个路线图里性价比最高的一步。**
+
+> ⚠️ **前置条件**：当前 App 只支持**一个硬编码动作**（杠铃卧推），也没有动作切换。
+> 所以"至少 3 个动作"这一步做不了 —— 阶段 3 之前需要先补上**最小的动作切换**
+> （加载 165 条种子 + 一个选择器）。这是阶段 4 的一小块被提前，不是额外工作量。
+>
+> 如果不想等，也可以先用**单动作 3~5 组**跑一次：`tap_count`、休息计时、组间手感
+> 这些核心假设用单个动作就能验，缺的只是"动作切换顺不顺手"这一个问题。
+>
+> **补齐进度**：
+> - [x] 增量 1：种子进资源管线（`node seed/build.mjs` 产出 `app/assets/exercises.json`）
+>       + `ExerciseRepository`（幂等导入 / 名称与别名检索 / 部位筛选 / 常用排序）+ 10 项测试
+> - [x] 增量 2：动作选择页（搜索/部位筛选/常用排序）+ `WorkoutController` 接受共享 `workoutId`
+> - [x] 增量 3：`main.dart` 串起「空态 → 选动作 → 训练 → 回来再选下一个」，
+>       整轮共享一个 `workoutId`，所以多动作挂在**同一次训练**下
+> - [x] 顺带修了两个真 bug：
+>       ① 控制器只写 `set_record`、从不写 `workout` 行 → 重启后 `loadWorkout` 返回 null；
+>       ② **组记录 id 用控制器局部计数生成**（`'s_${workout.sets.length + 1}'`），
+>          同一次训练里两个动作都会生成 `s_1`，后者覆盖前者 → **直接丢数据**。
+>          改为 `'s_<workoutId>_<exerciseId>_<组序>'`：全局唯一且幂等。
+>          这两个都是阶段 3 一去健身房就会撞上的，被多动作测试提前抓出来了。
 
 带上手机去健身房，**真的用完整一次训练**——至少 3 个动作、12 组。
 

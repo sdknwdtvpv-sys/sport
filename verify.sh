@@ -99,6 +99,20 @@ echo
 
 # ── 4. 静态分析 ─────────────────────────────────────────────────────────
 echo "${BOLD}[4/5] 静态分析（dart analyze --fatal-infos）${OFF}"
+
+# 廉价的 import 冲突检查：db.dart（drift 表）与 models.dart（领域模型）
+# 都定义了 Workout / SetRecord。同一文件裸 import 两个库时，
+# 一旦用到同名类就是 ambiguity_import —— 编译期也会报，但这里 1 秒就能发现。
+# （这个错犯过两次，所以固化成检查。）
+conflict=0
+for f in $(grep -rlE "db\.dart'" app/lib app/test 2>/dev/null | grep -v '\.tmpdir'); do
+  grep -qE "models\.dart'" "$f" || continue
+  grep -E "db\.dart'" "$f" | head -1 | grep -q ' hide ' && continue
+  grep -E "models\.dart'" "$f" | head -1 | grep -q ' as ' && continue
+  echo "  ${RED}✗${OFF} ${f#app/}：db.dart 与 models.dart 裸 import，需 hide 或 as"
+  conflict=1
+done
+[ "$conflict" -eq 0 ] && echo "  ${GREEN}✓${OFF} 无 import 命名冲突" || fail=1
 if [ -z "$DART_BIN" ]; then
   echo "${YELLOW}⊘ 阻塞${OFF} —— 未找到 Dart SDK。"; blocked=1
 elif [ ! -f app/.dart_tool/package_config.json ]; then
@@ -148,6 +162,10 @@ for f in README.md PRODUCT.md ROADMAP.md \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
          app/lib/features/workout/workout_controller.dart \
          app/lib/data/db.dart app/lib/data/drift_local_store.dart \
+         app/lib/data/exercise_repository.dart app/assets/exercises.json \
+         app/lib/features/exercise/exercise_picker_screen.dart \
+         app/test/exercise_repository_test.dart app/test/multi_exercise_test.dart \
+         app/test/exercise_picker_test.dart app/test/widget_test.dart \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \
