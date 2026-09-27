@@ -40,14 +40,16 @@ git commit -m "练了么 v0.1：产品契约 + 165 动作种子 + 双引擎 + 49
 **在 GitHub 上新建一个空仓库**（⚠️ 不要勾选 "Add README" 或 ".gitignore"，否则 push 会冲突），然后：
 
 ```bash
-git remote add origin git@github.com:<你的账号>/lianleme.git
+git remote add origin git@github.com/sdknwdtvpv-sys/sport.git
 git push -u origin main
 ```
 
 **完成标准**：
-- [ ] `git status` 干净
-- [ ] GitHub 仓库里没有 `.dart_tool/`、`.pub-cache/`、`.DS_Store`
-- [ ] Actions 两个 job（`contracts` / `app`）**都绿**
+- [x] `git status` 干净
+- [x] GitHub 仓库里没有 `.dart_tool/`、`.pub-cache/`、`.DS_Store`
+- [x] Actions 两个 job（`contracts` / `app`）**都绿** —— 9s + 2m 4s（含 1m 11s 下载 Flutter SDK）
+
+> ✅ **已完成**（仓库：`sdknwdtvpv-sys/sport`）。第二次运行会快很多（SDK 缓存命中）。
 
 **常见坑**：
 - 用 HTTPS 而非 SSH 会一直要密码 → 用 `git@github.com:` 形式，先配好 SSH key

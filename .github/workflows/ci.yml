@@ -1,5 +1,12 @@
 name: CI
 
+# 环境钉版本 —— 与"锁定 Flutter 3.47.5"同一个理由：
+# CI 必须验证一个**已知环境**，不能让上游悄悄换掉它。
+#   * runs-on: ubuntu-24.04 —— GitHub 公告 ubuntu-latest 将于 2026-10-19 起迁移到 Ubuntu 26，
+#     届时 ubuntu-latest 会静默变成另一个系统，可能与本仓库验证过的环境不同。
+#   * actions/*@v5 —— v4 面向 Node.js 20，GitHub 已标记弃用并强制跑在 Node.js 24 上（会产生告警）。
+# 复查时间：2027-01，或收到 GitHub 弃用公告时。
+
 on:
   push:
   pull_request:
@@ -9,11 +16,11 @@ jobs:
   # 这一层不需要 Flutter，跑得快，所以先跑，快速失败。
   contracts:
     name: 契约自检（动作库 + JS 规则引擎）
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -36,12 +43,12 @@ jobs:
   # 这一步绿了，才说明"移植完成"。
   app:
     name: Flutter 分析 + 测试（含 Dart 引擎向量）
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:

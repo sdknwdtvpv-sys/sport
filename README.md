@@ -1,5 +1,7 @@
 # 练了么
 
+[![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
 > 完整产品定义见 [`PRODUCT.md`](PRODUCT.md)。
@@ -35,7 +37,11 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
 `flutter test` 的 49 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 9 项 widget 交互测试。
 
-**尚未验证**：CI 还没在 GitHub 上真跑过；drift 持久化、真实埋点上报、iOS/Android 构建都还没接线。
+以上 5 层已在 CI 上跑通（[首次运行](https://github.com/sdknwdtvpv-sys/sport/actions) 2m 4s，两个 job 全绿）。
+这意味着整套验证在**从零 clone 的干净 Linux 环境**里同样成立，不依赖任何本机配置 ——
+中文目录只影响本机的 `flutter analyze`，不影响 CI。
+
+**尚未验证**：drift 持久化、真实埋点上报、iOS/Android 构建都还没接线。
 
 > **下一步做什么** → [`ROADMAP.md`](ROADMAP.md)：6 个阶段，每步都有命令与可验收的完成标准。
 > 其中**阶段 3「自己练一次」不要跳过** —— 成本是一次训练，产出是核心假设的第一个真实信号。
