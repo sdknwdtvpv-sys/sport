@@ -273,6 +273,21 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                 height: 1.4,
               ),
             ),
+            // 证据链：把引擎据以判断的**事实**摆出来。
+            // 「上次 3 组 · 60 kg × 10 次 → 今天 62.5 kg」这条链能被用户看见，
+            // 建议才不是黑箱；而看得见的事实也就可以被反驳（"这不是我上次记的"）。
+            if (p.historyLabel != null) ...<Widget>[
+              const SizedBox(height: 3),
+              Text(
+                p.historyLabel!,
+                key: Key('history-${p.exercise.id}'),
+                style: const TextStyle(
+                  color: Tokens.text3,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ],
           ],
         ],
       ),

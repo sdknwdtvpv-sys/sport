@@ -10,6 +10,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
+import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/today/today_planner.dart';
@@ -163,6 +164,70 @@ void main() {
 
       expect(plan.every((PlannedExercise p) => p.exercise.muscleGroup == 'shoulders'),
           isTrue);
+    });
+  });
+
+  group('证据链：建议卡要能看见「上次」', () {
+    test('有历史时给出上次的事实（组数 · 重量 × 次数）', () async {
+      await train('w_old', 'ex_bb_bench_press',
+          reps: <int>[10, 10, 10], weight: 60);
+
+      final List<PlannedExercise> plan =
+          await planner.planToday(muscleGroup: 'chest');
+      final PlannedExercise bench = plan
+          .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
+
+      expect(bench.historyLabel, '上次 3 组 · 60 kg × 10 次');
+      expect(bench.suggestion!.reasonCode, ReasonCode.linearProgress);
+    });
+
+    test('组间次数不一致时只报最少的那组（引擎就是按它判断的）', () async {
+      await train('w_old', 'ex_bb_bench_press', reps: <int>[10, 6, 5], weight: 60);
+
+      final List<PlannedExercise> plan =
+          await planner.planToday(muscleGroup: 'chest');
+      final PlannedExercise bench = plan
+          .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
+
+      expect(bench.historyLabel, '上次 3 组 · 60 kg × 最少 5 次',
+          reason: '报最大值会让用户觉得"我明明做到 10 次，凭什么不给我加重量"');
+      expect(bench.suggestion!.reasonCode, ReasonCode.hold);
+    });
+
+    test('没历史时没有那一行（第一次练这个动作，理由文案已经说了）', () async {
+      final List<PlannedExercise> plan =
+          await planner.planToday(muscleGroup: 'chest');
+      final PlannedExercise bench = plan
+          .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
+
+      expect(bench.lastSession, isNull);
+      expect(bench.historyLabel, isNull);
+    });
+
+    test('单位是 lb 时，证据链也跟着换算', () async {
+      await train('w_old', 'ex_bb_bench_press',
+          reps: <int>[10, 10, 10], weight: 60);
+
+      final List<PlannedExercise> plan = await planner.planToday(
+          muscleGroup: 'chest', unit: WeightUnit.lb);
+      final PlannedExercise bench = plan
+          .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
+
+      expect(bench.historyLabel, contains('lb'));
+      expect(bench.historyLabel, isNot(contains('60 kg')));
+    });
+
+    test('「换一批」也要带单位 —— 以前这里漏了 unit，一换就变回 kg', () async {
+      final List<PlannedExercise> first = await planner.planToday(
+          muscleGroup: 'chest', unit: WeightUnit.lb);
+      final List<PlannedExercise> again =
+          await planner.reroll(current: first, unit: WeightUnit.lb);
+
+      expect(again, isNotEmpty);
+      for (final PlannedExercise p in again) {
+        expect(p.unit, WeightUnit.lb,
+            reason: '同一屏上两种单位是明显的 bug');
+      }
     });
   });
 

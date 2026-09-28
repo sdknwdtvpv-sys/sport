@@ -16,11 +16,24 @@ class TodayScreen extends StatelessWidget {
     super.key,
     required this.onStart,
     this.lastWeekSessions = 0,
+    this.onSeePlan,
     this.onPlanHelp,
   });
 
+  /// 大按钮：**一跳直接进训练屏**（用今天的第一条建议），不再强制过建议卡。
+  ///
+  /// 为什么：端到端口径下原来的路径是「今日页 → 建议卡 → 大按钮」= 3 次点击才记下
+  /// 第一组，而 `PRODUCT.md` §1 的红线是"超过 3 次点击判负"—— 刚好压线。
+  /// 现在第一组 2 次（首页 + 大按钮），同一动作的第 2 组起 1 次。
   final VoidCallback onStart;
+
   final int lastWeekSessions;
+
+  /// 「看看今天练什么 ›」：进建议卡（换一批 / 我的计划 / 我自己选都在那儿）。
+  ///
+  /// 建议卡没有被砍掉，只是**不再挡在开练前面** —— 想看的人看得见，
+  /// 不想想的人点一下就能开始记。
+  final VoidCallback? onSeePlan;
 
   /// S13 的可选入口。**为 null 时不显示** —— 已经定过计划的人不需要它，
   /// 而放一个点不动的链接比没有更糟。
@@ -70,10 +83,22 @@ class TodayScreen extends StatelessWidget {
               ),
             ),
           ),
+          // 建议卡入口：**可选**。主按钮已经能直接开练，这一行只是给想先看看的人。
+          if (onSeePlan != null) ...<Widget>[
+            const SizedBox(height: Tokens.s2),
+            Center(
+              child: TextButton(
+                key: const Key('see-plan'),
+                onPressed: onSeePlan,
+                child: const Text('看看今天练什么 ›',
+                    style: TextStyle(color: Tokens.text2, fontSize: 14)),
+              ),
+            ),
+          ],
           // S13 的入口：**可选、非阻塞**。主按钮仍然是"点一下就能开始训练"，
           // 这一行只是给"不知道从哪下手"的人一个台阶。
           if (onPlanHelp != null) ...<Widget>[
-            const SizedBox(height: Tokens.s2),
+            if (onSeePlan == null) const SizedBox(height: Tokens.s2),
             Center(
               child: TextButton(
                 key: const Key('plan-help'),

@@ -46,6 +46,7 @@ class PlannedExercise {
     required this.exercise,
     required this.plan,
     this.suggestion,
+    this.lastSession,
     this.unit = WeightUnit.kg,
   });
 
@@ -54,6 +55,13 @@ class PlannedExercise {
 
   /// null 表示"不给建议"（用户关掉了渐进建议）
   final Suggestion? suggestion;
+
+  /// 引擎据以判断的**原始事实**：上一次这个动作练成什么样。
+  ///
+  /// 存下来只为了一件事：**把建议的证据摆到屏幕上**。建议不是黑箱 ——
+  /// 用户能看见"上次 3 组 × 10 次 @ 60 kg"，因此这条建议是可解释、也是可反驳的
+  /// （"这不是我上次记的" 本身就是一个有用的反馈信号）。
+  final LastSession? lastSession;
 
   /// 显示单位。**引擎给的建议值始终是 kg**，这里只影响怎么念。
   final WeightUnit unit;
@@ -64,6 +72,21 @@ class PlannedExercise {
     if (s == null) return '—';
     final String w = s.isBodyweight ? '自重' : formatWeight(s.weightKg, unit);
     return '$w × ${s.reps}';
+  }
+
+  /// 「上次」那一行：把引擎据以判断的事实原样摆出来。没历史时返回 null。
+  ///
+  /// 次数在组间不一致时只报**最少**的那一组 —— 那正是引擎做判断用的口径，
+  /// 报最大值会让用户觉得"我明明做到了 10 次，为什么还提示我保持重量"。
+  String? get historyLabel {
+    final LastSession? last = lastSession;
+    if (last == null || last.completedSets == 0) return null;
+    final String w =
+        last.weightKg == null ? '自重' : formatWeight(last.weightKg, unit);
+    final String reps = last.reps.toSet().length == 1
+        ? '${last.minReps} 次'
+        : '最少 ${last.minReps} 次';
+    return '上次 ${last.completedSets} 组 · $w × $reps';
   }
 }
 
@@ -126,6 +149,7 @@ class TodayPlanner {
         exercise: ex,
         plan: e.plan,
         unit: unit,
+        lastSession: last,
         suggestion: suggestNext(
           exercise: _repo.specOf(ex),
           plan: e.plan,
@@ -152,6 +176,7 @@ class TodayPlanner {
         exercise: e,
         plan: kDefaultPlan,
         unit: unit,
+        lastSession: last,
         suggestion: suggestNext(
           exercise: _repo.specOf(e),
           plan: kDefaultPlan,
@@ -190,6 +215,9 @@ class TodayPlanner {
       out.add(PlannedExercise(
         exercise: e,
         plan: kDefaultPlan,
+        // unit 以前在这里漏了：用户选了 lb，「换一批」之后又变回 kg —— 同一屏两种单位。
+        unit: unit,
+        lastSession: last,
         suggestion: suggestNext(
           exercise: _repo.specOf(e),
           plan: kDefaultPlan,

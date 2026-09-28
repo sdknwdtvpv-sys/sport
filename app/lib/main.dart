@@ -47,11 +47,21 @@ void main() {
 }
 
 class LianLeMeApp extends StatelessWidget {
-  const LianLeMeApp({super.key, this.database});
+  const LianLeMeApp({super.key, this.database, this.seedLoader});
 
   /// 测试注入内存库；生产传 null，由 [HomeShell] 打开真实库。
   /// 不注入的话 widget 测试会去碰 path_provider —— 那里没有平台通道。
   final AppDatabase? database;
+
+  /// 动作库种子的加载器。生产传 null（走 `rootBundle` 读 asset）。
+  ///
+  /// **测试必须能把它换掉** —— 和上面那条同一个理由，但更隐蔽：
+  /// `testWidgets` 跑在 fake-async 里，而 `rootBundle.loadString` 要经平台通道，
+  /// 于是 `await importSeed()` 会**永远挂住**（连 `Future.timeout` 都救不了：
+  /// 假时钟不推进，定时器根本不会触发）。
+  /// 所以在此之前，这个仓库里**没有任何测试驱动过完整的开练流程** ——
+  /// 全部自己注入 `loadJson`（见 `today_planner_test.dart` / `multi_exercise_test.dart`）。
+  final Future<String> Function()? seedLoader;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +69,7 @@ class LianLeMeApp extends StatelessWidget {
       title: '练了么',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: HomeShell(database: database),
+      home: HomeShell(database: database, seedLoader: seedLoader),
     );
   }
 }
@@ -74,9 +84,10 @@ class _NullTransport implements AnalyticsTransport {
 }
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key, this.database});
+  const HomeShell({super.key, this.database, this.seedLoader});
 
   final AppDatabase? database;
+  final Future<String> Function()? seedLoader;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -272,7 +283,49 @@ class _HomeShellState extends State<HomeShell> {
     await _refreshWeekSessions();
   }
 
-  Future<void> _startSession() async {
+  /// S1 的大按钮：**一跳直接开练**。
+  ///
+  /// 原来的路径是「今日页 → 建议卡 → 大按钮」= 端到端 3 次点击才记下第一组，
+  /// 而 `PRODUCT.md` §1 的红线是"超过 3 次点击判负"—— 刚好压线；
+  /// 竞品 Everlift 的公开数字是"3 组从约 21 次降到 8 次"（≈2.7 次/组）。
+  /// 现在：首页这一下直接进训练屏 → 第一组 **2 次**，同一动作的第 2 组起 **1 次**。
+  ///
+  /// 建议卡没有被砍掉，只是移到「看看今天练什么 ›」后面（见 [_openSuggestion]）。
+  Future<void> _startNow() async {
+    // 端到端口径：这一下就是这条记录的第一步（周期必须在这里开）
+    _analytics.beginSetInteraction();
+    _analytics.countTap(TapKind.nav);
+
+    await _repo.importSeed(loadJson: widget.seedLoader);
+    if (!mounted) return;
+
+    final String group = await _planner.nextMuscleGroup();
+    final List<PlannedExercise> plan =
+        await _planner.planToday(muscleGroup: group, unit: _unit);
+    if (!mounted) return;
+
+    // 动作库没准备好（或这个部位一个动作都没有）→ 退回建议卡：
+    // 它会给出"动作库还没准备好，可以点我自己选"的说明，
+    // 而不是把一个空白训练屏推给用户。
+    if (plan.isEmpty) {
+      await _openSuggestion();
+      return;
+    }
+
+    final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
+    await _trainSession(
+      workoutId,
+      plan
+          .map((PlannedExercise p) =>
+              SessionEntry(exercise: p.exercise, plan: p.plan))
+          .toList(),
+    );
+    await _showSummary(workoutId);
+    await _refreshWeekSessions(); // 练完回来，次数要变
+  }
+
+  /// 「看看今天练什么 ›」：原来的建议卡路径（换一批 / 我的计划 / 我自己选）。
+  Future<void> _openSuggestion() async {
     // 端到端 tap_count：用户按「开始训练」这一下就是这条记录的第一步。
     // 周期必须**在这里**开 —— 控制器要等建议卡/选动作走完才被构造，
     // 那时候再 begin() 会把这几下点击清零，又变回"只算大按钮"的窄口径。
@@ -280,7 +333,7 @@ class _HomeShellState extends State<HomeShell> {
     _analytics.countTap(TapKind.nav);
 
     // 幂等，所以每次开始训练都调一次，保证种子一定在库里
-    await _repo.importSeed();
+    await _repo.importSeed(loadJson: widget.seedLoader);
     if (!mounted) return;
 
     final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
@@ -376,7 +429,9 @@ class _HomeShellState extends State<HomeShell> {
     switch (tab) {
       case 0:
         return TodayScreen(
-            onStart: _startSession,
+            // 大按钮一跳直开练；想先看看的人走下面那个入口
+            onStart: _startNow,
+            onSeePlan: _openSuggestion,
             lastWeekSessions: _weekSessions,
             // 还没定过计划才显示入口
             onPlanHelp: _goalWire == null ? _openFirstPlan : null,

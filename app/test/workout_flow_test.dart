@@ -152,9 +152,13 @@ void main() {
 
   testWidgets('端到端口径：控制器被构造之前的导航点击也要算进第一组',
       (WidgetTester tester) async {
-    // 真实顺序（main.dart 的 _startSession）：用户点「开始训练」时先开周期、
-    // 记下这一下；等建议卡走完才构造控制器。构造函数里若调 begin() 就会
-    // 把这些点击清零 —— 那正是"只算大按钮"的窄口径，会让闸门自我满足。
+    // 模拟**走建议卡那条路**（首页「看看今天练什么」→ 卡片「开始训练」= 两次导航点击）：
+    // 进入时先开周期并记下这两下，等卡片走完才构造控制器。
+    // 构造函数里若调 begin() 就会把它们清零 —— 那正是"只算大按钮"的窄口径，
+    // 会让闸门自我满足。
+    //
+    // 首页现在一跳直开练（只 1 次 nav），但"累计"这个不变量必须守住：
+    // 少了它，建议卡那条路又会回到窄口径。
     final RecordingAnalytics analytics = RecordingAnalytics();
     analytics.beginSetInteraction();
     analytics.countTap(TapKind.nav); // 今日页那一下
