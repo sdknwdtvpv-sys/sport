@@ -91,6 +91,13 @@ if node seed/build.mjs >"$LOG" 2>&1; then
 else
   strip "$LOG"; echo "${RED}✗ 动作库校验失败${OFF}"; fail=1
 fi
+# docs/exercise-mapping.md 是从种子 + 上游快照生成的：种子一改它就过期。
+# 让它大声报错，比留一份"看起来还对"的映射表安全。
+if node tool/map-upstream.mjs --check >"$LOG" 2>&1; then
+  echo "${GREEN}✓${OFF} 上游映射表与种子一致"
+else
+  strip "$LOG"; echo "${RED}✗ 上游映射表过期${OFF}"; fail=1
+fi
 echo
 
 # ── 2. JS 引擎：向量 + 场景 eval ───────────────────────────────────────
@@ -213,6 +220,8 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          seed/build.mjs seed/exercises.json seed/exercises.sql \
          engine/progression.mjs engine/vectors.json engine/run-tests.mjs \
          engine/scenarios.json engine/run-scenarios.mjs \
+         seed/upstream-workout-guide.json seed/upstream-workout-guide-LICENSE.txt \
+         tool/map-upstream.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
          app/lib/features/workout/workout_controller.dart \

@@ -38,7 +38,12 @@ const FINE_MUSCLES = [
 const SECONDARY_OK = new Set([...MUSCLE_GROUPS, ...FINE_MUSCLES]);
 const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight'];
 // 怎么记这个动作（docs/data-model.md）。time/weight_time 的数字是**秒**不是次数。
-const TRACK_TYPES = ['weight_reps', 'reps_only', 'time', 'weight_time'];
+// 这两个值是 2026-09-29 按上游 exerciseType 补齐的：
+//   distance_time   ← 上游 distance_duration（有氧：跑/走/骑行/划船…）
+//   assisted_reps   ← 上游 assisted_bodyweight（辅助引体之类，"重量"是助力）
+const TRACK_TYPES = [
+  'weight_reps', 'reps_only', 'time', 'weight_time', 'distance_time', 'assisted_reps',
+];
 const REST_MIN = 30;
 const REST_MAX = 300;
 
@@ -83,6 +88,17 @@ for (const [i, e] of exercises.entries()) {
   if (!TRACK_TYPES.includes(e.track_type)) errors.push(`${at}：track_type 非法「${e.track_type}」`);
   if (e.track_type === 'weight_time' && e.weight_increment === 0) {
     errors.push(`${at}：weight_time 必须是有重量的动作（weight_increment 不能为 0）`);
+  }
+  // distance_time 目前**只有词表、没有引擎支持**：有氧的推进规则（配速/距离/时长）
+  // 还没设计，引擎会把它当成次数动作去推 —— 所以这里直接报错，
+  // 而不是等它在真机上说出"跑步再加 8 次"这种话。
+  if (e.track_type === 'distance_time') {
+    errors.push(`${at}：distance_time 只保留词表，暂不支持写进种子`
+      + `（要加有氧，先把引擎的推进规则补齐）`);
+  }
+  if (e.track_type === 'assisted_reps') {
+    warnings.push(`${at}：assisted_reps 的推进方向还没实现对 —— `
+      + `引擎现在按负重推进，等于"加重 = 加助力 = 更轻松"。见 docs/data-model.md 的已知限制`);
   }
   for (const m of e.secondary_muscles ?? []) {
     if (!SECONDARY_OK.has(m)) errors.push(`${at}：secondary_muscles 非法「${m}」`);

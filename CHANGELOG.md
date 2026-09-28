@@ -8,6 +8,39 @@
 
 ## 未切版（v1.2.0 之后的改动，尚未打 tag）
 
+### 内容 · 按上游把 26 处 track_type 修对 + 产出可复核的上游映射表（A 批）
+
+**背景**：上一轮我只手工判了 3 个平板支撑。这次把上游 `bryllim/workout-guide`
+的 302 条元数据（`exerciseType`）与我们的 165 条对撞，按数据修正：
+
+- **1 处真错**：`ex_mountain_climber` 登山跑 —— 上游是 `duration`（按时长），
+  我上一轮判成了次数动作。**这是我的判断失误**，按上游改成 `time`
+- **24 处字段不诚实**：俯卧撑/引体/卷腹这类自重次数动作一直是 `weight_reps`。
+  引擎行为不受影响（它按 `weight_increment == 0` 判断），但字段与事实不符 ——
+  将来按类型筛选就会错。改成 `reps_only`
+- **1 处语义反向**：`ex_assisted_pull_up` 的"重量"是**助力**，加重 = 更轻松。
+  标成 `assisted_reps`，并在 `build.mjs` 发**警告**（不阻断）+
+  写进 `data-model.md` 的已知限制：要做对得加一条"减少助力"的推进分支，那是产品决策
+- **补两个词表值**：`distance_time`（有氧，10 个上游动作）与 `assisted_reps`。
+  `distance_time` **种子里出现即报错** —— 引擎还没有有氧的推进规则，
+  与其让它按"加次数"推跑步，不如让它进不来
+
+**新增可复核产物**（这是本轮真正交付的东西）：
+
+- `seed/upstream-workout-guide.json` —— 上游元数据快照（**只留字段，不含任何插画**；
+  插画是 CC BY-SA 4.0，未收录未分发），带 commit 与许可指向
+- `seed/upstream-workout-guide-LICENSE.txt` —— MIT 原文（上游是 MIT，要求保留版权声明）
+- `docs/exercise-mapping.md` —— 由 `tool/map-upstream.mjs` 生成：
+  85 命中 / **54 个待人工确认的候选**（只给相似度，不下结论：`Romanian Deadlift`
+  与 `Deadlift` 名字极近但是两个动作）/ 26 个疑似上游真没有 / 217 个上游有我们没有
+  （含 **14 个拉伸动作** —— 我们一个都没有）
+- 两者都有守卫：`node tool/map-upstream.mjs --check` **已进 verify.sh 第 1 层**，
+  种子一改而映射表没重新生成就会红
+
+顺带修一条**断言错对象**的测试：`today_planner_test` 里"按次数的动作完全不受影响"
+断言的是"chest 里全都是 `weight_reps`"（字段值），而不是它想守的"处方不变" ——
+俯卧撑类改成 `reps_only` 之后它红了，改成断言 `isTimeTrack == false` + 处方不变。
+
 ### 过程 · 场景级 eval：把产品红线写成序列级断言（B 批之二）
 
 **补的是哪一块**：`engine/vectors.json` 管**单步正确性**；用户感受到的却是序列。

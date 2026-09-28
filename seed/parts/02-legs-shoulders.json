@@ -148,7 +148,7 @@
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -302,7 +302,7 @@
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "dumbbell",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
     "weight_increment": 2,
@@ -496,7 +496,7 @@
       "hamstrings"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -532,7 +532,7 @@
       "hamstrings"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -644,7 +644,7 @@
       "calves"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -826,7 +826,7 @@
       "abs"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 120,
     "default_weight_kg": null,
     "weight_increment": 0,

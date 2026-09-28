@@ -402,7 +402,7 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 120,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -444,7 +444,7 @@
       "abs"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -464,7 +464,7 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -484,7 +484,7 @@
       "triceps"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -526,7 +526,7 @@
       "biceps"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 120,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -567,7 +567,7 @@
       "biceps"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 120,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -588,7 +588,7 @@
       "biceps"
     ],
     "equipment": "machine",
-    "track_type": "weight_reps",
+    "track_type": "assisted_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 30,
     "weight_increment": 5,
@@ -955,7 +955,7 @@
       "abs"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "reps_only",
     "default_rest_sec": 90,
     "default_weight_kg": null,
     "weight_increment": 0,

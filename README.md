@@ -28,7 +28,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 
 | 门禁 | 命令 | 结果 |
 |---|---|---|
-| 动作库种子（165 个动作，字段/枚举/步长一致性校验） | `node seed/build.mjs` | ✅ 通过 |
+| 动作库种子（165 个动作，字段/枚举/步长一致性校验 + 与上游映射表一致） | `node seed/build.mjs` + `node tool/map-upstream.mjs --check` | ✅ 通过 |
 | JS 规则引擎（37 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 44/44 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 52/52 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |

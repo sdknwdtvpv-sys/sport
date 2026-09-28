@@ -77,6 +77,8 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | `reps_only` | 自重次数 | 次数 | 只能加次数（到上限后建议加负重） |
 | `time` | **按时长**（平板支撑、侧平板） | **秒** | 按秒推进（+5 秒）；到上限建议加负重 |
 | `weight_time` | 负重时长（负重平板支撑） | **秒** | 保持重量加秒数；到时长上限直接加重 |
+| `distance_time` | 距离 + 时长（有氧：跑/走/骑行/划船…） | 距离 + 秒 | ⚠️ **只保留词表，引擎还不支持** —— 见下方 |
+| `assisted_reps` | 辅助自重（辅助引体/双杠） | 次数 | ⚠️ **方向还没实现对** —— 见下方 |
 
 **两个必须知道的约定：**
 
@@ -88,6 +90,26 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
    `duration` → 我们的 `time`、`bodyweight_reps` → `reps_only`，
    另外还有我们暂时没有的 `distance_duration`（有氧）与 `assisted_bodyweight`（辅助自重）。
    映射与重叠度见 `【9月28日竞品分析】/参考包-健康教练Skill/本地补充/动作库对比.md`。
+
+**两个「词表有了、引擎还没跟上」的值（记在这儿，不藏着）**：
+
+- **`distance_time`**：有氧动作的推进规则（配速 / 距离 / 时长）还没设计。
+  种子里目前**一个都没有**，而且 `seed/build.mjs` 会在出现时报错 ——
+  与其让引擎按"加次数"去推进跑步，不如让它进不来。要加有氧就得先补引擎。
+- **`assisted_reps`**：辅助引体的"重量"是**助力**，所以加重 = 加助力 = 更轻松，
+  方向是反的。引擎目前按负重推进，`seed/build.mjs` 会为它发一条**警告**（不阻断）。
+  要做对得加一条"减少助力"的推进分支，那是产品决策，不是字段问题。
+
+**与上游的映射**：`docs/exercise-mapping.md`（由 `tool/map-upstream.mjs` 从
+`seed/upstream-workout-guide.json` 生成）。上游 `exerciseType` 的五值与我们的对应关系：
+
+| 上游 `exerciseType` | 我们 | 条数（上游 302 条里） |
+|---|---|---|
+| `weight_reps` | `weight_reps` | 136 |
+| `bodyweight_reps` | `reps_only` | 114 |
+| `duration` | `time` | 39 |
+| `distance_duration` | `distance_time` | 10 |
+| `assisted_bodyweight` | `assisted_reps` | 3 |
 
 **已知限制（记在这儿，不藏着）**：`weight_time` 动作的"容量"仍是 `重量 × 秒数`，
 量纲上说不通（负重平板 5kg × 30 秒 = 150）。目前只有 1 个这样的动作，

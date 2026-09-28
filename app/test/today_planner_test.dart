@@ -274,11 +274,15 @@ void main() {
       expect(plank.suggestion!.reasonText, contains('40 → 45 秒'));
     });
 
-    test('按次数的动作完全不受影响（缺省 track_type 行为不变）', () async {
+    test('非时长动作的处方不受影响（负重与自重次数都是 3 组 × 8–10 次）', () async {
       final List<PlannedExercise> plan =
           await planner.planToday(muscleGroup: 'chest', count: 60);
       for (final PlannedExercise p in plan) {
-        expect(p.exercise.trackType, 'weight_reps');
+        // ⚠️ 这条测试原本断言"chest 里全都是 weight_reps" —— 那是在断言**字段值**，
+        // 而不是它想守的东西。2026-09-29 按上游把俯卧撑类如实标成 reps_only
+        // （自重次数）之后它就红了，于是改成断言本意：**不是时长动作，处方不变**。
+        expect(isTimeTrack(p.exercise.trackType), isFalse,
+            reason: '${p.exercise.id} 不该被当成按时长动作');
         expect(p.plan.targetRepsHigh, 10, reason: '还是 3 组 × 8–10 次');
       }
     });

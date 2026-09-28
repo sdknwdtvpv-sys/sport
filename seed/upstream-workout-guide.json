@@ -1,0 +1,3569 @@
+{
+  "_provenance": {
+    "source": "bryllim/workout-guide",
+    "commit": "aac599224bb9780305239607ef98540b7e0ce389",
+    "upstream_file": "packages/workout-guide/manifest.json",
+    "license": "MIT（上游的源码与文档）；**本文件不含任何插画/帧信息** —— 那些是 CC BY-SA 4.0，未收录，也未分发",
+    "why": "给「练了么」的种子做动作类型 / 器械 / 肌群映射，并让 docs/exercise-mapping.md 可复现",
+    "how_to_regenerate": "node tool/map-upstream.mjs（读本文件 + seed/exercises.json）",
+    "upstream_fields_kept": [
+      "id",
+      "name",
+      "exerciseType",
+      "equipment",
+      "primaryMuscle",
+      "secondaryMuscles",
+      "isStretch"
+    ],
+    "dropped": "frames / attribution 等与素材授权相关的字段一律不收录",
+    "count": 302,
+    "license_file": "seed/upstream-workout-guide-LICENSE.txt（MIT 原文：Copyright (c) 2026 Bryl Lim）"
+  },
+  "exercises": [
+    {
+      "id": "exercise-bench-press",
+      "name": "Bench Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-incline-bench-press",
+      "name": "Incline Bench Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-incline-dumbbell-press",
+      "name": "Incline Dumbbell Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-bench-press",
+      "name": "Dumbbell Bench Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-decline-bench-press",
+      "name": "Decline Bench Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-machine-chest-press",
+      "name": "Machine Chest Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-pec-deck",
+      "name": "Pec Deck",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-fly",
+      "name": "Cable Fly",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-push-up",
+      "name": "Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-weighted-push-up",
+      "name": "Weighted Push-up",
+      "exerciseType": "weight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-overhead-press",
+      "name": "Overhead Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-seated-dumbbell-press",
+      "name": "Dumbbell Seated Shoulder Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-arnold-press",
+      "name": "Arnold Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-lateral-raise",
+      "name": "Lateral Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-front-raise",
+      "name": "Front Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-rear-delt-fly",
+      "name": "Rear Delt Fly",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Rear Delts",
+      "secondaryMuscles": [
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-reverse-pec-deck",
+      "name": "Reverse Pec Deck",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Rear Delts",
+      "secondaryMuscles": [
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-face-pull",
+      "name": "Face Pull",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Rear Delts",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-upright-row",
+      "name": "Upright Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Upper Back",
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-deadlift",
+      "name": "Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Posterior Chain",
+      "secondaryMuscles": [
+        "Back",
+        "Grip"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-romanian-deadlift",
+      "name": "Romanian Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-barbell-row",
+      "name": "Barbell Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-t-bar-row",
+      "name": "T-Bar Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-bent-over-row",
+      "name": "Dumbbell Bent Over Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-one-arm-dumbbell-row",
+      "name": "One-Arm Dumbbell Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-chest-supported-row",
+      "name": "Chest Supported Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-seated-row",
+      "name": "Seated Cable Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-machine-row",
+      "name": "Machine Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-lat-pulldown",
+      "name": "Lat Pulldown",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-close-grip-lat-pulldown",
+      "name": "Close-Grip Lat Pulldown",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-straight-arm-pulldown",
+      "name": "Straight-Arm Pulldown",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-pull-up",
+      "name": "Pull-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-assisted-pull-up",
+      "name": "Assisted Pull-up",
+      "exerciseType": "assisted_bodyweight",
+      "equipment": "Machine",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-weighted-pull-up",
+      "name": "Weighted Pull-up",
+      "exerciseType": "weight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-chin-up",
+      "name": "Chin-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Lats"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-shrug",
+      "name": "Barbell Shrug",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-squat",
+      "name": "Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-front-squat",
+      "name": "Front Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Core",
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hack-squat",
+      "name": "Hack Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-leg-press",
+      "name": "Leg Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bulgarian-split-squat",
+      "name": "Bulgarian Split Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-walking-lunge",
+      "name": "Walking Lunge",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-step-up",
+      "name": "Step-Up",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-leg-extension",
+      "name": "Leg Extension",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-leg-curl",
+      "name": "Leg Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Calves"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-seated-leg-curl",
+      "name": "Seated Leg Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Calves"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hip-thrust",
+      "name": "Hip Thrust",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-glute-bridge",
+      "name": "Glute Bridge",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-good-morning",
+      "name": "Good Morning",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-standing-calf-raise",
+      "name": "Standing Calf Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-seated-calf-raise",
+      "name": "Seated Calf Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bicep-curl",
+      "name": "Bicep Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hammer-curl",
+      "name": "Hammer Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-preacher-curl",
+      "name": "Preacher Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-curl",
+      "name": "Cable Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-reverse-curl",
+      "name": "Reverse Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Forearms",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wrist-curl",
+      "name": "Wrist Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Forearms",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-tricep-pushdown",
+      "name": "Tricep Pushdown",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-overhead-tricep-extension",
+      "name": "Overhead Tricep Extension",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-skull-crusher",
+      "name": "Skull Crusher",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-close-grip-bench-press",
+      "name": "Close-Grip Bench Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dip",
+      "name": "Dip",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-assisted-dip",
+      "name": "Assisted Dip",
+      "exerciseType": "assisted_bodyweight",
+      "equipment": "Machine",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-plank",
+      "name": "Plank",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-side-plank",
+      "name": "Side Plank",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hanging-leg-raise",
+      "name": "Hanging Leg Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Grip"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-crunch",
+      "name": "Cable Crunch",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-ab-wheel",
+      "name": "Ab Wheel Rollout",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-running",
+      "name": "Running",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-walking",
+      "name": "Walking",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cycling",
+      "name": "Cycling",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-rowing",
+      "name": "Rowing",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Legs",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-stair-climber",
+      "name": "Stair Climber",
+      "exerciseType": "duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-fly",
+      "name": "Dumbbell Fly",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-incline-cable-fly",
+      "name": "Incline Cable Fly",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-decline-dumbbell-press",
+      "name": "Decline Dumbbell Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-smith-machine-bench-press",
+      "name": "Smith Machine Bench Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-landmine-press",
+      "name": "Landmine Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Chest",
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-chest-dip",
+      "name": "Chest Dip",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-weighted-dip",
+      "name": "Weighted Dip",
+      "exerciseType": "weight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-machine-shoulder-press",
+      "name": "Machine Shoulder Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-standing-dumbbell-press",
+      "name": "Standing Dumbbell Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-push-press",
+      "name": "Push Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps",
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-machine-lateral-raise",
+      "name": "Machine Lateral Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-front-raise",
+      "name": "Cable Front Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-plate-front-raise",
+      "name": "Plate Front Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Plate",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bent-over-rear-delt-raise",
+      "name": "Bent-Over Rear Delt Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Rear Delts",
+      "secondaryMuscles": [
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-rear-delt-fly",
+      "name": "Cable Rear Delt Fly",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Rear Delts",
+      "secondaryMuscles": [
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-pendlay-row",
+      "name": "Pendlay Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-inverted-row",
+      "name": "Inverted Row",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-meadows-row",
+      "name": "Meadows Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-single-arm-cable-row",
+      "name": "Single-Arm Cable Row",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Rear Delts"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wide-grip-lat-pulldown",
+      "name": "Wide-Grip Lat Pulldown",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-neutral-grip-pull-up",
+      "name": "Neutral-Grip Pull-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-assisted-chin-up",
+      "name": "Assisted Chin-up",
+      "exerciseType": "assisted_bodyweight",
+      "equipment": "Machine",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Lats"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-weighted-chin-up",
+      "name": "Weighted Chin-up",
+      "exerciseType": "weight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Lats"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-rack-pull",
+      "name": "Rack Pull",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-back-extension",
+      "name": "Back Extension",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Lower Back",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-shrug",
+      "name": "Dumbbell Shrug",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-goblet-squat",
+      "name": "Goblet Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-smith-machine-squat",
+      "name": "Smith Machine Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-belt-squat",
+      "name": "Belt Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-sumo-deadlift",
+      "name": "Sumo Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Posterior Chain",
+      "secondaryMuscles": [
+        "Glutes",
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-trap-bar-deadlift",
+      "name": "Trap Bar Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Posterior Chain",
+      "secondaryMuscles": [
+        "Quads",
+        "Grip"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-lying-leg-curl",
+      "name": "Lying Leg Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Calves"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-nordic-hamstring-curl",
+      "name": "Nordic Hamstring Curl",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Calves"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-single-leg-romanian-deadlift",
+      "name": "Single-Leg Romanian Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-reverse-lunge",
+      "name": "Reverse Lunge",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-split-squat",
+      "name": "Split Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-kickback",
+      "name": "Cable Kickback",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hip-abduction-machine",
+      "name": "Hip Abduction Machine",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-single-leg-glute-bridge",
+      "name": "Single-Leg Glute Bridge",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-barbell-glute-bridge",
+      "name": "Barbell Glute Bridge",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-glute-bridge",
+      "name": "Dumbbell Glute Bridge",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-hip-thrust",
+      "name": "Dumbbell Hip Thrust",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-smith-machine-hip-thrust",
+      "name": "Smith Machine Hip Thrust",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-smith-machine-romanian-deadlift",
+      "name": "Smith Machine Romanian Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-romanian-deadlift",
+      "name": "Dumbbell Romanian Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-kettlebell-romanian-deadlift",
+      "name": "Kettlebell Romanian Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Kettlebell",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-pull-through",
+      "name": "Cable Pull-Through",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-machine-glute-kickback",
+      "name": "Machine Glute Kickback",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-standing-hip-abduction",
+      "name": "Cable Standing Hip Abduction",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-standing-hip-adduction",
+      "name": "Cable Standing Hip Adduction",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Adductors",
+      "secondaryMuscles": [
+        "Core",
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hip-adduction-machine",
+      "name": "Hip Adduction Machine",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Adductors",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-smith-machine-bulgarian-split-squat",
+      "name": "Smith Machine Bulgarian Split Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-smith-machine-reverse-lunge",
+      "name": "Smith Machine Reverse Lunge",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-smith-machine-split-squat",
+      "name": "Smith Machine Split Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-heel-elevated-goblet-squat",
+      "name": "Heel-Elevated Goblet Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-sumo-squat",
+      "name": "Dumbbell Sumo Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Quads",
+        "Adductors",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-sumo-deadlift",
+      "name": "Dumbbell Sumo Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Posterior Chain",
+      "secondaryMuscles": [
+        "Glutes",
+        "Quads",
+        "Adductors"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-front-foot-elevated-split-squat",
+      "name": "Front-Foot Elevated Split Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-deficit-reverse-lunge",
+      "name": "Deficit Reverse Lunge",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Quads",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-lateral-lunge",
+      "name": "Dumbbell Lateral Lunge",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Adductors",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-curtsy-lunge",
+      "name": "Dumbbell Curtsy Lunge",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Quads",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-landmine-squat",
+      "name": "Landmine Squat",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-landmine-romanian-deadlift",
+      "name": "Landmine Romanian Deadlift",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-kettlebell-swing",
+      "name": "Kettlebell Swing",
+      "exerciseType": "weight_reps",
+      "equipment": "Kettlebell",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-glute-focused-back-extension",
+      "name": "Glute-Focused Back Extension",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-reverse-hyperextension",
+      "name": "Reverse Hyperextension",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Lower Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-donkey-calf-raise",
+      "name": "Donkey Calf Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-leg-press-calf-raise",
+      "name": "Leg Press Calf Raise",
+      "exerciseType": "weight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wall-sit",
+      "name": "Wall Sit",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-jump-squat",
+      "name": "Jump Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Calves"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-incline-dumbbell-curl",
+      "name": "Incline Dumbbell Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-concentration-curl",
+      "name": "Concentration Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-ez-bar-curl",
+      "name": "EZ-Bar Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-spider-curl",
+      "name": "Spider Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-rope-hammer-curl",
+      "name": "Rope Hammer Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-drag-curl",
+      "name": "Drag Curl",
+      "exerciseType": "weight_reps",
+      "equipment": "Barbell",
+      "primaryMuscle": "Biceps",
+      "secondaryMuscles": [
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-rope-tricep-pushdown",
+      "name": "Rope Tricep Pushdown",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-skull-crusher",
+      "name": "Two Dumbbell Skullcrusher",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-single-dumbbell-skullcrusher",
+      "name": "Single Dumbbell Skullcrusher",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-overhead-tricep-extension",
+      "name": "Dumbbell Overhead Tricep Extension",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-single-arm-dumbbell-tricep-extension",
+      "name": "Single Arm Dumbbell Tricep Extension",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bench-dip",
+      "name": "Bench Dip",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-tricep-kickback",
+      "name": "Tricep Kickback",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wrist-extension",
+      "name": "Wrist Extension",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Forearms",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-farmer-carry",
+      "name": "Farmer Carry",
+      "exerciseType": "distance_duration",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Forearms",
+      "secondaryMuscles": [
+        "Upper Back",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-crunch",
+      "name": "Crunch",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-reverse-crunch",
+      "name": "Reverse Crunch",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-russian-twist",
+      "name": "Russian Twist",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bicycle-crunch",
+      "name": "Bicycle Crunch",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Legs"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-mountain-climber",
+      "name": "Mountain Climber",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Legs"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dead-bug",
+      "name": "Dead Bug",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Legs"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bird-dog",
+      "name": "Bird Dog",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Glutes",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-pallof-press",
+      "name": "Pallof Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-woodchop",
+      "name": "Cable Woodchop",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-half-kneeling-pallof-press",
+      "name": "Half-Kneeling Pallof Press",
+      "exerciseType": "weight_reps",
+      "equipment": "Cable",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Glutes",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cable-pallof-hold",
+      "name": "Cable Pallof Hold",
+      "exerciseType": "duration",
+      "equipment": "Cable",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Glutes",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hanging-knee-raise",
+      "name": "Hanging Knee Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Pull-up Bar",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Grip"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-captains-chair-knee-raise",
+      "name": "Captain's Chair Knee Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Machine",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-decline-sit-up",
+      "name": "Decline Sit-Up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bench",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-weighted-crunch",
+      "name": "Weighted Crunch",
+      "exerciseType": "weight_reps",
+      "equipment": "Plate",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-weighted-russian-twist",
+      "name": "Weighted Russian Twist",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dumbbell-side-bend",
+      "name": "Dumbbell Side Bend",
+      "exerciseType": "weight_reps",
+      "equipment": "Dumbbell",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Grip"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-elliptical",
+      "name": "Elliptical",
+      "exerciseType": "duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-swimming",
+      "name": "Swimming",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-jump-rope",
+      "name": "Jump Rope",
+      "exerciseType": "duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [
+        "Cardio",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-assault-bike",
+      "name": "Assault Bike",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Cardio",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-skierg",
+      "name": "SkiErg",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Triceps",
+        "Core",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hiking",
+      "name": "Hiking",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Glutes",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-treadmill-incline-walk",
+      "name": "Treadmill Incline Walk",
+      "exerciseType": "distance_duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Glutes",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-battle-ropes",
+      "name": "Battle Ropes",
+      "exerciseType": "duration",
+      "equipment": "Cardio",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Core",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-incline-push-up",
+      "name": "Incline Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-knee-push-up",
+      "name": "Knee Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wide-push-up",
+      "name": "Wide Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Triceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-diamond-push-up",
+      "name": "Diamond Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-decline-push-up",
+      "name": "Decline Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Triceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-pike-push-up",
+      "name": "Pike Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps",
+        "Chest",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-feet-elevated-pike-push-up",
+      "name": "Feet-Elevated Pike Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps",
+        "Chest",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-archer-push-up",
+      "name": "Archer Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-typewriter-push-up",
+      "name": "Typewriter Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-explosive-push-up",
+      "name": "Explosive Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hindu-push-up",
+      "name": "Hindu Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Triceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-scapular-push-up",
+      "name": "Scapular Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-push-up-shoulder-tap",
+      "name": "Push-up Shoulder Tap",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders",
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wall-push-up",
+      "name": "Wall Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Wall",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Triceps",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wall-walk",
+      "name": "Wall Walk",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Wall",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Core",
+        "Chest",
+        "Triceps"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-wall-handstand-push-up",
+      "name": "Wall Handstand Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Wall",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps",
+        "Core",
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-handstand-push-up",
+      "name": "Handstand Push-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Triceps",
+        "Core",
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-chair-dip",
+      "name": "Chair Dip",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Chair",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-doorway-row",
+      "name": "Doorway Row",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Doorway",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Upper Back",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-towel-row",
+      "name": "Towel Row",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Towel",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Upper Back",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-prone-y-raise",
+      "name": "Prone Y Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Rear Delts",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-prone-t-raise",
+      "name": "Prone T Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Rear Delts",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-superman",
+      "name": "Superman",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Lower Back",
+      "secondaryMuscles": [
+        "Glutes",
+        "Upper Back",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-superman-hold",
+      "name": "Superman Hold",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Lower Back",
+      "secondaryMuscles": [
+        "Glutes",
+        "Upper Back",
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-reverse-snow-angel",
+      "name": "Reverse Snow Angel",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Rear Delts",
+        "Lower Back",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dead-hang",
+      "name": "Dead Hang",
+      "exerciseType": "duration",
+      "equipment": "Pull-up Bar",
+      "primaryMuscle": "Forearms",
+      "secondaryMuscles": [
+        "Lats",
+        "Shoulders",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-active-hang",
+      "name": "Active Hang",
+      "exerciseType": "duration",
+      "equipment": "Pull-up Bar",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Upper Back",
+        "Forearms",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-scapular-pull-up",
+      "name": "Scapular Pull-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Pull-up Bar",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Upper Back",
+        "Forearms",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-negative-pull-up",
+      "name": "Negative Pull-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Pull-up Bar",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps",
+        "Upper Back",
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-commando-pull-up",
+      "name": "Commando Pull-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Pull-up Bar",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps",
+        "Upper Back",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-l-sit-pull-up",
+      "name": "L-Sit Pull-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Pull-up Bar",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps",
+        "Core",
+        "Forearms"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-towel-pull-up",
+      "name": "Towel Pull-up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Towel",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps",
+        "Forearms",
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bodyweight-squat",
+      "name": "Bodyweight Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-pistol-squat",
+      "name": "Pistol Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-assisted-pistol-squat",
+      "name": "Assisted Pistol Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-shrimp-squat",
+      "name": "Shrimp Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cossack-squat",
+      "name": "Cossack Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-sissy-squat",
+      "name": "Sissy Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Core",
+        "Calves"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-forward-lunge",
+      "name": "Forward Lunge",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-lateral-lunge",
+      "name": "Lateral Lunge",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-curtsy-lunge",
+      "name": "Curtsy Lunge",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Quads",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-skater-squat",
+      "name": "Skater Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-single-leg-box-squat",
+      "name": "Single-Leg Box Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Box",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-step-down",
+      "name": "Step-Down",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Box",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Calves"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-calf-raise",
+      "name": "Calf Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-single-leg-calf-raise",
+      "name": "Single-Leg Calf Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-glute-bridge-march",
+      "name": "Glute Bridge March",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-frog-pump",
+      "name": "Frog Pump",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-donkey-kick",
+      "name": "Donkey Kick",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-fire-hydrant",
+      "name": "Fire Hydrant",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-clamshell",
+      "name": "Clamshell",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hip-airplane",
+      "name": "Hip Airplane",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-side-lying-hip-abduction",
+      "name": "Side-Lying Hip Abduction",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-side-lying-leg-raise",
+      "name": "Side-Lying Leg Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-lying-hamstring-walkout",
+      "name": "Lying Hamstring Walkout",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-towel-hamstring-curl",
+      "name": "Towel Hamstring Curl",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Towel",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-stability-ball-hamstring-curl",
+      "name": "Stability Ball Hamstring Curl",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Stability Ball",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-glute-bridge",
+      "name": "Banded Glute Bridge",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-hip-thrust",
+      "name": "Banded Hip Thrust",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-frog-pump",
+      "name": "Banded Frog Pump",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-clamshell",
+      "name": "Banded Clamshell",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-lateral-walk",
+      "name": "Banded Lateral Walk",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Quads",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-monster-walk",
+      "name": "Banded Monster Walk",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Quads",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-squat",
+      "name": "Banded Squat",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Glutes",
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-donkey-kick",
+      "name": "Banded Donkey Kick",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-fire-hydrant",
+      "name": "Banded Fire Hydrant",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-kickback",
+      "name": "Banded Kickback",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Hamstrings",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-standing-hip-abduction",
+      "name": "Banded Standing Hip Abduction",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-seated-hip-abduction",
+      "name": "Banded Seated Hip Abduction",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Glutes",
+      "secondaryMuscles": [
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-band-pull-apart",
+      "name": "Band Pull-Apart",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Rear Delts",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-face-pull",
+      "name": "Banded Face Pull",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Upper Back",
+      "secondaryMuscles": [
+        "Rear Delts",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-row",
+      "name": "Banded Row",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Biceps",
+        "Upper Back"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-lat-pulldown",
+      "name": "Banded Lat Pulldown",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Lats",
+      "secondaryMuscles": [
+        "Biceps",
+        "Core"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-pallof-press",
+      "name": "Banded Pallof Press",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Glutes",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-woodchop",
+      "name": "Banded Woodchop",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-banded-dead-bug",
+      "name": "Banded Dead Bug",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Resistance Band",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Glutes",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hollow-body-hold",
+      "name": "Hollow Body Hold",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-hollow-rock",
+      "name": "Hollow Rock",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-v-up",
+      "name": "V-Up",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-flutter-kick",
+      "name": "Flutter Kick",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-lying-leg-raise",
+      "name": "Lying Leg Raise",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-toe-touch",
+      "name": "Toe Touch",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-heel-tap",
+      "name": "Heel Tap",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-plank-shoulder-tap",
+      "name": "Plank Shoulder Tap",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-plank-jack",
+      "name": "Plank Jack",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bear-plank",
+      "name": "Bear Plank",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-bear-crawl",
+      "name": "Bear Crawl",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Quads",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-crab-walk",
+      "name": "Crab Walk",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Triceps",
+      "secondaryMuscles": [
+        "Glutes",
+        "Core",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-inchworm",
+      "name": "Inchworm",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Hamstrings",
+        "Chest"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-l-sit-hold",
+      "name": "L-Sit Hold",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Triceps",
+        "Quads",
+        "Shoulders"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-seated-knee-tuck",
+      "name": "Seated Knee Tuck",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-side-plank-hip-dip",
+      "name": "Side Plank Hip Dip",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-copenhagen-plank",
+      "name": "Copenhagen Plank",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Quads",
+        "Glutes"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-dragon-flag",
+      "name": "Dragon Flag",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Lats",
+        "Quads"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-burpee",
+      "name": "Burpee",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Chest",
+        "Shoulders",
+        "Core",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-half-burpee",
+      "name": "Half Burpee",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Legs",
+        "Shoulders",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-squat-thrust",
+      "name": "Squat Thrust",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Core",
+      "secondaryMuscles": [
+        "Legs",
+        "Shoulders",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-high-knees",
+      "name": "High Knees",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Core",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-jumping-jack",
+      "name": "Jumping Jack",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Calves",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-skater-hop",
+      "name": "Skater Hop",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Glutes",
+        "Calves",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-lateral-shuffle",
+      "name": "Lateral Shuffle",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Glutes",
+        "Calves",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-fast-feet",
+      "name": "Fast Feet",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [
+        "Legs",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-sprawl",
+      "name": "Sprawl",
+      "exerciseType": "bodyweight_reps",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Legs",
+      "secondaryMuscles": [
+        "Core",
+        "Shoulders",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-seal-jack",
+      "name": "Seal Jack",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Legs",
+        "Cardio"
+      ],
+      "isStretch": false
+    },
+    {
+      "id": "exercise-cat-cow-stretch",
+      "name": "Cat-Cow Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Mobility",
+      "secondaryMuscles": [
+        "Back",
+        "Core"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-arm-circles",
+      "name": "Arm Circles",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Chest",
+        "Upper Back",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-worlds-greatest-stretch",
+      "name": "World's Greatest Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Mobility",
+      "secondaryMuscles": [
+        "Hips",
+        "Hamstrings",
+        "Upper Back"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-leg-swings-stretch",
+      "name": "Leg Swings",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Mobility",
+      "secondaryMuscles": [
+        "Hips",
+        "Hamstrings",
+        "Quads"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-torso-twist-stretch",
+      "name": "Torso Twists",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Mobility",
+      "secondaryMuscles": [
+        "Core",
+        "Back"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-doorway-chest-stretch",
+      "name": "Doorway Chest Stretch",
+      "exerciseType": "duration",
+      "equipment": "Doorway",
+      "primaryMuscle": "Chest",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-childs-pose",
+      "name": "Child's Pose",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Back",
+      "secondaryMuscles": [
+        "Shoulders",
+        "Hips",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-kneeling-hip-flexor-stretch",
+      "name": "Kneeling Hip Flexor Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Hips",
+      "secondaryMuscles": [
+        "Quads",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-hamstring-stretch",
+      "name": "Hamstring Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Calves",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-standing-quad-stretch",
+      "name": "Standing Quad Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Quads",
+      "secondaryMuscles": [
+        "Hips",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-seated-forward-fold-stretch",
+      "name": "Seated Forward Fold",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Hamstrings",
+      "secondaryMuscles": [
+        "Back",
+        "Calves",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-cross-body-shoulder-stretch",
+      "name": "Cross-Body Shoulder Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Shoulders",
+      "secondaryMuscles": [
+        "Upper Back",
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-wall-calf-stretch",
+      "name": "Wall Calf Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Calves",
+      "secondaryMuscles": [
+        "Mobility"
+      ],
+      "isStretch": true
+    },
+    {
+      "id": "exercise-butterfly-stretch",
+      "name": "Butterfly Stretch",
+      "exerciseType": "duration",
+      "equipment": "Bodyweight",
+      "primaryMuscle": "Hips",
+      "secondaryMuscles": [
+        "Groin",
+        "Mobility"
+      ],
+      "isStretch": true
+    }
+  ]
+}
