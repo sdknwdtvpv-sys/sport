@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
+import '../../core/app_info.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
@@ -439,11 +440,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: Tokens.s5),
         _sectionTitle('关于'),
         _card(<Widget>[
-          const Padding(
-            padding: EdgeInsets.all(Tokens.s4),
+          Padding(
+            padding: const EdgeInsets.all(Tokens.s4),
             child: Text(
-              '版本 1.0.0 · 数据只存在这台设备上，不上传任何人。',
-              style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+              // 版本号来自 core/app_info.dart，由 app_version_test 与 pubspec 对齐。
+              // 以前这里写死 '1.0.0'，两次切版后界面上的版本号就错了两个版本。
+              '版本 $kAppVersion · 数据只存在这台设备上，不上传任何人。',
+              style: const TextStyle(
+                  color: Tokens.text3, fontSize: 13, height: 1.5),
             ),
           ),
         ]),

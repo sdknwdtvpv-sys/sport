@@ -114,6 +114,10 @@
       无需手改；但**每个商店上传的 versionCode 必须递增**
 - [x] ✅ `CHANGELOG.md` 已同步为「v1.2.0」，与 commit / tag 一同落地
 - [x] ✅ 顺带补回 CHANGELOG 开头**丢失的版本号策略正文**（本节引用的就是它）
+- [ ] ⚠️ **界面上的版本号也要改**：`app/lib/core/app_info.dart` 的 `kAppVersion`。
+      以前它是写死在 `profile_screen.dart` 里的，v1.1.0 / v1.2.0 两次切版都没带上，
+      界面上错了两个版本。现在由 `app/test/app_version_test.dart` 读 pubspec 核对 ——
+      **忘了改 `flutter test` 会红**，不用靠人记得。
 
 ## 7. 商店材料（国内商店额外）
 
