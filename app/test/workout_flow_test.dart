@@ -190,6 +190,58 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('长按已完成的那一行 → 撤销这一组（误触的后悔药）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    expect(h.controller.loggedSets, hasLength(1));
+    final String id = h.controller.loggedSets.single.id;
+
+    await tester.longPress(find.byKey(Key('done-set-$id')));
+    await tester.pumpAndSettle();
+
+    expect(h.controller.loggedSets, isEmpty, reason: '那一行要真的消失');
+    expect(h.controller.setNumber, 1, reason: '计划进度也要退回，否则"第 2 组"是假的');
+    expect(h.controller.hint, contains('已撤销'));
+
+    // 埋点：撤销要能被统计到（analytics.md 的事件字典里有 set_undone）
+    final Map<String, Object?> undone = h.analytics.propsOf('set_undone').single;
+    expect(undone['set_index'], 1);
+    expect(undone['method'], 'longpress');
+
+    // 同步队列要带上删除动作（否则服务端永远不知道这组没了）
+    expect(h.syncQueue.pending, greaterThan(0));
+
+    // 本地库也要真的删掉（软删除），否则重启又冒出来
+    expect(await h.store.setsFor(h.controller.workout.id), isEmpty);
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('撤销之后大按钮上的值不变 —— 可以直接再点一下补回来',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    final String id = h.controller.loggedSets.single.id;
+    await tester.longPress(find.byKey(Key('done-set-$id')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('40 kg × 8'), findsOneWidget, reason: '值没变，手抖点快了再点一下就回来了');
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    expect(h.controller.loggedSets, hasLength(1));
+    expect(h.analytics.propsOf('set_logged'), hasLength(2), reason: '这是新的一条记录');
+
+    await _teardown(tester, h);
+  });
+
   testWidgets('离线可用：记录照常成功、进同步队列、界面不报错', (WidgetTester tester) async {
     final _Harness h = _Harness();
     await _pump(tester, h);

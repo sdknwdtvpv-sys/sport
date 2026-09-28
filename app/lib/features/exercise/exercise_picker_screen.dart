@@ -46,8 +46,14 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   bool _loading = true;
   String? _muscleGroup;
 
-  /// 浏览态 = 没搜索、没筛部位。只有这个状态下才分区。
-  bool get _browsing => _query.text.trim().isEmpty && _muscleGroup == null;
+  /// 器械筛选。**居家 / 女性人群进来的第一道门** ——
+  /// 只有一对哑铃的人不该被推荐杠铃卧推。
+  String? _equipment;
+
+  /// 浏览态 = 没搜索、没筛部位、没筛器械。只有这个状态下才分区
+  /// （分区是"我还不知道要练什么"时的陈列；筛过之后用户已经知道要找什么了）。
+  bool get _browsing =>
+      _query.text.trim().isEmpty && _muscleGroup == null && _equipment == null;
 
   @override
   void initState() {
@@ -66,6 +72,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     final List<ExerciseData> rows = await widget.repository.search(
       query: _query.text,
       muscleGroup: _muscleGroup,
+      equipment: _equipment,
       // 浏览态要把「全部」也铺出来，所以多要一些；搜索态 60 条足够
       limit: browsing ? 500 : 60,
     );
@@ -205,6 +212,28 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 ),
               ),
             ),
+            // 器械这一行：给"家里只有哑铃 / 只有自重"的人一条能走通的路。
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+              child: SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: <Widget>[
+                    _chip('全部器械', _equipment == null, () {
+                      _equipment = null;
+                      _load();
+                    }, key: 'equip-all'),
+                    for (final MapEntry<String, String> e
+                        in kEquipmentLabels.entries)
+                      _chip(e.value, _equipment == e.key, () {
+                        _equipment = e.key;
+                        _load();
+                      }, key: 'equip-${e.key}'),
+                  ],
+                ),
+              ),
+            ),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -324,10 +353,11 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     );
   }
 
-  Widget _chip(String label, bool active, VoidCallback onTap) {
+  Widget _chip(String label, bool active, VoidCallback onTap, {String? key}) {
     return Padding(
       padding: const EdgeInsets.only(right: Tokens.s2),
       child: GestureDetector(
+        key: key == null ? null : Key(key),
         onTap: onTap,
         child: Container(
           alignment: Alignment.center,

@@ -205,4 +205,39 @@ void main() {
     expect(bw.defaultWeightKg, isNull);
     expect(repo.specOf(bw).isBodyweight, isTrue);
   });
+
+  group('按器械过滤（居家 / 女性人群的第一道门）', () {
+    setUp(() => repo.importSeed(loadJson: _readAsset));
+
+    test('只返回该器械的动作', () async {
+      final List<ExerciseData> dumb =
+          await repo.search(equipment: 'dumbbell', limit: 500);
+      expect(dumb, isNotEmpty);
+      expect(dumb.every((ExerciseData e) => e.equipment == 'dumbbell'), isTrue);
+    });
+
+    test('自重筛选里能拿到平板支撑，且拿不到杠铃动作', () async {
+      final List<ExerciseData> body =
+          await repo.search(equipment: 'bodyweight', limit: 500);
+      expect(body.map((ExerciseData e) => e.id), contains('ex_plank'));
+      expect(body.map((ExerciseData e) => e.id), isNot(contains('ex_bb_bench_press')));
+    });
+
+    test('器械 + 部位可以叠加', () async {
+      final List<ExerciseData> rows = await repo.search(
+          equipment: 'dumbbell', muscleGroup: 'chest', limit: 500);
+
+      expect(rows, isNotEmpty);
+      expect(
+        rows.every((ExerciseData e) =>
+            e.equipment == 'dumbbell' && e.muscleGroup == 'chest'),
+        isTrue,
+      );
+    });
+
+    test('不传 equipment 时行为与以前完全一致（全都要）', () async {
+      final List<ExerciseData> all = await repo.search(limit: 500);
+      expect(all.length, 165);
+    });
+  });
 }

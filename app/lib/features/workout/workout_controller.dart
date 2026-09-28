@@ -208,6 +208,39 @@ class WorkoutController extends ChangeNotifier {
     _notify();
   }
 
+  /// 撤销误触记下的那一组（长按"已完成"里的任意一行）。
+  ///
+  /// 这是规格里"误触多记一组"的后悔药（`docs/interaction-spec.md` §7、`PRODUCT.md` §5）。
+  ///
+  /// **刻意不用右滑**：训练屏整屏已经在响应横向拖拽（切动作，S6），
+  /// 而 §7 又明令禁止训练中做"左滑删除"这类需要在组间 60 秒里精细操作的手势。
+  /// 长按是这块屏幕上唯一既不与别的手势打架、也不要求精细动作的入口。
+  ///
+  /// 撤销后大按钮上的值**不动** —— 它就是这一组刚记下的值，
+  /// 于是"手抖点快了"可以直接再点一下补回来（规格要求的"恢复上一组建议值"）。
+  Future<void> undoSet(String id) async {
+    final int i = workout.sets.indexWhere((SetRecord s) => s.id == id);
+    if (i < 0) return;
+    final SetRecord r = workout.sets.removeAt(i);
+    // 计划进度要退回：正式组才算进度（热身组本来就不计入）
+    if (r.setType == SetType.normal && _normalSets > 0) _normalSets--;
+    _hint = '已撤销第 ${r.setIndex} 组';
+    _notify();
+
+    // 本地优先：软删除留痕，训练中绝不发网络请求（真正出站交给同步队列）
+    await store.deleteSet(r.id);
+    syncQueue.enqueue('set_deleted', <String, Object?>{
+      'id': r.id,
+      'workout_id': r.workoutId,
+    });
+    analytics.track('set_undone', <String, Object?>{
+      'set_index': r.setIndex,
+      'method': 'longpress',
+      // 误触率要看"记完多久才发现" —— 这也解释了撤销该多容易被找到
+      'seconds_after_log': ((_clock() - r.completedAtMs) / 1000).round(),
+    });
+  }
+
   void skipRest() {
     _stopRest();
     _restRemaining = 0;

@@ -227,47 +227,62 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           for (final r in sets)
-            Padding(
-              padding: const EdgeInsets.only(bottom: Tokens.s2),
-              child: Row(
-                children: <Widget>[
-                  SizedBox(
-                    width: 16,
-                    child: Text('${r.setIndex}',
-                        textAlign: TextAlign.right,
-                        style: const TextStyle(color: Tokens.text3, fontSize: 13)),
-                  ),
-                  const SizedBox(width: Tokens.s3),
-                  Text(
-                    // 按时长动作那个数字是秒，不加"秒"会被读成"自重 × 30 次"
-                    r.weightKg == null
-                        ? '自重 × ${r.reps}${c.exercise.isTime ? ' 秒' : ''}'
-                        : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}'
-                            '${c.exercise.isTime ? ' 秒' : ''}',
-                    style: TextStyle(
-                      // 热身组用次级色：和正式组混在一起分不出来，用户就不知道
-                      // 哪些算进了计划进度
-                      color: r.setType == SetType.warmup ? Tokens.text3 : Tokens.text2,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+            // 长按任意一行撤销这一组（误触的后悔药）。
+            // **刻意不用右滑**：整屏已经在响应横向拖拽切动作，而
+            // interaction-spec §7 明令禁止训练中做左滑删除这类精细手势 ——
+            // 长按是这块屏幕上唯一不打架、也不要求精细操作的入口。
+            GestureDetector(
+              key: Key('done-set-${r.id}'),
+              behavior: HitTestBehavior.opaque,
+              onLongPress: () => c.undoSet(r.id),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: Tokens.s2),
+                child: Row(
+                  children: <Widget>[
+                    SizedBox(
+                      width: 16,
+                      child: Text('${r.setIndex}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                              color: Tokens.text3, fontSize: 13)),
                     ),
-                  ),
-                  // RPE 记了就必须显示 —— 只写库不显示就成了用户看不见的隐藏数据
-                  if (r.rpe != null) ...<Widget>[
-                    const SizedBox(width: Tokens.s2),
-                    Text('RPE ${r.rpe!.toInt()}',
-                        style: const TextStyle(color: Tokens.text3, fontSize: 12)),
-                  ],
-                  if (r.setType == SetType.warmup) ...<Widget>[
-                    const SizedBox(width: Tokens.s2),
-                    const Text('热身',
-                        style: TextStyle(color: Tokens.text3, fontSize: 12)),
-                  ],
-                  const SizedBox(width: Tokens.s2),
-                  const Text('✓',
+                    const SizedBox(width: Tokens.s3),
+                    Text(
+                      // 按时长动作那个数字是秒，不加"秒"会被读成"自重 × 30 次"
+                      r.weightKg == null
+                          ? '自重 × ${r.reps}${c.exercise.isTime ? ' 秒' : ''}'
+                          : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}'
+                              '${c.exercise.isTime ? ' 秒' : ''}',
                       style: TextStyle(
-                          color: Tokens.volt, fontSize: 15, fontWeight: FontWeight.w700)),
-                ],
+                        // 热身组用次级色：和正式组混在一起分不出来，用户就不知道
+                        // 哪些算进了计划进度
+                        color: r.setType == SetType.warmup
+                            ? Tokens.text3
+                            : Tokens.text2,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    // RPE 记了就必须显示 —— 只写库不显示就成了用户看不见的隐藏数据
+                    if (r.rpe != null) ...<Widget>[
+                      const SizedBox(width: Tokens.s2),
+                      Text('RPE ${r.rpe!.toInt()}',
+                          style: const TextStyle(
+                              color: Tokens.text3, fontSize: 12)),
+                    ],
+                    if (r.setType == SetType.warmup) ...<Widget>[
+                      const SizedBox(width: Tokens.s2),
+                      const Text('热身',
+                          style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                    ],
+                    const SizedBox(width: Tokens.s2),
+                    const Text('✓',
+                        style: TextStyle(
+                            color: Tokens.volt,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
               ),
             ),
         ],

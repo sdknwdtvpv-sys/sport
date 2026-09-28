@@ -49,6 +49,56 @@ void main() {
     return store;
   }
 
+  group('按器械筛选（居家 / 女性人群进来的第一道门）', () {
+    testWidgets('筛哑铃 → 杠铃动作不再出现', (WidgetTester tester) async {
+      await pumpPicker(tester);
+      expect(find.text('杠铃卧推'), findsOneWidget, reason: '不筛的时候它在最前面');
+
+      await tester.tap(find.byKey(const Key('equip-dumbbell')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('杠铃卧推'), findsNothing);
+      expect(find.textContaining('哑铃'), findsWidgets);
+    });
+
+    testWidgets('筛自重 → 拿不到杠铃/器械动作（家里没器械的人走这条路）',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      await tester.tap(find.byKey(const Key('equip-bodyweight')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('杠铃卧推'), findsNothing);
+      expect(find.text('器械推胸'), findsNothing);
+      expect(find.text('平板支撑'), findsOneWidget, reason: '自重动作要都在');
+    });
+
+    testWidgets('器械与搜索可以叠加', (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      await tester.tap(find.byKey(const Key('equip-dumbbell')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('exercise-search')), '卧推');
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('哑铃'), findsWidgets);
+      expect(find.text('杠铃卧推'), findsNothing, reason: '器械条件不能被搜索顶掉');
+    });
+
+    testWidgets('器械与部位可以叠加，且「全部器械」能退回去',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      await tester.tap(find.byKey(const Key('equip-bodyweight')));
+      await tester.pumpAndSettle();
+      expect(find.text('杠铃卧推'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('equip-all')));
+      await tester.pumpAndSettle();
+      expect(find.text('杠铃卧推'), findsOneWidget, reason: '退回全部');
+    });
+  });
+
   testWidgets('默认按常用度列出动作', (WidgetTester tester) async {
     await pumpPicker(tester);
 

@@ -46,9 +46,14 @@ class ExerciseRepository {
   }
 
   /// 查动作。别名与名称都参与匹配（"bp" 能搜到杠铃卧推）。
+  ///
+  /// [equipment] 按器械过滤。**这不是锦上添花**：家里只有一对哑铃的人
+  /// 不该被推荐杠铃卧推和腿举 —— 而这正是女性力量 / 居家训练那群人
+  /// （乐刻报告：女性会员同比 +20.5%）进来的第一道门。
   Future<List<ExerciseData>> search({
     String query = '',
     String? muscleGroup,
+    String? equipment,
     int limit = 50,
   }) {
     final String q = query.trim();
@@ -57,6 +62,9 @@ class ExerciseRepository {
       Expression<bool> cond = t.deletedAt.isNull();
       if (muscleGroup != null) {
         cond = cond & t.muscleGroup.equals(muscleGroup);
+      }
+      if (equipment != null) {
+        cond = cond & t.equipment.equals(equipment);
       }
       if (q.isNotEmpty) {
         cond = cond & (t.name.like('%$q%') | t.aliases.like('%$q%'));
