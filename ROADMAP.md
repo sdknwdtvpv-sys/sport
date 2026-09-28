@@ -217,7 +217,7 @@ adb push app/build/app/outputs/flutter-apk/app-debug.apk /sdcard/Download/
 
 ---
 
-## 阶段 4 · 铺 UI 屏 🚧（6 屏完成 5 屏）
+## 阶段 4 · 铺 UI 屏 ✅（S1–S13 全部落地；S14 砍掉、S15 并入 S10）
 
 > 顺带修了一个真 bug：**空态永远显示「还没有训练记录」**——
 > `lastWeekSessions` 从没被传过值，练完回来它还是这么说。
@@ -234,8 +234,11 @@ adb push app/build/app/outputs/flutter-apk/app-debug.apk /sdcard/Download/
 | 5 | **S10 我** | ✅ 完成 | 训练统计 / 渐进建议开关（真落库）/ 全量 CSV 导出到剪贴板 |
 | 6 | **S3 / S4 / S5 打磨** | ✅ 完成 | 补上了三处「数据层有、界面没有」的断链：热身组入口、RPE、最近做过分区；另加自定义动作创建 |
 
-> `prototype/index.html` 已补齐到 **6 屏**（含 S7/S8/S10）。打开浏览器就能看全套界面 ——
-> 在真机就位之前，这是唯一能看到产品长相的方式，也是招测试者时唯一能给人看的东西。
+> `prototype/index.html` 已补齐到 **13 屏**（S1–S13，覆盖已实现范围；S14 砍掉、S15 并入 S10）。
+> 打开浏览器就能看全套界面，零依赖、可 `Cmd+P` 打印成 PDF。
+>
+> **它的定位变了**：真机已经能装包（阶段 2），所以它不再是"唯一能看到产品长相的方式"，
+> 而是**招测试者时当面演示 / 递手机之前先讲清楚**用的那一页。
 
 **每屏的完成标准**：`dart analyze --fatal-infos` 零问题 + `flutter test` 全绿
 + 一条针对该屏核心行为的新 widget 测试。

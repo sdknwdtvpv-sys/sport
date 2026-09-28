@@ -230,6 +230,52 @@ body{
 .sw.off{background:var(--line-strong)}
 .sw.off::after{right:auto;left:3px;background:var(--text-2)}
 
+/* ---------- S3 动作选择器 ---------- */
+.pick-head{padding:var(--s2) var(--s5) 0;display:flex;align-items:center;gap:var(--s3)}
+.pick-head h2{font-size:var(--fs-headline);line-height:var(--lh-headline);font-weight:700;flex:1}
+.pick-count{font-size:var(--fs-cap);color:var(--text-3);font-variant-numeric:tabular-nums}
+.pick-new{background:none;border:none;color:var(--volt);font-family:inherit;font-size:var(--fs-cap);cursor:pointer}
+.search{margin:var(--s4) var(--s5) 0;height:48px;border-radius:var(--r-pill);background:var(--surface);
+  display:flex;align-items:center;padding:0 var(--s5);color:var(--text-3);font-size:var(--fs-body)}
+.filters{display:flex;gap:var(--s2);padding:var(--s3) var(--s5) 0;overflow:hidden}
+.fchip{height:36px;padding:0 var(--s4);border-radius:var(--r-pill);background:var(--surface);border:none;
+  color:var(--text-2);font-size:var(--fs-cap);font-family:inherit;white-space:nowrap}
+.fchip.on{background:var(--volt);color:var(--volt-ink);font-weight:700}
+.pick-list{flex:1;overflow:hidden;padding:var(--s4) var(--s5) 0}
+.pick-sect{margin:var(--s3) 0 var(--s2) 2px;color:var(--text-3);font-size:13px}
+.pick-sect:first-child{margin-top:0}
+.pick-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  padding:var(--s3) var(--s4);background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-card);margin-bottom:var(--s2)}
+.pick-row b{font-size:15px;font-weight:600}
+.pick-row span{color:var(--text-3);font-size:13px}
+
+/* ---------- S6 动作切换 ---------- */
+.swipe-hint{display:flex;align-items:center;justify-content:center;gap:var(--s3);
+  color:var(--text-3);font-size:var(--fs-micro);padding:var(--s3) 0 0}
+
+/* ---------- S9 全部数据 ---------- */
+.seg{display:flex;gap:var(--s2);margin:var(--s4) var(--s5) 0}
+.rec-row{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);
+  padding:var(--s3) var(--s4);border-bottom:1px solid var(--line);font-size:var(--fs-cap);color:var(--text-3)}
+.rec-row:last-child{border-bottom:none}
+.rec-row b{color:var(--text-2);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- S13 首次引导 ---------- */
+.steps{display:flex;gap:6px;align-items:center}
+.steps i{display:block;width:22px;height:4px;border-radius:2px;background:var(--line-strong)}
+.steps i.on{background:var(--volt)}
+.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);margin-top:var(--s5)}
+.goal{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-card);
+  padding:var(--s4);text-align:left;color:var(--text);font-family:inherit;cursor:pointer}
+.goal b{display:block;font-size:var(--fs-body);font-weight:700}
+.goal span{display:block;margin-top:4px;color:var(--text-3);font-size:var(--fs-cap);line-height:1.4}
+.goal.on{border-color:var(--volt);box-shadow:0 0 0 1px var(--volt) inset}
+.goal.on b{color:var(--volt)}
+
+/* ---------- S2 建议卡：证据链那一行 ---------- */
+.s2-history{margin-top:2px;font-size:var(--fs-micro);line-height:var(--lh-micro);color:var(--text-3)}
+
 /* 手机端：排成单列并铺满宽度，方便直接把手机递给别人演示 */
 @media (max-width:520px){
   body{padding:10px 0 40px;gap:18px}
@@ -249,9 +295,11 @@ body{
 <body>
 
 <div class="page-head">
-  <h1>练了么 · 高保真原型（6 屏）</h1>
-  <p>六张屏覆盖已实现的全部界面：<code>0 次注册 → 0 次打字 → 1 次点击记一组</code>。
-     第 3 屏可交互：点大按钮记录一组并开始休息计时，<b>长按</b>大按钮打开修改弹层。<br>手机上打开会自动排成单列，可直接把手机递给别人演示。</p>
+  <h1>练了么 · 高保真原型（13 屏）</h1>
+  <p>这 13 屏 = 已实现的界面范围（`docs/screens.md` 的清单里 S14 明确砍掉、S15 并入 S10）：
+     <code>0 次注册 → 0 次打字 → 1 次点击记一组</code>。
+     第 3 张（S4）是<b>可交互</b>的：点大按钮记录一组并开始休息计时，<b>长按</b>大按钮打开修改弹层。<br>
+     手机上打开会自动排成单列，可直接把手机递给别人演示；也能 <code>Cmd+P</code> 打印成 PDF。</p>
 </div>
 
 <div class="stage">
@@ -259,7 +307,9 @@ body{
   <!-- ==================== S1 空态 ==================== -->
   <div class="frame-wrap">
     <div class="frame-cap"><b>S1 ·「练」空态</b>
-      <span>冷启动第一屏。无注册、无引导、无授权请求，唯一动作是开始。</span></div>
+      <span>冷启动第一屏。无注册、无引导、无授权请求。
+      <b>大按钮一跳直开练</b>（用今天的第一条建议，不再强制过 S2）；
+      想先看看的人走下面「看看今天练什么」。</span></div>
     <div class="phone">
       <div class="statusbar"><span>20:14</span>
         <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
@@ -271,7 +321,9 @@ body{
             <div class="s1-sub">不需要先做计划。点一下就开始记录。</div>
           </div>
           <button class="btn-primary">开始今天的训练</button>
-          <div class="s1-meta">我上周练了 4 次 · 共 38 组</div>
+          <button class="btn-ghost" style="width:100%">看看今天练什么 ›</button>
+          <button class="btn-ghost" style="width:100%">不知道怎么练？帮我定个计划 ›</button>
+          <div class="s1-meta">我上周练了 4 次</div>
         </div>
         <div class="tabbar">
           <div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M4 9.5v5M20 9.5v5M6.5 12h11"/></svg>练</div>
@@ -285,7 +337,9 @@ body{
   <!-- ==================== S2 今日建议 ==================== -->
   <div class="frame-wrap">
     <div class="frame-cap"><b>S2 · 今日建议卡</b>
-      <span>建议必须带一行理由——放不下理由的建议不合法。</span></div>
+      <span>建议必须带一行理由 —— 放不下理由的建议不合法。
+      理由下面还有一行<b>证据</b>（"上次 3 组 · 60 kg × 10 次"）：
+      理由回答"为什么是这个数"，证据回答"你凭什么这么说"。<b>这一屏现在不再挡在开练前面</b>，入口在 S1。</span></div>
     <div class="phone">
       <div class="statusbar"><span>20:15</span>
         <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
@@ -299,10 +353,12 @@ body{
           <div class="s2-row">
             <div class="s2-row-top"><span class="s2-name">杠铃卧推</span><span class="s2-load">62.5kg × 8</span></div>
             <div class="s2-reason">上次 3 组全部达标，线性加重 +2.5kg</div>
+            <div class="s2-history">上次 3 组 · 60 kg × 10 次</div>
           </div>
           <div class="s2-row">
             <div class="s2-row-top"><span class="s2-name">上斜哑铃卧推</span><span class="s2-load">22kg × 8</span></div>
             <div class="s2-reason">上次差一点达标，先把每组次数补到 8</div>
+            <div class="s2-history">上次 3 组 · 20 kg × 最少 7 次</div>
           </div>
           <div class="s2-row">
             <div class="s2-row-top"><span class="s2-name">绳索下压</span><span class="s2-load">25kg × 10</span></div>
@@ -311,6 +367,7 @@ body{
           <div class="s2-row">
             <div class="s2-row-top"><span class="s2-name">悬垂举腿</span><span class="s2-load">自重 × 12</span></div>
             <div class="s2-reason plain">自重动作，先加次数，加到 15 次再考虑负重</div>
+            <div class="s2-history">上次 3 组 · 自重 × 12 次</div>
           </div>
         </div>
         <div class="s2-foot">
@@ -324,10 +381,53 @@ body{
     </div>
   </div>
 
+  <!-- ==================== S3 · 动作选择器 ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S3 · 动作选择器</b>
+      <span>两行筛选：部位 + <b>器械</b>。器械那一行是给"家里只有一对哑铃"的人走的 —— 之前没有它，居家用户会被推荐杠铃卧推。目标：从打开到选中一个动作 ≤ 5 秒、不滚动。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:15</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="pick-head">
+          <button class="s4-back"><svg class="gl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <h2>选动作</h2>
+          <span class="pick-count">165 个</span>
+          <button class="pick-new">＋ 新建</button>
+        </div>
+        <div class="search">搜索动作或别名，如 bp / rdl</div>
+        <div class="filters">
+          <button class="fchip on">全部</button><button class="fchip">胸</button><button class="fchip">背</button>
+          <button class="fchip">腿</button><button class="fchip">肩</button><button class="fchip">手臂</button><button class="fchip">核心</button>
+        </div>
+        <div class="filters">
+          <button class="fchip on">全部器械</button><button class="fchip">杠铃</button><button class="fchip">哑铃</button>
+          <button class="fchip">器械</button><button class="fchip">绳索</button><button class="fchip">自重</button>
+        </div>
+        <div class="pick-list">
+          <div class="pick-sect">最近做过</div>
+          <div class="pick-row"><b>杠铃卧推</b><span>胸 · 杠铃</span></div>
+          <div class="pick-row"><b>绳索下压</b><span>手臂 · 绳索</span></div>
+          <div class="pick-sect">常用</div>
+          <div class="pick-row"><b>杠铃深蹲</b><span>腿 · 杠铃</span></div>
+          <div class="pick-row"><b>引体向上</b><span>背 · 自重</span></div>
+          <div class="pick-row"><b>哑铃肩推</b><span>肩 · 哑铃</span></div>
+          <div class="pick-sect">全部动作</div>
+          <div class="pick-row"><b>杠铃卧推</b><span>胸 · 杠铃</span></div>
+          <div class="pick-row"><b>上斜哑铃卧推</b><span>胸 · 哑铃</span></div>
+        </div>
+        <div class="hint">搜索时分区收起，退回平铺列表 —— 那时用户已经知道自己在找什么</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== S4 训练主屏（可交互） ==================== -->
   <div class="frame-wrap">
     <div class="frame-cap"><b>S4 · 训练中主屏</b>
-      <span>可交互：点大按钮 = 记一组并开始休息计时；长按 = 打开修改弹层。</span></div>
+      <span>可交互：点大按钮 = 记一组并开始休息计时；长按 = 打开修改弹层。
+      <b>长按「已完成」里任意一行 = 撤销那一组</b>（误触的后悔药）。
+      按时长动作（平板支撑）这里显示的是<b>秒</b>不是次 —— 单位由动作类型决定。</span></div>
     <div class="phone">
       <div class="statusbar"><span>20:31</span>
         <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
@@ -359,7 +459,7 @@ body{
           <span class="cur">动作 1 / 3</span>
           <button>上斜哑铃卧推 ›</button>
         </div>
-        <div class="hint" id="s4-hint">点大按钮记录一组 · 长按可以改重量</div>
+        <div class="hint" id="s4-hint">点大按钮记录一组 · 长按可以改重量 · 长按上方任一行可以撤销</div>
       </div>
 
       <!-- 修改弹层（长按唤起） -->
@@ -446,6 +546,40 @@ body{
 
 </div>
 
+  <!-- ==================== S6 · 动作切换 ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S6 · 动作切换</b>
+      <span>左右滑整屏、或点底部那条 —— <b>不弹全屏列表</b>（训练中不该迷路）。弹层开着时不切；轻轻一蹭也不切（避免手抖就跳走）。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:15</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="s4-head">
+          <button class="s4-back"><svg class="gl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="s4-title">杠铃深蹲</div>
+          <div class="s4-count">第 2 组 / 共 3 组</div>
+        </div>
+        <div class="s4-mid">
+          <div class="s4-last">上次 80kg × 8</div>
+          <div class="s4-setno">第 1 组</div>
+          <button class="biglog"><span>80kg × 8</span><span class="tick">✓</span></button>
+        </div>
+        <div class="donelist"></div>
+        <div class="s4-rest">
+          <div class="rest-left"><span class="rest-label">休息</span><span class="rest-time done">可以开始下一组</span></div>
+          <button class="btn-skip">跳过</button>
+        </div>
+        <div class="s4-switch">
+          <button>‹ 杠铃卧推</button>
+          <span class="cur">动作 2 / 3</span>
+          <button>硬拉 ›</button>
+        </div>
+        <div class="swipe-hint">← 从任意位置横向滑动也能切 →</div>
+      </div>
+    </div>
+  </div>
+
   <div class="frame-wrap">
     <div class="frame-cap"><b>S7 · 训练结束总结</b>
       <span>三项大数 + 破纪录。破纪录用专属色，且<b>不只靠颜色</b>表达（有 ★ 字符）。</span></div>
@@ -502,14 +636,64 @@ body{
             <div class="row"><i>引体向上</i><b>15 次</b></div>
           </div>
         </div>
-        <div class="tabbar"><div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>练</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>进步</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>我</div></div>
+        <div class="tabbar"><div><svg class="gl" viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M4 9.5v5M20 9.5v5M6.5 12h11"/></svg>练</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>进步</div><div><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== S9 · 全部数据 ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S9 · 全部数据</b>
+      <span>按动作 / 按时间两个维度，曲线自绘不引图表库。右上「导出 CSV」是<b>报表</b>不是备份 —— 备份在 S10 的「导出备份文件」。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:15</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="pick-head">
+          <button class="s4-back"><svg class="gl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <h2>全部数据</h2>
+          <button class="pick-new">导出 CSV</button>
+        </div>
+        <div class="seg">
+          <button class="fchip on">按动作</button><button class="fchip">按时间</button>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:var(--s4) var(--s5) 0">
+          <div class="stat3">
+            <div><b>28</b><span>总组数</span></div>
+            <div><b>12,400 kg</b><span>总容量</span></div>
+            <div><b>12</b><span>最多次数</span></div>
+          </div>
+          <div class="pv">
+            <div class="cap">容量趋势（最近 30 天）</div>
+            <svg class="spark" viewBox="0 0 100 56" preserveAspectRatio="none">
+              <line x1="0" y1="55" x2="100" y2="55" stroke="#2A2A31" stroke-width="1"/>
+              <polyline points="0,50 20,44 40,46 60,30 80,22 100,10" fill="none" stroke="#D8FF47"
+                        stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            </svg>
+          </div>
+          <div class="pv">
+            <div class="cap">1RM 趋势（最近 30 天）</div>
+            <svg class="spark" viewBox="0 0 100 56" preserveAspectRatio="none">
+              <line x1="0" y1="55" x2="100" y2="55" stroke="#2A2A31" stroke-width="1"/>
+              <polyline points="0,48 20,48 40,36 60,36 80,20 100,18" fill="none" stroke="#D8FF47"
+                        stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            </svg>
+          </div>
+          <div class="sect" style="margin-left:0">历史最佳</div>
+          <div class="prwall" style="margin-top:0">
+            <div class="row"><i>杠铃卧推</i><b>80kg</b></div>
+            <div class="row"><i>引体向上</i><b>15 次</b></div>
+          </div>
+        </div>
+        <div class="hint">只显示最近 30 条，共 142 条。完整数据用「导出 CSV」。</div>
       </div>
     </div>
   </div>
 
   <div class="frame-wrap">
     <div class="frame-cap"><b>S10 ·「我」</b>
-      <span>每一行都真的有用。刻意没放单位切换、默认休息、会员入口——占位入口比没有更糟。</span></div>
+      <span>每一行都真的有用。单位切换与默认休息并入这一屏（原 S15）；会员入口<b>刻意不放</b> —— 没有支付基建时它就是占位，比没有更糟。</span></div>
     <div class="phone">
       <div class="statusbar"><span>20:58</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span></div>
       <div class="screen">
@@ -537,14 +721,122 @@ body{
           </div>
           <div class="sect">数据</div>
           <div class="card">
-            <div class="row"><div class="t"><b>导出全部记录</b><span>复制成 CSV 到剪贴板，可贴进表格</span></div>
+            <div class="row"><div class="t"><b>导出全部记录</b><span>复制成 CSV 到剪贴板，可贴进表格（报表，不能导回来）</span></div>
               <svg class="gl" viewBox="0 0 24 24" style="color:var(--text-3)"><path d="M12 3v12M8 11l4 4 4-4M4 19h16"/></svg>
+            </div>
+            <div class="row"><div class="t"><b>导出备份文件</b><span>存成文件或发给自己。导回来是同一批数据</span></div>
+              <svg class="gl" viewBox="0 0 24 24" style="color:var(--text-3)"><path d="M12 3v12M8 11l4 4 4-4M4 19h16"/></svg>
+            </div>
+            <div class="row"><div class="t"><b>导入备份</b><span>把备份内容粘进来。换手机、或想补齐历史都用它</span></div>
+              <svg class="gl" viewBox="0 0 24 24" style="color:var(--text-3)"><path d="M12 15V3M8 7l4-4 4 4M4 19h16"/></svg>
             </div>
           </div>
           <div class="sect">关于</div>
-          <div class="card"><div class="row"><div class="t"><span>版本 1.0.0 · 数据只存在这台设备上，不上传任何人。</span></div></div></div>
+          <div class="card"><div class="row"><div class="t"><span>版本 1.2.0 · 数据只存在这台设备上，不上传任何人。</span></div></div></div>
         </div>
-        <div class="tabbar"><div class="on"><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>练</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>进步</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div></div>
+        <div class="hint">「数据」区往下还有「导出备份文件」与「导入备份」两行 —— 手机上这一屏本来就能滚</div>
+        <div class="tabbar"><div><svg class="gl" viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M4 9.5v5M20 9.5v5M6.5 12h11"/></svg>练</div><div><svg class="gl" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3.5-4 3 2.5L20 8"/></svg>进步</div><div class="on"><svg class="gl" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== S11 · 计划模板 ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S11 · 计划模板</b>
+      <span>入口在 S2 的「我的计划」。简化版：只有动作 + 组数 + 次数区间，不做周期化。用计划开训走的是同一条路（返回同一个结果形状）。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:15</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="pick-head">
+          <button class="s4-back"><svg class="gl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <h2>我的计划</h2>
+          <button class="pick-new">＋ 新计划</button>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:var(--s4) var(--s5) 0">
+          <div class="card">
+            <div class="row"><div class="t"><b>推日</b><span>5 个动作 · 不用每次重新挑动作</span></div>
+              <span class="v">开始</span></div>
+          </div>
+          <div class="sect">推日里的动作</div>
+          <div class="card">
+            <div class="row"><div class="t"><b>杠铃卧推</b><span>3 组 · 8–10 次</span></div></div>
+            <div class="row"><div class="t"><b>上斜哑铃卧推</b><span>3 组 · 8–12 次</span></div></div>
+            <div class="row"><div class="t"><b>绳索下压</b><span>3 组 · 10–12 次</span></div></div>
+          </div>
+          <div class="sect">别的计划</div>
+          <div class="card">
+            <div class="row"><div class="t"><b>腿日</b><span>4 个动作</span></div><span class="v">开始</span></div>
+          </div>
+        </div>
+        <div class="s2-foot">
+          <button class="btn-primary">开始训练</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== S12 · 身体数据 ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S12 · 身体数据</b>
+      <span>一天一条。体重也会出现在 S8 进步页 —— 它当初就是因为"没有 body_metric 表"而没做，表建好后才加回来。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:15</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="pick-head">
+          <button class="s4-back"><svg class="gl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <h2>身体数据</h2>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:var(--s4) var(--s5) 0">
+          <div class="sect" style="margin-left:0">今天</div>
+          <div class="card">
+            <div class="row"><div class="t"><b>体重 (kg)</b></div><span class="v">72.5</span></div>
+            <div class="row"><div class="t"><b>备注（可选）</b></div>
+              <span class="v" style="font-size:var(--fs-body);font-weight:400;color:var(--text-2)">空腹</span></div>
+          </div>
+          <button class="btn-primary" style="height:56px;font-size:var(--fs-body);margin-top:var(--s4)">保存</button>
+          <div class="sect" style="margin-left:0">最近记录</div>
+          <div class="card">
+            <div class="row"><div class="t"><b>9/28</b></div><span class="v">72.5 kg</span></div>
+            <div class="row"><div class="t"><b>9/27</b></div><span class="v">72.8 kg</span></div>
+            <div class="row"><div class="t"><b>9/25</b></div><span class="v">73.1 kg</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== S13 · 首次引导（≤ 3 步） ==================== -->
+  <div class="frame-wrap">
+    <div class="frame-cap"><b>S13 · 首次引导（≤ 3 步）</b>
+      <span>目标 → 一周几天 → 第一份计划。<b>不拦启动</b>：入口是 S1 上那个可选链接，随时「跳过」，最后以「就用这个，开始练」收尾 —— 这样它与"点一下就能开始记录"这条总判据不冲突。</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>20:15</span>
+        <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span>
+      </div>
+      <div class="screen">
+        <div class="pick-head">
+          <div class="steps"><i class="on"></i><i></i><i></i></div>
+          <h2 style="margin-left:var(--s4)">帮你定个计划</h2>
+          <button class="pick-new">跳过</button>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:var(--s4) var(--s5) 0">
+          <div style="font-size:var(--fs-title);line-height:var(--lh-title);font-weight:700;letter-spacing:-.02em">你的目标是？</div>
+          <div style="margin-top:var(--s2);color:var(--text-2);font-size:var(--fs-sub);line-height:var(--lh-sub)">只影响建议的组数与次数，随时能改。</div>
+          <div class="goal-grid">
+            <button class="goal on"><b>增肌</b><span>4 组 × 8–12 次</span></button>
+            <button class="goal"><b>力量</b><span>5 组 × 3–5 次</span></button>
+            <button class="goal"><b>减脂</b><span>3 组 × 12–15 次</span></button>
+            <button class="goal"><b>保持</b><span>3 组 × 8–12 次</span></button>
+          </div>
+        </div>
+        <div class="s2-foot">
+          <button class="btn-primary">下一步</button>
+          <div class="hint" style="padding:0">下一步：一周练几天？ → 这是你的第一份计划</div>
+        </div>
       </div>
     </div>
   </div>
