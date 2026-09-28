@@ -8,6 +8,11 @@
  * *"209 项测试全绿，而核心引擎从未在真实路径上运行过"* ——
  * 测试证明了引擎是对的，而生产代码根本没调引擎。**测试数量从来不等于测试有效性。**
  *
+ * 它同时守两套检查：`engine/run-tests.mjs`（向量 = 单步正确性）与
+ * `engine/run-scenarios.mjs`（场景 eval = 序列级产品红线）。清单里带
+ * `runner: 'scenarios'` 的变异体是"只有场景 eval 抓得住"的那类 ——
+ * 那是场景 eval 存在的证明，否则它只是个永远通过的装饰。
+ *
  * 做法（借自参考项目 healthy-fitness-coach 的 `quality-tests/run-mutation-smoke.js`）：
  * 把源码**故意改坏**，再跑既有测试；测试红了 = 这个变异被"杀死"，
  * 测试还是绿的 = **盲区**（survived）。**盲区才是这个工具真正的产出。**
@@ -140,6 +145,26 @@ const MUTANTS = [
     js: { file: PROG_JS, from: 'round2(lastW + inc)', to: '(lastW + inc)', all: true },
     dart: { file: PROG_DART, from: '_round2(lastW + inc)', to: '(lastW + inc)', all: true },
   },
+  // ---- 只有场景 eval 抓得住的一类：文案红线 ----
+  //
+  // 向量只校验文案里的**子串**（`text_includes`），查不出"一行放得下"、
+  // 也查不出"有没有把内部状态泄漏给用户"。这两条是产品红线，只有序列级的
+  // 场景 eval 在守。这条变异体就是那条红线的**存在性证明** ——
+  // 没有它，场景 eval 只是一个永远通过的装饰。
+  {
+    name: '回归保护的文案写到一行放不下（向量查不出来）',
+    why: '向量只查子串；「理由必须一行放得下」是产品红线，只有场景 eval 守得住',
+    runner: 'scenarios',
+    js: {
+      file: PROG_JS,
+      // JS 那边是**反引号模板串**（第一版写成单引号，变异点没找到 → INVALID）。
+      // 这正是 INVALID 这一类的用处：它把"我写错了锚点"和"测试真的没抓到"分开了。
+      from: '`已经有 ${days} 天没练这个动作，先按上次重量找回感觉`',
+      to: '`已经有 ${days} 天没练这个动作了，别急着加重，先按上次的重量找回感觉'
+        + ' —— 这属于回归保护，三周以上的数据不足以支撑加重`',
+    },
+  },
+
   {
     name: 'tap 计数 +1 → +2（唯一的发布闸门算错）',
     why: 'tap_count 算错，发版闸门就失效',
@@ -163,7 +188,7 @@ const MUTANTS = [
   },
 ];
 
-// ---------------------------------------------------------------- 领域层需要的文件
+// ---------------------------------------------------------------- 暂存区
 //
 // `app/tool/check_domain.dart` 是零依赖纯 Dart，所以只拷这几只 ——
 // 仓库里 2.2G 的 build/ 与 446M 的 .dart_tool 都不需要。
@@ -216,9 +241,13 @@ for (const m of MUTANTS) {
       : original.replace(spec.from, spec.to);
 
     writeFileSync(abs, mutated, 'utf8');
-    const r = lang === 'dart'
-      ? spawnSync(DART, ['app/tool/check_domain.dart'], { cwd: staged, encoding: 'utf8' })
-      : spawnSync(NODE, ['engine/run-tests.mjs'], { cwd: staged, encoding: 'utf8' });
+    // 两套检查：向量（单步正确性）与场景 eval（序列级产品红线）。
+    // 后者只跑在 JS 参考实现上，所以这类变异体只声明 js。
+    const r = m.runner === 'scenarios'
+      ? spawnSync(NODE, ['engine/run-scenarios.mjs'], { cwd: staged, encoding: 'utf8' })
+      : lang === 'dart'
+        ? spawnSync(DART, ['app/tool/check_domain.dart'], { cwd: staged, encoding: 'utf8' })
+        : spawnSync(NODE, ['engine/run-tests.mjs'], { cwd: staged, encoding: 'utf8' });
     const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
     writeFileSync(abs, original, 'utf8');
 
@@ -238,6 +267,7 @@ for (const m of MUTANTS) {
 
     results.push({
       name: m.name, lang, verdict, why: m.why,
+      via: m.runner === 'scenarios' ? '场景' : '向量',
       tail: out.trim().split('\n').filter(Boolean).slice(-2).join(' | '),
     });
     if (verdict === 'KILLED') killed++;
@@ -254,7 +284,8 @@ rmSync(staged, { recursive: true, force: true });
 const mark = { KILLED: '✓ 杀死', SURVIVED: '✗ 存活', INVALID: '? 无效', EQUIVALENT: '= 等价' };
 console.log('练了么 · 变异测试（把源码改坏，看既有测试红不红）\n');
 for (const r of results) {
-  console.log(`${r.lang.padEnd(4)} ${mark[r.verdict].padEnd(10)} ${r.name}`);
+  console.log(`${r.lang.padEnd(4)} ${mark[r.verdict].padEnd(10)} ${r.name}`
+    + (r.via === '场景' ? '  ← 只有场景 eval 抓得住' : ''));
   if (r.verdict !== 'KILLED') {
     console.log(`       ${r.detail ?? r.why}`);
     if (verbose && r.tail) console.log(`       输出：${r.tail}`);

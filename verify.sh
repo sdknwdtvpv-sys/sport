@@ -6,7 +6,7 @@
 #   ./verify.sh --fast   # 跳过 Flutter widget 测试（日常迭代用）
 #
 # 分层（按"需要什么"切）：
-#   契约层（Node）            —— 动作库种子 + JS 规则引擎向量
+#   契约层（Node）            —— 动作库种子 + JS 规则引擎向量 + 场景 eval
 #   领域层（纯 Dart，零依赖）  —— Dart 引擎 vs 同一份 vectors.json + tap_count 边界
 #   静态分析（Dart）          —— 需要 package_config.json（跑过一次 pub get）
 #   应用层（Flutter）         —— widget 测试（需要 pub get 成功）
@@ -93,11 +93,17 @@ else
 fi
 echo
 
-# ── 2. JS 引擎 ─────────────────────────────────────────────────────────
-echo "${BOLD}[2/6] JS 规则引擎测试向量${OFF}"
+# ── 2. JS 引擎：向量 + 场景 eval ───────────────────────────────────────
+echo "${BOLD}[2/6] JS 规则引擎：测试向量 + 场景 eval${OFF}"
 node engine/run-tests.mjs >"$LOG" 2>&1; rc=$?
-strip "$LOG" | tail -14
-[ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} JS 引擎通过" || { echo "${RED}✗ JS 引擎失败（退出码 $rc）${OFF}"; fail=1; }
+strip "$LOG" | tail -6
+[ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 向量通过（单步正确性）" || { echo "${RED}✗ 向量失败（退出码 $rc）${OFF}"; fail=1; }
+
+# 场景 eval：模拟跨周训练史，对整条轨迹断言产品红线。
+# 向量测不出序列问题 —— 每一步都正确的函数，串起来照样可能走成荒谬的轨迹。
+node engine/run-scenarios.mjs >"$LOG" 2>&1; rc=$?
+strip "$LOG" | tail -12
+[ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 场景 eval 通过（序列级产品红线）" || { echo "${RED}✗ 场景 eval 违反红线（退出码 $rc）${OFF}"; fail=1; }
 echo
 
 # ── 3. Dart 领域层（零依赖） ────────────────────────────────────────────
@@ -206,6 +212,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          prototype/index.html \
          seed/build.mjs seed/exercises.json seed/exercises.sql \
          engine/progression.mjs engine/vectors.json engine/run-tests.mjs \
+         engine/scenarios.json engine/run-scenarios.mjs \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
          app/lib/features/workout/workout_controller.dart \

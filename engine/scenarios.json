@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "note": "场景级 eval：把 PRODUCT.md / docs/interaction-spec.md 里的产品红线写成**可执行的序列级断言**。与 vectors.json 的分工：向量管单步正确性（输入→输出），这里管**序列质量** —— 连练 12 周之后建议会不会变荒谬。动作与处方引用 engine/vectors.json 的 fixtures，不重复定义。",
+  "scenarios": [
+    {
+      "id": "linear_8_weeks",
+      "desc": "理想用户连练 8 周（每次按建议做满）：双重渐进应当稳步加重，且每次加重都在次数触到区间上限之后",
+      "exercise": "barbell_bench",
+      "plan": "plan_3x8_10",
+      "sessions": 24,
+      "daysBetween": 3,
+      "model": "follow",
+      "expect": {
+        "mustIncreaseWeight": true,
+        "mustStayBounded": true
+      }
+    },
+    {
+      "id": "always_top_reps",
+      "desc": "每次都把每组做到区间上限：会更快加重，但**一步只能加一个步长**，不能跳",
+      "exercise": "barbell_bench",
+      "plan": "plan_3x8_10",
+      "sessions": 12,
+      "daysBetween": 3,
+      "model": "top",
+      "expect": {
+        "mustIncreaseWeight": true,
+        "mustStayBounded": true
+      }
+    },
+    {
+      "id": "plateau_below_range",
+      "desc": "平台期：每次都做不满区间下限 → 只能保持重量，**一次都不许加重**",
+      "exercise": "barbell_bench",
+      "plan": "plan_3x8_10",
+      "sessions": 12,
+      "daysBetween": 3,
+      "model": "below",
+      "expect": {
+        "mustNotIncreaseWeight": true
+      }
+    },
+    {
+      "id": "short_sessions",
+      "desc": "每次少做一组 → 先把组数补满，不加重量",
+      "exercise": "barbell_bench",
+      "plan": "plan_3x8_10",
+      "sessions": 10,
+      "daysBetween": 3,
+      "model": "short",
+      "expect": {
+        "mustNotIncreaseWeight": true
+      }
+    },
+    {
+      "id": "layoff_recovery",
+      "desc": "练到一半断了 25 天：回归保护必须触发，且**重量只保持、不下降**（PRODUCT 的 deload 是保持而非降重）",
+      "exercise": "barbell_bench",
+      "plan": "plan_3x8_10",
+      "sessions": 14,
+      "daysBetween": 3,
+      "model": "follow",
+      "layoffAt": 7,
+      "layoffDays": 25,
+      "expect": {
+        "mustTriggerDeload": true
+      }
+    },
+    {
+      "id": "bodyweight_16_weeks",
+      "desc": "自重动作连练 16 周：重量恒为 null（硬红线 2），次数有上界，到上界后改成「建议加负重」而不是继续加次数",
+      "exercise": "pull_up",
+      "plan": "plan_3x8_12",
+      "sessions": 32,
+      "daysBetween": 3,
+      "model": "follow",
+      "expect": {
+        "mustStayBounded": true,
+        "mustNotIncreaseWeight": true
+      }
+    },
+    {
+      "id": "time_plank_16_weeks",
+      "desc": "按时长动作连练 16 周：数字是**秒**不是次数，按 5 秒推进，到上限后改成建议加负重",
+      "exercise": "plank",
+      "plan": "plan_3x30_45",
+      "sessions": 32,
+      "daysBetween": 3,
+      "model": "follow",
+      "expect": {
+        "mustStayBounded": true,
+        "mustNotIncreaseWeight": true
+      }
+    },
+    {
+      "id": "weighted_time_8_weeks",
+      "desc": "负重时长动作（负重平板）：保持重量加秒数，到时长上限后**直接加重**（它有重量，不是自重）",
+      "exercise": "plank_weighted",
+      "plan": "plan_3x30_45",
+      "sessions": 16,
+      "daysBetween": 3,
+      "model": "follow",
+      "expect": {
+        "mustIncreaseWeight": true
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "reason_never_empty",
+      "desc": "红线：解释不了的建议不许出现"
+    },
+    {
+      "id": "reason_fits_one_line",
+      "desc": "红线：理由必须一行放得下（> 40 字就不是一行了）"
+    },
+    {
+      "id": "reason_has_no_placeholders",
+      "desc": "理由里不许出现 null / undefined / NaN —— 那是把内部状态泄漏给用户"
+    },
+    {
+      "id": "reason_code_in_enum",
+      "desc": "reason_code 必须在枚举内（UI 靠它做埋点拆分）"
+    },
+    {
+      "id": "bodyweight_never_gets_weight",
+      "desc": "硬红线 2：自重动作（weight_increment = 0）的重量恒为 null，且永不 linear_progress"
+    },
+    {
+      "id": "weighted_always_has_weight",
+      "desc": "有步长的动作必须给出正数重量 —— 否则用户输入不了重量"
+    },
+    {
+      "id": "one_step_at_a_time",
+      "desc": "单步加重不超过一个步长（不把用户拉回整数网格，也不擅自多加重）"
+    },
+    {
+      "id": "weight_never_drops",
+      "desc": "重量只保持或增加，永不下降（回归保护也是保持上次重量）"
+    },
+    {
+      "id": "increase_only_after_top_reps",
+      "desc": "双重渐进的契约：只有上一组做到区间上限之后才允许加重"
+    },
+    {
+      "id": "reps_never_below_range",
+      "desc": "建议的组次不低于区间下限（否则等于劝用户退步）"
+    },
+    {
+      "id": "reps_stay_bounded",
+      "desc": "次数/秒数有上界，不会随时间无限增长"
+    },
+    {
+      "id": "time_steps_are_five_seconds",
+      "desc": "按时长动作按 5 秒推进，且文案里不说「次」"
+    }
+  ]
+}

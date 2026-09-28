@@ -294,7 +294,9 @@ void main() {
   }
   print('\nreason_code 覆盖：${byCode.entries.map((MapEntry<String, int> e) => "${e.key} ${e.value}").join(" · ")}');
 
-  final int total = vectors.length + 3 + oneRmCases.length + 6;
+  // 分母必须跟上面实际跑的检查数一致 —— 加检查时忘了改这里，就会打印出
+  // 「52/50」这种账对不上的结果（这个坑刚踩过一次，所以算式下面加了注释）。
+  final int total = vectors.length + 3 + oneRmCases.length + 8; // 8 条 tap_count 边界
   final int failed = _failures.length + (okMute ? 0 : 1) + (okBwLinear ? 0 : 1) + (okBwWeight ? 0 : 1);
   print('\n$_line');
   print(failed == 0 ? '✓ 全部通过（$_passed/$total）' : '✗ 失败 $failed/$total（通过 $_passed）');
