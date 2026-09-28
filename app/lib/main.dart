@@ -237,7 +237,7 @@ class _HomeShellState extends State<HomeShell> {
   /// 只练一个动作。「我自己选」那条流程每次只加一个。
   Future<void> _trainOne(String workoutId, ExerciseData exercise) =>
       _trainSession(workoutId, <SessionEntry>[
-        SessionEntry(exercise: exercise, plan: kDefaultPlan),
+        SessionEntry(exercise: exercise, plan: defaultPlanFor(exercise)),
       ]);
 
   /// S13：可选的「帮我定个计划」。**不在启动路径上** ——

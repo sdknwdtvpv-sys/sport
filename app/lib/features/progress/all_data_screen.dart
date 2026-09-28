@@ -89,6 +89,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
         name: exercise.name,
         sets: records,
         today: _today,
+        isTime: isTimeTrack(exercise.trackType),
       );
     }
 
@@ -290,7 +291,12 @@ class _AllDataScreenState extends State<AllDataScreen> {
             _statRow('最佳估算 1RM',
                 s.best1RM == null ? '—' : formatWeight(s.best1RM, widget.unit),
                 const Key('all-data-best-1rm')),
-            _statRow('最多次数', '${s.bestReps} 次', const Key('all-data-best-reps')),
+            // 按时长动作这里念「秒」—— 平板支撑的"最多次数"是个说不通的标签
+            _statRow(
+              s.isTime ? '最长时长' : '最多次数',
+              '${s.bestReps} ${s.isTime ? '秒' : '次'}',
+              const Key('all-data-best-reps'),
+            ),
             _statRow('总容量', formatVolume(s.totalVolumeKg, widget.unit, zeroText: '—'),
                 const Key('all-data-total-volume')),
             _statRow('总组数', '${s.setCount} 组', const Key('all-data-set-count')),

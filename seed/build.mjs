@@ -37,6 +37,8 @@ const FINE_MUSCLES = [
 ];
 const SECONDARY_OK = new Set([...MUSCLE_GROUPS, ...FINE_MUSCLES]);
 const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight'];
+// 怎么记这个动作（docs/data-model.md）。time/weight_time 的数字是**秒**不是次数。
+const TRACK_TYPES = ['weight_reps', 'reps_only', 'time', 'weight_time'];
 const REST_MIN = 30;
 const REST_MAX = 300;
 
@@ -76,6 +78,12 @@ for (const [i, e] of exercises.entries()) {
 
   if (!MUSCLE_GROUPS.includes(e.muscle_group)) errors.push(`${at}：muscle_group 非法「${e.muscle_group}」`);
   if (!EQUIPMENT.includes(e.equipment)) errors.push(`${at}：equipment 非法「${e.equipment}」`);
+  // track_type 以前只校验"字段存在"，值写错也照样过。它现在真的会改变行为
+  // （time/weight_time 的数字是**秒**，引擎会走加秒数分支），所以必须卡住。
+  if (!TRACK_TYPES.includes(e.track_type)) errors.push(`${at}：track_type 非法「${e.track_type}」`);
+  if (e.track_type === 'weight_time' && e.weight_increment === 0) {
+    errors.push(`${at}：weight_time 必须是有重量的动作（weight_increment 不能为 0）`);
+  }
   for (const m of e.secondary_muscles ?? []) {
     if (!SECONDARY_OK.has(m)) errors.push(`${at}：secondary_muscles 非法「${m}」`);
     if (m === e.muscle_group) warnings.push(`${at}：次要部位与主部位重复（${m}）`);

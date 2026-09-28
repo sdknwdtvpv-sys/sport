@@ -77,12 +77,16 @@ void main() {
   final List<Map<String, dynamic>> oneRmCases =
       (spec['oneRmCases'] as List<dynamic>).cast<Map<String, dynamic>>();
 
+  // ⚠️ fixture → ExerciseSpec 的映射**这里和 test/progression_vectors_test.dart 各有一份**
+  // （JS 那边直接读 fixture，不需要映射）。加了新字段要两处同步 ——
+  // 漏了会以"向量失败"的形式立刻暴露，不会悄悄算错（这正是同一套向量存在的意义）。
   ExerciseSpec exerciseOf(String key) {
     final Map<String, dynamic> f = fixtures[key] as Map<String, dynamic>;
     return ExerciseSpec(
       id: f['id'] as String,
       weightIncrement: (f['weight_increment'] as num).toDouble(),
       defaultWeightKg: (f['default_weight_kg'] as num?)?.toDouble(),
+      trackType: (f['track_type'] as String?) ?? 'weight_reps',
     );
   }
 

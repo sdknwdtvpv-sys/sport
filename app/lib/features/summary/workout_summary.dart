@@ -21,7 +21,11 @@ class SetPr {
     required this.previousBest,
     this.weightKg,
     this.unit = WeightUnit.kg,
+    this.isTime = false,
   });
+
+  /// 按时长动作（平板支撑）：那个数字是**秒**，不是次数。
+  final bool isTime;
 
   final String exerciseId;
   final String exerciseName;
@@ -41,10 +45,12 @@ class SetPr {
   /// 本次的成绩（重量或次数）
   double get value => isBodyweight ? reps.toDouble() : (weightKg ?? 0);
 
-  /// 一行展示，如「65kg（上次最好 60kg）」或「12 次（上次最好 10 次）」
+  /// 一行展示，如「65kg（上次最好 60kg）」或「12 次（上次最好 10 次）」。
+  /// 按时长动作说「秒」—— 破纪录破的是坚持的秒数。
   String get detail {
     if (isBodyweight) {
-      return '$reps 次（上次最好 ${previousBest.toInt()} 次）';
+      final String u = isTime ? '秒' : '次';
+      return '$reps $u（上次最好 ${previousBest.toInt()} $u）';
     }
     return '${formatWeight(weightKg, unit)}（上次最好 ${formatWeight(previousBest, unit)}）';
   }
@@ -197,6 +203,7 @@ class SummaryService {
       weightKg: bodyweight ? null : bestSet.weightKg,
       previousBest: previousBest,
       unit: unit,
+      isTime: row != null && isTimeTrack(row.trackType),
     );
   }
 }

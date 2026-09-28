@@ -87,12 +87,17 @@ class ExerciseRepository {
   }
 
   /// 把库里的行转成引擎要的输入
+  ///
+  /// `trackType` 必须带上：它决定引擎对平板支撑这类动作说的是"次"还是"秒"。
+  /// （这个字段曾经躺在库里没人读 —— 165 个动作全是 weight_reps，
+  /// 于是平板支撑被开成「3 组 × 8–10 次」。）
   ExerciseSpec specOf(ExerciseData e) => ExerciseSpec(
         id: e.id,
         name: e.name,
         weightIncrement: e.weightIncrement,
         defaultWeightKg: e.defaultWeightKg,
         defaultRestSec: e.defaultRestSec,
+        trackType: e.trackType,
       );
 
   /// 新建自定义动作。

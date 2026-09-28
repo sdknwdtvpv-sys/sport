@@ -18,6 +18,12 @@ const int kStaleDays = 21;
 /// 自重动作次数上限 = 目标区间上限 + 该值。
 const int kBodyweightRepCapBonus = 5;
 
+/// 按时长动作每次推进多少秒。
+const int kTimeStepSec = 5;
+
+/// 按时长动作的上限 = 目标区间上限 + 该值（秒）。
+const int kTimeCapBonus = 15;
+
 /// 连续手改达到此次数后，不再自作主张。
 const int kOverrideMinCount = 3;
 
@@ -56,7 +62,7 @@ _Preferred? _preferredOverride(List<ManualOverride> overrides) {
 /// 给出下一组的建议。返回 null 表示"不给建议"（用户关闭了建议）。
 ///
 /// 判定顺序**不可调整**，每一步都有对应的测试向量：
-///   off → 用户偏好 → 零历史 → 长期未练 → 自重分支 → 组数不足 → 达标加重 → 掉组保持 → 加次数
+///   off → 用户偏好 → 零历史 → 长期未练 → **按时长分支** → 自重分支 → 组数不足 → 达标加重 → 掉组保持 → 加次数
 Suggestion? suggestNext({
   required ExerciseSpec exercise,
   required PlanTarget plan,
@@ -69,6 +75,8 @@ Suggestion? suggestNext({
 
   final inc = exercise.weightIncrement;
   final isBodyweight = exercise.isBodyweight;
+  // 按时长的动作：这个数字是**秒**不是次数。缺省 weight_reps，行为向后兼容。
+  final isTime = exercise.isTime;
   final sets = plan.targetSets;
   final repsLow = plan.targetRepsLow;
   final repsHigh = plan.targetRepsHigh;
@@ -91,7 +99,9 @@ Suggestion? suggestNext({
       reps: repsLow,
       reasonCode: ReasonCode.firstTime,
       reasonText: isBodyweight
-          ? '第一次练这个动作，先记录你能完成的次数'
+          ? (isTime
+              ? '第一次练这个动作，先记录你能坚持的秒数'
+              : '第一次练这个动作，先记录你能完成的次数')
           : '第一次练这个动作，先从这个重量开始',
     );
   }
@@ -111,7 +121,49 @@ Suggestion? suggestNext({
     );
   }
 
-  // 4) 自重动作：唯一可行的推进方式是加次数
+  // 4) 按时长的动作：这个量是**秒**不是次数，推进方式是加秒数。
+  //    没有这一支，平板支撑会被按"次数"往上加，还会说出
+  //    「自重已完成 30 次，建议加负重」这种让用户一眼看出不懂健身的话。
+  if (isTime) {
+    final double? keepW = isBodyweight ? null : _round2(lastW);
+    if (completed < sets) {
+      return Suggestion(
+        weightKg: keepW,
+        reps: repsLow,
+        reasonCode: ReasonCode.hold,
+        reasonText: '上次只完成 $completed 组（计划 $sets 组），先把组数补满',
+      );
+    }
+    final int cap = repsHigh + kTimeCapBonus;
+    if (minReps >= cap) {
+      if (isBodyweight) {
+        return Suggestion(
+          weightKg: null,
+          reps: cap,
+          reasonCode: ReasonCode.addRep,
+          reasonText: '已能坚持 $minReps 秒，建议加负重',
+        );
+      }
+      // 负重时长（负重平板）：它是有重量的，到时长上限就直接加重
+      return Suggestion(
+        weightKg: _round2(lastW + inc),
+        reps: repsLow,
+        reasonCode: ReasonCode.linearProgress,
+        reasonText: '已能坚持 $minReps 秒（上限 $cap 秒），加重 +${_fmt(inc)}kg',
+      );
+    }
+    final int nextTime = math.min(minReps + kTimeStepSec, cap);
+    return Suggestion(
+      weightKg: keepW,
+      reps: nextTime,
+      reasonCode: ReasonCode.addRep,
+      reasonText: minReps >= repsHigh
+          ? '时长已达目标上限，按秒推进：$minReps → $nextTime 秒'
+          : '按秒推进：$minReps → $nextTime 秒',
+    );
+  }
+
+  // 5) 自重动作：唯一可行的推进方式是加次数
   if (isBodyweight) {
     if (completed < sets) {
       return Suggestion(
@@ -141,7 +193,7 @@ Suggestion? suggestNext({
     );
   }
 
-  // 5) 组数没做满 → 先补组数，不加重量
+  // 6) 组数没做满 → 先补组数，不加重量
   if (completed < sets) {
     return Suggestion(
       weightKg: _round2(lastW),
@@ -151,7 +203,7 @@ Suggestion? suggestNext({
     );
   }
 
-  // 6) 全部达标 → 双重渐进的"加重量"分支
+  // 7) 全部达标 → 双重渐进的"加重量"分支
   if (minReps >= repsHigh) {
     return Suggestion(
       weightKg: _round2(lastW + inc),
@@ -161,7 +213,7 @@ Suggestion? suggestNext({
     );
   }
 
-  // 7) 有组掉到区间下限以下 → 保持重量（不加重也不降重，先看是不是偶发）
+  // 8) 有组掉到区间下限以下 → 保持重量（不加重也不降重，先看是不是偶发）
   if (minReps < repsLow) {
     return Suggestion(
       weightKg: _round2(lastW),
@@ -171,7 +223,7 @@ Suggestion? suggestNext({
     );
   }
 
-  // 8) 中间态 → 重量不变，加次数
+  // 9) 中间态 → 重量不变，加次数
   final next = math.min(minReps + 1, repsHigh);
   return Suggestion(
     weightKg: _round2(lastW),

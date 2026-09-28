@@ -28,7 +28,11 @@ class ExercisePr {
     required this.reps,
     this.weightKg,
     this.unit = WeightUnit.kg,
+    this.isTime = false,
   });
+
+  /// 按时长动作（平板支撑）：这个数字是**秒**不是次数。
+  final bool isTime;
 
   final String exerciseId;
   final String name;
@@ -47,8 +51,9 @@ class ExercisePr {
   /// 显示单位。存储始终是 kg，这里只影响怎么念数字。
   final WeightUnit unit;
 
-  /// 如「80 kg」「176.4 lb」「15 次」
-  String get label => isBodyweight ? '$reps 次' : formatWeight(weightKg, unit);
+  /// 如「80 kg」「176.4 lb」「15 次」「45 秒」
+  String get label =>
+      isBodyweight ? '$reps ${isTime ? '秒' : '次'}' : formatWeight(weightKg, unit);
 }
 
 class ProgressData {
@@ -130,6 +135,8 @@ List<ExercisePr> personalBests({
   required List<SetRecord> sets,
   required Map<String, String> exerciseNames,
   WeightUnit unit = WeightUnit.kg,
+  /// 按时长动作的 id 集合 —— 它们的最佳值念「秒」。缺省空集，行为不变。
+  Set<String> timeExerciseIds = const <String>{},
 }) {
   final Map<String, List<SetRecord>> byExercise = <String, List<SetRecord>>{};
   for (final SetRecord s in sets) {
@@ -146,7 +153,13 @@ List<ExercisePr> personalBests({
       for (final SetRecord s in list) {
         if (s.reps > best.reps) best = s;
       }
-      out.add(ExercisePr(exerciseId: id, name: name, reps: best.reps, unit: unit));
+      out.add(ExercisePr(
+        exerciseId: id,
+        name: name,
+        reps: best.reps,
+        unit: unit,
+        isTime: timeExerciseIds.contains(id),
+      ));
     } else {
       SetRecord best = list.first;
       for (final SetRecord s in list) {
@@ -176,6 +189,8 @@ ProgressData buildProgress({
   required Map<String, String> exerciseNames,
   required DateTime today,
   WeightUnit unit = WeightUnit.kg,
+  /// 按时长动作的 id 集合（它们的最佳值念「秒」）。缺省空集，行为不变。
+  Set<String> timeExerciseIds = const <String>{},
 }) =>
     ProgressData(
       week: lastSevenDays(sets, today),
@@ -183,6 +198,7 @@ ProgressData buildProgress({
         sets: sets,
         exerciseNames: exerciseNames,
         unit: unit,
+        timeExerciseIds: timeExerciseIds,
       ),
       weekWorkouts: weekWorkoutCount(sets, today),
       unit: unit,

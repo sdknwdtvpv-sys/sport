@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "规则引擎的规范测试向量。Flutter/Dart 端移植后必须跑通同一套向量（见 engine/run-tests.mjs 的断言逻辑），端口才算完成。weight_kg/reps/reason_code 要求精确相等；reason_text 只校验包含的关键子串，允许文案微调但不允许理由缺失。",
+  "note": "规则引擎的规范测试向量。Flutter/Dart 端移植后必须跑通同一套向量（见 engine/run-tests.mjs 的断言逻辑），端口才算完成。weight_kg/reps/reason_code 要求精确相等；reason_text 只校验包含的关键子串，允许文案微调但不允许理由缺失。 2026-09-29 起 exercise_fixture 可带 track_type（weight_reps/reps_only/time/weight_time，缺省 weight_reps）：时长类动作的 reps 表示**秒**。",
   "fixtures": {
     "barbell_bench": {
       "id": "ex_bb_bench_press",
@@ -30,7 +30,8 @@
     "plank": {
       "id": "ex_plank",
       "default_weight_kg": null,
-      "weight_increment": 0
+      "weight_increment": 0,
+      "track_type": "time"
     },
     "plan_3x8_10": {
       "target_sets": 3,
@@ -41,6 +42,23 @@
       "target_sets": 3,
       "target_reps_low": 8,
       "target_reps_high": 12
+    },
+    "plank_weighted": {
+      "id": "ex_weighted_plank",
+      "default_weight_kg": 5,
+      "weight_increment": 2.5,
+      "track_type": "weight_time"
+    },
+    "crunch": {
+      "id": "ex_crunch",
+      "default_weight_kg": null,
+      "weight_increment": 0,
+      "track_type": "reps_only"
+    },
+    "plan_3x30_45": {
+      "target_sets": 3,
+      "target_reps_low": 30,
+      "target_reps_high": 45
     }
   },
   "vectors": [
@@ -397,7 +415,7 @@
       "id": "bodyweight_plank_style",
       "desc": "核心自重动作同样适用加次数路径",
       "input": {
-        "exercise": "plank",
+        "exercise": "crunch",
         "plan": "plan_3x8_12",
         "lastSession": {
           "weight_kg": null,
@@ -699,6 +717,158 @@
         "reps": 8,
         "reason_code": "linear_progress",
         "text_includes": "+2.5kg"
+      }
+    },
+    {
+      "id": "time_first_plank",
+      "desc": "按时长的动作零历史 —— 给秒数，文案也说\"秒数\"而不是\"次数\"",
+      "input": {
+        "exercise": "plank",
+        "plan": "plan_3x30_45",
+        "lastSession": null
+      },
+      "expect": {
+        "weight_kg": null,
+        "reps": 30,
+        "reason_code": "first_time",
+        "text_includes": "秒数"
+      }
+    },
+    {
+      "id": "time_hold_incomplete_sets",
+      "desc": "按时长：组数没做满 → 先补组数",
+      "input": {
+        "exercise": "plank",
+        "plan": "plan_3x30_45",
+        "lastSession": {
+          "weight_kg": null,
+          "reps": [
+            30,
+            30
+          ],
+          "daysAgo": 2
+        }
+      },
+      "expect": {
+        "weight_kg": null,
+        "reps": 30,
+        "reason_code": "hold",
+        "text_includes": "补满"
+      }
+    },
+    {
+      "id": "time_add_seconds",
+      "desc": "按时长：推进方式是加 5 秒，不是加 1 次",
+      "input": {
+        "exercise": "plank",
+        "plan": "plan_3x30_45",
+        "lastSession": {
+          "weight_kg": null,
+          "reps": [
+            35,
+            32,
+            30
+          ],
+          "daysAgo": 2
+        }
+      },
+      "expect": {
+        "weight_kg": null,
+        "reps": 35,
+        "reason_code": "add_rep",
+        "text_includes": "30 → 35 秒"
+      }
+    },
+    {
+      "id": "time_cap_suggests_weight",
+      "desc": "按时长到上限 → 自重动作建议加负重（不再无限加秒）",
+      "input": {
+        "exercise": "plank",
+        "plan": "plan_3x30_45",
+        "lastSession": {
+          "weight_kg": null,
+          "reps": [
+            60,
+            62,
+            60
+          ],
+          "daysAgo": 2
+        }
+      },
+      "expect": {
+        "weight_kg": null,
+        "reps": 60,
+        "reason_code": "add_rep",
+        "text_includes": "建议加负重"
+      }
+    },
+    {
+      "id": "time_deload_still_wins",
+      "desc": "按时长动作同样受\"21 天回归保护\"约束（顺序不能变）",
+      "input": {
+        "exercise": "plank",
+        "plan": "plan_3x30_45",
+        "lastSession": {
+          "weight_kg": null,
+          "reps": [
+            40,
+            40,
+            40
+          ],
+          "daysAgo": 25
+        }
+      },
+      "expect": {
+        "weight_kg": null,
+        "reps": 30,
+        "reason_code": "deload",
+        "text_includes": "25 天"
+      }
+    },
+    {
+      "id": "time_weighted_keeps_weight",
+      "desc": "负重时长动作：保持重量，加秒数",
+      "input": {
+        "exercise": "plank_weighted",
+        "plan": "plan_3x30_45",
+        "lastSession": {
+          "weight_kg": 5,
+          "reps": [
+            35,
+            30,
+            30
+          ],
+          "daysAgo": 2
+        }
+      },
+      "expect": {
+        "weight_kg": 5,
+        "reps": 35,
+        "reason_code": "add_rep",
+        "text_includes": "30 → 35 秒"
+      }
+    },
+    {
+      "id": "time_weighted_cap_adds_weight",
+      "desc": "负重时长动作到上限 → 直接加重（它有重量，不是自重）",
+      "input": {
+        "exercise": "plank_weighted",
+        "plan": "plan_3x30_45",
+        "lastSession": {
+          "weight_kg": 5,
+          "reps": [
+            60,
+            60,
+            60
+          ],
+          "daysAgo": 2
+        }
+      },
+      "expect": {
+        "weight_kg": 7.5,
+        "reps": 30,
+        "reason_code": "linear_progress",
+        "text_includes": "加重"
       }
     }
   ],

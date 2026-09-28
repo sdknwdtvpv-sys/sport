@@ -134,11 +134,22 @@ class WorkoutController extends ChangeNotifier {
   /// 下一组要记的 RPE；null = 不记（默认）。
   double? get rpe => _rpe;
 
+  /// 「次数」这一行对按时长动作来说其实是**秒**。
+  String get repsUnit => exercise.isTime ? '秒' : '次';
+
+  /// 次数（或秒数）的步进幅度。按时长动作一次 ±5 秒 —— ±1 秒没有意义。
+  int get repsStep => exercise.isTime ? kTimeStepSec : 1;
+
+  /// 重量步进幅度：**用动作自己的步长**，不再写死 ±2.5。
+  /// 种子里的步长有 2 / 5 / 2.5 / 0 四种（哑铃 2、器械 5…），写死会让用户改不动重量。
+  double get weightStep =>
+      exercise.weightIncrement > 0 ? exercise.weightIncrement : 2.5;
+
   /// 大按钮上显示的文案 —— 就是即将写入的值。
   /// 这是全产品唯一不可妥协的指标：点击即写入，1 次点击 = 1 组。
   String get primaryButtonLabel {
     final w = isBodyweight ? '自重' : formatWeight(_weightKg, unit);
-    return '$w × $_reps';
+    return exercise.isTime ? '$w × $_reps 秒' : '$w × $_reps';
   }
 
   // ---------- 手势入口（UI 只调用这四个） ----------
@@ -166,7 +177,8 @@ class WorkoutController extends ChangeNotifier {
     }
     if (deltaReps != 0) {
       final next = _reps + deltaReps;
-      _reps = next < 1 ? 1 : next;
+      // 下限就是一次步进：次数不会掉到 0，秒数也不会掉到 5 秒以下
+      _reps = next < repsStep ? repsStep : next;
     }
     _notify();
   }

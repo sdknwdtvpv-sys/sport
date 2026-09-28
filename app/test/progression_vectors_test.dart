@@ -44,12 +44,15 @@ void main() {
   final List<Map<String, dynamic>> oneRmCases =
       (spec['oneRmCases'] as List<dynamic>).cast<Map<String, dynamic>>();
 
+  // ⚠️ 这份映射与 tool/check_domain.dart 各有一份，加字段要两处同步（漏了会红）。
   ExerciseSpec exerciseOf(String key) {
     final Map<String, dynamic> f = fixtures[key] as Map<String, dynamic>;
     return ExerciseSpec(
       id: f['id'] as String,
       weightIncrement: (f['weight_increment'] as num).toDouble(),
       defaultWeightKg: (f['default_weight_kg'] as num?)?.toDouble(),
+      // 缺省 weight_reps：没有这个字段的 fixture 行为完全不变
+      trackType: (f['track_type'] as String?) ?? 'weight_reps',
     );
   }
 

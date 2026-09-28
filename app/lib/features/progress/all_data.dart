@@ -24,6 +24,7 @@ class ExerciseStats {
     required this.bestWeightKg,
     required this.best1RM,
     required this.bestReps,
+    this.isTime = false,
     required this.lastTrainedAtMs,
     required this.volumeByDay,
     required this.oneRmByDay,
@@ -43,6 +44,9 @@ class ExerciseStats {
 
   /// 历史最多次数。自重动作比这个。
   final int bestReps;
+
+  /// 按时长动作（平板支撑）：`bestReps` 其实是**秒**。界面据此改标签与单位。
+  final bool isTime;
 
   final int? lastTrainedAtMs;
 
@@ -73,6 +77,8 @@ ExerciseStats buildExerciseStats({
   required List<SetRecord> sets,
   required DateTime today,
   int days = 30,
+  /// 按时长动作：`bestReps` 是秒。缺省 false，行为不变。
+  bool isTime = false,
 }) {
   final List<SetRecord> normal =
       sets.where((SetRecord s) => s.setType == SetType.normal).toList();
@@ -114,6 +120,7 @@ ExerciseStats buildExerciseStats({
     bestWeightKg: bestWeight,
     best1RM: best1RM,
     bestReps: bestReps,
+    isTime: isTime,
     lastTrainedAtMs: lastAt,
     volumeByDay: <DailyVolume>[
       for (final DateTime d in window)

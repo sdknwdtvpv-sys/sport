@@ -69,6 +69,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final Map<String, String> names = <String, String>{
       for (final ExerciseData r in rows) r.id: r.name,
     };
+    // 按时长动作（平板支撑类）的最佳值念「秒」不念「次」
+    final Set<String> timeIds = <String>{
+      for (final ExerciseData r in rows)
+        if (isTimeTrack(r.trackType)) r.id,
+    };
     final BodyMetricData? weight = await widget.bodyMetrics?.latest();
     if (!mounted) return;
     setState(() {
@@ -77,6 +82,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         exerciseNames: names,
         today: widget.now ?? DateTime.now(),
         unit: widget.unit,
+        timeExerciseIds: timeIds,
       );
       _latestWeight = weight;
       _loading = false;

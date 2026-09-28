@@ -45,7 +45,8 @@ void main() {
     String workoutId,
     String exerciseId, {
     List<int> reps = const <int>[10, 10, 10],
-    double weight = 60,
+    /// 传 null 明确表示"自重"（按时长/自重动作必须这样，否则会被当成负重组）
+    double? weight = 60,
     int at = 1000,
     int daysAgo = 1,
   }) async {
@@ -227,6 +228,58 @@ void main() {
       for (final PlannedExercise p in again) {
         expect(p.unit, WeightUnit.lb,
             reason: '同一屏上两种单位是明显的 bug');
+      }
+    });
+  });
+
+  group('按时长动作（track_type 真的被读到了）', () {
+    test('平板支撑的处方是 3 组 × 30–45 秒，不是 8–10 次', () async {
+      final List<PlannedExercise> plan =
+          await planner.planToday(muscleGroup: 'core', count: 60);
+      final PlannedExercise plank =
+          plan.firstWhere((PlannedExercise p) => p.exercise.id == 'ex_plank');
+
+      expect(plank.exercise.trackType, 'time');
+      expect(plank.plan.targetRepsLow, 30, reason: '数字的含义是"秒"');
+      expect(plank.plan.targetRepsHigh, 45);
+      expect(plank.loadLabel, '自重 × 30 秒');
+      expect(plank.suggestion!.reasonText, contains('秒数'));
+      expect(plank.suggestion!.reasonText, isNot(contains('次数')));
+    });
+
+    test('侧平板同属按时长；负重平板是 weight_time 且保留重量', () async {
+      final List<PlannedExercise> plan =
+          await planner.planToday(muscleGroup: 'core', count: 60);
+      final PlannedExercise side =
+          plan.firstWhere((PlannedExercise p) => p.exercise.id == 'ex_side_plank');
+      final PlannedExercise wp =
+          plan.firstWhere((PlannedExercise p) => p.exercise.id == 'ex_weighted_plank');
+
+      expect(side.exercise.trackType, 'time');
+      expect(side.plan.targetRepsHigh, 45);
+      expect(wp.exercise.trackType, 'weight_time');
+      expect(wp.plan.targetRepsHigh, 45);
+      expect(wp.loadLabel, contains('kg'), reason: '它有重量，不是自重');
+    });
+
+    test('有历史时，证据链那一行也念「秒」', () async {
+      await train('w_old', 'ex_plank', reps: <int>[40, 40, 40], weight: null);
+
+      final List<PlannedExercise> plan =
+          await planner.planToday(muscleGroup: 'core', count: 60);
+      final PlannedExercise plank =
+          plan.firstWhere((PlannedExercise p) => p.exercise.id == 'ex_plank');
+
+      expect(plank.historyLabel, '上次 3 组 · 自重 × 40 秒');
+      expect(plank.suggestion!.reasonText, contains('40 → 45 秒'));
+    });
+
+    test('按次数的动作完全不受影响（缺省 track_type 行为不变）', () async {
+      final List<PlannedExercise> plan =
+          await planner.planToday(muscleGroup: 'chest', count: 60);
+      for (final PlannedExercise p in plan) {
+        expect(p.exercise.trackType, 'weight_reps');
+        expect(p.plan.targetRepsHigh, 10, reason: '还是 3 组 × 8–10 次');
       }
     });
   });

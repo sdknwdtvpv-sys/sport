@@ -24,7 +24,7 @@ CREATE TABLE exercise (
   secondary_muscles TEXT,                       -- JSON 数组
   equipment         TEXT NOT NULL,              -- barbell/dumbbell/machine/bodyweight/cable
   track_type        TEXT NOT NULL DEFAULT 'weight_reps',
-                                                -- weight_reps/reps_only/time/weight_time（MVP 只用第一种）
+                                                -- 怎么记这个动作，见下方「track_type 词表」
   default_rest_sec  INTEGER NOT NULL DEFAULT 90,
   default_weight_kg REAL,                       -- 首次使用时的起始建议
   weight_increment  REAL NOT NULL DEFAULT 2.5,  -- 规则引擎加重步长
@@ -37,6 +37,34 @@ CREATE TABLE exercise (
 CREATE INDEX idx_exercise_name     ON exercise(name);
 CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 ```
+
+### track_type 词表
+
+`track_type` 决定**数字的含义**，不只决定界面怎么显示：
+
+| 值 | 含义 | `reps` 这一列装的是 | 引擎的推进方式 |
+|---|---|---|---|
+| `weight_reps` | 负重次数（缺省） | 次数 | 双重渐进：先加次数，达标后加重 |
+| `reps_only` | 自重次数 | 次数 | 只能加次数（到上限后建议加负重） |
+| `time` | **按时长**（平板支撑、侧平板） | **秒** | 按秒推进（+5 秒）；到上限建议加负重 |
+| `weight_time` | 负重时长（负重平板支撑） | **秒** | 保持重量加秒数；到时长上限直接加重 |
+
+**两个必须知道的约定：**
+
+1. **`reps` 这一列对 `time` / `weight_time` 装的是秒数**，不是次数。
+   这是有意的取舍：另开一列要动 schema（v4 迁移）+ 查询 + CSV + 全部统计，
+   而它们真正需要的只是一个"怎么读这个数"的开关。**读这个数之前先看 `track_type`** ——
+   判断只走 `isTimeTrack()`（`app/lib/domain/models.dart`）一处，别各处自己写 `== 'time'`。
+2. **上游动作库的 `exerciseType` 是同一件事的更细版本**：它的
+   `duration` → 我们的 `time`、`bodyweight_reps` → `reps_only`，
+   另外还有我们暂时没有的 `distance_duration`（有氧）与 `assisted_bodyweight`（辅助自重）。
+   映射与重叠度见 `【9月28日竞品分析】/参考包-健康教练Skill/本地补充/动作库对比.md`。
+
+**已知限制（记在这儿，不藏着）**：`weight_time` 动作的"容量"仍是 `重量 × 秒数`，
+量纲上说不通（负重平板 5kg × 30 秒 = 150）。目前只有 1 个这样的动作，
+且自重时长动作的容量本来就是 0。要修就得让 `set_record` 知道自己是不是时长动作
+（加列或联表），留给真正需要"容量"统计的那次改动。
+
 
 ### 计划模板
 

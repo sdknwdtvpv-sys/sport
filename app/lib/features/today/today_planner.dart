@@ -40,6 +40,21 @@ const PlanTarget kDefaultPlan = PlanTarget(
   targetRepsHigh: 10,
 );
 
+/// 按时长动作（平板支撑 / 侧平板）的处方：**30–45 秒**。
+///
+/// 以前所有动作一律套 `kDefaultPlan`（3 组 × 8–10），于是平板支撑被开成
+/// "3 组 × 8–10 次" —— 用户一眼就能看出这个 App 不懂健身。
+/// 数字放在哪一列不变，含义由 `track_type` 决定。
+const PlanTarget kDefaultTimePlan = PlanTarget(
+  targetSets: 3,
+  targetRepsLow: 30,
+  targetRepsHigh: 45,
+);
+
+/// 按动作类型给默认处方。有计划模板（S11）时以模板里的为准。
+PlanTarget defaultPlanFor(ExerciseData e) =>
+    isTimeTrack(e.trackType) ? kDefaultTimePlan : kDefaultPlan;
+
 /// 一条推荐：动作 + 处方 + 引擎给的下一组建议。
 class PlannedExercise {
   const PlannedExercise({
@@ -66,12 +81,15 @@ class PlannedExercise {
   /// 显示单位。**引擎给的建议值始终是 kg**，这里只影响怎么念。
   final WeightUnit unit;
 
-  /// UI 上直接显示的一行，如「62.5 kg × 8」；自重动作显示「自重 × 8」
+  /// UI 上直接显示的一行，如「62.5 kg × 8」；自重动作显示「自重 × 8」。
+  ///
+  /// 按时长动作的数字是**秒**：显示「自重 × 30 秒」而不是「自重 × 30」——
+  /// 后者会被读成 30 次。
   String get loadLabel {
     final Suggestion? s = suggestion;
     if (s == null) return '—';
     final String w = s.isBodyweight ? '自重' : formatWeight(s.weightKg, unit);
-    return '$w × ${s.reps}';
+    return '$w × ${s.reps}${isTimeTrack(exercise.trackType) ? ' 秒' : ''}';
   }
 
   /// 「上次」那一行：把引擎据以判断的事实原样摆出来。没历史时返回 null。
@@ -83,9 +101,10 @@ class PlannedExercise {
     if (last == null || last.completedSets == 0) return null;
     final String w =
         last.weightKg == null ? '自重' : formatWeight(last.weightKg, unit);
+    final String u = isTimeTrack(exercise.trackType) ? '秒' : '次';
     final String reps = last.reps.toSet().length == 1
-        ? '${last.minReps} 次'
-        : '最少 ${last.minReps} 次';
+        ? '${last.minReps} $u'
+        : '最少 ${last.minReps} $u';
     return '上次 ${last.completedSets} 组 · $w × $reps';
   }
 }
@@ -172,14 +191,15 @@ class TodayPlanner {
     final List<PlannedExercise> out = <PlannedExercise>[];
     for (final ExerciseData e in candidates) {
       final LastSession? last = await _store.lastSessionFor(e.id);
+      final PlanTarget plan = defaultPlanFor(e);
       out.add(PlannedExercise(
         exercise: e,
-        plan: kDefaultPlan,
+        plan: plan,
         unit: unit,
         lastSession: last,
         suggestion: suggestNext(
           exercise: _repo.specOf(e),
-          plan: kDefaultPlan,
+          plan: plan,
           lastSession: last,
         ),
       ));
@@ -212,15 +232,16 @@ class TodayPlanner {
     final List<PlannedExercise> out = <PlannedExercise>[];
     for (final ExerciseData e in next) {
       final LastSession? last = await _store.lastSessionFor(e.id);
+      final PlanTarget plan = defaultPlanFor(e);
       out.add(PlannedExercise(
         exercise: e,
-        plan: kDefaultPlan,
+        plan: plan,
         // unit 以前在这里漏了：用户选了 lb，「换一批」之后又变回 kg —— 同一屏两种单位。
         unit: unit,
         lastSession: last,
         suggestion: suggestNext(
           exercise: _repo.specOf(e),
-          plan: kDefaultPlan,
+          plan: plan,
           lastSession: last,
         ),
       ));

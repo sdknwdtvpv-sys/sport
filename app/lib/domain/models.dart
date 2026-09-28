@@ -10,6 +10,13 @@ import 'dart:math' as math;
 import '../core/units.dart';
 
 /// 动作库条目的领域视图。只需要引擎用得上的三个字段。
+/// 这个 `track_type` 的数字是不是**秒**而不是次数。
+///
+/// 词表本身见 `docs/data-model.md`。判定刻意只留这一处 ——
+/// 引擎、planner、界面都问它，避免三处各写一遍 `== 'time'` 而慢慢分叉。
+bool isTimeTrack(String trackType) =>
+    trackType == 'time' || trackType == 'weight_time';
+
 class ExerciseSpec {
   const ExerciseSpec({
     required this.id,
@@ -17,12 +24,26 @@ class ExerciseSpec {
     this.defaultWeightKg,
     this.defaultRestSec = 90,
     this.name = '',
+    this.trackType = 'weight_reps',
   });
 
   final String id;
 
   /// 加重步长。0 表示自重动作 —— 由数据层不变量保证此时 defaultWeightKg 为 null。
   final double weightIncrement;
+
+  /// 怎么记这个动作（`docs/data-model.md` 的词表）：
+  ///
+  /// * `weight_reps`（缺省）—— 负重次数
+  /// * `reps_only`  —— 自重次数
+  /// * `time`       —— **按时长**（平板支撑、侧平板）：数字是**秒**不是次数
+  /// * `weight_time`—— 负重时长（负重平板支撑）
+  ///
+  /// 缺省值是 `weight_reps`，所以没有这个字段的老数据、老 fixture 行为完全不变。
+  /// 上游 `bryllim/workout-guide` 的 `exerciseType` 是同一件事的更细版本
+  /// （多出 `distance_duration` / `assisted_bodyweight`），映射表见
+  /// `【9月28日竞品分析】` 附录 E.3。
+  final String trackType;
 
   /// 该动作零历史时的起始重量。null = 自重。
   final double? defaultWeightKg;
@@ -32,8 +53,14 @@ class ExerciseSpec {
 
   final String name;
 
-  /// 自重动作：唯一可行的推进方式是加次数。
+  /// 自重动作：唯一可行的推进方式是加次数（或加秒数）。
   bool get isBodyweight => weightIncrement == 0;
+
+  /// 按时长的动作：`reps` 这个数字表示**秒**。引擎对它们不说"次"。
+  bool get isTime => isTimeTrack(trackType);
+
+  /// 有重量的时长动作（负重平板支撑）：到时长上限时可以直接加重。
+  bool get isWeightedTime => trackType == 'weight_time';
 }
 
 /// 计划项。

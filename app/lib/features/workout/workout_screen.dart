@@ -239,9 +239,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   ),
                   const SizedBox(width: Tokens.s3),
                   Text(
+                    // 按时长动作那个数字是秒，不加"秒"会被读成"自重 × 30 次"
                     r.weightKg == null
-                        ? '自重 × ${r.reps}'
-                        : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}',
+                        ? '自重 × ${r.reps}${c.exercise.isTime ? ' 秒' : ''}'
+                        : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}'
+                            '${c.exercise.isTime ? ' 秒' : ''}',
                     style: TextStyle(
                       // 热身组用次级色：和正式组混在一起分不出来，用户就不知道
                       // 哪些算进了计划进度
@@ -440,19 +442,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         ? '自重'
                         : trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
                     unit: c.isBodyweight ? '' : c.unit.wire,
+                    step: trimNumber(c.weightStep),
                     keyMinus: 'step-weight-down',
                     keyPlus: 'step-weight-up',
-                    onMinus: () => c.onStepper(deltaWeight: -2.5),
-                    onPlus: () => c.onStepper(deltaWeight: 2.5),
+                    onMinus: () => c.onStepper(deltaWeight: -c.weightStep),
+                    onPlus: () => c.onStepper(deltaWeight: c.weightStep),
                   ),
                   const SizedBox(height: Tokens.s5),
                   _stepperRow(
                     value: '${c.reps}',
-                    unit: '次',
+                    // 按时长动作这里是**秒**，步进也变成 ±5 秒
+                    unit: c.repsUnit,
+                    step: '${c.repsStep}',
                     keyMinus: 'step-reps-down',
                     keyPlus: 'step-reps-up',
-                    onMinus: () => c.onStepper(deltaReps: -1),
-                    onPlus: () => c.onStepper(deltaReps: 1),
+                    onMinus: () => c.onStepper(deltaReps: -c.repsStep),
+                    onPlus: () => c.onStepper(deltaReps: c.repsStep),
                   ),
                   const SizedBox(height: Tokens.s5),
                   // 热身组：规格要求「弱化样式存在、不主动教」，所以做成一个
@@ -552,6 +557,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget _stepperRow({
     required String value,
     required String unit,
+    /// 这一步的幅度，直接印在按钮上。
+    ///
+    /// 以前两个按钮上的字是**硬编码的 ±2.5** —— 于是次数那一行明明在 ±1，
+    /// 按钮却写着 ±2.5（一处用户一眼能看出不对、而且会怪自己看错的地方）。
+    required String step,
     required String keyMinus,
     required String keyPlus,
     required VoidCallback onMinus,
@@ -573,9 +583,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     color: Tokens.text3, fontSize: 17, fontWeight: FontWeight.w600)),
           ),
         const Spacer(),
-        _stepButton(keyMinus, '−2.5', onMinus),
+        _stepButton(keyMinus, '−$step', onMinus),
         const SizedBox(width: Tokens.s2),
-        _stepButton(keyPlus, '+2.5', onPlus),
+        _stepButton(keyPlus, '+$step', onPlus),
       ],
     );
   }

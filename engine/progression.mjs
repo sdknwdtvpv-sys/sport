@@ -27,6 +27,10 @@ export const REASON_CODES = Object.freeze({
 export const STALE_DAYS = 21;
 /** 自重动作次数上限 = 目标区间上限 + 该值 */
 export const BODYWEIGHT_REP_CAP_BONUS = 5;
+/** 按时长动作每次推进多少秒 */
+export const TIME_STEP_SEC = 5;
+/** 按时长动作的上限 = 目标区间上限 + 该值（秒） */
+export const TIME_CAP_BONUS = 15;
 /** 连续手改达到此次数后，不再自作主张 */
 export const OVERRIDE_MIN_COUNT = 3;
 
@@ -71,6 +75,10 @@ export function suggestNext(input) {
 
   const inc = exercise.weight_increment ?? 0;
   const isBodyweight = inc === 0; // 由数据层不变量保证：inc === 0 ⟺ default_weight_kg === null
+  // 按时长的动作（平板支撑 / 侧平板）：track_type 决定这个数字是**秒**而不是次数。
+  // 缺省 weight_reps —— 老 fixture 与老数据的行为完全不变（向后兼容）。
+  const track = exercise.track_type ?? 'weight_reps';
+  const isTime = track === 'time' || track === 'weight_time';
   const sets = plan.target_sets;
   const repsLow = plan.target_reps_low;
   const repsHigh = plan.target_reps_high;
@@ -93,7 +101,9 @@ export function suggestNext(input) {
       reps: repsLow,
       reason_code: REASON_CODES.FIRST_TIME,
       reason_text: isBodyweight
-        ? '第一次练这个动作，先记录你能完成的次数'
+        ? (isTime
+          ? '第一次练这个动作，先记录你能坚持的秒数'
+          : '第一次练这个动作，先记录你能完成的次数')
         : '第一次练这个动作，先从这个重量开始',
     };
   }
@@ -114,7 +124,45 @@ export function suggestNext(input) {
     };
   }
 
-  // 4) 自重动作：唯一可行的推进方式是加次数
+  // 4) 按时长的动作：这个量是**秒**不是次数，推进方式是加秒数。
+  //    没有这一支，平板支撑会被按"次数"往上加，还会说出
+  //    「自重已完成 30 次，建议加负重」这种让用户一眼看出不懂健身的话。
+  if (isTime) {
+    const keepW = isBodyweight ? null : round2(lastW);
+    if (completed < sets) {
+      return {
+        weight_kg: keepW, reps: repsLow,
+        reason_code: REASON_CODES.HOLD,
+        reason_text: `上次只完成 ${completed} 组（计划 ${sets} 组），先把组数补满`,
+      };
+    }
+    const cap = repsHigh + TIME_CAP_BONUS;
+    if (minReps >= cap) {
+      if (isBodyweight) {
+        return {
+          weight_kg: null, reps: cap,
+          reason_code: REASON_CODES.ADD_REP,
+          reason_text: `已能坚持 ${minReps} 秒，建议加负重`,
+        };
+      }
+      // 负重时长（负重平板）：它是有重量的，到时长上限就直接加重
+      return {
+        weight_kg: round2(lastW + inc), reps: repsLow,
+        reason_code: REASON_CODES.LINEAR_PROGRESS,
+        reason_text: `已能坚持 ${minReps} 秒（上限 ${cap} 秒），加重 +${inc}kg`,
+      };
+    }
+    const nextTime = Math.min(minReps + TIME_STEP_SEC, cap);
+    return {
+      weight_kg: keepW, reps: nextTime,
+      reason_code: REASON_CODES.ADD_REP,
+      reason_text: minReps >= repsHigh
+        ? `时长已达目标上限，按秒推进：${minReps} → ${nextTime} 秒`
+        : `按秒推进：${minReps} → ${nextTime} 秒`,
+    };
+  }
+
+  // 5) 自重动作：唯一可行的推进方式是加次数
   if (isBodyweight) {
     if (completed < sets) {
       return {
@@ -141,7 +189,7 @@ export function suggestNext(input) {
     };
   }
 
-  // 5) 组数没做满 → 先补组数，不加重量
+  // 6) 组数没做满 → 先补组数，不加重量
   if (completed < sets) {
     return {
       weight_kg: round2(lastW), reps: repsLow,
@@ -150,7 +198,7 @@ export function suggestNext(input) {
     };
   }
 
-  // 6) 全部达标 → 双重渐进的"加重量"分支
+  // 7) 全部达标 → 双重渐进的"加重量"分支
   if (minReps >= repsHigh) {
     return {
       weight_kg: round2(lastW + inc), reps: repsLow,
@@ -159,7 +207,7 @@ export function suggestNext(input) {
     };
   }
 
-  // 7) 有组掉到区间下限以下 → 保持重量（不加重也不降重，先看是不是偶发）
+  // 8) 有组掉到区间下限以下 → 保持重量（不加重也不降重，先看是不是偶发）
   if (minReps < repsLow) {
     return {
       weight_kg: round2(lastW), reps: repsLow,
@@ -168,7 +216,7 @@ export function suggestNext(input) {
     };
   }
 
-  // 8) 中间态 → 重量不变，加次数
+  // 9) 中间态 → 重量不变，加次数
   const next = Math.min(minReps + 1, repsHigh);
   return {
     weight_kg: round2(lastW), reps: next,

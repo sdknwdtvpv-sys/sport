@@ -743,7 +743,7 @@
       "obliques"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
@@ -761,7 +761,7 @@
       "obliques"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "weight_time",
     "default_rest_sec": 60,
     "default_weight_kg": 5,
     "weight_increment": 2.5,
@@ -780,7 +780,7 @@
       "obliques"
     ],
     "equipment": "bodyweight",
-    "track_type": "weight_reps",
+    "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
