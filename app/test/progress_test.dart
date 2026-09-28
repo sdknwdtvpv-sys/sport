@@ -10,6 +10,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/domain/models.dart';
@@ -122,7 +123,7 @@ void main() {
       );
 
       expect(prs.single.weightKg, 80);
-      expect(prs.single.label, '80kg');
+      expect(prs.single.label, '80 kg');
       expect(prs.single.name, '杠铃卧推');
     });
 
@@ -209,10 +210,16 @@ void main() {
 
     tearDown(() => db.close());
 
-    Future<void> pumpProgress(WidgetTester tester) async {
+    Future<void> pumpProgress(WidgetTester tester,
+        {BodyMetricRepository? body}) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: ProgressScreen(store: store, repository: repo, now: kToday),
+          body: ProgressScreen(
+            store: store,
+            repository: repo,
+            bodyMetrics: body,
+            now: kToday,
+          ),
         ),
       ));
       await tester.pumpAndSettle();
@@ -238,7 +245,7 @@ void main() {
       expect(find.byKey(const Key('progress-sparkline')), findsOneWidget);
       expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsOneWidget);
       expect(find.text('杠铃卧推'), findsOneWidget);
-      expect(find.text('60kg'), findsOneWidget);
+      expect(find.text('60 kg'), findsOneWidget);
     });
 
     testWidgets('窗口外的记录不显示（本周为空但历史有记录）',
@@ -251,5 +258,53 @@ void main() {
       expect(find.textContaining('这 7 天还没练'), findsOneWidget);
       expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsOneWidget);
     });
+
+    // ---------- S8 的第三块：体重（原先注释写着"等有了再加回来"）----------
+
+    testWidgets('没记录过体重时给一句说明，而不是一个空的「—」',
+        (WidgetTester tester) async {
+      await pumpProgress(tester, body: BodyMetricRepository(db));
+
+      expect(find.text('体重'), findsOneWidget);
+      expect(find.text('还没记录过体重'), findsOneWidget);
+      expect(find.text('记录'), findsOneWidget, reason: '给一个入口');
+    });
+
+    testWidgets('有体重记录时显示数值、日期与备注', (WidgetTester tester) async {
+      final BodyMetricRepository body = BodyMetricRepository(db);
+      await body.save(date: '2026-09-28', weightKg: 72.5, note: '空腹', nowMs: 1);
+
+      await pumpProgress(tester, body: body);
+
+      expect(
+        tester.widget<Text>(find.byKey(const Key('progress-weight'))).data,
+        '72.5 kg',
+      );
+      expect(find.textContaining('2026-09-28'), findsOneWidget);
+      expect(find.textContaining('空腹'), findsOneWidget);
+      expect(find.text('更新'), findsOneWidget, reason: '已有记录时按钮是"更新"');
+    });
+
+    testWidgets('一次都没练过也要显示体重卡片（体重和训练是两件事）',
+        (WidgetTester tester) async {
+      final BodyMetricRepository body = BodyMetricRepository(db);
+      await body.save(date: '2026-09-28', weightKg: 70.0, nowMs: 1);
+
+      await pumpProgress(tester, body: body);
+
+      // 空态提示还在，但体重不该被一起吞掉
+      expect(find.textContaining('还没有训练记录'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('progress-weight'))).data,
+        '70 kg',
+      );
+    });
+
+    testWidgets('不传体重仓库时不显示体重卡片（可选依赖）',
+        (WidgetTester tester) async {
+      await pumpProgress(tester);
+      expect(find.text('体重'), findsNothing);
+    });
   });
 }
+

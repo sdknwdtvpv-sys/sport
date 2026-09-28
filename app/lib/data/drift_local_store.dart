@@ -44,6 +44,8 @@ class DriftLocalStore implements LocalStore {
             setType: r.setType.wire,
             weightKg: r.weightKg,
             reps: r.reps,
+            // 可选的 RPE。DB 列早就有，以前一直没写值 —— 现在接上。
+            rpe: r.rpe,
             // 注意：withDefault() 只给 SQL 层加 DEFAULT，Dart 数据类里这些字段仍是 required，
             // 必须显式传。setType 同理（上面已传）。
             isPr: false,
@@ -185,5 +187,34 @@ class DriftLocalStore implements LocalStore {
         completedAtMs: row.completedAt,
         weightKg: row.weightKg,
         setType: row.setType == 'warmup' ? domain.SetType.warmup : domain.SetType.normal,
+        rpe: row.rpe,
       );
+
+  @override
+  Future<void> deleteAllUserData() async {
+    // 整个清空放进一个事务：中途失败就整体回滚，不会留下"训练没了但组还在"的
+    // 半残状态 —— 那比不删更糟，用户会以为删干净了。
+    //
+    // 删除顺序按"子 → 父"（组 → 训练项 → 训练），虽然这些表没有外键级联，
+    // 但顺序符合直觉，将来加上外键也不会突然炸。
+    await _db.transaction(() async {
+      await _db.delete(_db.setRecord).go();
+      await _db.delete(_db.workoutItem).go();
+      await _db.delete(_db.workout).go();
+      // 个人设置一并清掉：用户说"删除全部数据"就包括他的偏好开关。
+      // 之后会回落到默认值（渐进建议开、单位默认、"帮助改进产品"开）。
+      await _db.delete(_db.userProfile).go();
+      // 还没发出去的埋点事件也必须清 —— 否则"删了数据"之后还会继续上报，
+      // 这在合规上是明确不允许的。
+      await _db.delete(_db.analyticsOutbox).go();
+      // 身体数据（S12）同样是用户数据。新加表时最容易漏掉这一步，
+      // 于是用户点了"删除全部数据"、体重还留在库里。
+      await _db.delete(_db.bodyMetric).go();
+      // 计划模板（S11）同样是用户数据
+      await _db.delete(_db.routineItem).go();
+      await _db.delete(_db.routine).go();
+      // exercise（动作库）刻意不删：那是产品资产，不是用户数据，
+      // 删了用户就没法再记录任何动作。
+    });
+  }
 }

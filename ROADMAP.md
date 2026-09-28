@@ -2,9 +2,12 @@
 
 > 本文件与代码同步维护。
 >
-> **v1.0.0 已发布**（tag `v1.0.0`，commit `11dc01c`），CI 两个 job 全绿，
-> 209 条测试在干净环境通过。**但它还没在任何真实设备上跑过** —— 这是唯一一件
-> 挡住"它到底能不能用"的事，见阶段 2。
+> **v1.1.0 已切版**（tag `v1.1.0`），在 `v1.0.0`（tag `v1.0.0`，commit `11dc01c`）
+> 之上补齐 A–F 六项功能，381 条测试在干净环境通过，CI 两个 job 全绿。
+> **但这一版还没在任何真实设备上跑过** —— 这是唯一一件挡住"它到底能不能用"的事，见阶段 2。
+>
+> ⚠️ `v1.1.0` 只是**仓库侧切版**：`tap_count` 门禁值未校准 + 真机未验收，
+> 按本项目自己的规则**尚不具备上架条件**。真机装的仍是 `v1.0.0`。
 
 ---
 
@@ -14,13 +17,14 @@
 |---|---|---|---|
 | **0** | 钉住工程：git + CI 真跑起来 | ✅ 完成 | — |
 | **1** | 数据活过重启（接 drift） | ✅ 完成（只剩真机验证） | 阶段 2 |
-| **2** | 装到真机 | 🚧 平台目录已生成 | 只差 `flutter devices` + `flutter run` |
+| **2** | 装到真机 | ✅ **已装上真机**（交互验收待做） | 阶段 3 |
 | **3** | **自己去练一次** | ⬜ 未开始 | 阶段 2 |
-| **4** | 铺 UI 屏 | 🚧 进行中（6 屏里完成 5 屏） | 部分不依赖手机 |
+| **4** | 铺 UI 屏 | ✅ **S1–S13 全部落地**（S15 已并入 S10） | S14 未做（需支付基建，已明确砍掉） |
 | **5** | 招 5 人做可用性测试 | ⬜ 未开始 | 招募只占日历，可随时启动 |
 | **6** | 真实埋点上报 | ⬜ 未开始 | — |
 
-**唯一的硬依赖链**：`3 → 2 → 你装 Android 工具链`。其余都可以并行或调序。
+**唯一的硬依赖链**：`3 → 2 → 已打通`（工具链装好、App 已装进真机）。剩下的是**在真机上实际用一遍**。
+其余都可以并行或调序。
 
 ---
 
@@ -35,7 +39,7 @@
 
 ## 阶段 1 · 数据活过重启 ✅（剩一条真机验证）
 
-**做完了什么**：drift 落库（4 张表 + 3 个索引）+ 契约测试（19 条断言 × 2 个实现 = 38 项）。
+**做完了什么**：drift 落库（4 张表 + 3 个索引）+ 契约测试（24 条断言 × 2 个实现 = 48 项）。
 `.g.dart` 不提交、由 CI 生成 —— 提交了会悄悄过期，忽略了会大声报错。
 
 **唯一未验的**：
@@ -58,52 +62,61 @@ dev_dependencies:
 
 ---
 
-## 阶段 2 · 装到真机 ⬜
+## 阶段 2 · 装到真机 ✅（已装上，交互验收待做）
 
-**前置条件（我查过了，你机器上一个都没有）**：
-```
-Java          ✗ 未找到
-安卓 SDK      ✗ 未找到
-adb           ✗ 未找到（连手机用的）
-Android Studio ✗ 未安装
-```
+**前置条件已全部就绪**（原先写"一个都没有"，现已装齐）：
 
-**所以第一步不是连手机，是装 Android Studio**（约 1GB 安装包 + 几 G SDK，半小时到一小时）。
-它会把 Java、SDK、adb、模拟器一次带齐：https://developer.android.com/studio
+| | 状态 |
+|---|---|
+| Flutter SDK 3.47.5 | ✅ `~/development/flutter` |
+| JDK 17（Temurin） | ✅ `~/development/jdk-17` |
+| Android SDK / adb / build-tools 36 / NDK | ✅ `~/Library/Android/sdk` |
+| 平台目录 `app/android`、`app/ios` | ✅ 已生成，包名 `com.sdknwdtvpv.lianleme` |
 
-装完验证：
+**没有装 Android Studio** —— JDK tarball + Android 命令行工具就够了，免管理员权限，
+装法与踩坑见 `README.md` 的「Android 工具链」一节。这纯属本机环境，与仓库无关。
+
+**已实测通过**（比 `flutter doctor` 有说服力 —— doctor 只证明装上，build 才证明能跑）：
+
 ```bash
-export PATH="$HOME/development/flutter/bin:$PATH"
-flutter doctor                    # 应看到 [✓] Android toolchain
-flutter doctor --android-licenses # 提示没接受许可时跑，一路 y
+cd app && flutter build apk --debug
+# ✓ Built build/app/outputs/flutter-apk/app-debug.apk   (152M，compileSdk 36 / targetSdk 36)
 ```
 
-**然后生成平台目录**：
+APK 里 `libsqlite3.so` 在 arm64-v8a / armeabi-v7a / x86_64 三个 ABI 都在 —— 证明
+`sqlite3` 3.x 的 native assets 编译链是通的（Gradle 会为此自动补装 CMake），
+这是本阶段最容易卡住的一环。`app/build/` 已被 `.gitignore` 忽略，构建不污染仓库。
+
+**本机网络的一个坑**：`maven.google.com` 不可达（DNS 解析到真实 Google IP 后连接超时），
+Gradle 会卡死在拉 AGP 上。已用 `~/.gradle/init.gradle` 把
+`dl.google.com/dl/android/maven2` 与阿里云镜像插到 `google()` 前面绕过。
+**刻意不改工程的 `settings.gradle.kts`** —— 本机网络问题不该写进工程、影响 CI。
+
+**装到手机上（已在 2026-09-28 完成）**：
+1. ✅ 手机「设置 → 关于手机 → 连点 7 次版本号」→ 成为开发者
+2. ✅ 「设置 → 更多设置 → 开发者选项」→ 打开「USB 调试」
+3. ✅ **再打开「USB 安装」** —— 小米/HyperOS **必须单独开这一项**，否则 adb 报
+   `INSTALL_FAILED_USER_RESTRICTED: Install canceled by user`（实测踩到）。
+4. ✅ 数据线插电脑，手机上点「允许 USB 调试」
+5. ✅ `flutter devices` 认得出：Redmi `flourite` / Android 16 / API 36
+6. ✅ 装上：`com.sdknwdtvpv.lianleme` v1.0.0 / versionCode 1
+
+**接下来要做的不是装，是用** —— 见下方完成标准。
+
+**备用方案（「USB 安装」开不动时）** —— `adb push` 是传文件、不是安装，不受该限制：
+
 ```bash
-cd /Users/elliot/Harness/练了么
-git add -A && git commit -m "chore: 阶段 2 前的快照"   # 先存档，改坏能一键还原
-
-cd app
-flutter create --org com.你的反域名 --project-name lianleme --platforms=ios,android .
-
-cd ..
-git status --short                # 看它改了什么
-git diff app/pubspec.yaml         # 最关键：assets 与 drift 依赖还在吗？
+adb push app/build/app/outputs/flutter-apk/app-debug.apk /sdcard/Download/
 ```
 
-若 `pubspec.yaml` 被重写（丢了 `assets:` 或 drift 依赖）：
-```bash
-git checkout -- app/pubspec.yaml && cd app && flutter pub get
-```
+然后在手机上「文件管理 → Download」点这个 APK 安装（首次需允许「安装未知应用」）。
 
-`--org` 换成你自己的反向域名（如 `com.sdknwdtvpv`），它会写进 iOS bundle id 与
-Android applicationId，后期改很麻烦。
+> 阶段 3 去健身房建议用 `flutter build apk --release` —— 更小更快、没有 DEBUG 角标，
+> 且不依赖电脑连着。debug 版也能独立运行，只是慢。
 
-**在手机上跑**：
-1. 手机「设置 → 关于手机 → 连点 7 次版本号」→ 成为开发者
-2. 「设置 → 系统 → 开发者选项 → 打开 USB 调试」
-3. 数据线插电脑，手机上点「允许 USB 调试」
-4. `flutter devices` 确认电脑认得出手机，然后 `flutter run`
+> ✅ 撇号路径**不影响真机流程**（已实测）：`flutter build apk` 正常，`flutter run` 的
+> 构建与安装阶段也都正常走完 —— 卡住的是手机端权限，与路径无关。受撇号影响的只有
+> `flutter test`（见 README 坑 4）。所以真机调试**直接用主仓库就行**，不必换副本。
 
 **完成标准**（后两条专门验证已修的两个 bug）：
 - [ ] 手机上出现 App，点「开始今天的训练」进到今日建议卡
@@ -152,10 +165,10 @@ Android applicationId，后期改很麻烦。
 |---|---|---|---|
 | 1 | **S2 今日建议卡** | ✅ 完成 | 逻辑（`TodayPlanner`）+ 界面 + 串进导航 |
 | 2 | **S7 训练结束总结** | ✅ 完成 | 三项大数 + 破纪录判定 |
-| 3 | S7 分享卡图片 | ⬜ 推迟 | `RepaintBoundary.toImage()` + 相册写入，**需要平台通道，我在本机无法验证**，所以不做"看起来完成了但没人跑过"的代码 |
-| 4 | **S8 进步** | ✅ 完成 | 本周容量曲线（自绘，不引图表库）+ PR 墙。**体重没做** —— 需要 `body_metric` 表与录入界面（S12），是另一块工作 |
+| 3 | **S7 分享卡图片** | ✅ 完成 | 生成部分零依赖（`RepaintBoundary.toImage()`）；交付走 `share_plus` + `gal`（pubspec 里记录了这次依赖例外）。**待真机验收** |
+| 4 | **S8 进步** | ✅ 完成 | 本周容量曲线（自绘，不引图表库）+ PR 墙 + **体重卡片**（S12 落地后补回，含 v1→v2 迁移） |
 | 5 | **S10 我** | ✅ 完成 | 训练统计 / 渐进建议开关（真落库）/ 全量 CSV 导出到剪贴板 |
-| 6 | S3 / S4 / S5 打磨 | ⬜ 未开始 | 动作选择页与训练主屏已能用，属打磨 |
+| 6 | **S3 / S4 / S5 打磨** | ✅ 完成 | 补上了三处「数据层有、界面没有」的断链：热身组入口、RPE、最近做过分区；另加自定义动作创建 |
 
 > `prototype/index.html` 已补齐到 **6 屏**（含 S7/S8/S10）。打开浏览器就能看全套界面 ——
 > 在真机就位之前，这是唯一能看到产品长相的方式，也是招测试者时唯一能给人看的东西。
@@ -216,6 +229,26 @@ Android applicationId，后期改很麻烦。
 
 3. **测试数我数错过。** 契约测试是"每条断言 × 2 个实现"，我加断言时只按 1 条算，
    README 里一度写低了。已修正并加了提醒。
+
+4. **第二次推迟阶段 3（2026-09-28，决定做 3.0.0）。**
+   阶段 2 的最后一个阻塞（手机「USB 安装」权限）已解除、**App 已装进真机**，
+   按原计划此时就该去练一次、然后招 5 人测试。但你决定把阶段 3 / 阶段 5
+   推到 3.0.0 之后，先做产品完善。
+
+   **代价必须写明，不能含糊**：
+   - 接下来的 S3/S4/S5 打磨、体重记录、单位切换**仍然基于假设**，没有真实使用信号
+     —— 和第 1 条是同一个错误，只是这次阻塞已经不在了
+   - 按 `README.md` 的治理规则，**3.0.0 在 `tap_count` 校准前不具备发布条件**
+   - `README.md` 警告过："若 T1 通过率或 `tap_count` 中位数不达标，现在这批文档与
+     代码里有一半要改"
+
+   **这次的缓解办法**（和第 1 条不同之处，要真的执行）：排序上优先做**不依赖真实感受**
+   的项 —— 分享卡（纯工程，能验收）、单位切换（机械改造，行为确定）；
+   把**价值判断型**的项（体重记录、S11–S15 新屏）尽量往后放，
+   因为它们的价值判断恰恰只能来自真实使用。
+
+   **记录这件事的目的**：将来若发现白做了，能回头看清是哪一步决策导致的。
+   这一节存在的意义就是"不装作没发生"。
 
 ---
 

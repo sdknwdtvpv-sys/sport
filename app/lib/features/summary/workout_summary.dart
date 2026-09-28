@@ -7,6 +7,7 @@
 library;
 
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import '../../core/units.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../domain/models.dart';
@@ -19,6 +20,7 @@ class SetPr {
     required this.reps,
     required this.previousBest,
     this.weightKg,
+    this.unit = WeightUnit.kg,
   });
 
   final String exerciseId;
@@ -31,6 +33,9 @@ class SetPr {
   /// 自重动作为 null
   final double? weightKg;
 
+  /// 显示单位（存储始终是 kg）
+  final WeightUnit unit;
+
   bool get isBodyweight => weightKg == null;
 
   /// 本次的成绩（重量或次数）
@@ -41,12 +46,7 @@ class SetPr {
     if (isBodyweight) {
       return '$reps 次（上次最好 ${previousBest.toInt()} 次）';
     }
-    return '${_trim(weightKg)}kg（上次最好 ${_trim(previousBest)}kg）';
-  }
-
-  static String _trim(double? v) {
-    if (v == null) return '—';
-    return v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+    return '${formatWeight(weightKg, unit)}（上次最好 ${formatWeight(previousBest, unit)}）';
   }
 }
 
@@ -58,6 +58,8 @@ class WorkoutSummary {
     required this.duration,
     required this.exerciseCount,
     required this.prs,
+    required this.startedAtMs,
+    this.unit = WeightUnit.kg,
   });
 
   final String workoutId;
@@ -66,6 +68,13 @@ class WorkoutSummary {
   final Duration? duration;
   final int exerciseCount;
   final List<SetPr> prs;
+
+  /// 这次训练的开始时间。分享卡要显示日期 —— 一张没有日期的"训练完成"
+  /// 卡片没有任何纪念意义。
+  final int startedAtMs;
+
+  /// 显示单位（存储始终是 kg）
+  final WeightUnit unit;
 
   bool get hasPr => prs.isNotEmpty;
 
@@ -81,10 +90,8 @@ class WorkoutSummary {
     return rest == 0 ? '$h 小时' : '$h 小时 $rest 分';
   }
 
-  String get volumeLabel {
-    if (totalVolumeKg <= 0) return '自重';
-    return '${totalVolumeKg.round()} kg';
-  }
+  /// 自重训练容量记 0，这时显示「自重」而不是「0 kg」
+  String get volumeLabel => formatVolume(totalVolumeKg, unit, zeroText: '自重');
 }
 
 class SummaryService {
@@ -98,7 +105,8 @@ class SummaryService {
   /// 生成总结。查不到这次训练返回 null（比如用户一个动作都没练就退出）。
   ///
   /// [nowMs] 用于补上结束时间；不传则用最后一组的完成时间。
-  Future<WorkoutSummary?> build(String workoutId, {int? nowMs}) async {
+  Future<WorkoutSummary?> build(String workoutId,
+      {int? nowMs, WeightUnit unit = WeightUnit.kg}) async {
     final Workout? w = await _store.loadWorkout(workoutId);
     if (w == null || w.sets.isEmpty) return null;
 
@@ -117,7 +125,7 @@ class SummaryService {
 
     final List<SetPr> prs = <SetPr>[];
     for (final String id in exerciseIds) {
-      final SetPr? pr = await _prFor(id, workoutId, w);
+      final SetPr? pr = await _prFor(id, workoutId, w, unit);
       if (pr != null) prs.add(pr);
     }
 
@@ -128,6 +136,8 @@ class SummaryService {
       duration: w.duration,
       exerciseCount: exerciseIds.length,
       prs: prs,
+      startedAtMs: w.startedAtMs,
+      unit: unit,
     );
   }
 
@@ -140,7 +150,8 @@ class SummaryService {
   }
 
   /// 某个动作在本次训练里是否破纪录
-  Future<SetPr?> _prFor(String exerciseId, String workoutId, Workout w) async {
+  Future<SetPr?> _prFor(
+      String exerciseId, String workoutId, Workout w, WeightUnit unit) async {
     final List<SetRecord> mine = w.sets
         .where((SetRecord s) =>
             s.exerciseId == exerciseId && s.setType == SetType.normal)
@@ -185,6 +196,7 @@ class SummaryService {
       reps: bestSet.reps,
       weightKg: bodyweight ? null : bestSet.weightKg,
       previousBest: previousBest,
+      unit: unit,
     );
   }
 }

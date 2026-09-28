@@ -1,6 +1,6 @@
 # 练了么
 
-**v1.0.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+**v1.1.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
 
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
@@ -32,15 +32,17 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | JS 规则引擎（28 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 35/35 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 41/41 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter 测试（引擎 + 持久化契约 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **209/209** |
+| Flutter 测试（引擎 + 持久化契约 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **381/381** |
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
-`flutter test` 的 209 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 9 项 widget 交互测试
-+ **42 项持久化契约测试**（21 条断言 × 2 个实现：内存版与 drift 版）
-+ 10 项动作库 + 4 项多动作 + 5 项动作选择页 + 2 项启动冒烟 + 13 项今日规划
-+ 6 项今日建议卡 + 18 项训练总结 + 18 项「我」页 + 16 项「进步」页 + **26 项埋点上报**。
+`flutter test` 的 381 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 15 项 widget 交互测试
++ **48 项持久化契约测试**（24 条断言 × 2 个实现：内存版与 drift 版）
++ 14 项动作库 + 4 项多动作 + 12 项动作选择页 + 2 项启动冒烟 + 13 项今日规划
++ 6 项今日建议卡 + 18 项训练总结 + 15 项分享卡 + 14 项身体数据 + 22 项「我」页 + 20 项「进步」页
++ **26 项埋点上报** + **17 项单位换算** + **14 项休息偏好**
++ **18 项动作切换** + **22 项全部数据** + **16 项计划模板仓库** + **12 项计划模板界面** + **13 项首次引导**。
 
-> 契约那 38 项容易数错：**每条断言都会在两个实现上各跑一遍**，
+> 契约那 48 项容易数错：**每条断言都会在两个实现上各跑一遍**，
 > 所以加 3 条断言等于加 6 项测试。
 
 那 26 项是"换实现 UI 零改动"这句话的证明：同一组断言同时跑在 `InMemoryLocalStore` 和
@@ -51,8 +53,9 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 这意味着整套验证在**从零 clone 的干净 Linux 环境**里同样成立，不依赖任何本机配置 ——
 中文目录只影响本机的 `flutter analyze`，不影响 CI。
 
-**尚未验证**：真实埋点上报、iOS/Android 构建都还没接线。drift 持久化已接入并通过契约测试与 CI，
-但「杀掉 App 重开、记录还在」这条要等装到真机才能确认（阶段 2）。
+**尚未验证**：真实埋点上报地址，以及 App 在真实设备上的表现。构建链已打通（Android APK
+可构建，`libsqlite3.so` 三个 ABI 齐全，`flutter run` 的构建与安装阶段正常），但 App
+**至今没在任何设备上跑过** ——「杀掉 App 重开、记录还在」这条要等真机确认（阶段 2/3）。
 
 > ⚠️ **改过 `db.dart` 的表结构后，必须先重跑代码生成**，否则分析与测试都会报
 > "Target of URI doesn't exist"：`cd app && dart run build_runner build`
@@ -74,16 +77,67 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | Flutter SDK | **3.47.5**（stable） | 应用层。CI 也锁这一版，别用别的 |
 | Android Studio | 最新 | **只在要跑真机 / 模拟器时需要**，写代码不需要 |
 
-Flutter 的官方 zip 装法（arm64 Mac）：
+Flutter 的官方 zip 装法（arm64 Mac）。**建议直接用镜像**，官方源实测约 600 KB/s，
+这个 2.1G 的包要下近一小时，镜像约 10.3 MB/s（见坑 5）：
 
 ```bash
 mkdir -p ~/development
 cd ~/development
-curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.47.5-stable.zip
-unzip -q flutter_macos_arm64_3.47.5-stable.zip
+curl -L -o flutter_3.47.5.zip \
+  https://storage.flutter-io.cn/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.47.5-stable.zip
+unzip -q flutter_3.47.5.zip
 export PATH="$HOME/development/flutter/bin:$PATH"
 flutter --version
 ```
+
+### Android 工具链（不需要 Android Studio）
+
+JDK + 命令行工具就够，比 Android Studio 省事，也不需要管理员权限：
+
+```bash
+# JDK 17：Flutter 对 AGP ≥ 8.0 要求的最低与默认版本就是 17，工程 target 也是 17
+curl -L -o ~/development/jdk17.tar.gz \
+  https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jdk/aarch64/mac/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.20.1_1.tar.gz
+tar xzf ~/development/jdk17.tar.gz -C ~/development
+ln -sfn ~/development/jdk-17.0.20.1+1/Contents/Home ~/development/jdk-17
+
+# Android 命令行工具
+curl -L -o ~/development/commandlinetools.zip \
+  https://dl.google.com/android/repository/commandlinetools-mac-13114758_latest.zip
+mkdir -p ~/Library/Android/sdk/cmdline-tools
+unzip -q ~/development/commandlinetools.zip -d /tmp/clt && \
+  mv /tmp/clt/cmdline-tools ~/Library/Android/sdk/cmdline-tools/latest
+
+export JAVA_HOME="$HOME/development/jdk-17"
+export ANDROID_SDK_ROOT="$HOME/Library/Android/sdk"
+export PATH="$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+
+yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
+sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+  "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+
+flutter config --android-sdk "$ANDROID_SDK_ROOT"
+flutter config --jdk-dir "$JAVA_HOME"
+flutter doctor
+```
+
+`ndk` 版本必须与 `flutter.ndkVersion` 一致（定义在
+`$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/kotlin/FlutterExtension.kt`），
+否则 Gradle 报版本不匹配。首次 `flutter build apk` 时 Gradle 还会自己补装 CMake 与
+它需要的 platform 版本 —— `sqlite3` 3.x 靠 native assets 编译 C 代码，这步省不掉。
+
+**验证要跑 `build`，别只看 `doctor`** —— doctor 只证明装上了，build 才证明整条链能跑：
+
+```bash
+cd app && flutter build apk --debug
+# ✓ Built build/app/outputs/flutter-apk/app-debug.apk
+unzip -l build/app/outputs/flutter-apk/app-debug.apk | grep libsqlite3.so
+```
+
+⚠️ 若 `maven.google.com` 不可达（DNS 解析到真实 Google IP 后连接超时），Android 工程
+会卡在拉 AGP 与 androidx 上。**别改工程的 `settings.gradle.kts`** —— 那会影响所有人和
+CI。用本机 `~/.gradle/init.gradle` 把可达镜像插到仓库列表最前面，详见文末
+「这台机器上没有、也不需要带走的东西」。
 
 ### 拉下来之后
 
@@ -94,6 +148,11 @@ cd sport
 node seed/build.mjs
 ./verify.sh --fast
 ```
+
+**克隆路径不要含单引号**，否则应用层跑不了（见坑 4）。macOS 上
+`/Volumes/<卷名>` 常带撇号，`$HOME` 一般干净 —— 路径不干净时可以先跑
+`./verify.sh --fast`（契约层 + 领域层 + 静态分析都正常），要跑 `flutter test`
+时再把仓库放到干净路径。
 
 `./verify.sh` 会自己判断缺什么：**Flutter 没装就跳过应用层并明确标注"阻塞"，
 不会假装通过。**
@@ -111,7 +170,7 @@ flutter test
 `db.g.dart` 刻意不提交，所以 `build_runner` 那步不能跳 —— 但**忘了生成会大声报错**
 （`Target of URI doesn't exist`），不会静默用旧 schema 通过。
 
-### 三个环境坑（都踩过，记下来）
+### 五个环境坑（都踩过，记下来）
 
 1. **`flutter analyze` 在中文路径下必崩** —— 上游 bug
    ([flutter/flutter#191309](https://github.com/flutter/flutter/issues/191309))，
@@ -120,13 +179,52 @@ flutter test
    从文档里复制命令时**连同尾随注释一起粘**会报奇怪的错 —— 本仓库的命令都不带尾随注释。
 3. **受限环境下 `flutter pub get` 可能失败**（它要清自己的临时目录、还要访问 pub.dev）。
    这时 `./verify.sh` 会把应用层标为"阻塞"而不是"通过"。
+4. **路径里有一个单引号，`flutter test` 就必崩** —— 比第 1 条更隐蔽，因为路径看着
+   全是 ASCII，只有一个标点。`flutter_tools` 生成 `listener.dart` 时会把测试文件
+   路径塞进单引号字符串：
+
+   ```dart
+   goldenFileComparator = LocalFileComparator(Uri.parse('file:///Volumes/Elliot's SSD/.../foo_test.dart'));
+   //                                                                  ↑ 字符串在这里被截断
+   ```
+
+   结果是所有测试连加载都失败（`+0 -14`），报的却是 `Expected ',' before this` 这种
+   让人往语法上找的错。注意：
+
+   - **符号链接救不了** —— flutter 读的是 `pwd -P` 的物理路径，不是逻辑路径。
+   - **只影响 `flutter test`，不影响构建。** 同一路径下领域层、`dart analyze`、
+     以及 `flutter build apk` 都实测通过 —— Gradle 构建不走那段生成的 Dart。
+     所以**真机装包/调试可以直接在主仓库做，只有跑测试才需要换到干净路径**。
+   - `verify.sh` 会识别这种情况并标为"阻塞"，不会误报成测试失败。
+   - 解法：**把仓库放到不含 `'` 的路径再跑 `flutter test`**（macOS 上
+     `/Volumes/<卷名>` 常带撇号，`$HOME` 一般干净）。
+
+5. **官方源慢到会超时，换镜像快 17～39 倍**（实测）：
+
+   | 源 | 实测速度 |
+   |---|---|
+   | `storage.googleapis.com`（Flutter SDK zip） | ~600 KB/s |
+   | `storage.flutter-io.cn` | **~10.3 MB/s** |
+   | `pub.dev`（依赖） | ~40 KB/s |
+   | `pub.flutter-io.cn` | **~1.5 MB/s** |
+
+   2.1G 的 SDK zip 从 1 小时缩到几分钟。`pub get` 不换源会慢到 `verify.sh`
+   的 240 秒超时里跑不完，然后被标成"阻塞"—— 看着像环境坏，其实只是慢：
+
+   ```bash
+   export PUB_HOSTED_URL=https://pub.flutter-io.cn
+   export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+   ```
 
 ### 这台机器上没有、也不需要带走的东西
 
 | | |
 |---|---|
 | `~/development/flutter`（4.1G） | 新机器按上面的命令重装 |
+| `~/development/jdk-17` | 同上，Temurin 17 |
+| `~/Library/Android/sdk` | 同上，sdkmanager 装 |
 | `.pub-cache` | 新机器 `flutter pub get` 时会重新下 |
+| `~/.gradle/init.gradle` | **本机专用的 Maven 镜像覆盖**。这台机器的网络下 `maven.google.com` 不可达，它把 `dl.google.com/dl/android/maven2` 与 `maven.aliyun.com/repository/google` 插到 `google()` 前面。**刻意不放进仓库** —— 本机网络问题不该写进工程、影响 CI；纯离线/正常网络下没有它也能构建 |
 | 这段开发过程的对话记录 | **不在仓库里**。但结论都落进了 `CHANGELOG.md`、`ROADMAP.md` 的教训清单、以及 `docs/` |
 
 ## 这个仓库现在是什么
@@ -137,7 +235,7 @@ flutter test
 |---|---|---|---|
 | 产品定义 | `PRODUCT.md` | 散文 | 创始人 / 合伙人 |
 | 交互 | `prototype/index.html`（**6 屏，零依赖**）+ `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
-| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：165 条种子可直接导入；drift 落库有 26 项契约测试 | 客户端 / 后端 |
+| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：165 条种子可直接导入；drift 落库有 48 项契约测试 | 客户端 / 后端 |
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 28 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
 | 验证 | `docs/usability-test.md` + `-kit.md` | 流程手册，可照做 | 你本人 |
@@ -170,10 +268,11 @@ engine/vectors.json ──┬──> engine/run-tests.mjs        （Node）
 | 2 | `docs/data-model.md` | 建库；`seed/exercises.sql` 导入 165 条 |
 | 3 | `app/lib/domain/progression.dart` | 改引擎后 `flutter test` 必须全绿 —— 28 条向量是你唯一的验收标准 |
 | 4 | `app/lib/features/workout/` | 对照 `docs/interaction-spec.md` 扩展其余屏 |
-| 5 | `docs/analytics-sdk.md` | 把 `RecordingAnalytics` 换成真实 SDK，§3.5 的边界用例已成 widget 测试 |
+| 5 | `docs/analytics-sdk.md` | 接真实上报地址 —— 客户端管线已就绪（outbox + 批量 ≤100 + 退避重试 + **训练期间挂起**），现用 `_NullTransport` 兜底 |
 
-**当前工程刻意只做了一件事**：把引擎、交互红线、埋点计量这三样"最容易做坏"的东西用测试锁住。
-UI 只实现了 S1 / S4 / S5，动作只有杠铃卧推一个 —— 这是有意的，不是没写完。
+**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **381 条测试**锁住；
+UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 **165 个**。
+还没做的见上文「现在还没有的东西（别期待）」，下一步见 [`ROADMAP.md`](ROADMAP.md)。
 
 ### 你是后端开发
 
@@ -250,20 +349,34 @@ analysis server exited with code 255
 
 ## 现在还没有的东西（别期待）
 
+> 这一节原先留在早期状态（"没有构建配置""数据在内存里""动作只有 1 个"），已按实际
+> 进度重写。想知道"能不能用"，请看 `ROADMAP.md` 的阶段表 —— 那里才是准的。
+
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| ❌ 可安装的 App | 没有 iOS/Android 构建配置与签名 | 只能用 HTML 原型演示 |
-| ❌ 持久化接线 | 引擎/交互优先；drift 会引入 build_runner 代码生成，让 CI 首次运行多一个失败点 | 数据在内存里，重启即失 |
-| ❌ 真实埋点上报 | 只有 `RecordingAnalytics`（内存） | 看板还没有数据源 |
-| ❌ 后端接口 | 一期极薄，还没开始 | — |
-| ⚠️ UI 只有 3 屏、动作只有 1 个 | 刻意收窄，优先锁住易坏的部分 | 不能拿来做真实训练 |
+| 🚧 **真机交互验收** | App 已装进真机（Redmi `flourite`，v1.0.0），但**还没在设备上实际用一遍** | 381 条测试全绿，可真实手势与"杀掉重开数据还在"仍未验 —— **这是最大的一条** |
+| 🚧 **v1 → v2 迁移的真机验证** | 为 `body_metric` 新增表并把 `schemaVersion` 提到 2，补了 `onUpgrade`；有迁移测试，但那不是真机 | 老库升级必须在设备上过一次 |
+| 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
+| ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |
+| 🚧 **隐私政策** | 中英文均已成文、占位符已填（运营者 `Elliot.LI`） | 待**法务审核** + 公网可访问 URL |
+| ❌ **真实埋点上报地址** | 客户端已就绪（outbox + 批量 ≤100 + 退避重试 + 训练期间挂起），只缺后端接收，现用 `_NullTransport` 兜底 | 事件不丢，但看板没有数据源 |
+| ❌ **后端接口** | 一期极薄，还没开始 | — |
+| ❌ **S14 会员页** | `PRODUCT.md` 列的四大权益（AI 动态调整 / 多端云同步 / 无限历史对比 / 教练协作）**全部依赖后端**，一项都不存在 | 做出来等于向用户宣传不存在的功能，比不做更糟 —— 等后端落地再说 |
+| ⚠️ **`tap_count` 目标值未校准** | `docs/analytics.md` 的 55% 与 `tap_count = 1` 都还是**估计值**，要靠阶段 5 拿真实数字 | **按项目自己的门禁，校准前不允许发布** |
+
+已实现 **13 屏**：S1 / S2 / S3 / S4 / S5 / S6 / S7 / S8 / S9 / S10 / S11 / S12 / **S13**。
+未做：**S14 会员页**（原因见下表）。
+（**S15 设置的内容已并入 S10**：单位 / 默认休息 / 渐进开关 / 导出都在那儿。）
 
 ---
 
 ## 建议的下一步优先级
 
-1. **跑可用性测试**（5 人）。唯一需要人力的环节，也是唯一能证伪核心假设的手段。
-2. **接 drift**：实现 `LocalStore` 接口即可，调用方一行不用改；`docs/data-model.md` 的 DDL 已可直接用。
-3. **把 UI 铺到 `docs/screens.md` 的 15 屏**，每铺一屏补对应的 widget 测试。
+1. **插上手机跑起来**（收尾阶段 2）—— 开手机的「USB 安装」权限，然后 `flutter run`。
+2. **自己去练一次**（阶段 3）—— `ROADMAP.md` 标的唯一硬依赖链，也是唯一能验证
+   "它到底能不能用"的手段。成本是一次训练，产出是核心假设的第一个真实信号。
+3. **招 5 人做可用性测试**（阶段 5）—— 只占日历、不占工时，尽早启动；拿回 7 个数字
+   回填 `docs/analytics.md` 的目标值。
+4. **按真实感受修**，再补分享卡与体重记录。
 
 > 在测试数据出来之前，不建议扩张功能面。若 T1 通过率或 `tap_count` 中位数不达标，现在这批文档与代码里有一半要改。

@@ -115,7 +115,7 @@ void main() {
       expect(bench.suggestion!.reasonCode, ReasonCode.linearProgress);
       expect(bench.suggestion!.weightKg, 62.5);
       expect(bench.suggestion!.reasonText, contains('+2.5kg'));
-      expect(bench.loadLabel, '62.5kg × 8');
+      expect(bench.loadLabel, '62.5 kg × 8');
     });
 
     test('掉组时保持重量（历史真的进了引擎）', () async {

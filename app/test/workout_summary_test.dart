@@ -137,7 +137,7 @@ void main() {
       expect(s.prs.single.exerciseName, '杠铃卧推');
       expect(s.prs.single.weightKg, 65);
       expect(s.prs.single.previousBest, 60);
-      expect(s.prs.single.detail, '65kg（上次最好 60kg）');
+      expect(s.prs.single.detail, '65 kg（上次最好 60 kg）');
     });
 
     test('重量没超过历史最佳 → 不破纪录（含持平）', () async {
@@ -219,7 +219,7 @@ void main() {
 
       expect(find.text('破纪录'), findsOneWidget);
       expect(find.byKey(const Key('summary-pr-ex_bb_bench_press')), findsOneWidget);
-      expect(find.text('65kg（上次最好 60kg）'), findsOneWidget);
+      expect(find.text('65 kg（上次最好 60 kg）'), findsOneWidget);
       expect(find.text('★'), findsOneWidget, reason: '色盲用户也要能看出来');
     });
 

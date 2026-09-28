@@ -15,17 +15,21 @@ import 'analytics/outbox_analytics.dart';
 import 'analytics/transport.dart';
 import 'core/app_tab_bar.dart';
 import 'core/theme.dart';
+import 'core/units.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，
 // 同时裸 import 两个库时，一用到同名类就 ambiguity_import。这里预先 hide 掉。
-import 'data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import 'data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
+import 'data/body_metric_repository.dart';
 import 'data/drift_local_store.dart';
 import 'data/exercise_repository.dart';
 import 'data/local_store.dart';
 import 'data/profile_repository.dart';
+import 'data/routine_repository.dart';
 import 'data/sync_queue.dart';
 import 'domain/models.dart';
 import 'features/exercise/exercise_picker_screen.dart';
 import 'features/today/today_planner.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'features/today/today_screen.dart';
 import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
@@ -35,6 +39,7 @@ import 'features/progress/progress_screen.dart';
 import 'features/summary/workout_summary_screen.dart';
 import 'features/workout/workout_controller.dart';
 import 'features/workout/workout_screen.dart';
+import 'features/workout/workout_session.dart';
 
 void main() {
   runApp(const LianLeMeApp());
@@ -90,6 +95,8 @@ class _HomeShellState extends State<HomeShell> {
   Timer? _coldStartTimer;
   late final LocalStore _store = DriftLocalStore(_db);
   late final ExerciseRepository _repo = ExerciseRepository(_db);
+  late final BodyMetricRepository _bodyMetrics = BodyMetricRepository(_db);
+  late final RoutineRepository _routines = RoutineRepository(_db);
   late final TodayPlanner _planner =
       TodayPlanner(repository: _repo, store: _store);
   late final SummaryService _summaryService =
@@ -98,6 +105,16 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 当前 Tab。三个封顶（见 docs/screens.md）。
   int _tab = 0;
+
+  /// 显示单位。启动时从 user_profile 读一次，用户在 S10 改了之后整棵树重建。
+  /// **只影响显示**：存储、引擎、埋点始终是 kg（见 core/units.dart）。
+  WeightUnit _unit = WeightUnit.kg;
+
+  /// 休息时长偏好。**null = 跟随动作自带的值**，这是默认。
+  int? _restOverrideSec;
+
+  /// 训练目标。**null = 还没走过 S13 的引导** —— S1 据此决定要不要显示入口。
+  String? _goalWire;
 
   /// 最近 7 天练了几次 —— 空态那行字要用。
   /// 之前这个值从没被算过，所以练完回来空态还写着「还没有训练记录」。
@@ -111,7 +128,20 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _refreshWeekSessions();
+    unawaited(_loadUnit());
     unawaited(_initAnalytics());
+  }
+
+  Future<void> _loadUnit() async {
+    final WeightUnit u = await _profile.unit();
+    final int? rest = await _profile.restOverrideSec();
+    final String? goal = await _profile.goalWire();
+    if (!mounted) return;
+    setState(() {
+      _unit = u;
+      _restOverrideSec = rest;
+      _goalWire = goal;
+    });
   }
 
   Future<void> _initAnalytics() async {
@@ -142,25 +172,86 @@ class _HomeShellState extends State<HomeShell> {
     super.dispose();
   }
 
-  /// 练一个动作：开训练屏，用户返回后收工。
-  /// **全程共用同一个 workoutId**，所以多动作挂在同一次训练下。
-  Future<void> _trainOne(String workoutId, ExerciseData exercise) async {
+  /// 开一段训练会话：**一次把这一趟要练的动作都建好**，
+  /// 于是训练屏底部可以在它们之间切换（S6），而不是每个动作重新进一次页面。
+  /// 全程共用同一个 workoutId，所以多动作挂在同一次训练下。
+  Future<void> _trainSession(String workoutId, List<SessionEntry> entries) async {
+    if (entries.isEmpty) return;
+
     // 红线：训练进行中不发任何网络请求。
     // 健身房常年弱网，任何请求都可能跟"记一组"抢资源。
     _flusher.suspend();
-    final controller = WorkoutController(
-      workoutId: workoutId,
-      exercise: _repo.specOf(exercise),
-      plan: kDefaultPlan,
-      analytics: _analytics,
-      store: _store,
-      syncQueue: _syncQueue,
-    );
+
+    final List<WorkoutController> controllers = <WorkoutController>[
+      for (final SessionEntry entry in entries)
+        WorkoutController(
+          workoutId: workoutId,
+          exercise: _repo.specOf(entry.exercise),
+          // 处方逐项带上：计划模板里每个动作的组数/次数区间是分开的
+          plan: entry.plan,
+          analytics: _analytics,
+          store: _store,
+          syncQueue: _syncQueue,
+          // 控制器靠 profile 决定大按钮上怎么念数字、以及休息多久
+          profile: UserProfile(unit: _unit, restOverrideSec: _restOverrideSec),
+        ),
+    ];
+    final WorkoutSession session = WorkoutSession(controllers);
+
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => WorkoutScreen(controller: controller)),
+      MaterialPageRoute<void>(builder: (_) => WorkoutScreen(session: session)),
     );
-    controller.dispose();
+
+    session.dispose();
+    for (final WorkoutController c in controllers) {
+      c.dispose();
+    }
     _flusher.resume();
+  }
+
+  /// 只练一个动作。「我自己选」那条流程每次只加一个。
+  Future<void> _trainOne(String workoutId, ExerciseData exercise) =>
+      _trainSession(workoutId, <SessionEntry>[
+        SessionEntry(exercise: exercise, plan: kDefaultPlan),
+      ]);
+
+  /// S13：可选的「帮我定个计划」。**不在启动路径上** ——
+  /// 只有用户主动点 S1 上那个链接才会进。
+  ///
+  /// 引导以"开始训练"收尾：计划已经落库（S11 的计划模板），
+  /// 用户点「就用这个，开始练」时直接进训练会话。
+  Future<void> _openFirstPlan() async {
+    final OnboardingResult? r = await Navigator.of(context).push<OnboardingResult>(
+      MaterialPageRoute<OnboardingResult>(
+        builder: (_) => OnboardingScreen(
+          planner: _planner,
+          profile: _profile,
+          routines: _routines,
+          exercises: _repo,
+          unit: _unit,
+        ),
+      ),
+    );
+    if (r == null || !mounted) return;
+
+    // 入口该收起来了
+    final String? goal = await _profile.goalWire();
+    if (mounted) setState(() => _goalWire = goal);
+
+    if (!r.startNow) {
+      await _refreshWeekSessions();
+      return;
+    }
+    final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
+    await _trainSession(
+      workoutId,
+      r.plan
+          .map((PlannedExercise p) =>
+              SessionEntry(exercise: p.exercise, plan: p.plan))
+          .toList(),
+    );
+    await _showSummary(workoutId);
+    await _refreshWeekSessions();
   }
 
   Future<void> _startSession() async {
@@ -173,16 +264,25 @@ class _HomeShellState extends State<HomeShell> {
     // 第一屏先给建议：用户连计划都不用搭
     final TodayResult? result = await Navigator.of(context).push<TodayResult>(
       MaterialPageRoute<TodayResult>(
-        builder: (_) => TodaySuggestionScreen(planner: _planner),
+        builder: (_) => TodaySuggestionScreen(
+            planner: _planner,
+            unit: _unit,
+            routines: _routines,
+            exercises: _repo,
+          ),
       ),
     );
     if (result == null || !mounted) return; // 从建议卡返回 = 不练了
 
     if (result.choice == TodayChoice.startPlanned) {
-      for (final PlannedExercise p in result.plan) {
-        if (!mounted) break;
-        await _trainOne(workoutId, p.exercise);
-      }
+      // 一次把建议里的动作全开出来，底部条与左右滑动在它们之间切换（S6）
+      await _trainSession(
+        workoutId,
+        result.plan
+            .map((PlannedExercise p) =>
+                SessionEntry(exercise: p.exercise, plan: p.plan))
+            .toList(),
+      );
       await _showSummary(workoutId);
       await _refreshWeekSessions(); // 练完回来，次数要变
       return;
@@ -192,7 +292,11 @@ class _HomeShellState extends State<HomeShell> {
     while (mounted) {
       final ExerciseData? picked = await Navigator.of(context).push<ExerciseData>(
         MaterialPageRoute<ExerciseData>(
-          builder: (_) => ExercisePickerScreen(repository: _repo),
+          builder: (_) => ExercisePickerScreen(
+            repository: _repo,
+            store: _store,
+            unit: _unit,
+          ),
         ),
       );
       if (picked == null || !mounted) break;
@@ -214,6 +318,7 @@ class _HomeShellState extends State<HomeShell> {
         builder: (_) => WorkoutSummaryScreen(
           service: _summaryService,
           workoutId: workoutId,
+          unit: _unit,
         ),
       ),
     );
@@ -240,15 +345,35 @@ class _HomeShellState extends State<HomeShell> {
   Widget _bodyFor(int tab) {
     switch (tab) {
       case 0:
-        return TodayScreen(onStart: _startSession, lastWeekSessions: _weekSessions);
+        return TodayScreen(
+            onStart: _startSession,
+            lastWeekSessions: _weekSessions,
+            // 还没定过计划才显示入口
+            onPlanHelp: _goalWire == null ? _openFirstPlan : null,
+          );
       case 1:
-        return ProgressScreen(store: _store, repository: _repo);
+        return ProgressScreen(
+            store: _store,
+            repository: _repo,
+            bodyMetrics: _bodyMetrics,
+            unit: _unit,
+          );
       default:
         return ProfileScreen(
           store: _store,
           repository: _repo,
           profile: _profile,
           analytics: _analytics,
+          bodyMetrics: _bodyMetrics,
+          unit: _unit,
+          // 用户改了单位：存库 + 整棵树重建，别的地方立刻也跟着变
+          onUnitChanged: (WeightUnit u) {
+            setState(() => _unit = u);
+          },
+          restOverrideSec: _restOverrideSec,
+          onRestOverrideChanged: (int? sec) {
+            setState(() => _restOverrideSec = sec);
+          },
         );
     }
   }

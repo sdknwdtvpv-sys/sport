@@ -139,4 +139,70 @@ void main() {
     expect(spec.isBodyweight, isTrue,
         reason: '这条不变量若破了，引擎会给出加重量而不是加次数的错误建议');
   });
+
+  // ---------- 新建自定义动作 ----------
+
+  test('新建的自定义动作立刻能被搜到，且 isBuiltin 为 false', () async {
+    await repo.importSeed(loadJson: _readAsset);
+
+    final ExerciseData created = await repo.createCustom(
+      name: '坐姿划船机',
+      muscleGroup: 'back',
+      equipment: 'machine',
+      weightIncrement: 5,
+      nowMs: 1770000000000,
+    );
+
+    expect(created.isBuiltin, isFalse);
+    expect(created.popularity, 0, reason: '不该挤掉内置动作在「常用」区的位置');
+    expect(await repo.builtinCount(), 165, reason: '内置动作数不受影响');
+
+    // search 不按 isBuiltin 过滤，所以建完就该能搜到
+    final List<ExerciseData> found = await repo.search(query: '坐姿划船机');
+    expect(found.map((ExerciseData e) => e.id), contains(created.id));
+  });
+
+  test('重新导入种子不会冲掉自定义动作（upsert 只动种子那几个 id）', () async {
+    final ExerciseData created = await repo.createCustom(
+      name: '我的动作',
+      muscleGroup: 'core',
+      equipment: 'bodyweight',
+      weightIncrement: 0,
+      nowMs: 1770000000001,
+    );
+
+    await repo.importSeed(loadJson: _readAsset);
+
+    expect(await repo.byId(created.id), isNotNull);
+    expect(await repo.builtinCount(), 165);
+  });
+
+  test('步长 > 0 的自定义动作一定有起始重量（否则会被当成自重动作）', () async {
+    // 两个 isBodyweight 的判据不一致：
+    //   ExerciseSpec.isBodyweight => weightIncrement == 0
+    //   Suggestion.isBodyweight   => weightKg == null
+    // 所以步长 > 0 却没有起始重量时，引擎会给出 weightKg = null 的建议，
+    // 这个有重量的动作就被当成自重动作 —— 用户再也输入不了重量。
+    final ExerciseData barbell = await repo.createCustom(
+      name: '自定义杠铃动作',
+      muscleGroup: 'legs',
+      equipment: 'barbell',
+      weightIncrement: 2.5,
+      nowMs: 1770000000002,
+    );
+    expect(barbell.defaultWeightKg, isNotNull);
+    expect(repo.specOf(barbell).isBodyweight, isFalse);
+  });
+
+  test('步长为 0 的自定义动作起始重量必须是 null（走加次数推进）', () async {
+    final ExerciseData bw = await repo.createCustom(
+      name: '自定义自重动作',
+      muscleGroup: 'chest',
+      equipment: 'bodyweight',
+      weightIncrement: 0,
+      nowMs: 1770000000003,
+    );
+    expect(bw.defaultWeightKg, isNull);
+    expect(repo.specOf(bw).isBodyweight, isTrue);
+  });
 }

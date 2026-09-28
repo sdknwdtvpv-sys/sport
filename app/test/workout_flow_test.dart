@@ -16,6 +16,7 @@ import 'package:lianleme/data/sync_queue.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/workout/workout_controller.dart';
 import 'package:lianleme/features/workout/workout_screen.dart';
+import 'package:lianleme/features/workout/workout_session.dart';
 
 /// 与 seed/exercises.json 的 ex_bb_bench_press 保持一致。
 const ExerciseSpec _bench = ExerciseSpec(
@@ -57,7 +58,11 @@ class _Harness {
 
 Future<void> _pump(WidgetTester tester, _Harness h) async {
   await tester.pumpWidget(
-    MaterialApp(theme: buildAppTheme(), home: WorkoutScreen(controller: h.controller)),
+    MaterialApp(
+      theme: buildAppTheme(),
+      // 单动作会话：多动作切换的测试在 workout_session_test.dart 里
+      home: WorkoutScreen(session: WorkoutSession.single(h.controller)),
+    ),
   );
 }
 
@@ -73,7 +78,7 @@ void main() {
     final _Harness h = _Harness();
     await _pump(tester, h);
 
-    expect(find.text('40kg × 8'), findsOneWidget, reason: '按钮上就是要写入的值');
+    expect(find.text('40 kg × 8'), findsOneWidget, reason: '按钮上就是要写入的值');
 
     await tester.tap(find.byKey(const Key('big-log-button')));
     await tester.pump();
@@ -243,6 +248,169 @@ void main() {
     expect(stored.length, 1);
     expect(h.controller.workout.totalSets, 1);
     expect(h.controller.workout.totalVolume, 320); // 40kg × 8
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('S5 弹层里选 RPE → 记录带上它 → 完成列表里看得见', (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(h.controller.rpe, isNull, reason: '默认不记');
+
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('rpe-8')));
+    await tester.pumpAndSettle();
+    expect(h.controller.rpe, 8);
+
+    await tester.tap(find.byKey(const Key('sheet-confirm')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    expect(h.controller.loggedSets.single.rpe, 8);
+    expect(h.setEvents.single['rpe'], 8);
+    // 只写库不显示 = 用户看不见的隐藏数据
+    expect(find.text('RPE 8'), findsOneWidget);
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('再点一次已选中的 RPE 即清除（不需要额外的清除按钮）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('rpe-7')));
+    await tester.pumpAndSettle();
+    expect(h.controller.rpe, 7);
+
+    await tester.tap(find.byKey(const Key('rpe-7')));
+    await tester.pumpAndSettle();
+    expect(h.controller.rpe, isNull, reason: '再点一次同一个值 = 清除');
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('RPE 不影响计划进度与引擎判定（它只是可选记录）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    h.controller.setRpe(10);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    expect(h.controller.setNumber, 2, reason: '记了 RPE 仍然是正式组，照常推进');
+    expect(h.controller.workout.totalSets, 1);
+    expect(h.controller.workout.totalVolume, 320);
+
+    await _teardown(tester, h);
+  });
+
+  // ---------- S5 热身组（规格要求的弱化控件，此前只有数据层没有入口）----------
+
+  testWidgets('长按 → 点「热身组」→ 确定 → 记录：这一组是热身，不吃掉计划进度',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(h.controller.setNumber, 1, reason: '前置：下一组是第 1 组');
+
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sheet-warmup')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sheet-confirm')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    final SetRecord logged = h.controller.loggedSets.single;
+    expect(logged.setType, SetType.warmup, reason: '必须是热身组');
+    expect(h.controller.warmupSets, 1);
+
+    // 关键：热身不能推进计划进度，否则做两组热身就把"共 3 组"顶掉了
+    expect(h.controller.setNumber, 1, reason: '热身不计入计划进度，下一组仍是第 1 组');
+    expect(h.controller.workout.totalSets, 0, reason: 'totalSets 只数正式组');
+
+    // 埋点也要如实反映
+    expect(h.setEvents.single['set_type'], 'warmup');
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('热身状态是"粘住"的，且 S4 上有可见标记（否则用户会记错）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(
+      tester.widget<Text>(find.byKey(const Key('set-number'))).data,
+      '第 1 组',
+    );
+
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sheet-warmup')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sheet-confirm')));
+    await tester.pumpAndSettle();
+
+    // 状态粘住 + 标题换掉：用户看得见才安全
+    expect(h.controller.warmup, isTrue);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('set-number'))).data,
+      '热身组',
+      reason: '标题必须换掉 —— 显示"第 1 组"却记成热身，用户完全不知道发生了什么',
+    );
+
+    // 记一组之后仍然粘住（连做两组热身时不该每次重新打开）
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    expect(h.controller.warmup, isTrue, reason: '粘住，不自动弹回');
+
+    // 手动关掉就回到正式组
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sheet-warmup')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sheet-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(h.controller.warmup, isFalse);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('set-number'))).data,
+      '第 1 组',
+    );
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('连续两组热身不会撞 id（setIndex 必须用全部组计数）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    h.controller.toggleWarmup();
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    final List<SetRecord> sets = h.controller.loggedSets;
+    expect(sets.length, 2);
+    expect(sets.every((SetRecord s) => s.setType == SetType.warmup), isTrue);
+    // 两条热身如果都用 _normalSets 当序号，id 会一样 —— 后一条覆盖前一条，直接丢数据
+    expect(sets[0].id, isNot(sets[1].id));
+    expect(<int>[sets[0].setIndex, sets[1].setIndex], <int>[1, 2]);
+    expect(h.controller.workout.totalSets, 0, reason: '两组热身都不算正式组');
 
     await _teardown(tester, h);
   });

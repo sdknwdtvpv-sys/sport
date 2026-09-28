@@ -60,6 +60,7 @@ SetRecord _set({
   required int atMs,
   double? weightKg = 60,
   SetType setType = SetType.normal,
+  double? rpe,
 }) =>
     SetRecord(
       id: id,
@@ -70,6 +71,7 @@ SetRecord _set({
       completedAtMs: atMs,
       weightKg: weightKg,
       setType: setType,
+      rpe: rpe,
     );
 
 void runContractTests(StoreHarness harness) {
@@ -256,6 +258,43 @@ void runContractTests(StoreHarness harness) {
       final sets = await store.setsFor('w1');
       expect(sets.single.weightKg, isNull);
       expect(sets.single.volume, 0, reason: '自重动作容量记 0');
+    });
+
+    test('RPE 能往返：默认 null，有值时原样存回、不被别的字段挤掉', () async {
+      await store.saveSet(_set(
+          id: 'noRpe', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(
+          id: 'withRpe', workoutId: 'w1', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 2000, rpe: 8));
+
+      final List<SetRecord> sets = await store.setsFor('w1');
+      expect(sets.firstWhere((SetRecord s) => s.id == 'noRpe').rpe, isNull,
+          reason: '没记就是 null，不能变成 0');
+      expect(sets.firstWhere((SetRecord s) => s.id == 'withRpe').rpe, 8);
+    });
+
+    test('删除全部数据：训练、组记录、各类历史查询全部清空', () async {
+      await store.saveSet(_set(id: 's1', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveWorkout(Workout(id: 'w1', startedAtMs: 1000));
+      expect(await store.setsFor('w1'), hasLength(1), reason: '前置：确实有数据');
+
+      await store.deleteAllUserData();
+
+      expect(await store.setsFor('w1'), isEmpty);
+      expect(await store.allSets(), isEmpty, reason: '「我」页的统计与 CSV 导出来自这里');
+      expect(await store.loadWorkout('w1'), isNull);
+      expect(await store.lastSessionFor('bench'), isNull, reason: '不能让"上次 xx kg"还活在库里');
+      expect(await store.recentExerciseIds(), isEmpty);
+    });
+
+    test('删除全部数据之后仍能继续正常记录（不是把库弄坏了）', () async {
+      await store.saveSet(_set(id: 'old', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+
+      await store.deleteAllUserData();
+      await store.saveSet(_set(id: 'new', workoutId: 'w2', exerciseId: 'squat', setIndex: 1, reps: 5, atMs: 9000));
+
+      expect(await store.allSets(), hasLength(1));
+      expect((await store.setsFor('w2')).single.id, 'new');
+      expect(await store.setsFor('w1'), isEmpty, reason: '删掉的旧训练不会复活');
     });
   });
 }

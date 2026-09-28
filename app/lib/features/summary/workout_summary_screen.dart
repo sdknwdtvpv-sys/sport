@@ -11,6 +11,9 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/units.dart';
+import 'share_card_exporter.dart';
+import 'share_card_preview_screen.dart';
 import 'workout_summary.dart';
 
 class WorkoutSummaryScreen extends StatefulWidget {
@@ -18,10 +21,18 @@ class WorkoutSummaryScreen extends StatefulWidget {
     super.key,
     required this.service,
     required this.workoutId,
+    this.unit = WeightUnit.kg,
+    this.exporter = const PluginShareCardExporter(),
   });
 
   final SummaryService service;
   final String workoutId;
+
+  /// 显示单位。**只影响显示**：服务算出来的量与 PR 判定始终是 kg。
+  final WeightUnit unit;
+
+  /// 分享卡的交付实现。测试里换成假的（插件调用在 widget 测试里跑不了）。
+  final ShareCardExporter exporter;
 
   @override
   State<WorkoutSummaryScreen> createState() => _WorkoutSummaryScreenState();
@@ -38,7 +49,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   }
 
   Future<void> _load() async {
-    final WorkoutSummary? s = await widget.service.build(widget.workoutId);
+    final WorkoutSummary? s =
+        await widget.service.build(widget.workoutId, unit: widget.unit);
     if (!mounted) return;
     setState(() {
       _summary = s;
@@ -100,6 +112,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
             ],
           ),
         ),
+        _shareButton(s),
         _doneButton(),
       ],
     );
@@ -207,6 +220,39 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  /// 分享训练卡。**只在真的有记录时才出现** —— 一次都没练的总结页
+  /// 没有可分享的东西，给个按钮只会误导。
+  Widget _shareButton(WorkoutSummary s) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+      child: SizedBox(
+        height: 56,
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          key: const Key('summary-share'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Tokens.text,
+            side: const BorderSide(color: Tokens.lineStrong),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Tokens.rPill),
+            ),
+          ),
+          icon: const Icon(Icons.ios_share, size: 18),
+          label: const Text('分享训练卡',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ShareCardPreviewScreen(
+                summary: s,
+                exporter: widget.exporter,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

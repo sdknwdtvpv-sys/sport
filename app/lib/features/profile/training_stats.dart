@@ -7,6 +7,7 @@
 /// 工具类用户最怕数据被锁在里面。
 library;
 
+import '../../core/units.dart';
 import '../../domain/models.dart';
 
 class TrainingStats {
@@ -14,10 +15,14 @@ class TrainingStats {
     required this.workoutCount,
     required this.setCount,
     required this.totalVolumeKg,
+    this.unit = WeightUnit.kg,
   });
 
   /// 从全部正式组算出来
-  factory TrainingStats.fromSets(List<SetRecord> sets) {
+  factory TrainingStats.fromSets(
+    List<SetRecord> sets, {
+    WeightUnit unit = WeightUnit.kg,
+  }) {
     final Set<String> workouts = <String>{};
     double volume = 0;
     for (final SetRecord s in sets) {
@@ -28,6 +33,7 @@ class TrainingStats {
       workoutCount: workouts.length,
       setCount: sets.length,
       totalVolumeKg: volume,
+      unit: unit,
     );
   }
 
@@ -40,18 +46,9 @@ class TrainingStats {
   /// 总容量（自重动作记 0）
   final double totalVolumeKg;
 
-  String get volumeLabel {
-    if (totalVolumeKg <= 0) return '—';
-    final int v = totalVolumeKg.round();
-    // 千分位，让五位数一眼能读
-    final String s = v.toString();
-    final StringBuffer b = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
-      b.write(s[i]);
-    }
-    return '$b kg';
-  }
+  final WeightUnit unit;
+
+  String get volumeLabel => formatVolume(totalVolumeKg, unit);
 
   bool get isEmpty => setCount == 0;
 }
@@ -72,25 +69,29 @@ String _csvField(String v) => '"${v.replaceAll('"', '""')}"';
 /// 导出用的 CSV 文本。
 ///
 /// [exerciseNames] 是 id → 名称；查不到的用 id 兜底，不会丢行。
+///
+/// 重量列跟随 [unit]：界面上显示 lb、导出却是 kg 的话，用户会以为导错了。
+/// 表头也随之写清楚是哪个单位。
 String buildSetsCsv({
   required List<SetRecord> sets,
   required Map<String, String> exerciseNames,
+  WeightUnit unit = WeightUnit.kg,
 }) {
+  final String u = unit.wire;
   final StringBuffer b = StringBuffer();
-  b.writeln('日期,动作,重量kg,次数,容量kg,组序');
+  b.writeln('日期,动作,重量$u,次数,容量$u,组序');
   for (final SetRecord s in sets) {
     final String name = exerciseNames[s.exerciseId] ?? s.exerciseId;
     b.writeln(<String>[
       _csvField(formatLocalTime(s.completedAtMs)),
       _csvField(name),
-      _csvField(s.weightKg == null ? '' : _trim(s.weightKg!)),
+      _csvField(s.weightKg == null
+          ? ''
+          : trimNumber(round1(toDisplayWeight(s.weightKg!, unit)))),
       _csvField('${s.reps}'),
-      _csvField(_trim(s.volume)),
+      _csvField(trimNumber(round1(toDisplayWeight(s.volume, unit)))),
       _csvField('${s.setIndex}'),
     ].join(','));
   }
   return b.toString();
 }
-
-String _trim(double v) =>
-    v == v.roundToDouble() ? v.toInt().toString() : v.toString();

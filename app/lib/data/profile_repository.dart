@@ -4,6 +4,7 @@
 /// 现在真的被用到的只有 `progression_mode` —— S10「我」的那个开关。
 library;
 
+import '../core/units.dart';
 import '../domain/models.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
 import 'db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
@@ -86,5 +87,125 @@ class ProfileRepository {
           ..limit(1))
         .get();
     return rows.isNotEmpty;
+  }
+
+  /// `user_profile.default_rest_sec` 用 **0 表示「跟随动作自带的休息时长」**。
+  ///
+  /// 为什么用哨兵值而不是 NULL：那一列是 `NOT NULL DEFAULT 90`，
+  /// 改成可空要重建表（SQLite 不能直接去掉 NOT NULL），而老用户的库
+  /// 已经装到手机上了 —— 为一个偏好设置引入一次表重建不划算。
+  /// 0 秒不是一个有意义的休息时长，拿它当哨兵不会和真实取值冲突。
+  static const int kRestFollowExercise = 0;
+
+  /// 用户指定的休息时长（秒）。**null = 跟随动作**，这是默认。
+  Future<int?> restOverrideSec() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    final int v = row?.defaultRestSec ?? kRestFollowExercise;
+    return v == kRestFollowExercise ? null : v;
+  }
+
+  /// 写入休息时长偏好。[sec] 传 null 表示回到「跟随动作」。
+  ///
+  /// 和 [setUnit] / [setProgressionMode] 一样**必须把其它设置原样带回去**。
+  Future<void> setRestOverrideSec(int? sec, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: existing?.unitPref ?? 'kg',
+            defaultRestSec: sec ?? kRestFollowExercise,
+            analyticsEnabled: existing?.analyticsEnabled ?? true,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// 训练目标（S13）。没设置过返回 null —— 界面据此判断要不要邀请引导。
+  ///
+  /// 这里读的是**原始 wire 字符串**（hypertrophy / strength / fat_loss / maintain）：
+  /// 枚举定义在 feature 层，数据层不该反向依赖它。
+  Future<String?> goalWire() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.goal;
+  }
+
+  /// 一周练几天。没设置过返回 null。
+  Future<int?> weeklyFrequency() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.weeklyFrequency;
+  }
+
+  /// 记下引导的结果（目标 + 频率）。
+  ///
+  /// 和其它 setter 一样**必须把其余设置原样带回去** ——
+  /// 否则用户在引导里选个目标，就把单位 / 休息 / 隐私开关全重置了。
+  Future<void> setOnboarding({
+    required String goalWire,
+    required int weeklyFrequency,
+    int? nowMs,
+  }) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            goal: goalWire,
+            weeklyFrequency: weeklyFrequency,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: existing?.unitPref ?? 'kg',
+            defaultRestSec: existing?.defaultRestSec ?? kRestFollowExercise,
+            analyticsEnabled: existing?.analyticsEnabled ?? true,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// 显示单位。没有档案时返回 kg（与 `unit_pref` 的 DB 默认值一致）。
+  ///
+  /// 注意这里读的只是**显示**偏好 —— 存储与引擎始终是 kg，见 core/units.dart。
+  Future<WeightUnit> unit() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return WeightUnit.fromWire(row?.unitPref);
+  }
+
+  /// 写入显示单位。
+  ///
+  /// **必须把其它设置原样带回去** —— 这正是 `setProgressionMode` 注释里
+  /// 记着的那个坑：只写自己那一列、其余传默认值，会把用户别的设置悄悄抹掉。
+  Future<void> setUnit(WeightUnit unit, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: unit.wire,
+            defaultRestSec: existing?.defaultRestSec ?? 90,
+            analyticsEnabled: existing?.analyticsEnabled ?? true,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
   }
 }

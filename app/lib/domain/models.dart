@@ -7,6 +7,8 @@ library;
 
 import 'dart:math' as math;
 
+import '../core/units.dart';
+
 /// 动作库条目的领域视图。只需要引擎用得上的三个字段。
 class ExerciseSpec {
   const ExerciseSpec({
@@ -79,8 +81,24 @@ enum ProgressionMode {
 }
 
 class UserProfile {
-  const UserProfile({this.progressionMode = ProgressionMode.doubleProgression});
+  const UserProfile({
+    this.progressionMode = ProgressionMode.doubleProgression,
+    this.unit = WeightUnit.kg,
+    this.restOverrideSec,
+  });
+
   final ProgressionMode progressionMode;
+
+  /// 显示单位。**存储与引擎始终是 kg**（见 core/units.dart 的设计说明），
+  /// 所以这个字段只影响界面怎么念数字。
+  final WeightUnit unit;
+
+  /// 用户指定的休息时长（秒）。**null = 跟随动作自带的值**，这是默认。
+  ///
+  /// 为什么不干脆一律用它：种子里各动作差异很大（核心 45s、深蹲 180s），
+  /// 统一覆盖会把这份真实信息抹掉。所以默认是"跟随动作"，用户明确选了
+  /// 具体秒数才全局覆盖 —— 那是他自己的选择。
+  final int? restOverrideSec;
 }
 
 /// 用户的一次手动修改。overrides 由调用方按动作过滤好，最新在前。
@@ -138,6 +156,7 @@ class SetRecord {
     required this.completedAtMs,
     this.weightKg,
     this.setType = SetType.normal,
+    this.rpe,
   });
 
   final String id;
@@ -148,6 +167,13 @@ class SetRecord {
   final int completedAtMs;
   final double? weightKg;
   final SetType setType;
+
+  /// 自觉用力程度 RPE。**null = 用户没记**，这是默认状态。
+  ///
+  /// 规格（`docs/screens.md` S5）要求它以弱化样式存在、不主动教，
+  /// 所以它只是个可选输入，不参与任何引擎判定 —— 计划进度、渐进建议、
+  /// 破纪录判定都不看它。DB 的 `rpe` 列早就有了，只是领域模型一直没接。
+  final double? rpe;
 
   double get volume => (weightKg ?? 0) * reps;
 }

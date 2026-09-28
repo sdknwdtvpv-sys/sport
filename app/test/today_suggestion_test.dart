@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+import 'package:lianleme/data/routine_repository.dart';
 import 'package:lianleme/features/today/today_planner.dart';
 import 'package:lianleme/features/today/today_suggestion_screen.dart';
 
@@ -83,7 +84,7 @@ void main() {
     // 三条建议，每条都有动作名和加载值
     // 首选动作是杠铃卧推，首练用的是动作库起始重量 40kg × 8
     expect(find.byKey(const Key('suggestion-ex_bb_bench_press')), findsOneWidget);
-    expect(find.text('40kg × 8'), findsOneWidget);
+    expect(find.text('40 kg × 8'), findsOneWidget);
   });
 
   testWidgets('每条建议都带一行理由（红线：解释不了的建议不许出现）',
@@ -140,5 +141,107 @@ void main() {
     });
 
     expect(result, isNull);
+  });
+
+  // ---------- S11：用计划模板开训 ----------
+
+  group('我的计划', () {
+    late RoutineRepository routines;
+
+    setUp(() {
+      routines = RoutineRepository(db);
+    });
+
+    Future<TodayResult?> pumpWithRoutines(WidgetTester tester) async {
+      TodayResult? result;
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (BuildContext ctx) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  result = await Navigator.of(ctx).push<TodayResult>(
+                    MaterialPageRoute<TodayResult>(
+                      builder: (_) => TodaySuggestionScreen(
+                        planner: planner,
+                        routines: routines,
+                        exercises: repo,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('开始'),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('开始'));
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('没给计划仓库时不显示「我的计划」（不放点不动的按钮）',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: TodaySuggestionScreen(planner: planner),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('use-routine')), findsNothing);
+    });
+
+    testWidgets('给了就显示入口', (WidgetTester tester) async {
+      await pumpWithRoutines(tester);
+
+      expect(find.byKey(const Key('use-routine')), findsOneWidget);
+    });
+
+    testWidgets('选一份计划 → 返回 startPlanned，且处方来自计划而不是默认值',
+        (WidgetTester tester) async {
+      final RoutineData r = await routines.create('推日', nowMs: 1000);
+      await routines.addItem(r.id, 'ex_bb_bench_press',
+          targetSets: 5, targetRepsLow: 3, targetRepsHigh: 5, nowMs: 1001);
+
+      TodayResult? result;
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (BuildContext ctx) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  result = await Navigator.of(ctx).push<TodayResult>(
+                    MaterialPageRoute<TodayResult>(
+                      builder: (_) => TodaySuggestionScreen(
+                        planner: planner,
+                        routines: routines,
+                        exercises: repo,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('开始'),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('开始'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('use-routine')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('routine-start-${r.id}')));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.choice, TodayChoice.startPlanned);
+      expect(result!.plan, hasLength(1));
+      expect(result!.plan.single.exercise.id, 'ex_bb_bench_press');
+      // 关键：处方必须是计划里那份，不能被 kDefaultPlan 顶掉
+      expect(result!.plan.single.plan.targetSets, 5);
+      expect(result!.plan.single.plan.targetRepsLow, 3);
+      expect(result!.plan.single.plan.targetRepsHigh, 5);
+    });
   });
 }

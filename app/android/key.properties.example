@@ -1,0 +1,18 @@
+# 发布签名配置模板。
+#
+# 用法二选一：
+#   1. 直接跑 `./tool/gen-upload-keystore.sh` —— 它会生成 keystore 并写好 key.properties（推荐）
+#   2. 复制本文件为 key.properties，填入你自己的值
+#
+# 注意：
+#   * key.properties 已被 app/android/.gitignore 忽略，**不要**提交上来
+#   * storeFile 建议用绝对路径（相对路径的基准目录容易记错）
+#   * 密码存进密码管理器 —— 丢了就无法再更新已发布的应用
+#
+# 没有 key.properties 时：release 仍可构建，但用的是 debug 签名，商店会拒收，
+# 构建时 Gradle 会打印一条警告。
+
+storePassword=替换成你的keystore密码
+keyPassword=替换成你的key密码
+keyAlias=upload
+storeFile=/绝对路径/upload-keystore.p12

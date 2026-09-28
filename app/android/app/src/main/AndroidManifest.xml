@@ -1,8 +1,28 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 埋点上报需要联网。Flutter 模板只在 debug/profile 变体里加 INTERNET（为了热重载），
+         所以 release 版原本**没有**这个权限 —— 一旦接上真实上报地址，release 会静默失败
+         （OutboxAnalytics.track() 刻意绝不抛异常，所以不会有任何报错）。
+         这里显式声明到 main，让三个变体行为一致。
+
+         本应用是离线优先：训练记录只存在本机 SQLite，不联网也能完整使用；
+         联网仅用于「帮助改进产品」开关打开时的匿名埋点上报。
+
+         若某版本决定不做任何上报，可删掉这一行以收紧权限。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- 存分享卡到相册（gal 的 README 明确要求这一条）。
+         用 maxSdkVersion 把范围限死在 API ≤ 29：
+           * API 30+ 走 MediaStore，**不需要任何权限**，新系统上根本看不到这条
+           * API ≤ 29 的老设备才需要它
+         加上 INTERNET，release 版一共只声明这两条权限。 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="29" />
+
     <application
         android:label="lianleme"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

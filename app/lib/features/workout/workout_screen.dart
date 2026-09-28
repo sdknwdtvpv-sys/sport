@@ -10,31 +10,53 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/units.dart';
+import '../../domain/models.dart';
 import 'workout_controller.dart';
+import 'workout_session.dart';
 
 class WorkoutScreen extends StatefulWidget {
-  const WorkoutScreen({super.key, required this.controller});
+  const WorkoutScreen({super.key, required this.session});
 
-  /// 由调用方持有并负责 dispose —— 这样测试可以在页面销毁后继续断言控制器状态。
-  final WorkoutController controller;
+  /// 一次训练里的全部动作（S6）。单个动作就用 `WorkoutSession.single(c)`。
+  ///
+  /// **会话与它内部的控制器都由调用方持有并负责 dispose** ——
+  /// 这样测试可以在页面销毁后继续断言控制器状态。
+  final WorkoutSession session;
 
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  WorkoutController get c => widget.controller;
+  /// 当前动作。切动作时这个 getter 会指向另一个控制器 ——
+  /// 所以下面所有 `c.xxx` 都自动跟着走，不需要各自处理切换。
+  WorkoutController get c => widget.session.current;
 
   @override
   void initState() {
     super.initState();
-    c.addListener(_onChange);
+    // 只听会话：它会转发内部每个控制器的通知，切动作也是它通知
+    widget.session.addListener(_onChange);
   }
 
   @override
   void dispose() {
-    c.removeListener(_onChange);
+    widget.session.removeListener(_onChange);
     super.dispose();
+  }
+
+  /// 左右滑动切换动作（规格 S6）。要求一定速度，避免手一抖就跳走。
+  void _onHorizontalDragEnd(DragEndDetails d) {
+    // 弹层开着时不切：那是在改重量，不是在换动作
+    if (c.sheetOpen) return;
+    final double v = d.velocity.pixelsPerSecond.dx;
+    if (v.abs() < 200) return;
+    if (v < 0) {
+      widget.session.next();
+    } else {
+      widget.session.previous();
+    }
   }
 
   void _onChange() {
@@ -48,15 +70,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       body: SafeArea(
         child: Stack(
           children: <Widget>[
-            Column(
-              children: <Widget>[
-                _header(),
-                Expanded(child: _middle()),
-                _doneList(),
-                _restBar(),
-                _switcher(),
-                _hintBar(),
-              ],
+            // 左右滑动切换动作（规格 S6）。挂在整块内容上：
+            // 大按钮的点击/长按仍在手势竞技场里胜出，只有横向拖拽才切动作。
+            GestureDetector(
+              key: const Key('workout-swipe-area'),
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
+              child: Column(
+                children: <Widget>[
+                  _header(),
+                  Expanded(child: _middle()),
+                  _doneList(),
+                  _restBar(),
+                  _switcher(),
+                  _hintBar(),
+                ],
+              ),
             ),
             if (c.sheetOpen) _sheetOverlay(),
           ],
@@ -133,10 +162,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
           const SizedBox(height: Tokens.s4),
           Text(
-            '第 ${c.setNumber} 组',
+            // 热身状态是"粘住"的（见 WorkoutController._warmup），
+            // 所以标题必须换掉 —— 否则用户看到"第 1 组"却记进去一条热身，
+            // 完全不知道发生了什么。
+            c.warmup ? '热身组' : '第 ${c.setNumber} 组',
             key: const Key('set-number'),
-            style: const TextStyle(
-              color: Tokens.text,
+            style: TextStyle(
+              color: c.warmup ? Tokens.volt : Tokens.text,
               fontSize: 28,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
@@ -209,10 +241,26 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   Text(
                     r.weightKg == null
                         ? '自重 × ${r.reps}'
-                        : '${r.weightKg}kg × ${r.reps}',
-                    style: const TextStyle(
-                        color: Tokens.text2, fontSize: 15, fontWeight: FontWeight.w600),
+                        : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}',
+                    style: TextStyle(
+                      // 热身组用次级色：和正式组混在一起分不出来，用户就不知道
+                      // 哪些算进了计划进度
+                      color: r.setType == SetType.warmup ? Tokens.text3 : Tokens.text2,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                  // RPE 记了就必须显示 —— 只写库不显示就成了用户看不见的隐藏数据
+                  if (r.rpe != null) ...<Widget>[
+                    const SizedBox(width: Tokens.s2),
+                    Text('RPE ${r.rpe!.toInt()}',
+                        style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                  ],
+                  if (r.setType == SetType.warmup) ...<Widget>[
+                    const SizedBox(width: Tokens.s2),
+                    const Text('热身',
+                        style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                  ],
                   const SizedBox(width: Tokens.s2),
                   const Text('✓',
                       style: TextStyle(
@@ -272,20 +320,69 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   // ---------- 动作切换 ----------
 
+  /// 底部切换条（S6）。**每个元素都是真的能点的** ——
+  /// 之前这里是三个纯 Text，是死的装饰。
   Widget _switcher() {
+    final WorkoutSession s = widget.session;
+    // 只有一个动作时不显示：那行「1 / 1」没有信息量，还会让人以为能滑
+    if (!s.hasMultiple) return const SizedBox.shrink();
+
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: Tokens.line)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          Text('‹ 上一个动作', style: TextStyle(color: Tokens.text2, fontSize: 15)),
-          Text('动作 1 / 1', style: TextStyle(color: Tokens.text3, fontSize: 13)),
-          Text('下一个动作 ›', style: TextStyle(color: Tokens.text2, fontSize: 15)),
+          _switchSide(
+            key: 'prev-exercise',
+            name: s.previousName,
+            leading: true,
+            onTap: s.previous,
+          ),
+          Text(
+            '${s.index + 1} / ${s.length}',
+            key: const Key('exercise-position'),
+            style: const TextStyle(color: Tokens.text3, fontSize: 13),
+          ),
+          _switchSide(
+            key: 'next-exercise',
+            name: s.nextName,
+            leading: false,
+            onTap: s.next,
+          ),
         ],
+      ),
+    );
+  }
+
+  /// 一侧的切换按钮。名字太长时省略，不挤掉中间的「2 / 3」。
+  Widget _switchSide({
+    required String key,
+    required String? name,
+    required bool leading,
+    required VoidCallback onTap,
+  }) {
+    final bool enabled = name != null;
+    final String label = leading ? '‹ ${name ?? '上一个'}' : '${name ?? '下一个'} ›';
+    return GestureDetector(
+      key: Key(key),
+      onTap: enabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 110,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: leading ? TextAlign.left : TextAlign.right,
+          style: TextStyle(
+            color: enabled ? Tokens.text2 : Tokens.text3,
+            fontSize: 15,
+          ),
+        ),
       ),
     );
   }
@@ -337,8 +434,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   ),
                   const SizedBox(height: Tokens.s5),
                   _stepperRow(
-                    value: c.isBodyweight ? '自重' : '${c.weightKg}',
-                    unit: c.isBodyweight ? '' : 'kg',
+                    // 步进值按显示单位展示；底层量与步长仍是 kg
+                    // （lb 原生步进会让重量脱离杠铃片网格，见 core/units.dart）
+                    value: c.isBodyweight
+                        ? '自重'
+                        : trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
+                    unit: c.isBodyweight ? '' : c.unit.wire,
                     keyMinus: 'step-weight-down',
                     keyPlus: 'step-weight-up',
                     onMinus: () => c.onStepper(deltaWeight: -2.5),
@@ -354,6 +455,41 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     onPlus: () => c.onStepper(deltaReps: 1),
                   ),
                   const SizedBox(height: Tokens.s5),
+                  // 热身组：规格要求「弱化样式存在、不主动教」，所以做成一个
+                  // 普通文字按钮而不是显眼开关 —— 主按钮才是这一屏唯一的主角。
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      key: const Key('sheet-warmup'),
+                      onPressed: c.toggleWarmup,
+                      style: TextButton.styleFrom(
+                        foregroundColor: c.warmup ? Tokens.volt : Tokens.text3,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Tokens.s3,
+                          vertical: Tokens.s2,
+                        ),
+                      ),
+                      child: Text(
+                        c.warmup ? '✓ 下一组记为热身' : '热身组',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Tokens.s2),
+                  // RPE：同样按规格弱化 —— 一行小档位，不占位置也不教。
+                  // 点一个值即选中，**再点同一个值即清除**，省掉一个"清除"按钮。
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: <Widget>[
+                        const Text('RPE',
+                            style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                        const SizedBox(width: Tokens.s3),
+                        for (final double v in _rpeChoices) _rpeChip(v),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: Tokens.s3),
                   SizedBox(
                     width: double.infinity,
                     height: 64,
@@ -376,6 +512,39 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// RPE 只给常用档位，不做全键盘，也不做 1–10 全量选择（规格：弱化、不主动教）。
+  static const List<double> _rpeChoices = <double>[6, 7, 8, 9, 10];
+
+  Widget _rpeChip(double value) {
+    final bool active = c.rpe == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: Tokens.s1),
+      child: InkWell(
+        key: Key('rpe-${value.toInt()}'),
+        borderRadius: BorderRadius.circular(Tokens.rPill),
+        // 再点一次已选中的值 = 清除，不需要额外的"清除"按钮
+        onTap: () => c.setRpe(active ? null : value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: Tokens.s3, vertical: Tokens.s2),
+          decoration: BoxDecoration(
+            color: active ? Tokens.volt : Colors.transparent,
+            border: Border.all(color: active ? Tokens.volt : Tokens.lineStrong),
+            borderRadius: BorderRadius.circular(Tokens.rPill),
+          ),
+          child: Text(
+            '${value.toInt()}',
+            style: TextStyle(
+              color: active ? Tokens.voltInk : Tokens.text3,
+              fontSize: 13,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
       ),
     );
   }

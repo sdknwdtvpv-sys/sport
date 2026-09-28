@@ -35,6 +35,18 @@ abstract class LocalStore {
   /// "今天练什么"要做部位轮转，就必须知道上次练了哪些部位 ——
   /// 而部位要拿动作 id 去动作库换，所以这里只返回 id。
   Future<List<String>> recentExerciseIds();
+
+  /// 删除**全部用户数据**（S10「我」→「删除全部数据」）。
+  ///
+  /// 只清用户自己产生的数据 —— 训练、组记录、个人设置。**动作库不动**：
+  /// 内置的 165 个动作是产品资产、不是用户数据，删了就再也记不了。
+  ///
+  /// 是**硬删除**，不是软删除。用户按下"删除全部数据"的语义就是"真的没了"；
+  /// 只打 `deleted_at` 标记等于骗自己，也过不了《个人信息保护法》第四十七条
+  /// 要求的"删除"。
+  ///
+  /// 调用方随后必须刷新界面 —— 内存里的会话状态不会自己失效。
+  Future<void> deleteAllUserData();
 }
 
 /// 内存实现。写入**同步生效**（先改内存再返回 Future），
@@ -131,5 +143,11 @@ class InMemoryLocalStore implements LocalStore {
       weightKg: sameWorkout.last.weightKg,
       reps: sameWorkout.map((s) => s.reps).toList(),
     );
+  }
+
+  @override
+  Future<void> deleteAllUserData() async {
+    _sets.clear();
+    _workouts.clear();
   }
 }

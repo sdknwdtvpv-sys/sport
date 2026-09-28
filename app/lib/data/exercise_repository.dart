@@ -95,6 +95,58 @@ class ExerciseRepository {
         defaultRestSec: e.defaultRestSec,
       );
 
+  /// 新建自定义动作。
+  ///
+  /// 自定义动作与内置动作存在**同一张表**里（靠 `isBuiltin` 区分），而 [search]
+  /// 并不按 `isBuiltin` 过滤 —— 所以建完立刻就能被搜到、被选中、出现在「全部动作」区，
+  /// 不需要任何额外接线。
+  ///
+  /// `popularity` 给 0：自定义动作不该挤掉内置动作在「常用」区的位置。
+  /// 它会被「最近做过」接住 —— 练过一次之后自然浮上来。
+  Future<ExerciseData> createCustom({
+    required String name,
+    required String muscleGroup,
+    required String equipment,
+    required double weightIncrement,
+    double? defaultWeightKg,
+    int defaultRestSec = 90,
+    int? nowMs,
+  }) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+
+    // ⚠️ 不变量：步长 > 0 时**必须有**起始重量。
+    //
+    // 因为两个 isBodyweight 的判据不一致：
+    //   ExerciseSpec.isBodyweight  => weightIncrement == 0
+    //   Suggestion.isBodyweight    => weightKg == null
+    // 一个有步长却没有起始重量的动作，会被引擎给出 weightKg = null 的建议，
+    // 于是被当成自重动作 —— 用户再也输入不了重量。
+    // 与其让链路自相矛盾，不如在这里兜一个保守的起步值（步长 × 8：
+    // 杠铃 20kg、哑铃 16kg、器械 40kg），用户可以随时用步进按钮改。
+    final double? startWeight =
+        weightIncrement == 0 ? null : (defaultWeightKg ?? weightIncrement * 8);
+
+    final ExerciseData row = ExerciseData(
+      id: 'ex_custom_$now',
+      name: name,
+      nameEn: null,
+      aliases: jsonEncode(const <String>[]),
+      muscleGroup: muscleGroup,
+      secondaryMuscles: jsonEncode(const <String>[]),
+      equipment: equipment,
+      trackType: 'weight_reps',
+      defaultRestSec: defaultRestSec,
+      defaultWeightKg: startWeight,
+      weightIncrement: weightIncrement,
+      isBuiltin: false,
+      popularity: 0,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _db.into(_db.exercise).insertOnConflictUpdate(row);
+    return (await byId(row.id))!;
+  }
+
   /// ⚠️ 这 13 个必填字段是照 db.g.dart 里的 ExerciseData 构造签名核对的。
   /// drift 的 withDefault() 只加 SQL 层 DEFAULT，Dart 数据类里这些字段仍是 required
   /// （踩过一次坑：SetRecordData 的 isPr）。

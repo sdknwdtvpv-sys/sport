@@ -110,7 +110,7 @@ class UserProfile extends Table {
   TextColumn get goal => text().nullable()();
   IntColumn get weeklyFrequency => integer().nullable()();
 
-  /// kg | lb（单位切换还没做，先留着）
+  /// kg | lb。显示单位；**存储与引擎始终是 kg**（见 core/units.dart）
   TextColumn get unitPref => text().withDefault(const Constant('kg'))();
   IntColumn get defaultRestSec => integer().withDefault(const Constant(90))();
 
@@ -143,6 +143,67 @@ class AnalyticsOutbox extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// 身体数据（S12）。字段照 `docs/data-model.md` 的 `body_metric` DDL。
+///
+/// **一天一条**：用 `date`（YYYY-MM-DD 字符串）做业务上的唯一键。
+/// 刻意**不加数据库唯一索引** —— 软删除之后用户还要能重新录入同一天，
+/// 唯一索引会让那次插入直接炸。唯一性在仓库层判断。
+class BodyMetric extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get date => text()();
+
+  /// 体重。允许单独记体脂而不记体重，所以这一列可空。
+  RealColumn get weightKg => real().nullable()();
+  RealColumn get bodyFatPct => real().nullable()();
+  TextColumn get note => text().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+/// 计划模板（S11）。字段照 `docs/data-model.md` 的 `routine` DDL。
+///
+/// `source` 区分内置 / 用户自建 / 建议生成 —— 现在只写 `user`，
+/// 另两种留给后续（内置模板与"把建议存成计划"）。
+class Routine extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get name => text()();
+  TextColumn get note => text().nullable()();
+  TextColumn get source => text().withDefault(const Constant('user'))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(false))();
+  IntColumn get createdAt => integer()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+/// 计划里的一项。**简化版只有动作 + 组数 + 次数区间**（规格 S11 明确说的）。
+///
+/// `targetWeightKg` 与 `restSec` 照 DDL 建好但**这一版不暴露编辑入口** ——
+/// 前者交给规则引擎建议（NULL 就是这个意思），后者沿用动作自带的休息时长。
+class RoutineItem extends Table {
+  TextColumn get id => text()();
+  TextColumn get routineId => text()();
+  TextColumn get exerciseId => text()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  IntColumn get targetSets => integer().withDefault(const Constant(3))();
+  IntColumn get targetRepsLow => integer().withDefault(const Constant(8))();
+  IntColumn get targetRepsHigh => integer().withDefault(const Constant(10))();
+  RealColumn get targetWeightKg => real().nullable()();
+  IntColumn get restSec => integer().withDefault(const Constant(90))();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 @DriftDatabase(tables: <Type>[
   Exercise,
   Workout,
@@ -150,12 +211,20 @@ class AnalyticsOutbox extends Table {
   SetRecord,
   UserProfile,
   AnalyticsOutbox,
+  BodyMetric,
+  Routine,
+  RoutineItem,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
+  /// v2：新增 `body_metric`（S12 身体数据）。
+  /// v3：新增 `routine` / `routine_item`（S11 计划模板）。
+  ///
+  /// **老版本的库已经装在用户手机上了**，所以每次加表都必须有 onUpgrade ——
+  /// 只加表不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -175,6 +244,33 @@ class AppDatabase extends _$AppDatabase {
             'CREATE INDEX IF NOT EXISTS idx_workout_user_time '
             'ON workout (user_id, started_at DESC)',
           );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_body_metric_date '
+            'ON body_metric (date DESC)',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_routine_item_routine '
+            'ON routine_item (routine_id, position)',
+          );
+        },
+        onUpgrade: (Migrator m, int from, int to) async {
+          // v1 → v2：只多了一张表，没有改动任何既有列，所以不需要数据搬迁。
+          if (from < 2) {
+            await m.createTable(bodyMetric);
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_body_metric_date '
+              'ON body_metric (date DESC)',
+            );
+          }
+          // v2 → v3：只多两张表，没有改动任何既有列
+          if (from < 3) {
+            await m.createTable(routine);
+            await m.createTable(routineItem);
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_routine_item_routine '
+              'ON routine_item (routine_id, position)',
+            );
+          }
         },
       );
 }

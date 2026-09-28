@@ -14,6 +14,7 @@ library;
 
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import '../../core/units.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../domain/models.dart';
@@ -45,6 +46,7 @@ class PlannedExercise {
     required this.exercise,
     required this.plan,
     this.suggestion,
+    this.unit = WeightUnit.kg,
   });
 
   final ExerciseData exercise;
@@ -53,18 +55,24 @@ class PlannedExercise {
   /// null 表示"不给建议"（用户关掉了渐进建议）
   final Suggestion? suggestion;
 
-  /// UI 上直接显示的一行，如「62.5kg × 8」；自重动作显示「自重 × 8」
+  /// 显示单位。**引擎给的建议值始终是 kg**，这里只影响怎么念。
+  final WeightUnit unit;
+
+  /// UI 上直接显示的一行，如「62.5 kg × 8」；自重动作显示「自重 × 8」
   String get loadLabel {
     final Suggestion? s = suggestion;
     if (s == null) return '—';
-    final String w = s.isBodyweight ? '自重' : '${_trim(s.weightKg)}kg';
+    final String w = s.isBodyweight ? '自重' : formatWeight(s.weightKg, unit);
     return '$w × ${s.reps}';
   }
+}
 
-  static String _trim(double? v) {
-    if (v == null) return '—';
-    return v == v.roundToDouble() ? v.toInt().toString() : v.toString();
-  }
+/// 计划模板里的一项：哪个动作 + 什么处方。
+class RoutineEntry {
+  const RoutineEntry({required this.exerciseId, required this.plan});
+
+  final String exerciseId;
+  final PlanTarget plan;
 }
 
 class TodayPlanner {
@@ -100,9 +108,38 @@ class TodayPlanner {
   /// 生成今天的建议。
   ///
   /// [muscleGroup] 传 null 时自动做部位轮转；[count] 是要推荐几个动作。
+  /// 计划模板里的一项在"交接给引擎"时的形状（S11）。
+  ///
+  /// 刻意不复用 `RoutineItemData`：planner 不该知道数据库长什么样，
+  /// 它只要「哪个动作 + 什么处方」。
+  Future<List<PlannedExercise>> planFromRoutine({
+    required List<RoutineEntry> entries,
+    WeightUnit unit = WeightUnit.kg,
+  }) async {
+    final List<PlannedExercise> out = <PlannedExercise>[];
+    for (final RoutineEntry e in entries) {
+      final ExerciseData? ex = await _repo.byId(e.exerciseId);
+      // 动作被删掉了就跳过这一项，不让整份计划作废
+      if (ex == null) continue;
+      final LastSession? last = await _store.lastSessionFor(e.exerciseId);
+      out.add(PlannedExercise(
+        exercise: ex,
+        plan: e.plan,
+        unit: unit,
+        suggestion: suggestNext(
+          exercise: _repo.specOf(ex),
+          plan: e.plan,
+          lastSession: last,
+        ),
+      ));
+    }
+    return out;
+  }
+
   Future<List<PlannedExercise>> planToday({
     int count = 3,
     String? muscleGroup,
+    WeightUnit unit = WeightUnit.kg,
   }) async {
     final String group = muscleGroup ?? await nextMuscleGroup();
     final List<ExerciseData> candidates =
@@ -114,6 +151,7 @@ class TodayPlanner {
       out.add(PlannedExercise(
         exercise: e,
         plan: kDefaultPlan,
+        unit: unit,
         suggestion: suggestNext(
           exercise: _repo.specOf(e),
           plan: kDefaultPlan,
@@ -131,8 +169,9 @@ class TodayPlanner {
   Future<List<PlannedExercise>> reroll({
     required List<PlannedExercise> current,
     int count = 3,
+    WeightUnit unit = WeightUnit.kg,
   }) async {
-    if (current.isEmpty) return planToday(count: count);
+    if (current.isEmpty) return planToday(count: count, unit: unit);
     final String group = current.first.exercise.muscleGroup;
     final List<ExerciseData> all =
         await _repo.search(muscleGroup: group, limit: 60);

@@ -8,6 +8,7 @@
 /// 属于另一块工作，不该塞进这一屏顺手做。
 library;
 
+import '../../core/units.dart';
 import '../../domain/models.dart';
 
 class DailyVolume {
@@ -26,6 +27,7 @@ class ExercisePr {
     required this.name,
     required this.reps,
     this.weightKg,
+    this.unit = WeightUnit.kg,
   });
 
   final String exerciseId;
@@ -42,16 +44,20 @@ class ExercisePr {
   /// 排序与展示用的单一数值：有重量比重量，自重比次数
   double get value => isBodyweight ? reps.toDouble() : (weightKg ?? 0);
 
-  /// 如「80kg」「15 次」
-  String get label {
-    if (isBodyweight) return '$reps 次';
-    final double w = weightKg ?? 0;
-    return '${w == w.roundToDouble() ? w.toInt() : w}kg';
-  }
+  /// 显示单位。存储始终是 kg，这里只影响怎么念数字。
+  final WeightUnit unit;
+
+  /// 如「80 kg」「176.4 lb」「15 次」
+  String get label => isBodyweight ? '$reps 次' : formatWeight(weightKg, unit);
 }
 
 class ProgressData {
-  const ProgressData({required this.week, required this.prs, required this.weekWorkouts});
+  const ProgressData({
+    required this.week,
+    required this.prs,
+    required this.weekWorkouts,
+    this.unit = WeightUnit.kg,
+  });
 
   /// 最近 7 天（含今天），没练的那天是 0
   final List<DailyVolume> week;
@@ -62,6 +68,8 @@ class ProgressData {
   /// 这 7 天练了几次
   final int weekWorkouts;
 
+  final WeightUnit unit;
+
   bool get isEmpty => prs.isEmpty;
 
   /// 本周总容量
@@ -69,14 +77,9 @@ class ProgressData {
       week.fold<double>(0, (double a, DailyVolume d) => a + d.volumeKg);
 
   String get weekVolumeLabel {
-    if (weekVolume <= 0) return '—';
-    final String s = weekVolume.round().toString();
-    final StringBuffer b = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
-      b.write(s[i]);
-    }
-    return '$b kg';
+    // 交给 core/units.dart 统一格式化（此前这里、TrainingStats、WorkoutSummary
+    // 各写了一份千分位）
+    return formatVolume(weekVolume, unit);
   }
 
   /// 曲线用的点（0..1），全 0 时返回全 0 —— 由界面决定怎么画
@@ -126,6 +129,7 @@ int weekWorkoutCount(List<SetRecord> sets, DateTime today) {
 List<ExercisePr> personalBests({
   required List<SetRecord> sets,
   required Map<String, String> exerciseNames,
+  WeightUnit unit = WeightUnit.kg,
 }) {
   final Map<String, List<SetRecord>> byExercise = <String, List<SetRecord>>{};
   for (final SetRecord s in sets) {
@@ -142,7 +146,7 @@ List<ExercisePr> personalBests({
       for (final SetRecord s in list) {
         if (s.reps > best.reps) best = s;
       }
-      out.add(ExercisePr(exerciseId: id, name: name, reps: best.reps));
+      out.add(ExercisePr(exerciseId: id, name: name, reps: best.reps, unit: unit));
     } else {
       SetRecord best = list.first;
       for (final SetRecord s in list) {
@@ -153,6 +157,7 @@ List<ExercisePr> personalBests({
         name: name,
         reps: best.reps,
         weightKg: best.weightKg,
+        unit: unit,
       ));
     }
   });
@@ -170,9 +175,15 @@ ProgressData buildProgress({
   required List<SetRecord> sets,
   required Map<String, String> exerciseNames,
   required DateTime today,
+  WeightUnit unit = WeightUnit.kg,
 }) =>
     ProgressData(
       week: lastSevenDays(sets, today),
-      prs: personalBests(sets: sets, exerciseNames: exerciseNames),
+      prs: personalBests(
+        sets: sets,
+        exerciseNames: exerciseNames,
+        unit: unit,
+      ),
       weekWorkouts: weekWorkoutCount(sets, today),
+      unit: unit,
     );

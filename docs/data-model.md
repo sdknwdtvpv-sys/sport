@@ -53,6 +53,8 @@ CREATE TABLE routine (
   deleted_at INTEGER
 );
 
+CREATE INDEX idx_routine_item_routine ON routine_item(routine_id, position);
+
 CREATE TABLE routine_item (
   id                TEXT PRIMARY KEY,
   routine_id        TEXT NOT NULL REFERENCES routine(id),
@@ -132,6 +134,9 @@ CREATE TABLE body_metric (
   updated_at   INTEGER NOT NULL,
   deleted_at   INTEGER
 );
+
+-- S8「进步」要按日期倒序取最近若干条
+CREATE INDEX idx_body_metric_date ON body_metric(date DESC);
 
 CREATE TABLE personal_record (
   id            TEXT PRIMARY KEY,

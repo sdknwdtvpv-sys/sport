@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/analytics/analytics.dart';
+import 'package:lianleme/analytics/outbox.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
@@ -212,6 +214,26 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    /// 「我」页现在有 5 个分区（单位 / 训练统计 / 渐进建议 / 隐私 / 数据），
+    /// 800×600 的测试画布装不下。**ListView 是懒构建的**：没滚到的 widget
+    /// 根本不存在，`find` 会直接落空 —— 所以必须 dragUntilVisible，
+    /// 而不是 ensureVisible（后者要求 widget 已经被建出来）。
+    Future<void> scrollTo(WidgetTester tester, Finder target) async {
+      await tester.dragUntilVisible(
+        target,
+        find.byType(ListView),
+        const Offset(0, -220),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> tapDeleteAll(WidgetTester tester) async {
+      final Finder tile = find.byKey(const Key('delete-all'));
+      await scrollTo(tester, tile);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('没有记录时给出明确说明，而不是一排 0', (WidgetTester tester) async {
       await pumpProfile(tester);
 
@@ -241,6 +263,7 @@ void main() {
     testWidgets('开关默认开着，关掉之后写进库', (WidgetTester tester) async {
       await pumpProfile(tester);
 
+      await scrollTo(tester, find.byKey(const Key('progression-switch')));
       expect(tester.widget<SwitchListTile>(find.byKey(const Key('progression-switch'))).value,
           isTrue);
       expect(await profile.progressionMode(), ProgressionMode.doubleProgression);
@@ -268,6 +291,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // 「我」页现在有 6 个分区，隐私开关在首屏之下 —— ListView 懒构建，
+      // 不滚过去它根本不存在，find 会直接落空
+      await scrollTo(tester, find.byKey(const Key('analytics-switch')));
       expect(
         tester.widget<SwitchListTile>(find.byKey(const Key('analytics-switch'))).value,
         isTrue,
@@ -288,6 +314,7 @@ void main() {
       await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
       await pumpProfile(tester);
 
+      await scrollTo(tester, find.byKey(const Key('export-csv')));
       await tester.tap(find.byKey(const Key('export-csv')));
       await tester.pumpAndSettle();
 
@@ -295,6 +322,75 @@ void main() {
       expect(copied, startsWith('日期,动作,重量kg,次数,容量kg,组序'));
       expect(copied, contains('杠铃卧推'));
       expect(find.textContaining('已复制 1 条记录'), findsOneWidget);
+    });
+
+    testWidgets('点「删除全部数据」先弹二次确认；点取消什么都不删',
+        (WidgetTester tester) async {
+      await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
+      await pumpProfile(tester);
+
+      await tapDeleteAll(tester);
+
+      expect(find.byKey(const Key('delete-all-dialog')), findsOneWidget);
+      expect(find.textContaining('无法撤销'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('delete-all-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('delete-all-dialog')), findsNothing);
+      expect(await store.allSets(), hasLength(1), reason: '点了取消就不能删');
+    });
+
+    testWidgets('确认后数据真没了，且界面立刻刷新（不是只清了库）',
+        (WidgetTester tester) async {
+      await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
+      await pumpProfile(tester);
+      expect(find.byKey(const Key('profile-stat-sets')), findsOneWidget, reason: '前置：有数据');
+
+      await tapDeleteAll(tester);
+      await tester.tap(find.byKey(const Key('delete-all-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(await store.allSets(), isEmpty, reason: '库里必须真删掉（硬删除）');
+      expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
+          reason: '界面必须一起刷新 —— 否则用户以为没删掉');
+      expect(find.textContaining('还没有训练记录'), findsOneWidget);
+      expect(find.textContaining('已删除全部数据'), findsOneWidget);
+    });
+
+    testWidgets('删除全部数据会一并清掉还没上报的埋点事件', (WidgetTester tester) async {
+      final AnalyticsOutboxStore outbox = AnalyticsOutboxStore(db);
+      await outbox.enqueue(
+        name: 'set_logged',
+        props: <String, Object?>{'x': 1},
+        priority: 0,
+        nowMs: 1000,
+      );
+      expect(await outbox.pending(), 1, reason: '前置：outbox 里有待发事件');
+
+      await pumpProfile(tester);
+      await tapDeleteAll(tester);
+      await tester.tap(find.byKey(const Key('delete-all-confirm')));
+      await tester.pumpAndSettle();
+
+      // 用户说"删掉我的数据"，之后还继续上报是合规上明确不允许的
+      expect(await outbox.pending(), 0);
+    });
+
+    testWidgets('删除全部数据会一并清掉身体数据（加新表时最容易漏的一步）',
+        (WidgetTester tester) async {
+      final BodyMetricRepository body = BodyMetricRepository(db);
+      await body.save(date: '2026-09-28', weightKg: 72.5, nowMs: 1000);
+      expect(await body.count(), 1, reason: '前置：有一条体重');
+
+      await pumpProfile(tester);
+      await tapDeleteAll(tester);
+      await tester.tap(find.byKey(const Key('delete-all-confirm')));
+      await tester.pumpAndSettle();
+
+      // 新加的表如果不接进 deleteAllUserData，用户点了"删除全部数据"
+      // 之后体重还留在库里 —— 这是合规问题，不是功能瑕疵
+      expect(await body.count(), 0);
     });
   });
 }

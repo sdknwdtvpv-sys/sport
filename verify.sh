@@ -19,6 +19,11 @@
 #     Flutter 3.47 的 flutter analyze 在**非 ASCII 路径**下必崩
 #     （flutter/flutter#191309），本仓库目录名是中文。两者读同一套
 #     analysis_options.yaml，dart analyze 不经过 flutter_tools 的 LSP 客户端，因此不受影响。
+#   * 应用层会先检查仓库路径有没有单引号：flutter test 生成 listener.dart 时把
+#     测试文件路径塞进 `Uri.parse('file:///…')`，路径里的撇号会提前截断字符串，
+#     测试连加载都失败（+0 -14）。这跟上面那条同源，但路径看着全是 ASCII，
+#     只有一个标点，很难往那儿想。符号链接绕不过去 —— flutter 读的是 pwd -P
+#     的物理路径。这种情况标记为"阻塞"，不误报成测试失败。
 #
 # 环境导致的无法执行会标记为"阻塞"而非"通过"，且不计入失败：
 # 环境坏掉和测试失败是两件事。CI 里各层都是硬门槛。
@@ -29,6 +34,13 @@ REPO="$PWD"
 
 FAST=0
 [ "${1:-}" = "--fast" ] && FAST=1
+
+# 路径含单引号会让 flutter test 必崩（见文件头说明）。提前判定，好在应用层给出
+# 准确原因，而不是让它以"测试失败"的面目出现。
+case "$REPO" in
+  *"'"*) APOSTROPHE_PATH=1 ;;
+  *)     APOSTROPHE_PATH=0 ;;
+esac
 
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; DIM=$'\033[2m'; BOLD=$'\033[1m'; OFF=$'\033[0m'
 fail=0
@@ -139,14 +151,24 @@ if [ "$FAST" -eq 1 ]; then
   echo "${DIM}⊘ 已按 --fast 跳过。完整校验请去掉该参数。${OFF}"
 elif [ -z "$FLUTTER_BIN" ]; then
   echo "${YELLOW}⊘ 阻塞${OFF} —— 未安装 Flutter SDK。"; blocked=1
+elif [ "$APOSTROPHE_PATH" -eq 1 ]; then
+  echo "${YELLOW}⊘ 阻塞${OFF} —— 仓库路径含单引号，flutter test 生成的 listener.dart 会被撇号截断。"
+  echo "${DIM}    把仓库放到不含 ' 的路径再跑（如 ~/HARNESS/lianleme/sport）。${OFF}"
+  echo "${DIM}    不是测试失败：同一路径下领域层与静态分析都已通过，只有 flutter test 不行。${OFF}"
+  blocked=1
 else
+  # 不要把 $REPO 拼进单引号字符串。仓库路径可能含单引号，那会提前闭合引号
+  # （曾报成 `cd: /Volumes/Elliots: No such file`）。改用 env 传值、内部双引号
+  # 展开，任何字符都安全。
   PUBLOG=/tmp/lianleme-pubget.log
-  if ! with_timeout 240 bash -c "cd '$REPO/app' && PUB_CACHE='$REPO/.pub-cache' '$FLUTTER_BIN' pub get" >"$PUBLOG" 2>&1; then
+  if ! with_timeout 240 env VERIFY_APP="$REPO/app" VERIFY_CACHE="$REPO/.pub-cache" VERIFY_FLUTTER="$FLUTTER_BIN" \
+       bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" pub get' >"$PUBLOG" 2>&1; then
     echo "${YELLOW}⊘ 阻塞${OFF} —— flutter pub get 未成功：属环境问题，不是测试失败。"
     strip "$PUBLOG" | tail -5 | sed 's/^/    /'
     blocked=1
   else
-    with_timeout 420 bash -c "cd '$REPO/app' && PUB_CACHE='$REPO/.pub-cache' '$FLUTTER_BIN' test --reporter compact" >"$LOG" 2>&1; rc=$?
+    with_timeout 420 env VERIFY_APP="$REPO/app" VERIFY_CACHE="$REPO/.pub-cache" VERIFY_FLUTTER="$FLUTTER_BIN" \
+      bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" test --reporter compact' >"$LOG" 2>&1; rc=$?
     strip "$LOG" | tail -25
     [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 应用层通过" || { echo "${RED}✗ 应用层测试失败（退出码 $rc）${OFF}"; fail=1; }
   fi
@@ -160,6 +182,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          docs/tech-decisions.md docs/data-model.md docs/screens.md \
          docs/interaction-spec.md docs/usability-test.md docs/usability-test-kit.md \
          docs/analytics.md docs/analytics-sdk.md \
+         docs/privacy-policy.md docs/privacy-policy.en.md docs/release-checklist.md \
          prototype/index.html \
          seed/build.mjs seed/exercises.json seed/exercises.sql \
          engine/progression.mjs engine/vectors.json engine/run-tests.mjs \

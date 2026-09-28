@@ -12,10 +12,19 @@ import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 
 class TodayScreen extends StatelessWidget {
-  const TodayScreen({super.key, required this.onStart, this.lastWeekSessions = 0});
+  const TodayScreen({
+    super.key,
+    required this.onStart,
+    this.lastWeekSessions = 0,
+    this.onPlanHelp,
+  });
 
   final VoidCallback onStart;
   final int lastWeekSessions;
+
+  /// S13 的可选入口。**为 null 时不显示** —— 已经定过计划的人不需要它，
+  /// 而放一个点不动的链接比没有更糟。
+  final VoidCallback? onPlanHelp;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +70,19 @@ class TodayScreen extends StatelessWidget {
               ),
             ),
           ),
+          // S13 的入口：**可选、非阻塞**。主按钮仍然是"点一下就能开始训练"，
+          // 这一行只是给"不知道从哪下手"的人一个台阶。
+          if (onPlanHelp != null) ...<Widget>[
+            const SizedBox(height: Tokens.s2),
+            Center(
+              child: TextButton(
+                key: const Key('plan-help'),
+                onPressed: onPlanHelp,
+                child: const Text('不知道怎么练？帮我定个计划 ›',
+                    style: TextStyle(color: Tokens.text2, fontSize: 14)),
+              ),
+            ),
+          ],
           const SizedBox(height: Tokens.s3),
           Center(
             child: Text(

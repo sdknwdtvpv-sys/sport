@@ -1,7 +1,7 @@
 name: lianleme
 description: 练了么 —— 一次点击记一组的力量训练记录工具
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -12,11 +12,24 @@ environment:
 #    pub.dev 上的描述明确写着 "Not used anymore, update to version 3.x of package:sqlite3 instead"。
 #    原生库现在由 sqlite3 3.x 自己构建，而 drift_flutter 已经传递依赖它。
 #    （几乎所有 drift 教程都还在教你加这个包，别照抄。）
+#
+# 例外记录（上面那句"不加任何东西"的两次有意破例，都是 S7 分享卡）：
+#   * share_plus —— 拉起系统分享面板。**不需要任何权限**，
+#     所以隐私政策里「只申请 INTERNET 一项权限」那句话仍然成立。
+#   * gal —— 存到系统相册。Android 10+ 走 MediaStore 免权限；
+#     Android 9 及以下需要 WRITE_EXTERNAL_STORAGE，因此在 AndroidManifest 里
+#     声明时带了 `android:maxSdkVersion="28"`，新系统上看不到这条权限。
+#
+#   为什么不用自写平台通道：那要同时写 Kotlin 与 Swift 两套，
+#   而 iOS 那一半在本机**无法验证**（只有 Command Line Tools，没有完整 Xcode）。
+#   宁可引入两个可验证的依赖，也不写没跑过的原生代码 —— 详见 share_card.dart。
 dependencies:
   flutter:
     sdk: flutter
   drift: ^2.35.0
   drift_flutter: ^0.3.1
+  share_plus: ^13.3.0
+  gal: ^2.3.3
 
 dev_dependencies:
   flutter_test:

@@ -13,11 +13,16 @@ library;
 import 'package:flutter/material.dart';
 
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
+import '../../core/sparkline.dart';
 import '../../core/theme.dart';
+import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
+import '../../data/body_metric_repository.dart';
 import '../../domain/models.dart';
+import '../body/body_metric_screen.dart';
+import 'all_data_screen.dart';
 import 'progress_data.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -25,11 +30,20 @@ class ProgressScreen extends StatefulWidget {
     super.key,
     required this.store,
     required this.repository,
+    this.bodyMetrics,
+    this.unit = WeightUnit.kg,
     this.now,
   });
 
   final LocalStore store;
   final ExerciseRepository repository;
+
+  /// 体重（S12）。**可选**：不传就没有体重卡片 ——
+  /// 「等有了再加回来」的那块，加回来了。
+  final BodyMetricRepository? bodyMetrics;
+
+  /// 显示单位。**只影响显示**：容量与 PR 的判定始终按 kg 算。
+  final WeightUnit unit;
 
   /// 测试注入固定时间用；生产为 null，取当前时间
   final DateTime? now;
@@ -40,6 +54,7 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   ProgressData? _data;
+  BodyMetricData? _latestWeight;
   bool _loading = true;
 
   @override
@@ -54,15 +69,105 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final Map<String, String> names = <String, String>{
       for (final ExerciseData r in rows) r.id: r.name,
     };
+    final BodyMetricData? weight = await widget.bodyMetrics?.latest();
     if (!mounted) return;
     setState(() {
       _data = buildProgress(
         sets: sets,
         exerciseNames: names,
         today: widget.now ?? DateTime.now(),
+        unit: widget.unit,
       );
+      _latestWeight = weight;
       _loading = false;
     });
+  }
+
+  /// 体重卡片。S8 原本有三块，这块当时因为"没有 body_metric 表"而没做，
+  /// 注释里写的是「等有了再加回来」。
+  Widget _weightCard() {
+    final BodyMetricData? w = _latestWeight;
+    return Container(
+      padding: const EdgeInsets.all(Tokens.s4),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: w == null
+                ? const Text(
+                    '还没记录过体重',
+                    style: TextStyle(color: Tokens.text3, fontSize: 15),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        w.weightKg == null ? '—' : '${_trim(w.weightKg)} kg',
+                        key: const Key('progress-weight'),
+                        style: const TextStyle(
+                          color: Tokens.text,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: Tokens.s1),
+                      Text(
+                        <String>[
+                          w.date,
+                          if (w.note != null && w.note!.isNotEmpty) w.note!,
+                        ].join(' · '),
+                        style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                      ),
+                    ],
+                  ),
+          ),
+          TextButton(
+            key: const Key('progress-weight-edit'),
+            style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+            onPressed: _openBodyMetric,
+            child: Text(w == null ? '记录' : '更新'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openAllData() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AllDataScreen(
+          store: widget.store,
+          repository: widget.repository,
+          unit: widget.unit,
+          now: widget.now,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openBodyMetric() async {
+    final BodyMetricRepository? repo = widget.bodyMetrics;
+    if (repo == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => BodyMetricScreen(
+          repository: repo,
+          unit: widget.unit,
+          // 记完回来要刷新，否则卡片还显示旧体重
+          onSaved: _load,
+        ),
+      ),
+    );
+    await _load();
+  }
+
+  String _trim(double? v) {
+    if (v == null) return '';
+    return v == v.roundToDouble() ? v.toInt().toString() : v.toString();
   }
 
   @override
@@ -72,36 +177,56 @@ class _ProgressScreenState extends State<ProgressScreen> {
     }
     final ProgressData d = _data!;
 
-    if (d.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: Tokens.s5),
-        child: Center(
-          child: Text(
-            '还没有训练记录。\n练完第一次，这里就会长出曲线和纪录。',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.6),
-          ),
-        ),
-      );
-    }
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s5),
       children: <Widget>[
-        const Text(
-          '进步',
-          style: TextStyle(
-            color: Tokens.text,
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
-          ),
+        Row(
+          children: <Widget>[
+            const Expanded(
+              child: Text(
+                '进步',
+                style: TextStyle(
+                  color: Tokens.text,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+            // S9 的入口。二级页：这一屏回答"最近怎么样"，
+            // 那一屏回答"某个动作/某段时间到底怎么样"。
+            TextButton(
+              key: const Key('open-all-data'),
+              style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+              onPressed: _openAllData,
+              child: const Text('全部数据 ›', style: TextStyle(fontSize: 14)),
+            ),
+          ],
         ),
         const SizedBox(height: Tokens.s5),
-        _weekCard(d),
-        const SizedBox(height: Tokens.s5),
-        _sectionTitle('PR 墙'),
-        _prCard(d),
+        // 空态**不再提前 return** —— 否则"只记了体重、还没练过"的人
+        // 看不到自己刚记的体重。体重和训练是两件独立的事。
+        if (d.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(bottom: Tokens.s5),
+            child: Text(
+              '还没有训练记录。\n练完第一次，这里就会长出曲线和纪录。',
+              style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.6),
+            ),
+          )
+        else ...<Widget>[
+          _weekCard(d),
+          const SizedBox(height: Tokens.s5),
+          _sectionTitle('PR 墙'),
+          _prCard(d),
+        ],
+        // 没有体重仓库就连标题都不显示 —— 否则会渲染一个
+        // 「还没记录过体重」+ 点不动的「记录」按钮（测试抓出来的）
+        if (widget.bodyMetrics != null) ...<Widget>[
+          const SizedBox(height: Tokens.s5),
+          _sectionTitle('体重'),
+          _weightCard(),
+        ],
       ],
     );
   }
@@ -139,7 +264,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             width: double.infinity,
             child: CustomPaint(
               key: const Key('progress-sparkline'),
-              painter: _SparklinePainter(d.sparkline),
+              painter: SparklinePainter(d.sparkline),
             ),
           ),
           const SizedBox(height: Tokens.s2),
@@ -205,59 +330,4 @@ class _ProgressScreenState extends State<ProgressScreen> {
       );
 
   String _dayLabel(DateTime d) => '${d.month}/${d.day}';
-}
-
-/// 七个点的折线。不引图表库：为一条线加一个依赖不值得。
-class _SparklinePainter extends CustomPainter {
-  _SparklinePainter(this.values);
-
-  /// 0..1 的比例，长度即点数
-  final List<double> values;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
-
-    final Paint line = Paint()
-      ..color = Tokens.volt
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeJoin = StrokeJoin.round;
-    final Paint dot = Paint()..color = Tokens.volt;
-    final Paint baseline = Paint()
-      ..color = Tokens.line
-      ..strokeWidth = 1;
-
-    // 底部基线：全 0 时也让用户看得出这是"一条线"，而不是空白
-    canvas.drawLine(
-      Offset(0, size.height - 1),
-      Offset(size.width, size.height - 1),
-      baseline,
-    );
-
-    final double stepX =
-        values.length > 1 ? size.width / (values.length - 1) : 0;
-    final double usableH = size.height - 8;
-
-    final Path path = Path();
-    for (int i = 0; i < values.length; i++) {
-      final double x = stepX * i;
-      final double y = size.height - 4 - usableH * values[i].clamp(0.0, 1.0);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(path, line);
-
-    for (int i = 0; i < values.length; i++) {
-      final double x = stepX * i;
-      final double y = size.height - 4 - usableH * values[i].clamp(0.0, 1.0);
-      canvas.drawCircle(Offset(x, y), 3, dot);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SparklinePainter oldDelegate) => oldDelegate.values != values;
 }

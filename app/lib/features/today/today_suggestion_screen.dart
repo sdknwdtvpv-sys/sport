@@ -14,6 +14,12 @@ import 'package:flutter/material.dart';
 
 import '../../core/labels.dart';
 import '../../core/theme.dart';
+import '../../core/units.dart';
+import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
+import '../../domain/models.dart';
+import '../../data/exercise_repository.dart';
+import '../../data/routine_repository.dart';
+import '../routine/routine_screen.dart';
 import 'today_planner.dart';
 
 /// 用户在这一屏做出的选择，回传给调用方（main.dart）决定接下来怎么练。
@@ -33,9 +39,23 @@ class TodayResult {
 }
 
 class TodaySuggestionScreen extends StatefulWidget {
-  const TodaySuggestionScreen({super.key, required this.planner});
+  const TodaySuggestionScreen({
+    super.key,
+    required this.planner,
+    this.unit = WeightUnit.kg,
+    this.routines,
+    this.exercises,
+  });
 
   final TodayPlanner planner;
+
+  /// 计划模板（S11）。**两者都给才显示「我的计划」入口** ——
+  /// 缺一个就宁可不显示，也不放一个点不动的按钮。
+  final RoutineRepository? routines;
+  final ExerciseRepository? exercises;
+
+  /// 显示单位（建议卡上那行「62.5 kg × 8」）
+  final WeightUnit unit;
 
   @override
   State<TodaySuggestionScreen> createState() => _TodaySuggestionScreenState();
@@ -55,7 +75,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
   Future<void> _load() async {
     final String group = await widget.planner.nextMuscleGroup();
     final List<PlannedExercise> plan =
-        await widget.planner.planToday(muscleGroup: group);
+        await widget.planner.planToday(muscleGroup: group, unit: widget.unit);
     if (!mounted) return;
     setState(() {
       _group = group;
@@ -67,12 +87,52 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
   Future<void> _reroll() async {
     setState(() => _loading = true);
     final List<PlannedExercise> plan =
-        await widget.planner.reroll(current: _plan);
+        await widget.planner.reroll(current: _plan, unit: widget.unit);
     if (!mounted) return;
     setState(() {
       _plan = plan;
       _loading = false;
     });
+  }
+
+  /// 用计划模板开训（S11）。
+  ///
+  /// 复用「按建议练」那条路径 —— 返回的 TodayResult 形状完全一样，
+  /// 只是 plan 的来源从"轮转建议"换成了"用户自己的计划"。
+  Future<void> _useRoutine() async {
+    final RoutineStart? start = await Navigator.of(context).push<RoutineStart>(
+      MaterialPageRoute<RoutineStart>(
+        builder: (_) => RoutineListScreen(
+          repository: widget.routines!,
+          exercises: widget.exercises!,
+          unit: widget.unit,
+        ),
+      ),
+    );
+    if (start == null || !mounted) return;
+
+    final List<PlannedExercise> plan = await widget.planner.planFromRoutine(
+      entries: <RoutineEntry>[
+        for (final RoutineItemData i in start.items)
+          RoutineEntry(
+            exerciseId: i.exerciseId,
+            plan: PlanTarget(
+              targetSets: i.targetSets,
+              targetRepsLow: i.targetRepsLow,
+              targetRepsHigh: i.targetRepsHigh,
+            ),
+          ),
+      ],
+      unit: widget.unit,
+    );
+    if (!mounted) return;
+    if (plan.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('这份计划里的动作都不在动作库里了')),
+      );
+      return;
+    }
+    Navigator.of(context).pop(TodayResult(TodayChoice.startPlanned, plan));
   }
 
   void _start() =>
@@ -262,6 +322,15 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                       style: TextStyle(color: Tokens.text2, fontSize: 15)),
                 ),
               ),
+              if (widget.routines != null && widget.exercises != null)
+                Expanded(
+                  child: TextButton(
+                    key: const Key('use-routine'),
+                    onPressed: _useRoutine,
+                    child: const Text('我的计划',
+                        style: TextStyle(color: Tokens.text2, fontSize: 15)),
+                  ),
+                ),
             ],
           ),
         ],
