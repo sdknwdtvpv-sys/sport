@@ -352,6 +352,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(await store.allSets(), isEmpty, reason: '库里必须真删掉（硬删除）');
+
+      // ⚠️ 断言统计卡之前要先滚回顶部：`ListView` 是**懒构建**的 ——
+      // 「数据」区在下面，滚下去之后上面那几张卡会被回收，
+      // `find` 会直接落空（不是界面没刷新）。
+      // （加「导出备份/导入备份」两个 tile 之后视口变化，这条就露出来了。）
+      await tester.dragUntilVisible(
+        find.textContaining('还没有训练记录'),
+        find.byType(ListView),
+        const Offset(0, 220),
+      );
+      await tester.pumpAndSettle();
+
       expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
           reason: '界面必须一起刷新 —— 否则用户以为没删掉');
       expect(find.textContaining('还没有训练记录'), findsOneWidget);

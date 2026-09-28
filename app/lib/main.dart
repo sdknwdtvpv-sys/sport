@@ -459,6 +459,8 @@ class _HomeShellState extends State<HomeShell> {
           onRestOverrideChanged: (int? sec) {
             setState(() => _restOverrideSec = sec);
           },
+          // 删光 / 导入之后，首页那行"我上周练了 N 次"要跟着变
+          onDataChanged: () => unawaited(_refreshWeekSessions()),
         );
     }
   }

@@ -26,6 +26,8 @@ import '../../analytics/analytics.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/models.dart';
 import '../body/body_metric_screen.dart';
+import 'backup.dart';
+import 'backup_exporter.dart';
 import 'training_stats.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -40,6 +42,8 @@ class ProfileScreen extends StatefulWidget {
     this.onUnitChanged,
     this.restOverrideSec,
     this.onRestOverrideChanged,
+    this.backupExporter = const PluginBackupExporter(),
+    this.onDataChanged,
   });
 
   final LocalStore store;
@@ -63,6 +67,14 @@ class ProfileScreen extends StatefulWidget {
 
   /// 用户改了休息时长之后通知上层（训练屏要用新值）
   final ValueChanged<int?>? onRestOverrideChanged;
+
+  /// 把备份交给系统。默认走 share_plus（不需要新依赖，也不需要权限）；
+  /// 测试里换成假的就能断言"到底交出去了什么"。
+  final BackupExporter backupExporter;
+
+  /// 数据被改动过（删光 / 导入）—— 外壳要跟着刷新首页那个"我上周练了 N 次"。
+  /// 只清库不刷新的话，界面还显示着刚被删掉的数据（用户会以为没删掉）。
+  final VoidCallback? onDataChanged;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -122,6 +134,108 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('已复制 ${sets.length} 条记录到剪贴板'),
+        backgroundColor: Tokens.elevated,
+      ),
+    );
+  }
+
+  /// 导出**可导回的备份**（JSON，不是那份给人看的 CSV）。
+  ///
+  /// 为什么单独做一个：`_export` 那份 CSV 是**报表** —— 日期精确到分钟、
+  /// 重量跟着显示单位走，拿它当备份等于把数据换成"长得像"的另一份。
+  /// 这一份带上组 id、训练 id、热身标记、RPE、秒级时间，重量一律 kg，
+  /// 导回来是同一批数据。对手最集中的抱怨就是数据丢失，这是我们的答案。
+  Future<void> _exportBackup() async {
+    // allSets() 只给正式组，正好用来枚举"练过哪些训练"；
+    // 再按训练把**整份**记录（含热身组）读回来。
+    final List<SetRecord> normal = await widget.store.allSets();
+    final List<String> ids = <String>[];
+    for (final SetRecord s in normal) {
+      if (!ids.contains(s.workoutId)) ids.add(s.workoutId);
+    }
+
+    final List<Workout> workouts = <Workout>[];
+    for (final String id in ids) {
+      final List<SetRecord> sets = await widget.store.setsFor(id);
+      if (sets.isEmpty) continue;
+      // 训练行只用来拿起止时间，**不作为数据来源**：项目里真发生过
+      // "只写了 set_record、没写 workout 行"的缺陷，那时 loadWorkout 返回 null ——
+      // 如果备份依赖它，那一整次训练就会被静默丢掉。备份是最后一道防线，
+      // 所以缺训练行时用最早那一组的完成时间兜底，宁可时间粗一点也不丢数据。
+      final Workout? loaded = await widget.store.loadWorkout(id);
+      final Workout w = Workout(
+        id: id,
+        startedAtMs: loaded?.startedAtMs ?? sets.first.completedAtMs,
+        endedAtMs: loaded?.endedAtMs,
+      );
+      w.sets.addAll(sets);
+      workouts.add(w);
+    }
+
+    final List<ExerciseData> rows = await widget.repository.search(limit: 500);
+    final Map<String, String> names = <String, String>{
+      for (final ExerciseData r in rows) r.id: r.name,
+    };
+
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    final String json = encodeBackup(
+      workouts: workouts,
+      exerciseNames: names,
+      nowMs: now,
+    );
+    await widget.backupExporter
+        .shareBackup(json, fileName: backupFileName(now));
+    if (!mounted) return;
+
+    final int sets = workouts.fold<int>(0, (int a, Workout w) => a + w.sets.length);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已导出 ${workouts.length} 次训练 / $sets 组'),
+        backgroundColor: Tokens.elevated,
+      ),
+    );
+  }
+
+  /// 粘贴导入备份。
+  ///
+  /// 这条路径同时解决三件事：数据可携带（合规）、用户换了手机能回来、
+  /// 以及可用性测试需要的"预置 6 周历史"（`docs/usability-test-kit.md` §4）。
+  Future<void> _importBackup() async {
+    final BackupParse? parsed = await showDialog<BackupParse>(
+      context: context,
+      builder: (BuildContext ctx) => const _ImportBackupDialog(),
+    );
+    if (parsed == null || !mounted) return;
+
+    if (!parsed.ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('没导入：${parsed.error}'),
+          backgroundColor: Tokens.danger,
+        ),
+      );
+      return;
+    }
+
+    for (final Workout w in parsed.workouts) {
+      for (final SetRecord s in w.sets) {
+        await widget.store.saveSet(s);
+      }
+      // 训练行本身也要写：时长要用 started_at / ended_at
+      await widget.store.saveWorkout(w);
+    }
+    if (!mounted) return;
+
+    await _load();
+    widget.onDataChanged?.call();
+    if (!mounted) return;
+
+    final String skipped =
+        parsed.skippedSets > 0 ? '，跳过 ${parsed.skippedSets} 条没认出来的' : '';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            '已导入 ${parsed.workoutCount} 次训练 / ${parsed.setCount} 组$skipped'),
         backgroundColor: Tokens.elevated,
       ),
     );
@@ -253,6 +367,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // 只清库不刷新的话，界面还显示着刚被删掉的数据 —— 用户会以为没删掉。
     await _load();
     widget.analytics?.setEnabled(_analyticsEnabled);
+    // 首页那行"我上周练了 N 次"也要跟着归零
+    widget.onDataChanged?.call();
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -416,10 +532,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(color: Tokens.text, fontSize: 15),
             ),
             subtitle: const Text(
-              '复制成 CSV 到剪贴板，可贴进表格',
+              '复制成 CSV 到剪贴板，可贴进表格（报表，不能导回来）',
               style: TextStyle(color: Tokens.text3, fontSize: 13),
             ),
             trailing: const Icon(Icons.ios_share, color: Tokens.text3, size: 20),
+          ),
+          const Divider(height: 1, color: Tokens.line),
+          ListTile(
+            key: const Key('export-backup'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+            onTap: _exportBackup,
+            title: const Text(
+              '导出备份文件',
+              style: TextStyle(color: Tokens.text, fontSize: 15),
+            ),
+            subtitle: const Text(
+              '存成文件或发给自己。导回来是同一批数据',
+              style: TextStyle(color: Tokens.text3, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.save_alt, color: Tokens.text3, size: 20),
+          ),
+          const Divider(height: 1, color: Tokens.line),
+          ListTile(
+            key: const Key('import-backup'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+            onTap: _importBackup,
+            title: const Text(
+              '导入备份',
+              style: TextStyle(color: Tokens.text, fontSize: 15),
+            ),
+            subtitle: const Text(
+              '把备份内容粘进来。换手机、或想补齐历史都用它',
+              style: TextStyle(color: Tokens.text3, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.download, color: Tokens.text3, size: 20),
           ),
           const Divider(height: 1, color: Tokens.line),
           ListTile(
@@ -500,4 +646,111 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       );
+}
+
+/// 粘贴导入的弹层。
+///
+/// 做成独立 StatefulWidget 而不是就地 showDialog：错误要**留在弹层里**显示 ——
+/// 关掉弹层再弹一条 SnackBar，用户就得重新粘一遍。
+class _ImportBackupDialog extends StatefulWidget {
+  const _ImportBackupDialog();
+
+  @override
+  State<_ImportBackupDialog> createState() => _ImportBackupDialogState();
+}
+
+class _ImportBackupDialogState extends State<_ImportBackupDialog> {
+  final TextEditingController _text = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  /// 从剪贴板取。手机上长按输入框也能粘，但多一个按钮少一步操作。
+  Future<void> _paste() async {
+    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+    setState(() {
+      _text.text = data?.text ?? '';
+      _error = _text.text.isEmpty ? '剪贴板是空的' : null;
+    });
+  }
+
+  void _confirm() {
+    final BackupParse parsed = parseBackup(_text.text);
+    if (!parsed.ok) {
+      setState(() => _error = parsed.error);
+      return;
+    }
+    if (parsed.setCount == 0) {
+      setState(() => _error = '这份备份里一条记录都没有');
+      return;
+    }
+    Navigator.of(context).pop(parsed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      key: const Key('import-backup-dialog'),
+      backgroundColor: Tokens.elevated,
+      title: const Text('导入备份'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text(
+            '把「导出备份文件」得到的内容粘进下面。\n'
+            '导入是幂等的：同一份粘两次不会变成两份。',
+            style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+          ),
+          const SizedBox(height: Tokens.s3),
+          TextField(
+            key: const Key('import-text'),
+            controller: _text,
+            maxLines: 6,
+            style: const TextStyle(color: Tokens.text, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: '{\"app\":\"lianleme\", …}',
+              hintStyle: const TextStyle(color: Tokens.text3, fontSize: 13),
+              filled: true,
+              fillColor: Tokens.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Tokens.rCard),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          if (_error != null) ...<Widget>[
+            const SizedBox(height: Tokens.s2),
+            Text(
+              _error!,
+              key: const Key('import-error'),
+              style: const TextStyle(color: Tokens.danger, fontSize: 13),
+            ),
+          ],
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          key: const Key('import-paste'),
+          onPressed: _paste,
+          child: const Text('从剪贴板粘贴'),
+        ),
+        TextButton(
+          key: const Key('import-cancel'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          key: const Key('import-confirm'),
+          onPressed: _confirm,
+          child: const Text('导入'),
+        ),
+      ],
+    );
+  }
 }

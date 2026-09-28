@@ -38,6 +38,35 @@ CREATE INDEX idx_exercise_name     ON exercise(name);
 CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 ```
 
+### 备份文件格式
+
+用户数据的**完整可导回**表示（JSON），由 `app/lib/features/profile/backup.dart` 实现。
+与「导出全部记录」那份 CSV **不是一回事** —— 后者是给人看的报表，丢了 id/热身/RPE/秒级时间，
+重量还跟显示单位走，导回来是另一批数据。
+
+```json
+{
+  "app": "lianleme", "format": 1, "exported_at": 1790612345678, "unit": "kg",
+  "exercise_names": { "ex_bb_bench_press": "杠铃卧推" },
+  "workouts": [
+    { "id": "w_...", "started_at": 0, "ended_at": 0,
+      "sets": [ { "id": "s_...", "exercise_id": "ex_bb_bench_press", "set_index": 1,
+                  "reps": 8, "weight_kg": 60, "set_type": "normal", "rpe": 8,
+                  "completed_at": 0 } ] }
+  ]
+}
+```
+
+约定：
+
+1. **重量一律 kg**。备份是数据交换格式，不跟显示单位走 —— 否则一份 lb 备份
+   导进 kg 手机就会静默变成另一组数字。
+2. **`format` 是版本号**，加字段时靠它判断兼容；`app` 用来在用户粘错东西时给一句人话。
+3. **导入幂等**：id 是确定性的（`s_{workout}_{exercise}_{组序}`），同一份粘两次不会翻倍。
+4. **坏行跳过并计数**，不整份作废 —— "42 条进来、2 条没认出来"远好过"一份作废"，
+   后者会让用户在数据最危险的时候失去唯一的恢复手段。
+5. `exercise_names` **只是给人看的**；关联永远是 id（动作可能被改名或删除）。
+
 ### track_type 词表
 
 `track_type` 决定**数字的含义**，不只决定界面怎么显示：
