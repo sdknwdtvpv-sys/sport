@@ -25,7 +25,17 @@ abstract class Analytics {
   ///
   /// 做成方法而不是可变字段：`NoopAnalytics` 是 const 类，加可变字段会破坏它。
   void setEnabled(bool value);
+
+  /// 开启新的一组交互周期（清零）。
+  ///
+  /// 调用点必须**早于**导航：用户点「开始训练」时就调，这样建议卡/选动作
+  /// 上的点击才会算进第一组（端到端口径，见 docs/analytics.md §3）。
   void beginSetInteraction();
+
+  /// 周期没开就开、开着就不动。控制器构造时用这个 ——
+  /// 用 `beginSetInteraction()` 会把导航点击清零。
+  void ensureSetInteraction();
+
   void countTap(TapKind kind);
   TapMeterReading flushTap();
   Future<void> flush({bool force = false});
@@ -59,6 +69,9 @@ class RecordingAnalytics implements Analytics {
   void beginSetInteraction() => _meter.begin();
 
   @override
+  void ensureSetInteraction() => _meter.ensure();
+
+  @override
   void countTap(TapKind kind) => _meter.tap(kind);
 
   @override
@@ -88,6 +101,9 @@ class NoopAnalytics implements Analytics {
 
   @override
   void beginSetInteraction() {}
+
+  @override
+  void ensureSetInteraction() {}
 
   @override
   void countTap(TapKind kind) {}

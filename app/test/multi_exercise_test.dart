@@ -67,10 +67,10 @@ void main() {
       workoutId: workoutId,
       exercise: repo.specOf(row),
       plan: _plan,
-      // 每个控制器一份独立埋点：TapMeter 是"当前这一组的交互计数"，
-      // 两个控制器共用同一个会把彼此的计数重置掉。
-      // 真实 App 里控制器是顺序创建的（前一个 dispose 后才建下一个），不存在这个问题；
-      // 但测试里两个同时活着，必须各自一份才反映真实语义。
+      // 每个控制器一份独立埋点，避免互相影响断言。
+      // 真实 App 里所有控制器**共用同一个** `OutboxAnalytics`（main.dart 的 `_analytics`），
+      // 这也是端到端 tap_count 的前提：构造函数用 `ensure()` 而不是 `begin()`，
+      // 所以后构造的控制器不会把前面攒下的导航/切换点击清零。
       analytics: RecordingAnalytics(),
       store: store,
       syncQueue: queue,

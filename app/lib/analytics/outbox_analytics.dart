@@ -60,6 +60,9 @@ class OutboxAnalytics implements Analytics {
   void beginSetInteraction() => _meter.begin();
 
   @override
+  void ensureSetInteraction() => _meter.ensure();
+
+  @override
   void countTap(TapKind kind) => _meter.tap(kind);
 
   @override

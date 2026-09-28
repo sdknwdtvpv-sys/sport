@@ -53,7 +53,10 @@ class WorkoutController extends ChangeNotifier {
     unit = profile.unit;
     // 用户设了就用他的；没设就跟随动作自带的值（种子差异很大：核心 45s、深蹲 180s）
     plannedRestSec = profile.restOverrideSec ?? exercise.defaultRestSec;
-    analytics.beginSetInteraction();
+    // **ensure 而不是 begin**：端到端口径要求把"用户点开始训练 → 选动作"
+    // 这些点击算进第一组，而它们发生在控制器被构造之前。
+    // 用 begin 会在这里清零，第一组又变回"只算大按钮那一下"。
+    analytics.ensureSetInteraction();
   }
 
   final ExerciseSpec exercise;

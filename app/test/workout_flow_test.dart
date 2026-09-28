@@ -14,6 +14,7 @@ import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/local_store.dart';
 import 'package:lianleme/data/sync_queue.dart';
 import 'package:lianleme/domain/models.dart';
+import 'package:lianleme/domain/tap_meter.dart';
 import 'package:lianleme/features/workout/workout_controller.dart';
 import 'package:lianleme/features/workout/workout_screen.dart';
 import 'package:lianleme/features/workout/workout_session.dart';
@@ -147,6 +148,42 @@ void main() {
     expect(h.controller.loggedSets.single.weightKg, 42.5);
 
     await _teardown(tester, h);
+  });
+
+  testWidgets('端到端口径：控制器被构造之前的导航点击也要算进第一组',
+      (WidgetTester tester) async {
+    // 真实顺序（main.dart 的 _startSession）：用户点「开始训练」时先开周期、
+    // 记下这一下；等建议卡走完才构造控制器。构造函数里若调 begin() 就会
+    // 把这些点击清零 —— 那正是"只算大按钮"的窄口径，会让闸门自我满足。
+    final RecordingAnalytics analytics = RecordingAnalytics();
+    analytics.beginSetInteraction();
+    analytics.countTap(TapKind.nav); // 今日页那一下
+    analytics.countTap(TapKind.nav); // 建议卡「就用这个，开始练」
+
+    final WorkoutController controller = WorkoutController(
+      exercise: _bench,
+      plan: _plan3x8to10,
+      analytics: analytics,
+      store: InMemoryLocalStore(),
+      syncQueue: InMemorySyncQueue(),
+      clock: () => 1000,
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: WorkoutScreen(session: WorkoutSession.single(controller)),
+    ));
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    final Map<String, Object?> props = analytics.propsOf('set_logged').single;
+    expect(props['tap_count'], 3,
+        reason: '今日页 → 建议卡 → 大按钮 = 3 次；记成 1 就是窄口径在骗自己');
+    expect(props['tap_kinds'], <String>['nav', 'nav', 'big_button']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
   });
 
   testWidgets('离线可用：记录照常成功、进同步队列、界面不报错', (WidgetTester tester) async {

@@ -188,6 +188,58 @@ void runContractTests(StoreHarness harness) {
       expect((await store.lastSessionFor('row'))!.reps, <int>[12]);
     });
 
+    test('daysAgo 是真实天数 —— 引擎的"21 天回归保护"全靠它', () async {
+      // 两个实现曾经都漏了这个字段，daysAgo 恒为默认值 0，
+      // 于是 progression.dart 的 kStaleDays 分支永远进不去 ——
+      // 写在 PRODUCT.md §6 的一条承诺从来没生效过。
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      await store.saveSet(_set(
+        id: 's1',
+        workoutId: 'w1',
+        exerciseId: 'bench',
+        setIndex: 1,
+        reps: 8,
+        atMs: now - 5 * Duration.millisecondsPerDay,
+      ));
+
+      final last = await store.lastSessionFor('bench');
+      expect(last!.daysAgo, 5,
+          reason: '恒为 0 时"三周没练该减量"永远不会触发');
+    });
+
+    test('daysAgo 跨过 21 天门槛（回归保护的另一半）', () async {
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      await store.saveSet(_set(
+        id: 's1',
+        workoutId: 'w1',
+        exerciseId: 'bench',
+        setIndex: 1,
+        reps: 8,
+        atMs: now - 22 * Duration.millisecondsPerDay,
+      ));
+
+      expect((await store.lastSessionFor('bench'))!.daysAgo, greaterThanOrEqualTo(21));
+    });
+
+    test('excludeWorkoutId 排除本次训练 —— 同一次里再进同一动作时不把刚才的组当"上次"',
+        () async {
+      await store.saveSet(_set(id: 'p1', workoutId: 'w_prev', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000, weightKg: 60));
+      await store.saveSet(_set(id: 'n1', workoutId: 'w_now', exerciseId: 'bench', setIndex: 1, reps: 12, atMs: 2000, weightKg: 80));
+
+      final withNow = await store.lastSessionFor('bench');
+      expect(withNow!.weightKg, 80, reason: '不排除时最近一次就是本次');
+
+      final excluded = await store.lastSessionFor('bench', excludeWorkoutId: 'w_now');
+      expect(excluded!.weightKg, 60, reason: '排除本次后回落到上一次训练');
+      expect(excluded.reps, <int>[8]);
+    });
+
+    test('excludeWorkoutId 把唯一一次训练排除掉时返回 null', () async {
+      await store.saveSet(_set(id: 'n1', workoutId: 'w_now', exerciseId: 'bench', setIndex: 1, reps: 12, atMs: 2000));
+
+      expect(await store.lastSessionFor('bench', excludeWorkoutId: 'w_now'), isNull);
+    });
+
     test('allSets：返回全部正式组，跨训练、按时间升序', () async {
       await store.saveSet(_set(id: 'b', workoutId: 'w2', exerciseId: 'row', setIndex: 1, reps: 10, atMs: 5000));
       await store.saveSet(_set(id: 'a', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));

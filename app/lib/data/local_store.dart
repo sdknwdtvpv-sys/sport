@@ -10,6 +10,20 @@ library;
 
 import '../domain/models.dart';
 
+/// 距某个时间点过了几天（向下取整，未来时间归 0）。
+///
+/// 为什么做成共享函数而不是两个实现各写一遍：`LastSession.daysAgo` 是引擎
+/// 「21 天回归保护」（`progression.dart` 的 `kStaleDays` 分支）的唯一输入，
+/// 两个实现必须算出同一个数 —— 契约测试对两者跑同一组断言。
+///
+/// 这个字段曾经**两个实现都漏了**，于是 `daysAgo` 恒为默认值 0，
+/// 回归保护永远不触发 —— 写在 `PRODUCT.md` §6 的一条承诺从来没生效过。
+int daysSince(int fromMs, {int? nowMs}) {
+  final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+  final int diff = now - fromMs;
+  return diff <= 0 ? 0 : diff ~/ Duration.millisecondsPerDay;
+}
+
 abstract class LocalStore {
   Future<void> saveSet(SetRecord record);
   Future<void> deleteSet(String id);
@@ -18,7 +32,15 @@ abstract class LocalStore {
   Future<Workout?> loadWorkout(String id);
 
   /// 引擎的输入：某动作上一次训练的表现（只含正式组，最近一次训练的全部正式组）。
-  Future<LastSession?> lastSessionFor(String exerciseId);
+  ///
+  /// [excludeWorkoutId] 用来排除**本次**训练：同一次训练里再次进入同一个动作时，
+  /// 不排除就会把"两秒前刚记的组"当成"上次"，引擎据此说出"上次 3 组达标 → +2.5kg"。
+  ///
+  /// 返回值里的 `daysAgo` 必须是**真实天数** —— 引擎靠它做回归保护。
+  Future<LastSession?> lastSessionFor(
+    String exerciseId, {
+    String? excludeWorkoutId,
+  });
 
   /// 全部正式组，按完成时间升序。用于「我」页的训练统计与数据导出。
   Future<List<SetRecord>> allSets();
@@ -131,9 +153,15 @@ class InMemoryLocalStore implements LocalStore {
   }
 
   @override
-  Future<LastSession?> lastSessionFor(String exerciseId) async {
+  Future<LastSession?> lastSessionFor(
+    String exerciseId, {
+    String? excludeWorkoutId,
+  }) async {
     final all = _sets.values
-        .where((s) => s.exerciseId == exerciseId && s.setType == SetType.normal)
+        .where((s) =>
+            s.exerciseId == exerciseId &&
+            s.setType == SetType.normal &&
+            (excludeWorkoutId == null || s.workoutId != excludeWorkoutId))
         .toList()
       ..sort((a, b) => a.completedAtMs.compareTo(b.completedAtMs));
     if (all.isEmpty) return null;
@@ -142,6 +170,7 @@ class InMemoryLocalStore implements LocalStore {
     return LastSession(
       weightKg: sameWorkout.last.weightKg,
       reps: sameWorkout.map((s) => s.reps).toList(),
+      daysAgo: daysSince(sameWorkout.last.completedAtMs),
     );
   }
 

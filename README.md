@@ -1,6 +1,6 @@
 # 练了么
 
-**v1.1.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+**v1.2.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
 
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
@@ -32,17 +32,18 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | JS 规则引擎（28 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 35/35 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 41/41 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter 测试（引擎 + 持久化契约 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **381/381** |
+| Flutter 测试（引擎 + 持久化契约 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **400/400** |
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
-`flutter test` 的 381 项 = 34 项引擎向量/红线/1RM + 6 项 `tap_count` 边界 + 15 项 widget 交互测试
-+ **48 项持久化契约测试**（24 条断言 × 2 个实现：内存版与 drift 版）
+`flutter test` 的 400 项 = 34 项引擎向量/红线/1RM + 10 项 `tap_count` 边界 + 16 项 widget 交互测试
++ **56 项持久化契约测试**（28 条断言 × 2 个实现：内存版与 drift 版）
 + 14 项动作库 + 4 项多动作 + 12 项动作选择页 + 2 项启动冒烟 + 13 项今日规划
 + 6 项今日建议卡 + 18 项训练总结 + 15 项分享卡 + 14 项身体数据 + 22 项「我」页 + 20 项「进步」页
 + **26 项埋点上报** + **17 项单位换算** + **14 项休息偏好**
-+ **18 项动作切换** + **22 项全部数据** + **16 项计划模板仓库** + **12 项计划模板界面** + **13 项首次引导**。
++ **19 项动作切换** + **22 项全部数据** + **16 项计划模板仓库** + **12 项计划模板界面** + **13 项首次引导**
++ **5 项渐进建议接线**（`progression_wiring_test.dart`：测的不是引擎算得对不对，而是**历史真的走进了控制器**）。
 
-> 契约那 48 项容易数错：**每条断言都会在两个实现上各跑一遍**，
+> 契约那 56 项容易数错：**每条断言都会在两个实现上各跑一遍**，
 > 所以加 3 条断言等于加 6 项测试。
 
 那 26 项是"换实现 UI 零改动"这句话的证明：同一组断言同时跑在 `InMemoryLocalStore` 和
@@ -235,7 +236,7 @@ flutter test
 |---|---|---|---|
 | 产品定义 | `PRODUCT.md` | 散文 | 创始人 / 合伙人 |
 | 交互 | `prototype/index.html`（**6 屏，零依赖**）+ `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
-| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：165 条种子可直接导入；drift 落库有 48 项契约测试 | 客户端 / 后端 |
+| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：165 条种子可直接导入；drift 落库有 56 项契约测试 | 客户端 / 后端 |
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 28 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
 | 验证 | `docs/usability-test.md` + `-kit.md` | 流程手册，可照做 | 你本人 |
@@ -270,7 +271,7 @@ engine/vectors.json ──┬──> engine/run-tests.mjs        （Node）
 | 4 | `app/lib/features/workout/` | 对照 `docs/interaction-spec.md` 扩展其余屏 |
 | 5 | `docs/analytics-sdk.md` | 接真实上报地址 —— 客户端管线已就绪（outbox + 批量 ≤100 + 退避重试 + **训练期间挂起**），现用 `_NullTransport` 兜底 |
 
-**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **381 条测试**锁住；
+**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **400 条测试**锁住；
 UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 **165 个**。
 还没做的见上文「现在还没有的东西（别期待）」，下一步见 [`ROADMAP.md`](ROADMAP.md)。
 
@@ -283,14 +284,16 @@ UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 *
 ### 你是数据 / 增长
 
 - `docs/analytics.md`：事件字典 + 北极星定义（首次 `app_open` 起 24h 内完成含 ≥1 组的训练，目标 ≥55%）+ 看板布局
-- **必须知道的治理规则**：`set_logged.tap_count` 中位数 > 1 或 P90 上升，**该版本不允许发布**
+- **必须知道的治理规则**：`set_logged.tap_count` 中位数或 P90 **比上一版上升**，**该版本不允许发布**
+  （口径是端到端的：导航、选动作、切换动作都计入，见 `docs/analytics.md` §3）
 - `tap_kinds` 回答"点击花在哪了"；§5「反指标」列了四种"出现即停下讨论"的情况
 
 ### 你是 QA / 测试
 
 - `./verify.sh` 作为统一回归入口
 - `app/test/workout_flow_test.dart` —— 交互红线的自动化版本（9 个 widget 测试）
-- `app/test/tap_meter_test.dart` —— `tap_count` 的 6 条边界用例
+- `app/test/tap_meter_test.dart` —— `tap_count` 的 10 条边界用例（含端到端口径的 `ensure` 语义）
+- `app/test/progression_wiring_test.dart` —— **历史真的走进了控制器**（引擎对不等于接线对）
 - `docs/interaction-spec.md` §12 设计验收清单 / `docs/analytics-sdk.md` §12 接入验收清单
 - `docs/usability-test-kit.md` —— 可用性测试现场手册
 
@@ -354,7 +357,7 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | App 已装进真机（Redmi `flourite`，v1.0.0），但**还没在设备上实际用一遍** | 381 条测试全绿，可真实手势与"杀掉重开数据还在"仍未验 —— **这是最大的一条** |
+| 🚧 **真机交互验收** | App 已装进真机（Redmi `flourite`，v1.0.0），但**还没在设备上实际用一遍** | 400 条测试全绿，可真实手势与"杀掉重开数据还在"仍未验 —— **这是最大的一条** |
 | 🚧 **v1 → v2 迁移的真机验证** | 为 `body_metric` 新增表并把 `schemaVersion` 提到 2，补了 `onUpgrade`；有迁移测试，但那不是真机 | 老库升级必须在设备上过一次 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |
@@ -362,7 +365,7 @@ analysis server exited with code 255
 | ❌ **真实埋点上报地址** | 客户端已就绪（outbox + 批量 ≤100 + 退避重试 + 训练期间挂起），只缺后端接收，现用 `_NullTransport` 兜底 | 事件不丢，但看板没有数据源 |
 | ❌ **后端接口** | 一期极薄，还没开始 | — |
 | ❌ **S14 会员页** | `PRODUCT.md` 列的四大权益（AI 动态调整 / 多端云同步 / 无限历史对比 / 教练协作）**全部依赖后端**，一项都不存在 | 做出来等于向用户宣传不存在的功能，比不做更糟 —— 等后端落地再说 |
-| ⚠️ **`tap_count` 目标值未校准** | `docs/analytics.md` 的 55% 与 `tap_count = 1` 都还是**估计值**，要靠阶段 5 拿真实数字 | **按项目自己的门禁，校准前不允许发布** |
+| ⚠️ **`tap_count` 目标值未校准** | `docs/analytics.md` 的 55% 与 `tap_count` 目标都还是**估计值**，且口径已改端到端、旧目标作废，要靠阶段 5 拿真实数字 | **按项目自己的门禁，校准前不允许发布** |
 
 已实现 **13 屏**：S1 / S2 / S3 / S4 / S5 / S6 / S7 / S8 / S9 / S10 / S11 / S12 / **S13**。
 未做：**S14 会员页**（原因见下表）。

@@ -128,6 +128,37 @@ void main() {
       h.squat.dispose();
       h.dead.dispose();
     });
+
+    test('切换动作计一次点击，并且计在切换后的那个动作上', () {
+      // 同一个会话里的控制器**共用一个埋点** —— 这正是 main.dart 的真实做法
+      // （所有控制器都拿 `_analytics`）。
+      final RecordingAnalytics analytics = RecordingAnalytics();
+      WorkoutController make(String id, String name, double weight) =>
+          WorkoutController(
+            workoutId: 'w_shared',
+            exercise: ExerciseSpec(
+                id: id, name: name, weightIncrement: 2.5, defaultWeightKg: weight),
+            plan: _plan,
+            analytics: analytics,
+            store: InMemoryLocalStore(),
+            syncQueue: InMemorySyncQueue(),
+          );
+      final WorkoutController a = make('bench', '杠铃卧推', 40);
+      final WorkoutController b = make('squat', '杠铃深蹲', 60);
+      final WorkoutSession s = WorkoutSession(<WorkoutController>[a, b]);
+
+      s.next(); // 切到 B：一次操作
+      b.onBigButtonTap(); // 第 1 组
+
+      final Map<String, Object?> props = analytics.propsOf('set_logged').single;
+      expect(props['tap_count'], 2,
+          reason: '切动作 1 次 + 大按钮 1 次；只算大按钮会把它记成 1，等于假装用户没切');
+      expect(props['tap_kinds'], <String>['exercise_switch', 'big_button']);
+
+      s.dispose();
+      a.dispose();
+      b.dispose();
+    });
   });
 
   group('底部切换条', () {

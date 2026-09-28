@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
 import '../../domain/models.dart';
+import '../../domain/tap_meter.dart';
 import 'workout_controller.dart';
 
 /// 会话里的一项：练哪个动作、按什么处方。
@@ -56,15 +57,22 @@ class WorkoutSession extends ChangeNotifier {
   bool get canGoPrevious => _index > 0;
   bool get canGoNext => _index < _controllers.length - 1;
 
+  /// 换到上一个 / 下一个动作。
+  ///
+  /// 切换**要计一次点击**（端到端口径）：用户为得到下一组多操作了一次，
+  /// 而"底部条是不是常用"正是产品要回答的问题 —— 不计就等于假装它不存在。
+  /// 计在**切换后**的那个控制器上，因为那一组是它记的。
   void previous() {
     if (!canGoPrevious) return;
     _index--;
+    current.analytics.countTap(TapKind.exerciseSwitch);
     notifyListeners();
   }
 
   void next() {
     if (!canGoNext) return;
     _index++;
+    current.analytics.countTap(TapKind.exerciseSwitch);
     notifyListeners();
   }
 

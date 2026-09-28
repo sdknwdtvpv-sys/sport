@@ -159,13 +159,22 @@ class DriftLocalStore implements LocalStore {
   }
 
   @override
-  Future<domain.LastSession?> lastSessionFor(String exerciseId) async {
-    // 只取正式组；按完成时间升序，最后一条所在的那次训练就是"上次"
+  Future<domain.LastSession?> lastSessionFor(
+    String exerciseId, {
+    String? excludeWorkoutId,
+  }) async {
+    // 只取正式组；按完成时间升序，最后一条所在的那次训练就是"上次"。
+    // excludeWorkoutId 排除本次训练（同一次里再次进入同一个动作时要用）。
     final rows = await (_db.select(_db.setRecord)
-          ..where((t) =>
-              t.exerciseId.equals(exerciseId) &
-              t.setType.equals('normal') &
-              t.deletedAt.isNull())
+          ..where((t) {
+            Expression<bool> cond = t.exerciseId.equals(exerciseId) &
+                t.setType.equals('normal') &
+                t.deletedAt.isNull();
+            if (excludeWorkoutId != null) {
+              cond = cond & t.workoutId.equals(excludeWorkoutId).not();
+            }
+            return cond;
+          })
           ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]))
         .get();
     if (rows.isEmpty) return null;
@@ -175,6 +184,9 @@ class DriftLocalStore implements LocalStore {
     return domain.LastSession(
       weightKg: same.last.weightKg,
       reps: same.map((SetRecordData r) => r.reps ?? 0).toList(),
+      // 真实天数。以前这里漏了这个字段 → daysAgo 恒为 0 →
+      // 引擎的 21 天回归保护（progression.dart 的 kStaleDays 分支）永远不触发。
+      daysAgo: daysSince(same.last.completedAt),
     );
   }
 

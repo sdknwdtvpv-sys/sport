@@ -27,6 +27,7 @@ import 'data/profile_repository.dart';
 import 'data/routine_repository.dart';
 import 'data/sync_queue.dart';
 import 'domain/models.dart';
+import 'domain/tap_meter.dart';
 import 'features/exercise/exercise_picker_screen.dart';
 import 'features/today/today_planner.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -182,20 +183,33 @@ class _HomeShellState extends State<HomeShell> {
     // 健身房常年弱网，任何请求都可能跟"记一组"抢资源。
     _flusher.suspend();
 
-    final List<WorkoutController> controllers = <WorkoutController>[
-      for (final SessionEntry entry in entries)
-        WorkoutController(
-          workoutId: workoutId,
-          exercise: _repo.specOf(entry.exercise),
-          // 处方逐项带上：计划模板里每个动作的组数/次数区间是分开的
-          plan: entry.plan,
-          analytics: _analytics,
-          store: _store,
-          syncQueue: _syncQueue,
-          // 控制器靠 profile 决定大按钮上怎么念数字、以及休息多久
-          profile: UserProfile(unit: _unit, restOverrideSec: _restOverrideSec),
+    final List<WorkoutController> controllers = <WorkoutController>[];
+    for (final SessionEntry entry in entries) {
+      controllers.add(WorkoutController(
+        workoutId: workoutId,
+        exercise: _repo.specOf(entry.exercise),
+        // 处方逐项带上：计划模板里每个动作的组数/次数区间是分开的
+        plan: entry.plan,
+        analytics: _analytics,
+        store: _store,
+        syncQueue: _syncQueue,
+        // **上一次这个动作练成什么样 —— 渐进建议的输入，必须传。**
+        //
+        // 不传的后果（曾经就是这样）：引擎永远命中 progression.dart 的
+        // "零历史"分支 → 大按钮上恒是动作库默认重量（卧推 40kg）、
+        // 理由恒是"第一次练这个动作"；而两秒前建议卡上写的是按历史算出来的
+        // 数字 —— 同一个用户在两张屏上看到两个数。
+        //
+        // excludeWorkoutId 排除本次训练：同一次训练里再次进入同一个动作时，
+        // 不能把"两秒前刚记的组"当成"上次"。
+        lastSession: await _store.lastSessionFor(
+          entry.exercise.id,
+          excludeWorkoutId: workoutId,
         ),
-    ];
+        // 控制器靠 profile 决定大按钮上怎么念数字、以及休息多久
+        profile: UserProfile(unit: _unit, restOverrideSec: _restOverrideSec),
+      ));
+    }
     final WorkoutSession session = WorkoutSession(controllers);
 
     await Navigator.of(context).push<void>(
@@ -243,6 +257,10 @@ class _HomeShellState extends State<HomeShell> {
       return;
     }
     final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
+    // 引导最后那下「就用这个，开始练」也是导航点击，且此时控制器还没被构造。
+    // 引导中间选目标/频率的那几步**不计** —— 那是搭计划，不是记这一组。
+    _analytics.beginSetInteraction();
+    _analytics.countTap(TapKind.nav);
     await _trainSession(
       workoutId,
       r.plan
@@ -255,6 +273,12 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Future<void> _startSession() async {
+    // 端到端 tap_count：用户按「开始训练」这一下就是这条记录的第一步。
+    // 周期必须**在这里**开 —— 控制器要等建议卡/选动作走完才被构造，
+    // 那时候再 begin() 会把这几下点击清零，又变回"只算大按钮"的窄口径。
+    _analytics.beginSetInteraction();
+    _analytics.countTap(TapKind.nav);
+
     // 幂等，所以每次开始训练都调一次，保证种子一定在库里
     await _repo.importSeed();
     if (!mounted) return;
@@ -275,6 +299,8 @@ class _HomeShellState extends State<HomeShell> {
     if (result == null || !mounted) return; // 从建议卡返回 = 不练了
 
     if (result.choice == TodayChoice.startPlanned) {
+      // 建议卡上「就用这个，开始练」也是为得到第一组付出的一次操作
+      _analytics.countTap(TapKind.nav);
       // 一次把建议里的动作全开出来，底部条与左右滑动在它们之间切换（S6）
       await _trainSession(
         workoutId,
@@ -289,6 +315,8 @@ class _HomeShellState extends State<HomeShell> {
     }
 
     // 「我自己选」：沿用"选一个 → 练 → 回来再选"的循环
+    // 选这条路本身也是一次点击（它决定了接下来要记什么）
+    _analytics.countTap(TapKind.nav);
     while (mounted) {
       final ExerciseData? picked = await Navigator.of(context).push<ExerciseData>(
         MaterialPageRoute<ExerciseData>(
@@ -300,6 +328,8 @@ class _HomeShellState extends State<HomeShell> {
         ),
       );
       if (picked == null || !mounted) break;
+      // 从动作库挑一个动作 = 一次选动作点击
+      _analytics.countTap(TapKind.exercisePick);
       await _trainOne(workoutId, picked);
     }
     await _showSummary(workoutId);

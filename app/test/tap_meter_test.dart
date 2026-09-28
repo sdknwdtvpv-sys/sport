@@ -69,4 +69,56 @@ void main() {
       expect(m.pending, 0);
     });
   });
+
+  group('端到端口径：ensure 不清零', () {
+    test('ensure 在周期没开时开一个（直接 new 出控制器的那条路）', () {
+      final TapMeter m = TapMeter();
+      m.ensure();
+      expect(m.isActive, isTrue);
+      m.tap(TapKind.bigButton);
+      expect(m.flush().count, 1);
+    });
+
+    test('ensure 在周期已开时什么都不做 —— 导航点击必须活着', () {
+      final TapMeter m = TapMeter();
+      // 真实顺序：用户点「开始训练」→ 建议卡确认 → 控制器才被构造
+      m.begin();
+      m.tap(TapKind.nav);
+      m.tap(TapKind.nav);
+
+      m.ensure(); // 控制器构造函数里那一下：绝不能清零
+
+      m.tap(TapKind.bigButton);
+      final TapMeterReading r = m.flush();
+      expect(r.count, 3, reason: '今日页 → 建议卡 → 大按钮 = 3 次，这是端到端数字');
+      expect(r.kinds, <TapKind>[TapKind.nav, TapKind.nav, TapKind.bigButton]);
+    });
+
+    test('next 的 begin 仍然清零（下一组是独立周期）', () {
+      final TapMeter m = TapMeter();
+      m.begin();
+      m.tap(TapKind.nav);
+      m.ensure();
+      m.tap(TapKind.bigButton);
+      expect(m.flush().count, 2);
+
+      m.begin(); // 记录完一组后开启下一组
+      m.ensure();
+      m.tap(TapKind.bigButton);
+      expect(m.flush().count, 1, reason: '上一组的导航点击不能算到下一组头上');
+    });
+
+    test('切换动作与选动作都是独立的点击类型', () {
+      final TapMeter m = TapMeter()..begin();
+      m.tap(TapKind.exercisePick);
+      m.tap(TapKind.exerciseSwitch);
+      m.tap(TapKind.stepper);
+      m.tap(TapKind.bigButton);
+      final TapMeterReading r = m.flush();
+      expect(r.count, 4);
+      expect(r.kinds.map((TapKind k) => k.wire).toList(),
+          <String>['exercise_pick', 'exercise_switch', 'stepper', 'big_button'],
+          reason: 'tap_kinds 要能回答"这些点击花在哪了"');
+    });
+  });
 }

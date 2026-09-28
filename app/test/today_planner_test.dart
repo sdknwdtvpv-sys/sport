@@ -32,14 +32,24 @@ void main() {
 
   tearDown(() => db.close());
 
-  /// 记一次训练：同一个 workoutId 下若干个正式组
+  /// 记一次训练：同一个 workoutId 下若干个正式组。
+  ///
+  /// `at` 只用来定**相对先后**（同一批数据里越大越新）；绝对时间锚在「现在」上。
+  ///
+  /// 为什么必须锚在现在：`LastSession.daysAgo` 现在是**真实天数**了。
+  /// 以前这里写 `completedAtMs: 1000`（= 1970 年），那时 daysAgo 恒为 0 所以看不出问题；
+  /// 接上真实天数后，每条历史都变成"两万天没练"，直接命中**回归保护**分支，
+  /// 把「达标加重」「掉组保持」这些要测的分支全挡在外面。
   Future<void> train(
     String workoutId,
     String exerciseId, {
     List<int> reps = const <int>[10, 10, 10],
     double weight = 60,
     int at = 1000,
+    int daysAgo = 1,
   }) async {
+    final int base = DateTime.now().millisecondsSinceEpoch -
+        daysAgo * Duration.millisecondsPerDay;
     for (int i = 0; i < reps.length; i++) {
       await store.saveSet(SetRecord(
         id: '${workoutId}_${exerciseId}_${i + 1}',
@@ -48,7 +58,7 @@ void main() {
         setIndex: i + 1,
         reps: reps[i],
         weightKg: weight,
-        completedAtMs: at + i,
+        completedAtMs: base + at + i,
       ));
     }
   }
