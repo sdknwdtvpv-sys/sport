@@ -10,6 +10,8 @@
 #   领域层（纯 Dart，零依赖）  —— Dart 引擎 vs 同一份 vectors.json + tap_count 边界
 #   静态分析（Dart）          —— 需要 package_config.json（跑过一次 pub get）
 #   应用层（Flutter）         —— widget 测试（需要 pub get 成功）
+#   变异测试（Node + Dart）    —— **唯一一层验证"测试本身有没有用"**：
+#                              把源码改坏，看上面的测试红不红（存活 = 盲区）
 #
 # 两个刻意的选择：
 #   * 领域层零依赖：pub get 要清临时目录并访问 pub.dev，受限环境会失败；
@@ -83,7 +85,7 @@ fi
 echo
 
 # ── 1. 动作库 ───────────────────────────────────────────────────────────
-echo "${BOLD}[1/5] 动作库种子构建与校验${OFF}"
+echo "${BOLD}[1/6] 动作库种子构建与校验${OFF}"
 if node seed/build.mjs >"$LOG" 2>&1; then
   strip "$LOG" | head -5; echo "${GREEN}✓${OFF} 动作库通过"
 else
@@ -92,14 +94,14 @@ fi
 echo
 
 # ── 2. JS 引擎 ─────────────────────────────────────────────────────────
-echo "${BOLD}[2/5] JS 规则引擎测试向量${OFF}"
+echo "${BOLD}[2/6] JS 规则引擎测试向量${OFF}"
 node engine/run-tests.mjs >"$LOG" 2>&1; rc=$?
 strip "$LOG" | tail -14
 [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} JS 引擎通过" || { echo "${RED}✗ JS 引擎失败（退出码 $rc）${OFF}"; fail=1; }
 echo
 
 # ── 3. Dart 领域层（零依赖） ────────────────────────────────────────────
-echo "${BOLD}[3/5] Dart 引擎 vs 同一份 vectors.json（零依赖）${OFF}"
+echo "${BOLD}[3/6] Dart 引擎 vs 同一份 vectors.json（零依赖）${OFF}"
 if [ -z "$DART_BIN" ]; then
   echo "${YELLOW}⊘ 阻塞${OFF} —— 未找到 Dart SDK。"; blocked=1
 else
@@ -110,7 +112,7 @@ fi
 echo
 
 # ── 4. 静态分析 ─────────────────────────────────────────────────────────
-echo "${BOLD}[4/5] 静态分析（dart analyze --fatal-infos）${OFF}"
+echo "${BOLD}[4/6] 静态分析（dart analyze --fatal-infos）${OFF}"
 
 # 廉价的 import 冲突检查：db.dart（drift 表）与 models.dart（领域模型）
 # 都定义了 Workout / SetRecord。同一文件裸 import 两个库时，
@@ -146,7 +148,7 @@ fi
 echo
 
 # ── 5. Flutter 应用层 ──────────────────────────────────────────────────
-echo "${BOLD}[5/5] Flutter widget 测试${OFF}"
+echo "${BOLD}[5/6] Flutter widget 测试${OFF}"
 if [ "$FAST" -eq 1 ]; then
   echo "${DIM}⊘ 已按 --fast 跳过。完整校验请去掉该参数。${OFF}"
 elif [ -z "$FLUTTER_BIN" ]; then
@@ -171,6 +173,24 @@ else
       bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" test --reporter compact' >"$LOG" 2>&1; rc=$?
     strip "$LOG" | tail -25
     [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 应用层通过" || { echo "${RED}✗ 应用层测试失败（退出码 $rc）${OFF}"; fail=1; }
+  fi
+fi
+echo
+
+# ── 6. 变异测试（验证测试本身） ─────────────────────────────────────────
+echo "${BOLD}[6/6] 变异测试（把源码改坏，看测试红不红）${OFF}"
+if [ -z "$DART_BIN" ]; then
+  echo "${YELLOW}⊘ 阻塞${OFF} —— 未找到 Dart SDK；变异测试要跑领域层。"
+  blocked=1
+else
+  node tool/mutation.mjs >"$LOG" 2>&1; rc=$?
+  strip "$LOG" | tail -6
+  if [ "$rc" -eq 0 ]; then
+    echo "${GREEN}✓${OFF} 没有存活变异体（测试真的在守着行为）"
+  else
+    echo "${RED}✗ 有存活变异体 = 测试盲区${OFF}"
+    echo "${DIM}    处理方式只有一种：补一条能抓住它的测试。别改这个数字。${OFF}"
+    fail=1
   fi
 fi
 echo
@@ -201,6 +221,8 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/lib/features/progress/progress_data.dart \
          app/lib/features/progress/progress_screen.dart \
          app/lib/features/profile/training_stats.dart \
+         app/lib/features/profile/backup.dart \
+         app/lib/features/profile/backup_exporter.dart \
          app/lib/features/profile/profile_screen.dart \
          app/lib/features/summary/workout_summary.dart \
          app/lib/features/summary/workout_summary_screen.dart \
@@ -210,9 +232,11 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/exercise_repository_test.dart app/test/multi_exercise_test.dart \
          app/test/exercise_picker_test.dart app/test/widget_test.dart \
          app/test/local_store_contract_test.dart \
-         app/tool/check_domain.dart \
+         app/tool/check_domain.dart tool/mutation.mjs \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \
-         app/test/workout_flow_test.dart \
+         app/test/workout_flow_test.dart app/test/backup_test.dart \
+         app/test/time_exercise_test.dart app/test/progression_wiring_test.dart \
+         app/test/home_entry_test.dart app/test/app_version_test.dart \
          .github/workflows/ci.yml; do
   [ -f "$f" ] && printf '  %s✓%s %s\n' "$GREEN" "$OFF" "$f" || { printf '  %s✗ 缺失%s %s\n' "$RED" "$OFF" "$f"; missing=1; }
 done

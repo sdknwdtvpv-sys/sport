@@ -870,6 +870,52 @@
         "reason_code": "linear_progress",
         "text_includes": "加重"
       }
+    },
+    {
+      "id": "stale_boundary_exactly_21",
+      "desc": "第 21 天正好触发回归保护 —— 边界不能差一天（变异测试抓出来的盲区）",
+      "input": {
+        "exercise": "barbell_bench",
+        "plan": "plan_3x8_10",
+        "lastSession": {
+          "weight_kg": 60,
+          "reps": [
+            10,
+            10,
+            10
+          ],
+          "daysAgo": 21
+        }
+      },
+      "expect": {
+        "weight_kg": 60,
+        "reps": 8,
+        "reason_code": "deload",
+        "text_includes": "21 天"
+      }
+    },
+    {
+      "id": "float_noise_dirty_weight",
+      "desc": "重量带小数时两个引擎都必须给出同一个干净值（62.6）。⚠️ 变异测试证明：单次加法在现实范围内不会泄漏浮点噪声，所以这条守的是**跨语言输出一致性**，不是 round2 本身。",
+      "input": {
+        "exercise": "barbell_bench",
+        "plan": "plan_3x8_10",
+        "lastSession": {
+          "weight_kg": 60.1,
+          "reps": [
+            10,
+            10,
+            10
+          ],
+          "daysAgo": 2
+        }
+      },
+      "expect": {
+        "weight_kg": 62.6,
+        "reps": 8,
+        "reason_code": "linear_progress",
+        "text_includes": "+2.5kg"
+      }
     }
   ],
   "oneRmCases": [

@@ -14,7 +14,7 @@
 //   1. engine/vectors.json 的 28 条向量（与 JS 端同一份文件）
 //   2. 3 条跨用例硬红线
 //   3. 4 条 1RM 估算边界
-//   4. 6 条 tap_count 边界（与 test/tap_meter_test.dart 同源）
+//   4. 8 条 tap_count 边界（与 test/tap_meter_test.dart 同源）
 //
 // widget 测试无法在这里跑（需要 Flutter 测试框架），见 app/test/workout_flow_test.dart。
 
@@ -136,7 +136,7 @@ void main() {
   }
 
   print(_line);
-  print('Dart 领域校验：${vectors.length} 条向量 + 3 条红线 + ${oneRmCases.length} 条 1RM 边界 + 6 条 tap_count 边界');
+  print('Dart 领域校验：${vectors.length} 条向量 + 3 条红线 + ${oneRmCases.length} 条 1RM 边界 + 8 条 tap_count 边界');
   print(_line);
 
   // ── 1. 规范向量 ──────────────────────────────────────────────────────
@@ -250,6 +250,22 @@ void main() {
     m5.flush();
     m5.tap(TapKind.stepper); // 周期外，必须被忽略
     _check('tap_count: 周期外点击被忽略', m5.pending == 0 && !m5.isActive);
+
+    // 端到端口径的关键：控制器构造时用 ensure() 接住已有周期，**不能清零**。
+    // 清零了，"开始训练 / 选动作"那几下导航点击就丢了 —— 第一组又会变回"只算大按钮"。
+    // （这两条是变异测试抓出来的：把 ensure 的守卫去掉，上面 6 条一条都不会红。）
+    final TapMeter m6 = TapMeter()..begin();
+    m6.tap(TapKind.nav);
+    m6.tap(TapKind.nav);
+    m6.ensure(); // ← 控制器构造那一下
+    m6.tap(TapKind.bigButton);
+    final TapMeterReading r6 = m6.flush();
+    _check('tap_count: ensure 不清零已有周期', r6.count == 3,
+        '实际 ${r6.count}（应为 2 次导航 + 1 次大按钮）');
+
+    final TapMeter m7 = TapMeter()..ensure(); // 没开周期时 ensure 要开一个
+    m7.tap(TapKind.bigButton);
+    _check('tap_count: 周期没开时 ensure 自己开一个', m7.flush().count == 1);
   }
 
   // ── 输出 ────────────────────────────────────────────────────────────

@@ -29,13 +29,19 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | 门禁 | 命令 | 结果 |
 |---|---|---|
 | 动作库种子（165 个动作，字段/枚举/步长一致性校验） | `node seed/build.mjs` | ✅ 通过 |
-| JS 规则引擎（28 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 35/35 |
-| Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 41/41 |
+| JS 规则引擎（37 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 44/44 |
+| Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 52/52 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter 测试（引擎 + 持久化契约 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **455/455** |
+| Flutter 测试（引擎 + 持久化契约 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **457/457** |
+| **变异测试**（唯一验证"测试本身有没有用"的一层） | `node tool/mutation.mjs` | ✅ 21 杀死 / **0 存活** |
+
+> **最后一行是这套自检里最该被理解的一层。** 前五层回答"代码对不对"，
+> 它回答"**这些测试真的在守着行为吗**"：把源码故意改坏，看前五层红不红；
+> 改坏了还不红 = 盲区。它第一次跑就抓出 4 个真实盲区（21 天边界、浮点噪声的等价性、
+> `ensure()`/`flush()` 语义），并暴露了两处工具自身的假阳性。见 `tool/mutation.mjs` 的文件头。
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
-`flutter test` 的 455 项 = 41 项引擎向量/红线/1RM + 10 项 `tap_count` 边界 + **18 项 widget 交互测试**
+`flutter test` 的 457 项 = 43 项引擎向量/红线/1RM + 10 项 `tap_count` 边界 + **18 项 widget 交互测试**
 + **56 项持久化契约测试**（28 条断言 × 2 个实现：内存版与 drift 版）
 + **18 项动作库** + 4 项多动作 + **16 项动作选择页** + 2 项启动冒烟 + **22 项今日规划**
 + 6 项今日建议卡 + **3 项首页入口** + 18 项训练总结 + 15 项分享卡 + 14 项身体数据 + 22 项「我」页 + 20 项「进步」页
@@ -53,7 +59,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 `DriftLocalStore` 上，两者行为必须完全一致（组序、跨训练隔离、重复保存幂等、热身组排除、
 软删除排除、自重动作重量为 null……）。
 
-以上 5 层已在 CI 上跑通（[首次运行](https://github.com/sdknwdtvpv-sys/sport/actions) 2m 4s，两个 job 全绿）。
+以上 6 层已在 CI 上跑通（[首次运行](https://github.com/sdknwdtvpv-sys/sport/actions) 2m 4s，两个 job 全绿）。
 这意味着整套验证在**从零 clone 的干净 Linux 环境**里同样成立，不依赖任何本机配置 ——
 中文目录只影响本机的 `flutter analyze`，不影响 CI。
 
@@ -276,7 +282,7 @@ engine/vectors.json ──┬──> engine/run-tests.mjs        （Node）
 | 4 | `app/lib/features/workout/` | 对照 `docs/interaction-spec.md` 扩展其余屏 |
 | 5 | `docs/analytics-sdk.md` | 接真实上报地址 —— 客户端管线已就绪（outbox + 批量 ≤100 + 退避重试 + **训练期间挂起**），现用 `_NullTransport` 兜底 |
 
-**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **455 条测试**锁住；
+**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **457 条测试**锁住；
 UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 **165 个**。
 还没做的见上文「现在还没有的东西（别期待）」，下一步见 [`ROADMAP.md`](ROADMAP.md)。
 
@@ -362,7 +368,7 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.2.0 release**，启动冒烟已过；**「杀掉重开数据还在」已在真机上验证**（冷启动后读回 12 组 / 3,680 kg）。剩下的是**真的用手指走一遍** —— 目标机型的注入被 MIUI 禁掉，这一步只能人来做 | 455 条测试全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
+| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.2.0 release**，启动冒烟已过；**「杀掉重开数据还在」已在真机上验证**（冷启动后读回 12 组 / 3,680 kg）。剩下的是**真的用手指走一遍** —— 目标机型的注入被 MIUI 禁掉，这一步只能人来做 | 457 条测试全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
 | ✅ ~~v1 → v2 迁移的真机验证~~（已在真机过） | 真机里原本是 `v1.0.0` 留下的**老库**，直接覆盖安装 `v1.2.0`（`schemaVersion` 1 → 3）后，`onUpgrade` 跑完、**数据一条没丢**（冷启动读回 12 组） | 这是"老库升级必须真机过一次"的实测通过 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |

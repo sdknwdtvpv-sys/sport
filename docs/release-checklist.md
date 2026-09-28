@@ -145,7 +145,7 @@
 source ~/HARNESS/lianleme/flutter-env.sh        # flutter/java/adb 上 PATH
 cd "/Volumes/Elliot's SSD/HARNESS/lianleme/sport"
 
-./verify.sh                                      # 全量自检（5/5 才算过）
+./verify.sh                                      # 全量自检（六层全过才算过；含变异测试 0 存活）
 
 cd app
 flutter build appbundle --release                # 商店用（AAB）
