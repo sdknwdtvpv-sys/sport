@@ -355,9 +355,13 @@ class _AllDataScreenState extends State<AllDataScreen> {
                 style: const TextStyle(color: Tokens.text3, fontSize: 13)),
           ),
           Text(
-            r.weightKg == null
-                ? '自重 × ${r.reps}'
-                : '${formatWeight(r.weightKg, widget.unit)} × ${r.reps}',
+            // 有氧/农夫行走念「5.00 公里 · 30:00」—— 容量那一格对它们是 0，
+            // 光看"自重 × 1800"看不出这是跑还是走。
+            r.hasDistance
+                ? '${formatDistanceKm(r.distanceM!)} · ${formatDurationHms(r.reps)}'
+                : r.weightKg == null
+                    ? '自重 × ${r.reps}'
+                    : '${formatWeight(r.weightKg, widget.unit)} × ${r.reps}',
             style: const TextStyle(
                 color: Tokens.text2, fontSize: 15, fontWeight: FontWeight.w600),
           ),

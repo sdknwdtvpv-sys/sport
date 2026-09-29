@@ -83,6 +83,19 @@ export function suggestNext(input) {
   // 0) 用户关掉了建议：直接闭嘴，这是设置项赋予的权利
   if (profile.progression_mode === 'off') return null;
 
+  // 0.5) **有氧不给推进建议**（distance_time：跑步机/划船机/跳绳/农夫行走）。
+  //
+  // 这是产品决策，不是偷懒：我们没有用户的有氧目标（减脂？耐力？间歇？），
+  // 在这种前提下说"上次 5 公里 → 这次 5.25 公里（+5%）"是**假精确** ——
+  // 而力量动作可以这么推，是因为"多举一点"本身就是目标。
+  //
+  // 为什么必须在这里挡、不能只靠 UI 不显示：
+  // 不挡的话 distance_time 会掉进下面的**次数分支**（它不是 time），
+  // 于是引擎会对一次 5 公里跑说"每组次数补到 10 次" —— 那是直接说错话。
+  // 宁可返回 null（"不给建议"这条路径 UI 早就有），也不编一个数出来。
+  const trackEarly = exercise.track_type ?? 'weight_reps';
+  if (trackEarly === 'distance_time') return null;
+
   const inc = exercise.weight_increment ?? 0;
   const isBodyweight = inc === 0; // 由数据层不变量保证：inc === 0 ⟺ default_weight_kg === null
   // 按时长的动作（平板支撑 / 侧平板）：track_type 决定这个数字是**秒**而不是次数。

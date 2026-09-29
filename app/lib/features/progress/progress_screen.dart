@@ -74,6 +74,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
       for (final ExerciseData r in rows)
         if (isTimeTrack(r.trackType)) r.id,
     };
+    // 记距离的动作（有氧、农夫行走）**不进力量最佳榜**：
+    // 它们的 reps 是秒，按"自重比次数"会得出"最佳 1800 次"这种假纪录。
+    final Set<String> distanceIds = <String>{
+      for (final ExerciseData r in rows)
+        if (isDistanceTrack(r.trackType)) r.id,
+    };
     final BodyMetricData? weight = await widget.bodyMetrics?.latest();
     if (!mounted) return;
     setState(() {
@@ -83,6 +89,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         today: widget.now ?? DateTime.now(),
         unit: widget.unit,
         timeExerciseIds: timeIds,
+        distanceExerciseIds: distanceIds,
       );
       _latestWeight = weight;
       _loading = false;

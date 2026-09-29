@@ -68,6 +68,38 @@ String formatWeight(double? kg, WeightUnit unit, {String nullText = '—'}) {
   return '${trimNumber(round1(toDisplayWeight(kg, unit)))} ${unit.wire}';
 }
 
+/// 距离（**米**，存储单位）→「5.00 公里」/「800 米」。
+///
+/// 为什么小于 1 公里时改口说米：跑步机上"0.80 公里"和"800 米"是同一件事，
+/// 但后者才是人在器械上会念的说法。阈值放在 1 公里，不为它引入单位设置
+/// （距离的显示单位只有这一种约定，不像重量有 kg/lb 的分歧）。
+String formatDistanceKm(double meters) {
+  if (meters < 1000) return '${trimNumber(round1(meters))} 米';
+  return '${(meters / 1000).toStringAsFixed(2)} 公里';
+}
+
+/// 秒数 →「30:00」/「1:05:00」。时长动作（有氧）的数字是秒，
+/// 但 1800 秒这种念法在跑步机上没人用。
+String formatDurationHms(int seconds) {
+  final int s = seconds < 0 ? 0 : seconds;
+  final int h = s ~/ 3600;
+  final int m = (s % 3600) ~/ 60;
+  final int sec = s % 60;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return h > 0 ? '$h:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
+}
+
+/// 配速「5'30"/公里」。距离或时长为 0 时返回 null（配速没定义，不要拿 0 去除）。
+String? formatPace(double meters, int seconds) {
+  if (meters <= 0 || seconds <= 0) return null;
+  final double secPerKm = seconds / (meters / 1000);
+  final int total = secPerKm.round();
+  final int m = total ~/ 60;
+  final int s = total % 60;
+  final String ss = s.toString().padLeft(2, '0');
+  return "$m'$ss\"/公里";
+}
+
 /// 容量标签，带千分位。`volumeKg <= 0` 时返回 [zeroText]
 /// （有的屏要显示「—」，有的是「自重」，所以交给调用方决定）。
 String formatVolume(double volumeKg, WeightUnit unit, {String zeroText = '—'}) {

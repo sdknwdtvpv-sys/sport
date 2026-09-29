@@ -41,6 +41,62 @@ CREATE TABLE IF NOT EXISTS exercise (
 )
 ''';
 
+/// v1 的 `workout`（训练行）。
+const String legacyWorkoutDdl = '''
+CREATE TABLE IF NOT EXISTS workout (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NULL,
+  routine_id TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'in_progress',
+  started_at INTEGER NOT NULL,
+  ended_at INTEGER NULL,
+  duration_sec INTEGER NULL,
+  total_volume REAL NULL,
+  total_sets INTEGER NULL,
+  note TEXT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted_at INTEGER NULL
+)
+''';
+
+/// v1 的 `workout_item`。
+const String legacyWorkoutItemDdl = '''
+CREATE TABLE IF NOT EXISTS workout_item (
+  id TEXT NOT NULL PRIMARY KEY,
+  workout_id TEXT NOT NULL,
+  exercise_id TEXT NOT NULL,
+  position INTEGER NOT NULL DEFAULT 0,
+  note TEXT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted_at INTEGER NULL
+)
+''';
+
+/// v1～v4 的 `set_record`：与当前 db.dart 一致，**只少 `distance_m` 一列**。
+///
+/// v5 第一次给这张表加列，所以 fixture 必须有它 —— 而且必须有**当年那份 DDL**
+/// （没有 distance_m），否则那条迁移要么报 no such table，要么"列已存在"。
+const String legacySetRecordDdl = '''
+CREATE TABLE IF NOT EXISTS set_record (
+  id TEXT NOT NULL PRIMARY KEY,
+  workout_id TEXT NOT NULL,
+  workout_item_id TEXT NOT NULL,
+  exercise_id TEXT NOT NULL,
+  set_index INTEGER NOT NULL,
+  set_type TEXT NOT NULL DEFAULT 'normal',
+  weight_kg REAL NULL,
+  reps INTEGER NULL,
+  rpe REAL NULL,
+  rest_sec_actual INTEGER NULL,
+  is_pr INTEGER NOT NULL DEFAULT 0 CHECK (is_pr IN (0, 1)),
+  volume REAL NULL,
+  completed_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted_at INTEGER NULL
+)
+''';
+
 /// v2 的 `body_metric`（v2 引入的那张表）。
 const String legacyBodyMetricDdl = '''
 CREATE TABLE IF NOT EXISTS body_metric (
@@ -61,9 +117,25 @@ CREATE TABLE IF NOT EXISTS body_metric (
 /// 因为这几个测试要验的是"升级不崩"，不是"整份 v1 schema 逐列一致"。
 void legacySetup(dynamic raw, {required int version}) {
   raw.execute(legacyExerciseDdl);
+  raw.execute(legacyWorkoutDdl);
+  raw.execute(legacyWorkoutItemDdl);
+  raw.execute(legacySetRecordDdl);
   if (version >= 2) raw.execute(legacyBodyMetricDdl);
   raw.execute('PRAGMA user_version = $version');
 }
+
+/// 往老库里塞一组训练记录 —— 用来验"加列迁移不会碰既有行"。
+///
+/// 训练数据是资产：v5 给 `set_record` 加 `distance_m` 时，老组记录必须原样还在，
+/// 而且距离是 **null**（没记过距离），不是 0（0 表示"真的没动"）。
+const String legacySeedSetSql = '''
+INSERT INTO set_record
+  (id, workout_id, workout_item_id, exercise_id, set_index, set_type, weight_kg,
+   reps, rpe, is_pr, volume, completed_at, updated_at, deleted_at)
+VALUES
+  ('s_legacy_1', 'w_legacy', 'wi_legacy', 'ex_legacy_bench', 1, 'normal', 60.0,
+   8, NULL, 0, 480.0, 1000, 1000, NULL)
+''';
 
 /// 往老库里塞一个动作 —— 用来验"升级之后老数据还在，而且被落成 strength"。
 const String legacySeedExerciseSql = '''

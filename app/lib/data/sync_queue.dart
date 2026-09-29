@@ -33,6 +33,11 @@ abstract class SyncQueue {
 
 class InMemorySyncQueue implements SyncQueue {
   final List<OutboxItem> _items = <OutboxItem>[];
+
+  /// 队列内容的只读视图。**给测试用**：断言 payload 里到底带了哪些字段
+  /// （比如有氧的 `distance_m`）—— 只数 pending 的话"字段漏了"根本测不出来。
+  List<OutboxItem> get items => List<OutboxItem>.unmodifiable(_items);
+
   int _seq = 0;
 
   @override

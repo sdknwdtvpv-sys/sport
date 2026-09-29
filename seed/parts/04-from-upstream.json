@@ -61,6 +61,27 @@
     "popularity": 20
   },
   {
+    "id": "ex_assault_bike",
+    "name": "风阻单车",
+    "name_en": "Assault Bike",
+    "aliases": [
+      "空气单车",
+      "风扇单车"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "machine",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
     "id": "ex_assisted_chin_up",
     "name": "辅助反握引体向上",
     "name_en": "Assisted Chin-up",
@@ -1019,6 +1040,25 @@
     "popularity": 78
   },
   {
+    "id": "ex_cycling",
+    "name": "骑行",
+    "name_en": "Cycling",
+    "aliases": [
+      "单车",
+      "自行车"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "machine",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
     "id": "ex_dead_hang",
     "name": "静态悬垂",
     "name_en": "Dead Hang",
@@ -1700,6 +1740,27 @@
     "category": "warmup",
     "track_type": "time",
     "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
+    "id": "ex_hiking",
+    "name": "徒步",
+    "name_en": "Hiking",
+    "aliases": [
+      "徒步走",
+      "登山"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes"
+    ],
+    "equipment": "bodyweight",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -2408,6 +2469,44 @@
     "popularity": 20
   },
   {
+    "id": "ex_rowing",
+    "name": "划船机",
+    "name_en": "Rowing",
+    "aliases": [
+      "划船"
+    ],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "quads"
+    ],
+    "equipment": "machine",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
+    "id": "ex_running",
+    "name": "跑步",
+    "name_en": "Running",
+    "aliases": [
+      "户外跑"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "bodyweight",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
     "id": "ex_scapular_pull_up",
     "name": "肩胛引体向上",
     "name_en": "Scapular Pull-up",
@@ -2691,6 +2790,25 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 42
+  },
+  {
+    "id": "ex_skierg",
+    "name": "滑雪机",
+    "name_en": "SkiErg",
+    "aliases": [],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "triceps",
+      "core"
+    ],
+    "equipment": "machine",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
   },
   {
     "id": "ex_smith_machine_bulgarian_split_squat",
@@ -2999,6 +3117,24 @@
     "popularity": 62
   },
   {
+    "id": "ex_swimming",
+    "name": "游泳",
+    "name_en": "Swimming",
+    "aliases": [],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "bodyweight",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
     "id": "ex_toe_touch",
     "name": "仰卧摸脚",
     "name_en": "Toe Touch",
@@ -3113,6 +3249,27 @@
     "popularity": 78
   },
   {
+    "id": "ex_treadmill_incline_walk",
+    "name": "跑步机爬坡走",
+    "name_en": "Treadmill Incline Walk",
+    "aliases": [
+      "爬坡走",
+      "坡度快走"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes"
+    ],
+    "equipment": "machine",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
     "id": "ex_typewriter_push_up",
     "name": "打字机俯卧撑",
     "name_en": "Typewriter Push-up",
@@ -3151,6 +3308,22 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 42
+  },
+  {
+    "id": "ex_walking",
+    "name": "快走",
+    "name_en": "Walking",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "bodyweight",
+    "category": "cardio",
+    "track_type": "distance_time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
   },
   {
     "id": "ex_wall_calf_stretch",

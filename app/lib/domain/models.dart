@@ -17,6 +17,16 @@ import '../core/units.dart';
 bool isTimeTrack(String trackType) =>
     trackType == 'time' || trackType == 'weight_time';
 
+/// 这个动作记不记**距离**。
+///
+/// `distance_time` 的数字仍是秒（沿用 time 那一列的约定，不另开一列），
+/// 但多带一个 `distance_m`。跑步机、划船机、跳绳、农夫行走都是它。
+///
+/// ⚠️ 它与 `isTimeTrack` **不重叠**：距离动作不走"加秒数"的推进
+/// （引擎对它们不给建议，见 `progression.dart` 的说明），
+/// 所以判定必须分开问，不能图省事把 distance_time 并进 isTimeTrack。
+bool isDistanceTrack(String trackType) => trackType == 'distance_time';
+
 class ExerciseSpec {
   const ExerciseSpec({
     required this.id,
@@ -72,6 +82,9 @@ class ExerciseSpec {
 
   /// 有重量的时长动作（负重平板支撑）：到时长上限时可以直接加重。
   bool get isWeightedTime => trackType == 'weight_time';
+
+  /// 记距离的动作（有氧、农夫行走）。
+  bool get isDistance => isDistanceTrack(trackType);
 }
 
 /// 计划项。
@@ -94,12 +107,42 @@ class LastSession {
   const LastSession({
     required this.reps,
     this.weightKg,
+    this.distances,
     this.daysAgo = 0,
   });
 
   final double? weightKg;
   final List<int> reps;
+
+  /// 上次各组记的距离（米），与 [reps] 一一对应。null = 那一组没记距离。
+  ///
+  /// 有氧动作靠它做两件事：
+  ///   1. 训练屏的默认值（"今天还跑上次那么多" → 一次点击就是一组）
+  ///   2. 证据链那一行念「上次 5.0 公里 · 30:00」而不是「自重 × 1800 秒」
+  /// 缺省 null 而不是空列表：老调用点（几十个 fixture）不传就是"不记距离"，
+  /// 与空列表同义，但不用改它们。
+  final List<double?>? distances;
+
   final int daysAgo;
+
+  /// 上次最后一组的距离。null = 上次没记（或这个动作不记距离）。
+  double? get lastDistanceM {
+    final List<double?>? d = distances;
+    if (d == null || d.isEmpty) return null;
+    return d.last;
+  }
+
+  /// 上次最远的一组 —— 有氧的"最好成绩"是里程，不是次数。
+  double? get maxDistanceM {
+    final List<double?>? d = distances;
+    if (d == null) return null;
+    double? best;
+    for (final double? v in d) {
+      if (v == null) continue;
+      if (best == null || v > best) best = v;
+    }
+    return best;
+  }
 
   int get completedSets => reps.length;
 
@@ -193,6 +236,7 @@ class SetRecord {
     required this.reps,
     required this.completedAtMs,
     this.weightKg,
+    this.distanceM,
     this.setType = SetType.normal,
     this.rpe,
   });
@@ -204,6 +248,13 @@ class SetRecord {
   final int reps;
   final int completedAtMs;
   final double? weightKg;
+
+  /// 距离（**米**）。只有 `distance_time` 的动作会写它，其余恒为 null。
+  ///
+  /// null 与 0 是两件事：null = 这个动作不记距离（或老记录没这个字段），
+  /// 0 = 记了，而且是"没动"。
+  final double? distanceM;
+
   final SetType setType;
 
   /// 自觉用力程度 RPE。**null = 用户没记**，这是默认状态。
@@ -213,7 +264,13 @@ class SetRecord {
   /// 破纪录判定都不看它。DB 的 `rpe` 列早就有了，只是领域模型一直没接。
   final double? rpe;
 
-  double get volume => (weightKg ?? 0) * reps;
+  /// 容量。**距离动作恒为 0**：它的"次数"是秒，拿重量乘秒数没有量纲意义
+  /// （与 drift_local_store 里物化的那份保持一致，两处口径必须一样）。
+  double get volume => hasDistance ? 0 : (weightKg ?? 0) * reps;
+
+  /// 有距离的组：有氧与农夫行走。容量（重量 × 次数）对它们没有意义，
+  /// 它们该看的是**里程与配速**（见 features/progress 的呈现）。
+  bool get hasDistance => distanceM != null;
 }
 
 enum SetType {

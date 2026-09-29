@@ -12,6 +12,9 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+// db.dart（drift）与 models.dart 都定义了 Workout / SetRecord ——
+// 这里只需要 isDistanceTrack，所以用 as 带前缀（verify.sh 有检查守这条）
+import 'package:lianleme/domain/models.dart' as domain;
 
 Future<String> _readAsset() => File('assets/exercises.json').readAsString();
 
@@ -38,27 +41,48 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('种子规模：342 个动作（库不该悄悄缩水；改种子时这个数字要一起改）', () async {
+  test('种子规模：351 个动作（库不该悄悄缩水；改种子时这个数字要一起改）', () async {
     // 这一条是"故意的写死"：它是**人对当前库规模的一次背书**。
     // 加动作 / 减动作都会让它红，逼着改动的人确认"是我干的、且我认这个数字"。
-    // 342 = 165（手工维护的 01/02/03）+ 177（2026-09-29 从上游补的库：
-    //        153 力量 + 11 热身 + 4 有氧 + 9 拉伸）。
-    // 没进的 9 个有氧机（跑步机/划船机/游泳…）卡在**距离**上：引擎只有 distance_time
-    // 的词表、没有它的规则，按秒记就是假数据。见 tool/add-upstream-exercises.mjs。
-    expect(await _seedCount(), 342);
+    // 351 = 165（手工维护的 01/02/03）+ 186（2026-09-29 从上游补的库：
+    //        153 力量 + 11 热身 + 13 有氧 + 9 拉伸）。
+    expect(await _seedCount(), 351);
   });
 
-  test('动作类别：318 力量 / 11 热身 / 4 有氧 / 9 拉伸（类别决定会不会被推荐）', () async {
+  test('动作类别：318 力量 / 11 热身 / 13 有氧 / 9 拉伸（类别决定会不会被推荐）', () async {
     await repo.importSeed(loadJson: _readAsset);
 
     expect((await repo.search(category: 'strength', limit: 500)).length, 318);
     expect((await repo.search(category: 'warmup', limit: 500)).length, 11);
-    expect((await repo.search(category: 'cardio', limit: 500)).length, 4);
+    expect((await repo.search(category: 'cardio', limit: 500)).length, 13);
     expect((await repo.search(category: 'stretch', limit: 500)).length, 9);
+
+    // 13 个有氧 = 4 个按秒记的（跳绳/椭圆机/爬楼机/战绳）
+    //          + 9 个按距离记的（跑步机/划船机/游泳…）
+    final List<ExerciseData> cardio =
+        await repo.search(category: 'cardio', limit: 500);
+    for (final String id in <String>[
+      'ex_jump_rope', 'ex_elliptical', 'ex_stair_climber', 'ex_battle_ropes',
+      'ex_running', 'ex_rowing', 'ex_swimming', 'ex_treadmill_incline_walk',
+    ]) {
+      expect(cardio.map((ExerciseData e) => e.id), contains(id), reason: id);
+    }
 
     // 四类加起来必须等于总量 —— 免得将来加类别时漏掉一条
     final List<ExerciseData> all = await repo.search(limit: 500);
-    expect(all.length, 342);
+    expect(all.length, 351);
+  });
+
+  test('距离类动作的 track_type 是 distance_time（有氧 + 农夫行走）', () async {
+    await repo.importSeed(loadJson: _readAsset);
+
+    final List<ExerciseData> distance = (await repo.search(limit: 500))
+        .where((ExerciseData e) => domain.isDistanceTrack(e.trackType))
+        .toList();
+
+    // 9 个有氧机 + 农夫行走（它本来是 weight_reps —— 农夫行走不是"8–10 次"）
+    expect(distance.length, 10);
+    expect(distance.map((ExerciseData e) => e.id), contains('ex_farmer_walk'));
   });
 
   test('不传 category 时行为与以前完全一致（全都要，包含热身与拉伸）', () async {

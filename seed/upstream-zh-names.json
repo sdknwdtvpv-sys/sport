@@ -873,6 +873,89 @@
       ],
       "category": "cardio",
       "equipment": "band"
+    },
+    "Running": {
+      "name": "跑步",
+      "aliases": [
+        "户外跑"
+      ],
+      "category": "cardio",
+      "muscle_group": "legs",
+      "equipment": "bodyweight"
+    },
+    "Walking": {
+      "name": "快走",
+      "aliases": [],
+      "category": "cardio",
+      "muscle_group": "legs",
+      "equipment": "bodyweight"
+    },
+    "Cycling": {
+      "name": "骑行",
+      "aliases": [
+        "单车",
+        "自行车"
+      ],
+      "category": "cardio",
+      "muscle_group": "legs",
+      "equipment": "machine"
+    },
+    "Rowing": {
+      "name": "划船机",
+      "aliases": [
+        "划船"
+      ],
+      "category": "cardio",
+      "muscle_group": "back",
+      "equipment": "machine"
+    },
+    "Swimming": {
+      "name": "游泳",
+      "aliases": [],
+      "category": "cardio",
+      "muscle_group": "back",
+      "equipment": "bodyweight"
+    },
+    "Assault Bike": {
+      "name": "风阻单车",
+      "aliases": [
+        "空气单车",
+        "风扇单车"
+      ],
+      "category": "cardio",
+      "muscle_group": "legs",
+      "equipment": "machine"
+    },
+    "SkiErg": {
+      "name": "滑雪机",
+      "aliases": [],
+      "category": "cardio",
+      "muscle_group": "back",
+      "equipment": "machine"
+    },
+    "Hiking": {
+      "name": "徒步",
+      "aliases": [
+        "徒步走",
+        "登山"
+      ],
+      "category": "cardio",
+      "muscle_group": "legs",
+      "equipment": "bodyweight"
+    },
+    "Treadmill Incline Walk": {
+      "name": "跑步机爬坡走",
+      "aliases": [
+        "爬坡走",
+        "坡度快走"
+      ],
+      "category": "cardio",
+      "muscle_group": "legs",
+      "equipment": "machine"
+    },
+    "Farmer Carry": {
+      "name": "",
+      "skip": "与我们的农夫行走（Farmer's Walk）同一个动作"
     }
   }
 }

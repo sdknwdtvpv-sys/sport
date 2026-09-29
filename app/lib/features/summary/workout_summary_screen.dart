@@ -105,6 +105,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               ),
               const SizedBox(height: Tokens.s5),
               _stats(s),
+              if (s.hasDistance) _cardio(s),
               if (s.hasPr) ...<Widget>[
                 const SizedBox(height: Tokens.s5),
                 _prBlock(s),
@@ -134,6 +135,53 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
           _stat('时长', s.durationLabel, const Key('summary-duration')),
           _divider(),
           _stat('组数', '${s.totalSets}', const Key('summary-sets')),
+        ],
+      ),
+    );
+  }
+
+  /// 有氧那一行：**单独一块，不与容量并列成三个大数**。
+  ///
+  /// 容量（kg × 次）和里程（米）是两个量纲 —— 并排放会让人以为能相加。
+  /// 有配速就一起显示，没记时长就只显示里程（配速没定义时不要编一个）。
+  Widget _cardio(WorkoutSummary s) {
+    final String? pace = s.paceLabel;
+    return Container(
+      key: const Key('summary-cardio'),
+      margin: const EdgeInsets.only(top: Tokens.s3),
+      padding: const EdgeInsets.symmetric(vertical: Tokens.s4, horizontal: Tokens.s4),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.line),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.directions_run, size: 18, color: Tokens.text3),
+          const SizedBox(width: Tokens.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  s.cardiovascularLabels.join(' · '),
+                  style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  pace == null
+                      ? '${s.distanceLabel}'
+                      : '${s.distanceLabel} · 平均 $pace',
+                  key: const Key('summary-distance'),
+                  style: const TextStyle(
+                    color: Tokens.text,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

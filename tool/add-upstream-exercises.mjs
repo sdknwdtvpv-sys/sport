@@ -83,6 +83,10 @@ const TYPE_MAP = {
   bodyweight_reps: 'reps_only',
   duration: 'time',
   assisted_bodyweight: 'assisted_reps',
+  // 2026-09-29：引擎与数据库支持了距离（set_record.distance_m），
+  // 所以 distance_duration 不再是"进不来的那类" —— 跑步机/划船机/游泳/农夫行走都走这里。
+  // 数字仍是**秒**（沿用 time 那列的约定），距离另存一列。
+  distance_duration: 'distance_time',
 };
 const GROUP_OF = {
   chest: 'chest', back: 'back', lats: 'back', upperback: 'back', lowerback: 'back',
@@ -172,10 +176,6 @@ const missing = [];   // 既没名字、也没说明为什么不补 —— 会�
  * （热身的开合跳、高抬腿就是这么进来的：它们上游次肌群带 Cardio，但确实是热身）。
  */
 function notStrengthReason(u) {
-  if (norm(u.equipment) === 'cardio') {
-    return '有氧机：器械就是 Cardio（跑步机/划船机/游泳…）。按秒记的那几个'
-      + '（category: cardio）能进，其余靠 distance_duration，引擎记不了';
-  }
   // ⚠️ 只对 duration 生效：壶铃摆荡 / 波比跳的次肌群里也有 Cardio，
   //    但它们是力量动作（weight_reps / bodyweight_reps），不能一起扫掉。
   if (u.exerciseType === 'duration'
@@ -205,18 +205,20 @@ for (const u of upstream) {
     skipped.push({ name: u.name, why: notStrength, kind: 'rule' });
     continue;
   }
-  if (u.exerciseType === 'distance_duration') {
-    skipped.push({
-      name: u.name,
-      why: '有氧：引擎还没有 distance_time 的推进规则',
-      kind: 'rule',
-    });
-    continue;
-  }
+  // distance_duration：能记了（距离 + 时长）。器械是 Cardio 的 → 有氧；
+  // 其余（农夫行走）按上游的器械走（哑铃 → 力量动作，但它也按距离记，
+  // 且**不会被推荐** —— 见下面 plannable 的说明与 today_planner 的过滤）。
+  const isDistanceUpstream = u.exerciseType === 'distance_duration';
   // 拉伸：上游标了 isStretch，**必须**人工说是热身还是拉伸 —— 这两者的使用场景不一样
   if (u.isStretch === true && !override) { stretchNeedsCategory.push(u.name); continue; }
   if (!entry?.name) { missing.push(u.name); continue; }
-  toAdd.push({ u, entry, category: override ?? 'strength' });
+  // 缺省类别：距离类动作里，器械写着 Cardio 的是**有氧**；
+  // 其余（农夫行走，器械是哑铃）是力量动作 —— 但同样按距离记。
+  // 人工在中文名表里写了 category 就以他为准。
+  const defaultCategory = isDistanceUpstream && norm(u.equipment) === 'cardio'
+    ? 'cardio'
+    : 'strength';
+  toAdd.push({ u, entry, category: override ?? defaultCategory });
 }
 
 if (stretchNeedsCategory.length) {

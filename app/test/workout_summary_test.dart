@@ -267,4 +267,96 @@ void main() {
       expect(find.text('训练完成'), findsNothing);
     });
   });
+
+  group('有氧：里程与配速，且不冒充力量纪录', () {
+    // 这一组守的是"假数据"那条线：距离动作的 reps 是**秒**、weight 是 null，
+    // 按原来的"自重比次数"逻辑，一次 5 公里跑会得到一条"1800 次新纪录"。
+    test('里程聚合进来，且**不加进容量**（两个量纲）', () async {
+      final Workout w = Workout(id: 'w_run', startedAtMs: 1000)
+        ..sets.addAll(<SetRecord>[
+          SetRecord(
+            id: 's1', workoutId: 'w_run', exerciseId: 'ex_treadmill_incline_walk',
+            setIndex: 1, reps: 1800, distanceM: 5000, completedAtMs: 1000,
+          ),
+          SetRecord(
+            id: 's2', workoutId: 'w_run', exerciseId: 'ex_treadmill_incline_walk',
+            setIndex: 2, reps: 600, distanceM: 1500, completedAtMs: 2000,
+          ),
+        ]);
+      await store.saveWorkout(w);
+      for (final SetRecord r in w.sets) {
+        await store.saveSet(r);
+      }
+
+      final WorkoutSummary s = (await service.build('w_run', nowMs: 3000))!;
+
+      expect(s.distanceM, 6500);
+      expect(s.hasDistance, isTrue);
+      expect(s.distanceLabel, '6.50 公里');
+      expect(s.totalVolumeKg, 0, reason: '有氧不产生容量，也不许它污染容量的数字');
+      expect(s.cardiovascularLabels, <String>['跑步机爬坡走']);
+    });
+
+    test('距离动作**不判**力量纪录（否则会出"1800 次新纪录"）', () async {
+      // 先造一次历史，再练一次更"多"，看它会不会被判成破纪录
+      final Workout old = Workout(id: 'w_old', startedAtMs: 0)
+        ..sets.add(SetRecord(
+          id: 's_old', workoutId: 'w_old', exerciseId: 'ex_treadmill_incline_walk',
+          setIndex: 1, reps: 1200, distanceM: 3000, completedAtMs: 10,
+        ));
+      await store.saveWorkout(old);
+      for (final SetRecord r in old.sets) {
+        await store.saveSet(r);
+      }
+
+      final Workout now = Workout(id: 'w_now', startedAtMs: 5000)
+        ..sets.add(SetRecord(
+          id: 's_now', workoutId: 'w_now', exerciseId: 'ex_treadmill_incline_walk',
+          setIndex: 1, reps: 1800, distanceM: 5000, completedAtMs: 5000,
+        ));
+      await store.saveWorkout(now);
+      for (final SetRecord r in now.sets) {
+        await store.saveSet(r);
+      }
+
+      final WorkoutSummary s = (await service.build('w_now', nowMs: 9000))!;
+
+      expect(s.prs, isEmpty, reason: '"1800 次"是秒数，不是纪录');
+      expect(s.hasPr, isFalse);
+      expect(s.distanceM, 5000, reason: '里程本身照常统计');
+    });
+
+    test('混合训练：力量纪录照旧，有氧另外报里程', () async {
+      final Workout w = Workout(id: 'w_mix', startedAtMs: 1000)
+        ..sets.addAll(<SetRecord>[
+          SetRecord(
+            id: 's_bench', workoutId: 'w_mix', exerciseId: 'ex_bb_bench_press',
+            setIndex: 1, reps: 8, weightKg: 62.5, completedAtMs: 1000,
+          ),
+          SetRecord(
+            id: 's_run', workoutId: 'w_mix', exerciseId: 'ex_treadmill_incline_walk',
+            setIndex: 2, reps: 1200, distanceM: 4000, completedAtMs: 2000,
+          ),
+        ]);
+      await store.saveWorkout(w);
+      for (final SetRecord r in w.sets) {
+        await store.saveSet(r);
+      }
+      // 卧推的历史，让"这次 62.5 破纪录"成立
+      final Workout hist = Workout(id: 'w_hist', startedAtMs: 0)
+        ..sets.add(SetRecord(
+          id: 's_h', workoutId: 'w_hist', exerciseId: 'ex_bb_bench_press',
+          setIndex: 1, reps: 8, weightKg: 60, completedAtMs: 10,
+        ));
+      await store.saveWorkout(hist);
+      for (final SetRecord r in hist.sets) {
+        await store.saveSet(r);
+      }
+
+      final WorkoutSummary s = (await service.build('w_mix', nowMs: 9000))!;
+
+      expect(s.prs.map((SetPr p) => p.exerciseId), <String>['ex_bb_bench_press']);
+      expect(s.distanceM, 4000);
+    });
+  });
 }

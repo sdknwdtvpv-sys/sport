@@ -1,961 +1,1000 @@
 {
-  "version": 1,
-  "note": "规则引擎的规范测试向量。Flutter/Dart 端移植后必须跑通同一套向量（见 engine/run-tests.mjs 的断言逻辑），端口才算完成。weight_kg/reps/reason_code 要求精确相等；reason_text 只校验包含的关键子串，允许文案微调但不允许理由缺失。 2026-09-29 起 exercise_fixture 可带 track_type（weight_reps/reps_only/time/weight_time，缺省 weight_reps）：时长类动作的 reps 表示**秒**。",
-  "fixtures": {
-    "barbell_bench": {
-      "id": "ex_bb_bench_press",
-      "default_weight_kg": 40,
-      "weight_increment": 2.5
-    },
-    "dumbbell_press": {
-      "id": "ex_db_bench_press",
-      "default_weight_kg": 12,
-      "weight_increment": 2
-    },
-    "machine_press": {
-      "id": "ex_machine_chest_press",
-      "default_weight_kg": 30,
-      "weight_increment": 5
-    },
-    "weighted_pull_up": {
-      "id": "ex_weighted_pull_up",
-      "default_weight_kg": 10,
-      "weight_increment": 2.5
-    },
-    "pull_up": {
-      "id": "ex_pull_up",
-      "default_weight_kg": null,
-      "weight_increment": 0
-    },
-    "plank": {
-      "id": "ex_plank",
-      "default_weight_kg": null,
-      "weight_increment": 0,
-      "track_type": "time"
-    },
-    "plan_3x8_10": {
-      "target_sets": 3,
-      "target_reps_low": 8,
-      "target_reps_high": 10
-    },
-    "plan_3x8_12": {
-      "target_sets": 3,
-      "target_reps_low": 8,
-      "target_reps_high": 12
-    },
-    "plank_weighted": {
-      "id": "ex_weighted_plank",
-      "default_weight_kg": 5,
-      "weight_increment": 2.5,
-      "track_type": "weight_time"
-    },
-    "crunch": {
-      "id": "ex_crunch",
-      "default_weight_kg": null,
-      "weight_increment": 0,
-      "track_type": "reps_only"
-    },
-    "plan_3x30_45": {
-      "target_sets": 3,
-      "target_reps_low": 30,
-      "target_reps_high": 45
-    }
+ "version": 1,
+ "note": "规则引擎的规范测试向量。Flutter/Dart 端移植后必须跑通同一套向量（见 engine/run-tests.mjs 的断言逻辑），端口才算完成。weight_kg/reps/reason_code 要求精确相等；reason_text 只校验包含的关键子串，允许文案微调但不允许理由缺失。 2026-09-29 起 exercise_fixture 可带 track_type（weight_reps/reps_only/time/weight_time，缺省 weight_reps）：时长类动作的 reps 表示**秒**。 2026-09-29 加两条 distance_time 向量（有氧不给建议）。",
+ "fixtures": {
+  "barbell_bench": {
+   "id": "ex_bb_bench_press",
+   "default_weight_kg": 40,
+   "weight_increment": 2.5
   },
-  "vectors": [
-    {
-      "id": "first_time_barbell",
-      "desc": "零历史 → 用动作库起始重量，理由说明是第一次",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": null
-      },
-      "expect": {
-        "weight_kg": 40,
-        "reps": 8,
-        "reason_code": "first_time",
-        "text_includes": "第一次"
-      }
-    },
-    {
-      "id": "first_time_bodyweight",
-      "desc": "零历史的自重动作 → 不给重量，只给次数",
-      "input": {
-        "exercise": "pull_up",
-        "plan": "plan_3x8_12",
-        "lastSession": null
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 8,
-        "reason_code": "first_time",
-        "text_includes": "次数"
-      }
-    },
-    {
-      "id": "linear_progress_barbell",
-      "desc": "3 组全部到区间上限 → 加重一个杠铃片对，次数回落到区间下限",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 62.5,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "linear_progress_dumbbell",
-      "desc": "哑铃步长是 2kg，不是 2.5",
-      "input": {
-        "exercise": "dumbbell_press",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 12,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 3
-        }
-      },
-      "expect": {
-        "weight_kg": 14,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2kg"
-      }
-    },
-    {
-      "id": "linear_progress_machine",
-      "desc": "器械配重片档位是 5kg",
-      "input": {
-        "exercise": "machine_press",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 30,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 4
-        }
-      },
-      "expect": {
-        "weight_kg": 35,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+5kg"
-      }
-    },
-    {
-      "id": "linear_progress_weighted_pullup",
-      "desc": "负重引体是加权动作（increment > 0），走加重量而非加次数",
-      "input": {
-        "exercise": "weighted_pull_up",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 10,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 5
-        }
-      },
-      "expect": {
-        "weight_kg": 12.5,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "hold_dropped_reps",
-      "desc": "有组掉到区间下限以下 → 保持重量，不加重也不降重",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            8,
-            6,
-            5
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 8,
-        "reason_code": "hold",
-        "text_includes": "掉到 5 次"
-      }
-    },
-    {
-      "id": "add_rep_middle_state",
-      "desc": "次数在大区间里没到顶 → 重量不变，加次数",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_12",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            8,
-            8,
-            8
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 9,
-        "reason_code": "add_rep",
-        "text_includes": "补到 9"
-      }
-    },
-    {
-      "id": "add_rep_near_top",
-      "desc": "差 1 次到顶 → 加次数而不是加重",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            9,
-            9
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 10,
-        "reason_code": "add_rep",
-        "text_includes": "补到 10"
-      }
-    },
-    {
-      "id": "add_rep_capped_at_high",
-      "desc": "加次数不得溢出区间上限",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            9
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 10,
-        "reason_code": "add_rep",
-        "text_includes": "补到 10"
-      }
-    },
-    {
-      "id": "hold_incomplete_sets",
-      "desc": "组数没做满 → 先补组数，即使次数到顶也不加重",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 8,
-        "reason_code": "hold",
-        "text_includes": "只完成 2 组"
-      }
-    },
-    {
-      "id": "hold_incomplete_beats_dropped",
-      "desc": "组数不足且次数不够 → 提示补组数（更根本的问题）",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            6,
-            5
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 8,
-        "reason_code": "hold",
-        "text_includes": "只完成 2 组"
-      }
-    },
-    {
-      "id": "bodyweight_add_rep",
-      "desc": "自重动作：唯一推进路径是加次数，绝不能出现 linear_progress",
-      "input": {
-        "exercise": "pull_up",
-        "plan": "plan_3x8_12",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            8,
-            8,
-            8
-          ],
-          "daysAgo": 3
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 9,
-        "reason_code": "add_rep",
-        "text_includes": "自重动作先加次数"
-      }
-    },
-    {
-      "id": "bodyweight_at_range_top",
-      "desc": "自重次数到区间上限 → 加 2 次并预告之后要负重",
-      "input": {
-        "exercise": "pull_up",
-        "plan": "plan_3x8_12",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            12,
-            12,
-            12
-          ],
-          "daysAgo": 3
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 14,
-        "reason_code": "add_rep",
-        "text_includes": "负重"
-      }
-    },
-    {
-      "id": "bodyweight_at_cap",
-      "desc": "自重次数到硬上限（区间上限 + 5）→ 直接建议加负重，且次数不再上涨",
-      "input": {
-        "exercise": "pull_up",
-        "plan": "plan_3x8_12",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            17,
-            17,
-            17
-          ],
-          "daysAgo": 3
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 17,
-        "reason_code": "add_rep",
-        "text_includes": "建议加负重"
-      }
-    },
-    {
-      "id": "bodyweight_incomplete_sets",
-      "desc": "自重动作组数没做满 → 补组数，不加次数",
-      "input": {
-        "exercise": "pull_up",
-        "plan": "plan_3x8_12",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            8,
-            8
-          ],
-          "daysAgo": 3
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 8,
-        "reason_code": "hold",
-        "text_includes": "只完成 2 组"
-      }
-    },
-    {
-      "id": "bodyweight_plank_style",
-      "desc": "核心自重动作同样适用加次数路径",
-      "input": {
-        "exercise": "crunch",
-        "plan": "plan_3x8_12",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            12,
-            11,
-            11
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 12,
-        "reason_code": "add_rep",
-        "text_includes": "先加次数"
-      }
-    },
-    {
-      "id": "stale_three_weeks_plus",
-      "desc": "超过 21 天没练 → 回归保护：先按上次重量找回感觉",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 30
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 8,
-        "reason_code": "deload",
-        "text_includes": "没练这个动作"
-      }
-    },
-    {
-      "id": "stale_boundary_just_inside",
-      "desc": "20 天属于正常范围内 → 该加重还是要加重（边界值）",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 20
-        }
-      },
-      "expect": {
-        "weight_kg": 62.5,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "stale_wins_over_incomplete_sets",
-      "desc": "既长期未练又组数不足 → 时间维度的保护优先",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            9
-          ],
-          "daysAgo": 45
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 8,
-        "reason_code": "deload",
-        "text_includes": "没练这个动作"
-      }
-    },
-    {
-      "id": "user_preferred_three_overrides",
-      "desc": "连续 3 次手改成同一个值 → 不再自作主张，沿用用户的值",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        },
-        "overrides": [
-          {
-            "weight_kg": 55,
-            "reps": 8
-          },
-          {
-            "weight_kg": 55,
-            "reps": 8
-          },
-          {
-            "weight_kg": 55,
-            "reps": 8
-          }
-        ]
-      },
-      "expect": {
-        "weight_kg": 55,
-        "reps": 8,
-        "reason_code": "user_preferred",
-        "text_includes": "手动设置"
-      }
-    },
-    {
-      "id": "user_preferred_two_overrides_not_enough",
-      "desc": "只改过 2 次 → 还不足以覆盖引擎判断",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        },
-        "overrides": [
-          {
-            "weight_kg": 55,
-            "reps": 8
-          },
-          {
-            "weight_kg": 55,
-            "reps": 8
-          }
-        ]
-      },
-      "expect": {
-        "weight_kg": 62.5,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "user_preferred_broken_streak",
-      "desc": "手改值不连续（中间变过）→ 只数连续段，不触发偏好",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        },
-        "overrides": [
-          {
-            "weight_kg": 55,
-            "reps": 8
-          },
-          {
-            "weight_kg": 57.5,
-            "reps": 8
-          },
-          {
-            "weight_kg": 55,
-            "reps": 8
-          }
-        ]
-      },
-      "expect": {
-        "weight_kg": 62.5,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "progression_off",
-      "desc": "用户关闭了渐进建议 → 返回 null，一个字都不说",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        },
-        "profile": {
-          "progression_mode": "off"
-        }
-      },
-      "expect": null
-    },
-    {
-      "id": "float_noise_killed",
-      "desc": "非整格重量不拉回网格，但要消掉浮点噪声（60.1 + 2.5 ≠ 62.60000000000001）",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60.1,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 62.6,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "off_grid_weight_respected",
-      "desc": "用户用非常规重量（如 61.3kg）→ 系统只加步长，不擅自改成 62.5",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 61.3,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 63.8,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "single_set_history",
-      "desc": "只练过 1 组（极端情况）→ 走补组数，不崩",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10
-          ],
-          "daysAgo": 1
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 8,
-        "reason_code": "hold",
-        "text_includes": "只完成 1 组"
-      }
-    },
-    {
-      "id": "high_rep_over_target",
-      "desc": "远超区间上限（如 15 次 vs 8-10）→ 明确该加重了",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            15,
-            15,
-            15
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 62.5,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
-    },
-    {
-      "id": "time_first_plank",
-      "desc": "按时长的动作零历史 —— 给秒数，文案也说\"秒数\"而不是\"次数\"",
-      "input": {
-        "exercise": "plank",
-        "plan": "plan_3x30_45",
-        "lastSession": null
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 30,
-        "reason_code": "first_time",
-        "text_includes": "秒数"
-      }
-    },
-    {
-      "id": "time_hold_incomplete_sets",
-      "desc": "按时长：组数没做满 → 先补组数",
-      "input": {
-        "exercise": "plank",
-        "plan": "plan_3x30_45",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            30,
-            30
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 30,
-        "reason_code": "hold",
-        "text_includes": "补满"
-      }
-    },
-    {
-      "id": "time_add_seconds",
-      "desc": "按时长：推进方式是加 5 秒，不是加 1 次",
-      "input": {
-        "exercise": "plank",
-        "plan": "plan_3x30_45",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            35,
-            32,
-            30
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 35,
-        "reason_code": "add_rep",
-        "text_includes": "30 → 35 秒"
-      }
-    },
-    {
-      "id": "time_cap_suggests_weight",
-      "desc": "按时长到上限 → 自重动作建议加负重（不再无限加秒）",
-      "input": {
-        "exercise": "plank",
-        "plan": "plan_3x30_45",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            60,
-            62,
-            60
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 60,
-        "reason_code": "add_rep",
-        "text_includes": "建议加负重"
-      }
-    },
-    {
-      "id": "time_deload_still_wins",
-      "desc": "按时长动作同样受\"21 天回归保护\"约束（顺序不能变）",
-      "input": {
-        "exercise": "plank",
-        "plan": "plan_3x30_45",
-        "lastSession": {
-          "weight_kg": null,
-          "reps": [
-            40,
-            40,
-            40
-          ],
-          "daysAgo": 25
-        }
-      },
-      "expect": {
-        "weight_kg": null,
-        "reps": 30,
-        "reason_code": "deload",
-        "text_includes": "25 天"
-      }
-    },
-    {
-      "id": "time_weighted_keeps_weight",
-      "desc": "负重时长动作：保持重量，加秒数",
-      "input": {
-        "exercise": "plank_weighted",
-        "plan": "plan_3x30_45",
-        "lastSession": {
-          "weight_kg": 5,
-          "reps": [
-            35,
-            30,
-            30
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 5,
-        "reps": 35,
-        "reason_code": "add_rep",
-        "text_includes": "30 → 35 秒"
-      }
-    },
-    {
-      "id": "time_weighted_cap_adds_weight",
-      "desc": "负重时长动作到上限 → 直接加重（它有重量，不是自重）",
-      "input": {
-        "exercise": "plank_weighted",
-        "plan": "plan_3x30_45",
-        "lastSession": {
-          "weight_kg": 5,
-          "reps": [
-            60,
-            60,
-            60
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 7.5,
-        "reps": 30,
-        "reason_code": "linear_progress",
-        "text_includes": "加重"
-      }
-    },
-    {
-      "id": "stale_boundary_exactly_21",
-      "desc": "第 21 天正好触发回归保护 —— 边界不能差一天（变异测试抓出来的盲区）",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 21
-        }
-      },
-      "expect": {
-        "weight_kg": 60,
-        "reps": 8,
-        "reason_code": "deload",
-        "text_includes": "21 天"
-      }
-    },
-    {
-      "id": "float_noise_dirty_weight",
-      "desc": "重量带小数时两个引擎都必须给出同一个干净值（62.6）。⚠️ 变异测试证明：单次加法在现实范围内不会泄漏浮点噪声，所以这条守的是**跨语言输出一致性**，不是 round2 本身。",
-      "input": {
-        "exercise": "barbell_bench",
-        "plan": "plan_3x8_10",
-        "lastSession": {
-          "weight_kg": 60.1,
-          "reps": [
-            10,
-            10,
-            10
-          ],
-          "daysAgo": 2
-        }
-      },
-      "expect": {
-        "weight_kg": 62.6,
-        "reps": 8,
-        "reason_code": "linear_progress",
-        "text_includes": "+2.5kg"
-      }
+  "dumbbell_press": {
+   "id": "ex_db_bench_press",
+   "default_weight_kg": 12,
+   "weight_increment": 2
+  },
+  "machine_press": {
+   "id": "ex_machine_chest_press",
+   "default_weight_kg": 30,
+   "weight_increment": 5
+  },
+  "weighted_pull_up": {
+   "id": "ex_weighted_pull_up",
+   "default_weight_kg": 10,
+   "weight_increment": 2.5
+  },
+  "pull_up": {
+   "id": "ex_pull_up",
+   "default_weight_kg": null,
+   "weight_increment": 0
+  },
+  "plank": {
+   "id": "ex_plank",
+   "default_weight_kg": null,
+   "weight_increment": 0,
+   "track_type": "time"
+  },
+  "plan_3x8_10": {
+   "target_sets": 3,
+   "target_reps_low": 8,
+   "target_reps_high": 10
+  },
+  "plan_3x8_12": {
+   "target_sets": 3,
+   "target_reps_low": 8,
+   "target_reps_high": 12
+  },
+  "plank_weighted": {
+   "id": "ex_weighted_plank",
+   "default_weight_kg": 5,
+   "weight_increment": 2.5,
+   "track_type": "weight_time"
+  },
+  "crunch": {
+   "id": "ex_crunch",
+   "default_weight_kg": null,
+   "weight_increment": 0,
+   "track_type": "reps_only"
+  },
+  "plan_3x30_45": {
+   "target_sets": 3,
+   "target_reps_low": 30,
+   "target_reps_high": 45
+  },
+  "treadmill": {
+   "id": "ex_treadmill_incline_walk",
+   "default_weight_kg": null,
+   "weight_increment": 0,
+   "track_type": "distance_time"
+  },
+  "plan_3x_distance": {
+   "target_sets": 3,
+   "target_reps_low": 600,
+   "target_reps_high": 1200
+  }
+ },
+ "vectors": [
+  {
+   "id": "first_time_barbell",
+   "desc": "零历史 → 用动作库起始重量，理由说明是第一次",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": null
+   },
+   "expect": {
+    "weight_kg": 40,
+    "reps": 8,
+    "reason_code": "first_time",
+    "text_includes": "第一次"
+   }
+  },
+  {
+   "id": "first_time_bodyweight",
+   "desc": "零历史的自重动作 → 不给重量，只给次数",
+   "input": {
+    "exercise": "pull_up",
+    "plan": "plan_3x8_12",
+    "lastSession": null
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 8,
+    "reason_code": "first_time",
+    "text_includes": "次数"
+   }
+  },
+  {
+   "id": "linear_progress_barbell",
+   "desc": "3 组全部到区间上限 → 加重一个杠铃片对，次数回落到区间下限",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
     }
-  ],
-  "oneRmCases": [
-    {
-      "weight_kg": 100,
-      "reps": 5,
-      "expect": 116.67,
-      "desc": "100kg × 5 → 116.67"
-    },
-    {
-      "weight_kg": 60,
-      "reps": 12,
-      "expect": 84,
-      "desc": "12 次是可信上限，仍给值"
-    },
-    {
-      "weight_kg": 60,
-      "reps": 13,
-      "expect": null,
-      "desc": "13 次超出可信区间 → 宁可不给"
-    },
-    {
-      "weight_kg": 0,
-      "reps": 5,
-      "expect": null,
-      "desc": "重量为 0 → 不给"
+   },
+   "expect": {
+    "weight_kg": 62.5,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "linear_progress_dumbbell",
+   "desc": "哑铃步长是 2kg，不是 2.5",
+   "input": {
+    "exercise": "dumbbell_press",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 12,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 3
     }
-  ],
-  "invariants": [
-    {
-      "id": "every_suggestion_explains_itself",
-      "desc": "红线 1：任何非 null 的建议都必须有非空 reason_text"
-    },
-    {
-      "id": "bodyweight_never_linear_progress",
-      "desc": "红线 2：weight_increment === 0 的动作永远不返回 linear_progress"
-    },
-    {
-      "id": "bodyweight_never_returns_weight",
-      "desc": "红线 2 推论：自重动作（无负重）的重量恒为 null"
+   },
+   "expect": {
+    "weight_kg": 14,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2kg"
+   }
+  },
+  {
+   "id": "linear_progress_machine",
+   "desc": "器械配重片档位是 5kg",
+   "input": {
+    "exercise": "machine_press",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 30,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 4
     }
-  ]
+   },
+   "expect": {
+    "weight_kg": 35,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+5kg"
+   }
+  },
+  {
+   "id": "linear_progress_weighted_pullup",
+   "desc": "负重引体是加权动作（increment > 0），走加重量而非加次数",
+   "input": {
+    "exercise": "weighted_pull_up",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 10,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 5
+    }
+   },
+   "expect": {
+    "weight_kg": 12.5,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "hold_dropped_reps",
+   "desc": "有组掉到区间下限以下 → 保持重量，不加重也不降重",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      8,
+      6,
+      5
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 8,
+    "reason_code": "hold",
+    "text_includes": "掉到 5 次"
+   }
+  },
+  {
+   "id": "add_rep_middle_state",
+   "desc": "次数在大区间里没到顶 → 重量不变，加次数",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_12",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      8,
+      8,
+      8
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 9,
+    "reason_code": "add_rep",
+    "text_includes": "补到 9"
+   }
+  },
+  {
+   "id": "add_rep_near_top",
+   "desc": "差 1 次到顶 → 加次数而不是加重",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      9,
+      9
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 10,
+    "reason_code": "add_rep",
+    "text_includes": "补到 10"
+   }
+  },
+  {
+   "id": "add_rep_capped_at_high",
+   "desc": "加次数不得溢出区间上限",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      9
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 10,
+    "reason_code": "add_rep",
+    "text_includes": "补到 10"
+   }
+  },
+  {
+   "id": "hold_incomplete_sets",
+   "desc": "组数没做满 → 先补组数，即使次数到顶也不加重",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 8,
+    "reason_code": "hold",
+    "text_includes": "只完成 2 组"
+   }
+  },
+  {
+   "id": "hold_incomplete_beats_dropped",
+   "desc": "组数不足且次数不够 → 提示补组数（更根本的问题）",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      6,
+      5
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 8,
+    "reason_code": "hold",
+    "text_includes": "只完成 2 组"
+   }
+  },
+  {
+   "id": "bodyweight_add_rep",
+   "desc": "自重动作：唯一推进路径是加次数，绝不能出现 linear_progress",
+   "input": {
+    "exercise": "pull_up",
+    "plan": "plan_3x8_12",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      8,
+      8,
+      8
+     ],
+     "daysAgo": 3
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 9,
+    "reason_code": "add_rep",
+    "text_includes": "自重动作先加次数"
+   }
+  },
+  {
+   "id": "bodyweight_at_range_top",
+   "desc": "自重次数到区间上限 → 加 2 次并预告之后要负重",
+   "input": {
+    "exercise": "pull_up",
+    "plan": "plan_3x8_12",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      12,
+      12,
+      12
+     ],
+     "daysAgo": 3
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 14,
+    "reason_code": "add_rep",
+    "text_includes": "负重"
+   }
+  },
+  {
+   "id": "bodyweight_at_cap",
+   "desc": "自重次数到硬上限（区间上限 + 5）→ 直接建议加负重，且次数不再上涨",
+   "input": {
+    "exercise": "pull_up",
+    "plan": "plan_3x8_12",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      17,
+      17,
+      17
+     ],
+     "daysAgo": 3
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 17,
+    "reason_code": "add_rep",
+    "text_includes": "建议加负重"
+   }
+  },
+  {
+   "id": "bodyweight_incomplete_sets",
+   "desc": "自重动作组数没做满 → 补组数，不加次数",
+   "input": {
+    "exercise": "pull_up",
+    "plan": "plan_3x8_12",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      8,
+      8
+     ],
+     "daysAgo": 3
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 8,
+    "reason_code": "hold",
+    "text_includes": "只完成 2 组"
+   }
+  },
+  {
+   "id": "bodyweight_plank_style",
+   "desc": "核心自重动作同样适用加次数路径",
+   "input": {
+    "exercise": "crunch",
+    "plan": "plan_3x8_12",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      12,
+      11,
+      11
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 12,
+    "reason_code": "add_rep",
+    "text_includes": "先加次数"
+   }
+  },
+  {
+   "id": "stale_three_weeks_plus",
+   "desc": "超过 21 天没练 → 回归保护：先按上次重量找回感觉",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 30
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 8,
+    "reason_code": "deload",
+    "text_includes": "没练这个动作"
+   }
+  },
+  {
+   "id": "stale_boundary_just_inside",
+   "desc": "20 天属于正常范围内 → 该加重还是要加重（边界值）",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 20
+    }
+   },
+   "expect": {
+    "weight_kg": 62.5,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "stale_wins_over_incomplete_sets",
+   "desc": "既长期未练又组数不足 → 时间维度的保护优先",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      9
+     ],
+     "daysAgo": 45
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 8,
+    "reason_code": "deload",
+    "text_includes": "没练这个动作"
+   }
+  },
+  {
+   "id": "user_preferred_three_overrides",
+   "desc": "连续 3 次手改成同一个值 → 不再自作主张，沿用用户的值",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    },
+    "overrides": [
+     {
+      "weight_kg": 55,
+      "reps": 8
+     },
+     {
+      "weight_kg": 55,
+      "reps": 8
+     },
+     {
+      "weight_kg": 55,
+      "reps": 8
+     }
+    ]
+   },
+   "expect": {
+    "weight_kg": 55,
+    "reps": 8,
+    "reason_code": "user_preferred",
+    "text_includes": "手动设置"
+   }
+  },
+  {
+   "id": "user_preferred_two_overrides_not_enough",
+   "desc": "只改过 2 次 → 还不足以覆盖引擎判断",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    },
+    "overrides": [
+     {
+      "weight_kg": 55,
+      "reps": 8
+     },
+     {
+      "weight_kg": 55,
+      "reps": 8
+     }
+    ]
+   },
+   "expect": {
+    "weight_kg": 62.5,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "user_preferred_broken_streak",
+   "desc": "手改值不连续（中间变过）→ 只数连续段，不触发偏好",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    },
+    "overrides": [
+     {
+      "weight_kg": 55,
+      "reps": 8
+     },
+     {
+      "weight_kg": 57.5,
+      "reps": 8
+     },
+     {
+      "weight_kg": 55,
+      "reps": 8
+     }
+    ]
+   },
+   "expect": {
+    "weight_kg": 62.5,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "progression_off",
+   "desc": "用户关闭了渐进建议 → 返回 null，一个字都不说",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    },
+    "profile": {
+     "progression_mode": "off"
+    }
+   },
+   "expect": null
+  },
+  {
+   "id": "float_noise_killed",
+   "desc": "非整格重量不拉回网格，但要消掉浮点噪声（60.1 + 2.5 ≠ 62.60000000000001）",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60.1,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 62.6,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "off_grid_weight_respected",
+   "desc": "用户用非常规重量（如 61.3kg）→ 系统只加步长，不擅自改成 62.5",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 61.3,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 63.8,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "single_set_history",
+   "desc": "只练过 1 组（极端情况）→ 走补组数，不崩",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10
+     ],
+     "daysAgo": 1
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 8,
+    "reason_code": "hold",
+    "text_includes": "只完成 1 组"
+   }
+  },
+  {
+   "id": "high_rep_over_target",
+   "desc": "远超区间上限（如 15 次 vs 8-10）→ 明确该加重了",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      15,
+      15,
+      15
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 62.5,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "time_first_plank",
+   "desc": "按时长的动作零历史 —— 给秒数，文案也说\"秒数\"而不是\"次数\"",
+   "input": {
+    "exercise": "plank",
+    "plan": "plan_3x30_45",
+    "lastSession": null
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 30,
+    "reason_code": "first_time",
+    "text_includes": "秒数"
+   }
+  },
+  {
+   "id": "time_hold_incomplete_sets",
+   "desc": "按时长：组数没做满 → 先补组数",
+   "input": {
+    "exercise": "plank",
+    "plan": "plan_3x30_45",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      30,
+      30
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 30,
+    "reason_code": "hold",
+    "text_includes": "补满"
+   }
+  },
+  {
+   "id": "time_add_seconds",
+   "desc": "按时长：推进方式是加 5 秒，不是加 1 次",
+   "input": {
+    "exercise": "plank",
+    "plan": "plan_3x30_45",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      35,
+      32,
+      30
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 35,
+    "reason_code": "add_rep",
+    "text_includes": "30 → 35 秒"
+   }
+  },
+  {
+   "id": "time_cap_suggests_weight",
+   "desc": "按时长到上限 → 自重动作建议加负重（不再无限加秒）",
+   "input": {
+    "exercise": "plank",
+    "plan": "plan_3x30_45",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      60,
+      62,
+      60
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 60,
+    "reason_code": "add_rep",
+    "text_includes": "建议加负重"
+   }
+  },
+  {
+   "id": "time_deload_still_wins",
+   "desc": "按时长动作同样受\"21 天回归保护\"约束（顺序不能变）",
+   "input": {
+    "exercise": "plank",
+    "plan": "plan_3x30_45",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      40,
+      40,
+      40
+     ],
+     "daysAgo": 25
+    }
+   },
+   "expect": {
+    "weight_kg": null,
+    "reps": 30,
+    "reason_code": "deload",
+    "text_includes": "25 天"
+   }
+  },
+  {
+   "id": "time_weighted_keeps_weight",
+   "desc": "负重时长动作：保持重量，加秒数",
+   "input": {
+    "exercise": "plank_weighted",
+    "plan": "plan_3x30_45",
+    "lastSession": {
+     "weight_kg": 5,
+     "reps": [
+      35,
+      30,
+      30
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 5,
+    "reps": 35,
+    "reason_code": "add_rep",
+    "text_includes": "30 → 35 秒"
+   }
+  },
+  {
+   "id": "time_weighted_cap_adds_weight",
+   "desc": "负重时长动作到上限 → 直接加重（它有重量，不是自重）",
+   "input": {
+    "exercise": "plank_weighted",
+    "plan": "plan_3x30_45",
+    "lastSession": {
+     "weight_kg": 5,
+     "reps": [
+      60,
+      60,
+      60
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 7.5,
+    "reps": 30,
+    "reason_code": "linear_progress",
+    "text_includes": "加重"
+   }
+  },
+  {
+   "id": "stale_boundary_exactly_21",
+   "desc": "第 21 天正好触发回归保护 —— 边界不能差一天（变异测试抓出来的盲区）",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 21
+    }
+   },
+   "expect": {
+    "weight_kg": 60,
+    "reps": 8,
+    "reason_code": "deload",
+    "text_includes": "21 天"
+   }
+  },
+  {
+   "id": "float_noise_dirty_weight",
+   "desc": "重量带小数时两个引擎都必须给出同一个干净值（62.6）。⚠️ 变异测试证明：单次加法在现实范围内不会泄漏浮点噪声，所以这条守的是**跨语言输出一致性**，不是 round2 本身。",
+   "input": {
+    "exercise": "barbell_bench",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 60.1,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 62.6,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "+2.5kg"
+   }
+  },
+  {
+   "id": "distance_time_no_suggestion",
+   "desc": "有氧（distance_time）**不给推进建议** —— 我们没有用户的有氧目标，\"上次 5 公里 → 这次 5.25 公里\"是假精确。⚠️ 这条同时守着\"它绝不能掉进次数分支\"：不挡的话引擎会对一次跑步说\"每组次数补到 10 次\"",
+   "input": {
+    "exercise": "treadmill",
+    "plan": "plan_3x_distance",
+    "lastSession": {
+     "weight_kg": null,
+     "reps": [
+      1800,
+      1800,
+      1800
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": null
+  },
+  {
+   "id": "distance_time_no_suggestion_without_history",
+   "desc": "有氧零历史也不给建议 —— 不能走\"第一次练\"那条分支去说\"先从这个重量开始\"（跑步机没有重量）",
+   "input": {
+    "exercise": "treadmill",
+    "plan": "plan_3x_distance",
+    "lastSession": null
+   },
+   "expect": null
+  }
+ ],
+ "oneRmCases": [
+  {
+   "weight_kg": 100,
+   "reps": 5,
+   "expect": 116.67,
+   "desc": "100kg × 5 → 116.67"
+  },
+  {
+   "weight_kg": 60,
+   "reps": 12,
+   "expect": 84,
+   "desc": "12 次是可信上限，仍给值"
+  },
+  {
+   "weight_kg": 60,
+   "reps": 13,
+   "expect": null,
+   "desc": "13 次超出可信区间 → 宁可不给"
+  },
+  {
+   "weight_kg": 0,
+   "reps": 5,
+   "expect": null,
+   "desc": "重量为 0 → 不给"
+  }
+ ],
+ "invariants": [
+  {
+   "id": "every_suggestion_explains_itself",
+   "desc": "红线 1：任何非 null 的建议都必须有非空 reason_text"
+  },
+  {
+   "id": "bodyweight_never_linear_progress",
+   "desc": "红线 2：weight_increment === 0 的动作永远不返回 linear_progress"
+  },
+  {
+   "id": "bodyweight_never_returns_weight",
+   "desc": "红线 2 推论：自重动作（无负重）的重量恒为 null"
+  }
+ ]
 }

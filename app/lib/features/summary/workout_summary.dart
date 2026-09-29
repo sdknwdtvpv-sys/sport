@@ -65,6 +65,9 @@ class WorkoutSummary {
     required this.exerciseCount,
     required this.prs,
     required this.startedAtMs,
+    this.distanceM = 0,
+    this.distanceSets = 0,
+    this.cardiovascularLabels = const <String>[],
     this.unit = WeightUnit.kg,
   });
 
@@ -74,6 +77,20 @@ class WorkoutSummary {
   final Duration? duration;
   final int exerciseCount;
   final List<SetPr> prs;
+
+  /// 这次训练的有氧里程（米）。0 = 这次没记有氧。
+  ///
+  /// 与 [totalVolumeKg] **并列而不是相加**：容量是力量的口径（kg × 次），
+  /// 里程是心肺的口径（米）。把 5 公里加进容量里是两种量纲混在一起。
+  final double distanceM;
+
+  /// 记了距离的组数 —— 用来区分"没练有氧"与"练了但距离记成 0"。
+  final int distanceSets;
+
+  /// 这次练到的有氧动作名（去重、按首次出现）。总结页据此说"练了什么有氧"。
+  final List<String> cardiovascularLabels;
+
+  bool get hasDistance => distanceSets > 0 && distanceM > 0;
 
   /// 这次训练的开始时间。分享卡要显示日期 —— 一张没有日期的"训练完成"
   /// 卡片没有任何纪念意义。
@@ -98,6 +115,21 @@ class WorkoutSummary {
 
   /// 自重训练容量记 0，这时显示「自重」而不是「0 kg」
   String get volumeLabel => formatVolume(totalVolumeKg, unit, zeroText: '自重');
+
+  /// 里程那一个格子。没记有氧时返回 null —— 总结页据此决定要不要显示它。
+  String? get distanceLabel =>
+      hasDistance ? formatDistanceKm(distanceM) : null;
+
+  /// 有氧的平均配速：总里程 ÷ 总时长。时长缺失或为 0 时返回 null。
+  ///
+  /// ⚠️ 用**整场训练的时长**算，是近似的（中间的力量组也被算进去了）。
+  /// 精确做法要按每个有氧动作自己的组时间求和 —— 那是后续版本的事，
+  /// 这里宁可说"平均"也不假装精确（写在 UI 文案里）。
+  String? get paceLabel {
+    final Duration? d = duration;
+    if (!hasDistance || d == null) return null;
+    return formatPace(distanceM, d.inSeconds);
+  }
 }
 
 class SummaryService {
@@ -135,6 +167,22 @@ class SummaryService {
       if (pr != null) prs.add(pr);
     }
 
+    // 有氧：里程与"练了哪些有氧"。**与力量那三个大数并列，不相加。**
+    double distanceM = 0;
+    int distanceSets = 0;
+    final List<String> cardio = <String>[];
+    for (final SetRecord s in w.sets) {
+      if (!s.hasDistance) continue;
+      distanceM += s.distanceM!;
+      if (s.setType == SetType.normal) distanceSets++;
+      if (!cardio.contains(s.exerciseId)) cardio.add(s.exerciseId);
+    }
+    final List<String> cardioNames = <String>[];
+    for (final String id in cardio) {
+      final ExerciseData? row = await _repo.byId(id);
+      cardioNames.add(row?.name ?? id);
+    }
+
     return WorkoutSummary(
       workoutId: workoutId,
       totalSets: w.totalSets,
@@ -143,6 +191,9 @@ class SummaryService {
       exerciseCount: exerciseIds.length,
       prs: prs,
       startedAtMs: w.startedAtMs,
+      distanceM: distanceM,
+      distanceSets: distanceSets,
+      cardiovascularLabels: cardioNames,
       unit: unit,
     );
   }
@@ -164,6 +215,12 @@ class SummaryService {
         .toList();
     if (mine.isEmpty) return null;
 
+    // 距离动作**不判力量纪录**：它的"次数"是秒，"重量"多半是 null，
+    // 按自重那条路比次数就会得出一条"1800 次新纪录"——那是假数据。
+    // （有氧的最好成绩是里程与配速，那是另一套呈现，不是这里的 PR。）
+    if (mine.any((SetRecord s) => s.hasDistance)) return null;
+
+    // 走到这里一定没有距离组（上面已经返回），所以"全是 null 重量"就是自重动作
     final bool bodyweight = mine.every((SetRecord s) => s.weightKg == null);
 
     // 本次最佳

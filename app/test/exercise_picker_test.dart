@@ -74,16 +74,23 @@ void main() {
       expect(find.text('腘绳肌拉伸'), findsNothing);
     });
 
-    testWidgets('筛「有氧」→ 跳绳/椭圆机在，拉伸不在', (WidgetTester tester) async {
+    testWidgets('筛「有氧」→ 只剩有氧（力量与拉伸都不见了）',
+        (WidgetTester tester) async {
       await pumpPicker(tester);
 
       await tester.tap(find.byKey(const Key('cat-cardio')));
       await tester.pumpAndSettle();
 
-      expect(find.text('跳绳'), findsOneWidget);
-      expect(find.text('椭圆机'), findsOneWidget);
+      // ⚠️ **不按具体动作名断言**：有氧有 13 个，一屏放不下，
+      // ListView 只 build 可见的那几个 —— "找不到跳绳"可能只是它在屏幕外。
+      // （第一次写这条就是这么错的。）按类别的**表现**断言才稳：
+      // 每个可见行的副标题都带类别，且力量/拉伸的动作一个都不在。
+      expect(find.textContaining('有氧 · '), findsWidgets);
       expect(find.text('腘绳肌拉伸'), findsNothing);
       expect(find.text('杠铃卧推'), findsNothing);
+      expect(find.textContaining('拉伸 · '), findsNothing);
+
+      // 具体是谁属于有氧，在仓库层断言（exercise_repository_test）
     });
 
     testWidgets('「全部类型」能退回去（默认就看得到全部）',

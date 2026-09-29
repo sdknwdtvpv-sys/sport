@@ -13,14 +13,14 @@
 
 | 项 | 数量 |
 |---|---|
-| 我们的动作 | 342 |
+| 我们的动作 | 351 |
 | 上游动作 | 302 |
-| **有上游对应**（精确命中 262 + 人工确认 17） | **279** |
+| **有上游对应**（精确命中 271 + 人工确认 17） | **288** |
 | 已复核：确认一致 | 17 |
 | 已复核：命名相近但动作不同 | 39 |
 | 待人工复核的候选（相似度 ≥ 0.5） | 0 |
 | 未命中且相似度 < 0.5（自行维护） | 26 |
-| 上游有、我们没有 | 23 |
+| 上游有、我们没有 | 14 |
 
 ## 一、有上游对应、但类型标错的动作（当前为空 ✅）
 
@@ -152,8 +152,8 @@
 | 上游类型 | 数量 | 例 |
 |---|---|---|
 | `weight_reps` | 11 | Cable Fly, Rear Delt Fly, Dumbbell Bent Over Row, Leg Curl, Bicep Curl, Bent-Over Rear Delt Raise |
-| `distance_duration` | 10 | Running, Walking, Cycling, Rowing, Farmer Carry, Swimming |
 | `bodyweight_reps` | 1 | Dip |
+| `distance_duration` | 1 | Farmer Carry |
 | `duration` | 1 | Plank Jack |
 
 其中 **14 个是拉伸动作**（上游 `isStretch: true`）—— 我们种子里一个都没有：

@@ -306,5 +306,45 @@ void main() {
       expect(find.text('体重'), findsNothing);
     });
   });
-}
 
+  group('有氧不进力量最佳榜', () {
+    // 距离动作的 reps 是秒、weight 是 null。按"自重比次数"的老逻辑，
+    // 一次 5 公里跑会占住"最佳 1800 次"的位置，把真正的力量成绩挤下去。
+    test('distanceExerciseIds 里的动作整条跳过', () {
+      final List<ExercisePr> prs = personalBests(
+        sets: <SetRecord>[
+          const SetRecord(
+            id: 's1', workoutId: 'w1', exerciseId: 'ex_treadmill_incline_walk',
+            setIndex: 1, reps: 1800, distanceM: 5000, completedAtMs: 1000,
+          ),
+          const SetRecord(
+            id: 's2', workoutId: 'w1', exerciseId: 'ex_pull_up',
+            setIndex: 1, reps: 12, completedAtMs: 2000,
+          ),
+        ],
+        exerciseNames: const <String, String>{
+          'ex_treadmill_incline_walk': '跑步机爬坡走',
+          'ex_pull_up': '引体向上',
+        },
+        distanceExerciseIds: const <String>{'ex_treadmill_incline_walk'},
+      );
+
+      expect(prs.map((ExercisePr p) => p.exerciseId), <String>['ex_pull_up']);
+      expect(prs.single.reps, 12);
+    });
+
+    test('不传 distanceExerciseIds 时行为与以前完全一致（缺省不改变任何东西）', () {
+      final List<ExercisePr> prs = personalBests(
+        sets: <SetRecord>[
+          const SetRecord(
+            id: 's1', workoutId: 'w1', exerciseId: 'ex_treadmill_incline_walk',
+            setIndex: 1, reps: 1800, completedAtMs: 1000,
+          ),
+        ],
+        exerciseNames: const <String, String>{'ex_treadmill_incline_walk': '跑步机'},
+      );
+
+      expect(prs, hasLength(1), reason: '缺省参数必须向后兼容');
+    });
+  });
+}

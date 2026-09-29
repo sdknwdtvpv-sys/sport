@@ -185,7 +185,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               width: double.infinity,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Tokens.volt,
+                // 距离动作还没设距离时**视觉上也不给点**（控制器里同样挡了一道）：
+                // 一次误触会写进"0 公里"的假记录。按钮变灰 + 下面那行提示，
+                // 是这块屏幕上唯一"按钮不是主角"的例外。
+                color: c.canLog ? Tokens.volt : Tokens.elevated,
                 borderRadius: BorderRadius.circular(Tokens.rPill),
               ),
               child: Row(
@@ -196,17 +199,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   Text(
                     c.primaryButtonLabel,
                     key: const Key('button-label'),
-                    style: const TextStyle(
-                      color: Tokens.voltInk,
+                    style: TextStyle(
+                      color: c.canLog ? Tokens.voltInk : Tokens.text3,
                       fontSize: 30,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(width: Tokens.s2),
-                  const Text('✓',
+                  Text('✓',
                       style: TextStyle(
-                          color: Tokens.voltInk, fontSize: 24, fontWeight: FontWeight.w700)),
+                          color: c.canLog ? Tokens.voltInk : Tokens.text3,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -248,11 +253,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     ),
                     const SizedBox(width: Tokens.s3),
                     Text(
-                      // 按时长动作那个数字是秒，不加"秒"会被读成"自重 × 30 次"
-                      r.weightKg == null
-                          ? '自重 × ${r.reps}${c.exercise.isTime ? ' 秒' : ''}'
-                          : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}'
-                              '${c.exercise.isTime ? ' 秒' : ''}',
+                      // 距离动作念「5.00 公里 · 30:00」—— 既没有"自重 × 1800"，
+                      // 也没有把秒读成次。
+                      r.hasDistance
+                          ? '${formatDistanceKm(r.distanceM!)} · '
+                              '${formatDurationHms(r.reps)}'
+                          // 按时长动作那个数字是秒，不加"秒"会被读成"自重 × 30 次"
+                          : r.weightKg == null
+                              ? '自重 × ${r.reps}${c.exercise.isTime ? ' 秒' : ''}'
+                              : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}'
+                                  '${c.exercise.isTime ? ' 秒' : ''}',
                       style: TextStyle(
                         // 热身组用次级色：和正式组混在一起分不出来，用户就不知道
                         // 哪些算进了计划进度
@@ -408,7 +418,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, Tokens.s4),
       child: Text(
-        c.hint ?? '点大按钮记录一组 · 长按可以改重量',
+        c.hint ??
+            (c.isDistance
+                // 距离动作先说"怎么设距离" —— 首次进来它是 0，按钮是灰的
+                ? '长按按钮设距离与时长 · 设好之后点一下记一组'
+                : '点大按钮记录一组 · 长按可以改重量'),
         key: const Key('workout-hint'),
         textAlign: TextAlign.center,
         style: const TextStyle(color: Tokens.text3, fontSize: 11, height: 1.3),
@@ -450,24 +464,54 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     ),
                   ),
                   const SizedBox(height: Tokens.s5),
-                  _stepperRow(
-                    // 步进值按显示单位展示；底层量与步长仍是 kg
-                    // （lb 原生步进会让重量脱离杠铃片网格，见 core/units.dart）
-                    value: c.isBodyweight
-                        ? '自重'
-                        : trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
-                    unit: c.isBodyweight ? '' : c.unit.wire,
-                    step: trimNumber(c.weightStep),
-                    keyMinus: 'step-weight-down',
-                    keyPlus: 'step-weight-up',
-                    onMinus: () => c.onStepper(deltaWeight: -c.weightStep),
-                    onPlus: () => c.onStepper(deltaWeight: c.weightStep),
-                  ),
+                  // 距离动作（跑步机/划船机/跳绳/农夫行走）：**重量这一行没有意义** ——
+                  // 跑步机上没有"自重"，农夫行走的重量也确实要记，所以分两种：
+                  //   · 有重量的距离动作（农夫行走，weight_increment > 0）→ 重量 + 距离 + 时长
+                  //   · 没有重量的（跑步机等）→ 距离 + 时长，不显示重量行
+                  if (c.isDistance && !c.isBodyweight)
+                    _stepperRow(
+                      value: trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
+                      unit: c.unit.wire,
+                      step: trimNumber(c.weightStep),
+                      keyMinus: 'step-weight-down',
+                      keyPlus: 'step-weight-up',
+                      onMinus: () => c.onStepper(deltaWeight: -c.weightStep),
+                      onPlus: () => c.onStepper(deltaWeight: c.weightStep),
+                    ),
+                  if (c.isDistance && !c.isBodyweight) const SizedBox(height: Tokens.s5),
+                  if (c.isDistance)
+                    _stepperRow(
+                      value: trimNumber(round1(c.distanceM)),
+                      unit: '米',
+                      step: '${c.distanceStepM.toInt()}',
+                      keyMinus: 'step-distance-down',
+                      keyPlus: 'step-distance-up',
+                      onMinus: () => c.onStepper(deltaDistanceM: -c.distanceStepM),
+                      onPlus: () => c.onStepper(deltaDistanceM: c.distanceStepM),
+                    ),
+                  if (!c.isDistance)
+                    _stepperRow(
+                      // 步进值按显示单位展示；底层量与步长仍是 kg
+                      // （lb 原生步进会让重量脱离杠铃片网格，见 core/units.dart）
+                      value: c.isBodyweight
+                          ? '自重'
+                          : trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
+                      unit: c.isBodyweight ? '' : c.unit.wire,
+                      step: trimNumber(c.weightStep),
+                      keyMinus: 'step-weight-down',
+                      keyPlus: 'step-weight-up',
+                      onMinus: () => c.onStepper(deltaWeight: -c.weightStep),
+                      onPlus: () => c.onStepper(deltaWeight: c.weightStep),
+                    ),
                   const SizedBox(height: Tokens.s5),
                   _stepperRow(
-                    value: '${c.reps}',
-                    // 按时长动作这里是**秒**，步进也变成 ±5 秒
-                    unit: c.repsUnit,
+                    // 距离动作把秒念成 30:00（1800 秒没人这么念），其余照旧
+                    value: c.isDistance
+                        ? formatDurationHms(c.reps)
+                        : '${c.reps}',
+                    // 按时长动作这里是**秒**，步进也变成 ±5 秒；
+                    // 距离动作是 ±60 秒（1 分钟）
+                    unit: c.isDistance ? '' : c.repsUnit,
                     step: '${c.repsStep}',
                     keyMinus: 'step-reps-down',
                     keyPlus: 'step-reps-up',

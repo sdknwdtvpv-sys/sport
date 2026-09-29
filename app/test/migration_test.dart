@@ -11,8 +11,10 @@ library;
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lianleme/data/db.dart';
+import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+import 'package:lianleme/domain/models.dart';
 
 import 'legacy_db.dart';
 
@@ -58,6 +60,41 @@ void main() {
         <Object?>['r1', '推日', 1, 1]);
     final rows = await legacy.customSelect('SELECT COUNT(*) c FROM routine').get();
     expect(rows.first.read<int>('c'), 1);
+
+    await legacy.close();
+  });
+
+  test('v4 的库升到 v5：老组记录原样还在，距离是 null 而不是 0', () async {
+    // 训练数据是资产。v5 给 set_record 加 distance_m 时，最怕的不是崩，
+    // 是**老组记录被当成 0 公里**（那是"真的没动"，不是"当年没这个字段"）。
+    late List<String> colsBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 4);
+        raw.execute(legacySeedSetSql);
+        colsBefore = raw
+            .select("SELECT name FROM pragma_table_info('set_record')")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+
+    final DriftLocalStore store = DriftLocalStore(legacy);
+    final List<SetRecord> sets = await store.setsFor('w_legacy');
+
+    expect(sets, hasLength(1), reason: '加列不能弄丢组记录');
+    expect(sets.first.reps, 8);
+    expect(sets.first.weightKg, 60.0);
+    expect(sets.first.volume, 480.0, reason: '物化的容量也不该被动');
+    expect(sets.first.distanceM, isNull,
+        reason: '老记录没记过距离 —— null（没这个字段）不等于 0（真的没动）');
+    expect(colsBefore, isNot(contains('distance_m')),
+        reason: 'fixture 不该有 distance_m，否则这条测试是空转');
+
+    final after = await legacy
+        .customSelect("SELECT name FROM pragma_table_info('set_record')")
+        .get();
+    expect(after.map((r) => r.read<String>('name')), contains('distance_m'));
 
     await legacy.close();
   });

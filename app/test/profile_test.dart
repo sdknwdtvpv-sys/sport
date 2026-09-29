@@ -88,7 +88,7 @@ void main() {
       );
       final List<String> lines = csv.trim().split('\n');
       expect(lines.length, 3, reason: '1 行表头 + 2 行数据');
-      expect(lines.first, '日期,动作,重量kg,次数,容量kg,组序');
+      expect(lines.first, '日期,动作,重量kg,次数,容量kg,组序,距离km');
       expect(lines[1], contains('杠铃卧推'));
     });
 

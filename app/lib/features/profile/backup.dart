@@ -17,7 +17,13 @@ import 'dart:convert';
 import '../../domain/models.dart';
 
 /// 备份格式版本。加字段时靠它做兼容判断。
-const int kBackupFormat = 1;
+///
+/// * **1** —— 最初那版：组里有 id / 动作 / 组序 / 次数 / 重量 / 类型 / RPE / 完成时间
+/// * **2** —— 2026-09-29 加 `distance_m`（有氧记录）。**读的时候两个版本都认**：
+///   v1 的组没有距离 → distanceM = null（"没记过距离"），不是 0。
+///   写出去的一律是 v2（新格式带全字段，老 App 读不了新备份也没关系 ——
+///   备份是给未来的自己用的，不是给旧版本用的）。
+const int kBackupFormat = 2;
 
 /// 备份里的应用标识。粘错东西时要能一眼认出来，所以不只看 JSON 能不能解析。
 const String kBackupApp = 'lianleme';
@@ -58,6 +64,8 @@ String encodeBackup({
                 'set_index': s.setIndex,
                 'reps': s.reps,
                 'weight_kg': s.weightKg,
+                // 距离（米）。null = 这个动作不记距离 / 老记录没这个字段。
+                'distance_m': s.distanceM,
                 'set_type': s.setType.wire,
                 'rpe': s.rpe,
                 'completed_at': s.completedAtMs,
@@ -186,6 +194,9 @@ BackupParse parseBackup(String text) {
         setIndex: setIndex,
         reps: reps,
         weightKg: _asDouble(sRaw['weight_kg']),
+        // v1 的备份没有这个字段 → null；v2 里没记距离的组也是 null。
+        // 两种情况的含义一致：**没记过距离**（不是 0）。
+        distanceM: _asDouble(sRaw['distance_m']),
         completedAtMs: completed,
         setType: _setType(sRaw['set_type'] as String?),
         rpe: _asDouble(sRaw['rpe']),

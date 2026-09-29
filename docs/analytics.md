@@ -63,7 +63,7 @@ app_open ──▶ workout_started ──▶ first_set_logged ──▶ workout_
 | `onboarding_step` | 每步引导 | `step_index`, `skipped` | 验证"≤3 步且可跳过" |
 | `workout_started` | 进入 S4 | `routine_id`, `source`, `ms_since_launch` | 漏斗第 2 环 |
 | `exercise_added` | 添加动作 | `exercise_id`, `add_method`(suggest/search/recent/custom) | 建议采纳的另一种度量 |
-| **`set_logged`** | 记录一组成功 | `workout_id`, `exercise_id`, `set_index`, `weight_kg`, `reps`, `set_type`, `rpe`(可选), **`tap_count`**, **`tap_kinds`**, `entry`(bigbutton/stepper), `is_offline` | **最重要的事件**，见 §3 |
+| **`set_logged`** | 记录一组成功 | `workout_id`, `exercise_id`, `set_index`, `weight_kg`, `reps`, `distance_m`(可选，有氧/农夫行走), `set_type`, `rpe`(可选), **`tap_count`**, **`tap_kinds`**, `entry`(bigbutton/stepper), `is_offline` | **最重要的事件**，见 §3 |
 | `set_edited` | 弹层确定修改 | `field`(weight/reps), `from`, `to`, `suggestion_id` | 建议质量、编辑成本 |
 | `set_undone` | 撤销一组 | `set_index`, `method`(longpress), `seconds_after_log` | 误触率 |
 | `rest_started` | 休息计时开始 | `planned_sec`, `auto`(bool) | — |

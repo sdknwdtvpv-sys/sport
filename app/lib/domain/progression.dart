@@ -67,7 +67,7 @@ _Preferred? _preferredOverride(List<ManualOverride> overrides) {
 /// 给出下一组的建议。返回 null 表示"不给建议"（用户关闭了建议）。
 ///
 /// 判定顺序**不可调整**，每一步都有对应的测试向量：
-///   off → 用户偏好 → 零历史 → 长期未练 → **按时长分支** → 自重分支 → 组数不足 → 达标加重 → 掉组保持 → 加次数
+///   off → **有氧（不给建议）** → 用户偏好 → 零历史 → 长期未练 → 按时长分支 → 自重分支 → 组数不足 → 达标加重 → 掉组保持 → 加次数
 Suggestion? suggestNext({
   required ExerciseSpec exercise,
   required PlanTarget plan,
@@ -77,6 +77,13 @@ Suggestion? suggestNext({
 }) {
   // 0) 用户关掉了建议：直接闭嘴，这是设置项赋予的权利
   if (profile.progressionMode == ProgressionMode.off) return null;
+
+  // 0.5) **有氧不给推进建议**（distance_time）。与 engine/progression.mjs 同一条，
+  // 判定顺序也必须一致 —— 两套实现靠同一份 vectors.json 对齐。
+  //
+  // 不挡的后果很具体：distance_time 不是 isTime，会掉进下面的次数分支，
+  // 于是引擎对一次 5 公里跑说"每组次数补到 10 次"。宁可返回 null（不给建议）。
+  if (exercise.isDistance) return null;
 
   final inc = exercise.weightIncrement;
   final isBodyweight = exercise.isBodyweight;

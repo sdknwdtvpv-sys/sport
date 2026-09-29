@@ -137,6 +137,12 @@ List<ExercisePr> personalBests({
   WeightUnit unit = WeightUnit.kg,
   /// 按时长动作的 id 集合 —— 它们的最佳值念「秒」。缺省空集，行为不变。
   Set<String> timeExerciseIds = const <String>{},
+  /// 记距离的动作 id 集合 —— **整条跳过**。
+  ///
+  /// 它们没有"力量最佳"可言：距离动作的 weightKg 是 null、reps 是秒，
+  /// 按自重那条路比次数会得出"最佳 1800 次"。有氧的成绩是里程与配速，
+  /// 是另一套呈现（见 WorkoutSummary.distanceLabel）。
+  Set<String> distanceExerciseIds = const <String>{},
 }) {
   final Map<String, List<SetRecord>> byExercise = <String, List<SetRecord>>{};
   for (final SetRecord s in sets) {
@@ -145,6 +151,7 @@ List<ExercisePr> personalBests({
 
   final List<ExercisePr> out = <ExercisePr>[];
   byExercise.forEach((String id, List<SetRecord> list) {
+    if (distanceExerciseIds.contains(id)) return; // 有氧不进力量最佳榜
     final String name = exerciseNames[id] ?? id;
     final bool bodyweight = list.every((SetRecord s) => s.weightKg == null);
 
@@ -191,6 +198,8 @@ ProgressData buildProgress({
   WeightUnit unit = WeightUnit.kg,
   /// 按时长动作的 id 集合（它们的最佳值念「秒」）。缺省空集，行为不变。
   Set<String> timeExerciseIds = const <String>{},
+  /// 记距离的动作 id 集合（有氧、农夫行走）—— 不进力量最佳榜。
+  Set<String> distanceExerciseIds = const <String>{},
 }) =>
     ProgressData(
       week: lastSevenDays(sets, today),
@@ -199,6 +208,7 @@ ProgressData buildProgress({
         exerciseNames: exerciseNames,
         unit: unit,
         timeExerciseIds: timeExerciseIds,
+        distanceExerciseIds: distanceExerciseIds,
       ),
       weekWorkouts: weekWorkoutCount(sets, today),
       unit: unit,

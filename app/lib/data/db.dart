@@ -99,6 +99,15 @@ class SetRecord extends Table {
   TextColumn get setType => text().withDefault(const Constant('normal'))();
   RealColumn get weightKg => real().nullable()();
   IntColumn get reps => integer().nullable()();
+
+  /// **距离（米）**。只有 `track_type = distance_time` 的动作会写它
+  /// （跑步机、划船机、跳绳、农夫行走…）；其余动作恒为 null。
+  ///
+  /// 为什么存米而不是公里：与"重量一律存 kg"同一条规矩 ——
+  /// **存储不跟显示单位走**。5.25 公里的浮点表示会随显示单位变（英里 3.26），
+  /// 而米是整数友好的最小单位，算配速（秒/公里）时也不用再乘一次 1000。
+  RealColumn get distanceM => real().nullable()();
+
   RealColumn get rpe => real().nullable()();
   IntColumn get restSecActual => integer().nullable()();
   BoolColumn get isPr => boolean().withDefault(const Constant(false))();
@@ -231,11 +240,12 @@ class AppDatabase extends _$AppDatabase {
   /// v2：新增 `body_metric`（S12 身体数据）。
   /// v3：新增 `routine` / `routine_item`（S11 计划模板）。
   /// v4：`exercise` 新增 `category`（热身/拉伸进库，但不进推荐）—— **第一次给已有表加列**。
+  /// v5：`set_record` 新增 `distance_m`（有氧记录：跑步机/划船机/跳绳/农夫行走）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -287,6 +297,12 @@ class AppDatabase extends _$AppDatabase {
           // 它们本来就都是力量动作。**不需要数据搬迁**（也不需要清表重建）。
           if (from < 4) {
             await m.addColumn(exercise, exercise.category);
+          }
+          // v4 → v5：又是一次加列，这次是 `set_record`。老库里的组记录全是力量组，
+          // 距离一律 null —— 这正是"没记过距离"的诚实表示（不是 0，0 公里是一次真的没动）。
+          // ⚠️ 训练数据是资产：加列不能碰任何既有行，也不该重建表。
+          if (from < 5) {
+            await m.addColumn(setRecord, setRecord.distanceM);
           }
         },
       );

@@ -79,7 +79,10 @@ String buildSetsCsv({
 }) {
   final String u = unit.wire;
   final StringBuffer b = StringBuffer();
-  b.writeln('日期,动作,重量$u,次数,容量$u,组序');
+  // 「距离km」列：有氧与农夫行走靠它才带得走数据。
+  // 那一行的「次数」列其实是**秒**（沿用 time 的约定），报表里不改表头 ——
+  // 改了就要动已存在的表的解析，代价大于收益；说明写在 docs/data-model.md 与这里。
+  b.writeln('日期,动作,重量$u,次数,容量$u,组序,距离km');
   for (final SetRecord s in sets) {
     final String name = exerciseNames[s.exerciseId] ?? s.exerciseId;
     b.writeln(<String>[
@@ -91,6 +94,9 @@ String buildSetsCsv({
       _csvField('${s.reps}'),
       _csvField(trimNumber(round1(toDisplayWeight(s.volume, unit)))),
       _csvField('${s.setIndex}'),
+      _csvField(s.distanceM == null || s.distanceM == 0
+          ? ''
+          : (s.distanceM! / 1000).toStringAsFixed(2)),
     ].join(','));
   }
   return b.toString();

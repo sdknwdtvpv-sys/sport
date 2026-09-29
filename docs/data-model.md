@@ -179,6 +179,35 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 `tool/map-upstream.mjs` 消费它：如果哪天上游改了 `primaryMuscle`、或我们又改了归类，
 这一条会重新出现在"待决策"表里 —— 留档的结论不是免检通行证。
 
+### 有氧记录（`distance_m` + `distance_time`）
+
+**为什么存米不存公里**：与"重量一律存 kg"同一条规矩 —— **存储不跟显示单位走**。
+5.25 公里的浮点表示会随显示单位变（英里 3.26），而米是整数友好的最小单位，
+算配速（秒/公里）时也不用再乘一次 1000。显示层负责念「5.00 公里」还是「800 米」。
+
+`distance_m` 的三种取值含义**必须分清**：
+
+| 值 | 含义 |
+|---|---|
+| `255` | 记了 255 米 |
+| `NULL` | 这个动作不记距离（或 v4 及更早的老记录、format 1 的老备份没这个字段） |
+| `0` | 记了，而且是"没动" —— 目前**不会写入**（距离为 0 时大按钮置灰） |
+
+配套的三条规则：
+
+1. **`distance_time` 动作的 `reps` 是秒** —— 沿用 `time` 那一列的约定，不另开一列
+2. **容量恒为 0**：`weight_kg × reps` 对一次跑步没有量纲意义（20kg × 1800 是两个量纲相乘）。
+   有氧要看的是**里程与配速**，见 `WorkoutSummary.distanceLabel / paceLabel`
+3. **引擎对 `distance_time` 不给推进建议**（返回 null）。这是产品决策：
+   没有用户的有氧目标（减脂/耐力/间歇），"这次多跑 5%"是假精确；
+   更要紧的是不能让它掉进"加次数"分支 —— 那会对一次跑步说"每组次数补到 10 次"
+
+**距离类动作不进「今天练什么」**（`ExerciseRepository.search(plannable: true)`）：
+默认处方只有"3 组 × 8–10 次"与"3 组 × 30–45 秒"两种形态，
+而农夫行走的处方是"走 20 米" —— 用次数处方去开它是错的。
+要让它们能被推荐，得先做**距离处方**（计划模板那类活儿）。
+现在它们的状态是"能被搜到、能被选、能被记，但不被推荐"，这是一句实话而不是半成品。
+
 ### 迁移历史
 
 | 版本 | 改动 | 需要注意的地方 |
@@ -186,6 +215,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v2 | 新增 `body_metric` | 只加表 |
 | v3 | 新增 `routine` / `routine_item` | 只加表 |
 | v4 | `exercise` 新增 `category`（DEFAULT `'strength'`；词表 strength/warmup/cardio/stretch） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
+| v5 | `set_record` 新增 `distance_m` | 第二次加列。老库里的组记录距离恒为 **null**（"没记过距离"），**不是 0**（0 表示"真的没动"）—— 这是加列迁移最容易被搞错的地方，有专门的迁移测试守着 |
 
 迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
 ⚠️ **fixture 必须用当年的 DDL 手写**：拿当前 schema 建完再改的话，
@@ -269,11 +299,12 @@ CREATE TABLE set_record (
   set_index       INTEGER NOT NULL,       -- 第几组，从 1 开始
   set_type        TEXT NOT NULL DEFAULT 'normal',  -- normal | warmup（MVP 只有这两种）
   weight_kg       REAL,
-  reps            INTEGER,
+  reps            INTEGER,                -- 次数；time/distance_time 动作装的是**秒**
+  distance_m      REAL,                   -- 距离（米）。只有 distance_time 动作写它，见下
   rpe             REAL,                   -- 预留，MVP 不采集
   rest_sec_actual INTEGER,                -- 本组结束到下一组开始的真实间隔
   is_pr           INTEGER NOT NULL DEFAULT 0,
-  volume          REAL,                   -- weight_kg * reps，写入时算好
+  volume          REAL,                   -- weight_kg * reps；距离动作恒为 0（量纲不同）
   completed_at    INTEGER NOT NULL,
   updated_at      INTEGER NOT NULL,
   deleted_at      INTEGER

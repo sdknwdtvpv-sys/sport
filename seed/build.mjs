@@ -101,8 +101,14 @@ for (const [i, e] of exercises.entries()) {
   // 热身 / 有氧 / 拉伸都不是"力量组"：它们按秒记、没有重量。
   // 写成 weight_reps + 步长 2.5 的后果很具体 —— 引擎会给「站姿股四头肌拉伸」建议加重。
   if (e.category !== 'strength') {
-    if (e.track_type !== 'time') {
-      errors.push(`${at}：${e.category} 必须按秒记（track_type=time），当前是 ${e.track_type}`);
+    // 热身/拉伸：time。有氧还有第二种诚实形态：distance_time（记距离）。
+    const okTrack = e.category === 'cardio'
+      ? (e.track_type === 'time' || e.track_type === 'distance_time')
+      : e.track_type === 'time';
+    if (!okTrack) {
+      errors.push(`${at}：${e.category} 必须按秒或按距离记`
+        + `（track_type=time${e.category === 'cardio' ? ' 或 distance_time' : ''}），`
+        + `当前是 ${e.track_type}`);
     }
     if (e.weight_increment !== 0 || e.default_weight_kg !== null) {
       errors.push(`${at}：${e.category} 不该有重量（weight_increment=${e.weight_increment}, `
@@ -112,12 +118,18 @@ for (const [i, e] of exercises.entries()) {
   if (e.track_type === 'weight_time' && e.weight_increment === 0) {
     errors.push(`${at}：weight_time 必须是有重量的动作（weight_increment 不能为 0）`);
   }
-  // distance_time 目前**只有词表、没有引擎支持**：有氧的推进规则（配速/距离/时长）
-  // 还没设计，引擎会把它当成次数动作去推 —— 所以这里直接报错，
-  // 而不是等它在真机上说出"跑步再加 8 次"这种话。
-  if (e.track_type === 'distance_time') {
-    errors.push(`${at}：distance_time 只保留词表，暂不支持写进种子`
-      + `（要加有氧，先把引擎的推进规则补齐）`);
+  // distance_time（跑步机/划船机/跳绳/农夫行走）现在是**支持的**：
+  //   存储：set_record.distance_m；引擎：对它们**不给推进建议**（返回 null）。
+  // 上一版这里是一条 error（"引擎还没有这个规则，别让它进库"）——
+  // 那条规则守的是"不能对一次跑步说'再加 8 次'"，而那个位置现在由引擎的第 0.5 步守着
+  // （见 engine/progression.mjs，有两条向量证明）。
+  //
+  // 但有一条**会让人困惑**的组合值得发警告：category=strength 的距离动作
+  // （农夫行走）不会被「今天练什么」推荐 —— 推荐只会开"3 组 × 8–10 次 / 30–45 秒"，
+  // 开不出"走 20 米"。不是错，是还没做距离处方。
+  if (e.track_type === 'distance_time' && e.category === 'strength') {
+    warnings.push(`${at}：力量类距离动作不会进「今天练什么」`
+      + `（默认处方只开次数/秒数，开不了距离）—— 已知限制，见 docs/data-model.md`);
   }
   if (e.track_type === 'assisted_reps') {
     warnings.push(`${at}：assisted_reps 的推进方向还没实现对 —— `

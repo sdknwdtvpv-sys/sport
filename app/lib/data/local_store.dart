@@ -170,6 +170,7 @@ class InMemoryLocalStore implements LocalStore {
     return LastSession(
       weightKg: sameWorkout.last.weightKg,
       reps: sameWorkout.map((s) => s.reps).toList(),
+      distances: sameWorkout.map((s) => s.distanceM).toList(),
       daysAgo: daysSince(sameWorkout.last.completedAtMs),
     );
   }

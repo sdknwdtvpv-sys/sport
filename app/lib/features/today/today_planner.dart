@@ -189,7 +189,9 @@ class TodayPlanner {
         // category: 'strength' —— **只从力量动作里挑**。
         // 库里现在有热身（12 个）与拉伸（9 个），它们也会按部位归属（拉伸多半是腿），
         // 不挡的话「今天练什么」会推荐「站姿股四头肌拉伸 × 3 组」。
-        await _repo.search(muscleGroup: group, category: 'strength', limit: count);
+        // plannable: 距离类动作（跑步机、农夫行走）不进推荐 —— 默认处方开不出"走 20 米"。
+        await _repo.search(
+            muscleGroup: group, category: 'strength', plannable: true, limit: count);
 
     final List<PlannedExercise> out = <PlannedExercise>[];
     for (final ExerciseData e in candidates) {
@@ -225,7 +227,8 @@ class TodayPlanner {
         // 「换一批」也必须是 strength：这是最容易被漏掉的一处 ——
         // 它取回的是**整组**（limit 60）再跳过已推荐的，
         // 热身/拉伸不挡的话，常用度排完一定会轮到它们。
-        await _repo.search(muscleGroup: group, category: 'strength', limit: 60);
+        await _repo.search(
+            muscleGroup: group, category: 'strength', plannable: true, limit: 60);
     final Set<String> already = current
         .map((PlannedExercise p) => p.exercise.id)
         .toSet();

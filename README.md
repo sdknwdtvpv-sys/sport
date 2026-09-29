@@ -28,11 +28,11 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 
 | 门禁 | 命令 | 结果 |
 |---|---|---|
-| 动作库种子（342 个动作＝318 力量 + 11 热身 + 4 有氧 + 9 拉伸，字段/枚举/步长/类别一致性校验 + 与上游映射表一致） | `node seed/build.mjs` + `node tool/map-upstream.mjs --check` + `node tool/add-upstream-exercises.mjs --check` | ✅ 通过 |
+| 动作库种子（351 个动作＝318 力量 + 11 热身 + 13 有氧 + 9 拉伸，字段/枚举/步长/类别一致性校验 + 与上游映射表一致） | `node seed/build.mjs` + `node tool/map-upstream.mjs --check` + `node tool/add-upstream-exercises.mjs --check` | ✅ 通过 |
 | JS 规则引擎（37 向量 + 3 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 44/44 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 52/52 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter 测试（引擎 + 持久化契约 + 数据库迁移 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **473/473** |
+| Flutter 测试（引擎 + 持久化契约 + 数据库迁移 + 有氧记录 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **505/505** |
 | **场景 eval**（把产品红线写成序列级断言：连练 12 周之后还讲不讲道理） | `node engine/run-scenarios.mjs` | ✅ 8 场景 / 152 步 / 12 条红线 |
 | **变异测试**（唯一验证"测试本身有没有用"的一层） | `node tool/mutation.mjs` | ✅ 22 杀死 / **0 存活** |
 
@@ -51,7 +51,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 > `ensure()`/`flush()` 语义），并暴露了两处工具自身的假阳性。见 `tool/mutation.mjs` 的文件头。
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
-`flutter test` 的 473 项 = 43 项引擎向量/红线/1RM + 10 项 `tap_count` 边界 + **18 项 widget 交互测试**
+`flutter test` 的 505 项 = 43 项引擎向量/红线/1RM + 10 项 `tap_count` 边界 + **18 项 widget 交互测试**
 + **56 项持久化契约测试**（28 条断言 × 2 个实现：内存版与 drift 版）
 + **22 项动作库** + 4 项多动作 + **25 项动作选择页** + 2 项启动冒烟 + **22 项今日规划**
 + 6 项今日建议卡 + **3 项首页入口** + 18 项训练总结 + 15 项分享卡 + 14 项身体数据 + 22 项「我」页 + 20 项「进步」页
@@ -255,7 +255,7 @@ flutter test
 |---|---|---|---|
 | 产品定义 | `PRODUCT.md` | 散文 | 创始人 / 合伙人 |
 | 交互 | `prototype/index.html`（**13 屏，零依赖，双击就开**）+ `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
-| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：342 条种子可直接导入；drift 落库有 56 项契约测试 | 客户端 / 后端 |
+| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：351 条种子可直接导入；drift 落库有 56 项契约测试 | 客户端 / 后端 |
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 28 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
 | 验证 | `docs/usability-test.md` + `-kit.md` | 流程手册，可照做 | 你本人 |
@@ -287,14 +287,14 @@ engine/vectors.json ──┬──> engine/run-tests.mjs        （Node）
 | 步骤 | 看什么 | 做完的标准 |
 |---|---|---|
 | 1 | `docs/tech-decisions.md` | 确认选型（Flutter + 原生 Swift 扩展）与合规红线 |
-| 2 | `docs/data-model.md` | 建库；`seed/exercises.sql` 导入 342 条 |
+| 2 | `docs/data-model.md` | 建库；`seed/exercises.sql` 导入 351 条 |
 | 3 | `app/lib/domain/progression.dart` | 改引擎后 `flutter test` 必须全绿 —— 28 条向量是你唯一的验收标准 |
 | 4 | `app/lib/features/workout/` | 对照 `docs/interaction-spec.md` 扩展其余屏 |
 | 5 | `docs/analytics-sdk.md` | 接真实上报地址 —— 客户端管线已就绪（outbox + 批量 ≤100 + 退避重试 + **训练期间挂起**），现用 `_NullTransport` 兜底 |
 
-**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **473 条测试**锁住；
-UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 **342 个**
-（318 力量 + 11 热身 + 4 有氧 + 9 拉伸）。
+**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **505 条测试**锁住；
+UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 **351 个**
+（318 力量 + 11 热身 + 13 有氧 + 9 拉伸，其中有氧支持**记距离**）。
 还没做的见上文「现在还没有的东西（别期待）」，下一步见 [`ROADMAP.md`](ROADMAP.md)。
 
 ### 你是后端开发
@@ -379,7 +379,7 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.2.0 release**，启动冒烟已过；**「杀掉重开数据还在」已在真机上验证**（冷启动后读回 12 组 / 3,680 kg）。剩下的是**真的用手指走一遍** —— 目标机型的注入被 MIUI 禁掉，这一步只能人来做 | 473 条测试全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
+| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.2.0 release**，启动冒烟已过；**「杀掉重开数据还在」已在真机上验证**（冷启动后读回 12 组 / 3,680 kg）。剩下的是**真的用手指走一遍** —— 目标机型的注入被 MIUI 禁掉，这一步只能人来做 | 505 条测试全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
 | ✅ ~~v1 → v2 迁移的真机验证~~（已在真机过） | 真机里原本是 `v1.0.0` 留下的**老库**，直接覆盖安装 `v1.2.0`（`schemaVersion` 1 → 3）后，`onUpgrade` 跑完、**数据一条没丢**（冷启动读回 12 组） | 这是"老库升级必须真机过一次"的实测通过 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |

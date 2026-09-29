@@ -49,6 +49,19 @@ class WorkoutController extends ChangeNotifier {
     );
     _weightKg = _suggestion?.weightKg ?? 0;
     _reps = _suggestion?.reps ?? plan.targetRepsLow;
+    // 有氧的默认值来自上一次训练（没有建议可依）。lastSession 可能是上一轮的
+    // 老数据（distances 为 null）—— 那时保持 0，让用户自己设。
+    //
+    // 取**最远的一组**而不是最后一组：热身/放松那两组距离短，
+    // 拿它们当默认值会把"今天还跑 5 公里"变成"今天跑 1 公里"。
+    _distanceM = lastSession?.maxDistanceM ?? 0;
+    if (exercise.isDistance) {
+      // 时长同样来自上次。**不能用 plan.targetRepsLow（8）** ——
+      // 那是"8 次"的处方，落到有氧上就成了"8 秒"，一条 5 公里跑记成 8 秒。
+      // 这个 bug 是 cardio_test 里"reps 是秒"那条断言抓出来的。
+      final List<int>? lastReps = lastSession?.reps;
+      _reps = (lastReps == null || lastReps.isEmpty) ? 0 : lastReps.last;
+    }
     // 只影响界面怎么念数字；引擎与存储始终是 kg（见 core/units.dart）
     unit = profile.unit;
     // 用户设了就用他的；没设就跟随动作自带的值（种子差异很大：核心 45s、深蹲 180s）
@@ -78,6 +91,14 @@ class WorkoutController extends ChangeNotifier {
 
   double _weightKg = 0;
   int _reps = 0;
+
+  /// 下一组要记的**距离（米）**。只对 `distance_time` 动作有意义（跑步机/划船机/跳绳/农夫行走）。
+  ///
+  /// 默认取**上次的距离** —— 有氧没有推进建议（引擎对 distance_time 返回 null），
+  /// 所以"上次跑多少"就是最好的默认值：今天还跑那么多，一次点击落一组。
+  /// 没有历史时是 0，这时大按钮**不可点**（见 canLog），提示用户长按设距离 ——
+  /// 理由与这一整轮的主题一致：**宁可不记，也不写一条 0 公里的假记录**。
+  double _distanceM = 0;
 
   /// **正式组**数。计划进度与「第 N 组」都由它算。
   int _normalSets = 0;
@@ -112,6 +133,19 @@ class WorkoutController extends ChangeNotifier {
   Suggestion? get suggestion => _suggestion;
   double get weightKg => _weightKg;
   int get reps => _reps;
+  double get distanceM => _distanceM;
+
+  /// 这个动作记不记距离。
+  bool get isDistance => exercise.isDistance;
+
+  /// 大按钮能不能点。
+  ///
+  /// 对距离动作：**距离或时长有一个是 0 就不给点** —— 一次误触会写进
+  /// "0 公里 / 0 秒"或"5 公里 / 0 秒"这样的半截记录，那是这一整轮在防的那种假数据
+  /// （有氧不给建议、不按次数推、老库不加 0 距离，同一个道理）。
+  /// 代价是首次记有氧要设两个值 —— 两个值各一次步进，而假记录会跟着用户一辈子。
+  /// 其余动作恒为 true：力量动作的默认值来自引擎建议，点一下就是一组。
+  bool get canLog => !isDistance || (_distanceM > 0 && _reps > 0);
   int get restRemainingSec => _restRemaining;
   bool get restRunning => _restRunning;
   bool get restDone => !_restRunning && _restRemaining == 0 && _normalSets > 0;
@@ -134,20 +168,37 @@ class WorkoutController extends ChangeNotifier {
   /// 下一组要记的 RPE；null = 不记（默认）。
   double? get rpe => _rpe;
 
-  /// 「次数」这一行对按时长动作来说其实是**秒**。
+  /// 「次数」这一行对按时长/距离动作来说其实是**秒**。
   String get repsUnit => exercise.isTime ? '秒' : '次';
 
-  /// 次数（或秒数）的步进幅度。按时长动作一次 ±5 秒 —— ±1 秒没有意义。
-  int get repsStep => exercise.isTime ? kTimeStepSec : 1;
+  /// 次数（或秒数）的步长。
+  ///
+  /// * 次数动作：±1 次
+  /// * 时长动作（平板支撑）：±5 秒 —— ±1 秒没有意义
+  /// * **距离动作（有氧）：±60 秒（1 分钟）** —— 跑步 30 分钟要点 1800 次 ±1 秒，
+  ///   那不叫步进
+  int get repsStep {
+    if (isDistance) return 60;
+    return exercise.isTime ? kTimeStepSec : 1;
+  }
 
   /// 重量步进幅度：**用动作自己的步长**，不再写死 ±2.5。
   /// 种子里的步长有 2 / 5 / 2.5 / 0 四种（哑铃 2、器械 5…），写死会让用户改不动重量。
   double get weightStep =>
       exercise.weightIncrement > 0 ? exercise.weightIncrement : 2.5;
 
+  /// 距离步进幅度：100 米。跑步机上最小刻度就是 0.1 km，
+  /// 而再细（10 米）在长距离上要点太多次。
+  double get distanceStepM => 100;
+
   /// 大按钮上显示的文案 —— 就是即将写入的值。
   /// 这是全产品唯一不可妥协的指标：点击即写入，1 次点击 = 1 组。
   String get primaryButtonLabel {
+    // 距离动作：念「5.00 公里 · 30:00」——重量与次数都说不通（跑步机没有重量，
+    // "1800 次"更是胡说）。距离 + 时长才是这个动作实际做了什么。
+    if (isDistance) {
+      return '${formatDistanceKm(_distanceM)} · ${formatDurationHms(_reps)}';
+    }
     final w = isBodyweight ? '自重' : formatWeight(_weightKg, unit);
     return exercise.isTime ? '$w × $_reps 秒' : '$w × $_reps';
   }
@@ -169,11 +220,17 @@ class WorkoutController extends ChangeNotifier {
   }
 
   /// 弹层里每按一次步进按钮。
-  void onStepper({double deltaWeight = 0, int deltaReps = 0}) {
+  void onStepper({double deltaWeight = 0, int deltaReps = 0, double deltaDistanceM = 0}) {
     analytics.countTap(TapKind.stepper);
     if (deltaWeight != 0) {
       final next = _weightKg + deltaWeight;
       _weightKg = next < 0 ? 0 : (next * 10).round() / 10;
+    }
+    if (deltaDistanceM != 0) {
+      final next = _distanceM + deltaDistanceM;
+      // 下限为 0，**不是**一个步进：距离可以是 0（还没跑），
+      // 而次数不能掉到 0（"0 次"没有意义）。这是两种输入的区别。
+      _distanceM = next < 0 ? 0 : (next * 10).round() / 10;
     }
     if (deltaReps != 0) {
       final next = _reps + deltaReps;
@@ -269,6 +326,14 @@ class WorkoutController extends ChangeNotifier {
     // 计划进度只用**正式组**计数。
     if (!isWarmup) _normalSets++;
 
+    // 距离动作而距离还是 0：不写。见 canLog 的说明 ——
+    // 一条"0 公里 / 0 秒"的记录是假数据，宁可这一下不算。
+    if (!canLog) {
+      _hint = '长按按钮设置距离与时长（两个都要有，才能记一组）';
+      _notify();
+      return;
+    }
+
     final record = SetRecord(
       // 确定性 id，包含 workout + 动作 + 组序 —— 三者确定唯一一条记录。
       //
@@ -282,6 +347,8 @@ class WorkoutController extends ChangeNotifier {
       setIndex: _setSeq,
       reps: _reps,
       weightKg: isBodyweight ? null : _weightKg,
+      // 距离只给 distance_time 的动作写上；其余动作传 null（"不记距离"）
+      distanceM: isDistance ? _distanceM : null,
       completedAtMs: _clock(),
       setType: isWarmup ? SetType.warmup : SetType.normal,
       rpe: _rpe,
@@ -300,6 +367,8 @@ class WorkoutController extends ChangeNotifier {
       'set_index': record.setIndex,
       'weight_kg': record.weightKg,
       'reps': record.reps,
+      // 距离（米）。服务端现在是"有就收"，没这个字段就是没记
+      'distance_m': record.distanceM,
       'set_type': record.setType.wire,
       'completed_at': record.completedAtMs,
       'rpe': record.rpe,
@@ -311,6 +380,7 @@ class WorkoutController extends ChangeNotifier {
       'set_index': record.setIndex,
       'weight_kg': record.weightKg,
       'reps': record.reps,
+      'distance_m': record.distanceM,
       'set_type': record.setType.wire,
       'rpe': record.rpe,
       'tap_count': reading.count,

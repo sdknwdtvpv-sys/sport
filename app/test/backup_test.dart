@@ -40,9 +40,11 @@ SetRecord _set({
   int atMs = 1000,
   SetType setType = SetType.normal,
   double? rpe,
+  double? distanceM,
 }) =>
     SetRecord(
       id: id,
+      distanceM: distanceM,
       workoutId: workoutId,
       exerciseId: exerciseId,
       setIndex: setIndex,
@@ -104,6 +106,60 @@ void main() {
       expect(w.sets[1].rpe, 8);
       expect(w.sets[2].completedAtMs, 121000, reason: '秒级时间不能只剩分钟');
       expect(w.sets.map((SetRecord s) => s.setIndex).toList(), <int>[1, 2, 3]);
+    });
+
+    test('有氧的距离进得了备份、也回得来（format 2）', () {
+      final Workout cardio = Workout(id: 'w_run', startedAtMs: 1000, endedAtMs: 1801000)
+        ..sets.add(_set(
+          id: 's_run_1',
+          workoutId: 'w_run',
+          exerciseId: 'ex_treadmill_incline_walk',
+          reps: 1800,
+          weightKg: null,
+          distanceM: 5000,
+        ));
+
+      final String json = encodeBackup(
+        workouts: <Workout>[cardio],
+        exerciseNames: const <String, String>{'ex_treadmill_incline_walk': '跑步机爬坡走'},
+        nowMs: 1790612345678,
+      );
+      final Map<String, dynamic> root = jsonDecode(json) as Map<String, dynamic>;
+      expect(root['format'], 2, reason: '加了字段就要升版本，否则老备份的语义会漂');
+
+      final BackupParse parsed = parseBackup(json);
+      expect(parsed.ok, isTrue);
+      final SetRecord back = parsed.workouts.single.sets.single;
+      expect(back.distanceM, 5000);
+      expect(back.reps, 1800);
+      expect(back.weightKg, isNull);
+    });
+
+    test('format 1 的老备份照样能读 —— 距离是 null（没记过），不是 0', () {
+      // 手写一份 v1 备份：那时还没有 distance_m 这个字段。
+      // 兼容不是"能不能解析"，而是**语义对不对**：老备份里的组是"没记过距离"，
+      // 导进来变成 0 公里就凭空多了一条"真的没动"的记录。
+      const String v1 = '''
+{
+  "app": "lianleme", "format": 1, "unit": "kg",
+  "exercise_names": {"ex_bb_bench_press": "杠铃卧推"},
+  "workouts": [
+    {"id": "w1", "started_at": 1000, "ended_at": 3601000,
+     "sets": [{"id": "s1", "exercise_id": "ex_bb_bench_press", "set_index": 1,
+               "reps": 8, "weight_kg": 60, "set_type": "normal",
+               "rpe": 8, "completed_at": 1000}]}
+  ]
+}
+''';
+      final BackupParse parsed = parseBackup(v1);
+
+      expect(parsed.ok, isTrue);
+      expect(parsed.setCount, 1);
+      final SetRecord s = parsed.workouts.single.sets.single;
+      expect(s.weightKg, 60);
+      expect(s.distanceM, isNull, reason: '老备份里没有距离这件事');
+      expect(s.hasDistance, isFalse);
+      expect(s.volume, 480, reason: '力量组的容量不受影响');
     });
 
     test('重量一律 kg —— 备份不跟显示单位走', () {

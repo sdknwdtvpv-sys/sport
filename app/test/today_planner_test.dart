@@ -351,6 +351,40 @@ void main() {
     });
   });
 
+  group('距离类动作不进「今天练什么」', () {
+    // 推荐只会开两种处方：3 组 × 8–10 次 / 3 组 × 30–45 秒。
+    // 农夫行走的处方是"走 20 米"，用次数处方去开它是错的（"3 组 × 8 次"）。
+    // 所以距离类动作**不进推荐** —— 直到我们做出"距离处方"（S11 计划模板那类活儿）。
+    test('库里确实有距离类动作（不然下面的断言是空转）', () async {
+      final rows = await repo.search(limit: 500);
+      final distance = rows.where((ExerciseData e) => isDistanceTrack(e.trackType));
+
+      expect(distance.map((ExerciseData e) => e.id),
+          containsAll(<String>['ex_farmer_walk', 'ex_treadmill_incline_walk']));
+    });
+
+    test('六个部位全取回来，一条距离类动作都没有', () async {
+      for (final String g in kMuscleRotation) {
+        final List<PlannedExercise> all =
+            await planner.planToday(muscleGroup: g, count: 200);
+
+        expect(all, isNotEmpty, reason: '$g 应该有动作');
+        for (final PlannedExercise p in all) {
+          expect(isDistanceTrack(p.exercise.trackType), isFalse,
+              reason: '$g 里混进了距离类动作：${p.exercise.id}');
+        }
+      }
+    });
+
+    test('专门看腿（跑步机在这儿）也不推它', () async {
+      final List<PlannedExercise> legs =
+          await planner.planToday(muscleGroup: 'legs', count: 200);
+
+      expect(legs.map((PlannedExercise p) => p.exercise.id),
+          isNot(contains('ex_treadmill_incline_walk')));
+    });
+  });
+
   group('换一批', () {
     test('换掉动作，不复用已推荐过的', () async {
       final List<PlannedExercise> first = await planner.planToday();
