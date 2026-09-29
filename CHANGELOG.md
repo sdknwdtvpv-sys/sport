@@ -8,7 +8,13 @@
 
 ## 未切版（v1.17.0 之后的改动，尚未打 tag）
 
-（空 —— 下次动了 `app/` 的代码就往这里加）
+### 文档（不动 `app/`，不切版）
+
+- **发布签名干跑验证**（`docs/release-checklist.md` §2）：之前只验过 gradle 接线，
+  从没执行过 `tool/gen-upload-keystore.sh`。这次用一次性密钥完整跑了一遍 ——
+  密钥生成、`key.properties`（权限 600）、`keytool -list` 回显、以及
+  `apksigner verify --print-certs` 显示 `CN=DryRun Test` 而不是 `Android Debug`。
+  一次性密钥已删，工作区里没有 `upload-keystore.p12` / `key.properties`。
 
 ## v1.17.0 · 发行资源：应用图标 / 启动图 / 应用名（① 的第一块）
 

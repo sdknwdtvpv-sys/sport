@@ -33,7 +33,18 @@
 | 没有 `key.properties`、没有逃生开关 | **硬失败**，退出码 1，并打印"商店一定会拒收"的说明 |
 | 没有 `key.properties`、显式 `ORG_GRADLE_PROJECT_allowDebugSigning=true` | 落到 debug 签名（`CN=Android Debug`），供性能测试这类场合 |
 
-也就是说：**只差你生成并保管好那把真密钥**，接线上不会再出问题。
+**2026-09-30 又补验了两件事**（同样用一次性密钥，验完即删）：
+
+1. **生成脚本本身跑得通** —— 之前只验了 gradle 接线，从没执行过
+   `tool/gen-upload-keystore.sh`。上架那一刻才发现脚本坏了是最糟的，所以提前干跑：
+   密钥生成、`key.properties` 写入（权限 600）、`keytool -list` 回显填写的主体，全对。
+2. **真密钥那一档的证书确实换成了我们的** —— 用一次性密钥构建 release APK，
+   `apksigner verify --print-certs` 显示 `CN=DryRun Test, O=DryRun Org, C=CN`，
+   而不是 `C=US, O=Android, CN=Android Debug`。
+
+也就是说：**只差你生成并保管好那把真密钥**，接线与脚本都不会再出问题。
+（干跑用的 `upload-keystore.p12` / `key.properties` 已从 `app/android/` 删除，
+当前工作区里没有它们 —— 你跑生成脚本时不会撞上"已存在"的拦截。）
 
 - [ ] 生成正式签名（**这一步必须你来做**，密码不要经过任何工具/日志）：
       ```bash
@@ -201,7 +212,7 @@ flutter build apk --release                      # 旁加载用（APK）
 | 项 | 状态 |
 |---|---|
 | 构建链 | ✅ APK 152M / AAB 53M 均可产出，`libsqlite3.so` 三 ABI 齐全 |
-| 签名接线 | ✅ 已配好并三向验证（缺失时硬失败 / 逃生开关 / 正式签名生效） |
+| 签名接线 + 生成脚本 | ✅ 已配好并验证（缺失时硬失败 / 逃生开关 / 正式签名生效；生成脚本 2026-09-30 干跑通过） |
 | 权限 | ✅ 只有 INTERNET，已进 release manifest |
 | 隐私政策 | 🚧 中英文已成文、占位符已填；**待法务审核 + 公网 URL + 填生效日** |
 | 删除数据入口 | ✅ 已实现并测试（400 项测试全绿），**待真机点一次** |
