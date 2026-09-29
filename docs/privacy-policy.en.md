@@ -16,7 +16,7 @@
 > |---|---|
 > | Operator | **Elliot.LI** (individual developer) |
 > | Contact | **https://github.com/sdknwdtvpv-sys/sport/issues** |
-> | Effective date | `【to be set on release】` |
+> | Effective date | **date of first release** (currently: `not released` — must be filled in before publishing) |
 
 ---
 
@@ -45,20 +45,38 @@ This data lives in the app's private local database (SQLite, managed by drift) a
 ### 2.2 Collected only when "Help improve the product" is ON
 
 This is a **switch that is on by default and can be turned off at any time**
-(Profile → "Help improve the product"). It produces exactly **4 event types** with a
-**fixed, limited** set of fields:
+(Profile → "Help improve the product"). It produces exactly **9 event types** with a
+**fixed, limited** set of fields (the full list lives in `docs/privacy-facts.json` and is
+checked against the code by `tool/privacy-audit.mjs`):
 
 | Event | When | Fields |
 |---|---|---|
-| `set_logged` | When a set is logged | `workout_id`, `exercise_id`, `set_index`, `weight_kg`, `reps`, `set_type`, `rpe`, `tap_count`, `tap_kinds`, `entry`, `is_offline` |
+| `set_logged` | When a set is logged | `workout_id`, `exercise_id`, `set_index`, `weight_kg`, `reps`, `distance_m`, `set_type`, `rpe`, `tap_count`, `tap_kinds`, `entry`, `is_offline` |
+| `set_undone` | When a set is undone | `set_index`, `method`, `seconds_after_log` |
+| `app_open` | Cold start finished | `is_first_open`, `ms_since_launch`, `entry` |
+| `workout_started` | Entering the workout screen | `source`, `exercise_count`, `ms_since_launch` |
+| `workout_finished` | Workout finished | `duration_sec`, `total_sets`, `total_volume_kg`, `exercise_count`, `ms_since_launch` |
 | `rest_started` | Rest timer starts | `exercise_id`, `planned_sec`, `auto` |
 | `rest_completed` | Rest timer finishes | `exercise_id`, `planned_sec` |
 | `rest_skipped` | Rest skipped manually | `exercise_id`, `planned_sec` |
+| `seed_import_failed` | Exercise-library refresh failed | `error` (error type only, no content) |
+
+**Every event also carries these 7 common fields:**
+
+| Field | What it is |
+|---|---|
+| `device_id` | **Locally generated anonymous identifier** (32 hex chars). Unrelated to any account, contains no device information. Cleared by "Delete all data" |
+| `session_id` | Random identifier for one usage session; a new one after 30 minutes of inactivity |
+| `user_id` | **Always null** — there is no account system. Guests are counted too, otherwise the "did new users start training" metric cannot be computed |
+| `app_version` | Version string (used to compare "taps per set" across versions) |
+| `platform` | `android` / `ios` |
+| `is_offline` | Whether the device was offline when the event happened |
+| `schema_version` | Event schema version, append-only |
 
 A few clarifications:
 
-- `workout_id` / `exercise_id` are **locally generated random identifiers**. They are not your
-  identity and cannot be linked across users.
+- `workout_id` / `exercise_id` / `device_id` / `session_id` are **locally generated random
+  identifiers**. They are not your identity and contain no phone number, IMEI or advertising ID.
 - We can see "which exercise, what weight, how many sets" — because that is the core metric the
   product needs to validate (`tap_count` measures "how many taps it takes to log a set").
   **This is health-related information and we treat it as sensitive personal information.**
@@ -71,6 +89,9 @@ A few clarifications:
 - ❌ Contacts, photos, camera, microphone
 - ❌ Advertising identifiers (no ad SDKs)
 - ❌ Clipboard contents ("Export" **writes** to your clipboard for you; we never read it)
+- ❌ **Body-weight and other body-metric values** — only booleans such as "weight recorded" /
+  "note present" are reported; the numbers never leave the device
+- ❌ **Free text** such as workout notes or custom exercise names
 
 ---
 
@@ -81,7 +102,8 @@ A few clarifications:
 **The current version does not send any of your data to any server.** This is not a promise;
 it is a fact of the code:
 
-- The analytics channel uses `_NullTransport`, which **always fails** — events only accumulate
+- The upload endpoint is configured **at build time**: with no endpoint the analytics channel is
+  `_NullTransport`, which **always fails** — events only accumulate
   in the on-device outbox.
 - The workout sync channel is `InMemorySyncQueue`: memory only, no network, gone when the app closes.
 
@@ -142,7 +164,9 @@ background permissions.
 What deletion covers, to avoid misunderstanding:
 
 - **Deleted**: all workout and set records, preferences (including all switches), **and any
-  analytics events not yet uploaded**
+  analytics events not yet uploaded**, and the anonymous analytics identifiers
+  (`device_id` / session id / first-open timestamp) — with the honest consequence that this device
+  then counts as a new device in aggregate statistics**
 - **Not deleted**: the built-in exercise catalog (339 exercises) — that is product content and
   contains nothing about you
 - It is a **hard delete**, not a flag. Deletion cannot be undone, and we hold no backup that

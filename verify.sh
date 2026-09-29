@@ -137,6 +137,15 @@ else
 fi
 echo
 
+# 隐私政策对账：客户端会发的事件/字段、manifest 权限，都必须与政策正文一致。
+# **这是硬门禁** —— 加了一个新埋点字段却不在政策里写清楚，不许合并。
+if node tool/privacy-audit.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 隐私政策与代码一致"
+else
+  strip "$LOG"; echo "${RED}✗ 隐私政策与代码对不上${OFF}"; fail=1
+fi
+echo
+
 # ── 3. Dart 领域层（零依赖） ────────────────────────────────────────────
 echo "${BOLD}[3/6] Dart 引擎 vs 同一份 vectors.json（零依赖）${OFF}"
 if [ -z "$DART_BIN" ]; then
@@ -253,6 +262,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          server/collector.mjs server/collector.selftest.mjs tool/analytics-report.mjs \
          app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
          tool/usability-report.mjs tool/usability-selftest.mjs tool/content-report.mjs \
+         tool/privacy-audit.mjs docs/privacy-facts.json \
          usability/记录表.md usability/participants.example.json \
          tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \

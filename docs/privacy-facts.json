@@ -1,0 +1,149 @@
+{
+  "_note": "隐私政策的**单一事实源**。tool/privacy-audit.mjs 用它跟代码对账：客户端实际会发的事件、公共字段、manifest 里声明的权限，都必须在这里；而这里列出的每一条又必须在 docs/privacy-policy.md 的正文里出现（政策正文是给人看的，这份文件是给机器查的）。改代码或改政策之后跑 node tool/privacy-audit.mjs，对不上就报错。",
+  "_why": "隐私政策最容易烂掉的方式是「代码变了、文档没变」——而且没有任何东西会报错。2026-09-29 就发生过：埋点补了 5 个事件与 7 个公共字段（含 device_id），政策正文还写着「只产生 4 类事件」。",
+  "events": [
+    {
+      "name": "app_open",
+      "when": "冷启动完成",
+      "fields": [
+        "is_first_open",
+        "ms_since_launch",
+        "entry"
+      ]
+    },
+    {
+      "name": "workout_started",
+      "when": "进入训练屏",
+      "fields": [
+        "source",
+        "exercise_count",
+        "ms_since_launch"
+      ]
+    },
+    {
+      "name": "set_logged",
+      "when": "记录一组成功",
+      "fields": [
+        "workout_id",
+        "exercise_id",
+        "set_index",
+        "weight_kg",
+        "reps",
+        "distance_m",
+        "set_type",
+        "rpe",
+        "tap_count",
+        "tap_kinds",
+        "entry",
+        "is_offline"
+      ]
+    },
+    {
+      "name": "set_undone",
+      "when": "撤销一组",
+      "fields": [
+        "set_index",
+        "method",
+        "seconds_after_log"
+      ]
+    },
+    {
+      "name": "workout_finished",
+      "when": "训练结束",
+      "fields": [
+        "duration_sec",
+        "total_sets",
+        "total_volume_kg",
+        "exercise_count",
+        "ms_since_launch"
+      ]
+    },
+    {
+      "name": "rest_started",
+      "when": "开始休息计时",
+      "fields": [
+        "exercise_id",
+        "planned_sec",
+        "auto"
+      ]
+    },
+    {
+      "name": "rest_completed",
+      "when": "休息计时走完",
+      "fields": [
+        "exercise_id",
+        "planned_sec"
+      ]
+    },
+    {
+      "name": "rest_skipped",
+      "when": "手动跳过休息",
+      "fields": [
+        "exercise_id",
+        "planned_sec"
+      ]
+    },
+    {
+      "name": "seed_import_failed",
+      "when": "动作库刷新失败（只带错误类型，不带内容）",
+      "fields": [
+        "error"
+      ]
+    }
+  ],
+  "commonFields": [
+    {
+      "name": "schema_version",
+      "why": "事件格式版本，只增不改"
+    },
+    {
+      "name": "device_id",
+      "why": "本机随机生成的匿名标识（32 位十六进制，与账号无关）；「删除全部数据」会一并清除"
+    },
+    {
+      "name": "session_id",
+      "why": "一次使用会话的随机标识，30 分钟无操作即换新的"
+    },
+    {
+      "name": "user_id",
+      "why": "**恒为 null** —— 没有账号系统，游客态也要上报否则北极星分母缺失"
+    },
+    {
+      "name": "app_version",
+      "why": "版本号，用于比较不同版本的 tap_count"
+    },
+    {
+      "name": "platform",
+      "why": "android / ios"
+    },
+    {
+      "name": "is_offline",
+      "why": "事件发生时是否离线"
+    }
+  ],
+  "permissions": [
+    {
+      "name": "android.permission.INTERNET",
+      "maxSdkVersion": null,
+      "why": "上报「帮助改进产品」事件的开关打开时才用；训练过程中不发任何请求"
+    },
+    {
+      "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+      "maxSdkVersion": 29,
+      "why": "把训练分享卡存进相册。API 30+ 走 MediaStore **不需要权限**，所以这条只对 API ≤ 29 的老设备生效"
+    }
+  ],
+  "injectedPermissions": [
+    "com.sdknwdtvpv.lianleme.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  ],
+  "_injectedNote": "由 AndroidX 在合并 manifest 时自动加的**签名级自有权限**（targetSdk 33+ 的要求），不涉及任何用户数据、也不会出现在系统设置里。所以它不在政策正文的权限表里，但打包后核对时要能认得它。",
+  "neverCollected": [
+    "姓名、手机号、邮箱、身份证（没有账号系统）",
+    "位置信息",
+    "通讯录、相册内容、相机、麦克风",
+    "设备广告标识符（无广告 SDK）",
+    "剪贴板内容（「导出记录」是写入剪贴板给你，我们不读取）",
+    "体重等身体数据的数值（只上报 has_weight / has_note 这类布尔值，数值不出设备）",
+    "训练备注、自定义动作名称等自由文本"
+  ]
+}

@@ -12,4 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# .p12（PKCS12）也要忽略 —— 生成脚本 tool/gen-upload-keystore.sh 产的就是这个格式。
+# （2026-09-29：我曾以为这里漏了 .p12，实测**本来就写着了**，所以这一轮只加注释不动规则。）
 **/*.p12
+# 生成脚本的产物名也叫这个，多一条兜底（万一日后改成别的扩展名）
+upload-keystore.*

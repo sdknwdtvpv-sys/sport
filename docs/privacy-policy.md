@@ -13,7 +13,7 @@
 > |---|---|
 > | 运营者 | **Elliot.LI**（个人开发者） |
 > | 联系方式 | **https://github.com/sdknwdtvpv-sys/sport/issues** |
-> | 生效日期 | `【上架日填写】` |
+> | 生效日期 | **首次上架日**（当前：`未发布` —— 上架前必须替换为实际日期） |
 
 ---
 
@@ -40,21 +40,42 @@
 ### 2.2 「帮助改进产品」打开时才会产生的数据
 
 这是一个**默认开启、随时可关**的开关（路径：「我」→「帮助改进产品」）。它只产生下面
-4 类事件，字段是**有限且固定**的：
+9 类事件 —— 字段是**有限且固定**的（完整清单在 `docs/privacy-facts.json`，
+由 `tool/privacy-audit.mjs` 与代码逐条对账）：
 
 | 事件 | 什么时候发 | 携带的字段 |
 |---|---|---|
-| `set_logged` | 记录一组时 | `workout_id`、`exercise_id`、`set_index`、`weight_kg`、`reps`、`set_type`、`rpe`、`tap_count`、`tap_kinds`、`entry`、`is_offline` |
+| `set_logged` | 记录一组时 | `workout_id`、`exercise_id`、`set_index`、`weight_kg`、`reps`、`distance_m`、`set_type`、`rpe`、`tap_count`、`tap_kinds`、`entry`、`is_offline` |
+| `set_undone` | 撤销一组时 | `set_index`、`method`、`seconds_after_log` |
+| `app_open` | 冷启动完成 | `is_first_open`、`ms_since_launch`、`entry` |
+| `workout_started` | 进入训练屏 | `source`、`exercise_count`、`ms_since_launch` |
+| `workout_finished` | 训练结束 | `duration_sec`、`total_sets`、`total_volume_kg`、`exercise_count`、`ms_since_launch` |
 | `rest_started` | 开始休息计时 | `exercise_id`、`planned_sec`、`auto` |
 | `rest_completed` | 休息计时走完 | `exercise_id`、`planned_sec` |
 | `rest_skipped` | 手动跳过休息 | `exercise_id`、`planned_sec` |
+| `seed_import_failed` | 动作库刷新失败 | `error`（错误类型，不含内容） |
+
+**每个事件都会另外带上这 7 个公共字段**（它们回答"这是哪台设备、哪一次使用、哪个版本"）：
+
+| 字段 | 是什么 |
+|---|---|
+| `device_id` | **本机随机生成的匿名标识**（32 位十六进制）。与账号无关、不含设备信息。点「删除全部数据」会**一并清除**（见第五节） |
+| `session_id` | 一次使用会话的随机标识；30 分钟没有操作就换一个新的 |
+| `user_id` | **恒为 null** —— 没有账号系统。游客也要上报，否则"新用户有没有练起来"这个指标算不出来 |
+| `app_version` | 版本号（用于比较不同版本"记一组要几下"） |
+| `platform` | `android` / `ios` |
+| `is_offline` | 事件发生时是否离线 |
+| `schema_version` | 事件格式版本号，只增不改 |
 
 说明几点，避免误解：
 
-- `workout_id` / `exercise_id` 是**本机生成的随机标识**，不是你的身份，也不能跨用户关联。
+- `workout_id` / `exercise_id` / `device_id` / `session_id` 都是**本机生成的随机标识**，
+  不是你的身份，也不含手机号、IMEI、广告标识符之类的设备信息。
 - 我们会知道"某个动作、某个重量、做了几组"，因为这是产品要验证的核心指标
   （`tap_count` 衡量"记录一组要几下"）。**它属于健康相关信息，我们按敏感个人信息对待。**
 - `entry` 记录这次是点大按钮还是长按改重量输入的。
+- `app_open` / `workout_started` / `workout_finished` 是"漏斗"的三个点：
+  只知道**有没有**走完流程与花了多久，不含任何训练内容以外的东西。
 
 ### 2.3 我们**不**收集
 
@@ -63,6 +84,8 @@
 - ❌ 通讯录、相册、相机、麦克风
 - ❌ 设备广告标识符（无广告 SDK）
 - ❌ 剪贴板内容（"导出记录"是**写入**剪贴板给你，我们不读取）
+- ❌ **体重等身体数据的数值** —— 只上报"记没记体重 / 有没有备注"这类布尔值，数值不出设备
+- ❌ **训练备注、自定义动作名称等自由文本** —— 一律不上报
 
 ---
 
@@ -70,10 +93,12 @@
 
 ### 3.1 现状（务必如实告知：当前版本不联网上报）
 
-**当前版本的 App 不会把你的任何数据发送到任何服务器。** 这不是承诺，是代码事实：
+**当前发布的版本不会把你的任何数据发送到任何服务器。** 这不是承诺，是代码事实：
 
-- 埋点通道用的是 `_NullTransport`，它**永远失败** —— 事件只会留在本机的 outbox 里。
+- 上报地址是**编译期配置**的：没配地址时埋点通道是 `_NullTransport`，它**永远失败** ——
+  事件只会留在本机的 outbox 里。当前发布的包**没有配地址**。
 - 训练数据同步通道是 `InMemorySyncQueue`，只存内存、不上网，App 一关就没了。
+- **你可以自己验**：附录 B 给了三条命令（看权限、看埋点字段、看通道是不是 NullTransport）。
 
 换句话说，**现在连我们自己也拿不到你的数据。** 我们如实标注这一点，是因为把
 "将来会做"写成"已经在做"是欺骗，反过来把"其实没做"说成"做了"同样没必要。
@@ -89,7 +114,7 @@
 
 ## 四、权限
 
-应用声明两项系统权限，其中第二项**只在老系统上生效**：
+应用声明**两项**系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项**只在老系统上生效**：
 
 | 权限 | 为什么 | 适用范围 |
 |---|---|---|
@@ -125,8 +150,11 @@
 
 删除的范围，写清楚以免误解：
 
-- **会删**：全部训练与组记录、个人设置（含各项开关）、**以及还没上报出去的埋点事件**
-- **不会删**：内置的动作库（339 个动作）—— 那是产品自带的资料，不含你的任何信息
+- **会删**：全部训练与组记录、个人设置（含各项开关）、**还没上报出去的埋点事件**、
+  **以及埋点用的匿名设备标识**（`device_id` / 会话标识 / 首次启动时间）。
+  代价如实告知：删过之后，这台设备在统计里会被当成一台新设备
+  （否则"删除"就删不干净）
+- **不会删**：内置的动作库（351 个动作）—— 那是产品自带的资料，不含你的任何信息
 - 是**硬删除**，不是打标记。删除后无法恢复，我们也没有备份能帮你恢复
 
 ---
@@ -157,7 +185,10 @@
 
 | 说法 | 代码/文件位置 |
 |---|---|
-| 4 类埋点事件与字段 | `app/lib/features/workout/workout_controller.dart`（`track(...)` 调用点） |
+| 9 类埋点事件与字段 | `app/lib` 下所有 `track(...)` 调用点；**逐条对账见 `tool/privacy-audit.mjs`** |
+| 7 个公共字段（含 `device_id`） | `app/lib/analytics/analytics_context.dart`；匿名 ID 存在 `analytics_meta` 表 |
+| 删除数据会清掉匿名标识 | `app/lib/data/drift_local_store.dart`（同一事务内删 `analyticsMeta`） |
+| 事实源与政策正文的对应 | `docs/privacy-facts.json`（机器可查） |
 | 开关默认开启、落库 | `app/lib/data/db.dart`（`analyticsEnabled`，默认 `true`）、`app/lib/data/profile_repository.dart` |
 | 关闭后什么都不记 | `app/lib/analytics/analytics.dart`（`NoopAnalytics`）、`analytics.dart` 的 `if (!enabled) return;` |
 | 当前不联网 | `app/lib/main.dart`（`_NullTransport`）、`app/lib/data/sync_queue.dart`（`InMemorySyncQueue`） |
@@ -172,14 +203,19 @@
 不必相信本文档，可以直接验：
 
 ```bash
-# 1. 看权限：release 合并后的 manifest 里应该只有 INTERNET
-grep uses-permission app/build/app/intermediates/merged_manifest/release/*/AndroidManifest.xml
+# 0. 一条命令把"代码 ↔ 隐私事实 ↔ 政策正文"全对一遍（对不上会退出码 1）
+node tool/privacy-audit.mjs
+#    再核一次**打包后**的合并权限（插件的权限在这一步才会露出来）
+node tool/privacy-audit.mjs --apk app/build/apk/<你的包>.apk
 
-# 2. 看埋点发了什么字段
+# 1. 看权限：可以自己解包看合并后的 manifest
+unzip -p app/build/apk/<你的包>.apk AndroidManifest.xml | strings | grep -i permission
+
+# 2. 看埋点发了什么
 grep -rn "track('" app/lib/
 
-# 3. 看当前是否真的不联网（应该是永远失败的 _NullTransport）
-grep -n "_NullTransport" app/lib/main.dart
+# 3. 看当前是否真的不联网（应该是永远失败的 _NullTransport 或没配地址）
+grep -n "LIANLEME_ANALYTICS_URL\|_NullTransport" app/lib/main.dart
 
 # 4. 抓包验证"训练中零请求"（需要真机，见 docs/analytics-sdk.md §12）
 ```

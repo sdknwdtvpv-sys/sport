@@ -25,26 +25,34 @@
 
 ## 2. ⛔ 发布签名
 
-**现状：`release` 构建回落到 debug 签名**（`CN=Android Debug`），而那个 keystore 是构建时
-自动生成的、机器相关 —— 商店一律拒收。
+**接线已验证（2026-09-29，用临时密钥在真机上走通了三种情况；临时密钥已删）**：
 
-- [ ] 生成正式签名：
+| 情况 | 实测行为 |
+|---|---|
+| 有 `key.properties` | release 包由**正式密钥**签名：`CN=LianLeMe Verify…`（临时密钥的 DN） |
+| 没有 `key.properties`、没有逃生开关 | **硬失败**，退出码 1，并打印"商店一定会拒收"的说明 |
+| 没有 `key.properties`、显式 `ORG_GRADLE_PROJECT_allowDebugSigning=true` | 落到 debug 签名（`CN=Android Debug`），供性能测试这类场合 |
+
+也就是说：**只差你生成并保管好那把真密钥**，接线上不会再出问题。
+
+- [ ] 生成正式签名（**这一步必须你来做**，密码不要经过任何工具/日志）：
       ```bash
       cd app/android && ./tool/gen-upload-keystore.sh
       ```
       或复制 `key.properties.example` 为 `key.properties` 手动填写。
 - [ ] **把 keystore 和密码备份到密码管理器与离线介质** —— 丢了就无法再更新已发布的应用
-- [ ] 确认 `key.properties` 与 `*.p12` / `*.jks` / `*.keystore` **没有**进仓库：
+- [x] ✅ 确认 `key.properties` / `*.p12` / `*.jks` / `*.keystore` 都被忽略（**本来就已经忽略了 `.p12`**）：
       ```bash
-      git status --short            # 不应出现 key.properties
-      git check-ignore -v app/android/key.properties
+      git check-ignore -v app/android/key.properties   # 应命中 app/android/.gitignore
       ```
-- [ ] 构建并**验证签名者不再是 Android Debug**：
+- [ ] 构建并**验证签名者不再是 Android Debug**（接线已验证，这一步是在你的真密钥上复验）：
       ```bash
       cd app && flutter build appbundle --release
       "$JAVA_HOME/bin/keytool" -printcert -jarfile \
         build/app/outputs/bundle/release/app-release.aab | grep 所有者
       ```
+      > 注意：`apksigner` / `keytool` 都**需要 Java 环境** —— 先 `source ~/HARNESS/lianleme/flutter-env.sh`，
+      > 否则它们会静默失败（`exit 1` 且没有任何输出，看起来像"签名有问题"，其实是没找到 JRE）。
 - [ ] 决定是否启用 **Play App Signing**（Google Play 强烈建议；上传密钥与签名密钥分离，
       上传密钥丢了还能找回）
 
@@ -55,9 +63,13 @@
 
 ## 3. ⛔ 隐私合规
 
+- [x] ✅ **隐私政策与代码的对账做成了可执行的**：`node tool/privacy-audit.mjs`
+      （代码会发的事件/字段、manifest 权限 ↔ `docs/privacy-facts.json` ↔ 政策正文），已进 verify.sh。
+      发布前还要再跑一次 **`--apk <包>`** —— 插件的权限只有打包后合并才会露出来
 - [ ] 审核并定稿 `docs/privacy-policy.md`（**当前是草案，未经法务审核**）
 - [x] ✅ 占位符已填：运营者 `Elliot.LI`（个人开发者）、联系方式为 GitHub issue 地址
-- [ ] 把「生效日期」改成实际的首次发布日（当前是 `【上架日填写】`）
+- [ ] 把「生效日期」改成实际的首次发布日（当前写的是"首次上架日（未发布）"——
+      这句在没上架之前是准确的，上架前必须替换成实际日期）
 - [x] ✅ 英文版已成文：`docs/privacy-policy.en.md`（Google Play 用；**中英不一致以中文为准**）
 - [ ] ⚠️ 隐私政策需要一个**公网可访问的 URL**（商店强制要求）。可选做法：给本仓库开
       GitHub Pages，或把 `docs/privacy-policy.md` 贴到任意静态托管上
