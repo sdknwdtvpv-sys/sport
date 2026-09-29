@@ -9,7 +9,7 @@
  * 字段推导规则（都写在下面代码里，可复核）：
  *   id                 ← 上游 slug（`exercise-goblet-squat` → `ex_goblet_squat`）
  *   muscle_group       ← 上游 primaryMuscle 映射到我们的 6 值（**上游写 Mobility 的必须人工给**）
- *   category           ← strength / warmup / stretch，见下面「热身与拉伸」
+ *   category           ← strength / warmup / cardio / stretch，见下面「热身、有氧与拉伸」
  *   secondary_muscles  ← 上游 secondaryMuscles，经同义词表映射；与主肌群相同则丢弃
  *   equipment          ← 上游 16 值映射到我们的 7 值（单杠/墙/毛巾/门框/箱/凳/椅/瑞士球 → 自重）
  *   track_type         ← 上游 exerciseType（duration → time、bodyweight_reps → reps_only…）
@@ -18,11 +18,16 @@
  *   weight_increment   ← 按器械（与 seed/build.mjs 的期望一致）
  *   popularity         ← `seed/popularity-tiers.json` 的人工评级；没评到的一律 20
  *
- * **热身与拉伸**（2026-09-29 改）：上游用 `isStretch` / 次肌群带 `Cardio` 标着这类动作。
+ * **热身、有氧与拉伸**（2026-09-29 改）：上游用 `isStretch` / 次肌群带 `Cardio` 标着这类动作。
  * 上一轮把它们**整类排除**了，理由写得没错（"混进库会被当成某个部位的动作推荐"），
  * 但解法错了 —— 正确的解法是给它们一个 `category`，让推荐规则按类别排除，而不是让库里没有它们。
  * 所以现在：`isStretch` 的动作**进库**，`category` 由中文名表指定（warmup / stretch，必须人工标）；
- * 上游标了 `Cardio` 的体能动作**默认仍不进**，除非中文名表明确写 `category: warmup`。
+ * 上游标了 `Cardio` 的动作**默认仍不进**，除非中文名表明确写 `category`。
+ *   · `warmup` —— 练前的准备活动（开合跳、高抬腿、摆腿…）
+ *   · `cardio` —— 作为训练内容本身的心肺训练（跳绳、椭圆机、爬楼机、战绳）
+ *   · 但**只有上游 `duration` 那批能这么进**：按秒记，是现有引擎能诚实表达的。
+ *     `distance_duration` 那 9 个（跑步机/划船机/游泳…）**进不来** ——
+ *     把它们按"×N 秒"记等于丢距离与配速，那是假数据。要加先做「有氧记录」这个功能。
  * 后果：`app/lib/features/today/today_planner.dart` 只从 `strength` 里挑，
  * 「今天练什么」永远不会推荐「门框胸部拉伸 × 3 组」。
  *
@@ -119,7 +124,10 @@ const norm = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /** 休息时长：跟着"这个动作有多费"走。热身与拉伸不是"训练组"，30 秒是过渡不是恢复。 */
 function restFor(trackType, group, category) {
-  if (category !== 'strength') return 30;
+  // 热身与拉伸：30 秒是"这一节到下一节"的过渡，不是恢复。
+  if (category === 'warmup' || category === 'stretch') return 30;
+  // 有氧：按秒记，但组间还是要喘口气 —— 60
+  if (category === 'cardio') return 60;
   if (trackType !== 'weight_reps') return 60;
   if (group === 'core') return 60;
   if (group === 'legs' || group === 'back' || group === 'chest') return 120;
@@ -128,7 +136,7 @@ function restFor(trackType, group, category) {
 
 // ---------------------------------------------------------------- 常用度评级
 
-const CATEGORIES = new Set(['strength', 'warmup', 'stretch']);
+const CATEGORIES = new Set(['strength', 'warmup', 'cardio', 'stretch']);
 const GROUP_VALUES = new Set(['chest', 'back', 'legs', 'shoulders', 'arms', 'core']);
 const EQUIP_VALUES = new Set(['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'band', 'kettlebell']);
 
@@ -165,14 +173,15 @@ const missing = [];   // 既没名字、也没说明为什么不补 —— 会�
  */
 function notStrengthReason(u) {
   if (norm(u.equipment) === 'cardio') {
-    return '有氧机：器械就是 Cardio（跑步机/划船机/椭圆机…），我们库是力量与热身的库';
+    return '有氧机：器械就是 Cardio（跑步机/划船机/游泳…）。按秒记的那几个'
+      + '（category: cardio）能进，其余靠 distance_duration，引擎记不了';
   }
   // ⚠️ 只对 duration 生效：壶铃摆荡 / 波比跳的次肌群里也有 Cardio，
   //    但它们是力量动作（weight_reps / bodyweight_reps），不能一起扫掉。
   if (u.exerciseType === 'duration'
       && u.secondaryMuscles.some((m) => norm(m) === 'cardio')) {
     return '按时长的体能动作：上游次肌群就标着 Cardio（平板支撑开合跳…）。'
-      + '要收进来当热身，请在中文名表里写 category: warmup';
+      + '要收进来（热身或按秒的有氧），请在中文名表里写 category';
   }
   return null;
 }
@@ -364,8 +373,7 @@ if (checkOnly) {
   console.log(`✓ 已生成 seed/parts/04-from-upstream.json：补 ${items.length} 个动作`);
   const byCat = {};
   for (const i of items) byCat[i.category] = (byCat[i.category] ?? 0) + 1;
-  console.log('  按类别：', JSON.stringify(byCat),
-    byCat.warmup || byCat.stretch ? '（热身/拉伸不进「今天练什么」，靠 category 挡）' : '');
+  console.log('  按类别：', JSON.stringify(byCat), '（只有 strength 进「今天练什么」）');
   const byType = {};
   for (const i of items) byType[i.track_type] = (byType[i.track_type] ?? 0) + 1;
   console.log('  按类型：', JSON.stringify(byType));

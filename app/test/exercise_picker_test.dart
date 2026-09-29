@@ -74,6 +74,18 @@ void main() {
       expect(find.text('腘绳肌拉伸'), findsNothing);
     });
 
+    testWidgets('筛「有氧」→ 跳绳/椭圆机在，拉伸不在', (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      await tester.tap(find.byKey(const Key('cat-cardio')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('跳绳'), findsOneWidget);
+      expect(find.text('椭圆机'), findsOneWidget);
+      expect(find.text('腘绳肌拉伸'), findsNothing);
+      expect(find.text('杠铃卧推'), findsNothing);
+    });
+
     testWidgets('「全部类型」能退回去（默认就看得到全部）',
         (WidgetTester tester) async {
       await pumpPicker(tester);

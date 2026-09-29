@@ -260,7 +260,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                     }, key: 'cat-all'),
                     // strength 不单独给 chip：它是这个 App 的默认语境，
                     // 「全部类型」减去热身与拉伸就是它。
-                    for (final String c in const <String>['warmup', 'stretch'])
+                    for (final String c in const <String>['warmup', 'cardio', 'stretch'])
                       _chip(categoryLabel(c), _category == c, () {
                         _category = c;
                         _load();

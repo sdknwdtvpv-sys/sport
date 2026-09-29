@@ -51,7 +51,7 @@ const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'ban
 // 动作类别：**决定它会不会进「今天练什么」的推荐**（推荐只从 strength 里挑）。
 //   2026-09-29 新增。热身与拉伸上一轮被整类排除在库外，理由是"会被当成某个部位的动作推荐" ——
 //   理由对、解法错：正确解法是给它们一个类别，让推荐按类别过滤，而不是让库里没有它们。
-const CATEGORIES = ['strength', 'warmup', 'stretch'];
+const CATEGORIES = ['strength', 'warmup', 'cardio', 'stretch'];
 const TRACK_TYPES = [
   'weight_reps', 'reps_only', 'time', 'weight_time', 'distance_time', 'assisted_reps',
 ];
@@ -98,7 +98,7 @@ for (const [i, e] of exercises.entries()) {
   // （time/weight_time 的数字是**秒**，引擎会走加秒数分支），所以必须卡住。
   if (!TRACK_TYPES.includes(e.track_type)) errors.push(`${at}：track_type 非法「${e.track_type}」`);
   if (!CATEGORIES.includes(e.category)) errors.push(`${at}：category 非法「${e.category}」`);
-  // 热身与拉伸不是"训练组"：它们按秒记、没有重量。
+  // 热身 / 有氧 / 拉伸都不是"力量组"：它们按秒记、没有重量。
   // 写成 weight_reps + 步长 2.5 的后果很具体 —— 引擎会给「站姿股四头肌拉伸」建议加重。
   if (e.category !== 'strength') {
     if (e.track_type !== 'time') {

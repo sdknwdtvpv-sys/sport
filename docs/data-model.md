@@ -76,8 +76,17 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | 值 | 含义 | 会进「今天练什么」吗 | 记法 |
 |---|---|---|---|
 | `strength` | 力量动作（缺省，318 个） | 会 | 看 `track_type` |
-| `warmup` | 热身（12 个） | **不会** | 按秒（`time`），无重量 |
+| `warmup` | 热身（11 个） | **不会** | 按秒（`time`），无重量 |
+| `cardio` | 有氧（4 个） | **不会** | 按秒（`time`），无重量 |
 | `stretch` | 拉伸（9 个） | **不会** | 按秒（`time`），无重量 |
+
+**有氧只有"按秒记"的那批进得来**（跳绳、椭圆机、爬楼机、战绳）。跑步机 / 划船机 /
+动感单车 / 游泳 / 快走 / 徒步这一批在上游是 `distance_duration`（距离 + 时长），
+而**引擎只有 `distance_time` 的词表、没有它的规则** —— 把它们按"×N 秒"记等于丢掉距离与配速，
+是假数据（`seed/build.mjs` 见到 `distance_time` 直接报错，就是为了不让这种数据进库）。
+要有氧记录得先做那个功能：`set_record` 加距离列、输入 UI、配速、
+以及引擎对它的推进规则。**同一块石头下面还压着一个力量动作**：农夫行走（`Farmer Carry`）——
+它是哑铃负重行走，上游也是 `distance_duration`，同样卡在距离上。
 
 **为什么要有这个字段**（2026-09-29）：热身与拉伸一开始是**被整类排除在动作库外**的，
 理由是"混进来会被当成某个部位的动作推荐"—— 理由对，解法错：代价是"练完拉一下"也记不了，
@@ -176,7 +185,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 |---|---|---|
 | v2 | 新增 `body_metric` | 只加表 |
 | v3 | 新增 `routine` / `routine_item` | 只加表 |
-| v4 | `exercise` 新增 `category`（DEFAULT `'strength'`） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
+| v4 | `exercise` 新增 `category`（DEFAULT `'strength'`；词表 strength/warmup/cardio/stretch） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
 
 迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
 ⚠️ **fixture 必须用当年的 DDL 手写**：拿当前 schema 建完再改的话，

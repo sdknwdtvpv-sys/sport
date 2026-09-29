@@ -293,14 +293,17 @@ void main() {
     // 当初为了让拉伸不进推荐，我把它们整类排除在动作库外 —— 于是"练完拉一下"也记不了。
     // 正确的做法是类别（category）+ 推荐时过滤。这几条测试就是那个不变量的门闩：
     // 谁把 today_planner 里的 `category: 'strength'` 拿掉，这里立刻红。
-    test('库里确实有热身与拉伸（不然下面的断言是空转）', () async {
+    test('库里确实有热身 / 有氧 / 拉伸（不然下面的断言是空转）', () async {
+      // 这条测试自己也要防"空转"：如果这三类都是空的，下面那条"全部是 strength"
+      // 会毫无意义地通过（循环里根本没东西可查）。
       final warmup = await repo.search(category: 'warmup', limit: 100);
+      final cardio = await repo.search(category: 'cardio', limit: 100);
       final stretch = await repo.search(category: 'stretch', limit: 100);
 
       expect(warmup, isNotEmpty, reason: '开合跳/高抬腿这一批应该在库里');
+      expect(cardio, isNotEmpty, reason: '跳绳/椭圆机这一批应该在库里');
       expect(stretch, isNotEmpty, reason: '腘绳肌拉伸这一批应该在库里');
-      expect(warmup.first.category, 'warmup');
-      expect(stretch.first.category, 'stretch');
+      expect(cardio.first.category, 'cardio');
     });
 
     test('planToday 把整个部位取回来，也一条热身/拉伸都没有（六个部位都试）', () async {

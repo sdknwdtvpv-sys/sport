@@ -496,6 +496,26 @@
     "popularity": 62
   },
   {
+    "id": "ex_battle_ropes",
+    "name": "战绳",
+    "name_en": "Battle Ropes",
+    "aliases": [
+      "甩绳"
+    ],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "core"
+    ],
+    "equipment": "band",
+    "category": "cardio",
+    "track_type": "time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
     "id": "ex_bear_crawl",
     "name": "熊爬",
     "name_en": "Bear Crawl",
@@ -1345,6 +1365,24 @@
     "popularity": 78
   },
   {
+    "id": "ex_elliptical",
+    "name": "椭圆机",
+    "name_en": "Elliptical",
+    "aliases": [
+      "椭圆仪"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "machine",
+    "category": "cardio",
+    "track_type": "time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
     "id": "ex_explosive_push_up",
     "name": "爆发俯卧撑",
     "name_en": "Explosive Push-up",
@@ -1792,9 +1830,9 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
-    "category": "warmup",
+    "category": "cardio",
     "track_type": "time",
-    "default_rest_sec": 30,
+    "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -1823,9 +1861,7 @@
     "id": "ex_jumping_jack",
     "name": "开合跳",
     "name_en": "Jumping Jack",
-    "aliases": [
-      "开合跳热身"
-    ],
+    "aliases": [],
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts",
@@ -2826,6 +2862,24 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 62
+  },
+  {
+    "id": "ex_stair_climber",
+    "name": "爬楼机",
+    "name_en": "Stair Climber",
+    "aliases": [
+      "台阶机"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "machine",
+    "category": "cardio",
+    "track_type": "time",
+    "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
   },
   {
     "id": "ex_standing_dumbbell_press",

@@ -38,21 +38,27 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('种子规模：339 个动作（库不该悄悄缩水；改种子时这个数字要一起改）', () async {
+  test('种子规模：342 个动作（库不该悄悄缩水；改种子时这个数字要一起改）', () async {
     // 这一条是"故意的写死"：它是**人对当前库规模的一次背书**。
     // 加动作 / 减动作都会让它红，逼着改动的人确认"是我干的、且我认这个数字"。
-    // 339 = 165（手工维护的 01/02/03）+ 174（2026-09-29 从上游补的库：
-    //        153 力量 + 12 热身 + 9 拉伸；上游标了有氧机的 12 个没进，
-    //        见 tool/add-upstream-exercises.mjs）。
-    expect(await _seedCount(), 339);
+    // 342 = 165（手工维护的 01/02/03）+ 177（2026-09-29 从上游补的库：
+    //        153 力量 + 11 热身 + 4 有氧 + 9 拉伸）。
+    // 没进的 9 个有氧机（跑步机/划船机/游泳…）卡在**距离**上：引擎只有 distance_time
+    // 的词表、没有它的规则，按秒记就是假数据。见 tool/add-upstream-exercises.mjs。
+    expect(await _seedCount(), 342);
   });
 
-  test('动作类别：318 力量 / 12 热身 / 9 拉伸（类别决定会不会被推荐）', () async {
+  test('动作类别：318 力量 / 11 热身 / 4 有氧 / 9 拉伸（类别决定会不会被推荐）', () async {
     await repo.importSeed(loadJson: _readAsset);
 
     expect((await repo.search(category: 'strength', limit: 500)).length, 318);
-    expect((await repo.search(category: 'warmup', limit: 500)).length, 12);
+    expect((await repo.search(category: 'warmup', limit: 500)).length, 11);
+    expect((await repo.search(category: 'cardio', limit: 500)).length, 4);
     expect((await repo.search(category: 'stretch', limit: 500)).length, 9);
+
+    // 四类加起来必须等于总量 —— 免得将来加类别时漏掉一条
+    final List<ExerciseData> all = await repo.search(limit: 500);
+    expect(all.length, 342);
   });
 
   test('不传 category 时行为与以前完全一致（全都要，包含热身与拉伸）', () async {

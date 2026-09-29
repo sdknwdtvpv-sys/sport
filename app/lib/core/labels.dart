@@ -32,6 +32,7 @@ const Map<String, String> kEquipmentLabels = <String, String>{
 const Map<String, String> kCategoryLabels = <String, String>{
   'strength': '力量',
   'warmup': '热身',
+  'cardio': '有氧',
   'stretch': '拉伸',
 };
 
