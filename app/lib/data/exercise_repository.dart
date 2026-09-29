@@ -192,6 +192,7 @@ class ExerciseRepository {
         defaultWeightKg: (e['default_weight_kg'] as num?)?.toDouble(),
         defaultTargetDistanceM:
             (e['default_target_distance_m'] as num?)?.toDouble(),
+        instructions: e['instructions'] as String?,
         weightIncrement: (e['weight_increment'] as num?)?.toDouble() ?? 0,
         isBuiltin: ((e['is_builtin'] as num?)?.toInt() ?? 1) == 1,
         popularity: (e['popularity'] as num?)?.toInt() ?? 0,

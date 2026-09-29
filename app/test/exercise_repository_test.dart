@@ -73,6 +73,47 @@ void main() {
     expect(all.length, 351);
   });
 
+  test('推荐位上会出现的动作都有动作说明（内容承诺，不是覆盖率）', () async {
+    // 351 个动作不可能一次写完说明，所以这里守的**不是**覆盖率，而是那条更硬的承诺：
+    // **用户真的会看到的那些**（各部位按常用度前 8 —— 默认推荐取前 3、「换一批」往下取）
+    // 必须都有说明。长尾空白由 tool/content-report.mjs 量化，但推荐位不能空。
+    await repo.importSeed(loadJson: _readAsset);
+    final List<ExerciseData> all = await repo.search(limit: 500);
+
+    final Map<String, List<ExerciseData>> byGroup = <String, List<ExerciseData>>{};
+    for (final ExerciseData e in all.where((ExerciseData x) => x.category == 'strength')) {
+      (byGroup[e.muscleGroup] ??= <ExerciseData>[]).add(e);
+    }
+    final List<ExerciseData> top = <ExerciseData>[
+      for (final List<ExerciseData> rows in byGroup.values)
+        ...(rows.toList()
+              ..sort((ExerciseData a, ExerciseData b) =>
+                  b.popularity.compareTo(a.popularity)))
+            .take(8),
+    ];
+
+    final List<String> missing = top
+        .where((ExerciseData e) =>
+            e.instructions == null || e.instructions!.trim().isEmpty)
+        .map((ExerciseData e) => '${e.id}(${e.name})')
+        .toList();
+    expect(missing, isEmpty, reason: '这些是推荐位上会出现的动作，必须有说明：$missing');
+  });
+
+  test('动作说明：写得下、不超长（选择器一行放得下）', () async {
+    await repo.importSeed(loadJson: _readAsset);
+    final List<ExerciseData> all = await repo.search(limit: 500);
+    final List<ExerciseData> withText = all
+        .where((ExerciseData e) => e.instructions != null)
+        .toList();
+
+    expect(withText, isNotEmpty, reason: '至少有写过的（不然断言是空转）');
+    for (final ExerciseData e in withText) {
+      expect(e.instructions!.length, lessThanOrEqualTo(80), reason: e.id);
+      expect(e.instructions, e.instructions!.trim(), reason: '首尾不该有空白');
+    }
+  });
+
   test('距离类动作的 track_type 是 distance_time（有氧 + 农夫行走）', () async {
     await repo.importSeed(loadJson: _readAsset);
 

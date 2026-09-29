@@ -4,6 +4,7 @@
     "name": "主动悬垂",
     "name_en": "Active Hang",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "upper_back",
@@ -27,6 +28,7 @@
     "aliases": [
       "单臂俯卧撑辅助版"
     ],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "triceps",
@@ -48,6 +50,7 @@
     "name": "绕臂",
     "name_en": "Arm Circles",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "chest",
@@ -71,6 +74,7 @@
       "空气单车",
       "风扇单车"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts"
@@ -90,6 +94,7 @@
     "name": "辅助反握引体向上",
     "name_en": "Assisted Chin-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "lats"
@@ -109,6 +114,7 @@
     "name": "辅助双杠臂屈伸",
     "name_en": "Assisted Dip",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "chest"
@@ -128,6 +134,7 @@
     "name": "辅助单腿深蹲",
     "name_en": "Assisted Pistol Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -149,6 +156,7 @@
     "name": "弹力带扩胸",
     "name_en": "Band Pull-Apart",
     "aliases": [],
+    "instructions": "手肘微屈、肩胛向后夹；练肩后侧与上背最省事的居家动作。",
     "muscle_group": "back",
     "secondary_muscles": [
       "rear_delts",
@@ -169,6 +177,7 @@
     "name": "弹力带蚌式开合",
     "name_en": "Banded Clamshell",
     "aliases": [],
+    "instructions": "侧躺屈膝、带子套膝上，上侧膝打开；骨盆别跟着翻。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -188,6 +197,7 @@
     "name": "弹力带死虫",
     "name_en": "Banded Dead Bug",
     "aliases": [],
+    "instructions": "腰贴地，对侧手脚下放；腰一离地就说明放得太远了。",
     "muscle_group": "core",
     "secondary_muscles": [
       "glutes",
@@ -208,6 +218,7 @@
     "name": "弹力带跪姿后踢腿",
     "name_en": "Banded Donkey Kick",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -228,6 +239,7 @@
     "name": "弹力带面拉",
     "name_en": "Banded Face Pull",
     "aliases": [],
+    "instructions": "带子固定在与脸同高处，向脸方向拉并外旋；练肩后侧与上背，重量不必大。",
     "muscle_group": "back",
     "secondary_muscles": [
       "rear_delts",
@@ -248,6 +260,7 @@
     "name": "弹力带消防栓式",
     "name_en": "Banded Fire Hydrant",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -267,6 +280,7 @@
     "name": "弹力带蛙式臀冲",
     "name_en": "Banded Frog Pump",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings"
@@ -286,6 +300,7 @@
     "name": "弹力带臀桥",
     "name_en": "Banded Glute Bridge",
     "aliases": [],
+    "instructions": "脚跟踩实、带子套膝上，顶髋并外推膝盖；靠臀发力，不是靠腰。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -306,6 +321,7 @@
     "name": "弹力带臀推",
     "name_en": "Banded Hip Thrust",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -326,6 +342,7 @@
     "name": "弹力带后踢腿",
     "name_en": "Banded Kickback",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -346,6 +363,7 @@
     "name": "弹力带高位下拉",
     "name_en": "Banded Lat Pulldown",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -368,6 +386,7 @@
     "aliases": [
       "螃蟹走"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
@@ -388,6 +407,7 @@
     "name": "弹力带怪兽走",
     "name_en": "Banded Monster Walk",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
@@ -409,6 +429,7 @@
     "name": "弹力带帕洛夫推",
     "name_en": "Banded Pallof Press",
     "aliases": [],
+    "instructions": "侧对固定点，把带子从胸前推出并抗旋；最直接的抗旋转练法。",
     "muscle_group": "core",
     "secondary_muscles": [
       "glutes",
@@ -429,6 +450,7 @@
     "name": "弹力带划船",
     "name_en": "Banded Row",
     "aliases": [],
+    "instructions": "带子固定在与胸同高处，向后拉到肘过身侧；全程别让带子松回去。",
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -449,6 +471,7 @@
     "name": "弹力带坐姿髋外展",
     "name_en": "Banded Seated Hip Abduction",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -468,6 +491,7 @@
     "name": "弹力带深蹲",
     "name_en": "Banded Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -489,6 +513,7 @@
     "name": "弹力带站姿髋外展",
     "name_en": "Banded Standing Hip Abduction",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -508,6 +533,7 @@
     "name": "弹力带伐木",
     "name_en": "Banded Woodchop",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts",
@@ -528,6 +554,7 @@
     "name": "杠铃臀桥",
     "name_en": "Barbell Glute Bridge",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -550,6 +577,7 @@
     "aliases": [
       "甩绳"
     ],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "core"
@@ -569,6 +597,7 @@
     "name": "熊爬",
     "name_en": "Bear Crawl",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts",
@@ -589,6 +618,7 @@
     "name": "熊式平板支撑",
     "name_en": "Bear Plank",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads",
@@ -609,6 +639,7 @@
     "name": "腰带深蹲",
     "name_en": "Belt Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -630,6 +661,7 @@
     "aliases": [
       "长凳臂屈伸"
     ],
+    "instructions": "手撑身后凳沿，屈肘下沉到大臂与地面平行；肩疼就把身体贴近凳。",
     "muscle_group": "arms",
     "secondary_muscles": [
       "chest",
@@ -652,6 +684,7 @@
     "aliases": [
       "空中蹬车"
     ],
+    "instructions": "对侧肘找膝，转的是躯干不是手肘；慢一点比快一倍有效。",
     "muscle_group": "core",
     "secondary_muscles": [
       "quads"
@@ -673,6 +706,7 @@
     "aliases": [
       "立卧撑跳"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "chest",
@@ -694,6 +728,7 @@
     "name": "蝴蝶式拉伸",
     "name_en": "Butterfly Stretch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "adductors"
@@ -713,6 +748,7 @@
     "name": "绳索后踢腿",
     "name_en": "Cable Kickback",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings"
@@ -732,6 +768,7 @@
     "name": "绳索帕洛夫静力保持",
     "name_en": "Cable Pallof Hold",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "glutes",
@@ -754,6 +791,7 @@
     "aliases": [
       "绳索拉胯"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -774,6 +812,7 @@
     "name": "绳索反向飞鸟",
     "name_en": "Cable Rear Delt Fly",
     "aliases": [],
+    "instructions": "绳索交叉握、向后展开到与肩平；别用手臂拽，肩胛不要夹。",
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "upper_back"
@@ -793,6 +832,7 @@
     "name": "绳索站姿髋外展",
     "name_en": "Cable Standing Hip Abduction",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -812,6 +852,7 @@
     "name": "绳索站姿髋内收",
     "name_en": "Cable Standing Hip Adduction",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core",
@@ -834,6 +875,7 @@
     "aliases": [
       "绳索斜劈"
     ],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts"
@@ -853,6 +895,7 @@
     "name": "徒手提踵",
     "name_en": "Calf Raise",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -872,6 +915,7 @@
     "aliases": [
       "罗马椅举膝"
     ],
+    "instructions": "背贴靠垫，靠腹肌把膝抬到与髋同高；别靠身体前后晃借力。",
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts"
@@ -893,6 +937,7 @@
     "aliases": [
       "猫牛式拉伸"
     ],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "lats"
@@ -912,6 +957,7 @@
     "name": "椅上臂屈伸",
     "name_en": "Chair Dip",
     "aliases": [],
+    "instructions": "同凳上臂屈伸，椅子抵住墙；下沉别过深，肩前侧最容易在这里受伤。",
     "muscle_group": "arms",
     "secondary_muscles": [
       "chest",
@@ -932,6 +978,7 @@
     "name": "婴儿式",
     "name_en": "Child's Pose",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "front_delts",
@@ -952,6 +999,7 @@
     "name": "蚌式开合",
     "name_en": "Clamshell",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -973,6 +1021,7 @@
     "aliases": [
       "平行引体"
     ],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -994,6 +1043,7 @@
     "name": "哥本哈根平板支撑",
     "name_en": "Copenhagen Plank",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads",
@@ -1016,6 +1066,7 @@
     "aliases": [
       "侧向深蹲"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1037,6 +1088,7 @@
     "name": "螃蟹爬",
     "name_en": "Crab Walk",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "glutes",
@@ -1058,6 +1110,7 @@
     "name": "交叉肩部拉伸",
     "name_en": "Cross-Body Shoulder Stretch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "upper_back"
@@ -1077,6 +1130,7 @@
     "name": "交叉箭步蹲",
     "name_en": "Curtsy Lunge",
     "aliases": [],
+    "instructions": "后腿斜向侧后方落脚，前脚站稳再起身；膝盖别内扣。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
@@ -1101,6 +1155,7 @@
       "单车",
       "自行车"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
@@ -1118,6 +1173,7 @@
     "name": "静态悬垂",
     "name_en": "Dead Hang",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "lats",
@@ -1139,6 +1195,7 @@
     "name": "下斜仰卧起坐",
     "name_en": "Decline Sit-Up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads"
@@ -1158,6 +1215,7 @@
     "name": "垫高反向箭步蹲",
     "name_en": "Deficit Reverse Lunge",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
@@ -1179,6 +1237,7 @@
     "name": "驴式提踵",
     "name_en": "Donkey Calf Raise",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
@@ -1198,6 +1257,7 @@
     "aliases": [
       "驴踢"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -1218,6 +1278,7 @@
     "name": "门框胸部拉伸",
     "name_en": "Doorway Chest Stretch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "front_delts"
@@ -1237,6 +1298,7 @@
     "name": "门框划船",
     "name_en": "Doorway Row",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -1258,6 +1320,7 @@
     "name": "拖拽弯举",
     "name_en": "Drag Curl",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "forearms"
@@ -1277,6 +1340,7 @@
     "name": "龙旗",
     "name_en": "Dragon Flag",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "lats",
@@ -1297,6 +1361,7 @@
     "name": "哑铃交叉箭步蹲",
     "name_en": "Dumbbell Curtsy Lunge",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
@@ -1318,6 +1383,7 @@
     "name": "哑铃臀桥",
     "name_en": "Dumbbell Glute Bridge",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -1338,6 +1404,7 @@
     "name": "哑铃臀推",
     "name_en": "Dumbbell Hip Thrust",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings"
@@ -1357,6 +1424,7 @@
     "name": "哑铃侧向弓步",
     "name_en": "Dumbbell Lateral Lunge",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1380,6 +1448,7 @@
     "aliases": [
       "哑铃直腿硬拉"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1400,6 +1469,7 @@
     "name": "哑铃体侧屈",
     "name_en": "Dumbbell Side Bend",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "grip"
@@ -1419,6 +1489,7 @@
     "name": "双哑铃仰卧臂屈伸",
     "name_en": "Two Dumbbell Skullcrusher",
     "aliases": [],
+    "instructions": "仰卧，肘固定在头顶上方只让前臂转；肘一散开就成了推举。",
     "muscle_group": "arms",
     "secondary_muscles": [
       "front_delts"
@@ -1438,6 +1509,7 @@
     "name": "哑铃相扑硬拉",
     "name_en": "Dumbbell Sumo Deadlift",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1461,6 +1533,7 @@
     "aliases": [
       "相扑深蹲"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
@@ -1484,6 +1557,7 @@
     "aliases": [
       "椭圆仪"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
@@ -1503,6 +1577,7 @@
     "aliases": [
       "击掌俯卧撑"
     ],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "triceps",
@@ -1524,6 +1599,7 @@
     "name": "快速碎步",
     "name_en": "Fast Feet",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads"
@@ -1543,6 +1619,7 @@
     "name": "垫脚派克俯卧撑",
     "name_en": "Feet-Elevated Pike Push-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "triceps",
@@ -1564,6 +1641,7 @@
     "name": "消防栓式",
     "name_en": "Fire Hydrant",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -1585,6 +1663,7 @@
     "aliases": [
       "剪式打腿"
     ],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads"
@@ -1604,6 +1683,7 @@
     "name": "前箭步蹲",
     "name_en": "Forward Lunge",
     "aliases": [],
+    "instructions": "前脚迈出一步、后膝下沉到接近地面；上身保持直立，前膝别内扣。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1625,6 +1705,7 @@
     "name": "蛙式臀冲",
     "name_en": "Frog Pump",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings"
@@ -1644,6 +1725,7 @@
     "name": "前脚垫高分腿蹲",
     "name_en": "Front-Foot Elevated Split Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1664,6 +1746,7 @@
     "name": "臀桥踏步",
     "name_en": "Glute Bridge March",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -1684,6 +1767,7 @@
     "name": "臀部集中山羊挺身",
     "name_en": "Glute-Focused Back Extension",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -1706,6 +1790,7 @@
     "aliases": [
       "早安式"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1726,6 +1811,7 @@
     "name": "半程波比跳",
     "name_en": "Half Burpee",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads",
@@ -1746,6 +1832,7 @@
     "name": "半跪姿帕洛夫推",
     "name_en": "Half-Kneeling Pallof Press",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "glutes",
@@ -1766,6 +1853,7 @@
     "name": "腘绳肌拉伸",
     "name_en": "Hamstring Stretch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "calves"
@@ -1785,6 +1873,7 @@
     "name": "垫脚高脚杯深蹲",
     "name_en": "Heel-Elevated Goblet Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -1805,6 +1894,7 @@
     "name": "仰卧触踝",
     "name_en": "Heel Tap",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -1822,6 +1912,7 @@
     "name": "高抬腿",
     "name_en": "High Knees",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -1844,6 +1935,7 @@
       "徒步走",
       "登山"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -1865,6 +1957,7 @@
     "aliases": [
       "潜水式俯卧撑"
     ],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "front_delts",
@@ -1886,6 +1979,7 @@
     "name": "髋部飞机式",
     "name_en": "Hip Airplane",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -1906,6 +2000,7 @@
     "name": "空心支撑",
     "name_en": "Hollow Body Hold",
     "aliases": [],
+    "instructions": "肩与腿离地、腰贴地；腰拱起来就屈膝降难度。",
     "muscle_group": "core",
     "secondary_muscles": [
       "quads"
@@ -1925,6 +2020,7 @@
     "name": "空心摇摆",
     "name_en": "Hollow Rock",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads"
@@ -1944,6 +2040,7 @@
     "name": "毛毛虫爬行",
     "name_en": "Inchworm",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts",
@@ -1965,6 +2062,7 @@
     "name": "上斜绳索飞鸟",
     "name_en": "Incline Cable Fly",
     "aliases": [],
+    "instructions": "上斜角度做夹胸，肘微屈固定；拉向锁骨方向，别做成推。",
     "muscle_group": "chest",
     "secondary_muscles": [
       "front_delts"
@@ -1984,6 +2082,7 @@
     "name": "跳绳",
     "name_en": "Jump Rope",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts"
@@ -2003,6 +2102,7 @@
     "name": "深蹲跳",
     "name_en": "Jump Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2023,6 +2123,7 @@
     "name": "开合跳",
     "name_en": "Jumping Jack",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts",
@@ -2043,6 +2144,7 @@
     "name": "壶铃罗马尼亚硬拉",
     "name_en": "Kettlebell Romanian Deadlift",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2065,6 +2167,7 @@
     "aliases": [
       "壶铃摇摆"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -2085,6 +2188,7 @@
     "name": "跪姿俯卧撑",
     "name_en": "Knee Push-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "triceps",
@@ -2106,6 +2210,7 @@
     "name": "跪姿髂腰肌拉伸",
     "name_en": "Kneeling Hip Flexor Stretch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads"
@@ -2125,6 +2230,7 @@
     "name": "L 式支撑",
     "name_en": "L-Sit Hold",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "triceps",
@@ -2146,6 +2252,7 @@
     "name": "L 式引体向上",
     "name_en": "L-Sit Pull-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -2167,6 +2274,7 @@
     "name": "地雷管推举",
     "name_en": "Landmine Press",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "chest",
@@ -2187,6 +2295,7 @@
     "name": "地雷管罗马尼亚硬拉",
     "name_en": "Landmine Romanian Deadlift",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2207,6 +2316,7 @@
     "name": "地雷管深蹲",
     "name_en": "Landmine Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2227,6 +2337,7 @@
     "name": "侧向滑步",
     "name_en": "Lateral Shuffle",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2247,6 +2358,7 @@
     "name": "摆腿",
     "name_en": "Leg Swings",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2268,6 +2380,7 @@
     "name": "仰卧腘绳肌走",
     "name_en": "Lying Hamstring Walkout",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2288,6 +2401,7 @@
     "name": "器械后踢腿",
     "name_en": "Machine Glute Kickback",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings"
@@ -2307,6 +2421,7 @@
     "name": "梅多斯划船",
     "name_en": "Meadows Row",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -2329,6 +2444,7 @@
     "aliases": [
       "退让引体"
     ],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -2352,6 +2468,7 @@
     "aliases": [
       "锤式引体"
     ],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -2374,6 +2491,7 @@
     "aliases": [
       "北欧挺"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2396,6 +2514,7 @@
     "aliases": [
       "屈体俯卧撑"
     ],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "triceps",
@@ -2419,6 +2538,7 @@
     "aliases": [
       "手枪深蹲"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2440,6 +2560,7 @@
     "name": "平板支撑交替摸肩",
     "name_en": "Plank Shoulder Tap",
     "aliases": [],
+    "instructions": "平板姿势下交替摸肩，髋别左右摇；摇了就减小幅度。",
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts",
@@ -2460,6 +2581,7 @@
     "name": "杠铃片前平举",
     "name_en": "Plate Front Raise",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "chest"
@@ -2479,6 +2601,7 @@
     "name": "俯卧 T 字举",
     "name_en": "Prone T Raise",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "rear_delts",
@@ -2499,6 +2622,7 @@
     "name": "俯卧 Y 字举",
     "name_en": "Prone Y Raise",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "rear_delts",
@@ -2519,6 +2643,7 @@
     "name": "借力推举",
     "name_en": "Push Press",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "triceps",
@@ -2539,6 +2664,7 @@
     "name": "俯卧撑交替摸肩",
     "name_en": "Push-up Shoulder Tap",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "chest",
@@ -2560,6 +2686,7 @@
     "name": "反向山羊挺身",
     "name_en": "Reverse Hyperextension",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -2580,6 +2707,7 @@
     "name": "俯卧反向雪天使",
     "name_en": "Reverse Snow Angel",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "rear_delts",
@@ -2603,6 +2731,7 @@
     "aliases": [
       "划船"
     ],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "quads"
@@ -2624,6 +2753,7 @@
     "aliases": [
       "户外跑"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -2641,6 +2771,7 @@
     "name": "肩胛引体向上",
     "name_en": "Scapular Pull-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "upper_back",
@@ -2662,6 +2793,7 @@
     "name": "肩胛俯卧撑",
     "name_en": "Scapular Push-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "chest",
@@ -2683,6 +2815,7 @@
     "name": "海豹跳",
     "name_en": "Seal Jack",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts",
@@ -2703,6 +2836,7 @@
     "name": "坐姿体前屈",
     "name_en": "Seated Forward Fold",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "lats",
@@ -2723,6 +2857,7 @@
     "name": "坐姿收膝",
     "name_en": "Seated Knee Tuck",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads"
@@ -2742,6 +2877,7 @@
     "name": "虾式深蹲",
     "name_en": "Shrimp Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2763,6 +2899,7 @@
     "name": "侧卧髋外展",
     "name_en": "Side-Lying Hip Abduction",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -2782,6 +2919,7 @@
     "name": "侧卧举腿",
     "name_en": "Side-Lying Leg Raise",
     "aliases": [],
+    "instructions": "侧躺成一条线、脚尖朝前；抬腿别转髋，转髋就练不到臀中肌。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -2801,6 +2939,7 @@
     "name": "侧平板转髋",
     "name_en": "Side Plank Hip Dip",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts",
@@ -2821,6 +2960,7 @@
     "name": "单臂哑铃臂屈伸",
     "name_en": "Single Arm Dumbbell Tricep Extension",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "front_delts"
@@ -2840,6 +2980,7 @@
     "name": "单哑铃仰卧臂屈伸",
     "name_en": "Single Dumbbell Skullcrusher",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "front_delts"
@@ -2859,6 +3000,7 @@
     "name": "单腿箱式深蹲",
     "name_en": "Single-Leg Box Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2880,6 +3022,7 @@
     "name": "西西深蹲",
     "name_en": "Sissy Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core",
@@ -2900,6 +3043,7 @@
     "name": "滑冰跳",
     "name_en": "Skater Hop",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2920,6 +3064,7 @@
     "name": "滑冰深蹲",
     "name_en": "Skater Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2941,6 +3086,7 @@
     "name": "滑雪机",
     "name_en": "SkiErg",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "triceps",
@@ -2961,6 +3107,7 @@
     "name": "史密斯保加利亚分腿蹲",
     "name_en": "Smith Machine Bulgarian Split Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2981,6 +3128,7 @@
     "name": "史密斯臀推",
     "name_en": "Smith Machine Hip Thrust",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -3001,6 +3149,7 @@
     "name": "史密斯反向箭步蹲",
     "name_en": "Smith Machine Reverse Lunge",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3022,6 +3171,7 @@
     "name": "史密斯罗马尼亚硬拉",
     "name_en": "Smith Machine Romanian Deadlift",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3042,6 +3192,7 @@
     "name": "史密斯分腿蹲",
     "name_en": "Smith Machine Split Squat",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3062,6 +3213,7 @@
     "name": "蜘蛛弯举",
     "name_en": "Spider Curl",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "forearms"
@@ -3081,6 +3233,7 @@
     "name": "扑地起身",
     "name_en": "Sprawl",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "core",
@@ -3101,6 +3254,7 @@
     "name": "深蹲提膝",
     "name_en": "Squat Thrust",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads",
@@ -3121,6 +3275,7 @@
     "name": "瑞士球腘绳肌弯举",
     "name_en": "Stability Ball Hamstring Curl",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3143,6 +3298,7 @@
     "aliases": [
       "台阶机"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
@@ -3162,6 +3318,7 @@
     "aliases": [
       "站姿肩推"
     ],
+    "instructions": "站姿比坐姿更吃核心；两只哑铃分别推起，不要互相借力。",
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "triceps",
@@ -3182,6 +3339,7 @@
     "name": "站姿股四头肌拉伸",
     "name_en": "Standing Quad Stretch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -3201,6 +3359,7 @@
     "name": "台阶下步",
     "name_en": "Step-Down",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3222,6 +3381,7 @@
     "name": "哑铃台阶上步",
     "name_en": "Step-Up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -3241,6 +3401,7 @@
     "name": "超人式",
     "name_en": "Superman",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "glutes",
@@ -3262,6 +3423,7 @@
     "name": "超人式保持",
     "name_en": "Superman Hold",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "glutes",
@@ -3283,6 +3445,7 @@
     "name": "游泳",
     "name_en": "Swimming",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "front_delts"
@@ -3302,6 +3465,7 @@
     "name": "仰卧摸脚",
     "name_en": "Toe Touch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -3319,6 +3483,7 @@
     "name": "躯干转体",
     "name_en": "Torso Twists",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "lats"
@@ -3338,6 +3503,7 @@
     "name": "毛巾腘绳肌弯举",
     "name_en": "Towel Hamstring Curl",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3358,6 +3524,7 @@
     "name": "毛巾引体向上",
     "name_en": "Towel Pull-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -3379,6 +3546,7 @@
     "name": "毛巾划船",
     "name_en": "Towel Row",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -3402,6 +3570,7 @@
     "aliases": [
       "陷阱杠硬拉"
     ],
+    "instructions": "六角杠在重心正下方，是最容易学会的硬拉变式；背仍要中立。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
@@ -3425,6 +3594,7 @@
       "爬坡走",
       "坡度快走"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -3444,6 +3614,7 @@
     "name": "打字机俯卧撑",
     "name_en": "Typewriter Push-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "triceps",
@@ -3467,6 +3638,7 @@
     "aliases": [
       "两头起"
     ],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "quads"
@@ -3486,6 +3658,7 @@
     "name": "快走",
     "name_en": "Walking",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -3503,6 +3676,7 @@
     "name": "靠墙小腿拉伸",
     "name_en": "Wall Calf Stretch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -3520,6 +3694,7 @@
     "name": "靠墙倒立撑",
     "name_en": "Wall Handstand Push-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "triceps",
@@ -3543,6 +3718,7 @@
     "aliases": [
       "站立俯卧撑"
     ],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "triceps",
@@ -3563,6 +3739,7 @@
     "name": "靠墙静蹲",
     "name_en": "Wall Sit",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3583,6 +3760,7 @@
     "name": "爬墙",
     "name_en": "Wall Walk",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "core",
@@ -3606,6 +3784,7 @@
     "aliases": [
       "负重引体"
     ],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [
       "lats"
@@ -3625,6 +3804,7 @@
     "name": "负重卷腹",
     "name_en": "Weighted Crunch",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [],
     "equipment": "barbell",
@@ -3642,6 +3822,7 @@
     "name": "负重俯卧撑",
     "name_en": "Weighted Push-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "triceps",
@@ -3662,6 +3843,7 @@
     "name": "负重俄罗斯转体",
     "name_en": "Weighted Russian Twist",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts"
@@ -3681,6 +3863,7 @@
     "name": "宽握高位下拉",
     "name_en": "Wide-Grip Lat Pulldown",
     "aliases": [],
+    "instructions": "宽握更吃背阔外侧；握太宽行程变短，肩也容易别着。",
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps"
@@ -3700,6 +3883,7 @@
     "name": "宽距俯卧撑",
     "name_en": "Wide Push-up",
     "aliases": [],
+    "instructions": null,
     "muscle_group": "chest",
     "secondary_muscles": [
       "front_delts",
@@ -3723,6 +3907,7 @@
     "aliases": [
       "最伟大拉伸"
     ],
+    "instructions": null,
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3746,6 +3931,7 @@
     "aliases": [
       "正握腕弯举"
     ],
+    "instructions": null,
     "muscle_group": "arms",
     "secondary_muscles": [],
     "equipment": "dumbbell",

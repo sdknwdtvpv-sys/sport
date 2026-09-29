@@ -128,6 +128,18 @@ for (const [i, e] of exercises.entries()) {
   // （农夫行走）不会被「今天练什么」推荐 —— 推荐只会开"3 组 × 8–10 次 / 30–45 秒"，
   // 开不出"走 20 米"。不是错，是还没做距离处方。
 
+  // 动作说明：null 是允许的（内容债，覆盖率工具会算），但**写了就得是能看的一行**。
+  if (e.instructions !== undefined && e.instructions !== null) {
+    if (typeof e.instructions !== 'string' || !e.instructions.trim()) {
+      errors.push(`${at}：instructions 写了但为空 —— 要么别写，要么写成一句人话`);
+    } else if (e.instructions.length > 80) {
+      errors.push(`${at}：instructions 长 ${e.instructions.length} 字，超过 80`
+        + `（选择器那一行放不下；要点不是教程）`);
+    } else if (e.instructions !== e.instructions.trim()) {
+      errors.push(`${at}：instructions 首尾有空白`);
+    }
+  }
+
   // 距离处方：`distance_time` 必须有"每组多少米"（否则处方开不出来，
   // 而引擎又不会替它编一个 —— 5 公里跑与 20 米农夫行走差两个数量级）。
   const targetDist = e.default_target_distance_m;
@@ -197,8 +209,8 @@ const qn = (v) => (v === null || v === undefined ? 'NULL' : String(v));
 const COLS = [
   'id', 'name', 'name_en', 'aliases', 'muscle_group', 'secondary_muscles', 'equipment',
   'category', 'track_type', 'default_rest_sec', 'default_weight_kg', 'weight_increment',
-  'default_target_distance_m', 'is_builtin', 'popularity', 'created_at', 'updated_at',
-  'deleted_at',
+  'default_target_distance_m', 'instructions', 'is_builtin', 'popularity', 'created_at',
+  'updated_at', 'deleted_at',
 ];
 
 const rowOf = (e) =>
@@ -210,7 +222,7 @@ const rowOf = (e) =>
     q(JSON.stringify(e.secondary_muscles ?? [])),
     q(e.equipment), q(e.category), q(e.track_type),
     qn(e.default_rest_sec), qn(e.default_weight_kg), qn(e.weight_increment),
-    qn(e.default_target_distance_m ?? null), qn(e.is_builtin ?? 1),
+    qn(e.default_target_distance_m ?? null), q(e.instructions ?? null), qn(e.is_builtin ?? 1),
     qn(e.popularity), qn(SEED_TS), qn(SEED_TS), 'NULL',
   ].join(', ') +
   ')';

@@ -30,6 +30,7 @@ CREATE TABLE exercise (
   default_rest_sec  INTEGER NOT NULL DEFAULT 90,
   default_weight_kg REAL,                       -- 首次使用时的起始建议
   default_target_distance_m REAL,               -- 距离处方：每组多少米（distance_time 专用）
+  instructions      TEXT,                       -- 动作说明（怎么做 + 最常见的一个错），null = 还没写
   weight_increment  REAL NOT NULL DEFAULT 2.5,  -- 规则引擎加重步长
   is_builtin        INTEGER NOT NULL DEFAULT 0,
   popularity        INTEGER NOT NULL DEFAULT 0, -- 用于"常用动作"排序
@@ -232,6 +233,24 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
    没有用户的有氧目标（减脂/耐力/间歇），"这次多跑 5%"是假精确；
    更要紧的是不能让它掉进"加次数"分支 —— 那会对一次跑步说"每组次数补到 10 次"
 
+### 动作说明：内容债的**可见形式**（`instructions`，2026-09-29）
+
+动作库 351 个动作，而 App 里长期只有**名字** —— 对「垫脚高脚杯深蹲」这种名字，
+新人看不出是在干什么。这一列补的就是这个，但它**一次写不完**，所以配套的是三件事：
+
+| 事 | 在哪 |
+|---|---|
+| 字段与校验 | `exercise.instructions`（≤ 80 字，写了就不能空、不能带首尾空白） |
+| **覆盖率的数字** | `node tool/content-report.mjs`（全部覆盖率 + 推荐位覆盖率 + 待写队列按常用度排） |
+| **一条硬承诺** | **推荐位上会出现的动作必须有说明**（各部位按常用度前 8）—— 有测试守着 |
+
+当前的取舍如实写在这里：**推荐位 48/48 全覆盖，全库 54/351 = 15.4%**。
+长尾（不常推荐、名字又冷门的那些）仍然空白，但它们的队列是**可查的**，
+不再是一句"差不多写好了"。
+
+内容由人撰写（`seed/parts/01-03.json` 与 `seed/upstream-zh-names.json`），
+**不由脚本推导** —— 动作要点写错的代价比不写大得多。
+
 ### 距离处方（`default_target_distance_m`，2026-09-29 补齐）
 
 **处方现在有三种形态**，由动作的 `track_type` 决定：
@@ -261,6 +280,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v2 | 新增 `body_metric` | 只加表 |
 | v3 | 新增 `routine` / `routine_item` | 只加表 |
 | v4 | `exercise` 新增 `category`（DEFAULT `'strength'`；词表 strength/warmup/cardio/stretch） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
+| v9 | `exercise` 新增 `instructions` | 动作说明。老库恒为 null（那时 App 里没有这个字段）—— 覆盖率工具会如实算进去 |
 | v8 | `exercise` 新增 `default_target_distance_m` | 距离处方。老库里它恒为 null —— 老库本来就没有距离动作（v1.4.0 才补进来），null 是准确的历史 |
 | v6 | `user_profile` 新增 `body_weight_unit` | 第三次加列。老档案里缺省 `'kg'` —— 在"体重单位"这个概念出现之前，体重显示的确实是 kg（`unit_pref`），所以缺省值就是当时的真实行为 |
 | v5 | `set_record` 新增 `distance_m` | 第二次加列。老库里的组记录距离恒为 **null**（"没记过距离"），**不是 0**（0 表示"真的没动"）—— 这是加列迁移最容易被搞错的地方，有专门的迁移测试守着 |

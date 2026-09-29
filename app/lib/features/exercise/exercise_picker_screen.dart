@@ -370,12 +370,16 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
           fontWeight: FontWeight.w600,
         ),
       ),
+      // 说明**接在副标题后面**（不另起一行）：351 个动作里只有一部分写了说明，
+      // 另起一行会让"有没有说明"变成两行/一行的不齐；接在后面则一行放得下要点。
       subtitle: Text(
         <String>[
           e.category == 'strength'
               ? muscleLabel(e.muscleGroup)
               : '${categoryLabel(e.category)} · ${muscleLabel(e.muscleGroup)}',
           equipmentLabel(e.equipment),
+          if (e.instructions != null && e.instructions!.isNotEmpty)
+            e.instructions!,
         ].join(' · '),
         style: const TextStyle(color: Tokens.text3, fontSize: 13),
       ),

@@ -38,6 +38,15 @@ class Exercise extends Table {
   IntColumn get defaultRestSec => integer().withDefault(const Constant(90))();
   RealColumn get defaultWeightKg => real().nullable()();
 
+  /// **动作说明**（一两句话说清"怎么做 + 最常见的一个错"）。null = 还没写。
+  ///
+  /// 2026-09-29 加。动作库有 351 个动作而 App 里只有**名字** —— 对"垫脚高脚杯深蹲"这种
+  /// 名字，新人看不出是在干什么。这一列是内容债的**可见形式**：有就是有，没有就是 null，
+  /// `tool/content-report.mjs` 会把覆盖率与待写队列打出来。
+  ///
+  /// 只写"要点"，不写长文：选择器的一行放得下（≤ 80 字），也不至于让人在健身房读论文。
+  TextColumn get instructions => text().nullable()();
+
   /// **距离处方：每组多少米**（`distance_time` 动作专用，其余恒 null）。
   ///
   /// 2026-09-29 加。之前距离类动作"能记但不被推荐"，因为处方只有"多少次 / 多少秒"
@@ -291,11 +300,12 @@ class AppDatabase extends _$AppDatabase {
   /// v6：`user_profile` 新增 `body_weight_unit`（体重的显示单位：千克 / 斤）。
   /// v7：新增 `analytics_meta`（设备 ID / 会话 ID / 首次启动时间 —— 埋点公共字段）。
   /// v8：`exercise` 新增 `default_target_distance_m`（距离处方：每组多少米）。
+  /// v9：`exercise` 新增 `instructions`（动作说明：怎么做 + 最常见的错）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -370,6 +380,11 @@ class AppDatabase extends _$AppDatabase {
           // 老库本来就没有距离动作（v1.4.0 才补进来），null 是准确的历史。
           if (from < 8) {
             await m.addColumn(exercise, exercise.defaultTargetDistanceM);
+          }
+          // v8 → v9：动作说明。老库里恒为 null（那时 App 里根本没有这个字段）——
+          // 覆盖率工具会把"还没写的"如实算进去，不假装有。
+          if (from < 9) {
+            await m.addColumn(exercise, exercise.instructions);
           }
         },
       );

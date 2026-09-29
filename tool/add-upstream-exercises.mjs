@@ -324,6 +324,8 @@ for (const { u, entry, category } of toAdd) {
       name: entry.name,
       name_en: u.name,
       aliases: entry.aliases ?? [],
+      // 动作说明：人工写在中文名表里（**内容是人写的，不是推出来的**）
+      instructions: entry.instructions ?? null,
       muscle_group: group,
       secondary_muscles: secondary,
       equipment,

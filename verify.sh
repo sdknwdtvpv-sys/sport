@@ -252,7 +252,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/assisted_exercise_test.dart \
          server/collector.mjs server/collector.selftest.mjs tool/analytics-report.mjs \
          app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
-         tool/usability-report.mjs tool/usability-selftest.mjs \
+         tool/usability-report.mjs tool/usability-selftest.mjs tool/content-report.mjs \
          usability/记录表.md usability/participants.example.json \
          tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \

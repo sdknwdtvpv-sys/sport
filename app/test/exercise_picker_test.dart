@@ -49,6 +49,31 @@ void main() {
     return store;
   }
 
+  group('动作说明', () {
+    testWidgets('写在种子里的说明会出现在列表里（选动作时才知道这是什么）',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      // 杠铃卧推是推荐位上的动作，种子里有说明
+      expect(find.textContaining('肩胛后收贴凳'), findsOneWidget);
+    });
+
+    testWidgets('没写说明的动作不会显示空的一行', (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      // 「垫脚高脚杯深蹲」是长尾动作，还没写说明 —— 副标题里不该出现多余的 " · "
+      final Finder tile = find.byKey(const Key('exercise-ex_heel_elevated_goblet_squat'));
+      if (tile.evaluate().isNotEmpty) {
+        final String subtitle = tester
+            .widgetList<Text>(find.descendant(of: tile, matching: find.byType(Text)))
+            .map((Text t) => t.data ?? '')
+            .join('|');
+        expect(subtitle.contains(' ·  · '), isFalse,
+            reason: '没有说明就不该多一个分隔号');
+      }
+    });
+  });
+
   group('按类别筛选（热身 / 拉伸）', () {
     // 2026-09-29：热身与拉伸进了库（12 + 9 条）。它们不加进来，"练完拉一下"就记不了；
     // 但它们混在 339 条里排在最末（常用度 20），所以要有一行自己的入口。

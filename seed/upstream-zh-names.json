@@ -26,15 +26,18 @@
     },
     "Band Pull-Apart": {
       "name": "弹力带扩胸",
-      "aliases": []
+      "aliases": [],
+      "instructions": "手肘微屈、肩胛向后夹；练肩后侧与上背最省事的居家动作。"
     },
     "Banded Clamshell": {
       "name": "弹力带蚌式开合",
-      "aliases": []
+      "aliases": [],
+      "instructions": "侧躺屈膝、带子套膝上，上侧膝打开；骨盆别跟着翻。"
     },
     "Banded Dead Bug": {
       "name": "弹力带死虫",
-      "aliases": []
+      "aliases": [],
+      "instructions": "腰贴地，对侧手脚下放；腰一离地就说明放得太远了。"
     },
     "Banded Donkey Kick": {
       "name": "弹力带跪姿后踢腿",
@@ -42,7 +45,8 @@
     },
     "Banded Face Pull": {
       "name": "弹力带面拉",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子固定在与脸同高处，向脸方向拉并外旋；练肩后侧与上背，重量不必大。"
     },
     "Banded Fire Hydrant": {
       "name": "弹力带消防栓式",
@@ -54,7 +58,8 @@
     },
     "Banded Glute Bridge": {
       "name": "弹力带臀桥",
-      "aliases": []
+      "aliases": [],
+      "instructions": "脚跟踩实、带子套膝上，顶髋并外推膝盖；靠臀发力，不是靠腰。"
     },
     "Banded Hip Thrust": {
       "name": "弹力带臀推",
@@ -80,11 +85,13 @@
     },
     "Banded Pallof Press": {
       "name": "弹力带帕洛夫推",
-      "aliases": []
+      "aliases": [],
+      "instructions": "侧对固定点，把带子从胸前推出并抗旋；最直接的抗旋转练法。"
     },
     "Banded Row": {
       "name": "弹力带划船",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子固定在与胸同高处，向后拉到肘过身侧；全程别让带子松回去。"
     },
     "Banded Seated Hip Abduction": {
       "name": "弹力带坐姿髋外展",
@@ -118,7 +125,8 @@
       "name": "凳上臂屈伸",
       "aliases": [
         "长凳臂屈伸"
-      ]
+      ],
+      "instructions": "手撑身后凳沿，屈肘下沉到大臂与地面平行；肩疼就把身体贴近凳。"
     },
     "Bent-Over Rear Delt Raise": {
       "name": "",
@@ -132,7 +140,8 @@
       "name": "自行车卷腹",
       "aliases": [
         "空中蹬车"
-      ]
+      ],
+      "instructions": "对侧肘找膝，转的是躯干不是手肘；慢一点比快一倍有效。"
     },
     "Burpee": {
       "name": "波比跳",
@@ -160,7 +169,8 @@
     },
     "Cable Rear Delt Fly": {
       "name": "绳索反向飞鸟",
-      "aliases": []
+      "aliases": [],
+      "instructions": "绳索交叉握、向后展开到与肩平；别用手臂拽，肩胛不要夹。"
     },
     "Cable Standing Hip Abduction": {
       "name": "绳索站姿髋外展",
@@ -184,11 +194,13 @@
       "name": "船长椅举膝",
       "aliases": [
         "罗马椅举膝"
-      ]
+      ],
+      "instructions": "背贴靠垫，靠腹肌把膝抬到与髋同高；别靠身体前后晃借力。"
     },
     "Chair Dip": {
       "name": "椅上臂屈伸",
-      "aliases": []
+      "aliases": [],
+      "instructions": "同凳上臂屈伸，椅子抵住墙；下沉别过深，肩前侧最容易在这里受伤。"
     },
     "Clamshell": {
       "name": "蚌式开合",
@@ -216,7 +228,8 @@
     },
     "Curtsy Lunge": {
       "name": "交叉箭步蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "后腿斜向侧后方落脚，前脚站稳再起身；膝盖别内扣。"
     },
     "Dead Hang": {
       "name": "静态悬垂",
@@ -318,7 +331,8 @@
     },
     "Forward Lunge": {
       "name": "前箭步蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "前脚迈出一步、后膝下沉到接近地面；上身保持直立，前膝别内扣。"
     },
     "Frog Pump": {
       "name": "蛙式臀冲",
@@ -370,7 +384,8 @@
     },
     "Hollow Body Hold": {
       "name": "空心支撑",
-      "aliases": []
+      "aliases": [],
+      "instructions": "肩与腿离地、腰贴地；腰拱起来就屈膝降难度。"
     },
     "Hollow Rock": {
       "name": "空心摇摆",
@@ -382,7 +397,8 @@
     },
     "Incline Cable Fly": {
       "name": "上斜绳索飞鸟",
-      "aliases": []
+      "aliases": [],
+      "instructions": "上斜角度做夹胸，肘微屈固定；拉向锁骨方向，别做成推。"
     },
     "Jump Squat": {
       "name": "深蹲跳",
@@ -470,7 +486,8 @@
     },
     "Plank Shoulder Tap": {
       "name": "平板支撑交替摸肩",
-      "aliases": []
+      "aliases": [],
+      "instructions": "平板姿势下交替摸肩，髋别左右摇；摇了就减小幅度。"
     },
     "Plate Front Raise": {
       "name": "杠铃片前平举",
@@ -538,7 +555,8 @@
     },
     "Side-Lying Leg Raise": {
       "name": "侧卧举腿",
-      "aliases": []
+      "aliases": [],
+      "instructions": "侧躺成一条线、脚尖朝前；抬腿别转髋，转髋就练不到臀中肌。"
     },
     "Single Arm Dumbbell Tricep Extension": {
       "name": "单臂哑铃臂屈伸",
@@ -612,7 +630,8 @@
       "name": "站姿哑铃推举",
       "aliases": [
         "站姿肩推"
-      ]
+      ],
+      "instructions": "站姿比坐姿更吃核心；两只哑铃分别推起，不要互相借力。"
     },
     "Step-Down": {
       "name": "台阶下步",
@@ -650,7 +669,8 @@
       "name": "六角杠硬拉",
       "aliases": [
         "陷阱杠硬拉"
-      ]
+      ],
+      "instructions": "六角杠在重心正下方，是最容易学会的硬拉变式；背仍要中立。"
     },
     "Tricep Kickback": {
       "name": "",
@@ -658,7 +678,8 @@
     },
     "Two Dumbbell Skullcrusher": {
       "name": "双哑铃仰卧臂屈伸",
-      "aliases": []
+      "aliases": [],
+      "instructions": "仰卧，肘固定在头顶上方只让前臂转；肘一散开就成了推举。"
     },
     "Typewriter Push-up": {
       "name": "打字机俯卧撑",
@@ -712,7 +733,8 @@
     },
     "Wide-Grip Lat Pulldown": {
       "name": "宽握高位下拉",
-      "aliases": []
+      "aliases": [],
+      "instructions": "宽握更吃背阔外侧；握太宽行程变短，肩也容易别着。"
     },
     "Wrist Extension": {
       "name": "腕伸展",

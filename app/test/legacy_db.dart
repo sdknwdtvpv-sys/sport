@@ -17,7 +17,7 @@
 library;
 
 /// `exercise` 表的**按版本形状**：v1–v3 没有 `category`（v4 加的），
-/// v1–v7 没有 `default_target_distance_m`（v8 加的）。
+/// v1–v7 没有 `default_target_distance_m`（v8 加的），v1–v8 没有 `instructions`（v9 加的）。
 ///
 /// ⚠️ **必须是"那个版本当时的样子"**，否则测的就不是迁移：
 /// 这一条踩过 —— 最初这里只有一份 v1 形状的 DDL，于是造"v7 的库"时
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS exercise (
   popularity INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  deleted_at INTEGER NULL${version >= 4 ? ",\n  category TEXT NOT NULL DEFAULT 'strength'" : ''}${version >= 8 ? ",\n  default_target_distance_m REAL NULL" : ''}
+  deleted_at INTEGER NULL${version >= 4 ? ",\n  category TEXT NOT NULL DEFAULT 'strength'" : ''}${version >= 8 ? ",\n  default_target_distance_m REAL NULL" : ''}${version >= 9 ? ",\n  instructions TEXT NULL" : ''}
 )
 ''';
 
