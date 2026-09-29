@@ -89,6 +89,9 @@ Suggestion? suggestNext({
   final isBodyweight = exercise.isBodyweight;
   // 按时长的动作：这个数字是**秒**不是次数。缺省 weight_reps，行为向后兼容。
   final isTime = exercise.isTime;
+  // 辅助自重（辅助引体/双杠）：**"重量"是助力，推进方向与负重相反**。
+  // 与 engine/progression.mjs 同一条，靠同一份 vectors.json 对齐。
+  final isAssisted = exercise.isAssisted;
   final sets = plan.targetSets;
   final repsLow = plan.targetRepsLow;
   final repsHigh = plan.targetRepsHigh;
@@ -110,11 +113,13 @@ Suggestion? suggestNext({
       weightKg: isBodyweight ? null : (exercise.defaultWeightKg ?? plan.targetWeightKg),
       reps: repsLow,
       reasonCode: ReasonCode.firstTime,
-      reasonText: isBodyweight
-          ? (isTime
-              ? '第一次练这个动作，先记录你能坚持的秒数'
-              : '第一次练这个动作，先记录你能完成的次数')
-          : '第一次练这个动作，先从这个重量开始',
+      reasonText: isAssisted
+          ? '第一次练这个动作，先从这个助力开始（助力越少越难）'
+          : isBodyweight
+              ? (isTime
+                  ? '第一次练这个动作，先记录你能坚持的秒数'
+                  : '第一次练这个动作，先记录你能完成的次数')
+              : '第一次练这个动作，先从这个重量开始',
     );
   }
 
@@ -172,6 +177,51 @@ Suggestion? suggestNext({
       reasonText: minReps >= repsHigh
           ? '时长已达目标上限，按秒推进：$minReps → $nextTime 秒'
           : '按秒推进：$minReps → $nextTime 秒',
+    );
+  }
+
+  // 4.5) 辅助自重：**方向与负重相反**（达标 → 减助力）。必须排在自重分支之前。
+  if (isAssisted) {
+    final double ass = _round2(lastW);
+    if (completed < sets) {
+      return Suggestion(
+        weightKg: ass,
+        reps: repsLow,
+        reasonCode: ReasonCode.hold,
+        reasonText: '上次只完成 $completed 组（计划 $sets 组），先把组数补满',
+      );
+    }
+    if (minReps < repsLow) {
+      return Suggestion(
+        weightKg: ass,
+        reps: repsLow,
+        reasonCode: ReasonCode.hold,
+        reasonText: '上次有组掉到 $minReps 次，先保持助力',
+      );
+    }
+    if (minReps >= repsHigh) {
+      final double next = _round2(lastW - inc);
+      if (next <= 0) {
+        return Suggestion(
+          weightKg: 0,
+          reps: repsHigh,
+          reasonCode: ReasonCode.addRep,
+          reasonText: '助力已减到 0（上次 $minReps 次达标），可以试试不用辅助了',
+        );
+      }
+      return Suggestion(
+        weightKg: next,
+        reps: repsLow,
+        reasonCode: ReasonCode.linearProgress,
+        reasonText: '上次 $completed 组全部达标，减轻助力 −${_fmt(inc)}kg（助力越少越难）',
+      );
+    }
+    final int next = math.min(minReps + 1, repsHigh);
+    return Suggestion(
+      weightKg: ass,
+      reps: next,
+      reasonCode: ReasonCode.addRep,
+      reasonText: '助力不变，先把次数补到 $next 次',
     );
   }
 

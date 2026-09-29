@@ -261,7 +261,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           // 按时长动作那个数字是秒，不加"秒"会被读成"自重 × 30 次"
                           : r.weightKg == null
                               ? '自重 × ${r.reps}${c.exercise.isTime ? ' 秒' : ''}'
-                              : '${formatWeight(r.weightKg, c.unit)} × ${r.reps}'
+                              : '${c.isAssisted ? '助力 ' : ''}'
+                                  '${formatWeight(r.weightKg, c.unit)} × ${r.reps}'
                                   '${c.exercise.isTime ? ' 秒' : ''}',
                       style: TextStyle(
                         // 热身组用次级色：和正式组混在一起分不出来，用户就不知道
@@ -496,7 +497,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       value: c.isBodyweight
                           ? '自重'
                           : trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
-                      unit: c.isBodyweight ? '' : c.unit.wire,
+                      // 辅助自重的单位里必须带"助力"：这个数越大越轻松
+                      unit: c.isBodyweight
+                          ? ''
+                          : (c.isAssisted ? '${c.unit.wire} 助力' : c.unit.wire),
                       step: trimNumber(c.weightStep),
                       keyMinus: 'step-weight-down',
                       keyPlus: 'step-weight-up',

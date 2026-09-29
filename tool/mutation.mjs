@@ -145,6 +145,13 @@ const MUTANTS = [
     js: { file: PROG_JS, from: 'round2(lastW + inc)', to: '(lastW + inc)', all: true },
     dart: { file: PROG_DART, from: '_round2(lastW + inc)', to: '(lastW + inc)', all: true },
   },
+  {
+    name: '辅助自重的助力方向反了（达标 → 加助力 = 越练越轻松）',
+    why: '这正是 2026-09-29 修掉的那个反向 bug：辅助引体走"负重"分支时，"达标 → +5kg" '
+      + '意味着给你更多助力。六个 assisted 向量 + 一条不变量（只减不增）共同守它',
+    js: { file: PROG_JS, from: 'const next = round2(lastW - inc);', to: 'const next = round2(lastW + inc);' },
+    dart: { file: PROG_DART, from: 'final double next = _round2(lastW - inc);', to: 'final double next = _round2(lastW + inc);' },
+  },
   // ---- 只有场景 eval 抓得住的一类：文案红线 ----
   //
   // 向量只校验文案里的**子串**（`text_includes`），查不出"一行放得下"、

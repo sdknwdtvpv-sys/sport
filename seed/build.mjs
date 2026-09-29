@@ -132,8 +132,13 @@ for (const [i, e] of exercises.entries()) {
       + `（默认处方只开次数/秒数，开不了距离）—— 已知限制，见 docs/data-model.md`);
   }
   if (e.track_type === 'assisted_reps') {
-    warnings.push(`${at}：assisted_reps 的推进方向还没实现对 —— `
-      + `引擎现在按负重推进，等于"加重 = 加助力 = 更轻松"。见 docs/data-model.md 的已知限制`);
+    // 推进方向**已实现**（2026-09-29）：达标 → **减**助力，掉组 → 保持。
+    // 但那条分支的前提是"助力确实是一个要记的量"：increment 为 0 会被引擎当成自重动作，
+    // 于是用户看到的是「自重 × 8」而不是「助力 30kg × 8」—— 分支根本进不去。
+    if (!(e.weight_increment > 0)) {
+      errors.push(`${at}：assisted_reps 必须有助力步长（weight_increment > 0），`
+        + `否则会被当成自重动作，"减助力"那条分支永远走不到`);
+    }
   }
   for (const m of e.secondary_muscles ?? []) {
     if (!SECONDARY_OK.has(m)) errors.push(`${at}：secondary_muscles 非法「${m}」`);

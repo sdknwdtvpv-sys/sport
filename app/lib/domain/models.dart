@@ -17,6 +17,12 @@ import '../core/units.dart';
 bool isTimeTrack(String trackType) =>
     trackType == 'time' || trackType == 'weight_time';
 
+/// 这个动作的"重量"是不是**助力**（辅助引体/双杠）。
+///
+/// 辅助动作的推进方向与负重**相反**：越练越强 = 助力越少。
+/// 把它当负重推，用户看到的是"越练越轻松"，而系统以为在进步。
+bool isAssistedTrack(String trackType) => trackType == 'assisted_reps';
+
 /// 这个动作记不记**距离**。
 ///
 /// `distance_time` 的数字仍是秒（沿用 time 那一列的约定，不另开一列），
@@ -85,6 +91,9 @@ class ExerciseSpec {
 
   /// 记距离的动作（有氧、农夫行走）。
   bool get isDistance => isDistanceTrack(trackType);
+
+  /// "重量"是助力的动作（辅助引体/双杠）。
+  bool get isAssisted => isAssistedTrack(trackType);
 }
 
 /// 计划项。

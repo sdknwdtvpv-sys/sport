@@ -104,6 +104,25 @@ invariantResults.push({
   detail: bwWeight.length ? bwWeight.map((o) => o.v.id).join(', ') : '自重动作重量全部为 null',
 });
 
+// 红线 3：辅助自重的推进方向只允许**减**助力，永远不许加
+//
+// 这一条是 2026-09-29 修的那个反向 bug 的门闩：辅助引体走的是"负重"分支时，
+// "达标 → +5kg" 意味着**给你更多助力**，用户越练越轻松而系统以为在进步。
+// 判据：任何 assisted 用例的下一组助力都不能比上一组**更大**（0 是地板）。
+const assBad = observed.filter((o) => {
+  if (!o.actual || o.input.exercise.track_type !== 'assisted_reps') return false;
+  const last = o.input.lastSession?.weight_kg;
+  if (typeof last !== 'number') return false;
+  return Number(o.actual.weight_kg) > last;
+});
+invariantResults.push({
+  id: 'assisted_never_increases_assistance',
+  ok: assBad.length === 0,
+  detail: assBad.length
+    ? assBad.map((o) => `${o.v.id}(${o.input.lastSession.weight_kg} → ${o.actual.weight_kg})`).join(', ')
+    : '辅助动作的助力只减不增（0 为地板）',
+});
+
 // ---------- 1RM 估算边界（用例同样来自 vectors.json，与 Dart 端共用一份规格） ----------
 
 for (const c of spec.oneRmCases) {

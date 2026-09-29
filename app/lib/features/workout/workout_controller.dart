@@ -138,6 +138,9 @@ class WorkoutController extends ChangeNotifier {
   /// 这个动作记不记距离。
   bool get isDistance => exercise.isDistance;
 
+  /// "重量"是不是**助力**（辅助引体/双杠）。
+  bool get isAssisted => exercise.isAssisted;
+
   /// 大按钮能不能点。
   ///
   /// 对距离动作：**距离或时长有一个是 0 就不给点** —— 一次误触会写进
@@ -199,7 +202,14 @@ class WorkoutController extends ChangeNotifier {
     if (isDistance) {
       return '${formatDistanceKm(_distanceM)} · ${formatDurationHms(_reps)}';
     }
-    final w = isBodyweight ? '自重' : formatWeight(_weightKg, unit);
+    // 辅助自重：那个数字是**助力**。只说「30 kg × 8」会被读成"举起了 30kg"，
+    // 而它恰恰相反 —— 助力越大越轻松。引擎的方向已经反过来（达标 → 减助力），
+    // 界面上也必须说清楚这个数是什么。
+    final w = isAssisted
+        ? '助力 ${formatWeight(_weightKg, unit)}'
+        : isBodyweight
+            ? '自重'
+            : formatWeight(_weightKg, unit);
     return exercise.isTime ? '$w × $_reps 秒' : '$w × $_reps';
   }
 

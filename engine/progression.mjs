@@ -102,6 +102,10 @@ export function suggestNext(input) {
   // 缺省 weight_reps —— 老 fixture 与老数据的行为完全不变（向后兼容）。
   const track = exercise.track_type ?? 'weight_reps';
   const isTime = track === 'time' || track === 'weight_time';
+  // 辅助自重（辅助引体/双杠）：**"重量"是助力，所以推进方向与负重相反** ——
+  // 越练越强 = 助力越少。这一支不写，"达标 → +5kg"就是"给你更多助力"，
+  // 用户看到的是"越练越轻松"，而系统以为在进步。
+  const isAssisted = track === 'assisted_reps';
   const sets = plan.target_sets;
   const repsLow = plan.target_reps_low;
   const repsHigh = plan.target_reps_high;
@@ -123,11 +127,13 @@ export function suggestNext(input) {
       weight_kg: isBodyweight ? null : (exercise.default_weight_kg ?? plan.target_weight_kg ?? null),
       reps: repsLow,
       reason_code: REASON_CODES.FIRST_TIME,
-      reason_text: isBodyweight
-        ? (isTime
-          ? '第一次练这个动作，先记录你能坚持的秒数'
-          : '第一次练这个动作，先记录你能完成的次数')
-        : '第一次练这个动作，先从这个重量开始',
+      reason_text: isAssisted
+        ? '第一次练这个动作，先从这个助力开始（助力越少越难）'
+        : isBodyweight
+          ? (isTime
+            ? '第一次练这个动作，先记录你能坚持的秒数'
+            : '第一次练这个动作，先记录你能完成的次数')
+          : '第一次练这个动作，先从这个重量开始',
     };
   }
 
@@ -182,6 +188,52 @@ export function suggestNext(input) {
       reason_text: minReps >= repsHigh
         ? `时长已达目标上限，按秒推进：${minReps} → ${nextTime} 秒`
         : `按秒推进：${minReps} → ${nextTime} 秒`,
+    };
+  }
+
+  // 4.5) 辅助自重：**方向与负重相反**
+  //
+  // 判据是"达标就减助力"，与负重动作的"达标就加重量"是同一个双重渐进逻辑，
+  // 只是**符号反了**。这里必须排在自重分支之前 —— 辅助动作是 weight_increment > 0
+  // 的（助力是要记的量），不先拦就会走成"加助力"。
+  if (isAssisted) {
+    const ass = round2(lastW);
+    if (completed < sets) {
+      return {
+        weight_kg: ass, reps: repsLow,
+        reason_code: REASON_CODES.HOLD,
+        reason_text: `上次只完成 ${completed} 组（计划 ${sets} 组），先把组数补满`,
+      };
+    }
+    if (minReps < repsLow) {
+      return {
+        weight_kg: ass, reps: repsLow,
+        reason_code: REASON_CODES.HOLD,
+        reason_text: `上次有组掉到 ${minReps} 次，先保持助力`,
+      };
+    }
+    if (minReps >= repsHigh) {
+      const next = round2(lastW - inc);
+      if (next <= 0) {
+        // 助力已经减到 0：这个动作不再需要辅助 —— 提醒他直接自重做。
+        // 不再往负数减，也不"加助力"（那正是这个 bug 的样子）。
+        return {
+          weight_kg: 0, reps: repsHigh,
+          reason_code: REASON_CODES.ADD_REP,
+          reason_text: `助力已减到 0（上次 ${minReps} 次达标），可以试试不用辅助了`,
+        };
+      }
+      return {
+        weight_kg: next, reps: repsLow,
+        reason_code: REASON_CODES.LINEAR_PROGRESS,
+        reason_text: `上次 ${completed} 组全部达标，减轻助力 −${inc}kg（助力越少越难）`,
+      };
+    }
+    const next = Math.min(minReps + 1, repsHigh);
+    return {
+      weight_kg: ass, reps: next,
+      reason_code: REASON_CODES.ADD_REP,
+      reason_text: `助力不变，先把次数补到 ${next} 次`,
     };
   }
 

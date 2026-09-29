@@ -70,6 +70,12 @@
    "target_sets": 3,
    "target_reps_low": 600,
    "target_reps_high": 1200
+  },
+  "assisted_pull_up": {
+   "id": "ex_assisted_pull_up",
+   "default_weight_kg": 30,
+   "weight_increment": 5,
+   "track_type": "assisted_reps"
   }
  },
  "vectors": [
@@ -955,6 +961,135 @@
     "lastSession": null
    },
    "expect": null
+  },
+  {
+   "id": "assisted_first_time",
+   "desc": "辅助引体零历史 → 从起始**助力**开始（文案说助力，不说重量）",
+   "input": {
+    "exercise": "assisted_pull_up",
+    "plan": "plan_3x8_10",
+    "lastSession": null
+   },
+   "expect": {
+    "weight_kg": 30,
+    "reps": 8,
+    "reason_code": "first_time",
+    "text_includes": "助力"
+   }
+  },
+  {
+   "id": "assisted_reduce_assistance",
+   "desc": "辅助引体全部达标 → **减轻**助力（−5kg）。⚠️ 这条就是那个反向 bug 的门闩：按负重逻辑会给出 +5kg，也就是'给你更多助力'",
+   "input": {
+    "exercise": "assisted_pull_up",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 30,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 25,
+    "reps": 8,
+    "reason_code": "linear_progress",
+    "text_includes": "减轻助力"
+   }
+  },
+  {
+   "id": "assisted_incomplete_sets_holds",
+   "desc": "辅助引体组数没做满 → 助力不变（既不减也不加）",
+   "input": {
+    "exercise": "assisted_pull_up",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 30,
+     "reps": [
+      10,
+      10
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 30,
+    "reps": 8,
+    "reason_code": "hold",
+    "text_includes": "只完成 2 组"
+   }
+  },
+  {
+   "id": "assisted_dropped_reps_holds",
+   "desc": "辅助引体有组掉到下限以下 → 保持助力，不加助力（加助力=让人更轻松，不是修复）",
+   "input": {
+    "exercise": "assisted_pull_up",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 30,
+     "reps": [
+      10,
+      6,
+      5
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 30,
+    "reps": 8,
+    "reason_code": "hold",
+    "text_includes": "保持助力"
+   }
+  },
+  {
+   "id": "assisted_assistance_bottomed_out",
+   "desc": "助力已减到 5kg、再减就 ≤0 → 提示可以不用辅助了（**不减到负数、也不回加助力**）",
+   "input": {
+    "exercise": "assisted_pull_up",
+    "plan": "plan_3x8_10",
+    "lastSession": {
+     "weight_kg": 5,
+     "reps": [
+      10,
+      10,
+      10
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 0,
+    "reps": 10,
+    "reason_code": "add_rep",
+    "text_includes": "不用辅助"
+   }
+  },
+  {
+   "id": "assisted_add_rep_before_reducing",
+   "desc": "双重渐进的前半段：次数没到顶 → 助力不变，先加次数（与负重动作同一逻辑）",
+   "input": {
+    "exercise": "assisted_pull_up",
+    "plan": "plan_3x8_12",
+    "lastSession": {
+     "weight_kg": 30,
+     "reps": [
+      8,
+      8,
+      8
+     ],
+     "daysAgo": 2
+    }
+   },
+   "expect": {
+    "weight_kg": 30,
+    "reps": 9,
+    "reason_code": "add_rep",
+    "text_includes": "助力不变"
+   }
   }
  ],
  "oneRmCases": [

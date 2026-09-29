@@ -249,6 +249,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          seed/upstream-zh-names.json seed/parts/04-from-upstream.json \
          seed/popularity-tiers.json app/test/legacy_db.dart app/test/migration_test.dart \
          app/test/cardio_test.dart app/test/analytics_identity_test.dart \
+         app/test/assisted_exercise_test.dart \
          server/collector.mjs server/collector.selftest.mjs tool/analytics-report.mjs \
          app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
          tool/usability-report.mjs tool/usability-selftest.mjs \
