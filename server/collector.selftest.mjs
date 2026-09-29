@@ -109,13 +109,31 @@ export async function selftest() {
     check('没有数据时北极星率是 null', buildReport([]).northStar.rate === null);
 
     // ---- 5. 真的起一次 HTTP（客户端走的就是这条路） ----
-    await new Promise((resolve) => server.listen(0, resolve));
+    //
+    // 两处刻意的写法，都是被**不稳定的门禁**逼出来的：
+    //   1. 显式绑定 127.0.0.1 —— 只写 `listen(0)` 时，某些环境下监听在 `::` 上，
+    //      而客户端连的是 IPv4 的 127.0.0.1，偶发不通。
+    //   2. 第一个请求**重试** —— 2026-09-30 机器负载 8.4 时这里抛过一次
+    //      `fetch failed / read ECONNRESET`，整层门禁变红；单跑又立刻通过。
+    //      这种抖动最坏的地方不是它本身，而是**它会让人开始忽略门禁**。
+    //      （重试只包第一个请求：后面几个请求证明的是同一件事，真坏了照样红。）
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
     const port = server.address().port;
-    const res = await fetch(`http://127.0.0.1:${port}/v1/events`, {
+    const post = () => fetch(`http://127.0.0.1:${port}/v1/events`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ events: [ev({ event: 'set_logged', tap_count: 1 })] }),
     });
+    let res;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        res = await post();
+        break;
+      } catch (e) {
+        if (attempt >= 3) throw e;
+        await new Promise((r) => setTimeout(r, 150 * attempt));
+      }
+    }
     check('HTTP 收下并回 202', res.status === 202, `实际 ${res.status}`);
     const health = await (await fetch(`http://127.0.0.1:${port}/healthz`)).json();
     check('healthz 报出了事件数', health.events >= 3, JSON.stringify(health));

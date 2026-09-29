@@ -8,7 +8,28 @@
 
 ## 未切版（v1.17.0 之后的改动，尚未打 tag）
 
-### 文档与工具（不动 `app/`，不切版）
+### 文档与工具（**不切版**：只动了测试工具与文档，出货代码一行没变）
+
+> 关于版本号的判断，写在这里免得以后有人对着 git log 猜：
+> 这次 `app/` 下新增的是 `integration_test/` 与 `test_driver/`（都不进包），
+> `pubspec.yaml` 只加了一个 **dev** 依赖 —— `flutter build apk` 的产物与 v1.17.0 一致。
+> 所以没有切版，也没有重装真机。
+> （附带一个客观原因：真机现在装不了东西，见下面的 MIUI 那条。）
+
+- **界面截图改成一条命令生成**（`integration_test/screenshots_test.dart` +
+  `test_driver/screenshot_driver.dart` → `store-assets/screenshots/`）。
+  真机上本来截不了图（MIUI 禁了 `adb shell input`），但 integration_test 的点击是
+  **进程内模拟**的，绕开了这个限制，拿到的是真实字体 + 真实分辨率。
+  已出 4 张（首页 / 建议卡 / 我的计划 / 选动作），其余 7 步脚本已写好。
+  每一步单独包 try，失败会自动截一张 `zz-fail-*` 现场图（第一次跑 9 步连败却不知停在哪，才加的）。
+- ⚠️ **副作用要如实记**：`flutter drive` 需要装测试包，而 MIUI 的「USB 安装」授权失效后
+  连续失败**把设备上原来的 App 也卸掉了**。Redmi flourite 上现在没有「练了么」，
+  恢复需要在手机的开发者选项里重新打开「USB 安装」（步骤见 `docs/screenshots.md`）。
+  这也意味着**在放行之前，任何「切版并装真机」的收尾都做不了**。
+- **埋点自检的 HTTP 段加固**（`server/collector.selftest.mjs`）：显式绑定 `127.0.0.1`
+  + 第一个请求重试 3 次。起因是 2026-09-30 负载 8.4 时这里抛过一次
+  `fetch failed / read ECONNRESET`，整层门禁变红，单跑又立刻通过。
+  不稳定的门禁最坏的地方不是它本身，而是**它会让人开始忽略门禁**。
 
 - **隐私政策公开页面已生成并入库**（`store-assets/privacy/index.html` + `en.html`）：
   商店强制要求一个公网 URL，而"公开的那份"和"仓库里的那份"一旦各写各的早晚对不上。

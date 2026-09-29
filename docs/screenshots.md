@@ -1,0 +1,65 @@
+# 界面截图（软著说明书 / 商店列表都要）
+
+**一句话**：截图不该靠"拿手机一张张手工截"。这里是**一条命令从真实 App 里生成**的。
+
+## 怎么跑
+
+```bash
+cd app
+flutter drive --driver=test_driver/screenshot_driver.dart \
+              --target=integration_test/screenshots_test.dart
+```
+
+产物写进 `store-assets/screenshots/`（**入库**：它是交付物，不是 `dist/` 那种构建产物）。
+
+## 为什么用 `integration_test` 而不是 widget 测试
+
+两条路都试过，差别是决定性的：
+
+| | widget 测试（`flutter test`） | integration_test（`flutter drive`） |
+|---|---|---|
+| 字体 | 用测试字体，**汉字会渲染成方框** | 真实系统字体 |
+| 分辨率 | 要手工摆 | 真实设备（本项目 1280×2772） |
+| 点击 | 进程内模拟 | 进程内模拟 |
+
+**关键点：真机上本来截不了图。** MIUI 禁掉了 `adb shell input`（`INJECT_EVENTS`），
+屏幕点不动。但 integration_test 的点击是**在 App 进程内模拟**的，不走 adb 注入那条路 ——
+所以它绕开了这个限制。
+
+## ⚠️ 真机安装受 MIUI 限制（2026-09-30 实际踩到）
+
+`flutter drive` 会先装一个测试包。**MIUI 的「USB 安装」授权会失效**，症状是：
+
+```
+Failure [INSTALL_FAILED_USER_RESTRICTED: Install canceled by user]
+```
+
+更糟的是：连续失败之后**设备上原来的 App 也被卸掉了**（2026-09-30 就是这样，
+Redmi flourite 上现在没有「练了么」）。恢复方法（**必须在手机上操作**）：
+
+1. 设置 → 更多设置 → 开发者选项 → 打开 **「USB 安装」**（有的版本叫「通过 USB 安装应用」）
+2. 若弹出确认框，点「允许」
+3. 之后 `adb install -r` 与 `flutter drive` 都能用；装回正式包：
+   `adb install -r ../dist/练了么-v<版本>.apk`
+
+## 已覆盖 / 还缺
+
+| 屏 | 状态 |
+|---|---|
+| 01 首页（今天练什么） | ✅ |
+| 02 建议卡（今天练 X + 每个动作的建议重量与理由） | ✅ |
+| 03 我的计划 | ✅ |
+| 04 选动作（351 个动作 + 三排筛选 + 动作说明） | ✅ |
+| 05–11 训练屏 / 记完组 / 总结 / 进步 / 全部数据 / 我 / 身体数据 | ⏳ 脚本已写好，等安装放行后重跑一次即可 |
+
+`integration_test/screenshots_test.dart` 里每一步都单独包了 try：一步失败不会
+丢掉前面截好的图，而且会**自动截一张 `zz-fail-<步骤名>` 的现场图**
+（第一次跑时 9 步连败却不知道停在哪一屏，才加的这条）。
+
+## 给商店/软著用的注意
+
+- 商店通常要求 **3–8 张**，且**必须来自真实 App** —— 这批就是。
+  `prototype/index.html` 是设计原型，**不能充数**。
+- 软著说明书的界面图，每屏配一句说明即可（提纲见 `store-listing.md` 第七节）。
+- 截图里有真实训练数据（"上次 4 组全部达标，线性加重 +2kg"）—— 这比空态好看，
+  但也别截图里出现个人信息（当前没有：App 不要求注册）。

@@ -34,6 +34,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # 截图用：真实 App 上跑（MIUI 禁了 adb 输入，但进程内模拟点击不受影响）。
+  # 见 integration_test/screenshots_test.dart 与 test_driver/screenshot_driver.dart。
+  integration_test:
+    sdk: flutter
   build_runner: ^2.16.1
   drift_dev: ^2.35.0
 
