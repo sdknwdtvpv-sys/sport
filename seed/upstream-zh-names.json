@@ -4,7 +4,8 @@
   "names": {
     "Active Hang": {
       "name": "主动悬垂",
-      "aliases": []
+      "aliases": [],
+      "instructions": "挂杠时主动把肩胛往下沉，别完全放松吊着；这是引体的第一个动作。"
     },
     "Archer Push-up": {
       "name": "弓手俯卧撑",
@@ -14,15 +15,18 @@
     },
     "Assisted Chin-up": {
       "name": "辅助反握引体向上",
-      "aliases": []
+      "aliases": [],
+      "instructions": "同上：助力是「帮你」的量，越练越强就把助力调小，别越练越省力。"
     },
     "Assisted Dip": {
       "name": "辅助双杠臂屈伸",
-      "aliases": []
+      "aliases": [],
+      "instructions": "助力越小越难 —— 这是**进步方向**：达标就把助力减一档，而不是加。"
     },
     "Assisted Pistol Squat": {
       "name": "辅助单腿深蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "扶着架子或助力带完成单腿蹲；控制下沉，膝别内扣。"
     },
     "Band Pull-Apart": {
       "name": "弹力带扩胸",
@@ -41,7 +45,8 @@
     },
     "Banded Donkey Kick": {
       "name": "弹力带跪姿后踢腿",
-      "aliases": []
+      "aliases": [],
+      "instructions": "四点支撑、带子套脚踝，脚跟向天花板蹬；腰别塌。"
     },
     "Banded Face Pull": {
       "name": "弹力带面拉",
@@ -50,11 +55,13 @@
     },
     "Banded Fire Hydrant": {
       "name": "弹力带消防栓式",
-      "aliases": []
+      "aliases": [],
+      "instructions": "四点支撑、带子套膝上，腿向侧上方抬起；骨盆别翻。"
     },
     "Banded Frog Pump": {
       "name": "弹力带蛙式臀冲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子套膝上，脚掌相对、顶髋并外推膝盖；练臀中肌与臀大肌。"
     },
     "Banded Glute Bridge": {
       "name": "弹力带臀桥",
@@ -63,25 +70,30 @@
     },
     "Banded Hip Thrust": {
       "name": "弹力带臀推",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子套在膝上，顶髋的同时把膝盖向外推；练臀中肌最省事的做法。"
     },
     "Banded Kickback": {
       "name": "弹力带后踢腿",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子套脚踝，向后踢到臀收紧；腰别塌，身体别后仰。"
     },
     "Banded Lat Pulldown": {
       "name": "弹力带高位下拉",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子挂高处，跪姿下拉；把肩胛先沉下去再拉，否则只是手臂在动。"
     },
     "Banded Lateral Walk": {
       "name": "弹力带侧向走",
       "aliases": [
         "螃蟹走"
-      ]
+      ],
+      "instructions": "带子套膝上或脚踝，半蹲姿势横向迈步；全程保持带子有张力。"
     },
     "Banded Monster Walk": {
       "name": "弹力带怪兽走",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子套脚踝，半蹲横向跨步；全程保持带子张力，落脚别并拢。"
     },
     "Banded Pallof Press": {
       "name": "弹力带帕洛夫推",
@@ -95,27 +107,33 @@
     },
     "Banded Seated Hip Abduction": {
       "name": "弹力带坐姿髋外展",
-      "aliases": []
+      "aliases": [],
+      "instructions": "坐姿把膝向外打开；骨盆别跟着转，转了就练不到臀中肌。"
     },
     "Banded Squat": {
       "name": "弹力带深蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子踩在脚下、绕过肩或髋，蹲到髋低于膝；带子越拉越紧说明姿势没塌。"
     },
     "Banded Standing Hip Abduction": {
       "name": "弹力带站姿髋外展",
-      "aliases": []
+      "aliases": [],
+      "instructions": "站姿扶墙、腿向侧抬起；上身别倒，倒了就是靠惯性。"
     },
     "Banded Woodchop": {
       "name": "弹力带伐木",
-      "aliases": []
+      "aliases": [],
+      "instructions": "带子固定在高处，斜向下拉过身体；靠躯干转，不要用手臂拽。"
     },
     "Barbell Glute Bridge": {
       "name": "杠铃臀桥",
-      "aliases": []
+      "aliases": [],
+      "instructions": "杠铃压在髋部（垫个护垫），顶髋到完全伸开；别用腰拱。"
     },
     "Bear Plank": {
       "name": "熊式平板支撑",
-      "aliases": []
+      "aliases": [],
+      "instructions": "四点支撑、膝离地两厘米，背保持水平；屁股一高就变成休息姿势了。"
     },
     "Belt Squat": {
       "name": "腰带深蹲",
@@ -147,7 +165,8 @@
       "name": "波比跳",
       "aliases": [
         "立卧撑跳"
-      ]
+      ],
+      "instructions": "下蹲撑地 → 跳成平板 → 收腿跳起；累的时候可以去掉最后的跳。"
     },
     "Cable Fly": {
       "name": "",
@@ -155,17 +174,20 @@
     },
     "Cable Kickback": {
       "name": "绳索后踢腿",
-      "aliases": []
+      "aliases": [],
+      "instructions": "绳索套脚踝向后踢，身体略前倾；腰别塌，靠臀发力。"
     },
     "Cable Pallof Hold": {
       "name": "绳索帕洛夫静力保持",
-      "aliases": []
+      "aliases": [],
+      "instructions": "侧对绳索把把手推出并**停住**，抗住旋转 20–40 秒；重量不必大。"
     },
     "Cable Pull-Through": {
       "name": "绳索胯下拉",
       "aliases": [
         "绳索拉胯"
-      ]
+      ],
+      "instructions": "背对绳索、髋向后推让绳子从胯下穿过，再顶髋站直；腿后侧的入门动作。"
     },
     "Cable Rear Delt Fly": {
       "name": "绳索反向飞鸟",
@@ -174,7 +196,8 @@
     },
     "Cable Standing Hip Abduction": {
       "name": "绳索站姿髋外展",
-      "aliases": []
+      "aliases": [],
+      "instructions": "站姿侧向抬腿，手扶器械稳住；上身别倒。"
     },
     "Cable Standing Hip Adduction": {
       "name": "绳索站姿髋内收",
@@ -184,11 +207,13 @@
       "name": "绳索伐木",
       "aliases": [
         "绳索斜劈"
-      ]
+      ],
+      "instructions": "绳索伐木：转髋带躯干，手臂只是传力；别用腰硬拧。"
     },
     "Calf Raise": {
       "name": "徒手提踵",
-      "aliases": []
+      "aliases": [],
+      "instructions": "踮到最高停一秒，再慢慢落下到脚跟低于脚尖；弹跳式上下等于没练。"
     },
     "Captain's Chair Knee Raise": {
       "name": "船长椅举膝",
@@ -204,7 +229,8 @@
     },
     "Clamshell": {
       "name": "蚌式开合",
-      "aliases": []
+      "aliases": [],
+      "instructions": "侧躺屈膝，上侧膝打开；骨盆别跟着翻，翻了就是腰在代偿。"
     },
     "Commando Pull-up": {
       "name": "突击队引体向上",
@@ -233,15 +259,18 @@
     },
     "Dead Hang": {
       "name": "静态悬垂",
-      "aliases": []
+      "aliases": [],
+      "instructions": "双手挂杠、肩下沉，握到前臂发酸；引体做不动时先练它，也是握力的基础。"
     },
     "Decline Sit-Up": {
       "name": "下斜仰卧起坐",
-      "aliases": []
+      "aliases": [],
+      "instructions": "下斜卷起，靠腹肌不要靠脖子；幅度比平地大，但腰疼就退回平地。"
     },
     "Deficit Reverse Lunge": {
       "name": "垫高反向箭步蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "后脚垫高增加行程，前腿下沉更深；膝盖不舒服就撤掉垫高。"
     },
     "Dip": {
       "name": "",
@@ -249,13 +278,15 @@
     },
     "Donkey Calf Raise": {
       "name": "驴式提踵",
-      "aliases": []
+      "aliases": [],
+      "instructions": "躯干前倾、像驴一样踮起；比站姿行程更长，小腿刺激更集中。"
     },
     "Donkey Kick": {
       "name": "跪姿后踢腿",
       "aliases": [
         "驴踢"
-      ]
+      ],
+      "instructions": "四点支撑向后上方蹬腿；腰别塌，抬到臀收紧就够。"
     },
     "Doorway Row": {
       "name": "门框划船",
@@ -275,25 +306,30 @@
     },
     "Dumbbell Curtsy Lunge": {
       "name": "哑铃交叉箭步蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "后腿斜向侧后方落脚，前脚踩稳再起身；膝别内扣。"
     },
     "Dumbbell Glute Bridge": {
       "name": "哑铃臀桥",
-      "aliases": []
+      "aliases": [],
+      "instructions": "哑铃压在髋上，顶髋时脚跟踩实；腰别拱起来代偿。"
     },
     "Dumbbell Hip Thrust": {
       "name": "哑铃臀推",
-      "aliases": []
+      "aliases": [],
+      "instructions": "上背靠凳、哑铃压在髋上，顶到髋完全伸开停半秒；别用腰拱起来代替髋伸。"
     },
     "Dumbbell Lateral Lunge": {
       "name": "哑铃侧向弓步",
-      "aliases": []
+      "aliases": [],
+      "instructions": "向一侧迈大步、重心坐到那条腿上，另一条腿伸直；膝与脚尖同向。"
     },
     "Dumbbell Romanian Deadlift": {
       "name": "哑铃罗马尼亚硬拉",
       "aliases": [
         "哑铃直腿硬拉"
-      ]
+      ],
+      "instructions": "髋向后推、背平，哑铃贴腿下滑；感觉大腿后侧被拉长，不是腰在弯。"
     },
     "Dumbbell Side Bend": {
       "name": "哑铃体侧屈",
@@ -301,13 +337,15 @@
     },
     "Dumbbell Sumo Deadlift": {
       "name": "哑铃相扑硬拉",
-      "aliases": []
+      "aliases": [],
+      "instructions": "宽站距、哑铃在两腿之间，靠髋伸起身；背全程中立。"
     },
     "Dumbbell Sumo Squat": {
       "name": "哑铃相扑深蹲",
       "aliases": [
         "相扑深蹲"
-      ]
+      ],
+      "instructions": "双脚宽于肩、脚尖外展 30°，哑铃垂在两腿之间；膝盖顺着脚尖方向推开。"
     },
     "Explosive Push-up": {
       "name": "爆发俯卧撑",
@@ -321,13 +359,15 @@
     },
     "Fire Hydrant": {
       "name": "消防栓式",
-      "aliases": []
+      "aliases": [],
+      "instructions": "四点支撑，腿向侧上方抬起；骨盆保持水平，别为了抬更高而翻髋。"
     },
     "Flutter Kick": {
       "name": "仰卧交替打腿",
       "aliases": [
         "剪式打腿"
-      ]
+      ],
+      "instructions": "仰卧、腿伸直小幅交替上下；腰贴地，腰一离地就把腿抬高些。"
     },
     "Forward Lunge": {
       "name": "前箭步蹲",
@@ -336,25 +376,30 @@
     },
     "Frog Pump": {
       "name": "蛙式臀冲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "脚掌相对、膝向外打开，靠臀顶髋；腰贴地，不要用腰把髋顶起来。"
     },
     "Front-Foot Elevated Split Squat": {
       "name": "前脚垫高分腿蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "后脚垫高、前脚踩实，下沉到前腿大腿接近水平；重心别跑到脚尖上。"
     },
     "Glute Bridge March": {
       "name": "臀桥踏步",
-      "aliases": []
+      "aliases": [],
+      "instructions": "臀桥顶住不动，交替抬膝；骨盆一旦往一侧掉就说明抬太高了。"
     },
     "Glute-Focused Back Extension": {
       "name": "臀部集中山羊挺身",
-      "aliases": []
+      "aliases": [],
+      "instructions": "上背微微弓、脚尖外八，靠臀把身体抬起来；腰别过度后仰。"
     },
     "Good Morning": {
       "name": "早安式体前屈",
       "aliases": [
         "早安式"
-      ]
+      ],
+      "instructions": "杠铃放斜方肌上、髋向后推、躯干前倾；**重量要轻**，腰一弯立刻停。"
     },
     "Half Burpee": {
       "name": "半程波比跳",
@@ -362,15 +407,18 @@
     },
     "Half-Kneeling Pallof Press": {
       "name": "半跪姿帕洛夫推",
-      "aliases": []
+      "aliases": [],
+      "instructions": "半跪姿把绳索从胸前推出并抗旋；跪姿比站姿更难作弊。"
     },
     "Heel Tap": {
       "name": "仰卧触踝",
-      "aliases": []
+      "aliases": [],
+      "instructions": "仰卧屈膝，手交替去碰同侧脚跟；这是练腹斜肌最温和的入门动作。"
     },
     "Heel-Elevated Goblet Squat": {
       "name": "垫脚高脚杯深蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "脚跟垫高能蹲得更深、更吃股四头；重心别跑到脚尖上。"
     },
     "Hindu Push-up": {
       "name": "印度俯卧撑",
@@ -393,7 +441,8 @@
     },
     "Inchworm": {
       "name": "毛毛虫爬行",
-      "aliases": []
+      "aliases": [],
+      "instructions": "站姿手往远处走成平板，再走回来站起；走的过程中腰别塌。"
     },
     "Incline Cable Fly": {
       "name": "上斜绳索飞鸟",
@@ -402,21 +451,25 @@
     },
     "Jump Squat": {
       "name": "深蹲跳",
-      "aliases": []
+      "aliases": [],
+      "instructions": "落地要轻、膝顺着脚尖；膝或踝有伤就别做跳跃类。"
     },
     "Kettlebell Romanian Deadlift": {
       "name": "壶铃罗马尼亚硬拉",
-      "aliases": []
+      "aliases": [],
+      "instructions": "壶铃比哑铃更靠前，注意让它始终贴近腿；髋铰链、背平。"
     },
     "Kettlebell Swing": {
       "name": "壶铃摆荡",
       "aliases": [
         "壶铃摇摆"
-      ]
+      ],
+      "instructions": "髋铰链把壶铃荡出去，靠髋部发力不是靠手臂提；到胸口高度即可。"
     },
     "Knee Push-up": {
       "name": "跪姿俯卧撑",
-      "aliases": []
+      "aliases": [],
+      "instructions": "膝着地、身体从膝到肩一条直线；屁股别撅，下沉时胸口离地一拳。"
     },
     "L-Sit Hold": {
       "name": "L 式支撑",
@@ -428,7 +481,8 @@
     },
     "Landmine Press": {
       "name": "地雷管推举",
-      "aliases": []
+      "aliases": [],
+      "instructions": "杠铃一端固定在地雷架，斜向上推出；肩不舒服的人的推举替代品。"
     },
     "Landmine Romanian Deadlift": {
       "name": "地雷管罗马尼亚硬拉",
@@ -448,7 +502,8 @@
     },
     "Machine Glute Kickback": {
       "name": "器械后踢腿",
-      "aliases": []
+      "aliases": [],
+      "instructions": "后踢时骨盆别翻、腰别塌；靠臀把腿送出去，不是靠腰甩。"
     },
     "Meadows Row": {
       "name": "梅多斯划船",
@@ -458,13 +513,15 @@
       "name": "离心引体向上",
       "aliases": [
         "退让引体"
-      ]
+      ],
+      "instructions": "跳上去、用 3–5 秒慢慢下来；这是学会引体最快的一步。"
     },
     "Neutral-Grip Pull-up": {
       "name": "对握引体向上",
       "aliases": [
         "锤式引体"
-      ]
+      ],
+      "instructions": "对握时肩关节最舒服，适合肩不太行的人；先沉肩再拉。"
     },
     "Nordic Hamstring Curl": {
       "name": "北欧腘绳肌弯举",
@@ -476,7 +533,8 @@
       "name": "派克俯卧撑",
       "aliases": [
         "屈体俯卧撑"
-      ]
+      ],
+      "instructions": "臀抬高成倒 V、头顶朝地面下沉；这是倒立撑的入门台阶。"
     },
     "Pistol Squat": {
       "name": "单腿深蹲",
@@ -491,11 +549,13 @@
     },
     "Plate Front Raise": {
       "name": "杠铃片前平举",
-      "aliases": []
+      "aliases": [],
+      "instructions": "杠铃片举到与肩平即可；过顶会变成斜方肌主导。"
     },
     "Prone T Raise": {
       "name": "俯卧 T 字举",
-      "aliases": []
+      "aliases": [],
+      "instructions": "俯卧、手臂成 T 字抬起，拇指朝上；练肩后侧与上背，重量几乎为零也有效。"
     },
     "Prone Y Raise": {
       "name": "俯卧 Y 字举",
@@ -503,7 +563,8 @@
     },
     "Push Press": {
       "name": "借力推举",
-      "aliases": []
+      "aliases": [],
+      "instructions": "膝盖微屈借一点腿的力把杠铃推起；这是借力，别当成站姿推举练。"
     },
     "Push-up Shoulder Tap": {
       "name": "俯卧撑交替摸肩",
@@ -515,7 +576,8 @@
     },
     "Reverse Hyperextension": {
       "name": "反向山羊挺身",
-      "aliases": []
+      "aliases": [],
+      "instructions": "反式山羊挺身练臀与下背；靠臀发力顶起，别用腰甩。"
     },
     "Reverse Snow Angel": {
       "name": "俯卧反向雪天使",
@@ -531,7 +593,8 @@
     },
     "Scapular Pull-up": {
       "name": "肩胛引体向上",
-      "aliases": []
+      "aliases": [],
+      "instructions": "手臂伸直不动，只靠肩胛把身体拉起几厘米；引体之前先把这一步练会。"
     },
     "Scapular Push-up": {
       "name": "肩胛俯卧撑",
@@ -547,11 +610,13 @@
     },
     "Side Plank Hip Dip": {
       "name": "侧平板转髋",
-      "aliases": []
+      "aliases": [],
+      "instructions": "侧平板下把髋沉到接近地面再顶起；身体别前后转，转了就练不到侧腹。"
     },
     "Side-Lying Hip Abduction": {
       "name": "侧卧髋外展",
-      "aliases": []
+      "aliases": [],
+      "instructions": "侧躺抬上面那条腿，脚尖朝前；身体别后倒，后倒就练到髋屈肌了。"
     },
     "Side-Lying Leg Raise": {
       "name": "侧卧举腿",
@@ -560,7 +625,8 @@
     },
     "Single Arm Dumbbell Tricep Extension": {
       "name": "单臂哑铃臂屈伸",
-      "aliases": []
+      "aliases": [],
+      "instructions": "单臂举过头顶、肘朝前，只让前臂下放；肘一外张就变成推举了。"
     },
     "Single Dumbbell Skullcrusher": {
       "name": "单哑铃仰卧臂屈伸",
@@ -580,7 +646,8 @@
     },
     "Skater Hop": {
       "name": "滑冰跳",
-      "aliases": []
+      "aliases": [],
+      "instructions": "左右横向跳、落地缓冲；落地膝别内扣，这条最伤膝。"
     },
     "Skater Squat": {
       "name": "滑冰深蹲",
@@ -588,27 +655,33 @@
     },
     "Smith Machine Bulgarian Split Squat": {
       "name": "史密斯保加利亚分腿蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "史密斯轨道固定，最省平衡力；脚位往前放一点更吃臀，往后更吃股四头。"
     },
     "Smith Machine Hip Thrust": {
       "name": "史密斯臀推",
-      "aliases": []
+      "aliases": [],
+      "instructions": "上背靠凳、顶髋到完全伸开停半秒；把膝盖向外推一点更吃臀中肌。"
     },
     "Smith Machine Reverse Lunge": {
       "name": "史密斯反向箭步蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "史密斯反向箭步：向后迈步更吃臀，轨道固定不用管平衡。"
     },
     "Smith Machine Romanian Deadlift": {
       "name": "史密斯罗马尼亚硬拉",
-      "aliases": []
+      "aliases": [],
+      "instructions": "髋向后推、背平；器械轨道固定了路径，专注感受腿后侧被拉长。"
     },
     "Smith Machine Split Squat": {
       "name": "史密斯分腿蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "轨道固定，专注前腿发力；脚位再往前一点更吃臀。"
     },
     "Spider Curl": {
       "name": "蜘蛛弯举",
-      "aliases": []
+      "aliases": [],
+      "instructions": "俯卧在斜板上、手臂垂直下垂，弯举到最高停一下；这个角度肱二头几乎没有借力空间。"
     },
     "Split Squat": {
       "name": "",
@@ -624,7 +697,8 @@
     },
     "Stability Ball Hamstring Curl": {
       "name": "瑞士球腘绳肌弯举",
-      "aliases": []
+      "aliases": [],
+      "instructions": "脚跟压在球上、顶髋把球勾回来；全程臀别掉下去。"
     },
     "Standing Dumbbell Press": {
       "name": "站姿哑铃推举",
@@ -635,19 +709,23 @@
     },
     "Step-Down": {
       "name": "台阶下步",
-      "aliases": []
+      "aliases": [],
+      "instructions": "脚踩台面，缓慢下沉让另一只脚跟轻触地面再起身；控制比重量重要。"
     },
     "Step-Up": {
       "name": "哑铃台阶上步",
-      "aliases": []
+      "aliases": [],
+      "instructions": "整只脚踩满台面再蹬起，靠上侧腿把身体推上去；用下侧腿蹬地是借力。"
     },
     "Superman": {
       "name": "超人式",
-      "aliases": []
+      "aliases": [],
+      "instructions": "俯卧，对侧手脚同时抬离地面停一秒；抬到最高就好，别把腰掰成反弓。"
     },
     "Superman Hold": {
       "name": "超人式保持",
-      "aliases": []
+      "aliases": [],
+      "instructions": "俯卧抬起对侧手脚并停住 20–30 秒；腰别反弓，靠臀与背发力。"
     },
     "Toe Touch": {
       "name": "仰卧摸脚",
@@ -699,11 +777,13 @@
       "name": "靠墙俯卧撑",
       "aliases": [
         "站立俯卧撑"
-      ]
+      ],
+      "instructions": "手掌撑墙略高于肩，身体一条直线靠近墙面；最适合完全没基础的起点。"
     },
     "Wall Sit": {
       "name": "靠墙静蹲",
-      "aliases": []
+      "aliases": [],
+      "instructions": "背贴墙、大腿与地面平行，膝不超过脚尖；靠墙静蹲比深蹲更容易坚持。"
     },
     "Wall Walk": {
       "name": "爬墙",
@@ -717,19 +797,23 @@
     },
     "Weighted Crunch": {
       "name": "负重卷腹",
-      "aliases": []
+      "aliases": [],
+      "instructions": "抱片卷腹，靠腹肌把肩胛卷离地面；脖子别用力，腰始终贴地。"
     },
     "Weighted Push-up": {
       "name": "负重俯卧撑",
-      "aliases": []
+      "aliases": [],
+      "instructions": "背上加片或穿负重背心；先保证标准俯卧撑能连续做 15 次再加重量。"
     },
     "Weighted Russian Twist": {
       "name": "负重俄罗斯转体",
-      "aliases": []
+      "aliases": [],
+      "instructions": "抱一片杠铃片转体；转的是躯干，手只是跟着走，腰椎别硬拧到底。"
     },
     "Wide Push-up": {
       "name": "宽距俯卧撑",
-      "aliases": []
+      "aliases": [],
+      "instructions": "手比肩宽，胸的参与更多；手太宽会让肩别着，比肩宽一掌就够。"
     },
     "Wide-Grip Lat Pulldown": {
       "name": "宽握高位下拉",
