@@ -72,6 +72,12 @@ adb -s emulator-5554 install -r "dist/练了么-v<版本>.apk"
   （到 `10-profile`），driver 侧的写盘迟迟不返回（截图字节要等整个 run 结束才回传）。
   要用模拟器出图，**先把机器空出来**，或者用真机。
 - 截图落盘目录仍是 `store-assets/screenshots/`（driver 不区分来源，文件名要自己标）。
+- **它占约 5.3GB 磁盘**（emulator 1.1GB + 系统镜像 4.2GB）。磁盘紧张时这样回收
+  （下次要用再重装，命令就在上面）：
+  ```bash
+  sdkmanager --uninstall "emulator" "system-images;android-34;google_apis;arm64-v8a"
+  avdmanager delete avd -n lianleme
+  ```
 
 ## 已覆盖 / 还缺
 
