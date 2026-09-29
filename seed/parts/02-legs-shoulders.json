@@ -131,7 +131,8 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 40
+    "popularity": 40,
+    "instructions": "坐到箱子上停一下再起；箱子高度决定深度，也是学深蹲的好工具。"
   },
   {
     "id": "ex_pause_squat",
@@ -152,7 +153,8 @@
     "default_weight_kg": 35,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 38
+    "popularity": 38,
+    "instructions": "蹲到底停 2 秒再起；停顿会暴露你平时借的那点弹力。"
   },
   {
     "id": "ex_bodyweight_squat",
@@ -219,7 +221,8 @@
     "default_weight_kg": 30,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "instructions": "单腿踩在踏板中间，髋别跟着抬起来；重量比双腿小一半以上才正常。"
   },
   {
     "id": "ex_bulgarian_split_squat",
@@ -263,7 +266,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 44
+    "popularity": 44,
+    "instructions": "前后脚站定不动，下沉到前腿大腿接近水平；起身靠前脚蹬，别用后脚借力。"
   },
   {
     "id": "ex_walking_lunge",
@@ -329,7 +333,8 @@
     "default_weight_kg": 30,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 40
+    "popularity": 40,
+    "instructions": "杠铃放在上背，向前跨步下沉；前膝别越过脚尖太多。"
   },
   {
     "id": "ex_lateral_lunge",
@@ -351,7 +356,8 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 38
+    "popularity": 38,
+    "instructions": "一侧跨出去蹲下，另一侧腿伸直；脚掌踩稳别内翻。"
   },
   {
     "id": "ex_leg_extension",
@@ -391,7 +397,8 @@
     "default_weight_kg": 15,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 34
+    "popularity": 34,
+    "instructions": "单腿伸膝到接近伸直；重量减半，别用惯性甩。"
   },
   {
     "id": "ex_lying_leg_curl",
@@ -585,7 +592,8 @@
     "default_weight_kg": 30,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 36
+    "popularity": 36,
+    "instructions": "髋上放杠铃，顶峰夹紧臀；靠腰过伸顶起来是常见错。"
   },
   {
     "id": "ex_single_leg_glute_bridge",
@@ -604,7 +612,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 35
+    "popularity": 35,
+    "instructions": "一条腿撑地、另一条抬起，顶髋夹臀；髋别歪。"
   },
   {
     "id": "ex_hip_abduction",
@@ -730,7 +739,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 40
+    "popularity": 40,
+    "instructions": "前脚掌踩实、单腿顶到最高；扶墙只为平衡，别用手帮忙。"
   },
   {
     "id": "ex_smith_calf_raise",
@@ -748,7 +758,8 @@
     "default_weight_kg": 40,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 40
+    "popularity": 40,
+    "instructions": "轨道固定，前脚掌踩稳、脚跟先下沉再顶起；膝盖别锁死。"
   },
   {
     "id": "ex_bb_ohp",
@@ -840,7 +851,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 40
+    "popularity": 40,
+    "instructions": "单手往上推，核心抗住身体往一侧倒；另一侧别帮忙。"
   },
   {
     "id": "ex_arnold_press",
@@ -1010,7 +1022,8 @@
     "default_weight_kg": 5,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "instructions": "绳索从身后过来，单臂抬到肩高；躯干别晃，另一侧别帮忙。"
   },
   {
     "id": "ex_lean_away_lateral",
@@ -1030,7 +1043,8 @@
     "default_weight_kg": 6,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 38
+    "popularity": 38,
+    "instructions": "扶住固定物斜着身体，让重量落在身体前方；中束全程有张力。"
   },
   {
     "id": "ex_smith_lateral_raise",
@@ -1048,7 +1062,8 @@
     "default_weight_kg": 10,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 32
+    "popularity": 32,
+    "instructions": "轨道固定，抬到肩高就停；重量小一点，别靠耸肩。"
   },
   {
     "id": "ex_db_front_raise",
@@ -1108,7 +1123,8 @@
     "default_weight_kg": 7.5,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 44
+    "popularity": 44,
+    "instructions": "绳索从身后过来，抬到肩高就停；全程肘别弯太多。"
   },
   {
     "id": "ex_single_arm_cable_front",
@@ -1126,7 +1142,8 @@
     "default_weight_kg": 5,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 34
+    "popularity": 34,
+    "instructions": "单手抬到肩高，躯干别后仰；另一侧别帮忙。"
   },
   {
     "id": "ex_bent_over_db_fly",
@@ -1170,7 +1187,8 @@
     "default_weight_kg": 5,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 40
+    "popularity": 40,
+    "instructions": "俯身、手臂微屈向外展开像飞鸟；用三角后束发力，别耸肩。"
   },
   {
     "id": "ex_reverse_pec_deck",

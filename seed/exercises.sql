@@ -20,8 +20,8 @@ VALUES
   ('ex_db_bench_press', '哑铃卧推', 'Dumbbell Bench Press', '["平板哑铃卧推","哑铃平板卧推"]', 'chest', '["triceps","front_delts"]', 'dumbbell', 'strength', 'weight_reps', 120, 12, 2, NULL, '两手哑铃在中线靠拢但不撞；下放到胸口两侧即可，别贪深让肩关节过伸。', 1, 95, 1767225600000, 1767225600000, NULL),
   ('ex_db_incline_press', '上斜哑铃卧推', 'Incline Dumbbell Press', '["上斜哑铃推举"]', 'chest', '["front_delts","triceps"]', 'dumbbell', 'strength', 'weight_reps', 120, 10, 2, NULL, '凳角 30° 左右；角度越大越像推举，胸的参与反而变少。', 1, 90, 1767225600000, 1767225600000, NULL),
   ('ex_db_decline_press', '下斜哑铃卧推', 'Decline Dumbbell Press', '[]', 'chest', '["triceps","front_delts"]', 'dumbbell', 'strength', 'weight_reps', 120, 10, 2, NULL, '下斜 15–30° 就够，哑铃落在下胸两侧；头低于心容易头晕。', 1, 50, 1767225600000, 1767225600000, NULL),
-  ('ex_db_close_grip_press', '窄距哑铃卧推', 'Close-Grip Dumbbell Press', '["窄距哑铃推胸"]', 'chest', '["triceps"]', 'dumbbell', 'strength', 'weight_reps', 120, 10, 2, NULL, NULL, 1, 44, 1767225600000, 1767225600000, NULL),
-  ('ex_db_swissball_press', '瑞士球哑铃卧推', 'Swiss Ball Dumbbell Press', '["健身球卧推"]', 'chest', '["triceps","core"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, NULL, 1, 32, 1767225600000, 1767225600000, NULL),
+  ('ex_db_close_grip_press', '窄距哑铃卧推', 'Close-Grip Dumbbell Press', '["窄距哑铃推胸"]', 'chest', '["triceps"]', 'dumbbell', 'strength', 'weight_reps', 120, 10, 2, NULL, '两只哑铃并拢但不相撞，肘贴近身体；比宽距更吃三头。', 1, 44, 1767225600000, 1767225600000, NULL),
+  ('ex_db_swissball_press', '瑞士球哑铃卧推', 'Swiss Ball Dumbbell Press', '["健身球卧推"]', 'chest', '["triceps","core"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '球上推举，核心全程稳住不让球晃；重量要比平凳小很多。', 1, 32, 1767225600000, 1767225600000, NULL),
   ('ex_db_fly', '哑铃飞鸟', 'Dumbbell Fly', '["平板飞鸟","飞鸟"]', 'chest', '["shoulders"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '肘微屈并固定角度，像抱一棵树；下放到胸口有拉伸感就停，别做成卧推。', 1, 85, 1767225600000, 1767225600000, NULL),
   ('ex_db_incline_fly', '上斜哑铃飞鸟', 'Incline Dumbbell Fly', '["上斜飞鸟"]', 'chest', '["shoulders"]', 'dumbbell', 'strength', 'weight_reps', 90, 6, 2, NULL, '上斜 30°，肘微屈固定角度像抱树；下放到胸口有拉伸感就停。', 1, 70, 1767225600000, 1767225600000, NULL),
   ('ex_cable_crossover', '绳索夹胸', 'Cable Crossover', '["龙门架夹胸","绳索飞鸟","龙门架飞鸟"]', 'chest', '["shoulders"]', 'cable', 'strength', 'weight_reps', 90, 10, 2.5, NULL, '身体略前倾，两手在胸前交叉；重量宁小勿大，靠行程不靠磅数。', 1, 82, 1767225600000, 1767225600000, NULL),
@@ -30,7 +30,7 @@ VALUES
   ('ex_machine_pec_deck', '蝴蝶机夹胸', 'Pec Deck Fly', '["蝴蝶机","夹胸机"]', 'chest', '["shoulders"]', 'machine', 'strength', 'weight_reps', 90, 25, 5, NULL, '肘与肩同高，夹到胸前停半秒；别用惯性把配重片甩起来。', 1, 80, 1767225600000, 1767225600000, NULL),
   ('ex_machine_chest_press', '器械推胸', 'Chest Press Machine', '["坐姿推胸"]', 'chest', '["triceps","front_delts"]', 'machine', 'strength', 'weight_reps', 120, 30, 5, NULL, '座位调到握把与胸同高，肩胛后收；推到手肘将直就回，别锁死。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_machine_incline_press', '上斜器械推胸', 'Incline Chest Press Machine', '[]', 'chest', '["front_delts","triceps"]', 'machine', 'strength', 'weight_reps', 120, 25, 5, NULL, '凳角 30°、肩胛后收贴板，推到手接近伸直；别让肩往前送。', 1, 52, 1767225600000, 1767225600000, NULL),
-  ('ex_machine_single_chest_press', '单臂器械推胸', 'Single-Arm Chest Press', '[]', 'chest', '["core"]', 'machine', 'strength', 'weight_reps', 90, 15, 5, NULL, NULL, 1, 30, 1767225600000, 1767225600000, NULL);
+  ('ex_machine_single_chest_press', '单臂器械推胸', 'Single-Arm Chest Press', '[]', 'chest', '["core"]', 'machine', 'strength', 'weight_reps', 90, 15, 5, NULL, '单手推、肩胛贴住靠板；单边做能看出左右差。', 1, 30, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
@@ -39,7 +39,7 @@ VALUES
   ('ex_weighted_dip', '负重双杠臂屈伸', 'Weighted Dip', '["负重双杠"]', 'chest', '["triceps","front_delts"]', 'bodyweight', 'strength', 'weight_reps', 120, 10, 2.5, NULL, '肩胛下沉、躯干可略前倾，下到大臂接近水平；肩前侧疼就减幅度。', 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_push_up', '俯卧撑', 'Push-up', '["伏地挺身","掌上压"]', 'chest', '["triceps","front_delts","abs","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '身体一条直线、胸口离地一拳；撅臀或塌腰都是核心没在干活。', 1, 88, 1767225600000, 1767225600000, NULL),
   ('ex_incline_push_up', '上斜俯卧撑', 'Incline Push-up', '["高台俯卧撑"]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '手撑高台面，越高越轻松；新手先用它练标准俯卧撑的姿态。', 1, 45, 1767225600000, 1767225600000, NULL),
-  ('ex_decline_push_up', '下斜俯卧撑', 'Decline Push-up', '["脚抬高俯卧撑"]', 'chest', '["front_delts","triceps","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_decline_push_up', '下斜俯卧撑', 'Decline Push-up', '["脚抬高俯卧撑"]', 'chest', '["front_delts","triceps","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '脚垫高，胸口往地面走；手撑得越低越难，先保证身体是一条线。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_db_pullover', '哑铃仰卧屈臂上拉', 'Dumbbell Pullover', '["仰卧上拉","上拉"]', 'chest', '["lats","triceps"]', 'dumbbell', 'strength', 'weight_reps', 90, 15, 2, NULL, '只肩关节动、肘角固定，哑铃过头后放到有拉伸感；肩不稳就别贪幅度。', 1, 50, 1767225600000, 1767225600000, NULL),
   ('ex_pull_up', '引体向上', 'Pull-up', '["正握引体","引体"]', 'back', '["lats","biceps","core"]', 'bodyweight', 'strength', 'reps_only', 120, NULL, 0, NULL, '先沉肩再拉，胸口找杠；晃身体借力就成了甩上去，背没练到。', 1, 95, 1767225600000, 1767225600000, NULL),
   ('ex_weighted_pull_up', '负重引体向上', 'Weighted Pull-up', '["负重引体"]', 'back', '["lats","biceps"]', 'bodyweight', 'strength', 'weight_reps', 120, 10, 2.5, NULL, '先能自重做满 8 次再加负重；每次下放到底再拉，别靠摆荡借力。', 1, 60, 1767225600000, 1767225600000, NULL),
@@ -48,7 +48,7 @@ VALUES
   ('ex_lat_pulldown', '高位下拉', 'Lat Pulldown', '["下拉","宽握下拉"]', 'back', '["lats","biceps"]', 'cable', 'strength', 'weight_reps', 90, 40, 2.5, NULL, '挺胸、先沉肩再拉；拉到锁骨就够，不要往脑后拉。', 1, 92, 1767225600000, 1767225600000, NULL),
   ('ex_close_grip_pulldown', '窄握高位下拉', 'Close-Grip Lat Pulldown', '["窄距下拉","V把下拉"]', 'back', '["lats","biceps"]', 'cable', 'strength', 'weight_reps', 90, 40, 2.5, NULL, '对握或窄握更吃背阔内缘；挺胸沉肩，别用身体后仰把重量拽下来。', 1, 64, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_grip_pulldown', '反握高位下拉', 'Reverse-Grip Lat Pulldown', '["反手下拉"]', 'back', '["lats","biceps"]', 'cable', 'strength', 'weight_reps', 90, 35, 2.5, NULL, '反握与肩同宽，先沉肩再拉到锁骨；二头先累属于正常。', 1, 50, 1767225600000, 1767225600000, NULL),
-  ('ex_single_arm_pulldown', '单臂高位下拉', 'Single-Arm Lat Pulldown', '[]', 'back', '["lats","biceps"]', 'cable', 'strength', 'weight_reps', 90, 20, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_single_arm_pulldown', '单臂高位下拉', 'Single-Arm Lat Pulldown', '[]', 'back', '["lats","biceps"]', 'cable', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '单手往下拉，躯干别歪；单边做能看出哪一侧背更弱。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_seated_cable_row', '坐姿绳索划船', 'Seated Cable Row', '["坐姿划船","绳索划船"]', 'back', '["lats","traps","biceps","rear_delts"]', 'cable', 'strength', 'weight_reps', 90, 35, 2.5, NULL, '先坐稳再挺胸拉向腹部；靠后仰借力等于把活交给了惯性。', 1, 90, 1767225600000, 1767225600000, NULL),
   ('ex_single_arm_cable_row', '单臂绳索划船', 'Single-Arm Cable Row', '["单臂坐姿划船"]', 'back', '["lats","biceps","rear_delts"]', 'cable', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '躯干别跟着转，拉到腰侧；单边做能明显感觉出哪边弱。', 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_wide_cable_row', '宽握坐姿划船', 'Wide-Grip Cable Row', '["宽握划船"]', 'back', '["traps","rear_delts","lats"]', 'cable', 'strength', 'weight_reps', 90, 35, 2.5, NULL, '宽握更吃上背，把肘往身体两侧拉；身体别前后晃。', 1, 48, 1767225600000, 1767225600000, NULL),
@@ -60,21 +60,21 @@ INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
   ('ex_t_bar_row', 'T杠划船', 'T-Bar Row', '["T杆划船"]', 'back', '["lats","traps","biceps","rear_delts"]', 'barbell', 'strength', 'weight_reps', 120, 30, 2.5, NULL, '胸口贴垫（或俯身）、拉向腹部；别用腰把杠铃拽起来。', 1, 68, 1767225600000, 1767225600000, NULL),
-  ('ex_wide_t_bar_row', '宽握T杠划船', 'Wide-Grip T-Bar Row', '[]', 'back', '["shoulders"]', 'barbell', 'strength', 'weight_reps', 120, 30, 2.5, NULL, NULL, 1, 38, 1767225600000, 1767225600000, NULL),
+  ('ex_wide_t_bar_row', '宽握T杠划船', 'Wide-Grip T-Bar Row', '[]', 'back', '["shoulders"]', 'barbell', 'strength', 'weight_reps', 120, 30, 2.5, NULL, '宽握更吃上背，拉到下胸；身体别前后晃。', 1, 38, 1767225600000, 1767225600000, NULL),
   ('ex_one_arm_db_row', '单臂哑铃划船', 'One-Arm Dumbbell Row', '["哑铃划船"]', 'back', '["lats","biceps","obliques"]', 'dumbbell', 'strength', 'weight_reps', 90, 12, 2, NULL, '一手撑凳保持背平，哑铃拉向髋部；肩膀别转，转了就是斜方肌在拉。', 1, 85, 1767225600000, 1767225600000, NULL),
   ('ex_two_arm_db_row', '双臂哑铃划船', 'Two-Arm Dumbbell Row', '["俯身双臂划船"]', 'back', '["arms"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '背放平、髋向后推，两只哑铃同时拉到腰侧；别用腰把人拽起来。', 1, 50, 1767225600000, 1767225600000, NULL),
   ('ex_chest_supported_row', '胸托划船', 'Chest-Supported Row', '["海豹划船","上斜凳划船"]', 'back', '["lats","traps","biceps","rear_delts"]', 'machine', 'strength', 'weight_reps', 90, 30, 5, NULL, '胸口贴垫，拉向腹部；垫子替你固定了腰，最适合学划船的发力顺序。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_machine_row', '器械划船', 'Seated Row Machine', '["坐姿器械划船"]', 'back', '["lats","biceps"]', 'machine', 'strength', 'weight_reps', 90, 35, 5, NULL, '胸垫顶住、先沉肩再拉，肘往身后走；耸肩用斜方肌代偿是最常见的错。', 1, 60, 1767225600000, 1767225600000, NULL),
-  ('ex_single_arm_machine_row', '单臂器械划船', 'Single-Arm Machine Row', '[]', 'back', '["arms"]', 'machine', 'strength', 'weight_reps', 90, 20, 5, NULL, NULL, 1, 34, 1767225600000, 1767225600000, NULL),
+  ('ex_single_arm_machine_row', '单臂器械划船', 'Single-Arm Machine Row', '[]', 'back', '["arms"]', 'machine', 'strength', 'weight_reps', 90, 20, 5, NULL, '单手拉、躯干贴着垫子别转；单边做能补两侧差距。', 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_inverted_row', '澳式划船', 'Inverted Row', '["反向划船","自重划船"]', 'back', '["lats","biceps","abs","core"]', 'bodyweight', 'strength', 'reps_only', 90, NULL, 0, NULL, '身体绷直成一条线，胸口去碰杠；脚越靠前越难。', 1, 48, 1767225600000, 1767225600000, NULL),
   ('ex_deadlift', '硬拉', 'Deadlift', '["屈腿硬拉","传统硬拉","dl"]', 'legs', '["hamstrings","glutes","lower_back","traps","lats","grip"]', 'barbell', 'strength', 'weight_reps', 180, 50, 2.5, NULL, '杠铃贴小腿，先蹬地再挺髋，背全程中立；宁可少加重也别弓腰拉。', 1, 98, 1767225600000, 1767225600000, NULL),
   ('ex_sumo_deadlift', '相扑硬拉', 'Sumo Deadlift', '["宽站距硬拉"]', 'legs', '["glutes","quads","lower_back"]', 'barbell', 'strength', 'weight_reps', 180, 50, 2.5, NULL, '站距宽、脚尖外展，双手在两腿之间；起杠时膝和髋同时打开。', 1, 55, 1767225600000, 1767225600000, NULL),
-  ('ex_rack_pull', '架上硬拉', 'Rack Pull', '["半程硬拉"]', 'back', '["traps","lower_back","glutes","hamstrings"]', 'barbell', 'strength', 'weight_reps', 180, 60, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_rack_pull', '架上硬拉', 'Rack Pull', '["半程硬拉"]', 'back', '["traps","lower_back","glutes","hamstrings"]', 'barbell', 'strength', 'weight_reps', 180, 60, 2.5, NULL, '把杠放在膝盖高度起，练的是锁定那一段；重量可以比硬拉大一些。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_straight_arm_pulldown', '直臂下压', 'Straight-Arm Pulldown', '["直臂下拉"]', 'back', '["lats","triceps","core"]', 'cable', 'strength', 'weight_reps', 60, 20, 2.5, NULL, '手臂基本伸直，把杆从头上压到大腿前；用背发力，别变成三头下压。', 1, 58, 1767225600000, 1767225600000, NULL),
   ('ex_face_pull', '面拉', 'Face Pull', '["绳索面拉"]', 'back', '["rear_delts","traps","front_delts"]', 'cable', 'strength', 'weight_reps', 60, 15, 2.5, NULL, '拉向脸部并外旋，肘略高于手；练肩后侧最有效的动作之一，重量不必大。', 1, 66, 1767225600000, 1767225600000, NULL),
   ('ex_bb_shrug', '杠铃耸肩', 'Barbell Shrug', '["耸肩"]', 'back', '["traps","forearms"]', 'barbell', 'strength', 'weight_reps', 90, 40, 2.5, NULL, '耸肩到最高停一秒，别转圈；斜方肌只做上下，转肩反而伤关节。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_db_shrug', '哑铃耸肩', 'Dumbbell Shrug', '[]', 'back', '["traps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 20, 2, NULL, '只让肩上下走，别转圈；顶端停一下，重量大时可以用助力带。', 1, 52, 1767225600000, 1767225600000, NULL),
-  ('ex_farmer_walk', '农夫行走', 'Farmer''s Walk', '["农夫走","负重行走"]', 'back', '["forearms","traps","abs"]', 'dumbbell', 'strength', 'distance_time', 120, 20, 2, 20, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_farmer_walk', '农夫行走', 'Farmer''s Walk', '["农夫走","负重行走"]', 'back', '["forearms","traps","abs"]', 'dumbbell', 'strength', 'distance_time', 120, 20, 2, 20, '两手提重物走直线，肩下沉、别弓背；走完再放下。', 1, 40, 1767225600000, 1767225600000, NULL),
   ('ex_bb_squat', '杠铃深蹲', 'Barbell Back Squat', '["深蹲","后蹲","squat"]', 'legs', '["glutes","core","lower_back"]', 'barbell', 'strength', 'weight_reps', 180, 40, 2.5, NULL, '下蹲到髋低于膝、膝与脚尖同向；最常见的错是只顾蹲低却弓了腰。', 1, 100, 1767225600000, 1767225600000, NULL),
   ('ex_front_squat', '前蹲', 'Front Squat', '["颈前深蹲"]', 'legs', '["glutes","abs","core"]', 'barbell', 'strength', 'weight_reps', 180, 30, 2.5, NULL, '杠铃放在锁骨前、肘抬高，躯干尽量直立；手腕柔韧度不够就用交叉握。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_goblet_squat', '高脚杯深蹲', 'Goblet Squat', '["杯式深蹲","哑铃深蹲"]', 'legs', '["glutes","abs","core"]', 'dumbbell', 'strength', 'weight_reps', 90, 16, 2, NULL, '哑铃抱在胸前，蹲时肘顺着膝盖内侧下去；这是最容易学好的蹲法。', 1, 55, 1767225600000, 1767225600000, NULL),
@@ -84,19 +84,19 @@ INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
   ('ex_hack_squat', '哈克深蹲', 'Hack Squat', '["倒蹬深蹲"]', 'legs', '["glutes"]', 'machine', 'strength', 'weight_reps', 120, 40, 5, NULL, '背贴靠板、脚踩在踏板中前部，蹲到大腿接近水平；膝盖别锁死。', 1, 60, 1767225600000, 1767225600000, NULL),
-  ('ex_box_squat', '箱式深蹲', 'Box Squat', '["坐箱深蹲"]', 'legs', '["glutes","lower_back"]', 'barbell', 'strength', 'weight_reps', 150, 40, 2.5, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
-  ('ex_pause_squat', '暂停深蹲', 'Pause Squat', '["停顿深蹲"]', 'legs', '["glutes","abs"]', 'barbell', 'strength', 'weight_reps', 180, 35, 2.5, NULL, NULL, 1, 38, 1767225600000, 1767225600000, NULL),
+  ('ex_box_squat', '箱式深蹲', 'Box Squat', '["坐箱深蹲"]', 'legs', '["glutes","lower_back"]', 'barbell', 'strength', 'weight_reps', 150, 40, 2.5, NULL, '坐到箱子上停一下再起；箱子高度决定深度，也是学深蹲的好工具。', 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_pause_squat', '暂停深蹲', 'Pause Squat', '["停顿深蹲"]', 'legs', '["glutes","abs"]', 'barbell', 'strength', 'weight_reps', 180, 35, 2.5, NULL, '蹲到底停 2 秒再起；停顿会暴露你平时借的那点弹力。', 1, 38, 1767225600000, 1767225600000, NULL),
   ('ex_bodyweight_squat', '徒手深蹲', 'Bodyweight Squat', '["自重深蹲","空蹲"]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '脚与肩同宽、膝盖顺脚尖方向，蹲到还能保持背直的最低点。', 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_leg_press', '腿举', 'Leg Press', '["倒蹬","腿推"]', 'legs', '["quads","glutes","hamstrings"]', 'machine', 'strength', 'weight_reps', 120, 60, 5, NULL, '脚踩满踏板、膝不锁死；下放到大腿贴近腹部，别让尾骨离开靠垫。', 1, 88, 1767225600000, 1767225600000, NULL),
-  ('ex_single_leg_press', '单腿腿举', 'Single-Leg Press', '[]', 'legs', '["quads","glutes"]', 'machine', 'strength', 'weight_reps', 120, 30, 5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_single_leg_press', '单腿腿举', 'Single-Leg Press', '[]', 'legs', '["quads","glutes"]', 'machine', 'strength', 'weight_reps', 120, 30, 5, NULL, '单腿踩在踏板中间，髋别跟着抬起来；重量比双腿小一半以上才正常。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_bulgarian_split_squat', '保加利亚分腿蹲', 'Bulgarian Split Squat', '["分腿蹲","保加利亚蹲"]', 'legs', '["glutes","quads","core"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '后脚搭凳、前脚下沉到接近水平；前膝别内扣，重心在前脚中段。', 1, 70, 1767225600000, 1767225600000, NULL),
-  ('ex_static_lunge', '静态分腿蹲', 'Static Lunge', '["原地弓步蹲"]', 'legs', '["core"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, NULL, 1, 44, 1767225600000, 1767225600000, NULL),
+  ('ex_static_lunge', '静态分腿蹲', 'Static Lunge', '["原地弓步蹲"]', 'legs', '["core"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '前后脚站定不动，下沉到前腿大腿接近水平；起身靠前脚蹬，别用后脚借力。', 1, 44, 1767225600000, 1767225600000, NULL),
   ('ex_walking_lunge', '箭步蹲', 'Walking Lunge', '["行走箭步蹲","弓步蹲"]', 'legs', '["glutes","quads","abs","hamstrings"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '每一步都迈够远、后膝接近地面；步幅太小会变成原地上下蹲。', 1, 65, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_lunge', '反向箭步蹲', 'Reverse Lunge', '["后撤步箭步蹲"]', 'legs', '["core","glutes","hamstrings"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '向后撤一步再下沉，前腿发力蹬回；比向前箭步更护膝。', 1, 48, 1767225600000, 1767225600000, NULL),
-  ('ex_bb_lunge', '杠铃箭步蹲', 'Barbell Lunge', '[]', 'legs', '["core"]', 'barbell', 'strength', 'weight_reps', 120, 30, 2.5, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
-  ('ex_lateral_lunge', '侧向弓步', 'Lateral Lunge', '["侧弓步"]', 'legs', '["glutes","hamstrings","core"]', 'dumbbell', 'strength', 'reps_only', 90, 8, 2, NULL, NULL, 1, 38, 1767225600000, 1767225600000, NULL),
+  ('ex_bb_lunge', '杠铃箭步蹲', 'Barbell Lunge', '[]', 'legs', '["core"]', 'barbell', 'strength', 'weight_reps', 120, 30, 2.5, NULL, '杠铃放在上背，向前跨步下沉；前膝别越过脚尖太多。', 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_lateral_lunge', '侧向弓步', 'Lateral Lunge', '["侧弓步"]', 'legs', '["glutes","hamstrings","core"]', 'dumbbell', 'strength', 'reps_only', 90, 8, 2, NULL, '一侧跨出去蹲下，另一侧腿伸直；脚掌踩稳别内翻。', 1, 38, 1767225600000, 1767225600000, NULL),
   ('ex_leg_extension', '腿屈伸', 'Leg Extension', '["坐姿腿屈伸","腿伸展"]', 'legs', '["quads"]', 'machine', 'strength', 'weight_reps', 90, 25, 5, NULL, '膝与器械转轴对齐，伸到腿几乎直就停；别甩起来，末端停半秒更有效。', 1, 78, 1767225600000, 1767225600000, NULL),
-  ('ex_single_leg_extension', '单腿腿屈伸', 'Single-Leg Extension', '[]', 'legs', '["quads"]', 'machine', 'strength', 'weight_reps', 60, 15, 5, NULL, NULL, 1, 34, 1767225600000, 1767225600000, NULL),
+  ('ex_single_leg_extension', '单腿腿屈伸', 'Single-Leg Extension', '[]', 'legs', '["quads"]', 'machine', 'strength', 'weight_reps', 60, 15, 5, NULL, '单腿伸膝到接近伸直；重量减半，别用惯性甩。', 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_lying_leg_curl', '俯卧腿弯举', 'Lying Leg Curl', '["腿弯举"]', 'legs', '["hamstrings","calves"]', 'machine', 'strength', 'weight_reps', 90, 25, 5, NULL, '膝与器械转轴对齐，脚跟勾垫子；下放时别让配重片砸回去。', 1, 76, 1767225600000, 1767225600000, NULL),
   ('ex_seated_leg_curl', '坐姿腿弯举', 'Seated Leg Curl', '[]', 'legs', '["hamstrings","calves"]', 'machine', 'strength', 'weight_reps', 90, 25, 5, NULL, '坐姿勾腿，膝与转轴对齐；下放时控制住，别让配重片砸回去。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_rdl', '罗马尼亚硬拉', 'Romanian Deadlift', '["rdl","直腿罗马尼亚"]', 'legs', '["hamstrings","glutes","lower_back"]', 'barbell', 'strength', 'weight_reps', 120, 40, 2.5, NULL, '髋向后推、背平、杠铃贴腿下滑；感觉大腿后侧被拉长，而不是腰在弯。', 1, 85, 1767225600000, 1767225600000, NULL),
@@ -109,19 +109,19 @@ INSERT INTO exercise
 VALUES
   ('ex_machine_hip_thrust', '器械臀推', 'Machine Hip Thrust', '[]', 'legs', '["glutes","hamstrings"]', 'machine', 'strength', 'weight_reps', 120, 40, 5, NULL, '上背贴垫、下巴微收，顶峰把臀夹紧；别靠腰过伸顶上去。', 1, 46, 1767225600000, 1767225600000, NULL),
   ('ex_glute_bridge', '臀桥', 'Glute Bridge', '[]', 'legs', '["glutes","hamstrings"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '脚踩实、先收腹再顶髋，顶峰夹紧臀；用腰把身体顶起来是常见错。', 1, 50, 1767225600000, 1767225600000, NULL),
-  ('ex_weighted_glute_bridge', '负重臀桥', 'Weighted Glute Bridge', '[]', 'legs', '["glutes","hamstrings"]', 'barbell', 'strength', 'weight_reps', 90, 30, 2.5, NULL, NULL, 1, 36, 1767225600000, 1767225600000, NULL),
-  ('ex_single_leg_glute_bridge', '单腿臀桥', 'Single-Leg Glute Bridge', '[]', 'legs', '["glutes","hamstrings"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 35, 1767225600000, 1767225600000, NULL),
+  ('ex_weighted_glute_bridge', '负重臀桥', 'Weighted Glute Bridge', '[]', 'legs', '["glutes","hamstrings"]', 'barbell', 'strength', 'weight_reps', 90, 30, 2.5, NULL, '髋上放杠铃，顶峰夹紧臀；靠腰过伸顶起来是常见错。', 1, 36, 1767225600000, 1767225600000, NULL),
+  ('ex_single_leg_glute_bridge', '单腿臀桥', 'Single-Leg Glute Bridge', '[]', 'legs', '["glutes","hamstrings"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '一条腿撑地、另一条抬起，顶髋夹臀；髋别歪。', 1, 35, 1767225600000, 1767225600000, NULL),
   ('ex_hip_abduction', '髋外展', 'Hip Abduction', '["器械外展","坐姿外展"]', 'legs', '["abductors","core"]', 'machine', 'strength', 'weight_reps', 60, 30, 5, NULL, '上身别后仰，用臀外侧把腿推开；推开后停一下再慢慢合回来。', 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_hip_adduction', '髋内收', 'Hip Adduction', '["器械内收","坐姿内收"]', 'legs', '["adductors","core"]', 'machine', 'strength', 'weight_reps', 60, 30, 5, NULL, '上身别后仰，用大腿内侧把腿夹回来；慢慢回放，别让它自己弹回去。', 1, 45, 1767225600000, 1767225600000, NULL),
   ('ex_standing_calf_raise', '站姿提踵', 'Standing Calf Raise', '["提踵"]', 'legs', '["calves"]', 'machine', 'strength', 'weight_reps', 60, 40, 5, NULL, '肩垫压稳、踮到最高停一秒；靠踝关节发力，别用膝盖弹。', 1, 72, 1767225600000, 1767225600000, NULL),
   ('ex_seated_calf_raise', '坐姿提踵', 'Seated Calf Raise', '[]', 'legs', '["calves"]', 'machine', 'strength', 'weight_reps', 60, 30, 5, NULL, '膝垫压住大腿、踮到最高停一秒；坐姿比站姿更孤立小腿。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_leg_press_calf_raise', '腿举提踵', 'Leg Press Calf Raise', '[]', 'legs', '["calves"]', 'machine', 'strength', 'weight_reps', 60, 60, 5, NULL, '前脚掌踩在踏板边缘，脚跟下沉到有拉伸再顶起；膝盖别锁死。', 1, 45, 1767225600000, 1767225600000, NULL),
-  ('ex_single_leg_calf_raise', '单腿站姿提踵', 'Single-Leg Calf Raise', '["单腿提踵"]', 'legs', '["calves","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
-  ('ex_smith_calf_raise', '史密斯提踵', 'Smith Machine Calf Raise', '[]', 'legs', '["calves"]', 'machine', 'strength', 'weight_reps', 60, 40, 5, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_single_leg_calf_raise', '单腿站姿提踵', 'Single-Leg Calf Raise', '["单腿提踵"]', 'legs', '["calves","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '前脚掌踩实、单腿顶到最高；扶墙只为平衡，别用手帮忙。', 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_smith_calf_raise', '史密斯提踵', 'Smith Machine Calf Raise', '[]', 'legs', '["calves"]', 'machine', 'strength', 'weight_reps', 60, 40, 5, NULL, '轨道固定，前脚掌踩稳、脚跟先下沉再顶起；膝盖别锁死。', 1, 40, 1767225600000, 1767225600000, NULL),
   ('ex_bb_ohp', '杠铃站姿推举', 'Overhead Press', '["站姿推举","推举","ohp","实力举","军事推举"]', 'shoulders', '["front_delts","triceps","abs"]', 'barbell', 'strength', 'weight_reps', 150, 25, 2.5, NULL, '核心收紧、头略后让杠铃走直线；靠腿弹一下那是借力推举。', 1, 90, 1767225600000, 1767225600000, NULL),
   ('ex_seated_bb_press', '坐姿杠铃推举', 'Seated Barbell Press', '["颈前推举"]', 'shoulders', '["front_delts","triceps"]', 'barbell', 'strength', 'weight_reps', 150, 25, 2.5, NULL, '坐姿靠背、杠铃推过头顶；别为了推起来把腰拱离靠背。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_db_shoulder_press', '哑铃推举', 'Dumbbell Shoulder Press', '["坐姿哑铃推举","肩推","哑铃肩推"]', 'shoulders', '["front_delts","triceps"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '肘略前于身体，推到头顶上方；别为了推起来而塌腰。', 1, 92, 1767225600000, 1767225600000, NULL),
-  ('ex_single_arm_db_press', '单臂哑铃推举', 'One-Arm Dumbbell Press', '[]', 'shoulders', '["front_delts","obliques"]', 'dumbbell', 'strength', 'weight_reps', 120, 10, 2, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_single_arm_db_press', '单臂哑铃推举', 'One-Arm Dumbbell Press', '[]', 'shoulders', '["front_delts","obliques"]', 'dumbbell', 'strength', 'weight_reps', 120, 10, 2, NULL, '单手往上推，核心抗住身体往一侧倒；另一侧别帮忙。', 1, 40, 1767225600000, 1767225600000, NULL),
   ('ex_arnold_press', '阿诺德推举', 'Arnold Press', '["阿诺德"]', 'shoulders', '["front_delts","side_delts","triceps"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '从掌心朝自己旋到朝前，画弧推起；重量要比普通推举小一档。', 1, 60, 1767225600000, 1767225600000, NULL),
   ('ex_smith_shoulder_press', '史密斯推举', 'Smith Machine Shoulder Press', '[]', 'shoulders', '["front_delts","triceps"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '坐稳靠背，杠铃下到下巴附近；轨道固定，适合新手找推举路线。', 1, 50, 1767225600000, 1767225600000, NULL),
   ('ex_machine_shoulder_press', '器械推肩', 'Machine Shoulder Press', '["推肩机"]', 'shoulders', '["front_delts","triceps"]', 'machine', 'strength', 'weight_reps', 120, 25, 5, NULL, '背贴靠板、肘略在身前，推到手臂接近伸直；别让肩往前顶。', 1, 58, 1767225600000, 1767225600000, NULL),
@@ -133,15 +133,15 @@ INSERT INTO exercise
 VALUES
   ('ex_cable_lateral_raise', '绳索侧平举', 'Cable Lateral Raise', '[]', 'shoulders', '["side_delts","upper_back"]', 'cable', 'strength', 'weight_reps', 60, 5, 2.5, NULL, '绳索从身后过来，抬到手与肩平就停；耸肩说明重量太大。', 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_machine_lateral_raise', '器械侧平举', 'Machine Lateral Raise', '[]', 'shoulders', '["side_delts","upper_back"]', 'machine', 'strength', 'weight_reps', 60, 15, 5, NULL, '肘微屈、抬到肩高，让把手带着走；别用惯性甩。', 1, 48, 1767225600000, 1767225600000, NULL),
-  ('ex_single_arm_cable_lateral', '单臂绳索侧平举', 'Single-Arm Cable Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'cable', 'strength', 'weight_reps', 60, 5, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_lean_away_lateral', '斜托侧平举', 'Lean-Away Lateral Raise', '["单手斜托侧平举"]', 'shoulders', '["side_delts"]', 'dumbbell', 'strength', 'weight_reps', 60, 6, 2, NULL, NULL, 1, 38, 1767225600000, 1767225600000, NULL),
-  ('ex_smith_lateral_raise', '史密斯侧平举', 'Smith Machine Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'machine', 'strength', 'weight_reps', 60, 10, 5, NULL, NULL, 1, 32, 1767225600000, 1767225600000, NULL),
+  ('ex_single_arm_cable_lateral', '单臂绳索侧平举', 'Single-Arm Cable Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'cable', 'strength', 'weight_reps', 60, 5, 2.5, NULL, '绳索从身后过来，单臂抬到肩高；躯干别晃，另一侧别帮忙。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_lean_away_lateral', '斜托侧平举', 'Lean-Away Lateral Raise', '["单手斜托侧平举"]', 'shoulders', '["side_delts"]', 'dumbbell', 'strength', 'weight_reps', 60, 6, 2, NULL, '扶住固定物斜着身体，让重量落在身体前方；中束全程有张力。', 1, 38, 1767225600000, 1767225600000, NULL),
+  ('ex_smith_lateral_raise', '史密斯侧平举', 'Smith Machine Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'machine', 'strength', 'weight_reps', 60, 10, 5, NULL, '轨道固定，抬到肩高就停；重量小一点，别靠耸肩。', 1, 32, 1767225600000, 1767225600000, NULL),
   ('ex_db_front_raise', '哑铃前平举', 'Dumbbell Front Raise', '["前平举"]', 'shoulders', '["front_delts","chest"]', 'dumbbell', 'strength', 'weight_reps', 60, 6, 2, NULL, '举到与肩平即可；过顶会变成斜方肌主导，也容易夹到肩。', 1, 72, 1767225600000, 1767225600000, NULL),
   ('ex_bb_front_raise', '杠铃前平举', 'Barbell Front Raise', '[]', 'shoulders', '["front_delts"]', 'barbell', 'strength', 'weight_reps', 60, 15, 2.5, NULL, '抬到肩高就停，别用腰甩；重量小一点，前束很容易被中束抢走。', 1, 48, 1767225600000, 1767225600000, NULL),
-  ('ex_cable_front_raise', '绳索前平举', 'Cable Front Raise', '[]', 'shoulders', '["front_delts","chest"]', 'cable', 'strength', 'weight_reps', 60, 7.5, 2.5, NULL, NULL, 1, 44, 1767225600000, 1767225600000, NULL),
-  ('ex_single_arm_cable_front', '单臂绳索前平举', 'Single-Arm Cable Front Raise', '[]', 'shoulders', '["front_delts"]', 'cable', 'strength', 'weight_reps', 60, 5, 2.5, NULL, NULL, 1, 34, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_front_raise', '绳索前平举', 'Cable Front Raise', '[]', 'shoulders', '["front_delts","chest"]', 'cable', 'strength', 'weight_reps', 60, 7.5, 2.5, NULL, '绳索从身后过来，抬到肩高就停；全程肘别弯太多。', 1, 44, 1767225600000, 1767225600000, NULL),
+  ('ex_single_arm_cable_front', '单臂绳索前平举', 'Single-Arm Cable Front Raise', '[]', 'shoulders', '["front_delts"]', 'cable', 'strength', 'weight_reps', 60, 5, 2.5, NULL, '单手抬到肩高，躯干别后仰；另一侧别帮忙。', 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_bent_over_db_fly', '俯身哑铃飞鸟', 'Bent-Over Reverse Fly', '["反向飞鸟","后束飞鸟"]', 'shoulders', '["rear_delts","traps"]', 'dumbbell', 'strength', 'weight_reps', 60, 5, 2, NULL, '俯身近乎平行地面，肘微屈向后展开；重量要小，肩后侧本就弱。', 1, 78, 1767225600000, 1767225600000, NULL),
-  ('ex_bent_over_cable_fly', '俯身绳索飞鸟', 'Bent-Over Cable Fly', '["绳索反向飞鸟"]', 'shoulders', '["rear_delts","traps"]', 'cable', 'strength', 'weight_reps', 60, 5, 2.5, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_bent_over_cable_fly', '俯身绳索飞鸟', 'Bent-Over Cable Fly', '["绳索反向飞鸟"]', 'shoulders', '["rear_delts","traps"]', 'cable', 'strength', 'weight_reps', 60, 5, 2.5, NULL, '俯身、手臂微屈向外展开像飞鸟；用三角后束发力，别耸肩。', 1, 40, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_pec_deck', '反向蝴蝶机', 'Reverse Pec Deck', '["反向蝴蝶机飞鸟","后束器械"]', 'shoulders', '["rear_delts","traps","upper_back"]', 'machine', 'strength', 'weight_reps', 60, 15, 5, NULL, '握把在肩上方、向后展开；坐直别后仰，肩后侧不需要大重量。', 1, 66, 1767225600000, 1767225600000, NULL),
   ('ex_upright_row', '直立划船', 'Upright Row', '[]', 'shoulders', '["traps","side_delts","biceps","upper_back"]', 'barbell', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '拉到胸口高度就够，肘领先于手腕；拉太高容易夹到肩。', 1, 52, 1767225600000, 1767225600000, NULL),
   ('ex_bb_curl', '杠铃弯举', 'Barbell Curl', '["弯举"]', 'arms', '["biceps","forearms"]', 'barbell', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '肘固定、身体别晃；用腰把杠铃甩上去是最常见的作弊。', 1, 90, 1767225600000, 1767225600000, NULL),
@@ -150,7 +150,7 @@ VALUES
   ('ex_db_curl', '哑铃弯举', 'Dumbbell Curl', '["坐姿哑铃弯举"]', 'arms', '["biceps"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '手腕别外翻，抬到肱二头明显收紧就够；下放慢一点刺激更好。', 1, 88, 1767225600000, 1767225600000, NULL),
   ('ex_db_alternating_curl', '哑铃交替弯举', 'Alternating Dumbbell Curl', '["交替弯举"]', 'arms', '["biceps"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '交替弯举时肘固定、身体别晃；一侧举起时另一侧别跟着转。', 1, 70, 1767225600000, 1767225600000, NULL),
   ('ex_hammer_curl', '锤式弯举', 'Hammer Curl', '["锤式"]', 'arms', '["biceps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '拇指朝上对握，练肱肌与前臂；肘别往前跑。', 1, 82, 1767225600000, 1767225600000, NULL),
-  ('ex_incline_hammer_curl', '斜托锤式弯举', 'Incline Hammer Curl', '[]', 'arms', '["biceps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, NULL, 1, 36, 1767225600000, 1767225600000, NULL);
+  ('ex_incline_hammer_curl', '斜托锤式弯举', 'Incline Hammer Curl', '[]', 'arms', '["biceps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '靠着斜凳、掌心相对，肘别往前跑；这个角度更吃二头长头。', 1, 36, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
@@ -159,43 +159,43 @@ VALUES
   ('ex_concentration_curl', '集中弯举', 'Concentration Curl', '[]', 'arms', '["biceps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 60, 8, 2, NULL, '肘内侧顶住大腿内侧，只动小臂；追求顶点那一下的收缩。', 1, 58, 1767225600000, 1767225600000, NULL),
   ('ex_preacher_curl', '牧师凳弯举', 'Preacher Curl', '["斜托弯举","牧师椅弯举"]', 'arms', '["biceps","forearms"]', 'barbell', 'strength', 'weight_reps', 90, 15, 2.5, NULL, '上臂贴住斜板、只让前臂抬；下放到底部别完全放松，留一点张力。', 1, 65, 1767225600000, 1767225600000, NULL),
   ('ex_incline_db_curl', '斜托哑铃弯举', 'Incline Dumbbell Curl', '["上斜弯举"]', 'arms', '["biceps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '斜板托住上臂，弯举时肘不往前跑；下放到底留一点张力，别完全放松。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_zottman_curl', '佐特曼弯举', 'Zottman Curl', '[]', 'arms', '["biceps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, NULL, 1, 34, 1767225600000, 1767225600000, NULL),
+  ('ex_zottman_curl', '佐特曼弯举', 'Zottman Curl', '[]', 'arms', '["biceps","forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '弯起时掌心朝上，放下时转成朝下；一个动作练到两边手臂。', 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_cable_curl', '绳索弯举', 'Cable Curl', '[]', 'arms', '["biceps","forearms"]', 'cable', 'strength', 'weight_reps', 60, 15, 2.5, NULL, '肘固定在身侧，顶峰用力收紧；下放时慢一些，别直接放回。', 1, 55, 1767225600000, 1767225600000, NULL),
-  ('ex_cable_reverse_curl', '绳索反握弯举', 'Cable Reverse Curl', '[]', 'arms', '["forearms","biceps"]', 'cable', 'strength', 'weight_reps', 60, 12.5, 2.5, NULL, NULL, 1, 32, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_reverse_curl', '绳索反握弯举', 'Cable Reverse Curl', '[]', 'arms', '["forearms","biceps"]', 'cable', 'strength', 'weight_reps', 60, 12.5, 2.5, NULL, '反握把手、掌心朝下，肘固定住；前臂先累是正常的。', 1, 32, 1767225600000, 1767225600000, NULL),
   ('ex_machine_curl', '器械弯举', 'Machine Curl', '[]', 'arms', '["biceps"]', 'machine', 'strength', 'weight_reps', 90, 20, 5, NULL, '肘固定在垫上，只让前臂动；靠身体后仰把重量拽上来是借力。', 1, 58, 1767225600000, 1767225600000, NULL),
   ('ex_cable_pushdown', '绳索下压', 'Cable Triceps Pushdown', '["下压","三头下压"]', 'arms', '["triceps"]', 'cable', 'strength', 'weight_reps', 60, 20, 2.5, NULL, '肘夹紧身侧，只让小臂下压；上身别跟着往下压。', 1, 92, 1767225600000, 1767225600000, NULL),
   ('ex_straight_bar_pushdown', '直杆下压', 'Straight-Bar Pushdown', '["横杆下压"]', 'arms', '["triceps","front_delts"]', 'cable', 'strength', 'weight_reps', 60, 20, 2.5, NULL, '直杆反握或正握，肘夹紧身侧只让小臂下压；上身别压下去借力。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_grip_pushdown', '反握下压', 'Reverse-Grip Pushdown', '[]', 'arms', '["triceps","forearms"]', 'cable', 'strength', 'weight_reps', 60, 15, 2.5, NULL, '反握把手、肘固定，往下压到手臂伸直；这个角度更练内侧头。', 1, 45, 1767225600000, 1767225600000, NULL),
-  ('ex_single_arm_pushdown', '单臂绳索下压', 'Single-Arm Pushdown', '[]', 'arms', '["triceps"]', 'cable', 'strength', 'weight_reps', 60, 10, 2.5, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_single_arm_pushdown', '单臂绳索下压', 'Single-Arm Pushdown', '[]', 'arms', '["triceps"]', 'cable', 'strength', 'weight_reps', 60, 10, 2.5, NULL, '肘固定在身侧，单手往下压到伸直；单边做能纠正两侧不对称。', 1, 40, 1767225600000, 1767225600000, NULL),
   ('ex_close_grip_bench', '窄握卧推', 'Close-Grip Bench Press', '["窄距卧推","窄握推胸"]', 'arms', '["triceps","front_delts","chest"]', 'barbell', 'strength', 'weight_reps', 120, 30, 2.5, NULL, '握距与肩同宽或略窄，肘贴近身体；手腕别过度后折。', 1, 72, 1767225600000, 1767225600000, NULL),
-  ('ex_close_grip_smith', '窄握史密斯卧推', 'Close-Grip Smith Press', '[]', 'arms', '["triceps","front_delts"]', 'machine', 'strength', 'weight_reps', 120, 25, 5, NULL, NULL, 1, 34, 1767225600000, 1767225600000, NULL),
+  ('ex_close_grip_smith', '窄握史密斯卧推', 'Close-Grip Smith Press', '[]', 'arms', '["triceps","front_delts"]', 'machine', 'strength', 'weight_reps', 120, 25, 5, NULL, '窄握距、肘贴着身体推；轨道帮你稳，更吃三头。', 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_skull_crusher', '仰卧臂屈伸', 'Skull Crusher', '["碎颅式","法式卧推"]', 'arms', '["triceps","front_delts"]', 'barbell', 'strength', 'weight_reps', 90, 15, 2.5, NULL, '仰卧，肘固定在头顶上方只让前臂转；肘一散开就成了窄推。', 1, 70, 1767225600000, 1767225600000, NULL),
   ('ex_overhead_db_extension', '哑铃颈后臂屈伸', 'Overhead Dumbbell Extension', '["颈后臂屈伸"]', 'arms', '["triceps","front_delts"]', 'dumbbell', 'strength', 'weight_reps', 90, 10, 2, NULL, '双手托一只哑铃举过头顶，肘向前弯；肘别外张，腰别塌。', 1, 68, 1767225600000, 1767225600000, NULL),
   ('ex_overhead_cable_extension', '绳索过顶臂屈伸', 'Overhead Cable Extension', '["绳索颈后臂屈伸"]', 'arms', '["triceps","front_delts"]', 'cable', 'strength', 'weight_reps', 60, 15, 2.5, NULL, '背对绳索、肘朝前上方，只让前臂伸；肘往外张开就是跑偏了。', 1, 55, 1767225600000, 1767225600000, NULL),
-  ('ex_single_arm_overhead_cable', '单臂绳索过顶臂屈伸', 'Single-Arm Overhead Cable Extension', '[]', 'arms', '["triceps"]', 'cable', 'strength', 'weight_reps', 60, 10, 2.5, NULL, NULL, 1, 38, 1767225600000, 1767225600000, NULL),
+  ('ex_single_arm_overhead_cable', '单臂绳索过顶臂屈伸', 'Single-Arm Overhead Cable Extension', '[]', 'arms', '["triceps"]', 'cable', 'strength', 'weight_reps', 60, 10, 2.5, NULL, '背对绳索、肘朝前上方，只伸小臂；肘别往外张开。', 1, 38, 1767225600000, 1767225600000, NULL),
   ('ex_machine_triceps_extension', '器械臂屈伸', 'Machine Triceps Extension', '[]', 'arms', '["triceps"]', 'machine', 'strength', 'weight_reps', 60, 20, 5, NULL, '肘固定在垫上，只伸小臂；别耸肩也别让肘离开垫面。', 1, 48, 1767225600000, 1767225600000, NULL),
-  ('ex_triceps_kickback', '哑铃俯身臂屈伸', 'Triceps Kickback', '["后踢腿","臂屈伸后踢"]', 'arms', '["triceps"]', 'dumbbell', 'strength', 'weight_reps', 60, 5, 2, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL);
+  ('ex_triceps_kickback', '哑铃俯身臂屈伸', 'Triceps Kickback', '["后踢腿","臂屈伸后踢"]', 'arms', '["triceps"]', 'dumbbell', 'strength', 'weight_reps', 60, 5, 2, NULL, '俯身让大臂与地面平行并固定住，只伸小臂；重量小一点，甩起来就没意义。', 1, 42, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
   ('ex_diamond_push_up', '窄握俯卧撑', 'Diamond Push-up', '["钻石俯卧撑"]', 'arms', '["triceps","front_delts","core","chest"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '双手在胸口下方成三角，肘贴着身体走；手腕疼就换成拳撑。', 1, 50, 1767225600000, 1767225600000, NULL),
-  ('ex_wrist_curl', '腕弯举', 'Wrist Curl', '["正握腕弯举"]', 'arms', '["forearms"]', 'dumbbell', 'strength', 'weight_reps', 60, 8, 2, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
-  ('ex_reverse_wrist_curl', '反向腕弯举', 'Reverse Wrist Curl', '[]', 'arms', '["forearms"]', 'dumbbell', 'strength', 'weight_reps', 60, 6, 2, NULL, NULL, 1, 35, 1767225600000, 1767225600000, NULL),
+  ('ex_wrist_curl', '腕弯举', 'Wrist Curl', '["正握腕弯举"]', 'arms', '["forearms"]', 'dumbbell', 'strength', 'weight_reps', 60, 8, 2, NULL, '前臂搁在凳上、掌心朝上，只动手腕；轻重量多次数更合适。', 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_reverse_wrist_curl', '反向腕弯举', 'Reverse Wrist Curl', '[]', 'arms', '["forearms"]', 'dumbbell', 'strength', 'weight_reps', 60, 6, 2, NULL, '掌心朝下，只动手腕向上屈；练的是前臂伸肌，重量要轻。', 1, 35, 1767225600000, 1767225600000, NULL),
   ('ex_crunch', '卷腹', 'Crunch', '["仰卧卷腹"]', 'core', '["abs"]', 'bodyweight', 'strength', 'reps_only', 45, NULL, 0, NULL, '靠腹肌把肩胛卷离地面，不是靠脖子；手别拽头。', 1, 82, 1767225600000, 1767225600000, NULL),
   ('ex_sit_up', '仰卧起坐', 'Sit-up', '[]', 'core', '["abs","hip_flexors"]', 'bodyweight', 'strength', 'weight_reps', 45, NULL, 0, NULL, '起身时靠腹肌卷，不要用脖子；有腰痛史就改做卷腹（只卷起肩胛）。', 1, 65, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_crunch', '反向卷腹', 'Reverse Crunch', '[]', 'core', '["abs"]', 'bodyweight', 'strength', 'reps_only', 45, NULL, 0, NULL, '用腹肌把骨盆卷向胸口，不是抬腿；动作小而慢才有效。', 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_side_crunch', '侧卷腹', 'Side Crunch', '["侧腹卷腹"]', 'core', '["obliques"]', 'bodyweight', 'strength', 'weight_reps', 45, NULL, 0, NULL, '一侧手扶头，用侧腹把肩胛卷离地面；不要用手拽脖子。', 1, 45, 1767225600000, 1767225600000, NULL),
-  ('ex_heel_touch', '仰卧交替触踝', 'Heel Touch', '["触踝"]', 'core', '["obliques"]', 'bodyweight', 'strength', 'weight_reps', 45, NULL, 0, NULL, NULL, 1, 32, 1767225600000, 1767225600000, NULL),
+  ('ex_heel_touch', '仰卧交替触踝', 'Heel Touch', '["触踝"]', 'core', '["obliques"]', 'bodyweight', 'strength', 'weight_reps', 45, NULL, 0, NULL, '躺着交替用手去碰同侧脚踝，肩膀离开地面一点；脖子别使劲。', 1, 32, 1767225600000, 1767225600000, NULL),
   ('ex_hanging_leg_raise', '悬垂举腿', 'Hanging Leg Raise', '["单杠举腿"]', 'core', '["abs","hip_flexors","grip"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '悬垂时先稳住肩，靠腹把腿抬起；身体一前一后晃就是在借力。', 1, 72, 1767225600000, 1767225600000, NULL),
   ('ex_hanging_knee_raise', '悬垂举膝', 'Hanging Knee Raise', '["单杠举膝"]', 'core', '["abs","hip_flexors","grip"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '先沉肩挂稳，再把膝盖收到胸口；身体摆荡说明核心没在控制。', 1, 58, 1767225600000, 1767225600000, NULL),
-  ('ex_hanging_side_leg_raise', '悬垂侧举腿', 'Hanging Side Leg Raise', '[]', 'core', '["obliques","hip_flexors"]', 'bodyweight', 'strength', 'weight_reps', 60, NULL, 0, NULL, NULL, 1, 30, 1767225600000, 1767225600000, NULL),
+  ('ex_hanging_side_leg_raise', '悬垂侧举腿', 'Hanging Side Leg Raise', '[]', 'core', '["obliques","hip_flexors"]', 'bodyweight', 'strength', 'weight_reps', 60, NULL, 0, NULL, '挂稳之后把腿往一侧抬；身体摆荡说明核心没控制住。', 1, 30, 1767225600000, 1767225600000, NULL),
   ('ex_lying_leg_raise', '仰卧举腿', 'Lying Leg Raise', '[]', 'core', '["abs","hip_flexors","quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '腰要压住地面，腿下放到腰开始离地就是你的极限；靠惯性甩腿没意义。', 1, 60, 1767225600000, 1767225600000, NULL),
   ('ex_plank', '平板支撑', 'Plank', '["平板"]', 'core', '["abs","obliques","front_delts"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '肘在肩正下方、臀腿收紧成一条线；塌腰或撅臀都说明核心没在撑。', 1, 85, 1767225600000, 1767225600000, NULL),
-  ('ex_weighted_plank', '负重平板支撑', 'Weighted Plank', '[]', 'core', '["abs","obliques"]', 'bodyweight', 'strength', 'weight_time', 60, 5, 2.5, NULL, NULL, 1, 38, 1767225600000, 1767225600000, NULL),
+  ('ex_weighted_plank', '负重平板支撑', 'Weighted Plank', '[]', 'core', '["abs","obliques"]', 'bodyweight', 'strength', 'weight_time', 60, 5, 2.5, NULL, '背上放杠铃片，臀腿收紧保持一条线；塌腰就减重量。', 1, 38, 1767225600000, 1767225600000, NULL),
   ('ex_side_plank', '侧平板', 'Side Plank', '["侧桥"]', 'core', '["obliques","front_delts"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '肘在肩正下方，髋顶起来成一条线；撑不住就先屈膝做。', 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_russian_twist', '俄罗斯转体', 'Russian Twist', '["俄式转体"]', 'core', '["obliques","front_delts"]', 'bodyweight', 'strength', 'reps_only', 45, NULL, 0, NULL, '坐姿后仰、转的是躯干不是手；脚离地会大幅加难度，先落地做。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_cable_side_bend', '绳索侧屈', 'Cable Side Bend', '["绳索体侧屈"]', 'core', '["obliques"]', 'cable', 'strength', 'weight_reps', 45, 15, 2.5, NULL, NULL, 1, 34, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_side_bend', '绳索侧屈', 'Cable Side Bend', '["绳索体侧屈"]', 'core', '["obliques"]', 'cable', 'strength', 'weight_reps', 45, 15, 2.5, NULL, '绳索在体侧，只往一边弯；重量小，靠幅度不靠拽。', 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_ab_wheel', '健腹轮', 'Ab Wheel Rollout', '["腹肌轮","健腹轮跪姿"]', 'core', '["abs","hip_flexors","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '从跪姿开始，骨盆后倾、腰别塌；推出去的远近就是难度。', 1, 58, 1767225600000, 1767225600000, NULL),
   ('ex_cable_crunch', '绳索卷腹', 'Cable Crunch', '["跪姿绳索卷腹"]', 'core', '["abs"]', 'cable', 'strength', 'weight_reps', 60, 25, 2.5, NULL, '跪姿、用腹把绳索卷下来；靠髋部下压等于用体重作弊。', 1, 66, 1767225600000, 1767225600000, NULL),
   ('ex_machine_crunch', '器械卷腹', 'Machine Crunch', '[]', 'core', '["abs"]', 'machine', 'strength', 'weight_reps', 60, 25, 5, NULL, '背贴垫、用腹肌把胸口卷向骨盆；靠手臂拉把手是借力。', 1, 45, 1767225600000, 1767225600000, NULL);
@@ -203,13 +203,13 @@ VALUES
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
-  ('ex_dead_bug', '死虫', 'Dead Bug', '["死虫式"]', 'core', '["abs","quads"]', 'bodyweight', 'strength', 'reps_only', 45, NULL, 0, NULL, NULL, 1, 40, 1767225600000, 1767225600000, NULL),
-  ('ex_bird_dog', '鸟狗式', 'Bird Dog', '[]', 'core', '["lower_back","glutes","front_delts"]', 'bodyweight', 'strength', 'reps_only', 45, NULL, 0, NULL, NULL, 1, 32, 1767225600000, 1767225600000, NULL),
-  ('ex_mountain_climber', '登山跑', 'Mountain Climber', '["登山者"]', 'core', '["abs","hip_flexors","front_delts","quads"]', 'bodyweight', 'strength', 'time', 45, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_pallof_press', '帕洛夫抗旋转', 'Pallof Press', '["抗旋转推"]', 'core', '["obliques","abs","front_delts"]', 'cable', 'strength', 'weight_reps', 45, 10, 2.5, NULL, NULL, 1, 35, 1767225600000, 1767225600000, NULL),
+  ('ex_dead_bug', '死虫', 'Dead Bug', '["死虫式"]', 'core', '["abs","quads"]', 'bodyweight', 'strength', 'reps_only', 45, NULL, 0, NULL, '躺着把对侧手脚慢慢伸出去，腰始终贴地；腰一离地就是幅度太大。', 1, 40, 1767225600000, 1767225600000, NULL),
+  ('ex_bird_dog', '鸟狗式', 'Bird Dog', '[]', 'core', '["lower_back","glutes","front_delts"]', 'bodyweight', 'strength', 'reps_only', 45, NULL, 0, NULL, '对侧手脚同时伸出并停住，腰别塌、髋别转；慢比快有用。', 1, 32, 1767225600000, 1767225600000, NULL),
+  ('ex_mountain_climber', '登山跑', 'Mountain Climber', '["登山者"]', 'core', '["abs","hip_flexors","front_delts","quads"]', 'bodyweight', 'strength', 'time', 45, NULL, 0, NULL, '撑住不动，膝盖交替往胸口送；臀别越抬越高。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_pallof_press', '帕洛夫抗旋转', 'Pallof Press', '["抗旋转推"]', 'core', '["obliques","abs","front_delts"]', 'cable', 'strength', 'weight_reps', 45, 10, 2.5, NULL, '侧身站、把绳往前推出去，身体抗住不转；推到最远处停一下。', 1, 35, 1767225600000, 1767225600000, NULL),
   ('ex_back_extension', '山羊挺身', 'Back Extension', '["罗马椅挺身","背屈伸"]', 'back', '["lower_back","glutes","hamstrings"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '髋在垫边、背保持一条线，起身到大腿与躯干成直线就停；起太高会压腰椎。', 1, 60, 1767225600000, 1767225600000, NULL),
   ('ex_active_hang', '主动悬垂', 'Active Hang', '[]', 'back', '["upper_back","forearms","core"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '挂杠时主动把肩胛往下沉，别完全放松吊着；这是引体的第一个动作。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_archer_push_up', '弓手俯卧撑', 'Archer Push-up', '["单臂俯卧撑辅助版"]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_archer_push_up', '弓手俯卧撑', 'Archer Push-up', '["单臂俯卧撑辅助版"]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '重心压向一侧，另一只手基本伸直；这是单臂俯卧撑的过渡。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_arm_circles', '绕臂', 'Arm Circles', '[]', 'shoulders', '["chest","upper_back"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_assault_bike', '风阻单车', 'Assault Bike', '["空气单车","风扇单车"]', 'legs', '["front_delts"]', 'machine', 'cardio', 'distance_time', 60, NULL, 0, 5000, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_assisted_chin_up', '辅助反握引体向上', 'Assisted Chin-up', '[]', 'arms', '["lats"]', 'machine', 'strength', 'assisted_reps', 60, 20, 5, NULL, '同上：助力是「帮你」的量，越练越强就把助力调小，别越练越省力。', 1, 62, 1767225600000, 1767225600000, NULL),
@@ -242,7 +242,7 @@ VALUES
   ('ex_battle_ropes', '战绳', 'Battle Ropes', '["甩绳"]', 'shoulders', '["core"]', 'band', 'cardio', 'time', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_bear_crawl', '熊爬', 'Bear Crawl', '[]', 'core', '["front_delts","quads"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_bear_plank', '熊式平板支撑', 'Bear Plank', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '四点支撑、膝离地两厘米，背保持水平；屁股一高就变成休息姿势了。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_belt_squat', '腰带深蹲', 'Belt Squat', '[]', 'legs', '["glutes"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_belt_squat', '腰带深蹲', 'Belt Squat', '[]', 'legs', '["glutes"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '重量挂在腰带上，腿和臀只管蹲；核心不参与，别当普通深蹲用。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_bench_dip', '凳上臂屈伸', 'Bench Dip', '["长凳臂屈伸"]', 'arms', '["chest","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '手撑身后凳沿，屈肘下沉到大臂与地面平行；肩疼就把身体贴近凳。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_bicycle_crunch', '自行车卷腹', 'Bicycle Crunch', '["空中蹬车"]', 'core', '["quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '对侧肘找膝，转的是躯干不是手肘；慢一点比快一倍有效。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_burpee', '波比跳', 'Burpee', '["立卧撑跳"]', 'legs', '["chest","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '下蹲撑地 → 跳成平板 → 收腿跳起；累的时候可以去掉最后的跳。', 1, 62, 1767225600000, 1767225600000, NULL),
@@ -256,7 +256,7 @@ VALUES
   ('ex_cable_pull_through', '绳索胯下拉', 'Cable Pull-Through', '["绳索拉胯"]', 'legs', '["hamstrings","lower_back"]', 'cable', 'strength', 'weight_reps', 120, 10, 2.5, NULL, '背对绳索、髋向后推让绳子从胯下穿过，再顶髋站直；腿后侧的入门动作。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_cable_rear_delt_fly', '绳索反向飞鸟', 'Cable Rear Delt Fly', '[]', 'shoulders', '["upper_back"]', 'cable', 'strength', 'weight_reps', 90, 10, 2.5, NULL, '绳索交叉握、向后展开到与肩平；别用手臂拽，肩胛不要夹。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_cable_standing_hip_abduction', '绳索站姿髋外展', 'Cable Standing Hip Abduction', '[]', 'legs', '["core"]', 'cable', 'strength', 'weight_reps', 120, 10, 2.5, NULL, '站姿侧向抬腿，手扶器械稳住；上身别倒。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_cable_standing_hip_adduction', '绳索站姿髋内收', 'Cable Standing Hip Adduction', '[]', 'legs', '["core","glutes"]', 'cable', 'strength', 'weight_reps', 120, 10, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_standing_hip_adduction', '绳索站姿髋内收', 'Cable Standing Hip Adduction', '[]', 'legs', '["core","glutes"]', 'cable', 'strength', 'weight_reps', 120, 10, 2.5, NULL, '脚踝绑绳，把腿从外向内夹过身体中线；上身别倒过去。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_cable_woodchop', '绳索伐木', 'Cable Woodchop', '["绳索斜劈"]', 'core', '["front_delts"]', 'cable', 'strength', 'weight_reps', 60, 10, 2.5, NULL, '绳索伐木：转髋带躯干，手臂只是传力；别用腰硬拧。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_calf_raise', '徒手提踵', 'Calf Raise', '[]', 'legs', '[]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '踮到最高停一秒，再慢慢落下到脚跟低于脚尖；弹跳式上下等于没练。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_captains_chair_knee_raise', '船长椅举膝', 'Captain''s Chair Knee Raise', '["罗马椅举膝"]', 'core', '["front_delts"]', 'machine', 'strength', 'reps_only', 60, 20, 5, NULL, '背贴靠垫，靠腹肌把膝抬到与髋同高；别靠身体前后晃借力。', 1, 78, 1767225600000, 1767225600000, NULL),
@@ -265,9 +265,9 @@ VALUES
   ('ex_childs_pose', '婴儿式', 'Child''s Pose', '[]', 'back', '["front_delts","glutes"]', 'bodyweight', 'stretch', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_clamshell', '蚌式开合', 'Clamshell', '[]', 'legs', '["core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '侧躺屈膝，上侧膝打开；骨盆别跟着翻，翻了就是腰在代偿。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_commando_pull_up', '突击队引体向上', 'Commando Pull-up', '["平行引体"]', 'back', '["biceps","upper_back","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_copenhagen_plank', '哥本哈根平板支撑', 'Copenhagen Plank', '[]', 'core', '["quads","glutes"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_cossack_squat', '哥萨克深蹲', 'Cossack Squat', '["侧向深蹲"]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_crab_walk', '螃蟹爬', 'Crab Walk', '[]', 'arms', '["glutes","core","front_delts"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_copenhagen_plank', '哥本哈根平板支撑', 'Copenhagen Plank', '[]', 'core', '["quads","glutes"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '上侧腿内侧压在凳上，靠大腿内侧把髋撑住；这是内收肌最直接的动作。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_cossack_squat', '哥萨克深蹲', 'Cossack Squat', '["侧向深蹲"]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '侧向下蹲到一侧大腿内侧有拉伸；膝别内扣，脚跟尽量贴地。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_crab_walk', '螃蟹爬', 'Crab Walk', '[]', 'arms', '["glutes","core","front_delts"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '四肢撑地、臀离地，手脚交替横移；核心全程收紧，别塌腰。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_cross_body_shoulder_stretch', '交叉肩部拉伸', 'Cross-Body Shoulder Stretch', '[]', 'shoulders', '["upper_back"]', 'bodyweight', 'stretch', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_curtsy_lunge', '交叉箭步蹲', 'Curtsy Lunge', '[]', 'legs', '["quads","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '后腿斜向侧后方落脚，前脚站稳再起身；膝盖别内扣。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_cycling', '骑行', 'Cycling', '["单车","自行车"]', 'legs', '[]', 'machine', 'cardio', 'distance_time', 60, NULL, 0, 10000, NULL, 1, 20, 1767225600000, 1767225600000, NULL);
@@ -281,26 +281,26 @@ VALUES
   ('ex_donkey_calf_raise', '驴式提踵', 'Donkey Calf Raise', '[]', 'legs', '[]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '躯干前倾、像驴一样踮起；比站姿行程更长，小腿刺激更集中。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_donkey_kick', '跪姿后踢腿', 'Donkey Kick', '["驴踢"]', 'legs', '["hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '四点支撑向后上方蹬腿；腰别塌，抬到臀收紧就够。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_doorway_chest_stretch', '门框胸部拉伸', 'Doorway Chest Stretch', '[]', 'chest', '["front_delts"]', 'bodyweight', 'stretch', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_doorway_row', '门框划船', 'Doorway Row', '[]', 'back', '["biceps","upper_back","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_drag_curl', '拖拽弯举', 'Drag Curl', '[]', 'arms', '["forearms"]', 'barbell', 'strength', 'weight_reps', 90, 20, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_dragon_flag', '龙旗', 'Dragon Flag', '[]', 'core', '["lats","quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_doorway_row', '门框划船', 'Doorway Row', '[]', 'back', '["biceps","upper_back","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '握住门框、身体后倾，把胸口拉向门；脚越靠前越难。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_drag_curl', '拖拽弯举', 'Drag Curl', '[]', 'arms', '["forearms"]', 'barbell', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '杠铃贴着身体往上拖，肘朝后走而不是朝前抬；这是练二头长头的老办法。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_dragon_flag', '龙旗', 'Dragon Flag', '[]', 'core', '["lats","quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '上背固定、身体绷直整体落下再抬起；力量不够就先做单腿版。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_curtsy_lunge', '哑铃交叉箭步蹲', 'Dumbbell Curtsy Lunge', '[]', 'legs', '["quads","hamstrings","core"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '后腿斜向侧后方落脚，前脚踩稳再起身；膝别内扣。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_glute_bridge', '哑铃臀桥', 'Dumbbell Glute Bridge', '[]', 'legs', '["hamstrings","core"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '哑铃压在髋上，顶髋时脚跟踩实；腰别拱起来代偿。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_hip_thrust', '哑铃臀推', 'Dumbbell Hip Thrust', '[]', 'legs', '["hamstrings"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '上背靠凳、哑铃压在髋上，顶到髋完全伸开停半秒；别用腰拱起来代替髋伸。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_lateral_lunge', '哑铃侧向弓步', 'Dumbbell Lateral Lunge', '[]', 'legs', '["glutes","adductors","hamstrings"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '向一侧迈大步、重心坐到那条腿上，另一条腿伸直；膝与脚尖同向。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_romanian_deadlift', '哑铃罗马尼亚硬拉', 'Dumbbell Romanian Deadlift', '["哑铃直腿硬拉"]', 'legs', '["glutes","lower_back"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '髋向后推、背平，哑铃贴腿下滑；感觉大腿后侧被拉长，不是腰在弯。', 1, 78, 1767225600000, 1767225600000, NULL),
-  ('ex_dumbbell_side_bend', '哑铃体侧屈', 'Dumbbell Side Bend', '[]', 'core', '["grip"]', 'dumbbell', 'strength', 'weight_reps', 60, 8, 2, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_side_bend', '哑铃体侧屈', 'Dumbbell Side Bend', '[]', 'core', '["grip"]', 'dumbbell', 'strength', 'weight_reps', 60, 8, 2, NULL, '只往一侧弯，身体别前后倒；重量小、幅度自然，别硬拽。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_skull_crusher', '双哑铃仰卧臂屈伸', 'Two Dumbbell Skullcrusher', '[]', 'arms', '["front_delts"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '仰卧，肘固定在头顶上方只让前臂转；肘一散开就成了推举。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_sumo_deadlift', '哑铃相扑硬拉', 'Dumbbell Sumo Deadlift', '[]', 'legs', '["glutes","quads","adductors"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '宽站距、哑铃在两腿之间，靠髋伸起身；背全程中立。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_dumbbell_sumo_squat', '哑铃相扑深蹲', 'Dumbbell Sumo Squat', '["相扑深蹲"]', 'legs', '["quads","adductors","hamstrings"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '双脚宽于肩、脚尖外展 30°，哑铃垂在两腿之间；膝盖顺着脚尖方向推开。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_elliptical', '椭圆机', 'Elliptical', '["椭圆仪"]', 'legs', '[]', 'machine', 'cardio', 'time', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_explosive_push_up', '爆发俯卧撑', 'Explosive Push-up', '["击掌俯卧撑"]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL);
+  ('ex_explosive_push_up', '爆发俯卧撑', 'Explosive Push-up', '["击掌俯卧撑"]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '推起时双手离地，落地缓冲后再推；手腕或肩不舒服就别做。', 1, 42, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
   ('ex_fast_feet', '快速碎步', 'Fast Feet', '[]', 'legs', '["quads"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_feet_elevated_pike_push_up', '垫脚派克俯卧撑', 'Feet-Elevated Pike Push-up', '[]', 'shoulders', '["triceps","chest","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_feet_elevated_pike_push_up', '垫脚派克俯卧撑', 'Feet-Elevated Pike Push-up', '[]', 'shoulders', '["triceps","chest","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '臀高高翘起、脚垫高，头顶往地面落；这是倒立撑的入门。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_fire_hydrant', '消防栓式', 'Fire Hydrant', '[]', 'legs', '["core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '四点支撑，腿向侧上方抬起；骨盆保持水平，别为了抬更高而翻髋。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_flutter_kick', '仰卧交替打腿', 'Flutter Kick', '["剪式打腿"]', 'core', '["quads"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '仰卧、腿伸直小幅交替上下；腰贴地，腰一离地就把腿抬高些。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_forward_lunge', '前箭步蹲', 'Forward Lunge', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '前脚迈出一步、后膝下沉到接近地面；上身保持直立，前膝别内扣。', 1, 78, 1767225600000, 1767225600000, NULL),
@@ -309,7 +309,7 @@ VALUES
   ('ex_glute_bridge_march', '臀桥踏步', 'Glute Bridge March', '[]', 'legs', '["hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '臀桥顶住不动，交替抬膝；骨盆一旦往一侧掉就说明抬太高了。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_glute_focused_back_extension', '臀部集中山羊挺身', 'Glute-Focused Back Extension', '[]', 'legs', '["hamstrings","lower_back"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '上背微微弓、脚尖外八，靠臀把身体抬起来；腰别过度后仰。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_good_morning', '早安式体前屈', 'Good Morning', '["早安式"]', 'legs', '["glutes","lower_back"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, '杠铃放斜方肌上、髋向后推、躯干前倾；**重量要轻**，腰一弯立刻停。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_half_burpee', '半程波比跳', 'Half Burpee', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_half_burpee', '半程波比跳', 'Half Burpee', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '下蹲撑地、腿后伸再收回来起身，不做俯卧撑；省掉跳起来那一下。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_half_kneeling_pallof_press', '半跪姿帕洛夫推', 'Half-Kneeling Pallof Press', '[]', 'core', '["glutes","front_delts"]', 'cable', 'strength', 'weight_reps', 60, 10, 2.5, NULL, '半跪姿把绳索从胸前推出并抗旋；跪姿比站姿更难作弊。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_hamstring_stretch', '腘绳肌拉伸', 'Hamstring Stretch', '[]', 'legs', '["calves"]', 'bodyweight', 'stretch', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_heel_elevated_goblet_squat', '垫脚高脚杯深蹲', 'Heel-Elevated Goblet Squat', '[]', 'legs', '["glutes","core"]', 'dumbbell', 'strength', 'weight_reps', 120, 8, 2, NULL, '脚跟垫高能蹲得更深、更吃股四头；重心别跑到脚尖上。', 1, 62, 1767225600000, 1767225600000, NULL),
@@ -323,7 +323,7 @@ VALUES
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
-  ('ex_hollow_rock', '空心摇摆', 'Hollow Rock', '[]', 'core', '["quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_hollow_rock', '空心摇摆', 'Hollow Rock', '[]', 'core', '["quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '先摆出空心姿势（腰贴地、手脚离地）再前后摇；腰一离开地面就停。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_inchworm', '毛毛虫爬行', 'Inchworm', '[]', 'core', '["front_delts","hamstrings","chest"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '站姿手往远处走成平板，再走回来站起；走的过程中腰别塌。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_incline_cable_fly', '上斜绳索飞鸟', 'Incline Cable Fly', '[]', 'chest', '["front_delts"]', 'cable', 'strength', 'weight_reps', 120, 10, 2.5, NULL, '上斜角度做夹胸，肘微屈固定；拉向锁骨方向，别做成推。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_jump_rope', '跳绳', 'Jump Rope', '[]', 'legs', '["front_delts"]', 'bodyweight', 'cardio', 'time', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
@@ -333,40 +333,40 @@ VALUES
   ('ex_kettlebell_swing', '壶铃摆荡', 'Kettlebell Swing', '["壶铃摇摆"]', 'legs', '["hamstrings","core"]', 'kettlebell', 'strength', 'weight_reps', 120, 12, 4, NULL, '髋铰链把壶铃荡出去，靠髋部发力不是靠手臂提；到胸口高度即可。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_knee_push_up', '跪姿俯卧撑', 'Knee Push-up', '[]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '膝着地、身体从膝到肩一条直线；屁股别撅，下沉时胸口离地一拳。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_kneeling_hip_flexor_stretch', '跪姿髂腰肌拉伸', 'Kneeling Hip Flexor Stretch', '[]', 'legs', '["quads"]', 'bodyweight', 'stretch', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_l_sit_hold', 'L 式支撑', 'L-Sit Hold', '[]', 'core', '["triceps","quads","front_delts"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_l_sit_hold', 'L 式支撑', 'L-Sit Hold', '[]', 'core', '["triceps","quads","front_delts"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '腿伸直角、臀离地撑住不动；腘绳太紧就先屈膝做。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_l_sit_pull_up', 'L 式引体向上', 'L-Sit Pull-up', '[]', 'back', '["biceps","core","forearms"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_landmine_press', '地雷管推举', 'Landmine Press', '[]', 'shoulders', '["chest","triceps"]', 'barbell', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '杠铃一端固定在地雷架，斜向上推出；肩不舒服的人的推举替代品。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_landmine_romanian_deadlift', '地雷管罗马尼亚硬拉', 'Landmine Romanian Deadlift', '[]', 'legs', '["glutes","lower_back"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_landmine_squat', '地雷管深蹲', 'Landmine Squat', '[]', 'legs', '["glutes","core"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_landmine_romanian_deadlift', '地雷管罗马尼亚硬拉', 'Landmine Romanian Deadlift', '[]', 'legs', '["glutes","lower_back"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, '髋向后推、背放平，杠铃沿着大腿下滑；比杠铃硬拉好学很多。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_landmine_squat', '地雷管深蹲', 'Landmine Squat', '[]', 'legs', '["glutes","core"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, '杠铃一端抵地、抱在胸前，蹲起来像高脚杯深蹲；对腰更友好。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_lateral_shuffle', '侧向滑步', 'Lateral Shuffle', '[]', 'legs', '["glutes","calves"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_leg_swings_stretch', '摆腿', 'Leg Swings', '[]', 'legs', '["glutes","hamstrings","quads"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_lying_hamstring_walkout', '仰卧腘绳肌走', 'Lying Hamstring Walkout', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_machine_glute_kickback', '器械后踢腿', 'Machine Glute Kickback', '[]', 'legs', '["hamstrings"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '后踢时骨盆别翻、腰别塌；靠臀把腿送出去，不是靠腰甩。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_meadows_row', '梅多斯划船', 'Meadows Row', '[]', 'back', '["biceps","rear_delts"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL);
+  ('ex_meadows_row', '梅多斯划船', 'Meadows Row', '[]', 'back', '["biceps","rear_delts"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, '杠铃一端固定，站在侧面单手拉；躯干别跟着转。', 1, 42, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
   ('ex_negative_pull_up', '离心引体向上', 'Negative Pull-up', '["退让引体"]', 'back', '["biceps","upper_back","forearms"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '跳上去、用 3–5 秒慢慢下来；这是学会引体最快的一步。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_neutral_grip_pull_up', '对握引体向上', 'Neutral-Grip Pull-up', '["锤式引体"]', 'back', '["biceps","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '对握时肩关节最舒服，适合肩不太行的人；先沉肩再拉。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_nordic_hamstring_curl', '北欧腘绳肌弯举', 'Nordic Hamstring Curl', '["北欧挺"]', 'legs', '["glutes","calves"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_nordic_hamstring_curl', '北欧腘绳肌弯举', 'Nordic Hamstring Curl', '["北欧挺"]', 'legs', '["glutes","calves"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '脚踝固定、身体绷直往前倒，靠腘绳拉住；最容易拉伤，先小幅度做。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_pike_push_up', '派克俯卧撑', 'Pike Push-up', '["屈体俯卧撑"]', 'shoulders', '["triceps","chest","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '臀抬高成倒 V、头顶朝地面下沉；这是倒立撑的入门台阶。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_pistol_squat', '单腿深蹲', 'Pistol Squat', '["手枪深蹲"]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_pistol_squat', '单腿深蹲', 'Pistol Squat', '["手枪深蹲"]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '一条腿向前伸直、另一条蹲到底；先扶着架子或坐箱子过渡。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_plank_shoulder_tap', '平板支撑交替摸肩', 'Plank Shoulder Tap', '[]', 'core', '["front_delts","chest"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '平板姿势下交替摸肩，髋别左右摇；摇了就减小幅度。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_plate_front_raise', '杠铃片前平举', 'Plate Front Raise', '[]', 'shoulders', '["chest"]', 'barbell', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '杠铃片举到与肩平即可；过顶会变成斜方肌主导。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_prone_t_raise', '俯卧 T 字举', 'Prone T Raise', '[]', 'back', '["rear_delts","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '俯卧、手臂成 T 字抬起，拇指朝上；练肩后侧与上背，重量几乎为零也有效。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_prone_y_raise', '俯卧 Y 字举', 'Prone Y Raise', '[]', 'back', '["rear_delts","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_prone_y_raise', '俯卧 Y 字举', 'Prone Y Raise', '[]', 'back', '["rear_delts","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '趴着把手臂抬成 Y 字，靠肩胛发力；这是小重量动作，别用腰把身体撑起来。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_push_press', '借力推举', 'Push Press', '[]', 'shoulders', '["triceps","quads"]', 'barbell', 'strength', 'weight_reps', 90, 20, 2.5, NULL, '膝盖微屈借一点腿的力把杠铃推起；这是借力，别当成站姿推举练。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_push_up_shoulder_tap', '俯卧撑交替摸肩', 'Push-up Shoulder Tap', '[]', 'core', '["chest","front_delts","triceps"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_push_up_shoulder_tap', '俯卧撑交替摸肩', 'Push-up Shoulder Tap', '[]', 'core', '["chest","front_delts","triceps"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '撑住不动，一只手去摸对侧肩；臀别跟着左右晃。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_hyperextension', '反向山羊挺身', 'Reverse Hyperextension', '[]', 'legs', '["hamstrings","lower_back"]', 'machine', 'strength', 'reps_only', 60, 20, 5, NULL, '反式山羊挺身练臀与下背；靠臀发力顶起，别用腰甩。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_snow_angel', '俯卧反向雪天使', 'Reverse Snow Angel', '[]', 'back', '["rear_delts","lower_back","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_rowing', '划船机', 'Rowing', '["划船"]', 'back', '["quads"]', 'machine', 'cardio', 'distance_time', 60, NULL, 0, 2000, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_running', '跑步', 'Running', '["户外跑"]', 'legs', '[]', 'bodyweight', 'cardio', 'distance_time', 60, NULL, 0, 5000, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_scapular_pull_up', '肩胛引体向上', 'Scapular Pull-up', '[]', 'back', '["upper_back","forearms","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '手臂伸直不动，只靠肩胛把身体拉起几厘米；引体之前先把这一步练会。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_scapular_push_up', '肩胛俯卧撑', 'Scapular Push-up', '[]', 'back', '["chest","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_scapular_push_up', '肩胛俯卧撑', 'Scapular Push-up', '[]', 'back', '["chest","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '手臂伸直不动，只让肩胛前后收放；幅度很小，是引体与卧推的预备动作。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_seal_jack', '海豹跳', 'Seal Jack', '[]', 'legs', '["front_delts","quads"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_seated_forward_fold_stretch', '坐姿体前屈', 'Seated Forward Fold', '[]', 'legs', '["lats","calves"]', 'bodyweight', 'stretch', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_seated_knee_tuck', '坐姿收膝', 'Seated Knee Tuck', '[]', 'core', '["quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL);
+  ('ex_seated_knee_tuck', '坐姿收膝', 'Seated Knee Tuck', '[]', 'core', '["quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '坐着把膝盖收到胸口，靠下腹发力；身体别后仰借力。', 1, 42, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
@@ -377,10 +377,10 @@ VALUES
   ('ex_side_plank_hip_dip', '侧平板转髋', 'Side Plank Hip Dip', '[]', 'core', '["front_delts","glutes"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '侧平板下把髋沉到接近地面再顶起；身体别前后转，转了就练不到侧腹。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_single_arm_dumbbell_tricep_extension', '单臂哑铃臂屈伸', 'Single Arm Dumbbell Tricep Extension', '[]', 'arms', '["front_delts"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '单臂举过头顶、肘朝前，只让前臂下放；肘一外张就变成推举了。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_single_dumbbell_skullcrusher', '单哑铃仰卧臂屈伸', 'Single Dumbbell Skullcrusher', '[]', 'arms', '["front_delts"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_single_leg_box_squat', '单腿箱式深蹲', 'Single-Leg Box Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_single_leg_box_squat', '单腿箱式深蹲', 'Single-Leg Box Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '坐到箱子上再单腿起；箱子高度决定难度，先高后低。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_sissy_squat', '西西深蹲', 'Sissy Squat', '[]', 'legs', '["core","calves"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_skater_hop', '滑冰跳', 'Skater Hop', '[]', 'legs', '["glutes","calves"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '左右横向跳、落地缓冲；落地膝别内扣，这条最伤膝。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_skater_squat', '滑冰深蹲', 'Skater Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_skater_squat', '滑冰深蹲', 'Skater Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '侧向跨出一步蹲下，另一条腿留在身后；落地轻、膝顺脚尖。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_skierg', '滑雪机', 'SkiErg', '[]', 'back', '["triceps","core"]', 'machine', 'cardio', 'distance_time', 60, NULL, 0, 2000, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_smith_machine_bulgarian_split_squat', '史密斯保加利亚分腿蹲', 'Smith Machine Bulgarian Split Squat', '[]', 'legs', '["glutes","core"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '史密斯轨道固定，最省平衡力；脚位往前放一点更吃臀，往后更吃股四头。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_smith_machine_hip_thrust', '史密斯臀推', 'Smith Machine Hip Thrust', '[]', 'legs', '["hamstrings","core"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '上背靠凳、顶髋到完全伸开停半秒；把膝盖向外推一点更吃臀中肌。', 1, 62, 1767225600000, 1767225600000, NULL),
@@ -388,8 +388,8 @@ VALUES
   ('ex_smith_machine_romanian_deadlift', '史密斯罗马尼亚硬拉', 'Smith Machine Romanian Deadlift', '[]', 'legs', '["glutes","lower_back"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '髋向后推、背平；器械轨道固定了路径，专注感受腿后侧被拉长。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_smith_machine_split_squat', '史密斯分腿蹲', 'Smith Machine Split Squat', '[]', 'legs', '["glutes","core"]', 'machine', 'strength', 'weight_reps', 120, 20, 5, NULL, '轨道固定，专注前腿发力；脚位再往前一点更吃臀。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_spider_curl', '蜘蛛弯举', 'Spider Curl', '[]', 'arms', '["forearms"]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '俯卧在斜板上、手臂垂直下垂，弯举到最高停一下；这个角度肱二头几乎没有借力空间。', 1, 62, 1767225600000, 1767225600000, NULL),
-  ('ex_sprawl', '扑地起身', 'Sprawl', '[]', 'legs', '["core","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_squat_thrust', '深蹲提膝', 'Squat Thrust', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_sprawl', '扑地起身', 'Sprawl', '[]', 'legs', '["core","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '从站姿快速撑地、腿后伸再收回来站起；是波比跳的拆解，别省落地缓冲。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_squat_thrust', '深蹲提膝', 'Squat Thrust', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '蹲起之后用一条腿提膝到胸口；落地轻一点。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_stability_ball_hamstring_curl', '瑞士球腘绳肌弯举', 'Stability Ball Hamstring Curl', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '脚跟压在球上、顶髋把球勾回来；全程臀别掉下去。', 1, 62, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
@@ -403,7 +403,7 @@ VALUES
   ('ex_superman', '超人式', 'Superman', '[]', 'back', '["glutes","upper_back","hamstrings"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '俯卧，对侧手脚同时抬离地面停一秒；抬到最高就好，别把腰掰成反弓。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_superman_hold', '超人式保持', 'Superman Hold', '[]', 'back', '["glutes","upper_back","hamstrings"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '俯卧抬起对侧手脚并停住 20–30 秒；腰别反弓，靠臀与背发力。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_swimming', '游泳', 'Swimming', '[]', 'back', '["front_delts"]', 'bodyweight', 'cardio', 'distance_time', 60, NULL, 0, 800, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_toe_touch', '仰卧摸脚', 'Toe Touch', '[]', 'core', '[]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_toe_touch', '仰卧摸脚', 'Toe Touch', '[]', 'core', '[]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '躺着用手去够脚踝，肩胛离开地面；脖子别用力往前伸。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_torso_twist_stretch', '躯干转体', 'Torso Twists', '[]', 'core', '["lats"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_towel_hamstring_curl', '毛巾腘绳肌弯举', 'Towel Hamstring Curl', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_towel_pull_up', '毛巾引体向上', 'Towel Pull-up', '[]', 'back', '["biceps","forearms","upper_back"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
@@ -411,25 +411,25 @@ VALUES
   ('ex_trap_bar_deadlift', '六角杠硬拉', 'Trap Bar Deadlift', '["陷阱杠硬拉"]', 'legs', '["quads","grip"]', 'barbell', 'strength', 'weight_reps', 120, 20, 2.5, NULL, '六角杠在重心正下方，是最容易学会的硬拉变式；背仍要中立。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_treadmill_incline_walk', '跑步机爬坡走', 'Treadmill Incline Walk', '["爬坡走","坡度快走"]', 'legs', '["glutes"]', 'machine', 'cardio', 'distance_time', 60, NULL, 0, 2000, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_typewriter_push_up', '打字机俯卧撑', 'Typewriter Push-up', '[]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_v_up', 'V 字两头起', 'V-Up', '["两头起"]', 'core', '["quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_v_up', 'V 字两头起', 'V-Up', '["两头起"]', 'core', '["quads"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '手脚同时抬起在中间相碰，靠腹肌把身体卷起来；用惯性甩不算。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_walking', '快走', 'Walking', '[]', 'legs', '[]', 'bodyweight', 'cardio', 'distance_time', 60, NULL, 0, 3000, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
   ('ex_wall_calf_stretch', '靠墙小腿拉伸', 'Wall Calf Stretch', '[]', 'legs', '[]', 'bodyweight', 'stretch', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_wall_handstand_push_up', '靠墙倒立撑', 'Wall Handstand Push-up', '[]', 'shoulders', '["triceps","core","chest"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL);
+  ('ex_wall_handstand_push_up', '靠墙倒立撑', 'Wall Handstand Push-up', '[]', 'shoulders', '["triceps","core","chest"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '靠墙倒立，慢慢下到大臂接近水平再推起；别用头顶压地面。', 1, 42, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, category, track_type, default_rest_sec, default_weight_kg, weight_increment, default_target_distance_m, instructions, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
   ('ex_wall_push_up', '靠墙俯卧撑', 'Wall Push-up', '["站立俯卧撑"]', 'chest', '["triceps","front_delts"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '手掌撑墙略高于肩，身体一条直线靠近墙面；最适合完全没基础的起点。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_wall_sit', '靠墙静蹲', 'Wall Sit', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'strength', 'time', 60, NULL, 0, NULL, '背贴墙、大腿与地面平行，膝不超过脚尖；靠墙静蹲比深蹲更容易坚持。', 1, 78, 1767225600000, 1767225600000, NULL),
-  ('ex_wall_walk', '爬墙', 'Wall Walk', '[]', 'shoulders', '["core","chest","triceps"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
-  ('ex_weighted_chin_up', '负重反握引体向上', 'Weighted Chin-up', '["负重引体"]', 'arms', '["lats"]', 'bodyweight', 'strength', 'weight_reps', 90, NULL, 0, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_wall_walk', '爬墙', 'Wall Walk', '[]', 'shoulders', '["core","chest","triceps"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '面向墙把脚一步步往墙上走成倒立；下来也一步一步，别直接掉。', 1, 42, 1767225600000, 1767225600000, NULL),
+  ('ex_weighted_chin_up', '负重反握引体向上', 'Weighted Chin-up', '["负重引体"]', 'arms', '["lats"]', 'bodyweight', 'strength', 'weight_reps', 90, NULL, 0, NULL, '反握与肩同宽，先能自重做满 8 次再加负重；下放到底再拉。', 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_weighted_crunch', '负重卷腹', 'Weighted Crunch', '[]', 'core', '[]', 'barbell', 'strength', 'weight_reps', 60, 20, 2.5, NULL, '抱片卷腹，靠腹肌把肩胛卷离地面；脖子别用力，腰始终贴地。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_weighted_push_up', '负重俯卧撑', 'Weighted Push-up', '[]', 'chest', '["triceps","core"]', 'bodyweight', 'strength', 'weight_reps', 120, NULL, 0, NULL, '背上加片或穿负重背心；先保证标准俯卧撑能连续做 15 次再加重量。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_weighted_russian_twist', '负重俄罗斯转体', 'Weighted Russian Twist', '[]', 'core', '["front_delts"]', 'dumbbell', 'strength', 'weight_reps', 60, 8, 2, NULL, '抱一片杠铃片转体；转的是躯干，手只是跟着走，腰椎别硬拧到底。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_wide_grip_lat_pulldown', '宽握高位下拉', 'Wide-Grip Lat Pulldown', '[]', 'back', '["biceps"]', 'cable', 'strength', 'weight_reps', 120, 10, 2.5, NULL, '宽握更吃背阔外侧；握太宽行程变短，肩也容易别着。', 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_wide_push_up', '宽距俯卧撑', 'Wide Push-up', '[]', 'chest', '["front_delts","triceps","core"]', 'bodyweight', 'strength', 'reps_only', 60, NULL, 0, NULL, '手比肩宽，胸的参与更多；手太宽会让肩别着，比肩宽一掌就够。', 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_worlds_greatest_stretch', '世界最伟大拉伸', 'World''s Greatest Stretch', '["最伟大拉伸"]', 'legs', '["glutes","hamstrings","upper_back"]', 'bodyweight', 'warmup', 'time', 30, NULL, 0, NULL, NULL, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_wrist_extension', '腕伸展', 'Wrist Extension', '["正握腕弯举"]', 'arms', '[]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, NULL, 1, 42, 1767225600000, 1767225600000, NULL);
+  ('ex_wrist_extension', '腕伸展', 'Wrist Extension', '["正握腕弯举"]', 'arms', '[]', 'dumbbell', 'strength', 'weight_reps', 90, 8, 2, NULL, '前臂搁在凳上、掌心朝下，只动手腕；重量很轻，别用甩的。', 1, 42, 1767225600000, 1767225600000, NULL);
 
 COMMIT;
 

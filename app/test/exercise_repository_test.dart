@@ -114,17 +114,17 @@ void main() {
     }
   });
 
-  test('动作说明：常用度 ≥ 45 全都有（本版铺到的台阶，从高往低推）', () async {
+  test('动作说明：常用度 ≥ 30 全都有（本版铺到的台阶，从高往低推）', () async {
     // 和上面那条"推荐位"不同：这条守的是**这一版铺到哪一档**。
     // 台阶数字是"人的一次背书"（同 `种子规模：351` 的写法）：内容不再从高往低铺、
-    // 或者有人删掉某条说明，这里会红。下一版往下铺到 44 时，把这个数字改成 44 即可
+    // 或者有人删掉某条说明，这里会红。下一版往下铺到 20 时，把这个数字改成 20 即可
     // ——想清楚"我认这个新台阶"再改，正是这条测试存在的意义。
     await repo.importSeed(loadJson: _readAsset);
     final List<ExerciseData> all = await repo.search(limit: 500);
     final List<ExerciseData> tier =
-        all.where((ExerciseData e) => e.popularity >= 45).toList();
+        all.where((ExerciseData e) => e.popularity >= 30).toList();
 
-    expect(tier.length, 226, reason: '常用度 ≥ 45 的动作有 226 个（改种子规模时一起改）');
+    expect(tier.length, 304, reason: '常用度 ≥ 30 的动作有 304 个（改种子规模时一起改）');
     final List<String> missing = tier
         .where((ExerciseData e) =>
             e.instructions == null || e.instructions!.trim().isEmpty)

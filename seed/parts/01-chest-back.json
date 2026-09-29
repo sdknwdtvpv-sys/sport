@@ -215,7 +215,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 44
+    "popularity": 44,
+    "instructions": "两只哑铃并拢但不相撞，肘贴近身体；比宽距更吃三头。"
   },
   {
     "id": "ex_db_swissball_press",
@@ -236,7 +237,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 32
+    "popularity": 32,
+    "instructions": "球上推举，核心全程稳住不让球晃；重量要比平凳小很多。"
   },
   {
     "id": "ex_db_fly",
@@ -424,7 +426,8 @@
     "default_weight_kg": 15,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 30
+    "popularity": 30,
+    "instructions": "单手推、肩胛贴住靠板；单边做能看出左右差。"
   },
   {
     "id": "ex_dip",
@@ -540,7 +543,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "instructions": "脚垫高，胸口往地面走；手撑得越低越难，先保证身体是一条线。"
   },
   {
     "id": "ex_db_pullover",
@@ -742,7 +746,8 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "instructions": "单手往下拉，躯干别歪；单边做能看出哪一侧背更弱。"
   },
   {
     "id": "ex_seated_cable_row",
@@ -929,7 +934,8 @@
     "default_weight_kg": 30,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 38
+    "popularity": 38,
+    "instructions": "宽握更吃上背，拉到下胸；身体别前后晃。"
   },
   {
     "id": "ex_one_arm_db_row",
@@ -1038,7 +1044,8 @@
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 34
+    "popularity": 34,
+    "instructions": "单手拉、躯干贴着垫子别转；单边做能补两侧差距。"
   },
   {
     "id": "ex_inverted_row",
@@ -1137,7 +1144,8 @@
     "default_weight_kg": 60,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "instructions": "把杠放在膝盖高度起，练的是锁定那一段；重量可以比硬拉大一些。"
   },
   {
     "id": "ex_straight_arm_pulldown",
@@ -1249,6 +1257,7 @@
     "default_weight_kg": 20,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 40
+    "popularity": 40,
+    "instructions": "两手提重物走直线，肩下沉、别弓背；走完再放下。"
   }
 ]
