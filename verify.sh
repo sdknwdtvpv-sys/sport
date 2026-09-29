@@ -129,6 +129,14 @@ else
 fi
 echo
 
+# 可用性测试那 7 个数字的口径：中位数、硬错误拦截、判定与目标一致
+if node tool/usability-selftest.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | head -3; echo "${GREEN}✓${OFF} 可用性测试口径自检通过"
+else
+  strip "$LOG"; echo "${RED}✗ 可用性测试口径自检失败${OFF}"; fail=1
+fi
+echo
+
 # ── 3. Dart 领域层（零依赖） ────────────────────────────────────────────
 echo "${BOLD}[3/6] Dart 引擎 vs 同一份 vectors.json（零依赖）${OFF}"
 if [ -z "$DART_BIN" ]; then
@@ -243,6 +251,8 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/cardio_test.dart app/test/analytics_identity_test.dart \
          server/collector.mjs server/collector.selftest.mjs tool/analytics-report.mjs \
          app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
+         tool/usability-report.mjs tool/usability-selftest.mjs \
+         usability/记录表.md usability/participants.example.json \
          tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \

@@ -1,0 +1,129 @@
+{
+  "_note": "这是**一份填好的样例**（数字全是编的、且刻意做成达标的样子，用来看格式）。真实数据放 usability/sessions/ —— 那个目录已 gitignore：里面有被试的原话与行为，不该进仓库。汇总后的结论（7 个数字）才写进 docs/usability-test.md。",
+  "_howto": [
+    "1. 现场照 docs/usability-test-kit.md §5 的纸面记录表记（一个正字 = 1 次点击）",
+    "2. 每人一份 JSON：node tool/usability-report.mjs --template > usability/sessions/P1.json",
+    "3. 收工后：node tool/usability-report.mjs —— 它算那 7 个数字并给出通过/不通过",
+    "4. 把输出的 markdown 块粘进 docs/usability-test.md 的「定量指标」一节"
+  ],
+  "participants": [
+    {
+      "id": "P1",
+      "consent": true,
+      "tasks": {
+        "T1": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 62
+        },
+        "T2": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 25
+        },
+        "T3": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 40
+        },
+        "T4": {
+          "done": true,
+          "prompts": 1,
+          "seconds": 55
+        },
+        "T5": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 30
+        },
+        "T6": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 35
+        }
+      },
+      "tap": {
+        "firstLog": {
+          "bigButton": 1,
+          "stepper": 0,
+          "sheetConfirm": 0,
+          "keyboard": 0,
+          "other": 0
+        },
+        "t6Edit": {
+          "bigButton": 2,
+          "stepper": 1,
+          "sheetConfirm": 1,
+          "keyboard": 0,
+          "other": 0
+        }
+      },
+      "typing": 0,
+      "scrolls": 0,
+      "t6": {
+        "adopted": true
+      },
+      "q3": "lianleme",
+      "susLite": 85
+    },
+    {
+      "id": "P2",
+      "consent": true,
+      "tasks": {
+        "T1": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 88
+        },
+        "T2": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 31
+        },
+        "T3": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 44
+        },
+        "T4": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 39
+        },
+        "T5": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 27
+        },
+        "T6": {
+          "done": true,
+          "prompts": 0,
+          "seconds": 41
+        }
+      },
+      "tap": {
+        "firstLog": {
+          "bigButton": 1,
+          "stepper": 0,
+          "sheetConfirm": 0,
+          "keyboard": 0,
+          "other": 0
+        },
+        "t6Edit": {
+          "bigButton": 1,
+          "stepper": 2,
+          "sheetConfirm": 1,
+          "keyboard": 0,
+          "other": 0
+        }
+      },
+      "typing": 0,
+      "scrolls": 0,
+      "t6": {
+        "adopted": true
+      },
+      "q3": "lianleme",
+      "susLite": 78
+    }
+  ]
+}

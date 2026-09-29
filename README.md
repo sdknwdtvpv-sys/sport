@@ -35,6 +35,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | Flutter 测试（引擎 + 持久化契约 + 数据库迁移 + 有氧记录 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **530/530** |
 | **场景 eval**（把产品红线写成序列级断言：连练 12 周之后还讲不讲道理） | `node engine/run-scenarios.mjs` | ✅ 8 场景 / 152 步 / 12 条红线 |
 | **埋点链路**（收集端收/拒/落盘 + 北极星 24h 边界 + 漏斗 + `tap_count` 门禁口径） | `node server/collector.selftest.mjs` | ✅ 通过 |
+| **可用性测试口径**（中位数 / 硬错误拦截 / 判定与 §8 目标一致） | `node tool/usability-selftest.mjs` | ✅ 通过 |
 | **变异测试**（唯一验证"测试本身有没有用"的一层） | `node tool/mutation.mjs` | ✅ 22 杀死 / **0 存活** |
 
 > **向量管"单步对不对"，场景 eval 管"连起来讲不讲道理"。** 向量给一个输入看输出；
