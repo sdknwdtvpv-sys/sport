@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 启动器里显示的名字。原来是模板留下的 android:label="lianleme" ——
+     桌面上一排中文 App 里夹一个拼音，既不统一也和商店名称对不上。 -->
+<resources>
+    <string name="app_name">练了么</string>
+</resources>

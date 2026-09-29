@@ -146,6 +146,16 @@ else
 fi
 echo
 
+# 发行资源自检：图标不能是 Flutter 默认图（那是 Google 的商标，也不能上架）、
+# 启动图不能是模板纯白（App 是深色的）、应用名不能是模板的 "lianleme"。
+# 这类东西没有任何测试会红 —— 只有人记得才会改，所以在这里变成一条命令。
+if node tool/asset-check.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 发行资源（图标/启动图/应用名）齐全"
+else
+  strip "$LOG"; echo "${RED}✗ 发行资源有问题（上架前必须修）${OFF}"; fail=1
+fi
+echo
+
 # ── 3. Dart 领域层（零依赖） ────────────────────────────────────────────
 echo "${BOLD}[3/6] Dart 引擎 vs 同一份 vectors.json（零依赖）${OFF}"
 if [ -z "$DART_BIN" ]; then

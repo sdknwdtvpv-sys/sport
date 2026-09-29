@@ -157,7 +157,9 @@ adb shell dumpsys deviceidle whitelist -com.sdknwdtvpv.lianleme
 
 - [ ] **软件著作权登记**（软著）—— 国内主流商店必需，办理有周期，**尽早启动**
 - [ ] **App 备案**（工信部）—— 部分商店已强制要求
-- [ ] 应用图标与截图（各商店尺寸不同）
+- [x] 应用图标（2026-09-30 做完：之前一直是 **Flutter 默认图标** —— 既是商标问题也不能上架）
+      `python3 tool/gen-icons.py` 生成，`tool/asset-check.mjs` 在 verify.sh 第 2 层守着
+- [ ] 截图（3–8 张，必须来自真实 App）
 - [ ] 应用描述、分类、内容分级
 - [ ] Google Play：开发者账号（一次性 25 美元）、隐私政策 URL、数据安全表单
 - [ ] 健康类应用在国内可能需额外资质 —— **需按目标商店的具体要求确认**

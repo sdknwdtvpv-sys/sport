@@ -10,7 +10,7 @@
  *   node tool/copyright-export.mjs --check         # 只算统计，不写文件
  *
  * 约定与取舍（都是可复核的，不藏在代码里）：
- *   * **收录**：我们自己的源码（Dart / JS）。**排除**生成物（`*.g.dart`、`exercises.json/sql`）、
+ *   * **收录**：我们自己的源码（Dart / JS / Python）。**排除**生成物（`*.g.dart`、`exercises.json/sql`）、
  *     资源、种子数据 JSON、以及任何第三方依赖 —— 软著登记的是**我们写的**程序
  *   * **顺序**：按路径字典序。不是为了"最好看"，而是为了**可复现**：
  *     同一份代码每次导出的页码必须一样（审查会看前后页是否衔接）
@@ -52,7 +52,9 @@ function collect() {
       const rel = relative(ROOT, p);
       if (statSync(p).isDirectory()) { walk(p); continue; }
       const ext = extname(name);
-      if (ext !== '.dart' && ext !== '.mjs') continue;
+      // .py 也收：tool/gen-icons.py 是我们自己写的程序的一部分。
+      // （2026-09-30 之前只收 .dart/.mjs，于是它既在仓库里、又不在软著材料里。）
+      if (ext !== '.dart' && ext !== '.mjs' && ext !== '.py') continue;
       const why = excluded(rel);
       if (why) { skipped.set(why, (skipped.get(why) ?? 0) + 1); continue; }
       files.push(rel);
