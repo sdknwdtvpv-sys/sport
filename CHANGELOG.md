@@ -8,9 +8,19 @@
 
 ## 未切版（v1.17.0 之后的改动，尚未打 tag）
 
-### 文档（不动 `app/`，不切版）
+### 文档与验证环境（不动 `app/`，不切版）
 
-- **软著材料起草完成**（① 里不需要真机的那一块）：
+- **打通了 Android 模拟器这条验证路径**（真机被 MIUI 锁住时的替代）：
+  装了 emulator + `system-images;android-34;google_apis;arm64-v8a`，建 AVD、无头启动，
+  然后对 v1.17.0 正式包做了一次**全新安装验证**（先卸载再装）——
+  在干净的 Android 14 上装得上、起得来、渲染正确。
+  顺带补上了上一轮欠的那次验证：**自适应图标第一次被眼睛验证**
+  （模拟器应用抽屉里是 volt 圆底 + 墨色「练」、名称「练了么」，启动器还替我们裁了圆）。
+  证据图：`store-assets/screenshots/01b-home-fresh-install.png`、
+  `docs/images/launcher-icon-verified.png`。
+- 模拟器的坑也一并记下（`docs/screenshots.md`）：软件渲染把负载从 8 推到 20，
+  此时 `flutter drive` 的 11 步能跑完但 driver 侧写盘不返回 —— 要用它出图得先把机器空出来。
+- 软著材料起草完成（① 里不需要真机的那一块）：
   [`docs/copyright-manual.md`](docs/copyright-manual.md) 是可直接提交的软件说明书
   （软件概述 / 环境 / 10 个功能模块 / 配图的 4 屏操作说明 / 技术特点 / 质量自检），
   [`docs/copyright-application.md`](docs/copyright-application.md) 是申请表填写参考

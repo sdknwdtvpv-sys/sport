@@ -42,11 +42,44 @@ Redmi flourite 上现在没有「练了么」）。恢复方法（**必须在手
 3. 之后 `adb install -r` 与 `flutter drive` 都能用；装回正式包：
    `adb install -r ../dist/练了么-v<版本>.apk`
 
+## 真机装不上时的替代路径：Android 模拟器（2026-09-30 打通）
+
+MIUI 锁住 USB 安装时（见上），**模拟器不受影响** —— 能装、能跑、能截，
+而且**输入注入是通的**（真机被 MIUI 禁了，模拟器没有）。
+
+一次装好（约 2GB 下载，之后一直可用）：
+
+```bash
+sdkmanager --install "emulator" "system-images;android-34;google_apis;arm64-v8a"
+avdmanager create avd -n lianleme -k "system-images;android-34;google_apis;arm64-v8a" -d pixel_6
+emulator -avd lianleme -no-window -no-audio -no-boot-anim -no-snapshot \
+         -gpu swiftshader_indirect -memory 2048 &     # 无头启动，不需要窗口
+adb -s emulator-5554 wait-for-device
+adb -s emulator-5554 install -r "dist/练了么-v<版本>.apk"
+```
+
+**已经用它验过的事**：v1.17.0 在**全新安装**的 Android 14 上装得上、起得来、渲染正确
+（`store-assets/screenshots/01b-home-fresh-install.png`）；启动器里图标与名字也对
+（`docs/images/launcher-icon-verified.png` —— volt 圆底 + 墨色「练」、名称「练了么」，
+这是自适应图标第一次被**眼睛**验证，而不是只比字节）。
+
+**已知的坑（别重复踩）**：
+
+- 软件渲染很吃 CPU：本机负载 8 时它自己吃 346%，总负载被推到 20。
+  这时 SystemUI 会弹 "isn't responding" —— **不影响 App**，也不影响
+  `binding.takeScreenshot`（那只截 Flutter 自己的 surface）。
+- 但在这种负载下 **`flutter drive` 会卡在最后一步**：测试 11 步全跑完了
+  （到 `10-profile`），driver 侧的写盘迟迟不返回（截图字节要等整个 run 结束才回传）。
+  要用模拟器出图，**先把机器空出来**，或者用真机。
+- 截图落盘目录仍是 `store-assets/screenshots/`（driver 不区分来源，文件名要自己标）。
+
 ## 已覆盖 / 还缺
 
 | 屏 | 状态 |
 |---|---|
-| 01 首页（今天练什么） | ✅ |
+| 01 首页（有历史数据） | ✅ |
+| 01b 首页（**全新安装**的空态，Android 14 模拟器） | ✅ |
+| 启动器图标（模拟器应用抽屉，用来验图标与名字） | ✅ `docs/images/launcher-icon-verified.png` |
 | 02 建议卡（今天练 X + 每个动作的建议重量与理由） | ✅ |
 | 03 我的计划 | ✅ |
 | 04 选动作（351 个动作 + 三排筛选 + 动作说明） | ✅ |
