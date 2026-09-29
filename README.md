@@ -263,7 +263,7 @@ flutter test
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 45 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
 | 验证 | `docs/usability-test.md` + `-kit.md` | 流程手册 + **7 个数字可一键算**（`tool/usability-report.mjs`）；现场打印 `usability/记录表.md` | 你本人 |
-| **上架前的行政** | `docs/release-admin.md` | 软著 / App 备案 / 隐私政策公网 URL / 商店材料 —— **按周计，先起** | 你 |
+| **上架前的行政** | `docs/release-admin.md` + `docs/store-listing.md` | 软著 / App 备案 / 隐私政策公网 URL（行政）；应用描述、分级问卷、**数据安全表单 A/B 两版**、软著源码 60 页（`tool/copyright-export.mjs`） | 你与我各半 |
 
 **这个仓库最重要的一条设计**：Dart 与 JS **共用同一份 `engine/vectors.json`**，不复制。
 于是"移植是否完成"成了一个可判定的事实 —— `./verify.sh` 全绿就是一致，没有解释空间。

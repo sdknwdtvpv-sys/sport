@@ -263,6 +263,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
          tool/usability-report.mjs tool/usability-selftest.mjs tool/content-report.mjs \
          tool/privacy-audit.mjs docs/privacy-facts.json docs/release-admin.md \
+         tool/copyright-export.mjs docs/store-listing.md \
          usability/记录表.md usability/participants.example.json \
          tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \

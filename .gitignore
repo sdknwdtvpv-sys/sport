@@ -18,3 +18,6 @@ server/data/
 
 # 可用性测试的原始记录（含被试原话，不进仓库）；汇总后的结论才写进 docs/
 usability/sessions/
+
+# 软著源码导出等交付物（源码的副本，不进仓库）
+dist/
