@@ -23,6 +23,8 @@ CREATE TABLE exercise (
   muscle_group      TEXT NOT NULL,              -- chest/back/legs/shoulders/arms/core
   secondary_muscles TEXT,                       -- JSON 数组
   equipment         TEXT NOT NULL,              -- barbell/dumbbell/machine/cable/bodyweight/band/kettlebell
+  category          TEXT NOT NULL DEFAULT 'strength',
+                                                -- strength/warmup/stretch，见下方「category 词表」
   track_type        TEXT NOT NULL DEFAULT 'weight_reps',
                                                 -- 怎么记这个动作，见下方「track_type 词表」
   default_rest_sec  INTEGER NOT NULL DEFAULT 90,
@@ -66,6 +68,29 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 4. **坏行跳过并计数**，不整份作废 —— "42 条进来、2 条没认出来"远好过"一份作废"，
    后者会让用户在数据最危险的时候失去唯一的恢复手段。
 5. `exercise_names` **只是给人看的**；关联永远是 id（动作可能被改名或删除）。
+
+### category 词表
+
+`category` **决定这个动作会不会进「今天练什么」的推荐** —— 不只是个标签：
+
+| 值 | 含义 | 会进「今天练什么」吗 | 记法 |
+|---|---|---|---|
+| `strength` | 力量动作（缺省，318 个） | 会 | 看 `track_type` |
+| `warmup` | 热身（12 个） | **不会** | 按秒（`time`），无重量 |
+| `stretch` | 拉伸（9 个） | **不会** | 按秒（`time`），无重量 |
+
+**为什么要有这个字段**（2026-09-29）：热身与拉伸一开始是**被整类排除在动作库外**的，
+理由是"混进来会被当成某个部位的动作推荐"—— 理由对，解法错：代价是"练完拉一下"也记不了，
+用户想记一次拉伸，得自己新建一个自定义动作。正确的解法是给它们一个类别，
+让**推荐规则**按类别过滤（`TodayPlanner` 只从 `strength` 里挑，`planToday` 与 `reroll` 两处都要挡），
+而不是让库里没有它们。
+
+三处配套的硬约束（`seed/build.mjs` 会在违反时报错）：
+
+1. `warmup` / `stretch` 必须 `track_type = time` —— 它们没有"次数"这回事
+2. `warmup` / `stretch` 的 `weight_increment` 必须是 0、`default_weight_kg` 必须是 null ——
+   否则引擎会走"加重"那条路，给「站姿股四头肌拉伸」建议加 2.5 kg
+3. `category` 是**必填**，不给缺省 —— 这个字段决定"会不会被推荐"，静默缺省等于埋雷
 
 ### track_type 词表
 
@@ -144,6 +169,20 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 **结论留档在 `seed/upstream-confirmed.json`**（`primary_muscle_kept`），
 `tool/map-upstream.mjs` 消费它：如果哪天上游改了 `primaryMuscle`、或我们又改了归类，
 这一条会重新出现在"待决策"表里 —— 留档的结论不是免检通行证。
+
+### 迁移历史
+
+| 版本 | 改动 | 需要注意的地方 |
+|---|---|---|
+| v2 | 新增 `body_metric` | 只加表 |
+| v3 | 新增 `routine` / `routine_item` | 只加表 |
+| v4 | `exercise` 新增 `category`（DEFAULT `'strength'`） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
+
+迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
+⚠️ **fixture 必须用当年的 DDL 手写**：拿当前 schema 建完再改的话，
+`ALTER TABLE ADD COLUMN` 会因为列已存在而失败（看起来像迁移坏了），
+或者更糟 —— 有人把 fixture 悄悄改成新 schema，测试永远绿。
+`migration_test.dart` 里有一条专门守这个。
 
 **已知限制（记在这儿，不藏着）**：`weight_time` 动作的"容量"仍是 `重量 × 秒数`，
 量纲上说不通（负重平板 5kg × 30 秒 = 150）。目前只有 1 个这样的动作，

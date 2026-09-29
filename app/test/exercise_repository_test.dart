@@ -38,12 +38,43 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('种子规模：318 个动作（库不该悄悄缩水；改种子时这个数字要一起改）', () async {
+  test('种子规模：339 个动作（库不该悄悄缩水；改种子时这个数字要一起改）', () async {
     // 这一条是"故意的写死"：它是**人对当前库规模的一次背书**。
     // 加动作 / 减动作都会让它红，逼着改动的人确认"是我干的、且我认这个数字"。
-    // 318 = 165（手工维护的 01/02/03）+ 153（2026-09-29 从上游补的库，
-    // 上游明确标了 Cardio / 拉伸的 47 个没进，见 tool/add-upstream-exercises.mjs）。
-    expect(await _seedCount(), 318);
+    // 339 = 165（手工维护的 01/02/03）+ 174（2026-09-29 从上游补的库：
+    //        153 力量 + 12 热身 + 9 拉伸；上游标了有氧机的 12 个没进，
+    //        见 tool/add-upstream-exercises.mjs）。
+    expect(await _seedCount(), 339);
+  });
+
+  test('动作类别：318 力量 / 12 热身 / 9 拉伸（类别决定会不会被推荐）', () async {
+    await repo.importSeed(loadJson: _readAsset);
+
+    expect((await repo.search(category: 'strength', limit: 500)).length, 318);
+    expect((await repo.search(category: 'warmup', limit: 500)).length, 12);
+    expect((await repo.search(category: 'stretch', limit: 500)).length, 9);
+  });
+
+  test('不传 category 时行为与以前完全一致（全都要，包含热身与拉伸）', () async {
+    await repo.importSeed(loadJson: _readAsset);
+
+    final List<ExerciseData> all = await repo.search(limit: 500);
+    expect(all.length, await _seedCount());
+    expect(all.any((ExerciseData e) => e.category == 'stretch'), isTrue,
+        reason: '不筛类别就该看得到拉伸 —— 否则用户没法找到它');
+  });
+
+  test('类别与部位/器械可以叠加筛（"腿部的拉伸"要能查出来）', () async {
+    await repo.importSeed(loadJson: _readAsset);
+
+    final List<ExerciseData> legStretch =
+        await repo.search(muscleGroup: 'legs', category: 'stretch', limit: 100);
+    expect(legStretch, isNotEmpty);
+    expect(
+      legStretch.every((ExerciseData e) =>
+          e.muscleGroup == 'legs' && e.category == 'stretch'),
+      isTrue,
+    );
   });
 
   test('导入种子后动作数与资产一致（一个不少）', () async {

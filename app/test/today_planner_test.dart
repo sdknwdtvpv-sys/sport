@@ -288,6 +288,66 @@ void main() {
     });
   });
 
+  group('热身与拉伸：在库里，但永远不进「今天练什么」', () {
+    // 这一组守的是**上一轮那个错误解法的反面**：
+    // 当初为了让拉伸不进推荐，我把它们整类排除在动作库外 —— 于是"练完拉一下"也记不了。
+    // 正确的做法是类别（category）+ 推荐时过滤。这几条测试就是那个不变量的门闩：
+    // 谁把 today_planner 里的 `category: 'strength'` 拿掉，这里立刻红。
+    test('库里确实有热身与拉伸（不然下面的断言是空转）', () async {
+      final warmup = await repo.search(category: 'warmup', limit: 100);
+      final stretch = await repo.search(category: 'stretch', limit: 100);
+
+      expect(warmup, isNotEmpty, reason: '开合跳/高抬腿这一批应该在库里');
+      expect(stretch, isNotEmpty, reason: '腘绳肌拉伸这一批应该在库里');
+      expect(warmup.first.category, 'warmup');
+      expect(stretch.first.category, 'stretch');
+    });
+
+    test('planToday 把整个部位取回来，也一条热身/拉伸都没有（六个部位都试）', () async {
+      for (final String g in kMuscleRotation) {
+        final List<PlannedExercise> all =
+            await planner.planToday(muscleGroup: g, count: 200);
+
+        expect(all, isNotEmpty, reason: '$g 应该有动作');
+        for (final PlannedExercise p in all) {
+          expect(p.exercise.category, 'strength',
+              reason: '$g 里混进了 ${p.exercise.category}：${p.exercise.id}');
+        }
+      }
+    });
+
+    test('「换一批」也不放它们进来（这条最容易漏 —— 它取回整组再筛）', () async {
+      // ⚠️ 必须挑一个**动作总数 < reroll 的 limit（60）**的部位，否则这条测试是假的：
+      // 第一版用的 legs 有 123 个动作，而热身都在常用度 20 ——
+      // 它们根本进不了「按常用度取前 60」，于是"把过滤拿掉"这条测试照样绿
+      // （实测过：拿掉 today_planner 的 category 过滤，它不红）。
+      // core 只有 53 个（其中 3 个是热身），limit 60 会把整组取回来，它才真的守得住。
+      final List<PlannedExercise> first =
+          await planner.planToday(muscleGroup: 'core', count: 3);
+      final List<PlannedExercise> again =
+          await planner.reroll(current: first, count: 100);
+
+      expect(again, isNotEmpty);
+      expect(again.length, greaterThan(10),
+          reason: '拿回来太少的话这条测试又变成空转了');
+      for (final PlannedExercise p in again) {
+        expect(p.exercise.category, 'strength',
+            reason: '「换一批」拿出了 ${p.exercise.category}：${p.exercise.id}');
+      }
+    });
+
+    test('拉伸的处方不是「3 组 × 8–10 次」—— 它们按时长、也没有重量', () async {
+      final List<ExerciseData> stretch =
+          await repo.search(category: 'stretch', limit: 100);
+      for (final ExerciseData e in stretch) {
+        expect(e.trackType, 'time',
+            reason: '${e.id} 是拉伸，必须按秒记（否则会显示"× 8 次"）');
+        expect(e.weightIncrement, 0, reason: '${e.id} 不该有加重步长');
+        expect(e.defaultWeightKg, isNull, reason: '${e.id} 不该有起始重量');
+      }
+    });
+  });
+
   group('换一批', () {
     test('换掉动作，不复用已推荐过的', () async {
       final List<PlannedExercise> first = await planner.planToday();

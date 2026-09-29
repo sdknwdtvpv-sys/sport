@@ -25,7 +25,19 @@ const Map<String, String> kEquipmentLabels = <String, String>{
   'kettlebell': '壶铃',
 };
 
+/// 动作类别（`seed/exercises.json` 的 `category`）。
+///
+/// `strength` 不在筛选行里露出 —— "力量"是这个 App 的默认语境，
+/// 给它一个 chip 只会让筛选行更长。热身与拉伸才是用户会主动找的。
+const Map<String, String> kCategoryLabels = <String, String>{
+  'strength': '力量',
+  'warmup': '热身',
+  'stretch': '拉伸',
+};
+
 /// 查不到就原样返回 —— 宁可显示英文 key，也不要显示空白
 String muscleLabel(String key) => kMuscleLabels[key] ?? key;
 
 String equipmentLabel(String key) => kEquipmentLabels[key] ?? key;
+
+String categoryLabel(String key) => kCategoryLabels[key] ?? key;

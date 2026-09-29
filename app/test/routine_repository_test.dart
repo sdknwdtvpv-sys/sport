@@ -11,6 +11,8 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/routine_repository.dart';
 import 'package:lianleme/domain/models.dart';
 
+import 'legacy_db.dart';
+
 void main() {
   late AppDatabase db;
   late RoutineRepository repo;
@@ -163,11 +165,9 @@ void main() {
 
   group('数据库迁移', () {
     test('用 v3 代码打开一个 v2 的库：不崩，且新表可用', () async {
-      // 模拟老库：user_version = 2，且没有 routine / routine_item
+      // 模拟老库：user_version = 2，有当年的 exercise / body_metric（没有 routine）
       final AppDatabase legacy = AppDatabase(
-        NativeDatabase.memory(setup: (dynamic raw) {
-          raw.execute('PRAGMA user_version = 2');
-        }),
+        NativeDatabase.memory(setup: (dynamic raw) => legacySetup(raw, version: 2)),
       );
 
       final RoutineRepository r = RoutineRepository(legacy);

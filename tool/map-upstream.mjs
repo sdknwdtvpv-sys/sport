@@ -51,6 +51,10 @@ const TYPE_MAP = {
 const MUSCLE_SYNONYM = {
   shoulders: 'front_delts', reardelts: 'rear_delts', upperback: 'upper_back',
   lowerback: 'lower_back', groin: 'adductors', legs: 'quads', back: 'lats',
+  // ⚠️ 这张表必须与 tool/add-upstream-exercises.mjs 的一致。
+  // 少了 hips→glutes 的那一版会报出"假缺口"：我们明明给动作打了 glutes
+  // （补库脚本按同义词转过了），映射表却只认 hips，于是这里说"词表里没有"。
+  hips: 'glutes',
 };
 /** 上游 primaryMuscle → 我们的 6 值部位（用于查归类分歧）。 */
 const GROUP_OF = {
@@ -155,9 +159,16 @@ const typeFixes = linked
 
 /** 主肌群归类分歧。**已拍板保留我们归类的**不算分歧（结论在 upstream-confirmed.json）。 */
 const groupKept = review.primary_muscle_kept ?? {};
+/** 热身/拉伸的归类分歧：**不影响部位轮转**（category 已把它们挡在推荐之外），
+ *  所以不算"待拍板"，但要列出来给人复核。 */
+const warmupStretchGroups = linked
+  .map(({ o, u }) => ({ o, u, mapped: GROUP_OF[norm(u.primaryMuscle)] }))
+  .filter((c) => c.o.category && c.o.category !== 'strength')
+  .filter((c) => c.mapped !== c.o.muscle_group);
 const groupConflicts = linked
   .map(({ o, u }) => ({ o, u, mapped: GROUP_OF[norm(u.primaryMuscle)] }))
   .filter((c) => c.mapped && c.mapped !== c.o.muscle_group)
+  .filter((c) => (c.o.category ?? 'strength') === 'strength')
   .filter((c) => {
     if (!groupKept[c.o.id]) return true;
     // 留档的结论要真的还成立：上游改了 primaryMuscle、或我们改了归类，就该重新看一遍
@@ -307,6 +318,20 @@ if (!groupConflicts.length) {
   P('|---|---|---|---|');
   for (const c of groupConflicts.sort((a, b) => a.o.id.localeCompare(b.o.id))) {
     P(`| \`${c.o.id}\` | ${c.o.muscle_group} | ${c.u.primaryMuscle} | ${c.mapped} |`);
+  }
+}
+if (warmupStretchGroups.length) {
+  P('');
+  P(`**热身与拉伸的归类（${warmupStretchGroups.length} 个，不影响轮转，列出来供复核）：**`);
+  P('');
+  P('它们不参与"今天练哪个部位"的轮转（`category` 已经把推荐挡掉了），');
+  P('所以归到哪一组都不改变推荐结果 —— 只影响按部位筛选时能不能找到。');
+  P('逐条的中文名与归类写在 `seed/upstream-zh-names.json`。');
+  P('');
+  P('| 我们的 id | 我们 | 上游 primaryMuscle |');
+  P('|---|---|---|');
+  for (const c of warmupStretchGroups.sort((a, b) => a.o.id.localeCompare(b.o.id))) {
+    P(`| \`${c.o.id}\` | ${c.o.muscle_group}（${c.o.category}） | ${c.u.primaryMuscle} |`);
   }
 }
 if (groupKeptRows.length) {

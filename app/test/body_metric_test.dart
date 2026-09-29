@@ -12,6 +12,8 @@ import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/features/body/body_metric_screen.dart';
 
+import 'legacy_db.dart';
+
 void main() {
   late AppDatabase db;
   late BodyMetricRepository repo;
@@ -106,11 +108,9 @@ void main() {
 
   group('v1 → v2 迁移（手机上装的是 v1，这步坏了老用户一开就崩）', () {
     test('用 v2 代码打开一个 v1 的库：不崩，且新表可用', () async {
-      // 模拟老库：user_version = 1，且**没有** body_metric 表
+      // 模拟老库：user_version = 1，只有当年那张 exercise 表（没有 body_metric）
       final AppDatabase legacy = AppDatabase(
-        NativeDatabase.memory(setup: (dynamic raw) {
-          raw.execute('PRAGMA user_version = 1');
-        }),
+        NativeDatabase.memory(setup: (dynamic raw) => legacySetup(raw, version: 1)),
       );
 
       // 打开即触发 onUpgrade。没有 onUpgrade 的话 drift 会直接抛

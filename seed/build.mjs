@@ -48,6 +48,10 @@ const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'ban
 // 这两个值是 2026-09-29 按上游 exerciseType 补齐的：
 //   distance_time   ← 上游 distance_duration（有氧：跑/走/骑行/划船…）
 //   assisted_reps   ← 上游 assisted_bodyweight（辅助引体之类，"重量"是助力）
+// 动作类别：**决定它会不会进「今天练什么」的推荐**（推荐只从 strength 里挑）。
+//   2026-09-29 新增。热身与拉伸上一轮被整类排除在库外，理由是"会被当成某个部位的动作推荐" ——
+//   理由对、解法错：正确解法是给它们一个类别，让推荐按类别过滤，而不是让库里没有它们。
+const CATEGORIES = ['strength', 'warmup', 'stretch'];
 const TRACK_TYPES = [
   'weight_reps', 'reps_only', 'time', 'weight_time', 'distance_time', 'assisted_reps',
 ];
@@ -80,7 +84,7 @@ const seenName = new Map();
 for (const [i, e] of exercises.entries()) {
   const at = `#${i + 1} ${e.id ?? '(缺 id)'}`;
 
-  for (const k of ['id', 'name', 'muscle_group', 'equipment', 'track_type', 'default_rest_sec', 'weight_increment', 'popularity']) {
+  for (const k of ['id', 'name', 'muscle_group', 'equipment', 'category', 'track_type', 'default_rest_sec', 'weight_increment', 'popularity']) {
     if (e[k] === undefined || e[k] === null) errors.push(`${at}：缺少必填字段 ${k}`);
   }
   if (seenId.has(e.id)) errors.push(`${at}：id 重复，与「${seenId.get(e.id)}」冲突`);
@@ -93,6 +97,18 @@ for (const [i, e] of exercises.entries()) {
   // track_type 以前只校验"字段存在"，值写错也照样过。它现在真的会改变行为
   // （time/weight_time 的数字是**秒**，引擎会走加秒数分支），所以必须卡住。
   if (!TRACK_TYPES.includes(e.track_type)) errors.push(`${at}：track_type 非法「${e.track_type}」`);
+  if (!CATEGORIES.includes(e.category)) errors.push(`${at}：category 非法「${e.category}」`);
+  // 热身与拉伸不是"训练组"：它们按秒记、没有重量。
+  // 写成 weight_reps + 步长 2.5 的后果很具体 —— 引擎会给「站姿股四头肌拉伸」建议加重。
+  if (e.category !== 'strength') {
+    if (e.track_type !== 'time') {
+      errors.push(`${at}：${e.category} 必须按秒记（track_type=time），当前是 ${e.track_type}`);
+    }
+    if (e.weight_increment !== 0 || e.default_weight_kg !== null) {
+      errors.push(`${at}：${e.category} 不该有重量（weight_increment=${e.weight_increment}, `
+        + `default_weight_kg=${e.default_weight_kg}）`);
+    }
+  }
   if (e.track_type === 'weight_time' && e.weight_increment === 0) {
     errors.push(`${at}：weight_time 必须是有重量的动作（weight_increment 不能为 0）`);
   }
@@ -155,8 +171,8 @@ const qn = (v) => (v === null || v === undefined ? 'NULL' : String(v));
 
 const COLS = [
   'id', 'name', 'name_en', 'aliases', 'muscle_group', 'secondary_muscles', 'equipment',
-  'track_type', 'default_rest_sec', 'default_weight_kg', 'weight_increment', 'is_builtin',
-  'popularity', 'created_at', 'updated_at', 'deleted_at',
+  'category', 'track_type', 'default_rest_sec', 'default_weight_kg', 'weight_increment',
+  'is_builtin', 'popularity', 'created_at', 'updated_at', 'deleted_at',
 ];
 
 const rowOf = (e) =>
@@ -166,7 +182,7 @@ const rowOf = (e) =>
     q(JSON.stringify(e.aliases ?? [])),
     q(e.muscle_group),
     q(JSON.stringify(e.secondary_muscles ?? [])),
-    q(e.equipment), q(e.track_type),
+    q(e.equipment), q(e.category), q(e.track_type),
     qn(e.default_rest_sec), qn(e.default_weight_kg), qn(e.weight_increment), qn(e.is_builtin ?? 1),
     qn(e.popularity), qn(SEED_TS), qn(SEED_TS), 'NULL',
   ].join(', ') +
@@ -223,6 +239,10 @@ console.log(`✓ 动作库构建完成：${exercises.length} 个动作，${new S
 console.log('  按部位：' + MUSCLE_GROUPS.map((g) => `${label(g)} ${byGroup[g] ?? 0}`).join(' · '));
 console.log('  按器械：' + EQUIPMENT.map((g) => `${elabel(g)} ${byEquip[g] ?? 0}`).join(' · '));
 console.log('  自重动作（走"加次数"推进）：' + exercises.filter((e) => e.weight_increment === 0).length);
+const byCat = {};
+for (const e of exercises) byCat[e.category] = (byCat[e.category] ?? 0) + 1;
+console.log('  按类别：' + CATEGORIES.map((c) => `${c} ${byCat[c] ?? 0}`).join(' · ')
+  + '（只有 strength 会进「今天练什么」）');
 if (warnings.length) {
   console.log(`\n⚠ ${warnings.length} 条提示：\n` + warnings.map((s) => '  · ' + s).join('\n'));
 }

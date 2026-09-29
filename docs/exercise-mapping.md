@@ -13,14 +13,14 @@
 
 | 项 | 数量 |
 |---|---|
-| 我们的动作 | 318 |
+| 我们的动作 | 339 |
 | 上游动作 | 302 |
-| **有上游对应**（精确命中 238 + 人工确认 17） | **255** |
+| **有上游对应**（精确命中 259 + 人工确认 17） | **276** |
 | 已复核：确认一致 | 17 |
 | 已复核：命名相近但动作不同 | 39 |
 | 待人工复核的候选（相似度 ≥ 0.5） | 0 |
 | 未命中且相似度 < 0.5（自行维护） | 26 |
-| 上游有、我们没有 | 47 |
+| 上游有、我们没有 | 26 |
 
 ## 一、有上游对应、但类型标错的动作（当前为空 ✅）
 
@@ -105,9 +105,10 @@
 
 （无）
 
-**已拍板不扩的（1 个，结论留档）：**
+**已拍板不扩的（2 个，结论留档）：**
 
 - `cardio`（上游用在 6 个动作上）—— **不扩**。cardio 不是肌肉，是体能/供能系统的标签；我们的次肌群词表是给肌群热力图与恢复建议用的，塞进去会让热力图多出一块不存在的「肌肉」。上游拿它当次肌群用（波比跳、壶铃摆荡、滑冰跳…），我们在补库时也按同一把尺子把纯体能动作挡在库外（见 tool/add-upstream-exercises.mjs）。
+- `mobility`（上游用在 10 个动作上）—— **不扩**。mobility 不是肌肉，是「活动度」这个类别 —— 与 cardio 同理。上游拿它当次肌群用（猫牛式、摆腿、世界最伟大拉伸…）。这些动作我们收进来了（category=warmup/stretch），但它们的次肌群按真实肌肉标（摆腿→glutes/hamstrings/quads），不写一个叫 mobility 的假部位。
 
 ### 5.2 主肌群归类与上游不一致（0 个）
 
@@ -115,12 +116,25 @@
 
 （无）
 
-**已拍板保留我们归类的（2 个，结论留档）：**
+**热身与拉伸的归类（3 个，不影响轮转，列出来供复核）：**
+
+它们不参与"今天练哪个部位"的轮转（`category` 已经把推荐挡掉了），
+所以归到哪一组都不改变推荐结果 —— 只影响按部位筛选时能不能找到。
+逐条的中文名与归类写在 `seed/upstream-zh-names.json`。
+
+| 我们的 id | 我们 | 上游 primaryMuscle |
+|---|---|---|
+| `ex_leg_swings_stretch` | legs（warmup） | Mobility |
+| `ex_seal_jack` | legs（warmup） | Chest |
+| `ex_worlds_greatest_stretch` | legs（warmup） | Mobility |
+
+**已拍板保留我们归类的（3 个，结论留档）：**
 
 | 我们的 id | 我们 | 上游 primaryMuscle | 为什么不改 |
 |---|---|---|---|
 | `ex_chin_up` | back | Biceps | 引体向上是**背**的动作（背阔为主，肱二头只是协同）。上游只看主动屈肘就归到 Biceps，按它归会把引体塞进「手臂日」—— 那是把辅助肌当主角。部位轮转按 muscle_group 走，所以保持 back。 |
 | `ex_weighted_dip` | chest | Triceps | 负重双杠臂屈伸在双杠上躯干前倾、主推**胸**；上游按伸肘归 Triceps。我们的动作名与用法都是胸主导，保持 chest。 |
+| `ex_seal_jack` | legs | Chest | 海豹跳是**跳**（腿），上臂在胸前开合只是协同。上游按「上臂动作」归到 Chest，按它归会让这个热身出现在「胸日」。反正它是热身、不进轮转，归 legs 更贴近动作本身。 |
 
 ## 六、次肌群对齐情况（还差 0 个动作 / 0 个标签）
 
@@ -137,9 +151,9 @@
 
 | 上游类型 | 数量 | 例 |
 |---|---|---|
-| `duration` | 25 | Stair Climber, Elliptical, Jump Rope, Battle Ropes, Plank Jack, Bear Crawl |
 | `weight_reps` | 11 | Cable Fly, Rear Delt Fly, Dumbbell Bent Over Row, Leg Curl, Bicep Curl, Bent-Over Rear Delt Raise |
 | `distance_duration` | 10 | Running, Walking, Cycling, Rowing, Farmer Carry, Swimming |
+| `duration` | 4 | Stair Climber, Elliptical, Battle Ropes, Plank Jack |
 | `bodyweight_reps` | 1 | Dip |
 
 其中 **14 个是拉伸动作**（上游 `isStretch: true`）—— 我们种子里一个都没有：

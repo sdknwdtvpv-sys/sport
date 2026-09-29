@@ -15,6 +15,7 @@
       "lower_back"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 180,
     "default_weight_kg": 40,
@@ -36,6 +37,7 @@
       "core"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 180,
     "default_weight_kg": 30,
@@ -58,6 +60,7 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 16,
@@ -76,6 +79,7 @@
       "core"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 40,
@@ -95,6 +99,7 @@
       "glutes"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 40,
@@ -115,6 +120,7 @@
       "lower_back"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 150,
     "default_weight_kg": 40,
@@ -135,6 +141,7 @@
       "abs"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 180,
     "default_weight_kg": 35,
@@ -157,6 +164,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -179,6 +187,7 @@
       "hamstrings"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 60,
@@ -197,6 +206,7 @@
       "glutes"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 30,
@@ -219,6 +229,7 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 10,
@@ -238,6 +249,7 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 10,
@@ -261,6 +273,7 @@
       "hamstrings"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 10,
@@ -282,6 +295,7 @@
       "hamstrings"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 10,
@@ -299,6 +313,7 @@
       "core"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 30,
@@ -320,6 +335,7 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
@@ -340,6 +356,7 @@
       "quads"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 25,
@@ -357,6 +374,7 @@
       "quads"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 15,
@@ -377,6 +395,7 @@
       "calves"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 25,
@@ -395,6 +414,7 @@
       "calves"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 25,
@@ -417,6 +437,7 @@
       "lower_back"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 40,
@@ -438,6 +459,7 @@
       "lower_back"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 40,
@@ -459,6 +481,7 @@
       "obliques"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 10,
@@ -480,6 +503,7 @@
       "hamstrings"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 40,
@@ -498,6 +522,7 @@
       "hamstrings"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 40,
@@ -516,6 +541,7 @@
       "hamstrings"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -534,6 +560,7 @@
       "hamstrings"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 30,
@@ -552,6 +579,7 @@
       "hamstrings"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -573,6 +601,7 @@
       "core"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 30,
@@ -594,6 +623,7 @@
       "core"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 30,
@@ -613,6 +643,7 @@
       "calves"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 40,
@@ -630,6 +661,7 @@
       "calves"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 30,
@@ -647,6 +679,7 @@
       "calves"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 60,
@@ -667,6 +700,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -684,6 +718,7 @@
       "calves"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 40,
@@ -709,6 +744,7 @@
       "abs"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 150,
     "default_weight_kg": 25,
@@ -729,6 +765,7 @@
       "triceps"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 150,
     "default_weight_kg": 25,
@@ -751,6 +788,7 @@
       "triceps"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
@@ -769,6 +807,7 @@
       "obliques"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 10,
@@ -790,6 +829,7 @@
       "triceps"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
@@ -808,6 +848,7 @@
       "triceps"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
@@ -828,6 +869,7 @@
       "triceps"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 25,
@@ -851,6 +893,7 @@
       "chest"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 120,
     "default_weight_kg": null,
@@ -872,6 +915,7 @@
       "upper_back"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 5,
@@ -890,6 +934,7 @@
       "upper_back"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 5,
@@ -908,6 +953,7 @@
       "upper_back"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 15,
@@ -925,6 +971,7 @@
       "side_delts"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 5,
@@ -944,6 +991,7 @@
       "side_delts"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 6,
@@ -961,6 +1009,7 @@
       "side_delts"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 10,
@@ -981,6 +1030,7 @@
       "chest"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 6,
@@ -998,6 +1048,7 @@
       "front_delts"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 15,
@@ -1016,6 +1067,7 @@
       "chest"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 7.5,
@@ -1033,6 +1085,7 @@
       "front_delts"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 5,
@@ -1054,6 +1107,7 @@
       "traps"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 5,
@@ -1074,6 +1128,7 @@
       "traps"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 5,
@@ -1096,6 +1151,7 @@
       "upper_back"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 15,
@@ -1116,6 +1172,7 @@
       "upper_back"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 20,

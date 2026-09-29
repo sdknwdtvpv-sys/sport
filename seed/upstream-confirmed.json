@@ -189,12 +189,21 @@
       "ours": "chest",
       "upstream": "Triceps",
       "reason": "负重双杠臂屈伸在双杠上躯干前倾、主推**胸**；上游按伸肘归 Triceps。我们的动作名与用法都是胸主导，保持 chest。"
+    },
+    "ex_seal_jack": {
+      "ours": "legs",
+      "upstream": "Chest",
+      "reason": "海豹跳是**跳**（腿），上臂在胸前开合只是协同。上游按「上臂动作」归到 Chest，按它归会让这个热身出现在「胸日」。反正它是热身、不进轮转，归 legs 更贴近动作本身。"
     }
   },
   "vocab_not_extended": {
     "cardio": {
       "count": 6,
       "reason": "**不扩**。cardio 不是肌肉，是体能/供能系统的标签；我们的次肌群词表是给肌群热力图与恢复建议用的，塞进去会让热力图多出一块不存在的「肌肉」。上游拿它当次肌群用（波比跳、壶铃摆荡、滑冰跳…），我们在补库时也按同一把尺子把纯体能动作挡在库外（见 tool/add-upstream-exercises.mjs）。"
+    },
+    "mobility": {
+      "count": 10,
+      "reason": "**不扩**。mobility 不是肌肉，是「活动度」这个类别 —— 与 cardio 同理。上游拿它当次肌群用（猫牛式、摆腿、世界最伟大拉伸…）。这些动作我们收进来了（category=warmup/stretch），但它们的次肌群按真实肌肉标（摆腿→glutes/hamstrings/quads），不写一个叫 mobility 的假部位。"
     }
   }
 }

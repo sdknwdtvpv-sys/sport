@@ -230,6 +230,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          seed/upstream-workout-guide.json seed/upstream-workout-guide-LICENSE.txt \
          seed/upstream-confirmed.json docs/exercise-mapping-review.md \
          seed/upstream-zh-names.json seed/parts/04-from-upstream.json \
+         seed/popularity-tiers.json app/test/legacy_db.dart app/test/migration_test.dart \
          tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \

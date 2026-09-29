@@ -143,7 +143,7 @@ What deletion covers, to avoid misunderstanding:
 
 - **Deleted**: all workout and set records, preferences (including all switches), **and any
   analytics events not yet uploaded**
-- **Not deleted**: the built-in exercise catalog (318 exercises) — that is product content and
+- **Not deleted**: the built-in exercise catalog (339 exercises) — that is product content and
   contains nothing about you
 - It is a **hard delete**, not a flag. Deletion cannot be undone, and we hold no backup that
   could restore it.

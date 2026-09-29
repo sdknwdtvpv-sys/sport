@@ -50,10 +50,20 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   /// 只有一对哑铃的人不该被推荐杠铃卧推。
   String? _equipment;
 
-  /// 浏览态 = 没搜索、没筛部位、没筛器械。只有这个状态下才分区
+  /// 类别筛选（热身 / 拉伸 / null=全部）。
+  ///
+  /// 2026-09-29 加了热身与拉伸这两个类别之后，得让用户**找得到它们** ——
+  /// 这类动作的使用时机和力量动作不一样（练前 / 练后），
+  /// 混在 500 条「全部动作」里排到最后等于没有。所以给它一行自己的 chip。
+  String? _category;
+
+  /// 浏览态 = 没搜索、没筛部位、没筛器械、没筛类别。只有这个状态下才分区
   /// （分区是"我还不知道要练什么"时的陈列；筛过之后用户已经知道要找什么了）。
   bool get _browsing =>
-      _query.text.trim().isEmpty && _muscleGroup == null && _equipment == null;
+      _query.text.trim().isEmpty &&
+      _muscleGroup == null &&
+      _equipment == null &&
+      _category == null;
 
   @override
   void initState() {
@@ -73,6 +83,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       query: _query.text,
       muscleGroup: _muscleGroup,
       equipment: _equipment,
+      category: _category,
       // 浏览态要把「全部」也铺出来，所以多要一些；搜索态 60 条足够
       limit: browsing ? 500 : 60,
     );
@@ -234,6 +245,30 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 ),
               ),
             ),
+            // 类别这一行：热身与拉伸是**另外的使用时机**（练前 / 练后），
+            // 不给入口的话它们就是 500 条列表的最后几条 —— 等于没有。
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+              child: SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: <Widget>[
+                    _chip('全部类型', _category == null, () {
+                      _category = null;
+                      _load();
+                    }, key: 'cat-all'),
+                    // strength 不单独给 chip：它是这个 App 的默认语境，
+                    // 「全部类型」减去热身与拉伸就是它。
+                    for (final String c in const <String>['warmup', 'stretch'])
+                      _chip(categoryLabel(c), _category == c, () {
+                        _category = c;
+                        _load();
+                      }, key: 'cat-$c'),
+                  ],
+                ),
+              ),
+            ),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -337,7 +372,9 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       ),
       subtitle: Text(
         <String>[
-          muscleLabel(e.muscleGroup),
+          e.category == 'strength'
+              ? muscleLabel(e.muscleGroup)
+              : '${categoryLabel(e.category)} · ${muscleLabel(e.muscleGroup)}',
           equipmentLabel(e.equipment),
         ].join(' · '),
         style: const TextStyle(color: Tokens.text3, fontSize: 13),

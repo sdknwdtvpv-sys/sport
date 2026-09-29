@@ -49,6 +49,57 @@ void main() {
     return store;
   }
 
+  group('按类别筛选（热身 / 拉伸）', () {
+    // 2026-09-29：热身与拉伸进了库（12 + 9 条）。它们不加进来，"练完拉一下"就记不了；
+    // 但它们混在 339 条里排在最末（常用度 20），所以要有一行自己的入口。
+    testWidgets('筛「拉伸」→ 只剩拉伸，力量动作不见了', (WidgetTester tester) async {
+      await pumpPicker(tester);
+      expect(find.text('杠铃卧推'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('cat-stretch')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('杠铃卧推'), findsNothing);
+      expect(find.text('腘绳肌拉伸'), findsOneWidget);
+      expect(find.text('拉伸'), findsWidgets, reason: '标题里要标出类别，否则用户不知道自己筛了什么');
+    });
+
+    testWidgets('筛「热身」→ 开合跳在，拉伸不在', (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      await tester.tap(find.byKey(const Key('cat-warmup')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('开合跳'), findsOneWidget);
+      expect(find.text('腘绳肌拉伸'), findsNothing);
+    });
+
+    testWidgets('「全部类型」能退回去（默认就看得到全部）',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      await tester.tap(find.byKey(const Key('cat-warmup')));
+      await tester.pumpAndSettle();
+      expect(find.text('杠铃卧推'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('cat-all')));
+      await tester.pumpAndSettle();
+      expect(find.text('杠铃卧推'), findsOneWidget, reason: '退回全部类型');
+    });
+
+    testWidgets('类别与部位可以叠加（"腿部的拉伸"）', (WidgetTester tester) async {
+      await pumpPicker(tester);
+
+      await tester.tap(find.byKey(const Key('cat-stretch')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('腿'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('腘绳肌拉伸'), findsOneWidget);
+      expect(find.text('门框胸部拉伸'), findsNothing, reason: '胸部的拉伸不该出现在腿的筛选里');
+    });
+  });
+
   group('按器械筛选（居家 / 女性人群进来的第一道门）', () {
     testWidgets('筛哑铃 → 杠铃动作不再出现', (WidgetTester tester) async {
       await pumpPicker(tester);

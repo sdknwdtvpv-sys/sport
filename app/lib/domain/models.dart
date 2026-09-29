@@ -24,6 +24,7 @@ class ExerciseSpec {
     this.defaultWeightKg,
     this.defaultRestSec = 90,
     this.name = '',
+    this.category = 'strength',
     this.trackType = 'weight_reps',
   });
 
@@ -53,8 +54,18 @@ class ExerciseSpec {
 
   final String name;
 
+  /// strength | warmup | stretch（`docs/data-model.md`）。
+  ///
+  /// 缺省 `strength`：老 fixture、老调用点行为完全不变。
+  /// 「今天练什么」只从 strength 里挑 —— 这一条是 `today_planner` 的职责，
+  /// 引擎本身不关心类别（热身和拉伸也有可能要走推进建议）。
+  final String category;
+
   /// 自重动作：唯一可行的推进方式是加次数（或加秒数）。
   bool get isBodyweight => weightIncrement == 0;
+
+  /// 是不是力量动作 —— **推荐规则的唯一判据**。
+  bool get isStrength => category == 'strength';
 
   /// 按时长的动作：`reps` 这个数字表示**秒**。引擎对它们不说"次"。
   bool get isTime => isTimeTrack(trackType);

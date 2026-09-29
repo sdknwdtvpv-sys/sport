@@ -24,6 +24,16 @@ class Exercise extends Table {
   TextColumn get muscleGroup => text()();
   TextColumn get secondaryMuscles => text().withDefault(const Constant('[]'))();
   TextColumn get equipment => text()();
+
+  /// strength | warmup | stretch —— **决定它会不会进「今天练什么」的推荐**。
+  ///
+  /// 热身与拉伸是动作库的正常成员（能被搜到、能被选、能被记成一组），
+  /// 但它们不该当"今天练哪个部位"的答案。2026-09-29 之前它们根本不在库里 ——
+  /// 当时的做法是整类排除，那就连"练完拉一下"都记不了。类别比排除诚实。
+  ///
+  /// 缺省 'strength'：老库（v3）升上来时没有任何一行是热身/拉伸，缺省值就是正确答案。
+  TextColumn get category => text().withDefault(const Constant('strength'))();
+
   TextColumn get trackType => text().withDefault(const Constant('weight_reps'))();
   IntColumn get defaultRestSec => integer().withDefault(const Constant(90))();
   RealColumn get defaultWeightKg => real().nullable()();
@@ -220,11 +230,12 @@ class AppDatabase extends _$AppDatabase {
 
   /// v2：新增 `body_metric`（S12 身体数据）。
   /// v3：新增 `routine` / `routine_item`（S11 计划模板）。
+  /// v4：`exercise` 新增 `category`（热身/拉伸进库，但不进推荐）—— **第一次给已有表加列**。
   ///
-  /// **老版本的库已经装在用户手机上了**，所以每次加表都必须有 onUpgrade ——
-  /// 只加表不改 onUpgrade 的话，老用户的 App 一开就崩。
+  /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
+  /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -270,6 +281,12 @@ class AppDatabase extends _$AppDatabase {
               'CREATE INDEX IF NOT EXISTS idx_routine_item_routine '
               'ON routine_item (routine_id, position)',
             );
+          }
+          // v3 → v4：**加列**，不是加表。加列时是 NOT NULL + DEFAULT 'strength'，
+          // 所以老库里的 318 个动作全部落成 strength —— 这正是我们要的：
+          // 它们本来就都是力量动作。**不需要数据搬迁**（也不需要清表重建）。
+          if (from < 4) {
+            await m.addColumn(exercise, exercise.category);
           }
         },
       );

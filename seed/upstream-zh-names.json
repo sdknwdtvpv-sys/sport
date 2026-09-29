@@ -1,6 +1,6 @@
 {
-  "_note": "补库动作的中文名与别名（人工撰写）。键 = 上游 bryllim/workout-guide 的英文名。tool/add-upstream-exercises.mjs 读它 + seed/upstream-workout-guide.json 生成 seed/parts/04-from-upstream.json。其余字段（器械/肌群/类型/休息/步长/起始重量/常用度）都由规则推导，见那个脚本的头注释。",
-  "_skip_note": "不在本表里的上游动作 = 不补。排除规则见 tool/add-upstream-exercises.mjs（五类：有氧机 / 按时长的体能动作 / 拉伸 / 与我们已有动作语义重复 / 已有对应）。本表只写「要补的」的中文名，以及人工判定「重复」的那 12 条的 skip 理由；被规则扫掉的不在这里重复一遍。",
+  "_note": "补库动作的中文名与别名（人工撰写）。键 = 上游 bryllim/workout-guide 的英文名。tool/add-upstream-exercises.mjs 读它 + seed/upstream-workout-guide.json 生成 seed/parts/04-from-upstream.json。其余字段（器械/肌群/类型/休息/步长/起始重量/常用度）都由规则推导，见那个脚本的头注释。本表可**逐条覆盖**推导结果：muscle_group（上游写 Mobility 的，那不是肌群，必须人工给）、category（warmup/stretch —— 上游的 isStretch 与体能动作靠它进库）、equipment（跳绳：上游把器械写成 Cardio，但绳子是道具、负载是自重）。",
+  "_skip_note": "不在本表里的上游动作 = 不补。排除规则见 tool/add-upstream-exercises.mjs。本轮（2026-09-29）热身与拉伸**不再是排除理由** —— 它们进库、但标成 warmup/stretch，不进「今天练什么」的力量推荐。仍然不补的：有氧机（跑步机/划船机/椭圆机…）、与我们已有动作语义重复的 12 条、以及上游真没有的（另有说明）。",
   "names": {
     "Active Hang": {
       "name": "主动悬垂",
@@ -719,6 +719,139 @@
       "aliases": [
         "正握腕弯举"
       ]
+    },
+    "Arm Circles": {
+      "name": "绕臂",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "shoulders"
+    },
+    "Leg Swings": {
+      "name": "摆腿",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "legs"
+    },
+    "Torso Twists": {
+      "name": "躯干转体",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "core"
+    },
+    "World's Greatest Stretch": {
+      "name": "世界最伟大拉伸",
+      "aliases": [
+        "最伟大拉伸"
+      ],
+      "category": "warmup",
+      "muscle_group": "legs"
+    },
+    "Cat-Cow Stretch": {
+      "name": "猫牛式",
+      "aliases": [
+        "猫牛式拉伸"
+      ],
+      "category": "warmup",
+      "muscle_group": "core"
+    },
+    "Jumping Jack": {
+      "name": "开合跳",
+      "aliases": [
+        "开合跳热身"
+      ],
+      "category": "warmup",
+      "muscle_group": "legs"
+    },
+    "High Knees": {
+      "name": "高抬腿",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "legs"
+    },
+    "Fast Feet": {
+      "name": "快速碎步",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "legs"
+    },
+    "Lateral Shuffle": {
+      "name": "侧向滑步",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "legs"
+    },
+    "Seal Jack": {
+      "name": "海豹跳",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "legs"
+    },
+    "Bear Crawl": {
+      "name": "熊爬",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "core"
+    },
+    "Jump Rope": {
+      "name": "跳绳",
+      "aliases": [],
+      "category": "warmup",
+      "muscle_group": "legs",
+      "equipment": "bodyweight"
+    },
+    "Doorway Chest Stretch": {
+      "name": "门框胸部拉伸",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "chest"
+    },
+    "Child's Pose": {
+      "name": "婴儿式",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "back"
+    },
+    "Kneeling Hip Flexor Stretch": {
+      "name": "跪姿髂腰肌拉伸",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "legs"
+    },
+    "Hamstring Stretch": {
+      "name": "腘绳肌拉伸",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "legs"
+    },
+    "Standing Quad Stretch": {
+      "name": "站姿股四头肌拉伸",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "legs"
+    },
+    "Seated Forward Fold": {
+      "name": "坐姿体前屈",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "legs"
+    },
+    "Cross-Body Shoulder Stretch": {
+      "name": "交叉肩部拉伸",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "shoulders"
+    },
+    "Wall Calf Stretch": {
+      "name": "靠墙小腿拉伸",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "legs"
+    },
+    "Butterfly Stretch": {
+      "name": "蝴蝶式拉伸",
+      "aliases": [],
+      "category": "stretch",
+      "muscle_group": "legs"
     }
   }
 }

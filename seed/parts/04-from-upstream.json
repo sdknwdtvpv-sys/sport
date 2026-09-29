@@ -11,12 +11,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_archer_push_up",
@@ -32,8 +33,28 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_arm_circles",
+    "name": "绕臂",
+    "name_en": "Arm Circles",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "chest",
+      "upper_back"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -49,12 +70,13 @@
       "lats"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "assisted_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_assisted_dip",
@@ -66,12 +88,13 @@
       "chest"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "assisted_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_assisted_pistol_squat",
@@ -85,12 +108,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_band_pull_apart",
@@ -103,12 +127,13 @@
       "front_delts"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_clamshell",
@@ -120,12 +145,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_dead_bug",
@@ -138,12 +164,13 @@
       "front_delts"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_donkey_kick",
@@ -156,12 +183,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_face_pull",
@@ -174,12 +202,13 @@
       "front_delts"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_fire_hydrant",
@@ -191,12 +220,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_frog_pump",
@@ -208,12 +238,13 @@
       "hamstrings"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_glute_bridge",
@@ -226,12 +257,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_hip_thrust",
@@ -244,12 +276,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_kickback",
@@ -262,12 +295,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_lat_pulldown",
@@ -280,12 +314,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_lateral_walk",
@@ -300,12 +335,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_monster_walk",
@@ -319,12 +355,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_pallof_press",
@@ -337,12 +374,13 @@
       "front_delts"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_row",
@@ -355,12 +393,13 @@
       "upper_back"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_seated_hip_abduction",
@@ -372,12 +411,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_squat",
@@ -391,12 +431,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_banded_standing_hip_abduction",
@@ -408,12 +449,13 @@
       "core"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_banded_woodchop",
@@ -426,12 +468,13 @@
       "glutes"
     ],
     "equipment": "band",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_barbell_glute_bridge",
@@ -444,10 +487,30 @@
       "core"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_bear_crawl",
+    "name": "熊爬",
+    "name_en": "Bear Crawl",
+    "aliases": [],
+    "muscle_group": "core",
+    "secondary_muscles": [
+      "front_delts",
+      "quads"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 20
   },
@@ -462,12 +525,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_belt_squat",
@@ -479,12 +543,13 @@
       "glutes"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_bench_dip",
@@ -499,12 +564,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_bicycle_crunch",
@@ -518,12 +584,13 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_burpee",
@@ -539,8 +606,27 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_butterfly_stretch",
+    "name": "蝴蝶式拉伸",
+    "name_en": "Butterfly Stretch",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "adductors"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -556,12 +642,13 @@
       "hamstrings"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_cable_pallof_hold",
@@ -574,12 +661,13 @@
       "front_delts"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_cable_pull_through",
@@ -594,12 +682,13 @@
       "lower_back"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_cable_rear_delt_fly",
@@ -611,12 +700,13 @@
       "upper_back"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_cable_standing_hip_abduction",
@@ -628,12 +718,13 @@
       "core"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_cable_standing_hip_adduction",
@@ -646,12 +737,13 @@
       "glutes"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_cable_woodchop",
@@ -665,12 +757,13 @@
       "front_delts"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_calf_raise",
@@ -680,12 +773,13 @@
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_captains_chair_knee_raise",
@@ -699,10 +793,31 @@
       "front_delts"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": 20,
     "weight_increment": 5,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_cat_cow_stretch",
+    "name": "猫牛式",
+    "name_en": "Cat-Cow Stretch",
+    "aliases": [
+      "猫牛式拉伸"
+    ],
+    "muscle_group": "core",
+    "secondary_muscles": [
+      "lats"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 20
   },
@@ -717,8 +832,28 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_childs_pose",
+    "name": "婴儿式",
+    "name_en": "Child's Pose",
+    "aliases": [],
+    "muscle_group": "back",
+    "secondary_muscles": [
+      "front_delts",
+      "glutes"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -734,12 +869,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_commando_pull_up",
@@ -755,6 +891,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -773,12 +910,13 @@
       "glutes"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_cossack_squat",
@@ -794,12 +932,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_crab_walk",
@@ -813,8 +952,27 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_cross_body_shoulder_stretch",
+    "name": "交叉肩部拉伸",
+    "name_en": "Cross-Body Shoulder Stretch",
+    "aliases": [],
+    "muscle_group": "shoulders",
+    "secondary_muscles": [
+      "upper_back"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -832,12 +990,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_dead_hang",
@@ -851,12 +1010,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_decline_sit_up",
@@ -868,12 +1028,13 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_deficit_reverse_lunge",
@@ -887,12 +1048,13 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_donkey_calf_raise",
@@ -902,12 +1064,13 @@
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_donkey_kick",
@@ -922,8 +1085,27 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_doorway_chest_stretch",
+    "name": "门框胸部拉伸",
+    "name_en": "Doorway Chest Stretch",
+    "aliases": [],
+    "muscle_group": "chest",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -941,12 +1123,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_drag_curl",
@@ -958,12 +1141,13 @@
       "forearms"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_dragon_flag",
@@ -976,12 +1160,13 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_dumbbell_curtsy_lunge",
@@ -995,12 +1180,13 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_dumbbell_glute_bridge",
@@ -1013,12 +1199,13 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_dumbbell_hip_thrust",
@@ -1030,12 +1217,13 @@
       "hamstrings"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_dumbbell_lateral_lunge",
@@ -1049,12 +1237,13 @@
       "hamstrings"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_dumbbell_romanian_deadlift",
@@ -1069,12 +1258,13 @@
       "lower_back"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_dumbbell_side_bend",
@@ -1086,12 +1276,13 @@
       "grip"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_dumbbell_skull_crusher",
@@ -1103,12 +1294,13 @@
       "front_delts"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_dumbbell_sumo_deadlift",
@@ -1122,12 +1314,13 @@
       "adductors"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_dumbbell_sumo_squat",
@@ -1143,12 +1336,13 @@
       "hamstrings"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_explosive_push_up",
@@ -1164,8 +1358,27 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_fast_feet",
+    "name": "快速碎步",
+    "name_en": "Fast Feet",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "quads"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -1183,12 +1396,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_fire_hydrant",
@@ -1200,12 +1414,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_flutter_kick",
@@ -1219,12 +1434,13 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_forward_lunge",
@@ -1238,12 +1454,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_frog_pump",
@@ -1255,12 +1472,13 @@
       "hamstrings"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_front_foot_elevated_split_squat",
@@ -1273,12 +1491,13 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_glute_bridge_march",
@@ -1291,12 +1510,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_glute_focused_back_extension",
@@ -1309,12 +1529,13 @@
       "lower_back"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_good_morning",
@@ -1329,12 +1550,13 @@
       "lower_back"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_half_burpee",
@@ -1347,12 +1569,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_half_kneeling_pallof_press",
@@ -1365,10 +1588,29 @@
       "front_delts"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_hamstring_stretch",
+    "name": "腘绳肌拉伸",
+    "name_en": "Hamstring Stretch",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "calves"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 20
   },
@@ -1383,12 +1625,13 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_heel_tap",
@@ -1398,8 +1641,27 @@
     "muscle_group": "core",
     "secondary_muscles": [],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_high_knees",
+    "name": "高抬腿",
+    "name_en": "High Knees",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "core"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -1419,6 +1681,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -1437,6 +1700,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -1454,12 +1718,13 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_hollow_rock",
@@ -1471,12 +1736,13 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_inchworm",
@@ -1490,12 +1756,13 @@
       "chest"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_incline_cable_fly",
@@ -1507,10 +1774,29 @@
       "front_delts"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_jump_rope",
+    "name": "跳绳",
+    "name_en": "Jump Rope",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "front_delts"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 20
   },
@@ -1525,8 +1811,30 @@
       "calves"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_jumping_jack",
+    "name": "开合跳",
+    "name_en": "Jumping Jack",
+    "aliases": [
+      "开合跳热身"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "front_delts",
+      "calves"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -1543,12 +1851,13 @@
       "lower_back"
     ],
     "equipment": "kettlebell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 12,
     "weight_increment": 4,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_kettlebell_swing",
@@ -1563,12 +1872,13 @@
       "core"
     ],
     "equipment": "kettlebell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 12,
     "weight_increment": 4,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_knee_push_up",
@@ -1582,8 +1892,27 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_kneeling_hip_flexor_stretch",
+    "name": "跪姿髂腰肌拉伸",
+    "name_en": "Kneeling Hip Flexor Stretch",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "quads"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -1601,12 +1930,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_l_sit_pull_up",
@@ -1620,6 +1950,7 @@
       "forearms"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -1638,12 +1969,13 @@
       "triceps"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_landmine_romanian_deadlift",
@@ -1656,12 +1988,13 @@
       "lower_back"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_landmine_squat",
@@ -1674,10 +2007,50 @@
       "core"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_lateral_shuffle",
+    "name": "侧向滑步",
+    "name_en": "Lateral Shuffle",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "calves"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
+    "id": "ex_leg_swings_stretch",
+    "name": "摆腿",
+    "name_en": "Leg Swings",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings",
+      "quads"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 20
   },
@@ -1692,6 +2065,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -1709,12 +2083,13 @@
       "hamstrings"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_meadows_row",
@@ -1727,12 +2102,13 @@
       "rear_delts"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_negative_pull_up",
@@ -1748,12 +2124,13 @@
       "forearms"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_neutral_grip_pull_up",
@@ -1768,12 +2145,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_nordic_hamstring_curl",
@@ -1788,12 +2166,13 @@
       "calves"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_pike_push_up",
@@ -1809,12 +2188,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_pistol_squat",
@@ -1830,12 +2210,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_plank_shoulder_tap",
@@ -1848,12 +2229,13 @@
       "chest"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_plate_front_raise",
@@ -1865,12 +2247,13 @@
       "chest"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_prone_t_raise",
@@ -1883,12 +2266,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_prone_y_raise",
@@ -1901,12 +2285,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_push_press",
@@ -1919,12 +2304,13 @@
       "quads"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_push_up_shoulder_tap",
@@ -1938,12 +2324,13 @@
       "triceps"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_reverse_hyperextension",
@@ -1956,12 +2343,13 @@
       "lower_back"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_reverse_snow_angel",
@@ -1975,6 +2363,7 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -1994,12 +2383,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_scapular_push_up",
@@ -2013,8 +2403,47 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_seal_jack",
+    "name": "海豹跳",
+    "name_en": "Seal Jack",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "front_delts",
+      "quads"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 20
+  },
+  {
+    "id": "ex_seated_forward_fold_stretch",
+    "name": "坐姿体前屈",
+    "name_en": "Seated Forward Fold",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "lats",
+      "calves"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -2030,12 +2459,13 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_shrimp_squat",
@@ -2049,6 +2479,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -2066,12 +2497,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_side_lying_leg_raise",
@@ -2083,12 +2515,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_side_plank_hip_dip",
@@ -2101,12 +2534,13 @@
       "glutes"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_single_arm_dumbbell_tricep_extension",
@@ -2118,12 +2552,13 @@
       "front_delts"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_single_dumbbell_skullcrusher",
@@ -2135,6 +2570,7 @@
       "front_delts"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
@@ -2154,12 +2590,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_sissy_squat",
@@ -2172,6 +2609,7 @@
       "calves"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -2190,12 +2628,13 @@
       "calves"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_skater_squat",
@@ -2209,12 +2648,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_smith_machine_bulgarian_split_squat",
@@ -2227,12 +2667,13 @@
       "core"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_smith_machine_hip_thrust",
@@ -2245,12 +2686,13 @@
       "core"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_smith_machine_reverse_lunge",
@@ -2264,12 +2706,13 @@
       "core"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_smith_machine_romanian_deadlift",
@@ -2282,12 +2725,13 @@
       "lower_back"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_smith_machine_split_squat",
@@ -2300,12 +2744,13 @@
       "core"
     ],
     "equipment": "machine",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_spider_curl",
@@ -2317,12 +2762,13 @@
       "forearms"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_sprawl",
@@ -2335,12 +2781,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_squat_thrust",
@@ -2353,12 +2800,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_stability_ball_hamstring_curl",
@@ -2371,12 +2819,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_standing_dumbbell_press",
@@ -2391,10 +2840,29 @@
       "core"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
     "weight_increment": 2,
+    "is_builtin": 1,
+    "popularity": 78
+  },
+  {
+    "id": "ex_standing_quad_stretch",
+    "name": "站姿股四头肌拉伸",
+    "name_en": "Standing Quad Stretch",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes"
+    ],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
+    "default_weight_kg": null,
+    "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 20
   },
@@ -2410,12 +2878,13 @@
       "calves"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_step_up",
@@ -2427,12 +2896,13 @@
       "glutes"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_superman",
@@ -2446,12 +2916,13 @@
       "hamstrings"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_superman_hold",
@@ -2465,12 +2936,13 @@
       "hamstrings"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_toe_touch",
@@ -2480,8 +2952,27 @@
     "muscle_group": "core",
     "secondary_muscles": [],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_torso_twist_stretch",
+    "name": "躯干转体",
+    "name_en": "Torso Twists",
+    "aliases": [],
+    "muscle_group": "core",
+    "secondary_muscles": [
+      "lats"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -2498,6 +2989,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -2517,6 +3009,7 @@
       "upper_back"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -2536,6 +3029,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -2556,12 +3050,13 @@
       "grip"
     ],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_typewriter_push_up",
@@ -2575,6 +3070,7 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
@@ -2594,8 +3090,25 @@
       "quads"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 42
+  },
+  {
+    "id": "ex_wall_calf_stretch",
+    "name": "靠墙小腿拉伸",
+    "name_en": "Wall Calf Stretch",
+    "aliases": [],
+    "muscle_group": "legs",
+    "secondary_muscles": [],
+    "equipment": "bodyweight",
+    "category": "stretch",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -2613,12 +3126,13 @@
       "chest"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_wall_push_up",
@@ -2633,12 +3147,13 @@
       "front_delts"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_wall_sit",
@@ -2651,12 +3166,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "time",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_wall_walk",
@@ -2670,12 +3186,13 @@
       "triceps"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_weighted_chin_up",
@@ -2689,12 +3206,13 @@
       "lats"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   },
   {
     "id": "ex_weighted_crunch",
@@ -2704,12 +3222,13 @@
     "muscle_group": "core",
     "secondary_muscles": [],
     "equipment": "barbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_weighted_push_up",
@@ -2722,12 +3241,13 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_weighted_russian_twist",
@@ -2739,12 +3259,13 @@
       "front_delts"
     ],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 60,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 62
   },
   {
     "id": "ex_wide_grip_lat_pulldown",
@@ -2756,12 +3277,13 @@
       "biceps"
     ],
     "equipment": "cable",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 78
   },
   {
     "id": "ex_wide_push_up",
@@ -2775,8 +3297,31 @@
       "core"
     ],
     "equipment": "bodyweight",
+    "category": "strength",
     "track_type": "reps_only",
     "default_rest_sec": 60,
+    "default_weight_kg": null,
+    "weight_increment": 0,
+    "is_builtin": 1,
+    "popularity": 62
+  },
+  {
+    "id": "ex_worlds_greatest_stretch",
+    "name": "世界最伟大拉伸",
+    "name_en": "World's Greatest Stretch",
+    "aliases": [
+      "最伟大拉伸"
+    ],
+    "muscle_group": "legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings",
+      "upper_back"
+    ],
+    "equipment": "bodyweight",
+    "category": "warmup",
+    "track_type": "time",
+    "default_rest_sec": 30,
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
@@ -2792,11 +3337,12 @@
     "muscle_group": "arms",
     "secondary_muscles": [],
     "equipment": "dumbbell",
+    "category": "strength",
     "track_type": "weight_reps",
     "default_rest_sec": 90,
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 42
   }
 ]

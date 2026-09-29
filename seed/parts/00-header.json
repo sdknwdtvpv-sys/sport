@@ -20,6 +20,11 @@
     "band": "弹力带",
     "kettlebell": "壶铃"
   },
+  "categories": {
+    "strength": "力量",
+    "warmup": "热身",
+    "stretch": "拉伸"
+  },
   "field_notes": {
     "id": "稳定标识，进库后不可变更（用户历史数据引用它）",
     "default_weight_kg": "首次使用的建议起始重量，按 70kg 男性新手基准估算，仅作为无历史数据时的兜底；有历史后一律由规则引擎接管。后续版本应按用户体重比例缩放。null = 自重动作。",
@@ -27,7 +32,8 @@
     "popularity": "0-100，用于『常用动作』排序与动作选择器默认排序",
     "track_type": "怎么记这个动作。weight_reps 负重次数 / reps_only 自重次数 / time 按时长（数字是秒）/ weight_time 负重时长 / distance_time 有氧（**只保留词表，引擎未支持**）/ assisted_reps 辅助自重（**推进方向未实现**）。见 docs/data-model.md",
     "default_rest_sec": "默认组间休息秒数：复合动作 90-180，孤立动作 60，核心 45",
-    "secondary_muscles": "细粒度词汇（见 fine_muscles），用于肌群热力图；主部位仍是 muscle_group 的 6 个粗粒度分组，用于部位轮转"
+    "secondary_muscles": "细粒度词汇（见 fine_muscles），用于肌群热力图；主部位仍是 muscle_group 的 6 个粗粒度分组，用于部位轮转",
+    "category": "动作类别，**决定它会不会进「今天练什么」的推荐**：strength 力量 / warmup 热身 / stretch 拉伸。推荐只从 strength 里挑（today_planner 过滤）。热身与拉伸按秒记、没有重量（build.mjs 会校验 track_type=time 且 weight_increment=0）。2026-09-29 新增 —— 在那之前热身/拉伸被整类挡在库外，代价是'练完拉一下'也记不了。"
   },
   "fine_muscles": {
     "triceps": "肱三头肌",

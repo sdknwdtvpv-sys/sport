@@ -50,10 +50,13 @@ class ExerciseRepository {
   /// [equipment] 按器械过滤。**这不是锦上添花**：家里只有一对哑铃的人
   /// 不该被推荐杠铃卧推和腿举 —— 而这正是女性力量 / 居家训练那群人
   /// （乐刻报告：女性会员同比 +20.5%）进来的第一道门。
+  /// [category] 按类别过滤（strength / warmup / stretch）。传 `'strength'` 就是
+  /// **"只挑能当训练的动作"** —— 「今天练什么」必须传它，否则会把拉伸排进今天的计划里。
   Future<List<ExerciseData>> search({
     String query = '',
     String? muscleGroup,
     String? equipment,
+    String? category,
     int limit = 50,
   }) {
     final String q = query.trim();
@@ -65,6 +68,9 @@ class ExerciseRepository {
       }
       if (equipment != null) {
         cond = cond & t.equipment.equals(equipment);
+      }
+      if (category != null) {
+        cond = cond & t.category.equals(category);
       }
       if (q.isNotEmpty) {
         cond = cond & (t.name.like('%$q%') | t.aliases.like('%$q%'));
@@ -105,6 +111,7 @@ class ExerciseRepository {
         weightIncrement: e.weightIncrement,
         defaultWeightKg: e.defaultWeightKg,
         defaultRestSec: e.defaultRestSec,
+        category: e.category,
         trackType: e.trackType,
       );
 
@@ -147,6 +154,9 @@ class ExerciseRepository {
       muscleGroup: muscleGroup,
       secondaryMuscles: jsonEncode(const <String>[]),
       equipment: equipment,
+      // 用户自建的动作一律算力量动作：他想记的是一个训练动作。
+      // （要建"我自己的一套拉伸"，那是另一个功能，不是这里。）
+      category: 'strength',
       trackType: 'weight_reps',
       defaultRestSec: defaultRestSec,
       defaultWeightKg: startWeight,
@@ -160,7 +170,7 @@ class ExerciseRepository {
     return (await byId(row.id))!;
   }
 
-  /// ⚠️ 这 13 个必填字段是照 db.g.dart 里的 ExerciseData 构造签名核对的。
+  /// ⚠️ 这里的必填字段是照 db.g.dart 里的 ExerciseData 构造签名核对的。
   /// drift 的 withDefault() 只加 SQL 层 DEFAULT，Dart 数据类里这些字段仍是 required
   /// （踩过一次坑：SetRecordData 的 isPr）。
   ExerciseData _toData(Map<String, dynamic> e) => ExerciseData(
@@ -171,6 +181,9 @@ class ExerciseRepository {
         muscleGroup: e['muscle_group'] as String,
         secondaryMuscles: jsonEncode(e['secondary_muscles'] ?? const <String>[]),
         equipment: e['equipment'] as String,
+        // 缺省 strength：老种子文件里没有这个字段（2026-09-29 之前），
+        // 而那时库里没有一个热身/拉伸动作 —— 缺省值就是对的。
+        category: (e['category'] as String?) ?? 'strength',
         trackType: (e['track_type'] as String?) ?? 'weight_reps',
         defaultRestSec: (e['default_rest_sec'] as num?)?.toInt() ?? 90,
         defaultWeightKg: (e['default_weight_kg'] as num?)?.toDouble(),
