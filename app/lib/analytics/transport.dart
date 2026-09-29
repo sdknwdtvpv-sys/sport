@@ -39,8 +39,10 @@ class FakeAnalyticsTransport implements AnalyticsTransport {
 
 /// 真身：POST 一个 JSON 到 [endpoint]。
 ///
-/// ⚠️ **没有后端，所以这条路径只在本地环回服务器上验证过**（见 `analytics_test.dart`）。
-/// 接入真地址后还需要再验一次。
+/// **2026-09-30 已在真机上端到端验证过**（Redmi flourite → `adb reverse` → 本机收集端）：
+/// 9 次冷启动收到 9 条 `app_open`、1 台设备、无重复投递；
+/// 反向对照（不带地址的正式包）发出 0 条。做法与结果见 `docs/analytics.md` §10。
+/// 在此之前这里写的是"没有后端，只在本地环回服务器上验证过"—— 那句话已经过期了。
 class HttpAnalyticsTransport implements AnalyticsTransport {
   HttpAnalyticsTransport({
     required this.endpoint,

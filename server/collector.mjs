@@ -144,7 +144,14 @@ if (process.argv[1] && process.argv[1].endsWith('collector.mjs')) {
     console.log(`  收：POST /v1/events   看：GET /healthz /stats`);
     console.log(`  落盘：${outDir}/events-YYYY-MM-DD.jsonl`);
     console.log('');
-    console.log('  让 App 发到这里（真机联调用本机 IP，不是 127.0.0.1）：');
-    console.log(`    flutter run --dart-define=LIANLEME_ANALYTICS_URL=http://<你的IP>:${port}/v1/events`);
+    console.log('  让 App 发到这里，两条路选一条：');
+    console.log('  1) 真机 + USB（推荐，不用同一 Wi-Fi）：');
+    console.log(`       adb reverse tcp:${port} tcp:${port}`);
+    console.log(`       flutter build apk --release --dart-define=LIANLEME_ANALYTICS_URL=http://127.0.0.1:${port}/v1/events`);
+    console.log('  2) 真机 + 同一局域网（用本机 IP，不是 127.0.0.1）：');
+    console.log(`       flutter run --dart-define=LIANLEME_ANALYTICS_URL=http://<你的IP>:${port}/v1/events`);
+    console.log('');
+    console.log('  验完务必换回不带地址的正式包：配了地址的包会真的往外发。');
+    console.log('  （2026-09-30 用第 1 条做过一次真机端到端，见 docs/analytics.md §10）');
   });
 }
