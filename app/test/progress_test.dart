@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/drift_local_store.dart';
@@ -211,7 +212,7 @@ void main() {
     tearDown(() => db.close());
 
     Future<void> pumpProgress(WidgetTester tester,
-        {BodyMetricRepository? body}) async {
+        {BodyMetricRepository? body, WeightUnit unit = WeightUnit.kg}) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: ProgressScreen(
@@ -219,6 +220,7 @@ void main() {
             repository: repo,
             bodyMetrics: body,
             now: kToday,
+            unit: unit,
           ),
         ),
       ));
@@ -283,6 +285,29 @@ void main() {
       expect(find.textContaining('2026-09-28'), findsOneWidget);
       expect(find.textContaining('空腹'), findsOneWidget);
       expect(find.text('更新'), findsOneWidget, reason: '已有记录时按钮是"更新"');
+    });
+
+    testWidgets('体重跟随显示单位 —— 不能在两个页面显示两种单位',
+        (WidgetTester tester) async {
+      // 2026-09-29 用户在真机上问："身体数据里千克为什么变成磅了？"
+      // 答案是全局单位设置（存储始终 kg，只有显示换）。
+      // 但顺着查发现**这块卡片硬写着 kg**：lb 用户在「进步」看到 85.5 kg、
+      // 在「身体数据」看到 188.5 lb —— 同一个体重、两块屏、两种单位。
+      final BodyMetricRepository body = BodyMetricRepository(db);
+      await body.save(date: '2026-09-28', weightKg: 85.5, nowMs: 1);
+
+      await pumpProgress(tester, body: body, unit: WeightUnit.lb);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('progress-weight'))).data,
+        '188.5 lb',
+        reason: '85.5 kg 的显示值（存储仍是 85.5 kg）',
+      );
+
+      await pumpProgress(tester, body: body, unit: WeightUnit.kg);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('progress-weight'))).data,
+        '85.5 kg',
+      );
     });
 
     testWidgets('一次都没练过也要显示体重卡片（体重和训练是两件事）',

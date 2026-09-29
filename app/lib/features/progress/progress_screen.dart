@@ -118,7 +118,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        w.weightKg == null ? '—' : '${_trim(w.weightKg)} kg',
+                        // 走**唯一**的重量格式化入口 —— 这里以前硬写着 `kg` + 自己 _trim，
+                        // 于是单位是 lb 的用户会在「进步」看到「85.5 kg」、
+                        // 在「身体数据」看到「188.5 lb」：同一个体重，两个单位两块屏。
+                        formatWeight(w.weightKg, widget.unit),
                         key: const Key('progress-weight'),
                         style: const TextStyle(
                           color: Tokens.text,
@@ -178,10 +181,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     await _load();
   }
 
-  String _trim(double? v) {
-    if (v == null) return '';
-    return v == v.roundToDouble() ? v.toInt().toString() : v.toString();
-  }
 
   @override
   Widget build(BuildContext context) {
