@@ -3,20 +3,23 @@
  * 练了么 · 上游动作库映射（生成 `docs/exercise-mapping.md`）
  *
  * **它解决什么**：我们的种子有 165 个动作，上游 `bryllim/workout-guide` 有 302 个。
- * 名字能精确对上的只有 85 个 —— 剩下的 80 个里，大部分只是**命名习惯不同**
- * （`Chest Press Machine` vs `Machine Chest Press`），少数是真的没有对应。
- * 这份表就是给**人**逐条复核用的：工具只给候选与相似度，**不下结论**。
+ * 名字能精确对上的只有 85 个 —— 剩下的 80 个里，大部分只是**命名习惯不同**。
+ * 这份表给**人**逐条复核用：工具只给候选与相似度，**不下结论**
+ * （`Romanian Deadlift` 与 `Deadlift` 名字极近但是两个动作，自动接受等于往动作库里灌错数据）。
  *
- * 为什么不下结论：`Romanian Deadlift` 和 `Deadlift` 名字极近，但是两个动作。
- * 自动接受这一类猜测，等于往动作库里灌错数据 —— 而动作库是产品资产。
+ * 人工复核的结论落在 `seed/upstream-confirmed.json`（来自 `docs/exercise-mapping-review.md`）：
+ * 本工具消费它，把"已确认"移出待办、把"否掉"连同理由留档，
+ * 并把**两件仍需决策的事**算出来摆在最后：
+ *   1. 上游提到、我们词表里根本没有的次肌群标签（要扩词表才能补）
+ *   2. 主肌群归类与上游不一致的动作（改它会改变"今天练什么"的部位轮转）
  *
  * 用法：
  *   node tool/map-upstream.mjs            # 重新生成 docs/exercise-mapping.md
- *   node tool/map-upstream.mjs --check    # 只看有没有漂移，不写文件（CI 可跑）
+ *   node tool/map-upstream.mjs --check    # 只查有没有漂移，不写文件（verify.sh 第 1 层会跑）
  *
- * 输入：
- *   seed/upstream-workout-guide.json   —— 上游元数据快照（只留字段，不含插画）
- *   seed/exercises.json                —— 我们的种子（构建产物）
+ * 输入：seed/upstream-workout-guide.json（上游元数据快照，MIT，不含插画）
+ *       seed/exercises.json（我们的种子，构建产物）
+ *       seed/upstream-confirmed.json（人工复核结论）
  *
  * 退出码：--check 且输出与磁盘不一致 → 1
  */
@@ -29,10 +32,14 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'docs/exercise-mapping.md');
 const checkOnly = process.argv.includes('--check');
 
-const upstream = JSON.parse(readFileSync(join(ROOT, 'seed/upstream-workout-guide.json'), 'utf8'));
+const snapshot = JSON.parse(readFileSync(join(ROOT, 'seed/upstream-workout-guide.json'), 'utf8'));
+const upstream = snapshot.exercises;
 const ours = JSON.parse(readFileSync(join(ROOT, 'seed/exercises.json'), 'utf8')).exercises;
+const review = JSON.parse(readFileSync(join(ROOT, 'seed/upstream-confirmed.json'), 'utf8'));
+// 「按上游补了什么次肌群」由本工具自己算 —— 不另存一份 JSON：
+// 孤儿数据文件没人管就会漂移，而这些事实完全可以从种子 + 上游快照重新算出来。
 
-/** 上游 exerciseType → 我们的 track_type（这套映射是本次工作的核心产出）。 */
+/** 上游 exerciseType → 我们的 track_type（本次工作的核心产出）。 */
 const TYPE_MAP = {
   weight_reps: 'weight_reps',
   bodyweight_reps: 'reps_only',
@@ -40,11 +47,22 @@ const TYPE_MAP = {
   distance_duration: 'distance_time',
   assisted_bodyweight: 'assisted_reps',
 };
+/** 上游次肌群 → 我们的同义标签（只列明确的同义，别的算"词表缺值"）。 */
+const MUSCLE_SYNONYM = {
+  shoulders: 'front_delts', reardelts: 'rear_delts', upperback: 'upper_back',
+  lowerback: 'lower_back', groin: 'adductors', legs: 'quads', back: 'lats',
+};
+/** 上游 primaryMuscle → 我们的 6 值部位（用于查归类分歧）。 */
+const GROUP_OF = {
+  chest: 'chest', back: 'back', lats: 'back', upperback: 'back', lowerback: 'back',
+  triceps: 'arms', biceps: 'arms', forearms: 'arms',
+  shoulders: 'shoulders', reardelts: 'shoulders',
+  core: 'core', mobility: 'core',
+  quads: 'legs', hamstrings: 'legs', glutes: 'legs', legs: 'legs', calves: 'legs',
+  adductors: 'legs', hips: 'legs', posteriorchain: 'legs',
+};
 
-/** 只保留字母数字：`Chest Press Machine` → `chestpressmachine`。 */
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-/** 词集合的 Jaccard 相似度：给"命名习惯不同"的候选打分。 */
 const tokens = (s) => new Set(String(s ?? '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(' ').filter(Boolean));
 function jaccard(a, b) {
   const A = tokens(a), B = tokens(b);
@@ -54,137 +72,275 @@ function jaccard(a, b) {
   return inter / (A.size + B.size - inter);
 }
 
-const byName = new Map();
-for (const e of upstream.exercises) byName.set(norm(e.name), e);
-
 // ---------------------------------------------------------------- 分类
+//
+// 一条硬规矩：复核文件里写的 id / 上游名必须真实存在。
+// 写错一个字母就静静什么都不发生，是这类"人写的数据文件"最常见的失败方式。
 
-const matched = [];       // 精确命中
-const unmatched = [];     // 未命中
+const byUpstreamName = new Map(upstream.map((u) => [u.name, u]));
+const byId = new Map(ours.map((o) => [o.id, o]));
+const problems = [];
+for (const [id, name] of Object.entries(review.confirmed)) {
+  if (!byId.has(id)) problems.push(`confirmed 里的 \`${id}\` 在种子里不存在`);
+  if (!byUpstreamName.has(name)) problems.push(`confirmed 里 ${id} 指向的上游动作「${name}」不存在`);
+}
+for (const [id, v] of Object.entries(review.rejected)) {
+  if (!byId.has(id)) problems.push(`rejected 里的 \`${id}\` 在种子里不存在`);
+  if (!byUpstreamName.has(v.upstream)) problems.push(`rejected 里 ${id} 的上游动作「${v.upstream}」不存在`);
+}
+if (problems.length) {
+  console.error('✗ 复核结论引用了不存在的东西：\n' + problems.map((p) => '  · ' + p).join('\n'));
+  process.exit(1);
+}
+
+const exactByNorm = new Map(upstream.map((u) => [norm(u.name), u]));
+/** 我们次肌群词表里**已经有的**标签集合。 */
+const ourSecondaryVocab = new Set(ours.flatMap((o) => o.secondary_muscles));
+
+const matchedExact = [];   // 英文名精确命中
+const unmatched = [];      // 未命中
 for (const o of ours) {
-  const u = byName.get(norm(o.name_en));
-  if (u) matched.push({ o, u });
-  else unmatched.push(o);
+  const u = exactByNorm.get(norm(o.name_en));
+  if (u) matchedExact.push({ o, u }); else unmatched.push(o);
 }
 
-/** 未命中里，为每个动作找相似度最高的上游候选（含分数）。 */
+/** 未命中里，相似度 ≥ 0.5 的候选（与复核文件的候选集合同口径）。 */
 function candidatesFor(o) {
-  const scored = upstream.exercises
+  return upstream
     .map((u) => ({ u, score: jaccard(o.name_en, u.name) }))
-    .sort((a, b) => b.score - a.score || a.u.name.localeCompare(b.u.name));
-  return scored.slice(0, 3).filter((c) => c.score > 0);
+    .sort((a, b) => b.score - a.score || a.u.name.localeCompare(b.u.name))[0];
+}
+const candidates = unmatched
+  .map((o) => ({ o, top: candidatesFor(o) }))
+  .filter((c) => c.top.score >= 0.5);
+
+const confirmedIds = Object.keys(review.confirmed);
+const rejectedIds = Object.keys(review.rejected);
+const pendingCandidates = candidates.filter(
+  (c) => !confirmedIds.includes(c.o.id) && !rejectedIds.includes(c.o.id));
+
+/** 全部"有上游对应"的动作：精确命中 + 人工确认。字段对照都基于这个集合。 */
+const linked = [
+  ...matchedExact,
+  ...confirmedIds.map((id) => ({ o: byId.get(id), u: byUpstreamName.get(review.confirmed[id]) })),
+];
+
+/** 上游次肌群比我们多、且那个标签我们词表里已经有的部分（就是实际补上的那些）。 */
+const secondaryAdds = {};
+for (const { o, u } of linked) {
+  const have = new Set(o.secondary_muscles.map(norm));
+  const add = [];
+  for (const m of u.secondaryMuscles) {
+    const k = norm(m);
+    const t = MUSCLE_SYNONYM[k] ?? k;
+    if (have.has(k) || have.has(norm(t))) continue;
+    if (ourSecondaryVocab.has(t) && !add.includes(t)) add.push(t);
+  }
+  if (add.length) secondaryAdds[o.id] = add;
 }
 
-const strong = [];   // ≥ 0.5：很可能只是命名习惯不同
-const weak = [];     // < 0.5：很可能真的没有对应
-for (const o of unmatched) {
-  const top = candidatesFor(o)[0];
-  if (top && top.score >= 0.5) strong.push({ o, top });
-  else weak.push({ o, top });
-}
+const typeFixes = linked
+  .map(({ o, u }) => ({ o, u, want: TYPE_MAP[u.exerciseType] }))
+  .filter((f) => f.want !== f.o.track_type);
 
-const typeFixes = [];
-for (const { o, u } of matched) {
-  const want = TYPE_MAP[u.exerciseType];
-  if (want !== o.track_type) typeFixes.push({ o, u, want });
+/** 主肌群归类分歧。 */
+const groupConflicts = linked
+  .map(({ o, u }) => ({ o, u, mapped: GROUP_OF[norm(u.primaryMuscle)] }))
+  .filter((c) => c.mapped && c.mapped !== c.o.muscle_group);
+
+/** 上游提到、我们词表里没有的次肌群标签（要扩词表才能补）。 */
+const vocabGaps = new Map();
+for (const { o, u } of linked) {
+  const have = new Set(o.secondary_muscles.map(norm));
+  for (const m of u.secondaryMuscles) {
+    const k = norm(m);
+    const t = MUSCLE_SYNONYM[k] ?? k;
+    if (have.has(k) || have.has(norm(t))) continue;
+    if (ourSecondaryVocab.has(t)) continue;
+    if (!vocabGaps.has(t)) vocabGaps.set(t, []);
+    vocabGaps.get(t).push(o.id);
+  }
 }
 
 // ---------------------------------------------------------------- 生成
 
 const L = [];
-L.push('# 上游动作库映射（待人工复核）');
-L.push('');
-L.push('> **这不是结论，是一张给人过的候选表。** 工具只给候选与相似度；');
-L.push('> `Romanian Deadlift` 与 `Deadlift` 名字极近但是两个动作 —— 自动接受这类猜测');
-L.push('> 等于往动作库里灌错数据，而动作库是产品资产。');
-L.push('>');
-L.push(`> 由 \`node tool/map-upstream.mjs\` 生成，输入是 \`seed/upstream-workout-guide.json\``);
-L.push(`> （上游 \`bryllim/workout-guide\` @ \`${upstream._provenance.commit.slice(0, 8)}\` 的元数据快照，MIT，不含插画）。`);
-L.push('');
-L.push('## 总览');
-L.push('');
-L.push('| 项 | 数量 |');
-L.push('|---|---|');
-L.push(`| 我们的动作 | ${ours.length} |`);
-L.push(`| 上游动作 | ${upstream.exercises.length} |`);
-L.push(`| **英文名精确命中** | **${matched.length}**（${Math.round((matched.length / ours.length) * 100)}%） |`);
-L.push(`| 未命中：疑似只是命名不同（相似度 ≥ 0.5） | ${strong.length} |`);
-L.push(`| 未命中：疑似真的没有对应（< 0.5） | ${weak.length} |`);
-L.push(`| 上游有、我们没有 | ${upstream.exercises.length - matched.length} |`);
-L.push('');
-L.push('## 一、已命中、但类型标错的动作（可直接改，有上游依据）');
-L.push('');
+const P = (s = '') => L.push(s);
+
+P('# 上游动作库映射（活文档）');
+P('');
+P('> **这不是结论，是一张给人过的候选表。** 工具只给候选与相似度；');
+P('> `Romanian Deadlift` 与 `Deadlift` 名字极近但是两个动作 —— 自动接受这类猜测');
+P('> 等于往动作库里灌错数据，而动作库是产品资产。');
+P('>');
+P('> **人工复核的结论已经落进 `seed/upstream-confirmed.json`**（复核过程见');
+P(`> \`${review._review}\`），本文件由它驱动：已确认的移出待办、否掉的连理由留档。`);
+P('>');
+P(`> 由 \`node tool/map-upstream.mjs\` 生成。上游快照 = \`bryllim/workout-guide\` @`
+  + ` \`${snapshot._provenance.commit.slice(0, 8)}\`（MIT，**不含插画**）。`);
+P('');
+P('## 总览');
+P('');
+P('| 项 | 数量 |');
+P('|---|---|');
+P(`| 我们的动作 | ${ours.length} |`);
+P(`| 上游动作 | ${upstream.length} |`);
+P(`| **有上游对应**（精确命中 ${matchedExact.length} + 人工确认 ${confirmedIds.length}） | **${linked.length}** |`);
+P(`| 已复核：确认一致 | ${confirmedIds.length} |`);
+P(`| 已复核：命名相近但动作不同 | ${rejectedIds.length} |`);
+P(`| 待人工复核的候选（相似度 ≥ 0.5） | ${pendingCandidates.length} |`);
+P(`| 未命中且相似度 < 0.5（自行维护） | ${unmatched.length - candidates.length} |`);
+P(`| 上游有、我们没有 | ${upstream.length - linked.length} |`);
+P('');
+P(`## 一、有上游对应、但类型标错的动作${typeFixes.length ? '' : '（当前为空 ✅）'}`);
+P('');
 if (!typeFixes.length) {
-  L.push('（没有 —— 种子的 `track_type` 与上游一致）');
+  P('没有 —— 种子的 `track_type` 与上游逐条一致。（这条曾经有 26 处，2026-09-29 修完。）');
 } else {
-  L.push('| 我们的 id | 中文名 | 英文名 | 现在 | **应为** | 上游 exerciseType |');
-  L.push('|---|---|---|---|---|---|');
+  P('| 我们的 id | 中文名 | 现在 | **应为** | 上游 exerciseType |');
+  P('|---|---|---|---|---|');
   for (const f of typeFixes.sort((a, b) => a.want.localeCompare(b.want) || a.o.id.localeCompare(b.o.id))) {
-    L.push(`| \`${f.o.id}\` | ${f.o.name} | ${f.o.name_en} | \`${f.o.track_type}\` | **\`${f.want}\`** | \`${f.u.exerciseType}\` |`);
+    P(`| \`${f.o.id}\` | ${f.o.name} | \`${f.o.track_type}\` | **\`${f.want}\`** | \`${f.u.exerciseType}\` |`);
   }
 }
-L.push('');
-L.push('## 二、未命中：候选映射（相似度 ≥ 0.5，**待人工确认**）');
-L.push('');
-L.push('| 我们的 id | 中文名 | 英文名 | 最相近的上游动作 | 相似度 | 上游类型 | 上游器械 |');
-L.push('|---|---|---|---|---|---|---|');
-for (const { o, top } of strong.sort((a, b) => b.top.score - a.top.score || a.o.id.localeCompare(b.o.id))) {
-  L.push(`| \`${o.id}\` | ${o.name} | ${o.name_en} | ${top.u.name} | ${top.score.toFixed(2)} | \`${top.u.exerciseType}\` | ${top.u.equipment} |`);
+P('');
+P(`## 二、已复核确认（${confirmedIds.length} 个）：上游同一个动作，字段可借`);
+P('');
+P('| 我们的 id | 我们的英文名 | 上游动作 | 上游器械 | 相似度 | 按上游补了什么 |');
+P('|---|---|---|---|---|---|');
+for (const id of confirmedIds.sort()) {
+  const o = byId.get(id);
+  const u = byUpstreamName.get(review.confirmed[id]);
+  const score = matchedExact.some((m) => m.o.id === id) ? '精确同名' : jaccard(o.name_en, u.name).toFixed(2);
+  const gains = [];
+  if (TYPE_MAP[u.exerciseType] !== o.track_type) gains.push(`\`track_type\` → \`${TYPE_MAP[u.exerciseType]}\``);
+  if (u.equipment.toLowerCase() !== o.equipment) gains.push(`\`equipment\` → ${u.equipment}`);
+  if (secondaryAdds[id]) gains.push(`次肌群 + ${secondaryAdds[id].map((m) => `\`${m}\``).join(' ')}`);
+  P(`| \`${id}\` | ${o.name_en} | ${u.name} | ${u.equipment} | ${score} | ${gains.join('；') || '（已一致，无需补）'} |`);
 }
-L.push('');
-L.push('## 三、未命中且相似度低（< 0.5）—— 很可能上游真没有');
-L.push('');
-L.push('这些动作**我们自己维护**：上游没有对应，也就没有类型/器械/肌群可借。');
-L.push('');
-L.push('| 我们的 id | 中文名 | 英文名 | 最近的候选（若有） | 相似度 |');
-L.push('|---|---|---|---|---|');
-for (const { o, top } of weak.sort((a, b) => a.o.id.localeCompare(b.o.id))) {
-  L.push(`| \`${o.id}\` | ${o.name} | ${o.name_en} | ${top ? top.u.name : '—'} | ${top ? top.score.toFixed(2) : '—'} |`);
+P('');
+P('> **绝大多数「已一致」是有意义的结论，不是空转**：它们的 `track_type` 与 `equipment`');
+P('> 本来就对 —— 类型词表能表达的维度，在第 26 处修正时已经全部对齐。');
+P('');
+P(`## 三、已复核：命名相近但动作不同（${rejectedIds.length} 个，不再重新纠结）`);
+P('');
+P('| 我们的 id | 我们的英文名 | 曾被误指的上游动作 | 为什么不是同一个 |');
+P('|---|---|---|---|');
+for (const id of rejectedIds.sort()) {
+  const o = byId.get(id);
+  const v = review.rejected[id];
+  P(`| \`${id}\` | ${o.name_en} | ${v.upstream} | ${v.reason} |`);
 }
-L.push('');
-L.push('## 四、上游有、我们没有（可选补库）');
-L.push('');
+P('');
+if (pendingCandidates.length) {
+  P(`## 四、待人工复核的候选（${pendingCandidates.length} 个，相似度 ≥ 0.5）`);
+  P('');
+  P('| 我们的 id | 中文名 | 英文名 | 最相近的上游动作 | 相似度 | 上游类型 | 上游器械 |');
+  P('|---|---|---|---|---|---|---|');
+  for (const { o, top } of pendingCandidates.sort((a, b) => b.top.score - a.top.score)) {
+    P(`| \`${o.id}\` | ${o.name} | ${o.name_en} | ${top.u.name} | ${top.score.toFixed(2)} | \`${top.u.exerciseType}\` | ${top.u.equipment} |`);
+  }
+  P('');
+} else {
+  P('## 四、待人工复核的候选：**已清空 ✅**');
+  P('');
+  P('相似度 ≥ 0.5 的候选已全部被复核过（确认或否掉）。');
+  P('');
+}
+P(`## 五、仍需决策的两件事（工具算出来的，等人拍板）`);
+P('');
+P(`### 5.1 上游提到、我们词表里没有的次肌群标签（${vocabGaps.size} 个标签）`);
+P('');
+if (!vocabGaps.size) {
+  P('（无）');
+} else {
+  P('这些标签上游在用、我们的 21 值词表里没有。**补它们要先决定扩不扩词表** ——');
+  P('扩了以后 `docs/data-model.md` 与 `app/lib/core/labels.dart` 都要跟着改。');
+  P('');
+  P('| 上游标签 | 涉及我们的动作数 | 例 |');
+  P('|---|---|---|');
+  for (const [label, ids] of [...vocabGaps.entries()].sort((a, b) => b[1].length - a[1].length)) {
+    P(`| \`${label}\` | ${ids.length} | ${ids.slice(0, 4).map((i) => `\`${i}\``).join(' ')} |`);
+  }
+}
+P('');
+P(`### 5.2 主肌群归类与上游不一致（${groupConflicts.length} 个）`);
+P('');
+P('**改这些会改变"今天练什么"的部位轮转**（部位轮转按 `muscle_group` 走），所以是产品决策：');
+P('');
+P('| 我们的 id | 我们 | 上游 primaryMuscle | 按映射会归到 |');
+P('|---|---|---|---|');
+for (const c of groupConflicts.sort((a, b) => a.o.id.localeCompare(b.o.id))) {
+  P(`| \`${c.o.id}\` | ${c.o.muscle_group} | ${c.u.primaryMuscle} | ${c.mapped} |`);
+}
+P('');
+const addTotal = Object.values(secondaryAdds).reduce((a, v) => a + v.length, 0);
+P(`## 六、次肌群对齐情况（还差 ${Object.keys(secondaryAdds).length} 个动作 / ${addTotal} 个标签）`);
+P('');
+P('这是一份**实时差异**：上游 `secondaryMuscles` 列出、而我们没有的标签 ——');
+P('只统计"我们词表里已经有、只是没打在这个动作上"的那部分（需要新词表的见 5.1）。');
+P('');
+if (!addTotal) {
+  P('**当前为 0：已对齐。** 上游列出的次肌群，要么我们本来就有，要么是词表缺值（5.1）。');
+  P('');
+  P('> 2026-09-29 这一轮补了 51 个动作 / 59 个标签（**纯增量**，我们更细的标签如');
+  P('> `front_delts` 一律保留），过程记在 `CHANGELOG.md`。之后每改种子都重新算一次，');
+  P('> 有差异就会出现在下表里。');
+} else {
+  P('| 我们的 id | 还差 |');
+  P('|---|---|');
+}
+for (const [id, ms] of Object.entries(secondaryAdds).sort()) {
+  P(`| \`${id}\` | ${ms.map((m) => `\`${m}\``).join(' ')} |`);
+}
+P('');
+P(`## 七、上游有、我们没有（可选补库）`);
+P('');
 const oursNames = new Set(ours.map((o) => norm(o.name_en)));
-const onlyUpstream = upstream.exercises.filter((u) => !oursNames.has(norm(u.name)));
+const onlyUpstream = upstream.filter((u) => !oursNames.has(norm(u.name)) && !Object.values(review.confirmed).includes(u.name));
 const byType = new Map();
 for (const u of onlyUpstream) {
   if (!byType.has(u.exerciseType)) byType.set(u.exerciseType, []);
   byType.get(u.exerciseType).push(u.name);
 }
-L.push('| 上游类型 | 数量 | 例 |');
-L.push('|---|---|---|');
+P('| 上游类型 | 数量 | 例 |');
+P('|---|---|---|');
 for (const [t, names] of [...byType.entries()].sort((a, b) => b[1].length - a[1].length)) {
-  L.push(`| \`${t}\` | ${names.length} | ${names.slice(0, 6).join(', ')} |`);
+  P(`| \`${t}\` | ${names.length} | ${names.slice(0, 6).join(', ')} |`);
 }
-const stretches = upstream.exercises.filter((u) => u.isStretch).map((u) => u.name);
-L.push('');
-L.push(`其中 **${stretches.length} 个是拉伸动作**（上游 \`isStretch: true\`）—— 我们种子里一个都没有：`);
-L.push('');
-L.push(`> ${stretches.join(', ')}`);
-L.push('');
-L.push('---');
-L.push('');
-L.push('## 五、复核完之后怎么用');
-L.push('');
-L.push('1. **第一节**可以直接改种子（有上游依据，不需要人判断）：改 `seed/parts/*.json` 的 `track_type`。');
-L.push('2. **第二节**逐行确认 → 确认后可以借上游的 `exerciseType` / `equipment` / `primaryMuscle` 补我们缺的字段；');
-L.push('   不确认就留在表里，别猜。');
-L.push('3. **第三节**说明这些动作得自己维护（上游帮不上）。');
-L.push('4. **第四节**是"要不要补库"的产品决策：有氧与拉伸目前是整块空白。');
-L.push('');
+const stretches = upstream.filter((u) => u.isStretch).map((u) => u.name);
+P('');
+P(`其中 **${stretches.length} 个是拉伸动作**（上游 \`isStretch: true\`）—— 我们种子里一个都没有：`);
+P('');
+P(`> ${stretches.join(', ')}`);
+P('');
+P('---');
+P('');
+P('## 八、改完之后怎么跑');
+P('');
+P('```bash');
+P('node tool/map-upstream.mjs            # 改了种子或复核结论之后重新生成本文');
+P('node tool/map-upstream.mjs --check    # verify.sh 第 1 层会跑：过期就红');
+P('```');
+P('');
+P('复核结论写在 `seed/upstream-confirmed.json`：确认项进 `confirmed`，否掉项进 `rejected`（带理由）。');
+P('写错 id 或上游名会**直接报错退出**，不会静静什么都不发生。');
+P('');
 
 const text = L.join('\n');
 
 if (checkOnly) {
   const old = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
   if (old !== text) {
-    console.error('✗ docs/exercise-mapping.md 与当前种子/上游快照不一致，跑 `node tool/map-upstream.mjs` 重新生成');
+    console.error('✗ docs/exercise-mapping.md 与当前种子/复核结论不一致，跑 `node tool/map-upstream.mjs` 重新生成');
     process.exitCode = 1;
   } else {
-    console.log('✓ docs/exercise-mapping.md 与种子一致');
+    console.log('✓ docs/exercise-mapping.md 与种子、复核结论一致');
   }
 } else {
   writeFileSync(OUT, text, 'utf8');
-  console.log(`✓ 已生成 docs/exercise-mapping.md`);
-  console.log(`  命中 ${matched.length} / 待改类型 ${typeFixes.length} / 候选待确认 ${strong.length} / 疑似无对应 ${weak.length}`);
+  console.log('✓ 已生成 docs/exercise-mapping.md');
+  console.log(`  有对应 ${linked.length}（精确 ${matchedExact.length} + 确认 ${confirmedIds.length}）`
+    + ` / 已否掉 ${rejectedIds.length} / 待复核 ${pendingCandidates.length}`
+    + ` / 类型待改 ${typeFixes.length} / 待决策：词表 ${vocabGaps.size} 项、主肌群 ${groupConflicts.length} 项`);
 }

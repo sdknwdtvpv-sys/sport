@@ -8,6 +8,31 @@
 
 ## 未切版（v1.2.0 之后的改动，尚未打 tag）
 
+### 内容 · 复核结论落地：17 项确认 + 39 项否掉留档 + 51 个动作补次肌群
+
+**背景**：`docs/exercise-mapping.md` 的 54 个候选由人逐条复核，结论写在
+`docs/exercise-mapping-review.md`。这一版把结论**落成数据**并执行：
+
+- `seed/upstream-confirmed.json` —— 复核结论（`confirmed` 17 / `rejected` 39 **带理由**）。
+  工具消费它：确认项移出待办，否掉项连理由留档，免得下一个人重新纠结一遍
+- 写错 id 或上游名会**直接报错退出** —— "人写的数据文件里一个字母写错、静静什么都不发生"
+  是这类文件最常见的失败方式
+- **17 项确认项逐个对字段**：`track_type` 与 `equipment` **全部已经一致**
+  （类型词表能表达的维度，在上一版修完 26 处时就对齐了）—— 这是一次核对，不是改动
+- 两个边界项按你的判断确认：`ex_db_shoulder_press`（我们种子的别名里就写着「坐姿哑铃推举」，
+  与上游 `Dumbbell Seated Shoulder Press` 同一动作）；另外查源数据后升级确认
+  `ex_bb_squat`（上游光秃秃的 `Squat` = Barbell/Quads）与 `ex_straight_bar_pushdown`
+  （上游另一个叫 `Rope Tricep Pushdown`，光秃的那个就是直杆版）
+- **51 个动作补了 59 个次肌群标签**（纯增量，我们自己更细的标签如 `front_delts` 一律保留）。
+  其中 3 个动作原本次肌群是**空的**（`ex_smith_squat`/`ex_bodyweight_squat`/`ex_lateral_lunge`）。
+  最常补上的是 `core`(17)、`front_delts`(14)、`hamstrings`(7)、`rear_delts`(6)
+- `docs/exercise-mapping.md` 改成**活文档**：生成器消费复核结论，并把**两件仍需决策的事
+  算出来摆在最后**（§5）：需要扩词表才能补的 3 个次肌群标签（`chest`/`upper_back`/`grip`）、
+  以及 5 处主肌群归类分歧（**改它会改变"今天练什么"的部位轮转**，所以是产品决策）
+
+**顺带抓到自己一个错**：第一版"可补的 51 个"比较逻辑里 `target` 没归一化就与归一化过的集合比，
+把"只是叫法不同"也算成了"缺标签"。修好后才有的这份数字。
+
 ### 内容 · 按上游把 26 处 track_type 修对 + 产出可复核的上游映射表（A 批）
 
 **背景**：上一轮我只手工判了 3 个平板支撑。这次把上游 `bryllim/workout-guide`

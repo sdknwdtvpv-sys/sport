@@ -1,0 +1,181 @@
+{
+  "_note": "上游映射的**人工复核结论**。来自 docs/exercise-mapping-review.md，tool/map-upstream.mjs 消费它：确认项移出「待确认」并注明可借上游字段；否掉项连同理由留档，免得下一个人重新纠结一遍。改这里等于改结论。",
+  "_review": "docs/exercise-mapping-review.md",
+  "confirmed": {
+    "ex_machine_chest_press": "Machine Chest Press",
+    "ex_bb_decline_bench_press": "Decline Bench Press",
+    "ex_bb_incline_bench_press": "Incline Bench Press",
+    "ex_overhead_db_extension": "Dumbbell Overhead Tricep Extension",
+    "ex_bb_bench_press": "Bench Press",
+    "ex_db_front_raise": "Front Raise",
+    "ex_db_lateral_raise": "Lateral Raise",
+    "ex_hip_abduction": "Hip Abduction Machine",
+    "ex_hip_adduction": "Hip Adduction Machine",
+    "ex_hip_thrust": "Hip Thrust",
+    "ex_machine_pec_deck": "Pec Deck",
+    "ex_machine_row": "Machine Row",
+    "ex_reverse_bb_curl": "Reverse Curl",
+    "ex_overhead_cable_extension": "Overhead Tricep Extension",
+    "ex_db_shoulder_press": "Dumbbell Seated Shoulder Press",
+    "ex_bb_squat": "Squat",
+    "ex_straight_bar_pushdown": "Tricep Pushdown"
+  },
+  "rejected": {
+    "ex_bb_front_raise": {
+      "upstream": "Front Raise",
+      "reason": "上游器械是 Dumbbell，我们是 Barbell"
+    },
+    "ex_bent_over_cable_fly": {
+      "upstream": "Cable Fly",
+      "reason": "器械或姿态不同"
+    },
+    "ex_box_squat": {
+      "upstream": "Squat",
+      "reason": "器械或姿态不同"
+    },
+    "ex_cable_hammer_curl": {
+      "upstream": "Hammer Curl",
+      "reason": "锤式与普通 Cable Curl 不同"
+    },
+    "ex_cable_reverse_curl": {
+      "upstream": "Cable Curl",
+      "reason": "反握与普通 Cable Curl 不同"
+    },
+    "ex_cable_side_bend": {
+      "upstream": "Dumbbell Side Bend",
+      "reason": "器械或姿态不同"
+    },
+    "ex_close_grip_smith": {
+      "upstream": "Close-Grip Bench Press",
+      "reason": "存在 close-grip 限定差异"
+    },
+    "ex_db_alternating_curl": {
+      "upstream": "Incline Dumbbell Curl",
+      "reason": "器械或姿态不同"
+    },
+    "ex_db_close_grip_press": {
+      "upstream": "Close-Grip Bench Press",
+      "reason": "剩余项：命名相近但动作不同（复核第二节）"
+    },
+    "ex_db_curl": {
+      "upstream": "Incline Dumbbell Curl",
+      "reason": "上斜/器械变体不同"
+    },
+    "ex_db_incline_fly": {
+      "upstream": "Dumbbell Fly",
+      "reason": "上斜/器械变体不同"
+    },
+    "ex_hanging_side_leg_raise": {
+      "upstream": "Hanging Leg Raise",
+      "reason": "侧举腿 vs 直腿举腿"
+    },
+    "ex_incline_hammer_curl": {
+      "upstream": "Hammer Curl",
+      "reason": "上斜/器械变体不同"
+    },
+    "ex_lean_away_lateral": {
+      "upstream": "Lateral Raise",
+      "reason": "器械或姿态不同"
+    },
+    "ex_machine_crunch": {
+      "upstream": "Crunch",
+      "reason": "器械或姿态不同"
+    },
+    "ex_machine_hip_thrust": {
+      "upstream": "Smith Machine Hip Thrust",
+      "reason": "器械不同（Machine vs Smith Machine）"
+    },
+    "ex_machine_incline_press": {
+      "upstream": "Machine Chest Press",
+      "reason": "角度不同（上斜 vs 平）"
+    },
+    "ex_pause_squat": {
+      "upstream": "Squat",
+      "reason": "存在 pause 限定差异"
+    },
+    "ex_reverse_grip_bb_row": {
+      "upstream": "Barbell Row",
+      "reason": "存在 reverse-grip 限定差异"
+    },
+    "ex_reverse_grip_pulldown": {
+      "upstream": "Close-Grip Lat Pulldown",
+      "reason": "存在 reverse-grip 限定差异"
+    },
+    "ex_reverse_wrist_curl": {
+      "upstream": "Reverse Curl",
+      "reason": "腕弯举与普通弯举不同"
+    },
+    "ex_side_crunch": {
+      "upstream": "Crunch",
+      "reason": "器械或姿态不同"
+    },
+    "ex_single_arm_cable_front": {
+      "upstream": "Cable Front Raise",
+      "reason": "存在 single-arm 限定差异"
+    },
+    "ex_single_arm_cable_lateral": {
+      "upstream": "Cable Lateral Raise",
+      "reason": "存在 single-arm 限定差异"
+    },
+    "ex_single_arm_db_press": {
+      "upstream": "One-Arm Dumbbell Row",
+      "reason": "存在 single-arm 限定差异"
+    },
+    "ex_single_arm_machine_row": {
+      "upstream": "Single-Arm Cable Row",
+      "reason": "存在 single-arm 限定差异"
+    },
+    "ex_single_arm_overhead_cable": {
+      "upstream": "Single-Arm Cable Row",
+      "reason": "存在 single-arm 限定差异"
+    },
+    "ex_single_arm_pulldown": {
+      "upstream": "Lat Pulldown",
+      "reason": "存在 single-arm 限定差异"
+    },
+    "ex_single_leg_extension": {
+      "upstream": "Leg Extension",
+      "reason": "剩余项：命名相近但动作不同（复核第二节）"
+    },
+    "ex_single_leg_press": {
+      "upstream": "Leg Press",
+      "reason": "剩余项：命名相近但动作不同（复核第二节）"
+    },
+    "ex_sit_up": {
+      "upstream": "Decline Sit-Up",
+      "reason": "角度不同（vs Decline Sit-Up）"
+    },
+    "ex_smith_calf_raise": {
+      "upstream": "Calf Raise",
+      "reason": "器械或姿态不同"
+    },
+    "ex_smith_incline_press": {
+      "upstream": "Smith Machine Bench Press",
+      "reason": "剩余项：命名相近但动作不同（复核第二节）"
+    },
+    "ex_smith_lateral_raise": {
+      "upstream": "Machine Lateral Raise",
+      "reason": "史密斯 vs 普通器械"
+    },
+    "ex_smith_shoulder_press": {
+      "upstream": "Machine Shoulder Press",
+      "reason": "史密斯 vs 普通器械"
+    },
+    "ex_two_arm_db_row": {
+      "upstream": "One-Arm Dumbbell Row",
+      "reason": "剩余项：命名相近但动作不同（复核第二节）"
+    },
+    "ex_weighted_glute_bridge": {
+      "upstream": "Glute Bridge",
+      "reason": "存在 weighted 限定差异"
+    },
+    "ex_weighted_plank": {
+      "upstream": "Plank",
+      "reason": "器械或姿态不同"
+    },
+    "ex_wide_t_bar_row": {
+      "upstream": "T-Bar Row",
+      "reason": "剩余项：命名相近但动作不同（复核第二节）"
+    }
+  }
+}

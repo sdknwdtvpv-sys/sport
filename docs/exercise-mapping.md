@@ -1,11 +1,13 @@
-# 上游动作库映射（待人工复核）
+# 上游动作库映射（活文档）
 
 > **这不是结论，是一张给人过的候选表。** 工具只给候选与相似度；
 > `Romanian Deadlift` 与 `Deadlift` 名字极近但是两个动作 —— 自动接受这类猜测
 > 等于往动作库里灌错数据，而动作库是产品资产。
 >
-> 由 `node tool/map-upstream.mjs` 生成，输入是 `seed/upstream-workout-guide.json`
-> （上游 `bryllim/workout-guide` @ `aac59922` 的元数据快照，MIT，不含插画）。
+> **人工复核的结论已经落进 `seed/upstream-confirmed.json`**（复核过程见
+> `docs/exercise-mapping-review.md`），本文件由它驱动：已确认的移出待办、否掉的连理由留档。
+>
+> 由 `node tool/map-upstream.mjs` 生成。上游快照 = `bryllim/workout-guide` @ `aac59922`（MIT，**不含插画**）。
 
 ## 总览
 
@@ -13,113 +15,132 @@
 |---|---|
 | 我们的动作 | 165 |
 | 上游动作 | 302 |
-| **英文名精确命中** | **85**（52%） |
-| 未命中：疑似只是命名不同（相似度 ≥ 0.5） | 54 |
-| 未命中：疑似真的没有对应（< 0.5） | 26 |
-| 上游有、我们没有 | 217 |
+| **有上游对应**（精确命中 85 + 人工确认 17） | **102** |
+| 已复核：确认一致 | 17 |
+| 已复核：命名相近但动作不同 | 39 |
+| 待人工复核的候选（相似度 ≥ 0.5） | 0 |
+| 未命中且相似度 < 0.5（自行维护） | 26 |
+| 上游有、我们没有 | 200 |
 
-## 一、已命中、但类型标错的动作（可直接改，有上游依据）
+## 一、有上游对应、但类型标错的动作（当前为空 ✅）
 
-（没有 —— 种子的 `track_type` 与上游一致）
+没有 —— 种子的 `track_type` 与上游逐条一致。（这条曾经有 26 处，2026-09-29 修完。）
 
-## 二、未命中：候选映射（相似度 ≥ 0.5，**待人工确认**）
+## 二、已复核确认（17 个）：上游同一个动作，字段可借
 
-| 我们的 id | 中文名 | 英文名 | 最相近的上游动作 | 相似度 | 上游类型 | 上游器械 |
-|---|---|---|---|---|---|---|
-| `ex_machine_chest_press` | 器械推胸 | Chest Press Machine | Machine Chest Press | 1.00 | `weight_reps` | Machine |
-| `ex_bb_decline_bench_press` | 下斜杠铃卧推 | Decline Barbell Bench Press | Decline Bench Press | 0.75 | `weight_reps` | Barbell |
-| `ex_bb_incline_bench_press` | 上斜杠铃卧推 | Incline Barbell Bench Press | Incline Bench Press | 0.75 | `weight_reps` | Barbell |
-| `ex_db_shoulder_press` | 哑铃推举 | Dumbbell Shoulder Press | Dumbbell Seated Shoulder Press | 0.75 | `weight_reps` | Dumbbell |
-| `ex_hanging_side_leg_raise` | 悬垂侧举腿 | Hanging Side Leg Raise | Hanging Leg Raise | 0.75 | `bodyweight_reps` | Bodyweight |
-| `ex_machine_hip_thrust` | 器械臀推 | Machine Hip Thrust | Smith Machine Hip Thrust | 0.75 | `weight_reps` | Machine |
-| `ex_machine_incline_press` | 上斜器械推胸 | Incline Chest Press Machine | Machine Chest Press | 0.75 | `weight_reps` | Machine |
-| `ex_overhead_db_extension` | 哑铃颈后臂屈伸 | Overhead Dumbbell Extension | Dumbbell Overhead Tricep Extension | 0.75 | `weight_reps` | Dumbbell |
-| `ex_smith_lateral_raise` | 史密斯侧平举 | Smith Machine Lateral Raise | Machine Lateral Raise | 0.75 | `weight_reps` | Machine |
-| `ex_smith_shoulder_press` | 史密斯推举 | Smith Machine Shoulder Press | Machine Shoulder Press | 0.75 | `weight_reps` | Machine |
-| `ex_bb_bench_press` | 杠铃卧推 | Barbell Bench Press | Bench Press | 0.67 | `weight_reps` | Barbell |
-| `ex_bb_front_raise` | 杠铃前平举 | Barbell Front Raise | Front Raise | 0.67 | `weight_reps` | Dumbbell |
-| `ex_cable_hammer_curl` | 绳索锤式弯举 | Cable Hammer Curl | Cable Curl | 0.67 | `weight_reps` | Cable |
-| `ex_cable_reverse_curl` | 绳索反握弯举 | Cable Reverse Curl | Cable Curl | 0.67 | `weight_reps` | Cable |
-| `ex_db_curl` | 哑铃弯举 | Dumbbell Curl | Incline Dumbbell Curl | 0.67 | `weight_reps` | Dumbbell |
-| `ex_db_front_raise` | 哑铃前平举 | Dumbbell Front Raise | Front Raise | 0.67 | `weight_reps` | Dumbbell |
-| `ex_db_incline_fly` | 上斜哑铃飞鸟 | Incline Dumbbell Fly | Dumbbell Fly | 0.67 | `weight_reps` | Dumbbell |
-| `ex_db_lateral_raise` | 哑铃侧平举 | Dumbbell Lateral Raise | Lateral Raise | 0.67 | `weight_reps` | Dumbbell |
-| `ex_hip_abduction` | 髋外展 | Hip Abduction | Hip Abduction Machine | 0.67 | `weight_reps` | Machine |
-| `ex_hip_adduction` | 髋内收 | Hip Adduction | Hip Adduction Machine | 0.67 | `weight_reps` | Machine |
-| `ex_hip_thrust` | 臀推 | Barbell Hip Thrust | Hip Thrust | 0.67 | `weight_reps` | Barbell |
-| `ex_incline_hammer_curl` | 斜托锤式弯举 | Incline Hammer Curl | Hammer Curl | 0.67 | `weight_reps` | Dumbbell |
-| `ex_machine_pec_deck` | 蝴蝶机夹胸 | Pec Deck Fly | Pec Deck | 0.67 | `weight_reps` | Machine |
-| `ex_machine_row` | 器械划船 | Seated Row Machine | Machine Row | 0.67 | `weight_reps` | Machine |
-| `ex_reverse_bb_curl` | 反握杠铃弯举 | Reverse Barbell Curl | Reverse Curl | 0.67 | `weight_reps` | Barbell |
-| `ex_reverse_wrist_curl` | 反向腕弯举 | Reverse Wrist Curl | Reverse Curl | 0.67 | `weight_reps` | Barbell |
-| `ex_single_leg_extension` | 单腿腿屈伸 | Single-Leg Extension | Leg Extension | 0.67 | `weight_reps` | Machine |
-| `ex_single_leg_press` | 单腿腿举 | Single-Leg Press | Leg Press | 0.67 | `weight_reps` | Machine |
-| `ex_sit_up` | 仰卧起坐 | Sit-up | Decline Sit-Up | 0.67 | `bodyweight_reps` | Bench |
-| `ex_weighted_glute_bridge` | 负重臀桥 | Weighted Glute Bridge | Glute Bridge | 0.67 | `bodyweight_reps` | Bodyweight |
-| `ex_close_grip_smith` | 窄握史密斯卧推 | Close-Grip Smith Press | Close-Grip Bench Press | 0.60 | `weight_reps` | Barbell |
-| `ex_db_close_grip_press` | 窄距哑铃卧推 | Close-Grip Dumbbell Press | Close-Grip Bench Press | 0.60 | `weight_reps` | Barbell |
-| `ex_reverse_grip_pulldown` | 反握高位下拉 | Reverse-Grip Lat Pulldown | Close-Grip Lat Pulldown | 0.60 | `weight_reps` | Cable |
-| `ex_single_arm_cable_front` | 单臂绳索前平举 | Single-Arm Cable Front Raise | Cable Front Raise | 0.60 | `weight_reps` | Cable |
-| `ex_single_arm_cable_lateral` | 单臂绳索侧平举 | Single-Arm Cable Lateral Raise | Cable Lateral Raise | 0.60 | `weight_reps` | Cable |
-| `ex_single_arm_db_press` | 单臂哑铃推举 | One-Arm Dumbbell Press | One-Arm Dumbbell Row | 0.60 | `weight_reps` | Dumbbell |
-| `ex_single_arm_machine_row` | 单臂器械划船 | Single-Arm Machine Row | Single-Arm Cable Row | 0.60 | `weight_reps` | Cable |
-| `ex_smith_incline_press` | 史密斯上斜卧推 | Smith Machine Incline Press | Smith Machine Bench Press | 0.60 | `weight_reps` | Machine |
-| `ex_two_arm_db_row` | 双臂哑铃划船 | Two-Arm Dumbbell Row | One-Arm Dumbbell Row | 0.60 | `weight_reps` | Dumbbell |
-| `ex_wide_t_bar_row` | 宽握T杠划船 | Wide-Grip T-Bar Row | T-Bar Row | 0.60 | `weight_reps` | Machine |
-| `ex_bent_over_cable_fly` | 俯身绳索飞鸟 | Bent-Over Cable Fly | Cable Fly | 0.50 | `weight_reps` | Cable |
-| `ex_box_squat` | 箱式深蹲 | Box Squat | Single-Leg Box Squat | 0.50 | `bodyweight_reps` | Box |
-| `ex_cable_side_bend` | 绳索侧屈 | Cable Side Bend | Dumbbell Side Bend | 0.50 | `weight_reps` | Dumbbell |
-| `ex_db_alternating_curl` | 哑铃交替弯举 | Alternating Dumbbell Curl | Incline Dumbbell Curl | 0.50 | `weight_reps` | Dumbbell |
-| `ex_lean_away_lateral` | 斜托侧平举 | Lean-Away Lateral Raise | Lateral Raise | 0.50 | `weight_reps` | Dumbbell |
-| `ex_machine_crunch` | 器械卷腹 | Machine Crunch | Crunch | 0.50 | `bodyweight_reps` | Bodyweight |
-| `ex_overhead_cable_extension` | 绳索过顶臂屈伸 | Overhead Cable Extension | Overhead Tricep Extension | 0.50 | `weight_reps` | Cable |
-| `ex_pause_squat` | 暂停深蹲 | Pause Squat | Squat | 0.50 | `weight_reps` | Barbell |
-| `ex_reverse_grip_bb_row` | 反握杠铃划船 | Reverse-Grip Barbell Row | Barbell Row | 0.50 | `weight_reps` | Barbell |
-| `ex_side_crunch` | 侧卷腹 | Side Crunch | Crunch | 0.50 | `bodyweight_reps` | Bodyweight |
-| `ex_single_arm_overhead_cable` | 单臂绳索过顶臂屈伸 | Single-Arm Overhead Cable Extension | Single-Arm Cable Row | 0.50 | `weight_reps` | Cable |
-| `ex_single_arm_pulldown` | 单臂高位下拉 | Single-Arm Lat Pulldown | Lat Pulldown | 0.50 | `weight_reps` | Cable |
-| `ex_smith_calf_raise` | 史密斯提踵 | Smith Machine Calf Raise | Calf Raise | 0.50 | `bodyweight_reps` | Bodyweight |
-| `ex_weighted_plank` | 负重平板支撑 | Weighted Plank | Plank | 0.50 | `duration` | Bodyweight |
+| 我们的 id | 我们的英文名 | 上游动作 | 上游器械 | 相似度 | 按上游补了什么 |
+|---|---|---|---|---|---|
+| `ex_bb_bench_press` | Barbell Bench Press | Bench Press | Barbell | 0.67 | （已一致，无需补） |
+| `ex_bb_decline_bench_press` | Decline Barbell Bench Press | Decline Bench Press | Barbell | 0.75 | （已一致，无需补） |
+| `ex_bb_incline_bench_press` | Incline Barbell Bench Press | Incline Bench Press | Barbell | 0.75 | （已一致，无需补） |
+| `ex_bb_squat` | Barbell Back Squat | Squat | Barbell | 0.33 | （已一致，无需补） |
+| `ex_db_front_raise` | Dumbbell Front Raise | Front Raise | Dumbbell | 0.67 | （已一致，无需补） |
+| `ex_db_lateral_raise` | Dumbbell Lateral Raise | Lateral Raise | Dumbbell | 0.67 | （已一致，无需补） |
+| `ex_db_shoulder_press` | Dumbbell Shoulder Press | Dumbbell Seated Shoulder Press | Dumbbell | 0.75 | （已一致，无需补） |
+| `ex_hip_abduction` | Hip Abduction | Hip Abduction Machine | Machine | 0.67 | （已一致，无需补） |
+| `ex_hip_adduction` | Hip Adduction | Hip Adduction Machine | Machine | 0.67 | （已一致，无需补） |
+| `ex_hip_thrust` | Barbell Hip Thrust | Hip Thrust | Barbell | 0.67 | （已一致，无需补） |
+| `ex_machine_chest_press` | Chest Press Machine | Machine Chest Press | Machine | 1.00 | （已一致，无需补） |
+| `ex_machine_pec_deck` | Pec Deck Fly | Pec Deck | Machine | 0.67 | （已一致，无需补） |
+| `ex_machine_row` | Seated Row Machine | Machine Row | Machine | 0.67 | （已一致，无需补） |
+| `ex_overhead_cable_extension` | Overhead Cable Extension | Overhead Tricep Extension | Cable | 0.50 | （已一致，无需补） |
+| `ex_overhead_db_extension` | Overhead Dumbbell Extension | Dumbbell Overhead Tricep Extension | Dumbbell | 0.75 | （已一致，无需补） |
+| `ex_reverse_bb_curl` | Reverse Barbell Curl | Reverse Curl | Barbell | 0.67 | （已一致，无需补） |
+| `ex_straight_bar_pushdown` | Straight-Bar Pushdown | Tricep Pushdown | Cable | 0.25 | （已一致，无需补） |
 
-## 三、未命中且相似度低（< 0.5）—— 很可能上游真没有
+> **绝大多数「已一致」是有意义的结论，不是空转**：它们的 `track_type` 与 `equipment`
+> 本来就对 —— 类型词表能表达的维度，在第 26 处修正时已经全部对齐。
 
-这些动作**我们自己维护**：上游没有对应，也就没有类型/器械/肌群可借。
+## 三、已复核：命名相近但动作不同（39 个，不再重新纠结）
 
-| 我们的 id | 中文名 | 英文名 | 最近的候选（若有） | 相似度 |
-|---|---|---|---|---|
-| `ex_bb_curl` | 杠铃弯举 | Barbell Curl | Barbell Row | 0.33 |
-| `ex_bb_floor_press` | 地板卧推 | Barbell Floor Press | Arnold Press | 0.25 |
-| `ex_bb_lunge` | 杠铃箭步蹲 | Barbell Lunge | Barbell Row | 0.33 |
-| `ex_bb_squat` | 杠铃深蹲 | Barbell Back Squat | Squat | 0.33 |
-| `ex_bent_over_db_fly` | 俯身哑铃飞鸟 | Bent-Over Reverse Fly | Dumbbell Bent Over Row | 0.33 |
-| `ex_cable_crossover` | 绳索夹胸 | Cable Crossover | Cable Crunch | 0.33 |
-| `ex_cable_high_fly` | 高位绳索夹胸 | High Cable Crossover | Cable Crunch | 0.25 |
-| `ex_cable_low_fly` | 低位绳索夹胸 | Low Cable Crossover | Cable Crunch | 0.25 |
-| `ex_cable_pushdown` | 绳索下压 | Cable Triceps Pushdown | Cable Crunch | 0.25 |
-| `ex_db_pullover` | 哑铃仰卧屈臂上拉 | Dumbbell Pullover | Dumbbell Fly | 0.33 |
-| `ex_db_swissball_press` | 瑞士球哑铃卧推 | Swiss Ball Dumbbell Press | Decline Dumbbell Press | 0.40 |
-| `ex_farmer_walk` | 农夫行走 | Farmer's Walk | Crab Walk | 0.25 |
-| `ex_heel_touch` | 仰卧交替触踝 | Heel Touch | Heel Tap | 0.33 |
-| `ex_machine_curl` | 器械弯举 | Machine Curl | Bicep Curl | 0.33 |
-| `ex_machine_single_chest_press` | 单臂器械推胸 | Single-Arm Chest Press | Machine Chest Press | 0.40 |
-| `ex_machine_triceps_extension` | 器械臂屈伸 | Machine Triceps Extension | Back Extension | 0.25 |
-| `ex_reverse_grip_pushdown` | 反握下压 | Reverse-Grip Pushdown | Reverse Crunch | 0.25 |
-| `ex_seated_bb_press` | 坐姿杠铃推举 | Seated Barbell Press | Dumbbell Seated Shoulder Press | 0.40 |
-| `ex_single_arm_pushdown` | 单臂绳索下压 | Single-Arm Pushdown | Single-Arm Cable Row | 0.40 |
-| `ex_single_leg_rdl` | 单腿罗马尼亚硬拉 | Single-Leg RDL | Single-Leg Box Squat | 0.40 |
-| `ex_static_lunge` | 静态分腿蹲 | Static Lunge | Curtsy Lunge | 0.33 |
-| `ex_stiff_leg_deadlift` | 直腿硬拉 | Stiff-Leg Deadlift | Single-Leg Romanian Deadlift | 0.40 |
-| `ex_straight_bar_pushdown` | 直杆下压 | Straight-Bar Pushdown | Tricep Pushdown | 0.25 |
-| `ex_triceps_kickback` | 哑铃俯身臂屈伸 | Triceps Kickback | Banded Kickback | 0.33 |
-| `ex_wide_cable_row` | 宽握坐姿划船 | Wide-Grip Cable Row | Seated Cable Row | 0.40 |
-| `ex_zottman_curl` | 佐特曼弯举 | Zottman Curl | Bicep Curl | 0.33 |
+| 我们的 id | 我们的英文名 | 曾被误指的上游动作 | 为什么不是同一个 |
+|---|---|---|---|
+| `ex_bb_front_raise` | Barbell Front Raise | Front Raise | 上游器械是 Dumbbell，我们是 Barbell |
+| `ex_bent_over_cable_fly` | Bent-Over Cable Fly | Cable Fly | 器械或姿态不同 |
+| `ex_box_squat` | Box Squat | Squat | 器械或姿态不同 |
+| `ex_cable_hammer_curl` | Cable Hammer Curl | Hammer Curl | 锤式与普通 Cable Curl 不同 |
+| `ex_cable_reverse_curl` | Cable Reverse Curl | Cable Curl | 反握与普通 Cable Curl 不同 |
+| `ex_cable_side_bend` | Cable Side Bend | Dumbbell Side Bend | 器械或姿态不同 |
+| `ex_close_grip_smith` | Close-Grip Smith Press | Close-Grip Bench Press | 存在 close-grip 限定差异 |
+| `ex_db_alternating_curl` | Alternating Dumbbell Curl | Incline Dumbbell Curl | 器械或姿态不同 |
+| `ex_db_close_grip_press` | Close-Grip Dumbbell Press | Close-Grip Bench Press | 剩余项：命名相近但动作不同（复核第二节） |
+| `ex_db_curl` | Dumbbell Curl | Incline Dumbbell Curl | 上斜/器械变体不同 |
+| `ex_db_incline_fly` | Incline Dumbbell Fly | Dumbbell Fly | 上斜/器械变体不同 |
+| `ex_hanging_side_leg_raise` | Hanging Side Leg Raise | Hanging Leg Raise | 侧举腿 vs 直腿举腿 |
+| `ex_incline_hammer_curl` | Incline Hammer Curl | Hammer Curl | 上斜/器械变体不同 |
+| `ex_lean_away_lateral` | Lean-Away Lateral Raise | Lateral Raise | 器械或姿态不同 |
+| `ex_machine_crunch` | Machine Crunch | Crunch | 器械或姿态不同 |
+| `ex_machine_hip_thrust` | Machine Hip Thrust | Smith Machine Hip Thrust | 器械不同（Machine vs Smith Machine） |
+| `ex_machine_incline_press` | Incline Chest Press Machine | Machine Chest Press | 角度不同（上斜 vs 平） |
+| `ex_pause_squat` | Pause Squat | Squat | 存在 pause 限定差异 |
+| `ex_reverse_grip_bb_row` | Reverse-Grip Barbell Row | Barbell Row | 存在 reverse-grip 限定差异 |
+| `ex_reverse_grip_pulldown` | Reverse-Grip Lat Pulldown | Close-Grip Lat Pulldown | 存在 reverse-grip 限定差异 |
+| `ex_reverse_wrist_curl` | Reverse Wrist Curl | Reverse Curl | 腕弯举与普通弯举不同 |
+| `ex_side_crunch` | Side Crunch | Crunch | 器械或姿态不同 |
+| `ex_single_arm_cable_front` | Single-Arm Cable Front Raise | Cable Front Raise | 存在 single-arm 限定差异 |
+| `ex_single_arm_cable_lateral` | Single-Arm Cable Lateral Raise | Cable Lateral Raise | 存在 single-arm 限定差异 |
+| `ex_single_arm_db_press` | One-Arm Dumbbell Press | One-Arm Dumbbell Row | 存在 single-arm 限定差异 |
+| `ex_single_arm_machine_row` | Single-Arm Machine Row | Single-Arm Cable Row | 存在 single-arm 限定差异 |
+| `ex_single_arm_overhead_cable` | Single-Arm Overhead Cable Extension | Single-Arm Cable Row | 存在 single-arm 限定差异 |
+| `ex_single_arm_pulldown` | Single-Arm Lat Pulldown | Lat Pulldown | 存在 single-arm 限定差异 |
+| `ex_single_leg_extension` | Single-Leg Extension | Leg Extension | 剩余项：命名相近但动作不同（复核第二节） |
+| `ex_single_leg_press` | Single-Leg Press | Leg Press | 剩余项：命名相近但动作不同（复核第二节） |
+| `ex_sit_up` | Sit-up | Decline Sit-Up | 角度不同（vs Decline Sit-Up） |
+| `ex_smith_calf_raise` | Smith Machine Calf Raise | Calf Raise | 器械或姿态不同 |
+| `ex_smith_incline_press` | Smith Machine Incline Press | Smith Machine Bench Press | 剩余项：命名相近但动作不同（复核第二节） |
+| `ex_smith_lateral_raise` | Smith Machine Lateral Raise | Machine Lateral Raise | 史密斯 vs 普通器械 |
+| `ex_smith_shoulder_press` | Smith Machine Shoulder Press | Machine Shoulder Press | 史密斯 vs 普通器械 |
+| `ex_two_arm_db_row` | Two-Arm Dumbbell Row | One-Arm Dumbbell Row | 剩余项：命名相近但动作不同（复核第二节） |
+| `ex_weighted_glute_bridge` | Weighted Glute Bridge | Glute Bridge | 存在 weighted 限定差异 |
+| `ex_weighted_plank` | Weighted Plank | Plank | 器械或姿态不同 |
+| `ex_wide_t_bar_row` | Wide-Grip T-Bar Row | T-Bar Row | 剩余项：命名相近但动作不同（复核第二节） |
 
-## 四、上游有、我们没有（可选补库）
+## 四、待人工复核的候选：**已清空 ✅**
+
+相似度 ≥ 0.5 的候选已全部被复核过（确认或否掉）。
+
+## 五、仍需决策的两件事（工具算出来的，等人拍板）
+
+### 5.1 上游提到、我们词表里没有的次肌群标签（3 个标签）
+
+这些标签上游在用、我们的 21 值词表里没有。**补它们要先决定扩不扩词表** ——
+扩了以后 `docs/data-model.md` 与 `app/lib/core/labels.dart` 都要跟着改。
+
+| 上游标签 | 涉及我们的动作数 | 例 |
+|---|---|---|
+| `chest` | 6 | `ex_weighted_dip` `ex_handstand_push_up` `ex_cable_front_raise` `ex_close_grip_bench` |
+| `upper_back` | 5 | `ex_cable_lateral_raise` `ex_machine_lateral_raise` `ex_reverse_pec_deck` `ex_upright_row` |
+| `grip` | 3 | `ex_deadlift` `ex_hanging_leg_raise` `ex_hanging_knee_raise` |
+
+### 5.2 主肌群归类与上游不一致（5 个）
+
+**改这些会改变"今天练什么"的部位轮转**（部位轮转按 `muscle_group` 走），所以是产品决策：
+
+| 我们的 id | 我们 | 上游 primaryMuscle | 按映射会归到 |
+|---|---|---|---|
+| `ex_back_extension` | core | Lower Back | back |
+| `ex_chin_up` | back | Biceps | arms |
+| `ex_deadlift` | back | Posterior Chain | legs |
+| `ex_sumo_deadlift` | back | Posterior Chain | legs |
+| `ex_weighted_dip` | chest | Triceps | arms |
+
+## 六、次肌群对齐情况（还差 0 个动作 / 0 个标签）
+
+这是一份**实时差异**：上游 `secondaryMuscles` 列出、而我们没有的标签 ——
+只统计"我们词表里已经有、只是没打在这个动作上"的那部分（需要新词表的见 5.1）。
+
+**当前为 0：已对齐。** 上游列出的次肌群，要么我们本来就有，要么是词表缺值（5.1）。
+
+> 2026-09-29 这一轮补了 51 个动作 / 59 个标签（**纯增量**，我们更细的标签如
+> `front_delts` 一律保留），过程记在 `CHANGELOG.md`。之后每改种子都重新算一次，
+> 有差异就会出现在下表里。
+
+## 七、上游有、我们没有（可选补库）
 
 | 上游类型 | 数量 | 例 |
 |---|---|---|
 | `bodyweight_reps` | 90 | Dip, Neutral-Grip Pull-up, Nordic Hamstring Curl, Glute-Focused Back Extension, Reverse Hyperextension, Jump Squat |
-| `weight_reps` | 79 | Bench Press, Incline Bench Press, Decline Bench Press, Machine Chest Press, Pec Deck, Cable Fly |
+| `weight_reps` | 62 | Cable Fly, Weighted Push-up, Rear Delt Fly, Dumbbell Bent Over Row, Step-Up, Leg Curl |
 | `duration` | 36 | Stair Climber, Wall Sit, Cable Pallof Hold, Elliptical, Jump Rope, Battle Ropes |
 | `distance_duration` | 10 | Running, Walking, Cycling, Rowing, Farmer Carry, Swimming |
 | `assisted_bodyweight` | 2 | Assisted Dip, Assisted Chin-up |
@@ -130,10 +151,12 @@
 
 ---
 
-## 五、复核完之后怎么用
+## 八、改完之后怎么跑
 
-1. **第一节**可以直接改种子（有上游依据，不需要人判断）：改 `seed/parts/*.json` 的 `track_type`。
-2. **第二节**逐行确认 → 确认后可以借上游的 `exerciseType` / `equipment` / `primaryMuscle` 补我们缺的字段；
-   不确认就留在表里，别猜。
-3. **第三节**说明这些动作得自己维护（上游帮不上）。
-4. **第四节**是"要不要补库"的产品决策：有氧与拉伸目前是整块空白。
+```bash
+node tool/map-upstream.mjs            # 改了种子或复核结论之后重新生成本文
+node tool/map-upstream.mjs --check    # verify.sh 第 1 层会跑：过期就红
+```
+
+复核结论写在 `seed/upstream-confirmed.json`：确认项进 `confirmed`，否掉项进 `rejected`（带理由）。
+写错 id 或上游名会**直接报错退出**，不会静静什么都不发生。

@@ -221,6 +221,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          engine/progression.mjs engine/vectors.json engine/run-tests.mjs \
          engine/scenarios.json engine/run-scenarios.mjs \
          seed/upstream-workout-guide.json seed/upstream-workout-guide-LICENSE.txt \
+         seed/upstream-confirmed.json docs/exercise-mapping-review.md \
          tool/map-upstream.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \

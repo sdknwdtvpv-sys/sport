@@ -32,7 +32,8 @@
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
-      "abs"
+      "abs",
+      "core"
     ],
     "equipment": "barbell",
     "track_type": "weight_reps",
@@ -53,7 +54,8 @@
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
-      "abs"
+      "abs",
+      "core"
     ],
     "equipment": "dumbbell",
     "track_type": "weight_reps",
@@ -69,7 +71,10 @@
     "name_en": "Smith Machine Squat",
     "aliases": [],
     "muscle_group": "legs",
-    "secondary_muscles": [],
+    "secondary_muscles": [
+      "glutes",
+      "core"
+    ],
     "equipment": "machine",
     "track_type": "weight_reps",
     "default_rest_sec": 120,
@@ -146,7 +151,11 @@
       "空蹲"
     ],
     "muscle_group": "legs",
-    "secondary_muscles": [],
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings",
+      "core"
+    ],
     "equipment": "bodyweight",
     "track_type": "reps_only",
     "default_rest_sec": 60,
@@ -166,7 +175,8 @@
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads",
-      "glutes"
+      "glutes",
+      "hamstrings"
     ],
     "equipment": "machine",
     "track_type": "weight_reps",
@@ -205,7 +215,8 @@
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
-      "quads"
+      "quads",
+      "core"
     ],
     "equipment": "dumbbell",
     "track_type": "weight_reps",
@@ -246,7 +257,8 @@
     "secondary_muscles": [
       "glutes",
       "quads",
-      "abs"
+      "abs",
+      "hamstrings"
     ],
     "equipment": "dumbbell",
     "track_type": "weight_reps",
@@ -265,7 +277,9 @@
     ],
     "muscle_group": "legs",
     "secondary_muscles": [
-      "core"
+      "core",
+      "glutes",
+      "hamstrings"
     ],
     "equipment": "dumbbell",
     "track_type": "weight_reps",
@@ -300,7 +314,11 @@
       "侧弓步"
     ],
     "muscle_group": "legs",
-    "secondary_muscles": [],
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings",
+      "core"
+    ],
     "equipment": "dumbbell",
     "track_type": "reps_only",
     "default_rest_sec": 90,
@@ -355,7 +373,8 @@
     ],
     "muscle_group": "legs",
     "secondary_muscles": [
-      "hamstrings"
+      "hamstrings",
+      "calves"
     ],
     "equipment": "machine",
     "track_type": "weight_reps",
@@ -372,7 +391,8 @@
     "aliases": [],
     "muscle_group": "legs",
     "secondary_muscles": [
-      "hamstrings"
+      "hamstrings",
+      "calves"
     ],
     "equipment": "machine",
     "track_type": "weight_reps",
@@ -549,7 +569,8 @@
     ],
     "muscle_group": "legs",
     "secondary_muscles": [
-      "abductors"
+      "abductors",
+      "core"
     ],
     "equipment": "machine",
     "track_type": "weight_reps",
@@ -569,7 +590,8 @@
     ],
     "muscle_group": "legs",
     "secondary_muscles": [
-      "adductors"
+      "adductors",
+      "core"
     ],
     "equipment": "machine",
     "track_type": "weight_reps",
@@ -641,7 +663,8 @@
     ],
     "muscle_group": "legs",
     "secondary_muscles": [
-      "calves"
+      "calves",
+      "core"
     ],
     "equipment": "bodyweight",
     "track_type": "reps_only",
@@ -823,7 +846,8 @@
     "secondary_muscles": [
       "front_delts",
       "triceps",
-      "abs"
+      "abs",
+      "core"
     ],
     "equipment": "bodyweight",
     "track_type": "reps_only",

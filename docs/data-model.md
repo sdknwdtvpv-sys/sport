@@ -100,6 +100,14 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
   方向是反的。引擎目前按负重推进，`seed/build.mjs` 会为它发一条**警告**（不阻断）。
   要做对得加一条"减少助力"的推进分支，那是产品决策，不是字段问题。
 
+**次肌群已按上游补全（2026-09-29）**：51 个动作 / 59 个标签，**纯增量**
+（只加不减 —— 我们自己更细的标签如 `front_delts` 一律保留）。
+补全来自上游 `secondaryMuscles`，且只取我们**已有**的标签。
+
+**次肌群词表还差 3 个值**（`docs/exercise-mapping.md` §5.1，**待决策**）：
+上游用 `chest`（作为次肌群，6 个动作）、`upper_back`（5 个）、`grip`（3 个，硬拉与悬垂动作），
+我们的 21 值词表里没有。补它们要先决定扩不扩词表 —— 扩了 `labels.dart` 与本文都要跟着改。
+
 **与上游的映射**：`docs/exercise-mapping.md`（由 `tool/map-upstream.mjs` 从
 `seed/upstream-workout-guide.json` 生成）。上游 `exerciseType` 的五值与我们的对应关系：
 
@@ -110,6 +118,11 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | `duration` | `time` | 39 |
 | `distance_duration` | `distance_time` | 10 |
 | `assisted_bodyweight` | `assisted_reps` | 3 |
+
+**主肌群归类与上游不一致 5 处**（`docs/exercise-mapping.md` §5.2，**待决策**）：
+`ex_deadlift` / `ex_sumo_deadlift`（我们 back，上游 Posterior Chain）、`ex_chin_up`（back vs Biceps）、
+`ex_weighted_dip`（chest vs Triceps）、`ex_back_extension`（core vs Lower Back）。
+**改这些会改变"今天练什么"的部位轮转**（轮转按 `muscle_group` 走），所以不是数据问题而是产品决策。
 
 **已知限制（记在这儿，不藏着）**：`weight_time` 动作的"容量"仍是 `重量 × 秒数`，
 量纲上说不通（负重平板 5kg × 30 秒 = 150）。目前只有 1 个这样的动作，
