@@ -36,7 +36,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | **场景 eval**（把产品红线写成序列级断言：连练 12 周之后还讲不讲道理） | `node engine/run-scenarios.mjs` | ✅ 8 场景 / 152 步 / 12 条红线 |
 | **埋点链路**（收集端收/拒/落盘 + 北极星 24h 边界 + 漏斗 + `tap_count` 门禁口径） | `node server/collector.selftest.mjs` | ✅ 通过 |
 | **可用性测试口径**（中位数 / 硬错误拦截 / 判定与 §8 目标一致） | `node tool/usability-selftest.mjs` | ✅ 通过 |
-| 动作说明覆盖率（内容债的可见形式：推荐位 + 全库 + 待写队列） | `node tool/content-report.mjs` | 推荐位 48/48 · 全库 **168/351** |
+| 动作说明覆盖率（内容债的可见形式：推荐位 + 全库 + 待写队列） | `node tool/content-report.mjs` | 推荐位 48/48 · 全库 **226/351** |
 | **隐私政策对账**（代码会发的事件/字段、manifest 权限 ↔ 政策正文） | `node tool/privacy-audit.mjs`（发布前加 `--apk`） | ✅ 一致 |
 | **变异测试**（唯一验证"测试本身有没有用"的一层） | `node tool/mutation.mjs` | ✅ 24 杀死 / **0 存活** |
 

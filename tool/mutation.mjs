@@ -32,6 +32,17 @@
  *   node tool/mutation.mjs -v         # 存活时打印失败输出尾部
  *
  * 退出码：有存活或无效 → 1（盲区不能被当成没看见）
+ *
+ * **这个工具看不见什么**（写明边界，免得被当成"全覆盖"）：
+ *   暂存区只拷 `app/lib` + `app/tool` + `engine`，Dart 侧跑的是零依赖的
+ *   `check_domain.dart` —— 所以**需要 drift / flutter_test 的数据层变异体进不来**。
+ *   典型的一条：`exercise_repository.dart` 里 `importSeed` 的
+ *   `insertOnConflictUpdate(...)` 换成 `insert(..., onConflict: DoNothing())`
+ *   （冲突项原样不动），条数照样对、引擎也不受影响，
+ *   但**已装 App 的人永远拿不到新写的动作说明**。它由
+ *   `app/test/exercise_repository_test.dart` 的「老库冷启动也会拿到新写的说明」守着
+ *   （2026-09-30 验证过：换掉那一行，只有这条测试红，旧的幂等测试照绿）。
+ *   要把它并进来，得让 runner 支持 `flutter test` + 整个 app 工程 —— 那是另一件事。
  */
 
 import { spawnSync } from 'node:child_process';

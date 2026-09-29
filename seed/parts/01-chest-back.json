@@ -108,7 +108,8 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 48
+    "popularity": 48,
+    "instructions": "凳角 30°、杠铃落在锁骨下方；全程肩胛后收别松。"
   },
   {
     "id": "ex_bb_floor_press",
@@ -128,7 +129,8 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 46
+    "popularity": 46,
+    "instructions": "躺地上做，大臂碰到地面就停，天然保护肩；适合新手学卧推。"
   },
   {
     "id": "ex_db_bench_press",
@@ -192,7 +194,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "下斜 15–30° 就够，哑铃落在下胸两侧；头低于心容易头晕。"
   },
   {
     "id": "ex_db_close_grip_press",
@@ -318,7 +321,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "从下往上夹到胸前，像抱住一棵树；手肘保持微屈的固定角度。"
   },
   {
     "id": "ex_cable_high_fly",
@@ -337,7 +341,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 52
+    "popularity": 52,
+    "instructions": "从上往下夹到大腿前侧，肘保持微屈；靠身体前倾借力是常见错。"
   },
   {
     "id": "ex_machine_pec_deck",
@@ -400,7 +405,8 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 52
+    "popularity": 52,
+    "instructions": "凳角 30°、肩胛后收贴板，推到手接近伸直；别让肩往前送。"
   },
   {
     "id": "ex_machine_single_chest_press",
@@ -463,7 +469,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "肩胛下沉、躯干可略前倾，下到大臂接近水平；肩前侧疼就减幅度。"
   },
   {
     "id": "ex_push_up",
@@ -510,7 +517,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "手撑高台面，越高越轻松；新手先用它练标准俯卧撑的姿态。"
   },
   {
     "id": "ex_decline_push_up",
@@ -554,7 +562,8 @@
     "default_weight_kg": 15,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "只肩关节动、肘角固定，哑铃过头后放到有拉伸感；肩不稳就别贪幅度。"
   },
   {
     "id": "ex_pull_up",
@@ -599,7 +608,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 60
+    "popularity": 60,
+    "instructions": "先能自重做满 8 次再加负重；每次下放到底再拉，别靠摆荡借力。"
   },
   {
     "id": "ex_chin_up",
@@ -644,7 +654,8 @@
     "default_weight_kg": 30,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "助力越大越省力，进步就是把助力调小；记录时填的是助力值。"
   },
   {
     "id": "ex_lat_pulldown",
@@ -711,7 +722,8 @@
     "default_weight_kg": 35,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "反握与肩同宽，先沉肩再拉到锁骨；二头先累属于正常。"
   },
   {
     "id": "ex_single_arm_pulldown",
@@ -777,7 +789,8 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "躯干别跟着转，拉到腰侧；单边做能明显感觉出哪边弱。"
   },
   {
     "id": "ex_wide_cable_row",
@@ -799,7 +812,8 @@
     "default_weight_kg": 35,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 48
+    "popularity": 48,
+    "instructions": "宽握更吃上背，把肘往身体两侧拉；身体别前后晃。"
   },
   {
     "id": "ex_bb_row",
@@ -847,7 +861,8 @@
     "default_weight_kg": 35,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 46
+    "popularity": 46,
+    "instructions": "反握稍窄，拉到下腹；这个握法更容易找到背的收缩。"
   },
   {
     "id": "ex_pendlay_row",
@@ -871,7 +886,8 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "每次从地面重新起，背保持水平，爆发拉到下腹；腰不好别做。"
   },
   {
     "id": "ex_t_bar_row",
@@ -956,7 +972,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "背放平、髋向后推，两只哑铃同时拉到腰侧；别用腰把人拽起来。"
   },
   {
     "id": "ex_chest_supported_row",
@@ -1002,7 +1019,8 @@
     "default_weight_kg": 35,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 60
+    "popularity": 60,
+    "instructions": "胸垫顶住、先沉肩再拉，肘往身后走；耸肩用斜方肌代偿是最常见的错。"
   },
   {
     "id": "ex_single_arm_machine_row",
@@ -1044,7 +1062,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 48
+    "popularity": 48,
+    "instructions": "身体绷直成一条线，胸口去碰杠；脚越靠前越难。"
   },
   {
     "id": "ex_deadlift",
@@ -1094,7 +1113,8 @@
     "default_weight_kg": 50,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "站距宽、脚尖外展，双手在两腿之间；起杠时膝和髋同时打开。"
   },
   {
     "id": "ex_rack_pull",
@@ -1139,7 +1159,8 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "手臂基本伸直，把杆从头上压到大腿前；用背发力，别变成三头下压。"
   },
   {
     "id": "ex_face_pull",
@@ -1203,7 +1224,8 @@
     "default_weight_kg": 20,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 52
+    "popularity": 52,
+    "instructions": "只让肩上下走，别转圈；顶端停一下，重量大时可以用助力带。"
   },
   {
     "id": "ex_farmer_walk",

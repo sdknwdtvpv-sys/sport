@@ -68,7 +68,8 @@
     "default_weight_kg": 16,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "哑铃抱在胸前，蹲时肘顺着膝盖内侧下去；这是最容易学好的蹲法。"
   },
   {
     "id": "ex_smith_squat",
@@ -87,7 +88,8 @@
     "default_weight_kg": 40,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "轨道固定，脚可以往前放一点保护膝盖；下蹲到底别让腰离开靠背。"
   },
   {
     "id": "ex_hack_squat",
@@ -107,7 +109,8 @@
     "default_weight_kg": 40,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 60
+    "popularity": 60,
+    "instructions": "背贴靠板、脚踩在踏板中前部，蹲到大腿接近水平；膝盖别锁死。"
   },
   {
     "id": "ex_box_squat",
@@ -172,7 +175,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "脚与肩同宽、膝盖顺脚尖方向，蹲到还能保持背直的最低点。"
   },
   {
     "id": "ex_leg_press",
@@ -306,7 +310,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 48
+    "popularity": 48,
+    "instructions": "向后撤一步再下沉，前腿发力蹬回；比向前箭步更护膝。"
   },
   {
     "id": "ex_bb_lunge",
@@ -474,7 +479,8 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "膝微屈基本不动，靠髋向后推把杠铃放低；背一旦弓起就停。"
   },
   {
     "id": "ex_single_leg_rdl",
@@ -496,7 +502,8 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "支撑腿微屈，另一条腿随身体一起向后伸；髋正对地面别打开。"
   },
   {
     "id": "ex_hip_thrust",
@@ -538,7 +545,8 @@
     "default_weight_kg": 40,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 46
+    "popularity": 46,
+    "instructions": "上背贴垫、下巴微收，顶峰把臀夹紧；别靠腰过伸顶上去。"
   },
   {
     "id": "ex_glute_bridge",
@@ -557,7 +565,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "脚踩实、先收腹再顶髋，顶峰夹紧臀；用腰把身体顶起来是常见错。"
   },
   {
     "id": "ex_weighted_glute_bridge",
@@ -617,7 +626,8 @@
     "default_weight_kg": 30,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "上身别后仰，用臀外侧把腿推开；推开后停一下再慢慢合回来。"
   },
   {
     "id": "ex_hip_adduction",
@@ -639,7 +649,8 @@
     "default_weight_kg": 30,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "上身别后仰，用大腿内侧把腿夹回来；慢慢回放，别让它自己弹回去。"
   },
   {
     "id": "ex_standing_calf_raise",
@@ -697,7 +708,8 @@
     "default_weight_kg": 60,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "前脚掌踩在踏板边缘，脚跟下沉到有拉伸再顶起；膝盖别锁死。"
   },
   {
     "id": "ex_single_leg_calf_raise",
@@ -850,7 +862,8 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 60
+    "popularity": 60,
+    "instructions": "从掌心朝自己旋到朝前，画弧推起；重量要比普通推举小一档。"
   },
   {
     "id": "ex_smith_shoulder_press",
@@ -869,7 +882,8 @@
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "坐稳靠背，杠铃下到下巴附近；轨道固定，适合新手找推举路线。"
   },
   {
     "id": "ex_machine_shoulder_press",
@@ -890,7 +904,8 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "背贴靠板、肘略在身前，推到手臂接近伸直；别让肩往前顶。"
   },
   {
     "id": "ex_handstand_push_up",
@@ -956,7 +971,8 @@
     "default_weight_kg": 5,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "绳索从身后过来，抬到手与肩平就停；耸肩说明重量太大。"
   },
   {
     "id": "ex_machine_lateral_raise",
@@ -975,7 +991,8 @@
     "default_weight_kg": 15,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 48
+    "popularity": 48,
+    "instructions": "肘微屈、抬到肩高，让把手带着走；别用惯性甩。"
   },
   {
     "id": "ex_single_arm_cable_lateral",
@@ -1071,7 +1088,8 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 48
+    "popularity": 48,
+    "instructions": "抬到肩高就停，别用腰甩；重量小一点，前束很容易被中束抢走。"
   },
   {
     "id": "ex_cable_front_raise",
@@ -1197,6 +1215,7 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 52
+    "popularity": 52,
+    "instructions": "拉到胸口高度就够，肘领先于手腕；拉太高容易夹到肩。"
   }
 ]

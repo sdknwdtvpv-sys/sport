@@ -62,7 +62,8 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "掌心朝下握杠，这个角度更练前臂；重量比正握小很多是正常的。"
   },
   {
     "id": "ex_db_curl",
@@ -166,7 +167,8 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "掌心相对握绳，肘固定在身侧；绳索全程有张力，别放太快。"
   },
   {
     "id": "ex_concentration_curl",
@@ -185,7 +187,8 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "肘内侧顶住大腿内侧，只动小臂；追求顶点那一下的收缩。"
   },
   {
     "id": "ex_preacher_curl",
@@ -268,7 +271,8 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "肘固定在身侧，顶峰用力收紧；下放时慢一些，别直接放回。"
   },
   {
     "id": "ex_cable_reverse_curl",
@@ -305,7 +309,8 @@
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "肘固定在垫上，只让前臂动；靠身体后仰把重量拽上来是借力。"
   },
   {
     "id": "ex_cable_pushdown",
@@ -368,7 +373,8 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "反握把手、肘固定，往下压到手臂伸直；这个角度更练内侧头。"
   },
   {
     "id": "ex_single_arm_pushdown",
@@ -495,7 +501,8 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "背对绳索、肘朝前上方，只让前臂伸；肘往外张开就是跑偏了。"
   },
   {
     "id": "ex_single_arm_overhead_cable",
@@ -531,7 +538,8 @@
     "default_weight_kg": 20,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 48
+    "popularity": 48,
+    "instructions": "肘固定在垫上，只伸小臂；别耸肩也别让肘离开垫面。"
   },
   {
     "id": "ex_triceps_kickback",
@@ -575,7 +583,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 50
+    "popularity": 50,
+    "instructions": "双手在胸口下方成三角，肘贴着身体走；手腕疼就换成拳撑。"
   },
   {
     "id": "ex_wrist_curl",
@@ -672,7 +681,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "用腹肌把骨盆卷向胸口，不是抬腿；动作小而慢才有效。"
   },
   {
     "id": "ex_side_crunch",
@@ -692,7 +702,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "一侧手扶头，用侧腹把肩胛卷离地面；不要用手拽脖子。"
   },
   {
     "id": "ex_heel_touch",
@@ -757,7 +768,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "先沉肩挂稳，再把膝盖收到胸口；身体摆荡说明核心没在控制。"
   },
   {
     "id": "ex_hanging_side_leg_raise",
@@ -796,7 +808,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 60
+    "popularity": 60,
+    "instructions": "腰要压住地面，腿下放到腰开始离地就是你的极限；靠惯性甩腿没意义。"
   },
   {
     "id": "ex_plank",
@@ -859,7 +872,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 55
+    "popularity": 55,
+    "instructions": "肘在肩正下方，髋顶起来成一条线；撑不住就先屈膝做。"
   },
   {
     "id": "ex_russian_twist",
@@ -924,7 +938,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 58
+    "popularity": 58,
+    "instructions": "从跪姿开始，骨盆后倾、腰别塌；推出去的远近就是难度。"
   },
   {
     "id": "ex_cable_crunch",
@@ -963,7 +978,8 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 45
+    "popularity": 45,
+    "instructions": "背贴垫、用腹肌把胸口卷向骨盆；靠手臂拉把手是借力。"
   },
   {
     "id": "ex_dead_bug",
@@ -1072,6 +1088,7 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 60
+    "popularity": 60,
+    "instructions": "髋在垫边、背保持一条线，起身到大腿与躯干成直线就停；起太高会压腰椎。"
   }
 ]

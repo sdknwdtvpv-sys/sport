@@ -114,6 +114,25 @@ void main() {
     }
   });
 
+  test('动作说明：常用度 ≥ 45 全都有（本版铺到的台阶，从高往低推）', () async {
+    // 和上面那条"推荐位"不同：这条守的是**这一版铺到哪一档**。
+    // 台阶数字是"人的一次背书"（同 `种子规模：351` 的写法）：内容不再从高往低铺、
+    // 或者有人删掉某条说明，这里会红。下一版往下铺到 44 时，把这个数字改成 44 即可
+    // ——想清楚"我认这个新台阶"再改，正是这条测试存在的意义。
+    await repo.importSeed(loadJson: _readAsset);
+    final List<ExerciseData> all = await repo.search(limit: 500);
+    final List<ExerciseData> tier =
+        all.where((ExerciseData e) => e.popularity >= 45).toList();
+
+    expect(tier.length, 226, reason: '常用度 ≥ 45 的动作有 226 个（改种子规模时一起改）');
+    final List<String> missing = tier
+        .where((ExerciseData e) =>
+            e.instructions == null || e.instructions!.trim().isEmpty)
+        .map((ExerciseData e) => '${e.id}(${e.name})')
+        .toList();
+    expect(missing, isEmpty, reason: '这一档还没写说明：$missing');
+  });
+
   test('距离类动作的 track_type 是 distance_time（有氧 + 农夫行走）', () async {
     await repo.importSeed(loadJson: _readAsset);
 
@@ -161,6 +180,28 @@ void main() {
     await repo.importSeed(loadJson: _readAsset);
 
     expect(await repo.builtinCount(), await _seedCount());
+  });
+
+  test('老库冷启动也会拿到新写的说明（内容更新只靠这一条路）', () async {
+    // 为什么单独守这条：整条内容更新链（现在已 226 条说明）唯一的送达路径，
+    // 就是冷启动 `importSeed()` 里的 `insertOnConflictUpdate`。
+    // 幂等测试只数条数 —— 把那一行换成 `insertOnConflict()`（冲突就跳过），
+    // 条数照样对，但**已经装过 App 的人永远看不到新写的说明**，全绿。
+    await repo.importSeed(loadJson: _readAsset);
+
+    // 模拟"上一版的库里这条还没有说明"
+    await (db.update(db.exercise)..where((t) => t.id.equals('ex_goblet_squat')))
+        .write(const ExerciseCompanion(instructions: Value<String?>(null)));
+
+    Future<ExerciseData> goblet() async => (await repo.search(limit: 500))
+        .firstWhere((ExerciseData e) => e.id == 'ex_goblet_squat');
+
+    expect((await goblet()).instructions, isNull, reason: '前置条件：先把它清成空的');
+
+    await repo.importSeed(loadJson: _readAsset);
+
+    expect((await goblet()).instructions, isNotNull,
+        reason: '新写的说明必须靠冷启动导入刷进老库，否则老用户永远看不到');
   });
 
   test('全文检索：名称与别名都参与匹配', () async {
