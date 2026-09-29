@@ -14,6 +14,8 @@ library;
 
 import 'dart:math';
 
+import 'package:drift/drift.dart' show InsertMode;
+
 import '../analytics/analytics_context.dart';
 import 'db.dart';
 
@@ -32,14 +34,33 @@ class AnalyticsMetaRepository {
   /// 会话只该在"取公共字段"这一条路上推进，别处推容易漏。
   Future<AnalyticsMetaData> ensure() async {
     final int now = _clock();
-    final AnalyticsMetaData? row = await _row();
+    AnalyticsMetaData? row = await _row();
     if (row == null) {
-      return _write(
-        deviceId: newAnonymousId(_random),
-        sessionId: newAnonymousId(_random),
-        sessionLastAt: now,
-        firstOpenAt: null,
-      );
+      // ⚠️ 这里原来是 `return _write(...)` —— **并发下有真 bug**（真机抓到的）：
+      // 冷启动时可能有两个事件同时要公共字段，两个 ensure() 都看到"还没有这一行"，
+      // 于是各自生成一个 device_id：行里留最后一个，而**两条事件各带一个**。
+      // 后果是北极星分母凭空多出台设备，而且没有任何东西会报错。
+      //
+      // 改成"**插入或忽略 + 回读**"：谁先写谁赢，两个调用方拿到的是同一行。
+      // 输的那一方浪费一个随机数，无所谓；拿到不一致的身份才是问题。
+      await _db.into(_db.analyticsMeta).insert(
+            AnalyticsMetaData(
+              id: _localId,
+              deviceId: newAnonymousId(_random),
+              sessionId: newAnonymousId(_random),
+              sessionLastAt: now,
+              firstOpenAt: null,
+              updatedAt: now,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+      row = await _row();
+      if (row == null) {
+        // 理论上到不了这里（要么插入成功、要么主键冲突）。真到了就抛，
+        // 让上层把它记成 swallowedErrors —— 宁可这次事件少个字段，
+        // 也不要给设备编一个假身份。
+        throw StateError('analytics_meta 写入后读不回来');
+      }
     }
     final bool expired = now - row.sessionLastAt > kSessionTimeout.inMilliseconds;
     return _write(

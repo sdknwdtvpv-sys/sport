@@ -53,6 +53,26 @@ void main() {
       expect(later.deviceId, first.deviceId, reason: '设备 ID 是设备的，不是会话的');
     });
 
+    test('⚠️ 并发冷启动：两个 ensure() 必须拿到**同一个** device_id', () async {
+      // 这一条是真机上抓出来的：LAN 联调时收集端报出 devices:2，而这台设备
+      // 只装过一次。原因就是冷启动时两个事件同时要公共字段 → 两个 ensure()
+      // 都看到"还没有这一行"→ 各自生成一个 device_id → 行里留最后一个，
+      // 而**两条事件各带一个**。
+      //
+      // 后果不是"字段难看"，是北极星分母里凭空多出台设备 —— 每次更新/冷启动
+      // 都可能多一台，比例被系统性拉低，而且没有任何东西会报错。
+      final List<AnalyticsMetaData> both = await Future.wait(<Future<AnalyticsMetaData>>[
+        meta.ensure(),
+        meta.ensure(),
+      ]);
+      expect(both[0].deviceId, both[1].deviceId);
+      expect(both[0].sessionId, both[1].sessionId);
+      // 库里也必须只有一行
+      final rows = await db.select(db.analyticsMeta).get();
+      expect(rows, hasLength(1));
+      expect(rows.single.deviceId, both[0].deviceId);
+    });
+
     test('30 分钟无事件 → 换会话；设备 ID 不变', () async {
       int now = 1000;
       final AnalyticsMetaRepository repo =
