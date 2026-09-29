@@ -27,6 +27,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// 渲染器抽到 tool/lib/markdown.mjs 共用（软著说明书也要渲染同一套语法）
+import { renderMarkdown, esc } from './lib/markdown.mjs';
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'store-assets/privacy');
 const check = process.argv.includes('--check');
@@ -35,131 +38,6 @@ const PAGES = [
   { src: 'docs/privacy-policy.md', out: 'index.html', lang: 'zh-CN', title: '练了么 · 隐私政策' },
   { src: 'docs/privacy-policy.en.md', out: 'en.html', lang: 'en', title: 'LianLeMe · Privacy Policy' },
 ];
-
-// ── 行内元素 ────────────────────────────────────────────────────────────
-const esc = (s) => s
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;');
-
-function inline(s) {
-  let t = esc(s);
-  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
-  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // [文字](链接)：只允许相对路径与 http(s)，避免渲染出 javascript: 之类
-  t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, href) => {
-    const safe = /^(https?:\/\/|#|\/|[\w.-]+\.(md|json|mjs|dart|sh|html))/i.test(href);
-    if (!safe) return text;
-    const target = href.endsWith('.md') ? href : href; // 保留原链接，便于同仓库互跳
-    return `<a href="${target}">${text}</a>`;
-  });
-  return t;
-}
-
-/** 表格：连续的 `| … |` 行；第二行是 `|---|---|` 分隔时才算表头。 */
-function renderTable(rows) {
-  const cells = (r) => r.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-  const head = cells(rows[0]);
-  const body = rows.slice(1).map(cells);
-  let html = '<table>\n<thead><tr>'
-    + head.map((c) => `<th>${inline(c)}</th>`).join('')
-    + '</tr></thead>\n<tbody>\n';
-  for (const r of body) {
-    html += '<tr>' + r.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>\n';
-  }
-  return html + '</tbody>\n</table>\n';
-}
-
-function render(md) {
-  const lines = md.split('\n');
-  const out = [];
-  let i = 0;
-  let para = [];
-
-  const flushPara = () => {
-    if (para.length) { out.push(`<p>${inline(para.join(' '))}</p>\n`); para = []; }
-  };
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // 围栏代码块
-    if (line.startsWith('```')) {
-      flushPara();
-      const lang = line.slice(3).trim();
-      const buf = [];
-      i++;
-      while (i < lines.length && !lines[i].startsWith('```')) { buf.push(lines[i]); i++; }
-      i++; // 跳过结束围栏
-      out.push(`<pre><code${lang ? ` class="lang-${lang}"` : ''}>${esc(buf.join('\n'))}</code></pre>\n`);
-      continue;
-    }
-
-    // 标题
-    const h = /^(#{1,4})\s+(.*)$/.exec(line);
-    if (h) {
-      flushPara();
-      const level = h[1].length;
-      const text = inline(h[2]);
-      const id = h[2].toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-|-$/g, '');
-      out.push(`<h${level} id="${id}">${text}</h${level}>\n`);
-      i++;
-      continue;
-    }
-
-    // 表格
-    if (/^\|/.test(line) && i + 1 < lines.length && /^\|[\s:|-]+\|$/.test(lines[i + 1])) {
-      flushPara();
-      const rows = [lines[i]];
-      i += 2; // 跳过表头与分隔行
-      while (i < lines.length && /^\|/.test(lines[i])) { rows.push(lines[i]); i++; }
-      out.push(renderTable(rows));
-      continue;
-    }
-
-    // 列表（- 或数字）
-    if (/^(\s*)([-*]|\d+\.)\s+/.test(line)) {
-      flushPara();
-      const items = [];
-      while (i < lines.length) {
-        const m = /^(\s*)([-*]|\d+\.)\s+(.*)$/.exec(lines[i]);
-        if (!m) break;
-        // 续行（比标记多缩进的非空行）并入上一条
-        let text = m[3];
-        i++;
-        while (i < lines.length && /^\s+\S/.test(lines[i]) && !/^\s*([-*]|\d+\.)\s+/.test(lines[i])) {
-          text += ' ' + lines[i].trim();
-          i++;
-        }
-        items.push(`<li>${inline(text)}</li>`);
-      }
-      out.push(`<ul>\n${items.join('\n')}\n</ul>\n`);
-      continue;
-    }
-
-    // 引用
-    if (/^>\s?/.test(line)) {
-      flushPara();
-      const buf = [];
-      while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, '')); i++; }
-      // ⚠️ 引用块里的内容要**再走一遍块级渲染**，不能逐行当段落。
-      // 政策里就有一个写在引用里的表格（运营者/联系方式），
-      // 第一版逐行渲染，结果表格原样漏成了一串 `| ... |` 文本。
-      out.push(`<blockquote>${render(buf.join('\n'))}</blockquote>\n`);
-      continue;
-    }
-
-    // 分隔线
-    if (/^---+$/.test(line.trim())) { flushPara(); out.push('<hr>\n'); i++; continue; }
-
-    // 空行 → 段落边界
-    if (!line.trim()) { flushPara(); i++; continue; }
-
-    para.push(line.trim());
-    i++;
-  }
-  flushPara();
-  return out.join('');
-}
 
 const STYLE = `
   :root { color-scheme: dark; }
@@ -199,7 +77,7 @@ function page(md, { lang, title }) {
 </head>
 <body>
 <main>
-${render(md)}
+${renderMarkdown(md)}
 <footer>本页由 <code>tool/gen-privacy-page.mjs</code> 从仓库里的
 <code>docs/privacy-policy.md</code> 生成 —— 页面内容与随包发布的那份同源，
 改政策只改 Markdown，然后重跑这个脚本。</footer>

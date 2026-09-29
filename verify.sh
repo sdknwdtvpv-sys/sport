@@ -155,6 +155,15 @@ else
 fi
 echo
 
+# 软著材料里的数字不能漂：说明书与申请表都写着「N 个源文件 / M 行」，
+# 而那是要填进申请表、与鉴别材料一起交的。加一个文件就会变。
+if node tool/copyright-pdf.mjs --check-docs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 软著材料里的源程序量与实际一致"
+else
+  strip "$LOG"; echo "${RED}✗ 软著材料里的源程序量过期（改文档或重新导出）${OFF}"; fail=1
+fi
+echo
+
 # 发行资源自检：图标不能是 Flutter 默认图（那是 Google 的商标，也不能上架）、
 # 启动图不能是模板纯白（App 是深色的）、应用名不能是模板的 "lianleme"。
 # 这类东西没有任何测试会红 —— 只有人记得才会改，所以在这里变成一条命令。

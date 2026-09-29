@@ -28,7 +28,7 @@ import { dirname, join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const APP_VERSION = readFileSync(join(ROOT, 'app/lib/core/app_info.dart'), 'utf8')
+export const APP_VERSION = readFileSync(join(ROOT, 'app/lib/core/app_info.dart'), 'utf8')
   .match(/kAppVersion = '([^']+)'/)?.[1] ?? '0.0.0';
 
 /** 收录我们自己的源码目录（按路径字典序，可复现） */
@@ -43,7 +43,7 @@ function excluded(rel) {
   return null;
 }
 
-function collect() {
+export function collect() {
   const files = [];
   const skipped = new Map();
   const walk = (abs) => {
@@ -66,7 +66,7 @@ function collect() {
 }
 
 /** 把源文件摊成"行流"，每行前面带 `文件:行号` 便于审查时定位 */
-function lineStream(files) {
+export function lineStream(files) {
   const out = [];
   for (const rel of files) {
     out.push(`// ===== ${rel} =====`);
@@ -77,60 +77,65 @@ function lineStream(files) {
   return out;
 }
 
-const argv = process.argv.slice(2);
-const argOf = (n, d) => {
-  const i = argv.indexOf(n);
-  return i >= 0 && argv[i + 1] ? Number(argv[i + 1]) : d;
-};
-const PER_PAGE = argOf('--lines', 50);
-const FRONT = argOf('--front', 30);
-const BACK = argOf('--back', 30);
-const checkOnly = argv.includes('--check');
+// 只有**直接运行**时才走 CLI：`copyright-pdf.mjs` 要 import 上面的 collect/lineStream，
+// 不能被这里的打印与写盘顺带触发（import 一个模块不该有副作用）。
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) {
+  const argv = process.argv.slice(2);
+  const argOf = (n, d) => {
+    const i = argv.indexOf(n);
+    return i >= 0 && argv[i + 1] ? Number(argv[i + 1]) : d;
+  };
+  const PER_PAGE = argOf('--lines', 50);
+  const FRONT = argOf('--front', 30);
+  const BACK = argOf('--back', 30);
+  const checkOnly = argv.includes('--check');
 
-const { files, skipped } = collect();
-const lines = lineStream(files);
-const totalPages = Math.ceil(lines.length / PER_PAGE);
+  const { files, skipped } = collect();
+  const lines = lineStream(files);
+  const totalPages = Math.ceil(lines.length / PER_PAGE);
 
-const header = (pageNo) =>
-  `练了么 V${APP_VERSION}   源代码   第 ${String(pageNo).padStart(4, ' ')} 页 / 共 ${totalPages} 页`;
-const page = (slice, pageNo) =>
-  [header(pageNo), '', ...slice, '\f'].join('\n');
+  const header = (pageNo) =>
+    `练了么 V${APP_VERSION}   源代码   第 ${String(pageNo).padStart(4, ' ')} 页 / 共 ${totalPages} 页`;
+  const page = (slice, pageNo) =>
+    [header(pageNo), '', ...slice, '\f'].join('\n');
 
-const frontPages = [];
-for (let i = 0; i < FRONT && i < totalPages; i++) {
-  frontPages.push(page(lines.slice(i * PER_PAGE, (i + 1) * PER_PAGE), i + 1));
+  const frontPages = [];
+  for (let i = 0; i < FRONT && i < totalPages; i++) {
+    frontPages.push(page(lines.slice(i * PER_PAGE, (i + 1) * PER_PAGE), i + 1));
+  }
+  const backPages = [];
+  for (let i = Math.max(0, totalPages - BACK); i < totalPages; i++) {
+    backPages.push(page(lines.slice(i * PER_PAGE, (i + 1) * PER_PAGE), i + 1));
+  }
+
+  const divider = [
+    '',
+    '='.repeat(78),
+    `【中间省略 ${Math.max(0, totalPages - FRONT - BACK)} 页】`,
+    '按《计算机软件著作权登记办法》的惯例提交：源代码前 30 页 + 后 30 页。',
+    `完整源代码见仓库（共 ${files.length} 个源文件 / ${lines.length} 行）。`,
+    '='.repeat(78),
+    '',
+  ].join('\n');
+
+  const doc = frontPages.join('\n') + divider + backPages.join('\n');
+
+  console.log('软著源代码导出');
+  console.log(`  版本 V${APP_VERSION}　源文件 ${files.length} 个　${lines.length} 行　`
+    + `每页 ${PER_PAGE} 行 → 共 ${totalPages} 页`);
+  console.log(`  本次导出：前 ${frontPages.length} 页 + 后 ${backPages.length} 页`);
+  if (skipped.size) {
+    console.log('  已排除：' + [...skipped.entries()].map(([k, v]) => `${k}×${v}`).join('　'));
+  }
+
+  if (checkOnly) process.exit(0);
+
+  const outDir = join(ROOT, 'dist/copyright');
+  mkdirSync(outDir, { recursive: true });
+  const outFile = join(outDir, `练了么-源代码-V${APP_VERSION}.txt`);
+  writeFileSync(outFile, doc, 'utf8');
+  console.log(`\n✓ 已写入 ${relative(ROOT, outFile)}`);
+  console.log('  转 PDF：用编辑器打开 → 等宽字体、A4 竖排 → 导出 PDF');
+  console.log('  ⚠️ dist/ 已 gitignore：不要把导出结果提交进仓库（那是源码的副本）');
 }
-const backPages = [];
-for (let i = Math.max(0, totalPages - BACK); i < totalPages; i++) {
-  backPages.push(page(lines.slice(i * PER_PAGE, (i + 1) * PER_PAGE), i + 1));
-}
-
-const divider = [
-  '',
-  '='.repeat(78),
-  `【中间省略 ${Math.max(0, totalPages - FRONT - BACK)} 页】`,
-  '按《计算机软件著作权登记办法》的惯例提交：源代码前 30 页 + 后 30 页。',
-  `完整源代码见仓库（共 ${files.length} 个源文件 / ${lines.length} 行）。`,
-  '='.repeat(78),
-  '',
-].join('\n');
-
-const doc = frontPages.join('\n') + divider + backPages.join('\n');
-
-console.log('软著源代码导出');
-console.log(`  版本 V${APP_VERSION}　源文件 ${files.length} 个　${lines.length} 行　`
-  + `每页 ${PER_PAGE} 行 → 共 ${totalPages} 页`);
-console.log(`  本次导出：前 ${frontPages.length} 页 + 后 ${backPages.length} 页`);
-if (skipped.size) {
-  console.log('  已排除：' + [...skipped.entries()].map(([k, v]) => `${k}×${v}`).join('　'));
-}
-
-if (checkOnly) process.exit(0);
-
-const outDir = join(ROOT, 'dist/copyright');
-mkdirSync(outDir, { recursive: true });
-const outFile = join(outDir, `练了么-源代码-V${APP_VERSION}.txt`);
-writeFileSync(outFile, doc, 'utf8');
-console.log(`\n✓ 已写入 ${relative(ROOT, outFile)}`);
-console.log('  转 PDF：用编辑器打开 → 等宽字体、A4 竖排 → 导出 PDF');
-console.log('  ⚠️ dist/ 已 gitignore：不要把导出结果提交进仓库（那是源码的副本）');

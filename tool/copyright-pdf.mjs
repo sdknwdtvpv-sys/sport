@@ -1,0 +1,397 @@
+#!/usr/bin/env node
+/**
+ * 练了么 · 生成软著**鉴别材料的 PDF**（源程序 + 软件说明书）
+ *
+ * **为什么需要它**：`copyright-export.mjs` 产出的是 `.txt`，而登记系统要上传的是 PDF：
+ * 按[中国版权保护中心·所需文件](https://www.ccopyright.com/index.php?optionid=1080)：
+ *
+ *   * 鉴别材料 = 源程序和任何一种文档的**前、后各连续 30 页**；不到 60 页交全部
+ *   * **程序每页不少于 50 行，文档每页不少于 30 行**
+ *   * 申请文件应**纵向排版**
+ *   * **鉴别材料页眉的软件版本号应与申请表一致**（有无 V 以申请表为准）
+ *
+ * 最后那条是最容易翻车的：页眉版本号与申请表对不上，等于材料不一致。
+ * 所以版本号从 `app/lib/core/app_info.dart` 读（与 App、与申请表同一个来源）。
+ *
+ * 做法：自己排版成 A4 的 HTML（每页 50 行、页眉带版本与真实页码、页脚著作权人），
+ * 再用**无头 Chrome** 打成 PDF —— 汉字字体、A4、纵向都由浏览器保证，
+ * 不必手写 PDF 编码器（那是另一件容易出错的事）。
+ *
+ * 用法：
+ *   node tool/copyright-pdf.mjs --owner "张三"     # 著作权人（页码页脚要写）
+ *   node tool/copyright-pdf.mjs                    # 不带 --owner 会**警告**并留占位
+ *
+ * 产物：`dist/copyright/*.pdf`（dist 已 gitignore —— 那是源码的副本，不进仓库）
+ */
+
+import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync, rmSync, mkdtempSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { dirname, join, relative } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { collect, lineStream, APP_VERSION } from './copyright-export.mjs';
+import { renderMarkdown } from './lib/markdown.mjs';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const OUT = join(ROOT, 'dist/copyright');
+const APP_NAME = '练了么';           // 与申请表「软件全称」前缀一致
+const PER_PAGE = 50;                  // 官方要求"程序每页不少于 50 行"
+const FRONT = 30;
+const BACK = 30;
+
+const argv = process.argv.slice(2);
+const argOf = (n, d) => { const i = argv.indexOf(n); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
+const owner = argOf('--owner', '');
+
+const ownerText = owner || '（著作权人：待填）';
+
+/** 把 HTML 落到磁盘（Chrome 要按 file:// 打开它） */
+function writeHtml(html, pdfPath) {
+  const htmlPath = pdfPath.replace(/\.pdf$/, '.html');
+  writeFileSync(htmlPath, html, 'utf8');
+  return htmlPath;
+}
+
+// ---------------------------------------------------------------- 找 Chrome
+function findChrome() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+  ].filter(Boolean);
+  return candidates.find((p) => existsSync(p)) ?? null;
+}
+
+const CHROME = findChrome();
+if (!CHROME) {
+  console.error('✗ 找不到 Chrome / Chromium —— 用无头浏览器打 PDF 是这里唯一依赖的外部程序。');
+  console.error('  装一个，或设 CHROME_PATH 指向它。');
+  process.exit(1);
+}
+
+// ---------------------------------------------------------------- 通用样式
+const PAGE_CSS = `
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "PingFang SC", "Hiragino Sans GB", "Heiti SC", sans-serif; color: #000; }
+  .page { width: 210mm; height: 297mm; padding: 14mm 12mm 16mm; position: relative;
+          page-break-after: always; overflow: hidden; background: #fff; }
+  .page:last-child { page-break-after: auto; }
+  .hd { display: flex; justify-content: space-between; align-items: baseline;
+        font-size: 9pt; border-bottom: 0.6pt solid #000; padding-bottom: 1.5mm; margin-bottom: 3mm; }
+  .ft { position: absolute; left: 12mm; right: 12mm; bottom: 8mm; font-size: 8pt; color: #333;
+        border-top: 0.6pt solid #000; padding-top: 1.2mm; display: flex; justify-content: space-between; }
+  pre.src { margin: 0; font-family: "Courier New", Menlo, monospace; font-size: 7.6pt;
+            line-height: 1.46; white-space: pre; }
+`;
+
+function hd(left, right) {
+  return `<div class="hd"><span>${left}</span><span>${right}</span></div>`;
+}
+function ft(left, right = '') {
+  return `<div class="ft"><span>${left}</span><span>${right}</span></div>`;
+}
+
+// ---------------------------------------------------------------- 源程序 PDF
+function sourceHtml() {
+  const { files, skipped } = collect();
+  const lines = lineStream(files);
+  const totalPages = Math.ceil(lines.length / PER_PAGE);
+
+  const front = [];
+  for (let i = 0; i < FRONT && i < totalPages; i++) front.push(i);
+  const back = [];
+  for (let i = Math.max(0, totalPages - BACK); i < totalPages; i++) {
+    if (!front.includes(i)) back.push(i);
+  }
+
+  const renderPage = (pageIdx, isLastFront) => {
+    const slice = lines.slice(pageIdx * PER_PAGE, (pageIdx + 1) * PER_PAGE);
+    const no = pageIdx + 1;
+    // 第 30 页的页脚说明"中间省略"，这样 60 页里不出多余的说明页
+    const note = isLastFront && totalPages > front.length + back.length
+      ? `　·　中间省略 ${totalPages - front.length - back.length} 页（共 ${lines.length} 行 / ${files.length} 个源文件）`
+      : '';
+    return `<div class="page">`
+      + hd(`${APP_NAME} V${APP_VERSION}　源程序`, `第 ${no} 页 / 共 ${totalPages} 页`)
+      + `<pre class="src">${slice.map((l) => l.replace(/&/g, '&amp;').replace(/</g, '&lt;')).join('\n')}</pre>`
+      + ft(`著作权人：${ownerText}`, `本页 ${slice.length} 行${note}`)
+      + `</div>`;
+  };
+
+  const pages = [
+    ...front.map((i) => renderPage(i, i === front[front.length - 1])),
+    ...back.map((i) => renderPage(i, false)),
+  ];
+
+  const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>${APP_NAME} V${APP_VERSION} 源程序</title><style>${PAGE_CSS}</style></head>
+<body>${pages.join('\n')}</body></html>`;
+
+  return { html, totalPages, lineCount: lines.length, fileCount: files.length, pageCount: pages.length, skipped };
+}
+
+// ---------------------------------------------------------------- 说明书 PDF
+//
+// 说明书是"文档"，跟源程序不一样：它自然分页，段落/表格/图片高度不一。
+//
+// **页眉页脚必须由我们自己盖**，因为 Chrome 的 header/footer 模板在这台机器上
+// 不替换 `{{pageNumber}}` / `{{totalPages}}`（新旧 headless 都试过，原样印出占位符）。
+// 所以走两步：① 先用同一个样式把文档渲染到浏览器里，**量出每个块的位置与高度**；
+// ② 按可用高度切页，再输出**显式页**，每页盖真实页码。跟源程序是同一套机制。
+//
+// 官方要求在这里落地：A4 纵向、**文档每页不少于 30 行**（正文行高下每页约 45 行）、
+// 页眉带软件名称与版本号（**必须与申请表一致**）。
+
+const MM = 3.7795275591;                 // 1mm = 3.7795px（CSS 96dpi）
+const PAGE_W = 210, PAGE_H = 297;
+const MARGIN = { top: 18, right: 16, bottom: 20, left: 16 };
+const CONTENT_W = PAGE_W - MARGIN.left - MARGIN.right;          // 178mm
+const CONTENT_H = PAGE_H - MARGIN.top - MARGIN.bottom - 12;     // 再扣掉页眉页脚占位
+
+const MANUAL_CSS = `
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+         font-size: 10.5pt; line-height: 1.7; color: #000; }
+  h1 { font-size: 18pt; margin: 0 0 5mm; }
+  h2 { font-size: 14pt; margin: 7mm 0 2.5mm; border-bottom: 0.6pt solid #999; padding-bottom: 1mm; }
+  h3 { font-size: 12pt; margin: 5mm 0 1.5mm; }
+  table { border-collapse: collapse; width: 100%; margin: 2.5mm 0; font-size: 9.5pt; }
+  th, td { border: 0.6pt solid #666; padding: 1.4mm 2mm; text-align: left; vertical-align: top; }
+  th { background: #f0f0f0; }
+  code { font-family: "Courier New", monospace; font-size: 9pt; background: #f4f4f4; padding: 0 1mm; }
+  pre { background: #f4f4f4; padding: 2.5mm; font-size: 8.5pt; white-space: pre-wrap; }
+  blockquote { margin: 2.5mm 0; padding: 2mm 3mm; border-left: 2pt solid #888; background: #fafafa; }
+  img { max-width: 100%; border: 0.6pt solid #bbb; margin: 1.5mm 0; }
+  hr { border: none; border-top: 0.6pt solid #aaa; margin: 5mm 0; }
+  p { margin: 2mm 0; }
+  ul { margin: 2mm 0; padding-left: 6mm; }
+`;
+
+/** 测量版：所有块放在一个固定宽度的容器里，量它们的 offsetTop/高度与上下外边距 */
+function manualMeasureHtml() {
+  const md = readFileSync(join(ROOT, 'docs/copyright-manual.md'), 'utf8');
+  const body = renderMarkdown(md).replace(/src="\.\.\//g, `src="file://${ROOT}/`);
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<style>${MANUAL_CSS}
+  #m { width: ${CONTENT_W}mm; }
+</style></head><body><div id="m">${body}</div></body></html>`;
+}
+
+/** 按量出来的块切页，并盖上页眉页脚 */
+function manualFromBlocks(blocks) {
+  const avail = CONTENT_H * MM;
+  const pages = [];
+  let cur = [];
+  let used = 0;
+  for (const b of blocks) {
+    const h = b.h + b.mt + b.mb;
+    // 一页装不下就翻页（单个块比一页还高时，它自己占一页 —— 溢出会被 page 的
+    // overflow:visible 顺延到下一页，宁可多一页也不许裁掉内容）
+    if (used > 0 && used + h > avail) { pages.push(cur); cur = []; used = 0; }
+    cur.push(b);
+    used += h;
+  }
+  if (cur.length) pages.push(cur);
+
+  const body = pages.map((page, i) => {
+    const inner = page.map((b) => b.html).join('\n');
+    return `<div class="page">`
+      + `<div class="hd"><span>${APP_NAME} V${APP_VERSION}　软件说明书</span>`
+      + `<span>第 ${i + 1} 页 / 共 ${pages.length} 页</span></div>`
+      + `<div class="bd">${inner}</div>`
+      + `<div class="ft"><span>著作权人：${ownerText}</span><span>${APP_NAME} V${APP_VERSION}</span></div>`
+      + `</div>`;
+  }).join('\n');
+
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<style>${MANUAL_CSS}
+  @page { size: A4 portrait; margin: 0; }
+  .page { width: ${PAGE_W}mm; height: ${PAGE_H}mm; padding: ${MARGIN.top}mm ${MARGIN.right}mm ${MARGIN.bottom}mm ${MARGIN.left}mm;
+          position: relative; page-break-after: always; background: #fff; }
+  .page:last-child { page-break-after: auto; }
+  .hd { display: flex; justify-content: space-between; font-size: 9pt;
+        border-bottom: 0.6pt solid #000; padding-bottom: 1.2mm; margin-bottom: 2.5mm; }
+  .bd { height: ${CONTENT_H}mm; overflow: visible; }
+  .ft { position: absolute; left: ${MARGIN.left}mm; right: ${MARGIN.right}mm; bottom: 7mm;
+        font-size: 8pt; color: #333; border-top: 0.6pt solid #000; padding-top: 1.2mm;
+        display: flex; justify-content: space-between; }
+</style></head><body>${body}</body></html>`;
+}
+
+// ---------------------------------------------------------------- 打 PDF
+//
+// 用 **CDP 的 Page.printToPDF**，而不是 `chrome --print-to-pdf`：
+// 命令行那条路给不了 header/footer 模板（只能开 Chrome 自带的，它会印上 file:// 路径），
+// 而"每页页眉带软件名称与版本号、右上角页码"正是登记材料的要求。
+// Node 22 自带 fetch 与 WebSocket，所以这一步仍然是零依赖。
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** 起一个 headless Chrome、连上 CDP，把 send 交给 fn；结束负责收摊 */
+async function withCdp(htmlPath, fn) {
+  const port = 9333;
+  const profile = mkdtempSync(join(tmpdir(), 'lianleme-pdf-'));
+  const chrome = spawn(CHROME, [
+    '--headless=new', '--disable-gpu', '--no-sandbox', '--no-first-run',
+    `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank',
+  ], { stdio: 'ignore' });
+
+  try {
+    for (let i = 0; i < 80; i++) {
+      try { await fetch(`http://127.0.0.1:${port}/json/version`); break; }
+      catch { await sleep(150); }
+    }
+    const url = `file://${htmlPath}`;
+    const target = await (await fetch(
+      `http://127.0.0.1:${port}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' },
+    )).json();
+
+    const ws = new WebSocket(target.webSocketDebuggerUrl);
+    let seq = 0;
+    const pending = new Map();
+    let onLoad;
+    const loaded = new Promise((resolve) => { onLoad = resolve; });
+
+    ws.addEventListener('message', (ev) => {
+      const msg = JSON.parse(ev.data);
+      if (msg.method === 'Page.loadEventFired') onLoad();
+      if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg.result); pending.delete(msg.id); }
+    });
+    await new Promise((resolve) => ws.addEventListener('open', resolve, { once: true }));
+
+    const send = (method, params = {}) => new Promise((resolve) => {
+      const id = ++seq;
+      pending.set(id, resolve);
+      ws.send(JSON.stringify({ id, method, params }));
+    });
+
+    await send('Page.enable');
+    await send('Runtime.enable');
+    await Promise.race([loaded, sleep(5000)]);
+    await sleep(400); // 让字体与图片落定
+
+    const out = await fn(send);
+    ws.close();
+    return out;
+  } finally {
+    chrome.kill();
+    // Chrome 收摊要一点时间：直接 rm 会 ENOTEMPTY（它还在写 profile）。
+    // 删不掉也不该让整个工具失败 —— 那只是临时目录。
+    try { rmSync(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 120 }); }
+    catch { /* 留给系统清理 tmp */ }
+  }
+}
+
+/** 量出每个顶层块的位置/高度/外边距，并把它的 HTML 一起带回来 */
+async function measureBlocks(htmlPath) {
+  const expr = `JSON.stringify([...document.querySelectorAll('#m > *')].map((e) => {
+    const s = getComputedStyle(e);
+    return { html: e.outerHTML, h: e.offsetHeight,
+             mt: parseFloat(s.marginTop) || 0, mb: parseFloat(s.marginBottom) || 0 };
+  }))`;
+  return withCdp(htmlPath, async (send) => {
+    const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
+    return JSON.parse(r.result.value);
+  });
+}
+
+async function printPdf(htmlPath, pdfPath, opts = {}) {
+  return withCdp(htmlPath, async (send) => {
+    const { data } = await send('Page.printToPDF', {
+      printBackground: true, preferCSSPageSize: true, displayHeaderFooter: false, ...opts,
+    });
+    writeFileSync(pdfPath, Buffer.from(data, 'base64'));
+    return pdfPath;
+  });
+}
+
+/** PDF 页数：直接数 `/Type /Page` 对象（零依赖，够用） */
+function pdfPages(p) {
+  const buf = readFileSync(p, 'latin1');
+  return (buf.match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+}
+
+function a4Check(p) {
+  const buf = readFileSync(p, 'latin1');
+  // A4 = 595.28 × 841.89 pt；允许 1pt 误差
+  const m = buf.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/);
+  if (!m) return '找不到 MediaBox';
+  const [, w, h] = m;
+  const ok = Math.abs(Number(w) - 595.28) < 1.5 && Math.abs(Number(h) - 841.89) < 1.5;
+  return `${w} × ${h} pt ${ok ? '✓ A4 纵向' : '✗ 不是 A4'}`;
+}
+
+// ---------------------------------------------------------------- 文档数字防漂
+//
+// 说明书与申请表里都写了「N 个源文件 / M 行」。这两个数字**加一个文件就会变**，
+// 而它们是要填进申请表、并且与鉴别材料一起交上去的 —— 写错了就是材料不一致。
+// 2026-09-30 就是这么发现的：加完本工具自己之后，文档里还写着 106 / 26,658，
+// 实际已经是 108 / 26,910。所以把它变成一条能跑的命令。
+const DOCS = ['docs/copyright-manual.md', 'docs/copyright-application.md'];
+const NUM_RE = /(\d+) 个源文件 \/ ([\d,]+) 行/g;
+
+function checkDocNumbers(fileCount, lineCount) {
+  const problems = [];
+  for (const rel of DOCS) {
+    const text = readFileSync(join(ROOT, rel), 'utf8');
+    const hits = [...text.matchAll(NUM_RE)];
+    if (!hits.length) {
+      problems.push(`${rel}：找不到「N 个源文件 / M 行」（措辞变了？检查要跟着改）`);
+      continue;
+    }
+    for (const m of hits) {
+      const [, n, l] = m;
+      if (Number(n) !== fileCount || Number(l.replace(/,/g, '')) !== lineCount) {
+        problems.push(`${rel}：写的是 ${n} 个源文件 / ${l} 行，实际是 ${fileCount} / ${lineCount}`);
+      }
+    }
+  }
+  return problems;
+}
+
+// ---------------------------------------------------------------- 跑
+mkdirSync(OUT, { recursive: true });
+console.log(`软著鉴别材料 PDF　${APP_NAME} V${APP_VERSION}　著作权人：${ownerText}\n`);
+
+const src = sourceHtml();
+
+if (argv.includes('--check-docs')) {
+  const problems = checkDocNumbers(src.fileCount, src.lineCount);
+  console.log(`实际：${src.fileCount} 个源文件 / ${src.lineCount} 行`);
+  if (problems.length) { for (const p of problems) console.log(`✗ ${p}`); process.exit(1); }
+  console.log('✓ 说明书与申请表里的源程序量与实际一致');
+  process.exit(0);
+}
+
+if (!owner) {
+  console.log('⚠️  没有给 --owner（著作权人）。页脚会留占位文字 —— 正式提交前请补：');
+  console.log('      node tool/copyright-pdf.mjs --owner "你的姓名"\n');
+}
+
+const srcPdf = join(OUT, `${APP_NAME}-源程序-V${APP_VERSION}.pdf`);
+// 源程序用**自己的每页 div**（每页 50 行、页码是真实页码）
+await printPdf(writeHtml(src.html, srcPdf), srcPdf);
+const srcPages = pdfPages(srcPdf);
+console.log(`源程序：${src.fileCount} 个文件 / ${src.lineCount} 行 / 共 ${src.totalPages} 页`);
+console.log(`  提交前 ${FRONT} 页 + 后 ${BACK} 页 → 期望 ${src.pageCount} 页，实际 ${srcPages} 页`
+  + `　${srcPages === src.pageCount ? '✓' : '✗'}`);
+console.log(`  ${a4Check(srcPdf)}　${(statSync(srcPdf).size / 1024).toFixed(0)} KB`);
+console.log(`  ${relative(ROOT, srcPdf)}`);
+
+const manPdf = join(OUT, `${APP_NAME}-软件说明书-V${APP_VERSION}.pdf`);
+// 先量后切：把文档渲染进浏览器量出块高，再切成显式页并盖真实页码
+const blocks = await measureBlocks(writeHtml(manualMeasureHtml(), join(OUT, 'measure.html')));
+await printPdf(writeHtml(manualFromBlocks(blocks), manPdf), manPdf);
+console.log(`\n说明书：`);
+console.log(`  ${pdfPages(manPdf)} 页　${a4Check(manPdf)}　${(statSync(manPdf).size / 1024).toFixed(0)} KB`);
+console.log(`  ${relative(ROOT, manPdf)}`);
+
+if (src.skipped.size) {
+  console.log('\n已排除：' + [...src.skipped.entries()].map(([k, v]) => `${k}×${v}`).join('　'));
+}
+console.log('\n⚠️ dist/ 已 gitignore：PDF 是源码与说明书的副本，不要提交进仓库。');
+console.log('⚠️ 页眉里的版本号必须与申请表填的一致 —— 两处都来自 app/lib/core/app_info.dart。');

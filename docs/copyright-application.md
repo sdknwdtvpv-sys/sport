@@ -34,7 +34,7 @@
 | 开发工具/软件环境 | Flutter 3.47.5（stable）、Dart SDK ≥ 3.5.0、Android SDK、Gradle |
 | 运行软件环境 | **Android 7.0（API 24）及以上**（编译 targetSdk 36） |
 | 编程语言 | Dart、JavaScript、Python |
-| 源程序量 | **106 个源文件 / 26,658 行**（截至 V1.17.0） |
+| 源程序量 | **108 个源文件 / 27,077 行**（截至 V1.17.0） |
 
 > 源程序量的口径（如被问到就照这个答）：**只统计自研源码**（`app/lib`、`app/test`、
 > `app/tool`、`engine`、`server`、`tool`），**不含**生成代码（如 `*.g.dart`）、
@@ -82,16 +82,31 @@
 
 ## 五、提交清单（按顺序）
 
-1. [ ] 源代码文档：`node tool/copyright-export.mjs` → `dist/copyright/练了么-源代码-V<版本>.txt`
-       （前 30 页 + 后 30 页；每页页眉是「练了么 V<版本> 源代码 第 N 页 / 共 M 页」，
-       每页 50 行、行首带行号，文件之间有一行分隔注释）
-       > ⚠️ 这是**我们的排版**，不是从版权保护中心的现行要求逐条抄来的 ——
-       > 提交前请对着官网的《软件著作权登记申请指南》核一遍页数/行数/页眉要求。
-       > 常见口径是"每页不少于 50 行、页眉含软件名称与版本号"，与当前输出一致。
-2. [ ] 说明书：`docs/copyright-manual.md`（**待补 7 屏截图**，见 [`screenshots.md`](screenshots.md)）
-3. [ ] 申请表：本文档第一、二、三节 + 第四节你自己的信息
-4. [ ] 身份证明（个人：身份证正反面）
-5. [ ] 在线提交 → 受理 → 审查 → 领取证书（周期见 [`release-admin.md`](release-admin.md)）
+1. [ ] **鉴别材料的 PDF**（登记系统要上传的是 PDF，不是 .txt）：
+       ```bash
+       node tool/copyright-pdf.mjs --owner "你的姓名"
+       ```
+       → `dist/copyright/练了么-源程序-V<版本>.pdf`（前 30 页 + 后 30 页，正好 60 页）
+       → `dist/copyright/练了么-软件说明书-V<版本>.pdf`
+
+       **官方要求已逐条核对**（[中国版权保护中心·所需文件](https://www.ccopyright.com/index.php?optionid=1080)）：
+
+       | 要求 | 我们的做法 |
+       |---|---|
+       | 源程序与任一文档**前、后各连续 30 页** | 源程序正好 60 页（第 30 页页脚注明中间省略多少页） |
+       | **程序每页不少于 50 行** | 每页固定 50 行、行首带行号 |
+       | **文档每页不少于 30 行** | 说明书按 A4 正文行高排版，每页约 45 行 |
+       | 申请文件**纵向排版** | A4 纵向（生成后自检 MediaBox 是否为 595×842 pt） |
+       | **鉴别材料页眉的版本号应与申请表一致** | 页眉版本号从 `app/lib/core/app_info.dart` 读，与申请表同一个来源 |
+
+       > 页眉页脚由我们自己盖（含真实页码与著作权人）：Chrome 的 header/footer 模板
+       > 在这台机器上不替换 `{{pageNumber}}`，所以说明书走"先在浏览器里量出块高、
+       > 再切成显式页"的两步分页。**这一点是实测出来的，不是照抄社区工具的说法。**
+2. [ ] （可选留档）纯文本版：`node tool/copyright-export.mjs` → `dist/copyright/*.txt`
+3. [ ] 说明书：`docs/copyright-manual.md`（**待补 7 屏截图**，见 [`screenshots.md`](screenshots.md)）
+4. [ ] 申请表：本文档第一、二、三节 + 第四节你自己的信息
+5. [ ] 身份证明（个人：身份证正反面）
+6. [ ] 在线提交 → 受理 → 审查 → 领取证书（周期见 [`release-admin.md`](release-admin.md)）
 
 ## 六、顺序上的一个提醒
 

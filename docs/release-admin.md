@@ -61,7 +61,8 @@
 
 | 材料 | 状态 | 位置 / 怎么来 |
 |---|---|---|
-| 源代码前后各 30 页 | ✅ 已备好 | `node tool/copyright-export.mjs` → `dist/copyright/练了么-源代码-V<版本>.txt` |
+| 鉴别材料 PDF（源程序 60 页） | ✅ 已能生成 | `node tool/copyright-pdf.mjs --owner "姓名"` → `dist/copyright/*.pdf`（A4 纵向、每页 50 行、页眉带版本与页码） |
+| 鉴别材料 PDF（说明书） | ✅ 已能生成 | 同上，由 `docs/copyright-manual.md` 排版而来 |
 | 软件说明书（用户手册） | ✅ 已起草（差 7 屏截图） | [`copyright-manual.md`](copyright-manual.md) |
 | 申请表填写参考 | ✅ 已填好能核的字段 | [`copyright-application.md`](copyright-application.md) |
 | 界面截图 | 🟡 已出 4 张 | [`screenshots.md`](screenshots.md) → `store-assets/screenshots/` |
