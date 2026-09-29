@@ -24,6 +24,8 @@
   blockquote p { margin: 6px 0; }
   table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; display: block; overflow-x: auto; }
   th, td { border: 1px solid #2A2A31; padding: 8px 10px; text-align: left; vertical-align: top; }
+  /* 表头别折行：「什么时候发」被挤成三行很难看。表格本身可横向滚动，够了。 */
+  th { white-space: nowrap; }
   th { background: #1F1F24; }
   hr { border: none; border-top: 1px solid #2A2A31; margin: 32px 0; }
   footer { margin-top: 48px; color: #9A9AA5; font-size: 14px; }
