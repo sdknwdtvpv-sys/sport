@@ -47,13 +47,25 @@ void main() {
 
     bool surfaceReady = false;
 
+    /// ⚠️ **必须带超时**。踩过两次：失败分支里那次"现场截图"没有超时，
+    /// 结果 11 步都跑完了、`takeScreenshot` 却再也不返回 —— 整个 run 卡死，
+    /// driver 侧一张图都写不出来（截图字节是等 run 结束才回传的）。
+    /// 少一张现场图无所谓，把全部截图赔进去才是灾难。
+    Future<void> shotWithTimeout(String name) async {
+      try {
+        await binding.takeScreenshot(name).timeout(const Duration(seconds: 8));
+      } catch (e) {
+        debugPrint('LIANLEME-SHOT-TIMEOUT $name — $e');
+      }
+    }
+
     Future<void> capture(String name) async {
       if (Platform.isAndroid && !surfaceReady) {
         await binding.convertFlutterSurfaceToImage();
         surfaceReady = true;
         await settle(400);
       }
-      await binding.takeScreenshot(name);
+      await shotWithTimeout(name);
       shot.add(name);
       debugPrint('LIANLEME-SHOT $name');
     }
@@ -66,9 +78,7 @@ void main() {
         debugPrint('LIANLEME-SHOT-FAIL $name — $e');
         // 失败时顺手截一张现场图：不然只知道"没找到那个 key"，
         // 不知道当时到底停在哪一屏。（第一次跑就吃了这个亏：9 步连败，无从查起。）
-        try {
-          await binding.takeScreenshot('zz-fail-$name');
-        } catch (_) {}
+        await shotWithTimeout('zz-fail-$name');
       }
     }
 
@@ -114,9 +124,10 @@ void main() {
     });
 
     await step('04b-back-home', () async {
-      await tapBack(const Key('picker-back')); // 选动作 → 建议卡
-      await settle(1000);
-      await tapBack(const Key('today-back')); // 建议卡 → 首页（不带结果 = 不练了）
+      // 只需一次返回：从建议卡点「我自己选」是把建议卡**弹掉**再推选动作页的，
+      // 所以选动作页返回 = 直接回首页。（原来还补点了一次 today-back，
+      // 结果那一下必然落空 —— 现场图与 01-home 逐字节相同，正好证明了当时已在首页。）
+      await tapBack(const Key('picker-back'));
       await settle(1600);
     });
 
@@ -171,6 +182,14 @@ void main() {
     });
 
     await step('11-body-metric', () async {
+      // 「我」页是懒构建的 ListView：没滚到的 widget 根本不存在，find 会落空
+      // （前两次跑就是栽在这 —— 报"找不到 open-body-metric"）。先滚过去再点。
+      await tester.dragUntilVisible(
+        find.byKey(const Key('open-body-metric')),
+        find.byType(ListView),
+        const Offset(0, -220),
+      );
+      await settle(800);
       await tester.tap(find.byKey(const Key('open-body-metric')));
       await settle(1500);
       await capture('11-body-metric');

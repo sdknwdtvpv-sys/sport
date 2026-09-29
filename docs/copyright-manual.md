@@ -121,8 +121,13 @@
 | ![](../store-assets/screenshots/03-routine.png) | **我的计划**：把常练的动作存成计划，下次直接按计划开始。 |
 | ![](../store-assets/screenshots/04-picker.png) | **选动作**：351 个内置动作，三排筛选（部位 / 器械 / 类别）；每个动作下方是动作说明。 |
 
-> 以下 7 屏截图待补（脚本已写好，真机安装放行后一条命令即可）：
-> 训练屏 / 记完一组 / 训练总结 / 进步 / 全部数据 / 我 / 身体数据。
+| ![](../store-assets/screenshots/05-workout.png) | **训练屏**：大按钮上直接写着建议的重量与次数，点一下记一组；长按打开步进弹层。 |
+| ![](../store-assets/screenshots/07-summary.png) | **训练完成**：容量 / 时长 / 组数，破纪录单独标出，可分享训练卡。 |
+| ![](../store-assets/screenshots/08-progress.png) | **进步**：本周容量、周训练次数、个人纪录墙、逐动作最好成绩。 |
+| ![](../store-assets/screenshots/11-body-metric.png) | **身体数据**：记录体重与体脂；体重单位可在千克 / 斤之间**实时切换**。 |
+
+> 全部 11 屏（含训练屏、记完一组、全部数据、我页）见
+> [`../store-assets/screenshots/`](../store-assets/screenshots/) 与 [`screenshots.md`](screenshots.md)。
 
 ## 五、技术特点
 

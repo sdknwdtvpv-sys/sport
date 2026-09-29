@@ -81,15 +81,30 @@ adb -s emulator-5554 install -r "dist/练了么-v<版本>.apk"
 
 ## 已覆盖 / 还缺
 
-| 屏 | 状态 |
+**11 屏全部到手**（2026-09-30，Android 14 模拟器，1080×2337）：
+
+| 文件 | 屏 |
 |---|---|
-| 01 首页（有历史数据） | ✅ |
-| 01b 首页（**全新安装**的空态，Android 14 模拟器） | ✅ |
-| 启动器图标（模拟器应用抽屉，用来验图标与名字） | ✅ `docs/images/launcher-icon-verified.png` |
-| 02 建议卡（今天练 X + 每个动作的建议重量与理由） | ✅ |
-| 03 我的计划 | ✅ |
-| 04 选动作（351 个动作 + 三排筛选 + 动作说明） | ✅ |
-| 05–11 训练屏 / 记完组 / 总结 / 进步 / 全部数据 / 我 / 身体数据 | ⏳ 脚本已写好，等安装放行后重跑一次即可 |
+| `01-home.png` | 首页（有历史数据） |
+| `01b-home-fresh-install.png` | 首页（**全新安装**的空态） |
+| `02-suggestion.png` | 建议卡（今天练 X + 每个动作的建议重量与理由） |
+| `03-routine.png` | 我的计划 |
+| `04-picker.png` | 选动作（351 个动作 + 三排筛选 + 动作说明） |
+| `05-workout.png` | 训练屏（大按钮上写着建议重量） |
+| `06-workout-logged.png` | 记完两组（组列表 + 休息计时） |
+| `07-summary.png` | 训练完成（容量/时长/组数 + 分享训练卡） |
+| `08-progress.png` | 进步（本周容量 + PR 墙 + 体重入口） |
+| `09-all-data.png` | 全部数据 |
+| `10-profile.png` | 我（单位 / 统计 / 渐进建议 / 隐私 / 数据） |
+| `11-body-metric.png` | 身体数据（**kg / 斤 实时切换**） |
+| `docs/images/launcher-icon-verified.png` | 启动器图标与名字（不算商店素材，是验证证据） |
+
+两处尺寸差异（如实记，不藏着）：
+
+- 11 张是 **1080×2337**（`integration_test` 抓的是 Flutter 自己的 surface，不含系统状态栏）
+- `01b-home-fresh-install.png` 是 **1080×2400**（`adb screencap` 抓的整屏，含状态栏）
+
+商店通常逐张接收、不要求尺寸一致；若要统一，用 11 张那套即可（它自己也齐了）。
 
 `integration_test/screenshots_test.dart` 里每一步都单独包了 try：一步失败不会
 丢掉前面截好的图，而且会**自动截一张 `zz-fail-<步骤名>` 的现场图**
