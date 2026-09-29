@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LianLeMe · Privacy Policy</title>
+<meta name="description" content="LianLeMe · Privacy Policy">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0D; color: #F5F5F7;
+    font: 16px/1.75 -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 96px; }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  h2 { font-size: 21px; margin: 40px 0 12px; padding-top: 16px; border-top: 1px solid #2A2A31; }
+  h3 { font-size: 17px; margin: 28px 0 8px; color: #D8FF47; }
+  h4 { font-size: 16px; margin: 22px 0 6px; }
+  a { color: #D8FF47; }
+  code { background: #1F1F24; padding: 1px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: #16161A; border: 1px solid #2A2A31; border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  blockquote { margin: 16px 0; padding: 10px 16px; border-left: 3px solid #D8FF47;
+    background: #16161A; border-radius: 0 8px 8px 0; color: #C9C9D1; }
+  blockquote p { margin: 6px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; display: block; overflow-x: auto; }
+  th, td { border: 1px solid #2A2A31; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #1F1F24; }
+  hr { border: none; border-top: 1px solid #2A2A31; margin: 32px 0; }
+  footer { margin-top: 48px; color: #9A9AA5; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<h1 id="lianleme-练了么-privacy-policy">LianLeMe (练了么) · Privacy Policy</h1>
+<blockquote><p><strong>Status: DRAFT — not yet reviewed by counsel; do not use for store submission as-is.</strong></p>
+<p>This is the English translation of <code>docs/privacy-policy.md</code>. <strong>In case of any discrepancy, the Chinese version prevails.</strong></p>
+<p>Every statement below was <strong>verified against the source code</strong>, not copied from a template (see Appendix B for how to check it yourself).</p>
+<p><strong>Two things remain before submission:</strong></p>
+<ul>
+<li>⬜ Legal review — workout data is <strong>sensitive personal information</strong> under China's PIPL</li>
+<li>⬜ Replace the &quot;Effective date&quot; with the actual first release date</li>
+</ul>
+<table>
+<thead><tr><th></th><th></th></tr></thead>
+<tbody>
+<tr><td>Operator</td><td><strong>Elliot.LI</strong> (individual developer)</td></tr>
+<tr><td>Contact</td><td><strong>https://github.com/sdknwdtvpv-sys/sport/issues</strong></td></tr>
+<tr><td>Effective date</td><td><strong>date of first release</strong> (currently: <code>not released</code> — must be filled in before publishing)</td></tr>
+</tbody>
+</table>
+</blockquote>
+<hr>
+<h2 id="1-in-one-sentence">1. In one sentence</h2>
+<p><strong>LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone. There is no sign-up, no phone number, no location, no contacts. The only network activity is anonymous usage statistics when the &quot;Help improve the product&quot; switch is on — and you can turn that off at any time.</strong></p>
+<hr>
+<h2 id="2-what-we-collect">2. What we collect</h2>
+<h3 id="2-1-stored-only-on-your-device-never-uploaded">2.1 Stored only on your device, never uploaded</h3>
+<table>
+<thead><tr><th>Data</th><th>Content</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>Workout records</td><td>Exercise, weight, reps, set index, warm-up flag, completion time</td><td>Log your training; compute volume and progress</td></tr>
+<tr><td>Workout sessions</td><td>Start/end time, total sets, total volume</td><td>Workout summary screen</td></tr>
+<tr><td>Preferences</td><td>Progression-suggestion switch, unit preference, &quot;Help improve the product&quot; switch</td><td>Remember your choices</td></tr>
+</tbody>
+</table>
+<p>This data lives in the app's private local database (SQLite, managed by drift) and <strong>never leaves the device</strong>.</p>
+<h3 id="2-2-collected-only-when-help-improve-the-product-is-on">2.2 Collected only when &quot;Help improve the product&quot; is ON</h3>
+<p>This is a <strong>switch that is on by default and can be turned off at any time</strong> (Profile → &quot;Help improve the product&quot;). It produces exactly <strong>9 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
+<table>
+<thead><tr><th>Event</th><th>When</th><th>Fields</th></tr></thead>
+<tbody>
+<tr><td><code>set_logged</code></td><td>When a set is logged</td><td><code>workout_id</code>, <code>exercise_id</code>, <code>set_index</code>, <code>weight_kg</code>, <code>reps</code>, <code>distance_m</code>, <code>set_type</code>, <code>rpe</code>, <code>tap_count</code>, <code>tap_kinds</code>, <code>entry</code>, <code>is_offline</code></td></tr>
+<tr><td><code>set_undone</code></td><td>When a set is undone</td><td><code>set_index</code>, <code>method</code>, <code>seconds_after_log</code></td></tr>
+<tr><td><code>app_open</code></td><td>Cold start finished</td><td><code>is_first_open</code>, <code>ms_since_launch</code>, <code>entry</code></td></tr>
+<tr><td><code>workout_started</code></td><td>Entering the workout screen</td><td><code>source</code>, <code>exercise_count</code>, <code>ms_since_launch</code></td></tr>
+<tr><td><code>workout_finished</code></td><td>Workout finished</td><td><code>duration_sec</code>, <code>total_sets</code>, <code>total_volume_kg</code>, <code>exercise_count</code>, <code>ms_since_launch</code></td></tr>
+<tr><td><code>rest_started</code></td><td>Rest timer starts</td><td><code>exercise_id</code>, <code>planned_sec</code>, <code>auto</code></td></tr>
+<tr><td><code>rest_completed</code></td><td>Rest timer finishes</td><td><code>exercise_id</code>, <code>planned_sec</code></td></tr>
+<tr><td><code>rest_skipped</code></td><td>Rest skipped manually</td><td><code>exercise_id</code>, <code>planned_sec</code></td></tr>
+<tr><td><code>seed_import_failed</code></td><td>Exercise-library refresh failed</td><td><code>error</code> (error type only, no content)</td></tr>
+</tbody>
+</table>
+<p><strong>Every event also carries these 7 common fields:</strong></p>
+<table>
+<thead><tr><th>Field</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td><code>device_id</code></td><td><strong>Locally generated anonymous identifier</strong> (32 hex chars). Unrelated to any account, contains no device information. Cleared by &quot;Delete all data&quot;</td></tr>
+<tr><td><code>session_id</code></td><td>Random identifier for one usage session; a new one after 30 minutes of inactivity</td></tr>
+<tr><td><code>user_id</code></td><td><strong>Always null</strong> — there is no account system. Guests are counted too, otherwise the &quot;did new users start training&quot; metric cannot be computed</td></tr>
+<tr><td><code>app_version</code></td><td>Version string (used to compare &quot;taps per set&quot; across versions)</td></tr>
+<tr><td><code>platform</code></td><td><code>android</code> / <code>ios</code></td></tr>
+<tr><td><code>is_offline</code></td><td>Whether the device was offline when the event happened</td></tr>
+<tr><td><code>schema_version</code></td><td>Event schema version, append-only</td></tr>
+</tbody>
+</table>
+<p>A few clarifications:</p>
+<ul>
+<li><code>workout_id</code> / <code>exercise_id</code> / <code>device_id</code> / <code>session_id</code> are <strong>locally generated random identifiers</strong>. They are not your identity and contain no phone number, IMEI or advertising ID.</li>
+<li>We can see &quot;which exercise, what weight, how many sets&quot; — because that is the core metric the product needs to validate (<code>tap_count</code> measures &quot;how many taps it takes to log a set&quot;). <strong>This is health-related information and we treat it as sensitive personal information.</strong></li>
+<li><code>entry</code> records whether the set was logged via the big button or via long-press editing.</li>
+</ul>
+<h3 id="2-3-what-we-do-not-collect">2.3 What we do NOT collect</h3>
+<ul>
+<li>❌ Name, phone number, email, government ID — <strong>there is no account system</strong></li>
+<li>❌ Location</li>
+<li>❌ Contacts, photos, camera, microphone</li>
+<li>❌ Advertising identifiers (no ad SDKs)</li>
+<li>❌ Clipboard contents (&quot;Export&quot; <strong>writes</strong> to your clipboard for you; we never read it)</li>
+<li>❌ <strong>Body-weight and other body-metric values</strong> — only booleans such as &quot;weight recorded&quot; / &quot;note present&quot; are reported; the numbers never leave the device</li>
+<li>❌ <strong>Free text</strong> such as workout notes or custom exercise names</li>
+</ul>
+<hr>
+<h2 id="3-where-the-data-lives-and-who-receives-it">3. Where the data lives and who receives it</h2>
+<h3 id="3-1-current-state-the-app-does-not-upload-anything">3.1 Current state — the app does not upload anything</h3>
+<p><strong>The current version does not send any of your data to any server.</strong> This is not a promise; it is a fact of the code:</p>
+<ul>
+<li>The upload endpoint is configured <strong>at build time</strong>: with no endpoint the analytics channel is <code>_NullTransport</code>, which <strong>always fails</strong> — events only accumulate in the on-device outbox.</li>
+<li>The workout sync channel is <code>InMemorySyncQueue</code>: memory only, no network, gone when the app closes.</li>
+</ul>
+<p>In other words, <strong>even we cannot access your data right now.</strong> We state this plainly because describing a future feature as already shipped would be dishonest — and so would pretending &quot;nothing happens&quot; is a feature.</p>
+<h3 id="3-2-after-a-real-endpoint-is-connected">3.2 After a real endpoint is connected</h3>
+<p>In a future version, when the switch above is ON, the events in 2.2 will be sent over HTTPS to a receiver we operate. This policy will be updated with a new version and effective date, and the app will notify you. <strong>Whenever the switch is off, not a single event is sent.</strong></p>
+<p>We <strong>never sell, rent, or share</strong> your personal information with third parties. No third-party advertising. No data brokers.</p>
+<hr>
+<h2 id="4-permissions">4. Permissions</h2>
+<p>The app declares two permissions; the second <strong>only takes effect on old systems</strong>:</p>
+<table>
+<thead><tr><th>Permission</th><th>Why</th><th>Applies to</th></tr></thead>
+<tbody>
+<tr><td><code>android.permission.INTERNET</code></td><td>Solely for the anonymous usage statistics in 2.2 (when the switch is ON)</td><td>All versions</td></tr>
+<tr><td><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td><td>Saving the &quot;share card&quot; image to the system gallery</td><td><strong>Android 9 and below only</strong> (declared with <code>maxSdkVersion=&quot;29&quot;</code>)</td></tr>
+</tbody>
+</table>
+<p>Three notes on the second one:</p>
+<ul>
+<li><strong>Android 10+ does not need it at all</strong> — modern Android writes to the gallery via MediaStore with no permission. Because we declare it with <code>android:maxSdkVersion=&quot;29&quot;</code>, <strong>users on newer systems never see it in the permission list.</strong></li>
+<li>It only grants image writes, and is used only when you tap &quot;Save to gallery&quot;.</li>
+<li>The share card is <strong>rendered on your device</strong>: the image is drawn directly from the UI into a PNG and <strong>is never uploaded to our servers</strong>. Tapping &quot;Share&quot; hands the image to the system share sheet; which app you then pick (WeChat, Photos, …) is your choice, and that step is governed by that app's privacy policy.</li>
+</ul>
+<p>Beyond these, we request <strong>no</strong> location, contacts, camera, microphone, calendar, or background permissions.</p>
+<blockquote><p>Implementation note: the Flutter template only adds INTERNET to the debug/profile variants (for hot reload), so the release build originally had no such permission. We declare it in <code>main</code> so all three variants behave identically — otherwise, once a real endpoint is wired, release builds would <strong>fail silently</strong> with no error.</p>
+</blockquote>
+<hr>
+<h2 id="5-your-rights-and-controls">5. Your rights and controls</h2>
+<table>
+<thead><tr><th>Right</th><th>How</th></tr></thead>
+<tbody>
+<tr><td><strong>Turn off usage statistics</strong></td><td>Profile → &quot;Help improve the product&quot;. Takes effect immediately; no feature is affected</td></tr>
+<tr><td><strong>Export all your data</strong></td><td>Profile → &quot;Export all records&quot; — generates a CSV copied to your clipboard</td></tr>
+<tr><td><strong>Delete all data</strong></td><td>Profile → &quot;Delete all data&quot;. After a confirmation prompt, local records and settings are wiped immediately</td></tr>
+<tr><td><strong>Uninstall to delete</strong></td><td>Uninstalling the app removes the local database</td></tr>
+</tbody>
+</table>
+<p>What deletion covers, to avoid misunderstanding:</p>
+<ul>
+<li><strong>Deleted</strong>: all workout and set records, preferences (including all switches), <strong>and any analytics events not yet uploaded</strong>, and the anonymous analytics identifiers (<code>device_id</code> / session id / first-open timestamp) — with the honest consequence that this device then counts as a new device in aggregate statistics</li>
+<li><strong>Not deleted</strong>: the built-in exercise catalog (351 exercises) — that is product content and contains nothing about you</li>
+<li>It is a <strong>hard delete</strong>, not a flag. Deletion cannot be undone, and we hold no backup that could restore it.</li>
+</ul>
+<hr>
+<h2 id="6-retention">6. Retention</h2>
+<ul>
+<li>On-device data: kept until you delete it (which is what a workout log should do).</li>
+<li>Pending outbox events: size-capped; over the cap, lower-priority events are dropped first (P0 workout data is retained preferentially).</li>
+<li>Server-side: <strong>no server-side data exists today.</strong></li>
+</ul>
+<hr>
+<h2 id="7-minors">7. Minors</h2>
+<p>This product is not directed at children under 14, and we do not knowingly collect their personal information. If you are a guardian and believe we hold such information, please contact us via the link above.</p>
+<hr>
+<h2 id="8-changes-to-this-policy">8. Changes to this policy</h2>
+<p>When this policy changes we will announce it in-app and in the release notes, and update the effective date at the top. For material changes (for example, beginning real uploads) we will ask for your consent separately.</p>
+<hr>
+<h2 id="appendix-a-where-these-statements-come-from">Appendix A: where these statements come from</h2>
+<table>
+<thead><tr><th>Statement</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>The 9 analytics events and their fields</td><td><code>app/lib/features/workout/workout_controller.dart</code> (<code>track(...)</code> call sites)</td></tr>
+<tr><td>Switch defaults to ON and is persisted</td><td><code>app/lib/data/db.dart</code> (<code>analyticsEnabled</code>, default <code>true</code>), <code>app/lib/data/profile_repository.dart</code></td></tr>
+<tr><td>When off, nothing is recorded</td><td><code>app/lib/analytics/analytics.dart</code> (<code>NoopAnalytics</code>, and <code>if (!enabled) return;</code>)</td></tr>
+<tr><td>Nothing is uploaded today</td><td><code>app/lib/main.dart</code> (<code>_NullTransport</code>), <code>app/lib/data/sync_queue.dart</code> (<code>InMemorySyncQueue</code>)</td></tr>
+<tr><td>No requests during a workout</td><td><code>app/lib/analytics/flusher.dart</code> (<code>suspend()</code> / <code>resume()</code>), guarded by tests</td></tr>
+<tr><td>Only the INTERNET permission</td><td><code>app/android/app/src/main/AndroidManifest.xml</code></td></tr>
+<tr><td>Right to deletion is available</td><td><code>app/lib/features/profile/profile_screen.dart</code> (<code>_deleteAll</code>), <code>app/lib/data/local_store.dart</code> (<code>deleteAllUserData</code>)</td></tr>
+<tr><td>Deletion includes pending events</td><td><code>app/lib/data/drift_local_store.dart</code> (deletes <code>analyticsOutbox</code> in the same transaction)</td></tr>
+<tr><td>No account system</td><td>No login/sign-up code anywhere; <code>app/lib/data/</code> contains only local storage</td></tr>
+</tbody>
+</table>
+<h2 id="appendix-b-verify-it-yourself">Appendix B: verify it yourself</h2>
+<p>You do not have to take this document on faith:</p>
+<pre><code class="lang-bash"># 1. Permissions: the merged release manifest should list only INTERNET
+grep uses-permission app/build/app/intermediates/merged_manifest/release/*/AndroidManifest.xml
+
+# 2. What the analytics layer actually sends
+grep -rn &quot;track('&quot; app/lib/
+
+# 3. Whether anything is uploaded today (should be the always-failing _NullTransport)
+grep -n &quot;_NullTransport&quot; app/lib/main.dart</code></pre>
+
+<footer>本页由 <code>tool/gen-privacy-page.mjs</code> 从仓库里的
+<code>docs/privacy-policy.md</code> 生成 —— 页面内容与随包发布的那份同源，
+改政策只改 Markdown，然后重跑这个脚本。</footer>
+</main>
+</body>
+</html>

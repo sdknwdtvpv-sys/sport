@@ -146,6 +146,15 @@ else
 fi
 echo
 
+# 隐私政策页面不能漂：docs/privacy-policy*.md 是唯一事实来源，
+# store-assets/privacy/*.html 是要交给商店的公网页面。改了正文没重生成 → 红。
+if node tool/gen-privacy-page.mjs --check >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 隐私政策公开页面与正文同源"
+else
+  strip "$LOG"; echo "${RED}✗ 隐私政策页面过期（跑 node tool/gen-privacy-page.mjs）${OFF}"; fail=1
+fi
+echo
+
 # 发行资源自检：图标不能是 Flutter 默认图（那是 Google 的商标，也不能上架）、
 # 启动图不能是模板纯白（App 是深色的）、应用名不能是模板的 "lianleme"。
 # 这类东西没有任何测试会红 —— 只有人记得才会改，所以在这里变成一条命令。

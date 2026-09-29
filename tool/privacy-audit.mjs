@@ -26,10 +26,20 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FACTS = join(ROOT, 'docs/privacy-facts.json');
 const POLICY = join(ROOT, 'docs/privacy-policy.md');
+// 英文版也是**要发布**的那份（Google Play 用它）。2026-09-30 发现它已经漂了：
+// 写着"339 个动作"和"4 个埋点事件"，而事实是 351 与 9 —— 中文版对、英文版过期，
+// 而当时的检查只读中文版，所以两边不一致这件事**没有任何东西会发现**。
+const POLICY_EN = join(ROOT, 'docs/privacy-policy.en.md');
 const MANIFEST = join(ROOT, 'app/android/app/src/main/AndroidManifest.xml');
 
-/** 扫源码里所有 `track('事件名'` —— 这是"客户端到底会发什么"的唯一真源 */
-export function scanEmittedEvents(dir) {
+/** 内置动作库到底有多少个 —— 政策里写了"（N 个动作）"，那个 N 必须是真的。
+ *  从种子读，不写死：动作数会变，写死只会变成第二处会过期的地方。 */
+function countSeedExercises() {
+  const seed = JSON.parse(readFileSync(join(ROOT, 'seed/exercises.json'), 'utf8'));
+  return (seed.exercises ?? seed).length;
+}
+
+/** 扫源码里所有 `track('事件名'` —— 这是"客户端到底会发什么"的唯一真源 */export function scanEmittedEvents(dir) {
   const out = new Set();
   const walk = (d) => {
     for (const f of readdirSync(d)) {
@@ -142,6 +152,36 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     const key = n.split(/[、（]/)[0];
     if (!policy.includes(key)) {
       warnings.push(`政策正文里找不到「不收集」条目：${n}`);
+    }
+  }
+
+  // ⑤ 英文版同样要发布，所以同样要核：标识符不能少，数字不能过期。
+  if (existsSync(POLICY_EN)) {
+    const policyEn = readFileSync(POLICY_EN, 'utf8');
+    const missingEn = mustAppear.filter((n) => !policyEn.includes(n));
+    if (missingEn.length) {
+      errors.push(`这些名字没有出现在 docs/privacy-policy.en.md（要发布的英文版）里：`
+        + missingEn.join('、'));
+    }
+
+    // 数字类断言：中文与英文都必须与事实源/种子一致。
+    // 只查**政策自己声明的口径数字**，不查正文里顺口提到的别的数字。
+    const exerciseCount = countSeedExercises();
+    const numericChecks = [
+      { label: '埋点事件数', src: policy, re: /(\d+)\s*类事件/, want: facts.events.length },
+      { label: '埋点事件数（英文）', src: policyEn, re: /(\d+)\s+analytics events/i, want: facts.events.length },
+      { label: '动作库数量', src: policy, re: /（(\d+)\s*个动作）/, want: exerciseCount },
+      { label: '动作库数量（英文）', src: policyEn, re: /\((\d+)\s+exercises\)/, want: exerciseCount },
+    ];
+    for (const c of numericChecks) {
+      const m = c.re.exec(c.src);
+      if (!m) {
+        warnings.push(`${c.label}：政策里没找到可核对的数字（措辞变了？检查要跟着改）`);
+        continue;
+      }
+      if (Number(m[1]) !== c.want) {
+        errors.push(`${c.label}：政策写的是 ${m[1]}，实际是 ${c.want}`);
+      }
     }
   }
 

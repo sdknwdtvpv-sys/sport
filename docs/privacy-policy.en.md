@@ -166,8 +166,8 @@ What deletion covers, to avoid misunderstanding:
 - **Deleted**: all workout and set records, preferences (including all switches), **and any
   analytics events not yet uploaded**, and the anonymous analytics identifiers
   (`device_id` / session id / first-open timestamp) — with the honest consequence that this device
-  then counts as a new device in aggregate statistics**
-- **Not deleted**: the built-in exercise catalog (339 exercises) — that is product content and
+  then counts as a new device in aggregate statistics
+- **Not deleted**: the built-in exercise catalog (351 exercises) — that is product content and
   contains nothing about you
 - It is a **hard delete**, not a flag. Deletion cannot be undone, and we hold no backup that
   could restore it.
@@ -203,7 +203,7 @@ for your consent separately.
 
 | Statement | Source |
 |---|---|
-| The 4 analytics events and their fields | `app/lib/features/workout/workout_controller.dart` (`track(...)` call sites) |
+| The 9 analytics events and their fields | `app/lib/features/workout/workout_controller.dart` (`track(...)` call sites) |
 | Switch defaults to ON and is persisted | `app/lib/data/db.dart` (`analyticsEnabled`, default `true`), `app/lib/data/profile_repository.dart` |
 | When off, nothing is recorded | `app/lib/analytics/analytics.dart` (`NoopAnalytics`, and `if (!enabled) return;`) |
 | Nothing is uploaded today | `app/lib/main.dart` (`_NullTransport`), `app/lib/data/sync_queue.dart` (`InMemorySyncQueue`) |

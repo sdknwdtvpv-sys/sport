@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>练了么 · 隐私政策</title>
+<meta name="description" content="练了么 · 隐私政策">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0D; color: #F5F5F7;
+    font: 16px/1.75 -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 96px; }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  h2 { font-size: 21px; margin: 40px 0 12px; padding-top: 16px; border-top: 1px solid #2A2A31; }
+  h3 { font-size: 17px; margin: 28px 0 8px; color: #D8FF47; }
+  h4 { font-size: 16px; margin: 22px 0 6px; }
+  a { color: #D8FF47; }
+  code { background: #1F1F24; padding: 1px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: #16161A; border: 1px solid #2A2A31; border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  blockquote { margin: 16px 0; padding: 10px 16px; border-left: 3px solid #D8FF47;
+    background: #16161A; border-radius: 0 8px 8px 0; color: #C9C9D1; }
+  blockquote p { margin: 6px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; display: block; overflow-x: auto; }
+  th, td { border: 1px solid #2A2A31; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #1F1F24; }
+  hr { border: none; border-top: 1px solid #2A2A31; margin: 32px 0; }
+  footer { margin-top: 48px; color: #9A9AA5; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<h1 id="练了么-隐私政策">练了么 · 隐私政策</h1>
+<blockquote><p><strong>状态：草案 —— 未经法务审核，不得直接用于上架。</strong></p>
+<p>本文档中的每一项<strong>都是从代码里核对出来的</strong>，不是套模板写的（核对方式见文末「附录 B」）。 英文版见 <code>docs/privacy-policy.en.md</code>；<strong>中英不一致时以中文版为准</strong>。</p>
+<p><strong>上架前只剩两件事：</strong></p>
+<ul>
+<li>⬜ 由法务或有资质的人审核 —— 健康数据属《个人信息保护法》的<strong>敏感个人信息</strong></li>
+<li>⬜ 把「生效日期」改成实际的首次发布日</li>
+</ul>
+<table>
+<thead><tr><th></th><th></th></tr></thead>
+<tbody>
+<tr><td>运营者</td><td><strong>Elliot.LI</strong>（个人开发者）</td></tr>
+<tr><td>联系方式</td><td><strong>https://github.com/sdknwdtvpv-sys/sport/issues</strong></td></tr>
+<tr><td>生效日期</td><td><strong>首次上架日</strong>（当前：<code>未发布</code> —— 上架前必须替换为实际日期）</td></tr>
+</tbody>
+</table>
+</blockquote>
+<hr>
+<h2 id="一-一句话概括">一、一句话概括</h2>
+<p><strong>练了么是一款离线优先的训练记录工具。你的训练数据只存在你自己的手机里。 我们不要求注册、不要你的手机号、不要定位、不要通讯录。 唯一的联网行为是「帮助改进产品」开关打开时的匿名使用统计，而这个开关你可以随时关掉。</strong></p>
+<hr>
+<h2 id="二-我们收集什么">二、我们收集什么</h2>
+<h3 id="2-1-只存在你手机里-不上传的数据">2.1 只存在你手机里、不上传的数据</h3>
+<table>
+<thead><tr><th>数据</th><th>内容</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>训练记录</td><td>动作、重量、次数、组序、是否热身、完成时间</td><td>记录你的训练，算容量与进步曲线</td></tr>
+<tr><td>训练会话</td><td>开始/结束时间、总组数、总容量</td><td>训练总结页</td></tr>
+<tr><td>个人设置</td><td>渐进建议开关、单位偏好、&quot;帮助改进产品&quot;开关</td><td>记住你的选择</td></tr>
+</tbody>
+</table>
+<p>这些数据存放在应用私有的本地数据库（SQLite，经 drift 管理），<strong>不会离开设备</strong>。</p>
+<h3 id="2-2-帮助改进产品-打开时才会产生的数据">2.2 「帮助改进产品」打开时才会产生的数据</h3>
+<p>这是一个<strong>默认开启、随时可关</strong>的开关（路径：「我」→「帮助改进产品」）。它只产生下面 9 类事件 —— 字段是<strong>有限且固定</strong>的（完整清单在 <code>docs/privacy-facts.json</code>， 由 <code>tool/privacy-audit.mjs</code> 与代码逐条对账）：</p>
+<table>
+<thead><tr><th>事件</th><th>什么时候发</th><th>携带的字段</th></tr></thead>
+<tbody>
+<tr><td><code>set_logged</code></td><td>记录一组时</td><td><code>workout_id</code>、<code>exercise_id</code>、<code>set_index</code>、<code>weight_kg</code>、<code>reps</code>、<code>distance_m</code>、<code>set_type</code>、<code>rpe</code>、<code>tap_count</code>、<code>tap_kinds</code>、<code>entry</code>、<code>is_offline</code></td></tr>
+<tr><td><code>set_undone</code></td><td>撤销一组时</td><td><code>set_index</code>、<code>method</code>、<code>seconds_after_log</code></td></tr>
+<tr><td><code>app_open</code></td><td>冷启动完成</td><td><code>is_first_open</code>、<code>ms_since_launch</code>、<code>entry</code></td></tr>
+<tr><td><code>workout_started</code></td><td>进入训练屏</td><td><code>source</code>、<code>exercise_count</code>、<code>ms_since_launch</code></td></tr>
+<tr><td><code>workout_finished</code></td><td>训练结束</td><td><code>duration_sec</code>、<code>total_sets</code>、<code>total_volume_kg</code>、<code>exercise_count</code>、<code>ms_since_launch</code></td></tr>
+<tr><td><code>rest_started</code></td><td>开始休息计时</td><td><code>exercise_id</code>、<code>planned_sec</code>、<code>auto</code></td></tr>
+<tr><td><code>rest_completed</code></td><td>休息计时走完</td><td><code>exercise_id</code>、<code>planned_sec</code></td></tr>
+<tr><td><code>rest_skipped</code></td><td>手动跳过休息</td><td><code>exercise_id</code>、<code>planned_sec</code></td></tr>
+<tr><td><code>seed_import_failed</code></td><td>动作库刷新失败</td><td><code>error</code>（错误类型，不含内容）</td></tr>
+</tbody>
+</table>
+<p><strong>每个事件都会另外带上这 7 个公共字段</strong>（它们回答&quot;这是哪台设备、哪一次使用、哪个版本&quot;）：</p>
+<table>
+<thead><tr><th>字段</th><th>是什么</th></tr></thead>
+<tbody>
+<tr><td><code>device_id</code></td><td><strong>本机随机生成的匿名标识</strong>（32 位十六进制）。与账号无关、不含设备信息。点「删除全部数据」会<strong>一并清除</strong>（见第五节）</td></tr>
+<tr><td><code>session_id</code></td><td>一次使用会话的随机标识；30 分钟没有操作就换一个新的</td></tr>
+<tr><td><code>user_id</code></td><td><strong>恒为 null</strong> —— 没有账号系统。游客也要上报，否则&quot;新用户有没有练起来&quot;这个指标算不出来</td></tr>
+<tr><td><code>app_version</code></td><td>版本号（用于比较不同版本&quot;记一组要几下&quot;）</td></tr>
+<tr><td><code>platform</code></td><td><code>android</code> / <code>ios</code></td></tr>
+<tr><td><code>is_offline</code></td><td>事件发生时是否离线</td></tr>
+<tr><td><code>schema_version</code></td><td>事件格式版本号，只增不改</td></tr>
+</tbody>
+</table>
+<p>说明几点，避免误解：</p>
+<ul>
+<li><code>workout_id</code> / <code>exercise_id</code> / <code>device_id</code> / <code>session_id</code> 都是<strong>本机生成的随机标识</strong>， 不是你的身份，也不含手机号、IMEI、广告标识符之类的设备信息。</li>
+<li>我们会知道&quot;某个动作、某个重量、做了几组&quot;，因为这是产品要验证的核心指标 （<code>tap_count</code> 衡量&quot;记录一组要几下&quot;）。<strong>它属于健康相关信息，我们按敏感个人信息对待。</strong></li>
+<li><code>entry</code> 记录这次是点大按钮还是长按改重量输入的。</li>
+<li><code>app_open</code> / <code>workout_started</code> / <code>workout_finished</code> 是&quot;漏斗&quot;的三个点： 只知道<strong>有没有</strong>走完流程与花了多久，不含任何训练内容以外的东西。</li>
+</ul>
+<h3 id="2-3-我们-不-收集">2.3 我们<strong>不</strong>收集</h3>
+<ul>
+<li>❌ 姓名、手机号、邮箱、身份证 —— <strong>没有账号系统</strong></li>
+<li>❌ 位置信息</li>
+<li>❌ 通讯录、相册、相机、麦克风</li>
+<li>❌ 设备广告标识符（无广告 SDK）</li>
+<li>❌ 剪贴板内容（&quot;导出记录&quot;是<strong>写入</strong>剪贴板给你，我们不读取）</li>
+<li>❌ <strong>体重等身体数据的数值</strong> —— 只上报&quot;记没记体重 / 有没有备注&quot;这类布尔值，数值不出设备</li>
+<li>❌ <strong>训练备注、自定义动作名称等自由文本</strong> —— 一律不上报</li>
+</ul>
+<hr>
+<h2 id="三-数据在哪-传给谁">三、数据在哪、传给谁</h2>
+<h3 id="3-1-现状-务必如实告知-当前版本不联网上报">3.1 现状（务必如实告知：当前版本不联网上报）</h3>
+<p><strong>当前发布的版本不会把你的任何数据发送到任何服务器。</strong> 这不是承诺，是代码事实：</p>
+<ul>
+<li>上报地址是<strong>编译期配置</strong>的：没配地址时埋点通道是 <code>_NullTransport</code>，它<strong>永远失败</strong> —— 事件只会留在本机的 outbox 里。当前发布的包<strong>没有配地址</strong>。</li>
+<li>训练数据同步通道是 <code>InMemorySyncQueue</code>，只存内存、不上网，App 一关就没了。</li>
+<li><strong>你可以自己验</strong>：附录 B 给了三条命令（看权限、看埋点字段、看通道是不是 NullTransport）。</li>
+</ul>
+<p>换句话说，<strong>现在连我们自己也拿不到你的数据。</strong> 我们如实标注这一点，是因为把 &quot;将来会做&quot;写成&quot;已经在做&quot;是欺骗，反过来把&quot;其实没做&quot;说成&quot;做了&quot;同样没必要。</p>
+<h3 id="3-2-接入真实上报之后">3.2 接入真实上报之后</h3>
+<p>在未来的版本里，当上面那个开关打开时，2.2 的事件会通过 HTTPS 发送到我们自建的接收端。 届时本政策会更新版本号与生效日期，并在应用内提示。<strong>无论何时，开关关闭后一行数据都不会发出。</strong></p>
+<blockquote><p>⚠️ <strong>待决（2026-09-30，法务审核前必须定）</strong>：按当前代码，没配地址的版本<strong>不会丢</strong> 它记下的 2.2 事件，而是攒在本机（上限 1 万条）。所以&quot;接入上报的第一个版本&quot; 会把之前版本攒下的事件一起发出去 —— <strong>除非我们显式地不让它发</strong>。 这直接影响本节怎么写、以及应用商店数据安全表怎么填。 三个选项与代价见 <code>docs/analytics.md</code> §10。<strong>在定下来之前不要发布配了上报地址的包。</strong></p>
+</blockquote>
+<p>我们<strong>不向任何第三方出售、出租或共享</strong>你的个人信息。不接入第三方广告、不接入数据经纪。</p>
+<hr>
+<h2 id="四-权限">四、权限</h2>
+<p>应用声明<strong>两项</strong>系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项<strong>只在老系统上生效</strong>：</p>
+<table>
+<thead><tr><th>权限</th><th>为什么</th><th>适用范围</th></tr></thead>
+<tbody>
+<tr><td><code>android.permission.INTERNET</code></td><td>仅用于 2.2 的匿名使用统计（开关打开时）</td><td>全部</td></tr>
+<tr><td><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td><td>把「分享训练卡」的图片存进系统相册</td><td><strong>仅 Android 9 及以下</strong>（带 <code>maxSdkVersion=&quot;29&quot;</code>）</td></tr>
+</tbody>
+</table>
+<p>关于第二项，说明三点：</p>
+<ul>
+<li><strong>Android 10 及以上完全不需要它</strong> —— 新系统走 MediaStore，写入相册不需要任何权限。 我们在声明时带了 <code>android:maxSdkVersion=&quot;29&quot;</code>，所以<strong>新系统的用户在被请求的权限列表里 根本看不到这一项</strong>。</li>
+<li>它只能写图片，且只在你自己点「存相册」时才会用到。</li>
+<li>分享卡是<strong>在本机画出来的</strong>：图片由设备上的界面直接渲染成 PNG， <strong>不会上传到我们的服务器</strong>。点「分享」是把这张图交给系统分享面板， 之后你选了哪个应用（微信、相册……）由你决定，那一步的数据处理适用那个应用的隐私政策。</li>
+</ul>
+<p>除此之外<strong>不申请</strong>定位、通讯录、相机、麦克风、日历、后台运行等任何权限。</p>
+<blockquote><p>实现说明：Flutter 模板默认只在 debug/profile 变体里加 INTERNET（为了热重载）， release 版原本没有这个权限。本项目把它显式声明到 main，使三个变体行为一致 —— 否则将来接上报地址时，release 版会<strong>静默失败</strong>且不报错。</p>
+</blockquote>
+<hr>
+<h2 id="五-你的权利与控制">五、你的权利与控制</h2>
+<table>
+<thead><tr><th>权利</th><th>怎么做</th></tr></thead>
+<tbody>
+<tr><td><strong>关闭使用统计</strong></td><td>「我」→「帮助改进产品」关掉。立即生效，功能不受任何影响</td></tr>
+<tr><td><strong>导出你的全部数据</strong></td><td>「我」→「导出全部记录」，生成 CSV 复制到剪贴板</td></tr>
+<tr><td><strong>删除全部数据</strong></td><td>「我」→「数据」→「删除全部数据」。二次确认后立即清空本机记录与设置</td></tr>
+<tr><td><strong>卸载即删除</strong></td><td>卸载应用会一并删除本机数据库</td></tr>
+</tbody>
+</table>
+<p>删除的范围，写清楚以免误解：</p>
+<ul>
+<li><strong>会删</strong>：全部训练与组记录、个人设置（含各项开关）、<strong>还没上报出去的埋点事件</strong>、 <strong>以及埋点用的匿名设备标识</strong>（<code>device_id</code> / 会话标识 / 首次启动时间）。 代价如实告知：删过之后，这台设备在统计里会被当成一台新设备 （否则&quot;删除&quot;就删不干净）</li>
+<li><strong>不会删</strong>：内置的动作库（351 个动作）—— 那是产品自带的资料，不含你的任何信息</li>
+<li>是<strong>硬删除</strong>，不是打标记。删除后无法恢复，我们也没有备份能帮你恢复</li>
+</ul>
+<hr>
+<h2 id="六-数据保留">六、数据保留</h2>
+<ul>
+<li>本机数据：你不删就一直在（这正是训练记录工具该有的行为）。</li>
+<li>outbox 里的待发事件：有数量上限，超过后按优先级丢弃（P0 训练数据优先保留）。</li>
+<li>服务器端：<strong>当前不存在服务器端数据。</strong></li>
+</ul>
+<hr>
+<h2 id="七-未成年人">七、未成年人</h2>
+<p>本产品不面向 14 周岁以下儿童，也不会有意收集其个人信息。 若你是未成年人的监护人并认为我们持有相关信息，请通过文末方式联系。</p>
+<hr>
+<h2 id="八-政策变更">八、政策变更</h2>
+<p>本政策更新时，我们会在应用内与版本更新说明中提示，并更新文首的生效日期。 涉及重大变更（例如开始真实上报）时，会单独征求你的同意。</p>
+<hr>
+<h2 id="附录-a-本政策的事实来源">附录 A：本政策的事实来源</h2>
+<table>
+<thead><tr><th>说法</th><th>代码/文件位置</th></tr></thead>
+<tbody>
+<tr><td>9 类埋点事件与字段</td><td><code>app/lib</code> 下所有 <code>track(...)</code> 调用点；<strong>逐条对账见 <code>tool/privacy-audit.mjs</code></strong></td></tr>
+<tr><td>7 个公共字段（含 <code>device_id</code>）</td><td><code>app/lib/analytics/analytics_context.dart</code>；匿名 ID 存在 <code>analytics_meta</code> 表</td></tr>
+<tr><td>删除数据会清掉匿名标识</td><td><code>app/lib/data/drift_local_store.dart</code>（同一事务内删 <code>analyticsMeta</code>）</td></tr>
+<tr><td>事实源与政策正文的对应</td><td><code>docs/privacy-facts.json</code>（机器可查）</td></tr>
+<tr><td>开关默认开启、落库</td><td><code>app/lib/data/db.dart</code>（<code>analyticsEnabled</code>，默认 <code>true</code>）、<code>app/lib/data/profile_repository.dart</code></td></tr>
+<tr><td>关闭后什么都不记</td><td><code>app/lib/analytics/analytics.dart</code>（<code>NoopAnalytics</code>）、<code>analytics.dart</code> 的 <code>if (!enabled) return;</code></td></tr>
+<tr><td>当前不联网</td><td><code>app/lib/main.dart</code>（<code>_NullTransport</code>）、<code>app/lib/data/sync_queue.dart</code>（<code>InMemorySyncQueue</code>）</td></tr>
+<tr><td>训练期间不发请求</td><td><code>app/lib/analytics/flusher.dart</code> 的 <code>suspend()</code> / <code>resume()</code>，有测试守着</td></tr>
+<tr><td>只有 INTERNET 权限</td><td><code>app/android/app/src/main/AndroidManifest.xml</code></td></tr>
+<tr><td>删除权可用（第四十七条）</td><td><code>app/lib/features/profile/profile_screen.dart</code>（<code>_deleteAll</code>）、<code>app/lib/data/local_store.dart</code>（<code>deleteAllUserData</code>）</td></tr>
+<tr><td>删除含待发埋点</td><td><code>app/lib/data/drift_local_store.dart</code>（同一事务内删 <code>analyticsOutbox</code>）</td></tr>
+<tr><td>无账号系统</td><td>全仓库无登录/注册代码；<code>app/lib/data/</code> 下只有本地库</td></tr>
+</tbody>
+</table>
+<h2 id="附录-b-怎么自己核对">附录 B：怎么自己核对</h2>
+<p>不必相信本文档，可以直接验：</p>
+<pre><code class="lang-bash"># 0. 一条命令把&quot;代码 ↔ 隐私事实 ↔ 政策正文&quot;全对一遍（对不上会退出码 1）
+node tool/privacy-audit.mjs
+#    再核一次**打包后**的合并权限（插件的权限在这一步才会露出来）
+node tool/privacy-audit.mjs --apk app/build/apk/&lt;你的包&gt;.apk
+
+# 1. 看权限：可以自己解包看合并后的 manifest
+unzip -p app/build/apk/&lt;你的包&gt;.apk AndroidManifest.xml | strings | grep -i permission
+
+# 2. 看埋点发了什么
+grep -rn &quot;track('&quot; app/lib/
+
+# 3. 看当前是否真的不联网（应该是永远失败的 _NullTransport 或没配地址）
+grep -n &quot;LIANLEME_ANALYTICS_URL\|_NullTransport&quot; app/lib/main.dart
+
+# 4. 抓包验证&quot;训练中零请求&quot;（需要真机，见 docs/analytics-sdk.md §12）</code></pre>
+
+<footer>本页由 <code>tool/gen-privacy-page.mjs</code> 从仓库里的
+<code>docs/privacy-policy.md</code> 生成 —— 页面内容与随包发布的那份同源，
+改政策只改 Markdown，然后重跑这个脚本。</footer>
+</main>
+</body>
+</html>
