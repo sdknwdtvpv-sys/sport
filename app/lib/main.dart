@@ -122,6 +122,9 @@ class _HomeShellState extends State<HomeShell> {
   /// **只影响显示**：存储、引擎、埋点始终是 kg（见 core/units.dart）。
   WeightUnit _unit = WeightUnit.kg;
 
+  /// 体重的显示单位（千克 / 斤）。**与训练重量分开** —— 见 units.dart 的说明。
+  BodyWeightUnit _bodyUnit = BodyWeightUnit.kg;
+
   /// 休息时长偏好。**null = 跟随动作自带的值**，这是默认。
   int? _restOverrideSec;
 
@@ -168,11 +171,13 @@ class _HomeShellState extends State<HomeShell> {
 
   Future<void> _loadUnit() async {
     final WeightUnit u = await _profile.unit();
+    final BodyWeightUnit b = await _profile.bodyWeightUnit();
     final int? rest = await _profile.restOverrideSec();
     final String? goal = await _profile.goalWire();
     if (!mounted) return;
     setState(() {
       _unit = u;
+      _bodyUnit = b;
       _restOverrideSec = rest;
       _goalWire = goal;
     });
@@ -464,6 +469,7 @@ class _HomeShellState extends State<HomeShell> {
             repository: _repo,
             bodyMetrics: _bodyMetrics,
             unit: _unit,
+            bodyUnit: _bodyUnit,
           );
       default:
         return ProfileScreen(
@@ -476,6 +482,10 @@ class _HomeShellState extends State<HomeShell> {
           // 用户改了单位：存库 + 整棵树重建，别的地方立刻也跟着变
           onUnitChanged: (WeightUnit u) {
             setState(() => _unit = u);
+          },
+          bodyUnit: _bodyUnit,
+          onBodyUnitChanged: (BodyWeightUnit u) {
+            setState(() => _bodyUnit = u);
           },
           restOverrideSec: _restOverrideSec,
           onRestOverrideChanged: (int? sec) {

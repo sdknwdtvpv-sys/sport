@@ -32,6 +32,7 @@ class ProgressScreen extends StatefulWidget {
     required this.repository,
     this.bodyMetrics,
     this.unit = WeightUnit.kg,
+    this.bodyUnit = BodyWeightUnit.kg,
     this.now,
   });
 
@@ -42,8 +43,12 @@ class ProgressScreen extends StatefulWidget {
   /// 「等有了再加回来」的那块，加回来了。
   final BodyMetricRepository? bodyMetrics;
 
-  /// 显示单位。**只影响显示**：容量与 PR 的判定始终按 kg 算。
+  /// **训练重量**的显示单位。只影响显示：容量与 PR 的判定始终按 kg 算。
   final WeightUnit unit;
+
+  /// **体重**的显示单位（千克 / 斤）。与 [unit] 分开 ——
+  /// 把训练切到 lb 的人，体重也不该跟着变磅（中国用户称体重说斤）。
+  final BodyWeightUnit bodyUnit;
 
   /// 测试注入固定时间用；生产为 null，取当前时间
   final DateTime? now;
@@ -121,7 +126,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         // 走**唯一**的重量格式化入口 —— 这里以前硬写着 `kg` + 自己 _trim，
                         // 于是单位是 lb 的用户会在「进步」看到「85.5 kg」、
                         // 在「身体数据」看到「188.5 lb」：同一个体重，两个单位两块屏。
-                        formatWeight(w.weightKg, widget.unit),
+                        formatBodyWeight(w.weightKg, widget.bodyUnit),
                         key: const Key('progress-weight'),
                         style: const TextStyle(
                           color: Tokens.text,
@@ -172,7 +177,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       MaterialPageRoute<void>(
         builder: (_) => BodyMetricScreen(
           repository: repo,
-          unit: widget.unit,
+          unit: widget.bodyUnit,
           // 记完回来要刷新，否则卡片还显示旧体重
           onSaved: _load,
         ),

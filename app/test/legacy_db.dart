@@ -97,6 +97,23 @@ CREATE TABLE IF NOT EXISTS set_record (
 )
 ''';
 
+/// v1～v5 的 `user_profile`：与当前 db.dart 一致，**只少 `body_weight_unit` 一列**。
+///
+/// v6 第一次给这张表加列，所以 fixture 必须有它。
+const String legacyUserProfileDdl = '''
+CREATE TABLE IF NOT EXISTS user_profile (
+  user_id TEXT NOT NULL PRIMARY KEY,
+  goal TEXT NULL,
+  weekly_frequency INTEGER NULL,
+  unit_pref TEXT NOT NULL DEFAULT 'kg',
+  default_rest_sec INTEGER NOT NULL DEFAULT 90,
+  progression_mode TEXT NOT NULL DEFAULT 'double',
+  analytics_enabled INTEGER NOT NULL DEFAULT 1 CHECK (analytics_enabled IN (0, 1)),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+)
+''';
+
 /// v2 的 `body_metric`（v2 引入的那张表）。
 const String legacyBodyMetricDdl = '''
 CREATE TABLE IF NOT EXISTS body_metric (
@@ -120,6 +137,7 @@ void legacySetup(dynamic raw, {required int version}) {
   raw.execute(legacyWorkoutDdl);
   raw.execute(legacyWorkoutItemDdl);
   raw.execute(legacySetRecordDdl);
+  raw.execute(legacyUserProfileDdl);
   if (version >= 2) raw.execute(legacyBodyMetricDdl);
   raw.execute('PRAGMA user_version = $version');
 }
@@ -135,6 +153,15 @@ INSERT INTO set_record
 VALUES
   ('s_legacy_1', 'w_legacy', 'wi_legacy', 'ex_legacy_bench', 1, 'normal', 60.0,
    8, NULL, 0, 480.0, 1000, 1000, NULL)
+''';
+
+/// 往老库里塞一行用户档案 —— 用来验 v6 给 user_profile 加列时不动已有设置。
+const String legacySeedProfileSql = '''
+INSERT INTO user_profile
+  (user_id, goal, weekly_frequency, unit_pref, default_rest_sec,
+   progression_mode, analytics_enabled, created_at, updated_at)
+VALUES
+  ('local', 'hypertrophy', 5, 'lb', 90, 'double', 1, 1000, 1000)
 ''';
 
 /// 往老库里塞一个动作 —— 用来验"升级之后老数据还在，而且被落成 strength"。

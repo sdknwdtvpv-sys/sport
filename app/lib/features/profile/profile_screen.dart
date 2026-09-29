@@ -39,7 +39,9 @@ class ProfileScreen extends StatefulWidget {
     this.analytics,
     this.bodyMetrics,
     this.unit = WeightUnit.kg,
+    this.bodyUnit = BodyWeightUnit.kg,
     this.onUnitChanged,
+    this.onBodyUnitChanged,
     this.restOverrideSec,
     this.onRestOverrideChanged,
     this.backupExporter = const PluginBackupExporter(),
@@ -58,6 +60,12 @@ class ProfileScreen extends StatefulWidget {
 
   /// 当前显示单位。**只影响显示**：统计与判定始终按 kg 算。
   final WeightUnit unit;
+
+  /// **体重**的显示单位（千克 / 斤）。与训练重量的 [unit] 是两个设置。
+  final BodyWeightUnit bodyUnit;
+
+  /// 用户改了体重单位之后通知上层（理由同 [onUnitChanged]）。
+  final ValueChanged<BodyWeightUnit>? onBodyUnitChanged;
 
   /// 用户切了单位之后通知上层重建（否则别的 Tab 还按旧单位显示）。
   final ValueChanged<WeightUnit>? onUnitChanged;
@@ -283,6 +291,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     widget.onUnitChanged?.call(u);
   }
 
+  /// 切换**体重**单位。与训练重量那个开关各写各的列 ——
+  /// `setBodyWeightUnit` 里会把其它设置原样带回去。
+  Future<void> _setBodyUnit(BodyWeightUnit u) async {
+    if (u == widget.bodyUnit) return;
+    await widget.profile.setBodyWeightUnit(u);
+    widget.onBodyUnitChanged?.call(u);
+  }
+
+  Widget _bodyUnitChip(BodyWeightUnit u) {
+    final bool active = widget.bodyUnit == u;
+    return GestureDetector(
+      key: Key('body-unit-${u.wire}'),
+      onTap: () => _setBodyUnit(u),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+        height: 36,
+        decoration: BoxDecoration(
+          color: active ? Tokens.volt : Tokens.surface,
+          borderRadius: BorderRadius.circular(Tokens.rPill),
+        ),
+        child: Text(
+          u.label,
+          style: TextStyle(
+            color: active ? Tokens.voltInk : Tokens.text2,
+            fontSize: 13,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _unitChip(WeightUnit u) {
     final bool active = widget.unit == u;
     return GestureDetector(
@@ -315,7 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute<void>(
         builder: (_) => BodyMetricScreen(
           repository: repo,
-          unit: widget.unit,
+          unit: widget.bodyUnit,
           onSaved: _load,
         ),
       ),
@@ -413,6 +454,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Spacer(),
                 const Text(
                   '只影响显示，数据按 kg 存',
+                  style: TextStyle(color: Tokens.text3, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // **体重单独一行**：中国用户称体重说斤（1 斤 = 500 g），
+          // 而杠铃重量说 kg —— 一个开关管两件事就会打架：
+          // 把训练切到磅的人，不该连体重也变成磅。
+          Padding(
+            padding: const EdgeInsets.all(Tokens.s4),
+            child: Row(
+              children: <Widget>[
+                const Text('体重',
+                    style: TextStyle(color: Tokens.text2, fontSize: 13)),
+                const SizedBox(width: Tokens.s3),
+                _bodyUnitChip(BodyWeightUnit.kg),
+                const SizedBox(width: Tokens.s2),
+                _bodyUnitChip(BodyWeightUnit.jin),
+                const Spacer(),
+                const Text(
+                  '1 斤 = 500 g',
                   style: TextStyle(color: Tokens.text3, fontSize: 12),
                 ),
               ],

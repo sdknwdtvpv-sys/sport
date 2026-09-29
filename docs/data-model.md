@@ -179,6 +179,22 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 `tool/map-upstream.mjs` 消费它：如果哪天上游改了 `primaryMuscle`、或我们又改了归类，
 这一条会重新出现在"待决策"表里 —— 留档的结论不是免检通行证。
 
+### 两个显示单位：训练重量（kg/lb）与体重（kg/斤）
+
+**为什么是两个设置**（2026-09-29，用户提出"体重钉死在千克和斤之间切换"）：
+
+| 场景 | 取值 | 存在哪 |
+|---|---|---|
+| 训练重量（杠铃、哑铃、容量、PR） | `kg` / `lb` | `user_profile.unit_pref` |
+| 体重（S12 录入、S8 卡片） | `kg` / `jin`（斤） | `user_profile.body_weight_unit` |
+
+* 中国用户称体重说**斤**（1 斤 = 500 g），而杠铃重量说 kg —— 一个开关管两件事就会打架：
+  把训练切到磅的人，不该连体重也变成磅（"我 188.5 磅"没人这么说）
+* 斤**不是**训练重量的选项，lb 也**不是**体重的选项 —— 两个枚举各管一段，
+  所以它们在 `core/units.dart` 里是**两个类型**（`WeightUnit` / `BodyWeightUnit`），
+  使用点不需要判断"这个单位在这个场景下合不合法"
+* **存储仍然是 kg**（与全局同一条规矩），转换是精确的：1 kg = 2 斤，来回倒不掉精度
+
 ### 有氧记录（`distance_m` + `distance_time`）
 
 **为什么存米不存公里**：与"重量一律存 kg"同一条规矩 —— **存储不跟显示单位走**。
@@ -215,6 +231,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v2 | 新增 `body_metric` | 只加表 |
 | v3 | 新增 `routine` / `routine_item` | 只加表 |
 | v4 | `exercise` 新增 `category`（DEFAULT `'strength'`；词表 strength/warmup/cardio/stretch） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
+| v6 | `user_profile` 新增 `body_weight_unit` | 第三次加列。老档案里缺省 `'kg'` —— 在"体重单位"这个概念出现之前，体重显示的确实是 kg（`unit_pref`），所以缺省值就是当时的真实行为 |
 | v5 | `set_record` 新增 `distance_m` | 第二次加列。老库里的组记录距离恒为 **null**（"没记过距离"），**不是 0**（0 表示"真的没动"）—— 这是加列迁移最容易被搞错的地方，有专门的迁移测试守着 |
 
 迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
@@ -368,7 +385,8 @@ CREATE TABLE user_profile (
   user_id            TEXT PRIMARY KEY,
   goal               TEXT,      -- hypertrophy | strength | fat_loss
   weekly_frequency   INTEGER,   -- 每周几天，用于部位轮转
-  unit_pref          TEXT DEFAULT 'kg',
+  unit_pref          TEXT DEFAULT 'kg',       -- 训练重量的显示单位：kg / lb
+  body_weight_unit   TEXT DEFAULT 'kg',       -- 体重的显示单位：kg / jin（1 斤 = 500 g）
   default_rest_sec   INTEGER DEFAULT 90,
   progression_mode   TEXT DEFAULT 'double',  -- double | linear | off（用户可关闭建议）
   created_at         INTEGER NOT NULL,

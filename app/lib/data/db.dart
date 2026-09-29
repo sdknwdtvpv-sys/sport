@@ -129,8 +129,15 @@ class UserProfile extends Table {
   TextColumn get goal => text().nullable()();
   IntColumn get weeklyFrequency => integer().nullable()();
 
-  /// kg | lb。显示单位；**存储与引擎始终是 kg**（见 core/units.dart）
+  /// kg | lb。**训练重量**的显示单位；存储与引擎始终是 kg（见 core/units.dart）
   TextColumn get unitPref => text().withDefault(const Constant('kg'))();
+
+  /// kg | jin。**体重**的显示单位，与训练重量分开。
+  ///
+  /// 2026-09-29 用户提出："体重钉死在千克和斤之间切换"。
+  /// 中国用户称体重说斤（1 斤 = 500 g），而杠铃重量说 kg —— 一个开关管两件事
+  /// 就会打架（把训练切到 lb 的人，体重也不该跟着变磅）。存储同样是 kg。
+  TextColumn get bodyWeightUnit => text().withDefault(const Constant('kg'))();
   IntColumn get defaultRestSec => integer().withDefault(const Constant(90))();
 
   /// double | linear | off
@@ -241,11 +248,12 @@ class AppDatabase extends _$AppDatabase {
   /// v3：新增 `routine` / `routine_item`（S11 计划模板）。
   /// v4：`exercise` 新增 `category`（热身/拉伸进库，但不进推荐）—— **第一次给已有表加列**。
   /// v5：`set_record` 新增 `distance_m`（有氧记录：跑步机/划船机/跳绳/农夫行走）。
+  /// v6：`user_profile` 新增 `body_weight_unit`（体重的显示单位：千克 / 斤）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -303,6 +311,12 @@ class AppDatabase extends _$AppDatabase {
           // ⚠️ 训练数据是资产：加列不能碰任何既有行，也不该重建表。
           if (from < 5) {
             await m.addColumn(setRecord, setRecord.distanceM);
+          }
+          // v5 → v6：给 `user_profile` 加一列。老库里的档案只有一行（本机用户），
+          // 缺省 'kg' 就是正确答案 —— 在"体重单位"这个概念出现之前，
+          // 体重显示的确实是 kg（`unit_pref`）。**不需要数据搬迁。**
+          if (from < 6) {
+            await m.addColumn(userProfile, userProfile.bodyWeightUnit);
           }
         },
       );

@@ -12,8 +12,10 @@ library;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
 
 import 'legacy_db.dart';
@@ -95,6 +97,40 @@ void main() {
         .customSelect("SELECT name FROM pragma_table_info('set_record')")
         .get();
     expect(after.map((r) => r.read<String>('name')), contains('distance_m'));
+
+    await legacy.close();
+  });
+
+  test('v5 的库升到 v6：档案里的其它设置原样保留，体重单位落成 kg', () async {
+    // v6 给 user_profile 加一列。风险与 v5 同类：不是崩，是**把别人的设置抹掉**。
+    late List<String> colsBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 5);
+        raw.execute(legacySeedProfileSql);
+        colsBefore = raw
+            .select("SELECT name FROM pragma_table_info('user_profile')")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+
+    final ProfileRepository profile = ProfileRepository(legacy);
+    // 打开即触发 onUpgrade
+    expect(await profile.unit(), WeightUnit.lb,
+        reason: '老库里设的是磅，升级不能把它改回 kg —— 那是"把别人的设置抹掉"');
+    expect(await profile.bodyWeightUnit(), BodyWeightUnit.kg,
+        reason: '缺省 kg：在"体重单位"这个概念出现之前，体重显示的确实是 kg');
+    // ⚠️ 90 秒是一个**真实偏好**，不是"跟随动作"（那个有自己的哨兵值）。
+    // 第一版这里写成 isNull，被测试自己纠正了 —— 顺手也说明加列的迁移没有动它。
+    expect(await profile.restOverrideSec(), 90, reason: '加列不该动到别的设置');
+    expect(colsBefore, isNot(contains('body_weight_unit')),
+        reason: 'fixture 不该有这一列，否则这条测试是空转');
+
+    final after = await legacy
+        .customSelect("SELECT name FROM pragma_table_info('user_profile')")
+        .get();
+    expect(after.map((r) => r.read<String>('name')), contains('body_weight_unit'));
 
     await legacy.close();
   });

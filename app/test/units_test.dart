@@ -239,4 +239,99 @@ void main() {
       expect(calls, 0, reason: '没变化就不该通知，也不该重建');
     });
   });
+
+  group('体重单位：千克 / 斤', () {
+    test('1 kg = 2 斤，换算是精确的（来回倒不掉精度）', () {
+      expect(toDisplayBodyWeight(85.5, BodyWeightUnit.jin), 171);
+      expect(bodyWeightToKg(171, BodyWeightUnit.jin), 85.5);
+      expect(toDisplayBodyWeight(85.5, BodyWeightUnit.kg), 85.5);
+      expect(bodyWeightToKg(85.5, BodyWeightUnit.kg), 85.5);
+      // 半斤 = 0.25 kg，用说明"斤"的粒度是 0.5 斤而不是 1 斤
+      expect(toDisplayBodyWeight(85.25, BodyWeightUnit.jin), 170.5);
+    });
+
+    test('念法：斤 不带多余小数，kg 保留一位', () {
+      expect(formatBodyWeight(85.5, BodyWeightUnit.jin), '171 斤');
+      expect(formatBodyWeight(85.5, BodyWeightUnit.kg), '85.5 kg');
+      expect(formatBodyWeight(70.0, BodyWeightUnit.jin), '140 斤');
+      expect(formatBodyWeight(70.0, BodyWeightUnit.kg), '70 kg');
+      expect(formatBodyWeight(null, BodyWeightUnit.jin), '—');
+    });
+
+    test('wire 与 DB 默认值一致，未知值回落 kg', () {
+      expect(BodyWeightUnit.jin.wire, 'jin');
+      expect(BodyWeightUnit.fromWire('jin'), BodyWeightUnit.jin);
+      expect(BodyWeightUnit.fromWire(null), BodyWeightUnit.kg);
+      expect(BodyWeightUnit.fromWire('lb'), BodyWeightUnit.kg,
+          reason: '体重没有磅这个选项 —— 单位集合是 kg/斤');
+    });
+
+    test('体重单位与训练重量单位是两件事，互不影响', () {
+      // 训练切到磅，不代表体重也变磅
+      expect(formatWeight(60, WeightUnit.lb), '132.3 lb');
+      expect(formatBodyWeight(85.5, BodyWeightUnit.kg), '85.5 kg');
+    });
+  });
+
+  group('S10：训练单位与体重单位是两个开关，互不抹掉', () {
+    testWidgets('点「斤」→ 落库，训练单位不动', (WidgetTester tester) async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final ProfileRepository profile = ProfileRepository(db);
+      await profile.setUnit(WeightUnit.lb); // 训练单位先设成磅
+
+      BodyWeightUnit? got;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: ProfileScreen(
+            store: DriftLocalStore(db),
+            repository: ExerciseRepository(db),
+            profile: profile,
+            analytics: RecordingAnalytics(),
+            unit: WeightUnit.lb,
+            bodyUnit: BodyWeightUnit.kg,
+            onBodyUnitChanged: (BodyWeightUnit u) => got = u,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('body-unit-jin')));
+      await tester.pumpAndSettle();
+
+      expect(got, BodyWeightUnit.jin, reason: '要通知上层重建');
+      expect(await profile.bodyWeightUnit(), BodyWeightUnit.jin);
+      expect(await profile.unit(), WeightUnit.lb,
+          reason: '改体重单位不能把训练单位抹成默认值');
+    });
+
+    testWidgets('点训练单位 → 体重单位不动（反向也要守）',
+        (WidgetTester tester) async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final ProfileRepository profile = ProfileRepository(db);
+      await profile.setBodyWeightUnit(BodyWeightUnit.jin);
+
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: ProfileScreen(
+            store: DriftLocalStore(db),
+            repository: ExerciseRepository(db),
+            profile: profile,
+            analytics: RecordingAnalytics(),
+            unit: WeightUnit.kg,
+            bodyUnit: BodyWeightUnit.jin,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('unit-lb')));
+      await tester.pumpAndSettle();
+
+      expect(await profile.unit(), WeightUnit.lb);
+      expect(await profile.bodyWeightUnit(), BodyWeightUnit.jin,
+          reason: '改训练单位不能把体重单位抹掉');
+    });
+  });
 }

@@ -24,15 +24,17 @@ class BodyMetricScreen extends StatefulWidget {
   const BodyMetricScreen({
     super.key,
     required this.repository,
-    this.unit = WeightUnit.kg,
+    this.unit = BodyWeightUnit.kg,
     this.clock,
     this.onSaved,
   });
 
   final BodyMetricRepository repository;
 
-  /// 显示与输入单位。**存储始终是 kg**（见 core/units.dart）。
-  final WeightUnit unit;
+  /// 体重的显示与输入单位（**千克 / 斤**）。**存储始终是 kg**（见 core/units.dart）。
+  ///
+  /// 它与训练重量的 kg/lb 是**两个**设置：把训练切到 lb 的人，体重也不该跟着变磅。
+  final BodyWeightUnit unit;
 
   /// 便于测试固定"今天"。不传则用真实时间。
   final DateTime Function()? clock;
@@ -96,7 +98,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       // 软删除过的不填 —— 用户已经删掉它了
       final bool usable = row != null && row.deletedAt == null;
       _weight.text = usable
-          ? trimNumber(round1(toDisplayWeight(row.weightKg ?? 0, widget.unit)))
+          ? trimNumber(round1(toDisplayBodyWeight(row.weightKg ?? 0, widget.unit)))
           : '';
       _note.text = usable ? (row.note ?? '') : '';
     });
@@ -109,9 +111,11 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     final double? v = double.tryParse(t);
     if (v == null) return null;
     // 明显不合理的值当作没填，避免把 720kg 存进去。
-    // 范围按**显示单位**判断（400 lb ≈ 181 kg），再换成 kg 存库。
-    if (v <= 0 || v > 400) return null;
-    return round1(toStoredKg(v, widget.unit));
+    // 范围按**显示单位**判断：400 kg / 800 斤（两者等价），再换成 kg 存库。
+    final double maxInDisplay =
+        widget.unit == BodyWeightUnit.kg ? 400 : 400 * kJinPerKg;
+    if (v <= 0 || v > maxInDisplay) return null;
+    return round1(bodyWeightToKg(v, widget.unit));
   }
 
   bool get _canSave => !_saving && _parsedWeight != null;
@@ -199,7 +203,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         ],
                       ),
                     ),
-                    _label('体重 (${widget.unit.wire})'),
+                    _label('体重 (${widget.unit.label})'),
                     TextField(
                       key: const Key('body-weight'),
                       controller: _weight,
@@ -322,7 +326,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 style: const TextStyle(color: Tokens.text3, fontSize: 13)),
           ),
           Text(
-            r.weightKg == null ? '—' : formatWeight(r.weightKg, widget.unit),
+            r.weightKg == null
+                ? '—'
+                : formatBodyWeight(r.weightKg, widget.unit),
             style: const TextStyle(color: Tokens.text, fontSize: 16,
                 fontWeight: FontWeight.w600),
           ),

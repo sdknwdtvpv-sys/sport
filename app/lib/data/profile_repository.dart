@@ -42,6 +42,7 @@ class ProfileRepository {
             // ⚠️ 带 withDefault() 的列在 Dart 数据类里**仍然是 required**，必须显式传。
             // 而且要保留已有值 —— 否则以后再加设置项时，一开一关渐进建议就把别人的设置抹了。
             unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             // 同样：带 withDefault 的列在 Dart 数据类里仍必填，且必须保留已有值
             analyticsEnabled: existing?.analyticsEnabled ?? true,
@@ -72,6 +73,7 @@ class ProfileRepository {
             userId: kLocalUserId,
             progressionMode: existing?.progressionMode ?? 'double',
             unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: enabled,
             createdAt: existing?.createdAt ?? now,
@@ -120,6 +122,7 @@ class ProfileRepository {
             userId: kLocalUserId,
             progressionMode: existing?.progressionMode ?? 'double',
             unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: sec ?? kRestFollowExercise,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
             createdAt: existing?.createdAt ?? now,
@@ -168,6 +171,7 @@ class ProfileRepository {
             weeklyFrequency: weeklyFrequency,
             progressionMode: existing?.progressionMode ?? 'double',
             unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? kRestFollowExercise,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
             createdAt: existing?.createdAt ?? now,
@@ -186,6 +190,39 @@ class ProfileRepository {
     return WeightUnit.fromWire(row?.unitPref);
   }
 
+  /// 体重单位（千克 / 斤）。**与训练重量单位是两个设置**。
+  ///
+  /// 没有档案时返回 kg —— 与 `body_weight_unit` 的 DB 默认值一致。
+  Future<BodyWeightUnit> bodyWeightUnit() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return BodyWeightUnit.fromWire(row?.bodyWeightUnit);
+  }
+
+  /// 写入体重单位。和别的设置一样：**必须把其它列原样带回去**。
+  Future<void> setBodyWeightUnit(BodyWeightUnit unit, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            goal: existing?.goal,
+            weeklyFrequency: existing?.weeklyFrequency,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: unit.wire,
+            defaultRestSec: existing?.defaultRestSec ?? 90,
+            analyticsEnabled: existing?.analyticsEnabled ?? true,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
   /// 写入显示单位。
   ///
   /// **必须把其它设置原样带回去** —— 这正是 `setProgressionMode` 注释里
@@ -201,6 +238,8 @@ class ProfileRepository {
             userId: kLocalUserId,
             progressionMode: existing?.progressionMode ?? 'double',
             unitPref: unit.wire,
+            // ⚠️ 这里也必须带上体重单位 —— 它和训练重量是**两个**设置
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
             createdAt: existing?.createdAt ?? now,

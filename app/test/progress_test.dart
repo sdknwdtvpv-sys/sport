@@ -212,7 +212,9 @@ void main() {
     tearDown(() => db.close());
 
     Future<void> pumpProgress(WidgetTester tester,
-        {BodyMetricRepository? body, WeightUnit unit = WeightUnit.kg}) async {
+        {BodyMetricRepository? body,
+        WeightUnit unit = WeightUnit.kg,
+        BodyWeightUnit bodyUnit = BodyWeightUnit.kg}) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: ProgressScreen(
@@ -221,6 +223,7 @@ void main() {
             bodyMetrics: body,
             now: kToday,
             unit: unit,
+            bodyUnit: bodyUnit,
           ),
         ),
       ));
@@ -287,23 +290,29 @@ void main() {
       expect(find.text('更新'), findsOneWidget, reason: '已有记录时按钮是"更新"');
     });
 
-    testWidgets('体重跟随显示单位 —— 不能在两个页面显示两种单位',
+    testWidgets('体重跟随**体重**单位（千克 / 斤），不跟训练重量的 kg/lb',
         (WidgetTester tester) async {
       // 2026-09-29 用户在真机上问："身体数据里千克为什么变成磅了？"
-      // 答案是全局单位设置（存储始终 kg，只有显示换）。
-      // 但顺着查发现**这块卡片硬写着 kg**：lb 用户在「进步」看到 85.5 kg、
-      // 在「身体数据」看到 188.5 lb —— 同一个体重、两块屏、两种单位。
+      // 顺着查发现两件事：
+      //   1. 这块卡片**硬写着 kg** —— lb 用户在「进步」看 85.5 kg、
+      //      在「身体数据」看 188.5 lb：同一个体重、两块屏、两种单位
+      //   2. 更要紧的是：体重**不该**跟着训练重量的单位走。
+      //      用户的要求是"体重钉死在千克和斤之间切换"，所以两个单位分开了。
       final BodyMetricRepository body = BodyMetricRepository(db);
       await body.save(date: '2026-09-28', weightKg: 85.5, nowMs: 1);
 
-      await pumpProgress(tester, body: body, unit: WeightUnit.lb);
+      // 训练单位是磅 + 体重单位是斤 → 体重照斤念
+      await pumpProgress(tester, body: body,
+          unit: WeightUnit.lb, bodyUnit: BodyWeightUnit.jin);
       expect(
         tester.widget<Text>(find.byKey(const Key('progress-weight'))).data,
-        '188.5 lb',
-        reason: '85.5 kg 的显示值（存储仍是 85.5 kg）',
+        '171 斤',
+        reason: '训练切到磅不该把体重也变成磅',
       );
 
-      await pumpProgress(tester, body: body, unit: WeightUnit.kg);
+      // 训练单位是磅 + 体重单位是千克 → 体重照 kg 念
+      await pumpProgress(tester, body: body,
+          unit: WeightUnit.lb, bodyUnit: BodyWeightUnit.kg);
       expect(
         tester.widget<Text>(find.byKey(const Key('progress-weight'))).data,
         '85.5 kg',

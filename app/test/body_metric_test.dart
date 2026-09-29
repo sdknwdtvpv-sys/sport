@@ -8,6 +8,7 @@ library;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/features/body/body_metric_screen.dart';
@@ -131,12 +132,58 @@ void main() {
     /// 固定"今天"，否则测试会在月初/月末飘
     DateTime fixedNow() => DateTime(2026, 9, 28, 9);
 
-    Future<void> pump(WidgetTester tester) async {
+    Future<void> pump(WidgetTester tester,
+        {BodyWeightUnit unit = BodyWeightUnit.kg}) async {
       await tester.pumpWidget(MaterialApp(
-        home: BodyMetricScreen(repository: repo, clock: fixedNow),
+        home: BodyMetricScreen(repository: repo, clock: fixedNow, unit: unit),
       ));
       await tester.pumpAndSettle();
     }
+
+    testWidgets('体重单位是斤时：输入按斤、存库存 kg、标签也写斤',
+        (WidgetTester tester) async {
+      // 用户的要求："体重钉死在千克和斤之间切换"。1 斤 = 500 g。
+      await pump(tester, unit: BodyWeightUnit.jin);
+
+      expect(find.text('体重 (斤)'), findsOneWidget, reason: '标签必须说清是按斤填');
+
+      await tester.enterText(find.byKey(const Key('body-weight')), '171');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('body-save')));
+      await tester.pumpAndSettle();
+
+      final BodyMetricData row = (await repo.forDate('2026-09-28'))!;
+      expect(row.weightKg, 85.5, reason: '171 斤 = 85.5 kg（存储永远 kg）');
+
+      // 最近记录那一行也按斤念
+      expect(find.text('171 斤'), findsOneWidget);
+    });
+
+    testWidgets('斤的上限按斤算（800 斤 = 400 kg），别把 500 斤当合法',
+        (WidgetTester tester) async {
+      await pump(tester, unit: BodyWeightUnit.jin);
+      final Finder save = find.byKey(const Key('body-save'));
+
+      await tester.enterText(find.byKey(const Key('body-weight')), '900');
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(save).onPressed, isNull,
+          reason: '900 斤 = 450 kg，超出上限');
+
+      await tester.enterText(find.byKey(const Key('body-weight')), '170');
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
+    });
+
+    testWidgets('补录时把已有值按**当前单位**填回来（不是把 kg 塞进斤的框）',
+        (WidgetTester tester) async {
+      await repo.save(date: '2026-09-28', weightKg: 85.5, nowMs: 1);
+
+      await pump(tester, unit: BodyWeightUnit.jin);
+
+      final TextField field =
+          tester.widget<TextField>(find.byKey(const Key('body-weight')));
+      expect(field.controller!.text, '171', reason: '85.5 kg 在斤模式下是 171');
+    });
 
     testWidgets('没填有效体重时保存按钮不可用', (WidgetTester tester) async {
       await pump(tester);

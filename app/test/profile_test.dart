@@ -237,6 +237,9 @@ void main() {
     testWidgets('没有记录时给出明确说明，而不是一排 0', (WidgetTester tester) async {
       await pumpProfile(tester);
 
+      // 2026-09-29 加了「体重 kg/斤」那一行之后，统计区被顶到首屏之下 ——
+      // ListView 懒构建，不滚过去 `find` 会直接落空（这个文件早就记着这条规律）
+      await scrollTo(tester, find.textContaining('还没有训练记录'));
       expect(find.textContaining('还没有训练记录'), findsOneWidget);
       expect(find.byKey(const Key('profile-stat-sets')), findsNothing);
     });
@@ -246,6 +249,8 @@ void main() {
       await store.saveSet(_set(id: 'b', reps: 8, weightKg: 60, setIndex: 2));
       await pumpProfile(tester);
 
+      // 同上：统计区在首屏之下，懒构建 —— 先滚过去
+      await scrollTo(tester, find.byKey(const Key('profile-stat-workouts')));
       expect(
         tester.widget<Text>(find.byKey(const Key('profile-stat-workouts'))).data,
         '1 次',
@@ -345,6 +350,7 @@ void main() {
         (WidgetTester tester) async {
       await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
       await pumpProfile(tester);
+      await scrollTo(tester, find.byKey(const Key('profile-stat-sets')));
       expect(find.byKey(const Key('profile-stat-sets')), findsOneWidget, reason: '前置：有数据');
 
       await tapDeleteAll(tester);

@@ -32,6 +32,51 @@ enum WeightUnit {
   static WeightUnit fromWire(String? w) => w == 'lb' ? WeightUnit.lb : WeightUnit.kg;
 }
 
+/// 体重的显示单位：**千克 / 斤**。
+///
+/// 为什么不复用 [WeightUnit]：训练重量用的是"杠铃片网格"那套（kg/lb），
+/// 而中国人称体重说的是**斤**（1 斤 = 500 g = 0.5 kg）—— 两者的取值集合不一样：
+///   * 训练重量：kg / lb（没人说"杠铃 200 斤"）
+///   * 体重：kg / 斤（没人把体重记成磅）
+/// 混成一个枚举会逼着每个使用点判断"这个单位在体重场景下合不合法"。
+///
+/// 存储仍然是 kg（与全局同一条规矩）—— 这里只管怎么念。
+enum BodyWeightUnit {
+  kg('kg', 'kg'),
+  jin('jin', '斤');
+
+  const BodyWeightUnit(this.wire, this.label);
+
+  /// 落库用的字符串，与 `user_profile.body_weight_unit` 一致
+  final String wire;
+
+  /// 界面上念的名字
+  final String label;
+
+  static BodyWeightUnit fromWire(String? w) =>
+      w == 'jin' ? BodyWeightUnit.jin : BodyWeightUnit.kg;
+}
+
+/// 1 kg = 2 斤（市斤）。整数，换算是精确的 —— 斤 与 kg 之间来回倒不会掉精度。
+const double kJinPerKg = 2;
+
+/// kg → 体重的显示单位
+double toDisplayBodyWeight(double kg, BodyWeightUnit unit) =>
+    unit == BodyWeightUnit.kg ? kg : kg * kJinPerKg;
+
+/// 用户输入的体重 → 存储的 kg
+double bodyWeightToKg(double value, BodyWeightUnit unit) =>
+    unit == BodyWeightUnit.kg ? value : value / kJinPerKg;
+
+/// 「85.5 kg」/「171 斤」。
+///
+/// 斤 那边不写小数点后一位的"171.0" —— `trimNumber` 会去掉多余的 `.0`，
+/// 而 斤 的粒度本来就是 0.5（= 半斤），不需要更多小数。
+String formatBodyWeight(double? kg, BodyWeightUnit unit, {String nullText = '—'}) {
+  if (kg == null) return nullText;
+  return '${trimNumber(round1(toDisplayBodyWeight(kg, unit)))} ${unit.label}';
+}
+
 /// kg → 用户单位
 double toDisplayWeight(double kg, WeightUnit unit) =>
     unit == WeightUnit.kg ? kg : kg * kLbPerKg;
