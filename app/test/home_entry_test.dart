@@ -14,6 +14,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart';
+import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/main.dart';
 
 void main() {
@@ -50,6 +51,27 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   }
+
+  testWidgets('冷启动就把动作库导进去了 —— 不需要先点「开始训练」',
+      (WidgetTester tester) async {
+    // 这一条守的是 2026-09-29 在真机上抓到的 bug：`importSeed` 原来只在
+    // 「开始训练」与「看看今天练什么」两个按钮里调，冷启动不调 ——
+    // 于是「计划 → 加动作 → 选择器」这条路永远看到升级前的**旧库**，
+    // 新补的 186 个动作（热身/拉伸/有氧）在那些路径上根本不存在。
+    // 真机那次：库里还是 165 条。
+    //
+    // 断言的是**库本身**，不是某个界面：这是内容层的不变量。
+    await pumpApp(tester);
+
+    final ExerciseRepository repo = ExerciseRepository(db);
+    expect(await repo.builtinCount(), greaterThan(300),
+        reason: '冷启动后库里应该是当前种子（351 条），而不是升级前那份 165 条');
+
+    // 抽一个"升级才有"的类别：它在新库里，老库里没有
+    final List<ExerciseData> cardio =
+        await repo.search(category: 'cardio', limit: 50);
+    expect(cardio, isNotEmpty, reason: '有氧这一类是 v1.4.0 才有的');
+  });
 
   testWidgets('首页给两个入口：大按钮直开练 + 「看看今天练什么」', (WidgetTester tester) async {
     await pumpApp(tester);

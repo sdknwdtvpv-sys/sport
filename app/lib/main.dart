@@ -142,6 +142,28 @@ class _HomeShellState extends State<HomeShell> {
     _refreshWeekSessions();
     unawaited(_loadUnit());
     unawaited(_initAnalytics());
+    unawaited(_importSeedQuietly());
+  }
+
+  /// 冷启动就把动作库刷一遍。
+  ///
+  /// **这个调用是补上的，2026-09-29 在真机上抓到的**：在此之前 `importSeed` 只在
+  /// 「开始训练」与「看看今天练什么」两个按钮里调 —— 而 `exercise_repository.dart`
+  /// 的注释写的是"每次冷启动都可以安全地调一次 `importSeed()`"。
+  /// 后果：v1.2.0 升到 v1.4.0 之后，真机上的 `exercise` 表还是老的 **165** 条，
+  /// 新补的 186 个动作（热身/拉伸/有氧/跑步机…）**要等用户真的点开始训练才会出现**；
+  /// 而「计划 → 加动作 → 选择器」这条路根本不经过那两个按钮，永远看到老库。
+  ///
+  /// 为什么 `unawaited`：这是冷启动路径，不能为一个内容刷新卡住首屏。
+  /// 两个按钮里的 `await` 保留着 —— 那条路必须保证"进训练屏时库是最新的"。
+  Future<void> _importSeedQuietly() async {
+    try {
+      await _repo.importSeed(loadJson: widget.seedLoader);
+    } catch (e) {
+      // 刷新失败不该挡住启动：库里已有上一份，用户照常能练。
+      // 但要留痕 —— 否则"新动作没出现"会变成一个查不下去的问题。
+      _analytics.track('seed_import_failed', <String, Object?>{'error': '$e'});
+    }
   }
 
   Future<void> _loadUnit() async {

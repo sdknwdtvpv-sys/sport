@@ -119,6 +119,24 @@
       界面上错了两个版本。现在由 `app/test/app_version_test.dart` 读 pubspec 核对 ——
       **忘了改 `flutter test` 会红**，不用靠人记得。
 
+## 6.5 用 adb 验真机时的一个坑（2026-09-29 记）
+
+屏幕熄灭时 Android 会把进程**冻住**：Dart 的定时器不触发、平台通道不回包，
+于是任何"启动后应该发生的事"都看不到，很容易误判成代码没跑。
+
+```bash
+adb shell dumpsys deviceidle whitelist +com.sdknwdtvpv.lianleme
+adb shell dumpsys deviceidle disable
+# …验证完恢复：
+adb shell dumpsys deviceidle enable
+adb shell dumpsys deviceidle whitelist -com.sdknwdtvpv.lianleme
+```
+
+另外目标机（Redmi `flourite`）的 `input` 注入被 MIUI 禁掉
+（`SecurityException: Injecting input events requires … INJECT_EVENTS`），
+所以**点击类验收只能人拿手机做** —— 能自动化的只有：安装、冷启动、
+把应用私有库拉下来查数据（需要 debug 包，release 包 `run-as` 会被拒）。
+
 ## 7. 商店材料（国内商店额外）
 
 - [ ] **软件著作权登记**（软著）—— 国内主流商店必需，办理有周期，**尽早启动**
