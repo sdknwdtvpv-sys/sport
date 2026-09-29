@@ -37,6 +37,16 @@ class Exercise extends Table {
   TextColumn get trackType => text().withDefault(const Constant('weight_reps'))();
   IntColumn get defaultRestSec => integer().withDefault(const Constant(90))();
   RealColumn get defaultWeightKg => real().nullable()();
+
+  /// **距离处方：每组多少米**（`distance_time` 动作专用，其余恒 null）。
+  ///
+  /// 2026-09-29 加。之前距离类动作"能记但不被推荐"，因为处方只有"多少次 / 多少秒"
+  /// 两种形态，开不出"走 20 米"。有了这一列，「今天练什么」才敢推荐农夫行走，
+  /// 训练屏也才有默认距离可用（首次练时拿它当起点）。
+  ///
+  /// 为什么写在种子里而不是代码里推导：5 公里跑与 20 米农夫行走差两个数量级，
+  /// 任何"默认 3000 米"都是编数据。见 `seed/upstream-zh-names.json` 的约定。
+  RealColumn get defaultTargetDistanceM => real().nullable()();
   RealColumn get weightIncrement => real().withDefault(const Constant(2.5))();
   BoolColumn get isBuiltin => boolean().withDefault(const Constant(false))();
   IntColumn get popularity => integer().withDefault(const Constant(0))();
@@ -280,11 +290,12 @@ class AppDatabase extends _$AppDatabase {
   /// v5：`set_record` 新增 `distance_m`（有氧记录：跑步机/划船机/跳绳/农夫行走）。
   /// v6：`user_profile` 新增 `body_weight_unit`（体重的显示单位：千克 / 斤）。
   /// v7：新增 `analytics_meta`（设备 ID / 会话 ID / 首次启动时间 —— 埋点公共字段）。
+  /// v8：`exercise` 新增 `default_target_distance_m`（距离处方：每组多少米）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -354,6 +365,11 @@ class AppDatabase extends _$AppDatabase {
           // 那正是我们要的：升级用户的"首次 app_open"从这一版算起。
           if (from < 7) {
             await m.createTable(analyticsMeta);
+          }
+          // v7 → v8：给 `exercise` 再加一列（距离处方）。老库里它恒为 null ——
+          // 老库本来就没有距离动作（v1.4.0 才补进来），null 是准确的历史。
+          if (from < 8) {
+            await m.addColumn(exercise, exercise.defaultTargetDistanceM);
           }
         },
       );

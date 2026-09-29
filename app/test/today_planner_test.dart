@@ -351,37 +351,61 @@ void main() {
     });
   });
 
-  group('距离类动作不进「今天练什么」', () {
-    // 推荐只会开两种处方：3 组 × 8–10 次 / 3 组 × 30–45 秒。
-    // 农夫行走的处方是"走 20 米"，用次数处方去开它是错的（"3 组 × 8 次"）。
-    // 所以距离类动作**不进推荐** —— 直到我们做出"距离处方"（S11 计划模板那类活儿）。
-    test('库里确实有距离类动作（不然下面的断言是空转）', () async {
+  group('距离处方：农夫行走能进推荐了，有氧仍然不进', () {
+    // 2026-09-29 的变化：以前距离类动作"能记但不被推荐"，因为处方只有
+    // "多少次 / 多少秒"两种形态，开不出"走 20 米"。现在处方能表达距离，
+    // 所以**力量类**的距离动作可以进推荐；有氧仍然不进 —— 它靠 `category` 挡着。
+    test('库里确实有这两类（不然下面的断言是空转）', () async {
       final rows = await repo.search(limit: 500);
       final distance = rows.where((ExerciseData e) => isDistanceTrack(e.trackType));
 
       expect(distance.map((ExerciseData e) => e.id),
           containsAll(<String>['ex_farmer_walk', 'ex_treadmill_incline_walk']));
+      // 农夫行走是 strength（能被推荐），跑步机是 cardio（不能）
+      expect((await repo.byId('ex_farmer_walk'))!.category, 'strength');
+      expect((await repo.byId('ex_treadmill_incline_walk'))!.category, 'cardio');
     });
 
-    test('六个部位全取回来，一条距离类动作都没有', () async {
+    test('农夫行走的处方是「3 组 × 20 米」，不是「3 组 × 8–10 次」', () async {
+      final ExerciseData e = (await repo.byId('ex_farmer_walk'))!;
+      final PlanTarget plan = defaultPlanFor(e);
+
+      expect(plan.targetSets, 3);
+      expect(plan.targetDistanceM, 20);
+      expect(plan.targetRepsLow, 0, reason: '距离处方不说次数（配速因人而异）');
+    });
+
+    test('有氧的处方是「1 组 × 5000 米」——没有人练"3 组 5 公里跑"', () async {
+      final ExerciseData e = (await repo.byId('ex_running'))!;
+      final PlanTarget plan = defaultPlanFor(e);
+
+      expect(plan.targetSets, 1);
+      expect(plan.targetDistanceM, 5000);
+    });
+
+    test('六个部位全取回来：力量类的距离动作在，有氧的不在', () async {
       for (final String g in kMuscleRotation) {
         final List<PlannedExercise> all =
             await planner.planToday(muscleGroup: g, count: 200);
 
-        expect(all, isNotEmpty, reason: '$g 应该有动作');
         for (final PlannedExercise p in all) {
-          expect(isDistanceTrack(p.exercise.trackType), isFalse,
-              reason: '$g 里混进了距离类动作：${p.exercise.id}');
+          expect(p.exercise.category, 'strength',
+              reason: '$g 里混进了非力量动作：${p.exercise.id}');
+          // 有氧是 cardio，category 过滤就该拦住它
+          expect(p.exercise.id, isNot('ex_treadmill_incline_walk'));
         }
       }
     });
 
-    test('专门看腿（跑步机在这儿）也不推它', () async {
-      final List<PlannedExercise> legs =
-          await planner.planToday(muscleGroup: 'legs', count: 200);
+    test('背部的推荐里能看到农夫行走，而且带着距离处方', () async {
+      final List<PlannedExercise> back =
+          await planner.planToday(muscleGroup: 'back', count: 200);
+      final PlannedExercise? carry = back
+          .where((PlannedExercise p) => p.exercise.id == 'ex_farmer_walk')
+          .firstOrNull;
 
-      expect(legs.map((PlannedExercise p) => p.exercise.id),
-          isNot(contains('ex_treadmill_incline_walk')));
+      expect(carry, isNotNull, reason: '它现在是一个能被推荐的力量动作');
+      expect(carry!.plan.targetDistanceM, 20);
     });
   });
 

@@ -52,18 +52,14 @@ class ExerciseRepository {
   /// （乐刻报告：女性会员同比 +20.5%）进来的第一道门。
   /// [category] 按类别过滤（strength / warmup / stretch）。传 `'strength'` 就是
   /// **"只挑能当训练的动作"** —— 「今天练什么」必须传它，否则会把拉伸排进今天的计划里。
-  /// [plannable] 只返回**能开默认处方**的动作。
-  ///
-  /// 「今天练什么」的默认处方只有两种形态：3 组 × 8–10 次，或 3 组 × 30–45 秒。
-  /// 而距离类动作（跑步机、农夫行走）的处方是"走/跑多少米" —— 用次数处方去开它是错的
-  /// （"农夫行走 3 组 × 8 次"），所以我们宁可不推它们。
-  /// 排距离要走计划模板那条路（S11），不是这里。
+  /// 注：曾经有个 `plannable` 参数（把距离类动作挡在推荐之外）——
+  /// 2026-09-29 距离处方做出来之后它就多余了，删掉。
+  /// **留着它反而危险**：以后有人加距离动作时会照着旧注释把自己挡在推荐外。
   Future<List<ExerciseData>> search({
     String query = '',
     String? muscleGroup,
     String? equipment,
     String? category,
-    bool plannable = false,
     int limit = 50,
   }) {
     final String q = query.trim();
@@ -78,9 +74,6 @@ class ExerciseRepository {
       }
       if (category != null) {
         cond = cond & t.category.equals(category);
-      }
-      if (plannable) {
-        cond = cond & t.trackType.equals('distance_time').not();
       }
       if (q.isNotEmpty) {
         cond = cond & (t.name.like('%$q%') | t.aliases.like('%$q%'));
@@ -197,6 +190,8 @@ class ExerciseRepository {
         trackType: (e['track_type'] as String?) ?? 'weight_reps',
         defaultRestSec: (e['default_rest_sec'] as num?)?.toInt() ?? 90,
         defaultWeightKg: (e['default_weight_kg'] as num?)?.toDouble(),
+        defaultTargetDistanceM:
+            (e['default_target_distance_m'] as num?)?.toDouble(),
         weightIncrement: (e['weight_increment'] as num?)?.toDouble() ?? 0,
         isBuiltin: ((e['is_builtin'] as num?)?.toInt() ?? 1) == 1,
         popularity: (e['popularity'] as num?)?.toInt() ?? 0,

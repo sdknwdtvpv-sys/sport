@@ -29,6 +29,7 @@ CREATE TABLE exercise (
                                                 -- 怎么记这个动作，见下方「track_type 词表」
   default_rest_sec  INTEGER NOT NULL DEFAULT 90,
   default_weight_kg REAL,                       -- 首次使用时的起始建议
+  default_target_distance_m REAL,               -- 距离处方：每组多少米（distance_time 专用）
   weight_increment  REAL NOT NULL DEFAULT 2.5,  -- 规则引擎加重步长
   is_builtin        INTEGER NOT NULL DEFAULT 0,
   popularity        INTEGER NOT NULL DEFAULT 0, -- 用于"常用动作"排序
@@ -144,7 +145,8 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 **仍然只保留词表、引擎没用上的值**：`distance_time`（有氧的配速/距离/时长推进规则还没设计）。
 现在库里有 9 个有氧动作用它（**能记**距离与时长），但引擎对它们**不给推进建议** ——
 没有用户的有氧目标（减脂/耐力/间歇），"这次多跑 5%"是假精确。
-另外距离类动作不进「今天练什么」（默认处方开不出"走 20 米"，见 `plannable` 过滤）。
+距离类动作现在**进得了**「今天练什么」了（见下方「距离处方」）——
+2026-09-29 补上了 `default_target_distance_m`，处方能表达"3 组 × 20 米"。
 
 **次肌群词表 2026-09-29 扩到 24 值**（原 21 值 + `chest` / `upper_back` / `grip`）：
 上游拿它们当次肌群用（`chest` 6 个动作、`upper_back` 5 个、`grip` 3 个 —— 硬拉与悬垂的握力），
@@ -230,11 +232,27 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
    没有用户的有氧目标（减脂/耐力/间歇），"这次多跑 5%"是假精确；
    更要紧的是不能让它掉进"加次数"分支 —— 那会对一次跑步说"每组次数补到 10 次"
 
-**距离类动作不进「今天练什么」**（`ExerciseRepository.search(plannable: true)`）：
-默认处方只有"3 组 × 8–10 次"与"3 组 × 30–45 秒"两种形态，
-而农夫行走的处方是"走 20 米" —— 用次数处方去开它是错的。
-要让它们能被推荐，得先做**距离处方**（计划模板那类活儿）。
-现在它们的状态是"能被搜到、能被选、能被记，但不被推荐"，这是一句实话而不是半成品。
+### 距离处方（`default_target_distance_m`，2026-09-29 补齐）
+
+**处方现在有三种形态**，由动作的 `track_type` 决定：
+
+| track_type | 处方 |
+|---|---|
+| `weight_reps` / `reps_only` / `assisted_reps` | 3 组 × 8–10 次 |
+| `time` / `weight_time` | 3 组 × 30–45 秒 |
+| **`distance_time`** | **N 组 × 每组多少米**（有氧 1 组、力量类 3 组） |
+
+* 米数写在种子里（`exercise.default_target_distance_m`），**不在代码里推导** ——
+  5 公里跑与 20 米农夫行走差两个数量级，任何默认值都是编数据；`seed/build.mjs` 会强制它存在
+* 秒数（`target_reps_low/high`）留 0：配速因人而异，距离处方只说"多少米"，
+  时长由用户在训练屏自己设（有历史时默认沿用上次）
+* 于是**力量类的距离动作（农夫行走）能进「今天练什么」了**；
+  有氧仍然不进 —— 它靠 `category = cardio` 挡着，与距离处方无关
+* 训练屏会显示「目标 3 组 × 20 米」（那一行本来留给引擎建议，但引擎对距离动作不给建议）
+
+> 曾经有个 `ExerciseRepository.search(plannable: true)` 把距离类动作挡在推荐之外
+> （因为当时处方开不出距离）。**已删除** —— 留着反而危险：以后有人加距离动作时
+> 会照着旧注释把自己挡在推荐外。
 
 ### 迁移历史
 
@@ -243,6 +261,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v2 | 新增 `body_metric` | 只加表 |
 | v3 | 新增 `routine` / `routine_item` | 只加表 |
 | v4 | `exercise` 新增 `category`（DEFAULT `'strength'`；词表 strength/warmup/cardio/stretch） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
+| v8 | `exercise` 新增 `default_target_distance_m` | 距离处方。老库里它恒为 null —— 老库本来就没有距离动作（v1.4.0 才补进来），null 是准确的历史 |
 | v6 | `user_profile` 新增 `body_weight_unit` | 第三次加列。老档案里缺省 `'kg'` —— 在"体重单位"这个概念出现之前，体重显示的确实是 kg（`unit_pref`），所以缺省值就是当时的真实行为 |
 | v5 | `set_record` 新增 `distance_m` | 第二次加列。老库里的组记录距离恒为 **null**（"没记过距离"），**不是 0**（0 表示"真的没动"）—— 这是加列迁移最容易被搞错的地方，有专门的迁移测试守着 |
 

@@ -16,11 +16,16 @@
 /// 加新版本时应该新增一个 `legacyV5Schema` 之类的常量，而不是改老的。
 library;
 
-/// v1～v3 的 `exercise` 表：与当前 `app/lib/data/db.dart` 一致，**只少 `category` 一列**。
+/// `exercise` 表的**按版本形状**：v1–v3 没有 `category`（v4 加的），
+/// v1–v7 没有 `default_target_distance_m`（v8 加的）。
 ///
-/// 手写而不是从 db.dart 反推：反推的话将来给 exercise 再加一列，
-/// 这个 fixture 会跟着变，于是"老库升级"就再也测不出问题了。
-const String legacyExerciseDdl = '''
+/// ⚠️ **必须是"那个版本当时的样子"**，否则测的就不是迁移：
+/// 这一条踩过 —— 最初这里只有一份 v1 形状的 DDL，于是造"v7 的库"时
+/// `exercise` 里根本没有 `category` 列（v7 的迁移不会再加它，因为 `from < 4` 为假），
+/// drift 读那一行时直接 `Null check operator used on a null value`。
+/// 那不是迁移坏了，是 fixture 假了。所以这里按版本拼：
+/// **加新版本时给对应分支添列，而不是改老分支**。
+String legacyExerciseDdl(int version) => '''
 CREATE TABLE IF NOT EXISTS exercise (
   id TEXT NOT NULL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -37,7 +42,7 @@ CREATE TABLE IF NOT EXISTS exercise (
   popularity INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  deleted_at INTEGER NULL
+  deleted_at INTEGER NULL${version >= 4 ? ",\n  category TEXT NOT NULL DEFAULT 'strength'" : ''}${version >= 8 ? ",\n  default_target_distance_m REAL NULL" : ''}
 )
 ''';
 
@@ -133,7 +138,7 @@ CREATE TABLE IF NOT EXISTS body_metric (
 /// 只建与迁移相关的表（`exercise` 必须建、其余按版本），
 /// 因为这几个测试要验的是"升级不崩"，不是"整份 v1 schema 逐列一致"。
 void legacySetup(dynamic raw, {required int version}) {
-  raw.execute(legacyExerciseDdl);
+  raw.execute(legacyExerciseDdl(version));
   raw.execute(legacyWorkoutDdl);
   raw.execute(legacyWorkoutItemDdl);
   raw.execute(legacySetRecordDdl);

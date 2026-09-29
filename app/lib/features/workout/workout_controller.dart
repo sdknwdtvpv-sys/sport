@@ -54,7 +54,9 @@ class WorkoutController extends ChangeNotifier {
     //
     // 取**最远的一组**而不是最后一组：热身/放松那两组距离短，
     // 拿它们当默认值会把"今天还跑 5 公里"变成"今天跑 1 公里"。
-    _distanceM = lastSession?.maxDistanceM ?? 0;
+    // 默认距离：**先看上次**（"今天还跑那么多"），没历史就用**距离处方**（种子给的每组米数）。
+    // 处方之前，首次练距离动作只能从 0 开始、逼着用户自己设 —— 现在它有起点。
+    _distanceM = lastSession?.maxDistanceM ?? plan.targetDistanceM ?? 0;
     if (exercise.isDistance) {
       // 时长同样来自上次。**不能用 plan.targetRepsLow（8）** ——
       // 那是"8 次"的处方，落到有氧上就成了"8 秒"，一条 5 公里跑记成 8 秒。
@@ -140,6 +142,9 @@ class WorkoutController extends ChangeNotifier {
 
   /// "重量"是不是**助力**（辅助引体/双杠）。
   bool get isAssisted => exercise.isAssisted;
+
+  /// 距离处方（每组多少米）。null = 这个动作不吃距离处方。
+  double? get targetDistanceM => plan.targetDistanceM;
 
   /// 大按钮能不能点。
   ///

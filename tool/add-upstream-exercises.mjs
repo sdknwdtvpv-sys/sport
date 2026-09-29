@@ -14,6 +14,7 @@
  *   equipment          ← 上游 16 值映射到我们的 7 值（单杠/墙/毛巾/门框/箱/凳/椅/瑞士球 → 自重）
  *   track_type         ← 上游 exerciseType（duration → time、bodyweight_reps → reps_only…）
  *   default_rest_sec   ← 复合 120 / 孤立 90 / 核心 60 / 自重与时长 60 / 热身与拉伸 30
+ *   default_target_distance_m ← **距离类动作必须人工给**（"每组多少米"是处方，不是推导出来的）
  *   default_weight_kg  ← 按器械给新手起点（杠铃 20 / 哑铃 8 / 器械 20 / 绳索 10 / 壶铃 12）
  *   weight_increment   ← 按器械（与 seed/build.mjs 的期望一致）
  *   popularity         ← `seed/popularity-tiers.json` 的人工评级；没评到的一律 20
@@ -305,6 +306,16 @@ for (const { u, entry, category } of toAdd) {
       }
       secondary.push(t);
     }
+    // 距离处方：距离类动作**必须**人工给"每组多少米"。
+    // 不推导 —— 5 公里跑和 20 米农夫行走的量级差两个数量级，任何默认值都是编数据。
+    const targetDistance = entry.default_target_distance_m ?? null;
+    if (trackType === 'distance_time' && !(targetDistance > 0)) {
+      problems.push(`${u.name}：distance_time 必须在中文名表里给 default_target_distance_m`
+        + `（每组多少米 —— 那是处方，不能推导）`);
+    }
+    if (trackType !== 'distance_time' && targetDistance !== null) {
+      problems.push(`${u.name}：只有 distance_time 才该有 default_target_distance_m`);
+    }
     const isWeighted = category === 'strength'
       && equipment !== 'bodyweight' && equipment !== 'band';
     const rated = popularityOf.get(u.name);
@@ -322,6 +333,7 @@ for (const { u, entry, category } of toAdd) {
       track_type: trackType,
       default_rest_sec: restFor(trackType, group, category),
       default_weight_kg: isWeighted ? WEIGHT_BY_EQUIP[equipment] : null,
+      default_target_distance_m: targetDistance,
       weight_increment: isWeighted ? INCREMENT_BY_EQUIP[equipment] : 0,
       is_builtin: 1,
       // 常用度：人工评级（seed/popularity-tiers.json），没评到的一律 20。

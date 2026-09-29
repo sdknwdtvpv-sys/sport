@@ -251,6 +251,55 @@ void main() {
     });
   });
 
+  group('距离处方：首次练也有起点', () {
+    test('没有历史时，默认距离来自**处方**（不是 0）', () {
+      const PlanTarget plan = PlanTarget(
+        targetSets: 3,
+        targetRepsLow: 0,
+        targetRepsHigh: 0,
+        targetDistanceM: 20,
+      );
+      final WorkoutController c = WorkoutController(
+        exercise: _farmerWalk,
+        plan: plan,
+        analytics: RecordingAnalytics(),
+        store: InMemoryLocalStore(),
+        syncQueue: InMemorySyncQueue(),
+        clock: () => 1000,
+      );
+
+      expect(c.distanceM, 20, reason: '处方给的每组米数就是起点');
+      expect(c.targetDistanceM, 20);
+      c.dispose();
+    });
+
+    test('有历史时**上次优先**（今天还练那么多），处方只当没有历史时的兜底', () {
+      const PlanTarget plan = PlanTarget(
+        targetSets: 3,
+        targetRepsLow: 0,
+        targetRepsHigh: 0,
+        targetDistanceM: 20,
+      );
+      final WorkoutController c = WorkoutController(
+        exercise: _farmerWalk,
+        plan: plan,
+        analytics: RecordingAnalytics(),
+        store: InMemoryLocalStore(),
+        syncQueue: InMemorySyncQueue(),
+        lastSession: const LastSession(
+          weightKg: 20,
+          reps: <int>[60, 60],
+          distances: <double?>[24.5, 26],
+          daysAgo: 2,
+        ),
+        clock: () => 1000,
+      );
+
+      expect(c.distanceM, 26, reason: '上次最远的一组；处方不该盖掉真实历史');
+      c.dispose();
+    });
+  });
+
   group('训练屏：念公里与时长，不念"自重 × 1800"', () {
     testWidgets('大按钮上写「5.00 公里 · 30:00」', (WidgetTester tester) async {
       final _Harness h = _Harness(

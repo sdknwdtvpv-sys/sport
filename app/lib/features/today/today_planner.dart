@@ -51,9 +51,27 @@ const PlanTarget kDefaultTimePlan = PlanTarget(
   targetRepsHigh: 45,
 );
 
+/// 距离动作的处方：**多少组 × 每组多少米**。
+///
+/// * 组数：有氧（category=cardio）是 **1 组** —— "3 组 5 公里跑"没有人这么练；
+///   力量类的距离动作（农夫行走）是 3 组
+/// * 距离：**来自种子**（`default_target_distance_m`），不在这里推导 ——
+///   5 公里跑与 20 米农夫行走差两个数量级，任何默认值都是编数据
+/// * 秒数（`targetRepsLow/High`）留 0：配速因人而异，距离处方只说"多少米"，
+///   时长由用户在训练屏自己设（有历史时默认沿用上次）
+PlanTarget distancePlanFor(ExerciseData e) => PlanTarget(
+      targetSets: e.category == 'cardio' ? 1 : 3,
+      targetRepsLow: 0,
+      targetRepsHigh: 0,
+      targetDistanceM: e.defaultTargetDistanceM,
+    );
+
 /// 按动作类型给默认处方。有计划模板（S11）时以模板里的为准。
-PlanTarget defaultPlanFor(ExerciseData e) =>
-    isTimeTrack(e.trackType) ? kDefaultTimePlan : kDefaultPlan;
+PlanTarget defaultPlanFor(ExerciseData e) => isDistanceTrack(e.trackType)
+    ? distancePlanFor(e)
+    : isTimeTrack(e.trackType)
+        ? kDefaultTimePlan
+        : kDefaultPlan;
 
 /// 一条推荐：动作 + 处方 + 引擎给的下一组建议。
 class PlannedExercise {
@@ -189,9 +207,9 @@ class TodayPlanner {
         // category: 'strength' —— **只从力量动作里挑**。
         // 库里现在有热身（12 个）与拉伸（9 个），它们也会按部位归属（拉伸多半是腿），
         // 不挡的话「今天练什么」会推荐「站姿股四头肌拉伸 × 3 组」。
-        // plannable: 距离类动作（跑步机、农夫行走）不进推荐 —— 默认处方开不出"走 20 米"。
-        await _repo.search(
-            muscleGroup: group, category: 'strength', plannable: true, limit: count);
+        // 距离类动作现在**可以**被推荐了：处方能表达"3 组 × 20 米"（见 distancePlanFor）。
+        // 有氧仍然不会出现 —— 它靠 category 挡着（推荐只挑 strength）。
+        await _repo.search(muscleGroup: group, category: 'strength', limit: count);
 
     final List<PlannedExercise> out = <PlannedExercise>[];
     for (final ExerciseData e in candidates) {
@@ -228,7 +246,7 @@ class TodayPlanner {
         // 它取回的是**整组**（limit 60）再跳过已推荐的，
         // 热身/拉伸不挡的话，常用度排完一定会轮到它们。
         await _repo.search(
-            muscleGroup: group, category: 'strength', plannable: true, limit: 60);
+            muscleGroup: group, category: 'strength', limit: 60);
     final Set<String> already = current
         .map((PlannedExercise p) => p.exercise.id)
         .toSet();

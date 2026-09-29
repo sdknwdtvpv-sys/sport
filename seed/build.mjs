@@ -127,10 +127,18 @@ for (const [i, e] of exercises.entries()) {
   // 但有一条**会让人困惑**的组合值得发警告：category=strength 的距离动作
   // （农夫行走）不会被「今天练什么」推荐 —— 推荐只会开"3 组 × 8–10 次 / 30–45 秒"，
   // 开不出"走 20 米"。不是错，是还没做距离处方。
-  if (e.track_type === 'distance_time' && e.category === 'strength') {
-    warnings.push(`${at}：力量类距离动作不会进「今天练什么」`
-      + `（默认处方只开次数/秒数，开不了距离）—— 已知限制，见 docs/data-model.md`);
+
+  // 距离处方：`distance_time` 必须有"每组多少米"（否则处方开不出来，
+  // 而引擎又不会替它编一个 —— 5 公里跑与 20 米农夫行走差两个数量级）。
+  const targetDist = e.default_target_distance_m;
+  if (e.track_type === 'distance_time') {
+    if (!(targetDist > 0)) {
+      errors.push(`${at}：distance_time 必须有 default_target_distance_m（每组多少米）`);
+    }
+  } else if (targetDist !== undefined && targetDist !== null) {
+    errors.push(`${at}：只有 distance_time 才该有 default_target_distance_m`);
   }
+
   if (e.track_type === 'assisted_reps') {
     // 推进方向**已实现**（2026-09-29）：达标 → **减**助力，掉组 → 保持。
     // 但那条分支的前提是"助力确实是一个要记的量"：increment 为 0 会被引擎当成自重动作，
@@ -189,7 +197,8 @@ const qn = (v) => (v === null || v === undefined ? 'NULL' : String(v));
 const COLS = [
   'id', 'name', 'name_en', 'aliases', 'muscle_group', 'secondary_muscles', 'equipment',
   'category', 'track_type', 'default_rest_sec', 'default_weight_kg', 'weight_increment',
-  'is_builtin', 'popularity', 'created_at', 'updated_at', 'deleted_at',
+  'default_target_distance_m', 'is_builtin', 'popularity', 'created_at', 'updated_at',
+  'deleted_at',
 ];
 
 const rowOf = (e) =>
@@ -200,7 +209,8 @@ const rowOf = (e) =>
     q(e.muscle_group),
     q(JSON.stringify(e.secondary_muscles ?? [])),
     q(e.equipment), q(e.category), q(e.track_type),
-    qn(e.default_rest_sec), qn(e.default_weight_kg), qn(e.weight_increment), qn(e.is_builtin ?? 1),
+    qn(e.default_rest_sec), qn(e.default_weight_kg), qn(e.weight_increment),
+    qn(e.default_target_distance_m ?? null), qn(e.is_builtin ?? 1),
     qn(e.popularity), qn(SEED_TS), qn(SEED_TS), 'NULL',
   ].join(', ') +
   ')';

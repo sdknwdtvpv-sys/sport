@@ -160,6 +160,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Tokens.text3, fontSize: 15, height: 1.4),
             ),
+          // 距离动作**没有引擎建议**（有氧不给推进建议，见 engine/progression.mjs 第 0.5 步），
+          // 所以那一行由**处方**来占：告诉用户今天的目标是什么。
+          // 不写这一行的话，这块屏幕上会少掉"今天该练多少"这个信息。
+          if (s == null && c.targetDistanceM != null)
+            Text(
+              '目标 ${c.plannedSets} 组 × ${formatDistanceKm(c.targetDistanceM!)}'
+              '（可长按改成你实际练的）',
+              key: const Key('plan-target'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Tokens.text3, fontSize: 15, height: 1.4),
+            ),
           const SizedBox(height: Tokens.s4),
           Text(
             // 热身状态是"粘住"的（见 WorkoutController._warmup），

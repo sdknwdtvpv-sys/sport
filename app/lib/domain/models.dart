@@ -103,12 +103,21 @@ class PlanTarget {
     required this.targetRepsLow,
     required this.targetRepsHigh,
     this.targetWeightKg,
+    this.targetDistanceM,
   });
 
   final int targetSets;
+
+  /// 次数；`time` / `distance_time` 动作装的是**秒**
   final int targetRepsLow;
   final int targetRepsHigh;
   final double? targetWeightKg;
+
+  /// **距离处方：每组多少米**。只有 `distance_time` 动作有值。
+  ///
+  /// 有了它，「今天练什么」才敢推荐农夫行走这类动作 ——
+  /// 之前它"能记但不被推荐"，因为处方只有次数与秒数两种形态，开不出"走 20 米"。
+  final double? targetDistanceM;
 }
 
 /// 上次同动作的表现。reps **只含正式组**，热身组由调用方过滤掉。

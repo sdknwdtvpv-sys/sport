@@ -1197,6 +1197,7 @@
     "equipment": "dumbbell",
     "category": "strength",
     "track_type": "distance_time",
+    "default_target_distance_m": 20,
     "default_rest_sec": 120,
     "default_weight_kg": 20,
     "weight_increment": 2,

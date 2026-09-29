@@ -161,6 +161,37 @@ void main() {
     await legacy.close();
   });
 
+  test('v7 的库升到 v8：exercise 多一列距离处方，老数据原样', () async {
+    late List<String> colsBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 7);
+        raw.execute(legacySeedExerciseSql);
+        colsBefore = raw
+            .select("SELECT name FROM pragma_table_info('exercise')")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+
+    final ExerciseRepository repo = ExerciseRepository(legacy);
+    final ExerciseData? kept = await repo.byId('ex_legacy_bench');
+    expect(kept, isNotNull);
+    expect(kept!.category, 'strength');
+    expect(kept.defaultTargetDistanceM, isNull,
+        reason: '老库里没有距离动作，null 是准确的历史');
+    expect(colsBefore, isNot(contains('default_target_distance_m')),
+        reason: 'fixture 不该有这一列，否则这条测试是空转');
+
+    final after = await legacy
+        .customSelect("SELECT name FROM pragma_table_info('exercise')")
+        .get();
+    expect(after.map((r) => r.read<String>('name')),
+        contains('default_target_distance_m'));
+
+    await legacy.close();
+  });
+
   test('老库里**没有** category 列 —— fixture 本身也要守着', () async {
     // 这一条是防"有人把 fixture 改成当前 schema 的样子"从而让上面两条变成空转。
     // 迁移测试最隐蔽的失败方式就是：fixture 悄悄跟上了新 schema，测试永远绿。
