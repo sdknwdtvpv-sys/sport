@@ -232,6 +232,11 @@ class DriftLocalStore implements LocalStore {
       // 计划模板（S11）同样是用户数据
       await _db.delete(_db.routineItem).go();
       await _db.delete(_db.routine).go();
+      // 埋点的本机身份（设备 ID / 会话 / 首启时间）也清掉。**这是有意的取舍**：
+      // 留着它能让"90 天内重装"的排除规则生效、北极星分母更干净，
+      // 但用户说"删除全部数据"时，一个能把他和过去关联起来的标识就不该留下。
+      // 后果如实记录：删过数据的设备再打开会被算成一台新设备（分母多一个）。
+      await _db.delete(_db.analyticsMeta).go();
       // exercise（动作库）刻意不删：那是产品资产，不是用户数据，
       // 删了用户就没法再记录任何动作。
     });

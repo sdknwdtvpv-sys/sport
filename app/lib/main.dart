@@ -5,10 +5,12 @@
 /// 接 drift 时替换 `_store` 的构造即可，UI 与控制器一行不用改。
 library;
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
-import 'dart:async';
-
+import 'analytics/analytics_context.dart';
 import 'analytics/flusher.dart';
 import 'analytics/outbox.dart';
 import 'analytics/outbox_analytics.dart';
@@ -18,6 +20,7 @@ import 'core/theme.dart';
 import 'core/units.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，
 // 同时裸 import 两个库时，一用到同名类就 ambiguity_import。这里预先 hide 掉。
+import 'data/analytics_meta_repository.dart';
 import 'data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
 import 'data/body_metric_repository.dart';
 import 'data/drift_local_store.dart';
@@ -100,7 +103,17 @@ class _HomeShellState extends State<HomeShell> {
   /// 换回内存实现只需把下面两行改成 `InMemoryLocalStore()`。
   late final AppDatabase _db = widget.database ?? openAppDatabase();
   late final AnalyticsOutboxStore _outbox = AnalyticsOutboxStore(_db);
-  late final OutboxAnalytics _analytics = OutboxAnalytics(outbox: _outbox);
+  late final AnalyticsMetaRepository _analyticsMeta =
+      AnalyticsMetaRepository(_db);
+  late final OutboxAnalytics _analytics = OutboxAnalytics(
+    outbox: _outbox,
+    context: DeviceAnalyticsContext(
+      repository: _analyticsMeta,
+      platform: () => Platform.isIOS ? 'ios' : 'android',
+    ),
+    // 事件发生时的离线状态：公共字段 is_offline 的真源
+    offline: () => _syncQueue.offline,
+  );
   late final AnalyticsFlusher _flusher =
       AnalyticsFlusher(db: _db, transport: _buildTransport(), outbox: _outbox);
   Timer? _flushTimer;
@@ -128,6 +141,11 @@ class _HomeShellState extends State<HomeShell> {
   /// 休息时长偏好。**null = 跟随动作自带的值**，这是默认。
   int? _restOverrideSec;
 
+  /// 冷启动时刻，用来给事件算 `ms_since_launch`（"从打开到记下第一组用了多久"）。
+  final int _launchedAtMs = DateTime.now().millisecondsSinceEpoch;
+
+  int _clock() => DateTime.now().millisecondsSinceEpoch;
+
   /// 训练目标。**null = 还没走过 S13 的引导** —— S1 据此决定要不要显示入口。
   String? _goalWire;
 
@@ -137,7 +155,28 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 上报地址。还没有后端，所以返回一个「什么都不做但永远失败」的传输实现 ——
   /// 事件会留在本地 outbox 里，等真地址接上再一起送出去（不会丢）。
-  AnalyticsTransport _buildTransport() => _NullTransport();
+  /// 上报地址：**编译期可配**，不改代码就能接上真后端。
+  ///
+  ///   flutter build apk --release \
+  ///     --dart-define=LIANLEME_ANALYTICS_URL=https://example.com/v1/events
+  ///
+  /// 不配就回落 [_NullTransport]：事件照常落本地 outbox（P0 永不丢），只是不发。
+  /// **这个默认值是安全的那一个** —— 没配地址却"假装上报了"才是危险的。
+  AnalyticsTransport _buildTransport() {
+    final String raw = const String.fromEnvironment('LIANLEME_ANALYTICS_URL');
+    if (raw.isEmpty) return _NullTransport();
+    final Uri? uri = Uri.tryParse(raw);
+    final bool usable = uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+    if (!usable) {
+      // 配了但配错：**不发**，而且要让它在开发期看得见。
+      // 静默回落到 Null 会让人以为"接了但没数据"，那种问题查起来最费时间。
+      debugPrint('LIANLEME_ANALYTICS_URL 不是可用的 http(s) 地址：$raw —— 上报已禁用');
+      return _NullTransport();
+    }
+    return HttpAnalyticsTransport(endpoint: uri);
+  }
 
   @override
   void initState() {
@@ -146,6 +185,31 @@ class _HomeShellState extends State<HomeShell> {
     unawaited(_loadUnit());
     unawaited(_initAnalytics());
     unawaited(_importSeedQuietly());
+  }
+
+  /// `app_open`（`docs/analytics.md` §2.1 / §1.1）。
+  ///
+  /// **这是北极星的分母**：没有它，"首次 24h 内完成一次训练的比例"根本算不出来。
+  /// 在此之前客户端从未发过这个事件 —— 上报管线是通的，但漏斗的起点是空的。
+  ///
+  /// `is_first_open` 必须在**记下首启时间之前**读，顺序颠倒的话它永远是 false。
+  Future<void> _trackAppOpen() async {
+    bool first = false;
+    try {
+      first = await _analyticsMeta.isFirstOpen();
+    } catch (_) {
+      // 读不到就当作"不是第一次" —— 宁可分母少一台设备，也不重复计一次新设备
+    }
+    _analytics.track('app_open', <String, Object?>{
+      'is_first_open': first,
+      'ms_since_launch': _clock() - _launchedAtMs,
+      'entry': 'cold_start',
+    });
+    try {
+      await _analyticsMeta.markFirstOpen();
+    } catch (_) {
+      // 记不上就下次再记（首启判定会退化成"每次都是第一次"，但事件不丢）
+    }
   }
 
   /// 冷启动就把动作库刷一遍。
@@ -185,6 +249,7 @@ class _HomeShellState extends State<HomeShell> {
 
   Future<void> _initAnalytics() async {
     await _flusher.onColdStart(); // 放行上次 parked 的事件
+    await _trackAppOpen();
     // 冷启动 5 秒后试一次（analytics-sdk.md §5 的五个触发时机之一）
     _coldStartTimer =
         Timer(const Duration(seconds: 5), () => unawaited(_flusher.flushOnce()));
@@ -214,8 +279,20 @@ class _HomeShellState extends State<HomeShell> {
   /// 开一段训练会话：**一次把这一趟要练的动作都建好**，
   /// 于是训练屏底部可以在它们之间切换（S6），而不是每个动作重新进一次页面。
   /// 全程共用同一个 workoutId，所以多动作挂在同一次训练下。
-  Future<void> _trainSession(String workoutId, List<SessionEntry> entries) async {
+  Future<void> _trainSession(
+    String workoutId,
+    List<SessionEntry> entries, {
+    required String source,
+  }) async {
     if (entries.isEmpty) return;
+
+    // 漏斗第 2 环。source 回答"用户是从哪条路开始练的"——
+    // 首页大按钮压到 1 跳之后，这一环的转化率是那一版改动的直接检验。
+    _analytics.track('workout_started', <String, Object?>{
+      'source': source,
+      'exercise_count': entries.length,
+      'ms_since_launch': _clock() - _launchedAtMs,
+    });
 
     // 红线：训练进行中不发任何网络请求。
     // 健身房常年弱网，任何请求都可能跟"记一组"抢资源。
@@ -263,9 +340,13 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 只练一个动作。「我自己选」那条流程每次只加一个。
   Future<void> _trainOne(String workoutId, ExerciseData exercise) =>
-      _trainSession(workoutId, <SessionEntry>[
-        SessionEntry(exercise: exercise, plan: defaultPlanFor(exercise)),
-      ]);
+      _trainSession(
+        workoutId,
+        <SessionEntry>[
+          SessionEntry(exercise: exercise, plan: defaultPlanFor(exercise)),
+        ],
+        source: 'picker',
+      );
 
   /// S13：可选的「帮我定个计划」。**不在启动路径上** ——
   /// 只有用户主动点 S1 上那个链接才会进。
@@ -305,6 +386,7 @@ class _HomeShellState extends State<HomeShell> {
           .map((PlannedExercise p) =>
               SessionEntry(exercise: p.exercise, plan: p.plan))
           .toList(),
+      source: 'onboarding',
     );
     await _showSummary(workoutId);
     await _refreshWeekSessions();
@@ -346,6 +428,8 @@ class _HomeShellState extends State<HomeShell> {
           .map((PlannedExercise p) =>
               SessionEntry(exercise: p.exercise, plan: p.plan))
           .toList(),
+      // 首页大按钮：1 跳直开练那条路
+      source: 'home_button',
     );
     await _showSummary(workoutId);
     await _refreshWeekSessions(); // 练完回来，次数要变
@@ -388,6 +472,7 @@ class _HomeShellState extends State<HomeShell> {
             .map((PlannedExercise p) =>
                 SessionEntry(exercise: p.exercise, plan: p.plan))
             .toList(),
+        source: 'suggestion',
       );
       await _showSummary(workoutId);
       await _refreshWeekSessions(); // 练完回来，次数要变
@@ -423,6 +508,22 @@ class _HomeShellState extends State<HomeShell> {
 
     final Workout? w = await _store.loadWorkout(workoutId);
     if (w == null || w.sets.isEmpty || !mounted) return;
+
+    // 漏斗第 4 环 + **北极星的分子**。属性按 docs/analytics.md §2.2：
+    // duration_sec / total_sets / total_volume_kg / exercise_count。
+    // 验收清单里有一条 sanity check：set_logged 条数要和 total_sets 对得上 ——
+    // total_sets 只数正式组（热身不算），set_logged 那边也一样（热身组照记，
+    // 但对比时用正式组），这条一致性由 analytics_test 里的端到端用例守着。
+    final Set<String> exercised = <String>{
+      for (final SetRecord r in w.sets) r.exerciseId,
+    };
+    _analytics.track('workout_finished', <String, Object?>{
+      'duration_sec': w.duration?.inSeconds,
+      'total_sets': w.totalSets,
+      'total_volume_kg': w.totalVolume.round(),
+      'exercise_count': exercised.length,
+      'ms_since_launch': _clock() - _launchedAtMs,
+    });
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => WorkoutSummaryScreen(

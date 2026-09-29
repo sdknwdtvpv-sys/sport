@@ -14,16 +14,31 @@ import 'dart:async';
 import '../domain/tap_meter.dart';
 import 'analytics.dart';
 import 'flusher.dart';
+import 'analytics_context.dart';
 import 'outbox.dart';
 
 class OutboxAnalytics implements Analytics {
   OutboxAnalytics({
     required AnalyticsOutboxStore outbox,
+    required AnalyticsContext context,
+    bool Function()? offline,
     int Function()? clock,
   })  : _outbox = outbox,
+        _context = context,
+        _offline = offline ?? (() => false),
         _clock = clock ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   final AnalyticsOutboxStore _outbox;
+
+  /// 公共字段（`device_id` / `session_id` / `app_version`…）。
+  ///
+  /// **必填，不给缺省** —— 有意的：漏接它的后果是"北极星算不出来"，
+  /// 而那是一个只有到了看板阶段才会发现的窟窿。编译期逼着接，比事后查便宜。
+  final AnalyticsContext _context;
+
+  /// 事件发生时是否离线。真身传 `syncQueue.offline`。
+  final bool Function() _offline;
+
   final int Function() _clock;
 
   /// TapMeter 是"当前这一组的交互计数"。放这里而不是全局，
@@ -45,15 +60,33 @@ class OutboxAnalytics implements Analytics {
     try {
       // 刻意不 await：埋点绝不能阻塞 UI。
       // enqueue 的 _seq++ 在第一个 await 之前执行，所以并发调用也不会撞 id。
-      unawaited(_outbox.enqueue(
-        name: event,
-        props: props,
-        priority: priorityFor(event),
-        nowMs: _clock(),
-      ));
+      unawaited(_enqueueWithCommon(event, props));
     } catch (_) {
       swallowedErrors++;
     }
+  }
+
+  /// 补上公共字段再入队。
+  ///
+  /// **公共字段排在后面**：万一调用方也传了 `is_offline` 之类，以公共层为准 ——
+  /// 否则同一个字段会有两种来源，早晚对不上（`docs/analytics.md` §2.1 说它是"自动附带"）。
+  Future<void> _enqueueWithCommon(
+      String event, Map<String, Object?> props) async {
+    final int now = _clock();
+    Map<String, Object?> common = const <String, Object?>{};
+    try {
+      common = await _context.commonProps(offline: _offline());
+    } catch (_) {
+      // 取不到公共字段也要把事件送出去 —— 少几个字段比丢整条事件好。
+      // （比如数据库临时出问题；埋点永远不该因为自己坏掉而吃掉数据。）
+      swallowedErrors++;
+    }
+    await _outbox.enqueue(
+      name: event,
+      props: <String, Object?>{...props, ...common},
+      priority: priorityFor(event),
+      nowMs: now,
+    );
   }
 
   @override

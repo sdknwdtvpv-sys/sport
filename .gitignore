@@ -12,3 +12,6 @@
 .idea/
 .vscode/
 *.swp
+
+# 埋点收集端落盘的数据（本地联调用，不进仓库）
+server/data/

@@ -241,3 +241,72 @@ app_open ──▶ workout_started ──▶ first_set_logged ──▶ workout_
 - [ ] 事件量级 sanity check：`set_logged` 与 `workout_finished.total_sets` 能对上
 - [ ] 关闭"使用数据改进"后，除崩溃外无任何上报
 - [ ] 埋点异常注入测试：让埋点 SDK 抛错，确认记录功能不受影响
+
+---
+
+## 8. 口径的**可执行版本**（2026-09-29 补）
+
+**为什么要有它**：这份文档把分母、窗口、门禁写得非常死（"首次 `app_open` 的设备"、
+"24 小时固定不调"、"中位数或 P90 上升就不许发"）。但只要口径**只活在文档里**，
+它就一定会被各自解释 —— 三个人算出三个数，然后争论谁对。
+
+所以同一份定义现在有一个可运行的实现：
+
+```bash
+node tool/analytics-report.mjs              # 读 server/data，打出全部口径
+node tool/analytics-report.mjs --json       # 机器可读
+node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 12 → 退出码 1
+```
+
+它算的就是本文件 §1 与 §7 定义的那些数：北极星（分母/分子/比例）、漏斗四环、
+`tap_count` 的中位数与 P90（按 `app_version` 分组）、以及 §5 里**能算**的那几条反指标。
+算不了的（要跨版本 + DAU 的）会**明确写"算不了"**，不假装。
+
+数据从哪来：`server/collector.mjs` 是最小的参考收集端（零依赖，落 JSONL）。
+它**不是**要上线的后端，而是"真机联调有个能收的东西 + 口径有数据可算"的前提。
+将来写真后端时，线格式与语义有一份可运行的参考。
+
+---
+
+## 9. 客户端事件落地状况（**如实记，不粉饰**）
+
+2026-09-29 查出来一个会让人白干一场的窟窿：上报**管线**早就写完了
+（outbox / 批量 ≤100 / 退避重试 / 训练期挂起 / 本地环回 HTTP 测试全在），
+但客户端当时**只发 6 个事件**，而本文件定义了 31 个 ——
+**北极星的分母（`app_open`）和分子（`workout_finished`）从来没发过**，
+公共字段（`device_id` / `session_id` / `app_version` / `platform` / `is_offline`）
+一个都没带。也就是说：**指标定义写死了，但没有任何数据能算出它。**
+
+### 已经发的（9 个）
+
+| 事件 | 说明 |
+|---|---|
+| `app_open` | 含 `is_first_open` / `ms_since_launch` —— **北极星分母** |
+| `workout_started` | 含 `source`(home_button/suggestion/onboarding/picker) / `exercise_count` |
+| `set_logged` | 本来就有的（含 `tap_count` / `tap_kinds` / `distance_m`） |
+| `workout_finished` | 含 `duration_sec` / `total_sets` / `total_volume_kg` / `exercise_count` —— **北极星分子** |
+| `rest_started` / `rest_skipped` / `rest_completed` | 本来就有的 |
+| `set_undone` | 本来就有的 |
+| `seed_import_failed` | 动作库刷新失败（2026-09-29 加，配合"冷启动刷新"那个修复） |
+
+公共字段由 `lib/analytics/analytics_context.dart` **统一附带**（不是各处自己传）：
+`schema_version` / `device_id` / `session_id` / `user_id`(null) / `app_version` /
+`platform` / `is_offline`。
+
+### 还没发的（10 个，以及它们卡住哪个指标）
+
+| 事件 | 谁在等它 |
+|---|---|
+| `suggestion_shown` / `suggestion_accepted` / `suggestion_modified` | **建议采纳率**、引擎失效点定位（§5 反指标之一） |
+| `set_edited` | 编辑成本、§5 反指标"采纳率高但容量不增长" |
+| `exercise_added` | 建议采纳的另一种度量（`add_method`） |
+| `pr_achieved` | 留存钩子效果 |
+| `share_card_created` | 一期唯一社交形态的效果 |
+| `body_metric_logged` | 体重记录的使用率（**只上报 `has_weight` / `has_note`，数值不出设备**） |
+| `sync_failed` | 同步健康度 |
+| `onboarding_step` | 验证"≤3 步且可跳过" |
+
+`paywall_viewed` / `purchase_completed` **不发**：S14（变现）已明确砍掉（见 `ROADMAP.md`）。
+
+**现在的结论**：北极星、漏斗、`tap_count` 门禁**都能算了**；
+采纳率与编辑成本那两条反指标**还不能**，因为它们要的事件还没发。

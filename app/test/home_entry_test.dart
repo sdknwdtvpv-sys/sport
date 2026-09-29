@@ -13,9 +13,28 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:convert';
+
+import 'package:lianleme/analytics/outbox.dart';
+import 'package:lianleme/core/app_info.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/main.dart';
+
+/// 从 outbox 里读事件（按入队顺序）。
+///
+/// 用 `takeBatch()` 而不是 `peekAll()`：outbox 没有"偷看"接口，
+/// 而 takeBatch 只读不改（真正标记已发是 markSent）。
+Future<List<AnalyticsOutboxData>> _rows(AppDatabase db) async {
+  await AnalyticsOutboxStore(db).takeBatch();
+  final rows = await db.select(db.analyticsOutbox).get();
+  rows.sort((AnalyticsOutboxData a, AnalyticsOutboxData b) =>
+      a.createdAt.compareTo(b.createdAt));
+  return rows;
+}
+
+Future<List<String>> _names(AppDatabase db) async =>
+    (await _rows(db)).map((AnalyticsOutboxData r) => r.name).toList();
 
 void main() {
   late AppDatabase db;
@@ -51,6 +70,57 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   }
+
+  testWidgets('漏斗真的会发出四个环：app_open → workout_started → set_logged → workout_finished',
+      (WidgetTester tester) async {
+    // 这一条守的是 2026-09-29 查出来的窟窿：上报管线（outbox / 批量 / 退避 /
+    // 训练期挂起 / 环回 HTTP 测试）全都写完了，但客户端**只发 6 个事件**，
+    // 而 `docs/analytics.md` 定义了 31 个 —— 其中 `app_open` 与 `workout_finished`
+    // 从来没发过，等于**北极星的分母和分子都是空的**。
+    // 所以这条测试不看字段拼得对不对，只看"那条链路到底有没有走通"。
+    await pumpApp(tester);
+
+    // 环 1：冷启动
+    expect(await _names(db), contains('app_open'));
+
+    // 环 2：首页大按钮直开练
+    await tester.tap(find.byKey(const Key('start-workout')));
+    await tester.pumpAndSettle();
+    expect(await _names(db), contains('workout_started'));
+
+    // 环 3：点大按钮记一组
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pumpAndSettle();
+    expect(await _names(db), contains('set_logged'));
+
+    // 环 4：结束训练 —— 训练屏左上角那个 chevron（key: back-button）退出，
+    // 主壳接着会推总结页，workout_finished 就是在那里发的
+    await tester.tap(find.byKey(const Key('back-button')));
+    await tester.pumpAndSettle();
+
+    final List<AnalyticsOutboxData> rows = await _rows(db);
+    final AnalyticsOutboxData finished =
+        rows.lastWhere((AnalyticsOutboxData r) => r.name == 'workout_finished');
+    final Map<String, Object?> props =
+        (jsonDecode(finished.payload) as Map<String, dynamic>)
+            .cast<String, Object?>();
+
+    // docs/analytics-sdk.md §12 那条 sanity check：两边的组数必须对得上。
+    // 对不上就说明有一条埋点漏了或者多算了，报表全跟着错。
+    final int logged = rows.where((AnalyticsOutboxData r) => r.name == 'set_logged').length;
+    expect(props['total_sets'], logged,
+        reason: 'set_logged 条数与 workout_finished.total_sets 必须一致');
+    expect(props['total_sets'], 1);
+    expect(props['exercise_count'], 1);
+    expect(props.containsKey('duration_sec'), isTrue);
+
+    // 公共字段必须在（否则这些事件到了服务端认不出是同一台设备）
+    expect(props['device_id'], hasLength(32));
+    expect(props['session_id'], hasLength(32));
+    expect(props['app_version'], kAppVersion);
+
+    await teardown(tester);
+  });
 
   testWidgets('冷启动就把动作库导进去了 —— 不需要先点「开始训练」',
       (WidgetTester tester) async {

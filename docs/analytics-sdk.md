@@ -236,9 +236,50 @@ CREATE INDEX idx_outbox_flush ON analytics_outbox(priority, created_at);
 
 ---
 
+## 11.5 怎么接一个真实地址（2026-09-29）
+
+**客户端已就绪**：`lib/analytics/transport.dart` 里的 `HttpAnalyticsTransport`
+（超时、读掉响应体、任何错都只返回 false 不抛异常）。接地址不需要改代码：
+
+```bash
+# 真机联调（本机起收集端，用局域网 IP，不是 127.0.0.1）
+node server/collector.mjs --port 8787
+flutter run --dart-define=LIANLEME_ANALYTICS_URL=http://192.168.x.x:8787/v1/events
+
+# 正式包
+flutter build apk --release --dart-define=LIANLEME_ANALYTICS_URL=https://your.host/v1/events
+```
+
+不配 → 回落 `NullTransport`：事件照常落本地 outbox（P0 永不丢），只是不发。
+**这个默认值是安全的那一个** —— 没配地址却"假装上报了"才是危险的。
+配了但配错（不是 http(s) / 没有 host）→ 不发，并在 logcat 里明说，不静默。
+
+线格式（客户端 → 服务端）：
+
+```json
+{ "events": [ { "id": "ev_...", "event": "set_logged", "ts": 1790000000000,
+                "priority": 0, "schema_version": 1, "device_id": "...",
+                "session_id": "...", "user_id": null, "app_version": "1.8.0",
+                "platform": "android", "is_offline": false,
+                "reps": 8, "tap_count": 1, "...": "其余 props 摊平" } ] }
+```
+
+事件专有属性是**摊平**在同一层的（见 `AnalyticsEventPayload.toJson`），
+公共字段由 `analytics_context.dart` 统一附加；同名字段以公共层为准。
+
+**收下来的数据怎么变成指标**：`node tool/analytics-report.mjs`
+（口径的可执行版本，见 `docs/analytics.md` §8）。
+
 ## 12. 接入验收清单
 
-- [ ] 每个事件在真机上验证一次，属性齐全、取值正确
+- [x] ✅ **公共字段自动附带且有测试**（`analytics_identity_test.dart`：七个字段、
+      同名字段以公共层为准、取不到公共字段时事件照发）
+- [x] ✅ **漏斗四环有端到端测试**（`home_entry_test.dart`：app_open → workout_started
+      → set_logged → workout_finished，并断言 `total_sets` 与 `set_logged` 条数一致）
+- [x] ✅ **收集端与口径有自检**（`node server/collector.selftest.mjs`，已进 verify.sh：
+      收/拒/落盘、北极星 24h 边界、漏斗、tap_count 中位数与 P90、真实 HTTP 往返）
+- [ ] 每个事件在真机上验证一次，属性齐全、取值正确 ← **还没做的只有这一条**：
+      真机点一遍 + `node tool/analytics-report.mjs` 看数对不对
 - [ ] 飞行模式跑完整场训练 → 恢复网络后 **100% 补报**，且所有事件 `is_offline: true`
 - [ ] `set_logged.tap_count` **人工逐次数过**，与上报值一致
 - [ ] 连点大按钮 2 次 → 两条 `set_logged` 各自 `tap_count = 1`（单测覆盖）

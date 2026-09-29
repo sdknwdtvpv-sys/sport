@@ -48,6 +48,35 @@ class Exercise extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// 埋点的本机身份与会话（`docs/analytics.md` §2.1 的公共字段靠它）。
+///
+/// **为什么不塞进 `user_profile`**：那张表的每一列都是"用户能看见、能改的设置"，
+/// 而且它的写入路径有一堆"必须把其它列原样带回去"的坑（见 ProfileRepository 的注释）。
+/// 设备 ID / 会话 ID 是**埋点的记账**，不是用户设置 —— 放一起只会让两边都更容易写错。
+///
+/// 只有一行（`id = 'local'`）。
+class AnalyticsMeta extends Table {
+  TextColumn get id => text()();
+
+  /// 设备匿名 ID。随机生成、与任何账号信息无关（`docs/analytics.md` §6）。
+  TextColumn get deviceId => text()();
+
+  /// 当前会话 ID。30 分钟无事件即换新会话。
+  TextColumn get sessionId => text()();
+
+  /// 上一条事件的时间。判断会话是否过期用它，不是用"App 启动时间"。
+  IntColumn get sessionLastAt => integer()();
+
+  /// 首次冷启动的时间。null = 还没开过 → `app_open.is_first_open = true`。
+  /// **北极星的分母完全靠它**（"首次 app_open 起 24 小时内"），所以必须落库。
+  IntColumn get firstOpenAt => integer().nullable()();
+
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 /// 一次训练。
 class Workout extends Table {
   TextColumn get id => text()();
@@ -237,6 +266,7 @@ class RoutineItem extends Table {
   SetRecord,
   UserProfile,
   AnalyticsOutbox,
+  AnalyticsMeta,
   BodyMetric,
   Routine,
   RoutineItem,
@@ -249,11 +279,12 @@ class AppDatabase extends _$AppDatabase {
   /// v4：`exercise` 新增 `category`（热身/拉伸进库，但不进推荐）—— **第一次给已有表加列**。
   /// v5：`set_record` 新增 `distance_m`（有氧记录：跑步机/划船机/跳绳/农夫行走）。
   /// v6：`user_profile` 新增 `body_weight_unit`（体重的显示单位：千克 / 斤）。
+  /// v7：新增 `analytics_meta`（设备 ID / 会话 ID / 首次启动时间 —— 埋点公共字段）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -317,6 +348,12 @@ class AppDatabase extends _$AppDatabase {
           // 体重显示的确实是 kg（`unit_pref`）。**不需要数据搬迁。**
           if (from < 6) {
             await m.addColumn(userProfile, userProfile.bodyWeightUnit);
+          }
+          // v6 → v7：加一张新表（只放埋点的记账），没有改动任何既有列。
+          // 老库升上来时这张表是空的，首次启动会生成设备 ID 并把首启时间记下 ——
+          // 那正是我们要的：升级用户的"首次 app_open"从这一版算起。
+          if (from < 7) {
+            await m.createTable(analyticsMeta);
           }
         },
       );

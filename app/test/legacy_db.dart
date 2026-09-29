@@ -155,6 +155,9 @@ VALUES
    8, NULL, 0, 480.0, 1000, 1000, NULL)
 ''';
 
+/// **v1–v6 都没有 `analytics_meta`** —— v7 才建的（埋点的本机身份）。
+/// 不用写 DDL：fixture 里不该有它，迁移负责创建。migration_test 里有一条守这个。
+///
 /// 往老库里塞一行用户档案 —— 用来验 v6 给 user_profile 加列时不动已有设置。
 const String legacySeedProfileSql = '''
 INSERT INTO user_profile

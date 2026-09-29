@@ -15,6 +15,7 @@ import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, Workou
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+import 'package:lianleme/data/analytics_meta_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
 
@@ -131,6 +132,31 @@ void main() {
         .customSelect("SELECT name FROM pragma_table_info('user_profile')")
         .get();
     expect(after.map((r) => r.read<String>('name')), contains('body_weight_unit'));
+
+    await legacy.close();
+  });
+
+  test('v6 的库升到 v7：新表建出来了，而且老数据一条没动', () async {
+    // v7 加的是**埋点的记账表**（设备 ID / 会话 / 首启时间）。
+    // 它和用户数据无关，但升级路径同样要走通 —— 老库升上来时这张表必须是空的，
+    // 首次启动才生成设备 ID（升级用户从这一版起算"首次 app_open"）。
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 6);
+        raw.execute(legacySeedExerciseSql);
+        raw.execute(legacySeedSetSql);
+      }),
+    );
+
+    final AnalyticsMetaRepository meta = AnalyticsMetaRepository(legacy);
+
+    expect(await meta.isFirstOpen(), isTrue,
+        reason: '升级用户没有历史设备 ID —— 从这一版起算首次（诚实的近似）');
+    final AnalyticsMetaData row = await meta.ensure();
+    expect(row.deviceId, hasLength(32));
+    // 老数据不受影响
+    final DriftLocalStore store = DriftLocalStore(legacy);
+    expect(await store.setsFor('w_legacy'), hasLength(1));
 
     await legacy.close();
   });

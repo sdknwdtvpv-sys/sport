@@ -6,9 +6,71 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
-## 未切版（v1.7.0 之后的改动，尚未打 tag）
+## 未切版（v1.8.0 之后的改动，尚未打 tag）
 
 （空 —— 下次动了 `app/` 的代码就往这里加）
+
+## v1.8.0 · 埋点真的能算出北极星了（原来连分母都没发）
+
+**起因**：按计划做"接真实埋点上报"。一看代码，问题不是"没接地址"，而是
+**上报的管线全写完了、要上报的事件几乎没发**：
+
+* 客户端**只发 6 个事件**（记组 / 休息 / 撤销），而 `docs/analytics.md` 定义了 31 个
+* **`app_open` 从来没发过** → 北极星的分母是空的
+* **`workout_finished` 从来没发过** → 分子也是空的
+* 公共字段（`device_id` / `session_id` / `app_version` / `platform` / `is_offline`）
+  一个都没带 → 就算发了也认不出"这是同一台设备"
+
+也就是说：**指标定义早早写死了，却没有任何数据能算出它**。这和前面那个
+"冷启动不刷新动作库"是同一类窟窿 —— 测试全绿，功能"看起来"在，但那条路从来没走通过。
+
+### 这一版补的三块
+
+**① 埋点的本机身份（数据库 v7）**：新增 `analytics_meta` 表 —— 设备 ID（随机 32 位十六进制、
+与任何账号信息无关）、会话 ID（30 分钟无事件即换）、首次启动时间。
+`app_open.is_first_open` 靠它；**北极星的分母完全建立在这张表上**。
+删除全部数据时这张表也清掉（有意的取舍：宁可分母多算一台，也不留下能关联过去的标识）。
+
+**② 公共字段统一附带**：新增 `analytics_context.dart`，
+`OutboxAnalytics` 的构造**强制**要一个 context（不给缺省）——
+漏接它的后果是"北极星算不出来"，而那要到看板阶段才会发现，编译期逼着接便宜得多。
+同名字段以公共层为准（以前 `is_offline` 是各处自己传的）；
+取不到公共字段时**事件照发**（少几个字段好过丢整条事件）。
+
+**③ 漏斗四环真的会发了**：`app_open`（含 `is_first_open` / `ms_since_launch`）、
+`workout_started`（含 `source`：home_button / suggestion / onboarding / picker）、
+`workout_finished`（含 `duration_sec` / `total_sets` / `total_volume_kg` / `exercise_count`）。
+
+### 地址可配 + 参考收集端 + 口径可执行
+
+* `--dart-define=LIANLEME_ANALYTICS_URL=...` 就能接真后端，**不改代码**；
+  不配回落 `NullTransport`（事件仍在本地 outbox，P0 不丢），配错会在 logcat 明说而不是静默
+* `server/collector.mjs` —— 零依赖参考收集端（收 / 拒 / 落 JSONL / `/healthz` / `/stats`）。
+  不是要上线的后端，而是"真机联调有个能收的东西 + 口径有数据可算"的前提
+* `tool/analytics-report.mjs` —— **口径的可执行版本**：北极星（分母/分子/比例）、
+  漏斗四环、`tap_count` 中位数与 P90（按版本分组）、§5 里能算的反指标；
+  `--baseline N` 直接当发布门禁（中位数高于 N → 退出码 1）
+
+### 测试 529/529（+9）
+
+* 身份与会话：设备 ID 不随会话变、30 分钟换会话、`is_first_open` 只真一次、
+  升级上来的老库算"新设备"（诚实说明）
+* 公共字段：七个字段齐全、同名字段以公共层为准、取不到时不丢事件、隐私开关照旧
+* **漏斗端到端**：冷启动 → 点开始 → 记一组 → 退出，四个环都发出来了，
+  且 `workout_finished.total_sets` 与 `set_logged` 条数一致（§12 那条 sanity check）
+* 迁移 v7：新表建出来、老数据不动
+
+自检进了 verify.sh（`server/collector.selftest.mjs`）：收集端收/拒/落盘、
+北极星 24 小时**边界**（正好 24h 算、24h+1ms 不算、`total_sets=0` 不算）、
+漏斗比例、中位数/P90、以及一次真实 HTTP 往返。
+
+### 如实记：还没发的 10 个事件
+
+`suggestion_shown/accepted/modified`（建议采纳率、引擎失效点）、`set_edited`（编辑成本）、
+`exercise_added`、`pr_achieved`、`share_card_created`、`body_metric_logged`、`sync_failed`、
+`onboarding_step`。**后果**：北极星 / 漏斗 / `tap_count` 门禁都能算了，
+但 §5 那两条"采纳率与编辑成本"的反指标还不能 —— 已写进 `docs/analytics.md` §9。
+（`paywall_*` / `purchase_completed` 不发：S14 变现已明确砍掉。）
 
 ## v1.7.0 · 单位开关改位置：体重在身体数据页里实时切，训练单位下沉
 

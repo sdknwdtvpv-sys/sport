@@ -120,6 +120,15 @@ strip "$LOG" | tail -12
 [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 场景 eval 通过（序列级产品红线）" || { echo "${RED}✗ 场景 eval 违反红线（退出码 $rc）${OFF}"; fail=1; }
 echo
 
+# 埋点那半边的 JS：收集端收/拒/落盘 + 口径计算（北极星边界、漏斗、tap_count）
+# 它自己错了会给出"看起来很确定"的错数字，所以和引擎一样进这条门禁。
+if node server/collector.selftest.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | head -3; echo "${GREEN}✓${OFF} 埋点链路自检通过"
+else
+  strip "$LOG"; echo "${RED}✗ 埋点链路自检失败${OFF}"; fail=1
+fi
+echo
+
 # ── 3. Dart 领域层（零依赖） ────────────────────────────────────────────
 echo "${BOLD}[3/6] Dart 引擎 vs 同一份 vectors.json（零依赖）${OFF}"
 if [ -z "$DART_BIN" ]; then
@@ -231,7 +240,9 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          seed/upstream-confirmed.json docs/exercise-mapping-review.md \
          seed/upstream-zh-names.json seed/parts/04-from-upstream.json \
          seed/popularity-tiers.json app/test/legacy_db.dart app/test/migration_test.dart \
-         app/test/cardio_test.dart \
+         app/test/cardio_test.dart app/test/analytics_identity_test.dart \
+         server/collector.mjs server/collector.selftest.mjs tool/analytics-report.mjs \
+         app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
          tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
