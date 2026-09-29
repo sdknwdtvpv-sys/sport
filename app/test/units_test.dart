@@ -15,6 +15,8 @@ import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
+import 'package:lianleme/data/body_metric_repository.dart';
+import 'package:lianleme/features/body/body_metric_screen.dart';
 import 'package:lianleme/features/profile/profile_screen.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/workout/workout_controller.dart';
@@ -273,25 +275,18 @@ void main() {
     });
   });
 
-  group('S10：训练单位与体重单位是两个开关，互不抹掉', () {
-    testWidgets('点「斤」→ 落库，训练单位不动', (WidgetTester tester) async {
+  group('两个单位互不抹掉：体重在身体数据页切，训练单位不受影响', () {
+    testWidgets('在身体数据页切「斤」→ 落库，训练单位不动',
+        (WidgetTester tester) async {
       final AppDatabase db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final ProfileRepository profile = ProfileRepository(db);
       await profile.setUnit(WeightUnit.lb); // 训练单位先设成磅
 
-      BodyWeightUnit? got;
       await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ProfileScreen(
-            store: DriftLocalStore(db),
-            repository: ExerciseRepository(db),
-            profile: profile,
-            analytics: RecordingAnalytics(),
-            unit: WeightUnit.lb,
-            bodyUnit: BodyWeightUnit.kg,
-            onBodyUnitChanged: (BodyWeightUnit u) => got = u,
-          ),
+        home: BodyMetricScreen(
+          repository: BodyMetricRepository(db),
+          profile: profile,
         ),
       ));
       await tester.pumpAndSettle();
@@ -299,13 +294,12 @@ void main() {
       await tester.tap(find.byKey(const Key('body-unit-jin')));
       await tester.pumpAndSettle();
 
-      expect(got, BodyWeightUnit.jin, reason: '要通知上层重建');
       expect(await profile.bodyWeightUnit(), BodyWeightUnit.jin);
       expect(await profile.unit(), WeightUnit.lb,
           reason: '改体重单位不能把训练单位抹成默认值');
     });
 
-    testWidgets('点训练单位 → 体重单位不动（反向也要守）',
+    testWidgets('改训练单位 → 体重单位不动（反向也要守）',
         (WidgetTester tester) async {
       final AppDatabase db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
@@ -326,7 +320,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('unit-lb')));
+      // 「我」页把训练重量单位下沉到了页面最下面 —— 先滚过去
+      final Finder lb = find.byKey(const Key('unit-lb'));
+      await tester.dragUntilVisible(lb, find.byType(ListView), const Offset(0, -220));
+      await tester.pumpAndSettle();
+      await tester.tap(lb);
       await tester.pumpAndSettle();
 
       expect(await profile.unit(), WeightUnit.lb);

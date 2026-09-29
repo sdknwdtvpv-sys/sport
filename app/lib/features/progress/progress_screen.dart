@@ -19,6 +19,7 @@ import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
+import '../../data/profile_repository.dart';
 import '../../data/body_metric_repository.dart';
 import '../../domain/models.dart';
 import '../body/body_metric_screen.dart';
@@ -31,6 +32,8 @@ class ProgressScreen extends StatefulWidget {
     required this.store,
     required this.repository,
     this.bodyMetrics,
+    this.profile,
+    this.onBodyUnitChanged,
     this.unit = WeightUnit.kg,
     this.bodyUnit = BodyWeightUnit.kg,
     this.now,
@@ -46,9 +49,18 @@ class ProgressScreen extends StatefulWidget {
   /// **训练重量**的显示单位。只影响显示：容量与 PR 的判定始终按 kg 算。
   final WeightUnit unit;
 
-  /// **体重**的显示单位（千克 / 斤）。与 [unit] 分开 ——
+  /// **体重**的显示单位（千克 / 斤）的初始值。与 [unit] 分开 ——
   /// 把训练切到 lb 的人，体重也不该跟着变磅（中国用户称体重说斤）。
+  ///
+  /// 它可以在**身体数据页里实时切**，所以这页要能收到变化（[onBodyUnitChanged]）
+  /// 并把这个偏好落库（[profile]）。
   final BodyWeightUnit bodyUnit;
+
+  /// 用户偏好仓库 —— 身体数据页里切单位时要落库。
+  final ProfileRepository? profile;
+
+  /// 体重单位在身体数据页被切了之后通知上层（本页那张卡片要立刻跟着变）。
+  final ValueChanged<BodyWeightUnit>? onBodyUnitChanged;
 
   /// 测试注入固定时间用；生产为 null，取当前时间
   final DateTime? now;
@@ -61,6 +73,24 @@ class _ProgressScreenState extends State<ProgressScreen> {
   ProgressData? _data;
   BodyMetricData? _latestWeight;
   bool _loading = true;
+
+  /// 体重单位：初值来自构造参数，身体数据页里切了之后本地也跟着变
+  /// （否则回来那张卡片还按旧单位念）。
+  late BodyWeightUnit _bodyUnit = widget.bodyUnit;
+
+  /// 上层换了体重单位就跟着换。
+  ///
+  /// 少这一条会出一个很具体的 bug：用户在身体数据页把单位切成「斤」→
+  /// 上层 setState 传下新的 `bodyUnit` → **State 被复用**（同类型同位置），
+  /// 于是本地 `_bodyUnit` 还是旧值，回来那张卡片仍按千克念 ——
+  /// "切了但数字没变"。测试把这条抓出来了。
+  @override
+  void didUpdateWidget(ProgressScreen old) {
+    super.didUpdateWidget(old);
+    if (old.bodyUnit != widget.bodyUnit) {
+      setState(() => _bodyUnit = widget.bodyUnit);
+    }
+  }
 
   @override
   void initState() {
@@ -126,7 +156,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         // 走**唯一**的重量格式化入口 —— 这里以前硬写着 `kg` + 自己 _trim，
                         // 于是单位是 lb 的用户会在「进步」看到「85.5 kg」、
                         // 在「身体数据」看到「188.5 lb」：同一个体重，两个单位两块屏。
-                        formatBodyWeight(w.weightKg, widget.bodyUnit),
+                        formatBodyWeight(w.weightKg, _bodyUnit),
                         key: const Key('progress-weight'),
                         style: const TextStyle(
                           color: Tokens.text,
@@ -178,6 +208,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
         builder: (_) => BodyMetricScreen(
           repository: repo,
           unit: widget.bodyUnit,
+          profile: widget.profile,
+          onUnitChanged: (BodyWeightUnit u) {
+            if (!mounted) return;
+            setState(() => _bodyUnit = u);
+            widget.onBodyUnitChanged?.call(u);
+          },
           // 记完回来要刷新，否则卡片还显示旧体重
           onSaved: _load,
         ),

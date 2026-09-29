@@ -291,39 +291,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     widget.onUnitChanged?.call(u);
   }
 
-  /// 切换**体重**单位。与训练重量那个开关各写各的列 ——
-  /// `setBodyWeightUnit` 里会把其它设置原样带回去。
-  Future<void> _setBodyUnit(BodyWeightUnit u) async {
-    if (u == widget.bodyUnit) return;
-    await widget.profile.setBodyWeightUnit(u);
-    widget.onBodyUnitChanged?.call(u);
-  }
-
-  Widget _bodyUnitChip(BodyWeightUnit u) {
-    final bool active = widget.bodyUnit == u;
-    return GestureDetector(
-      key: Key('body-unit-${u.wire}'),
-      onTap: () => _setBodyUnit(u),
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
-        height: 36,
-        decoration: BoxDecoration(
-          color: active ? Tokens.volt : Tokens.surface,
-          borderRadius: BorderRadius.circular(Tokens.rPill),
-        ),
-        child: Text(
-          u.label,
-          style: TextStyle(
-            color: active ? Tokens.voltInk : Tokens.text2,
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _unitChip(WeightUnit u) {
     final bool active = widget.unit == u;
     return GestureDetector(
@@ -357,6 +324,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (_) => BodyMetricScreen(
           repository: repo,
           unit: widget.bodyUnit,
+          // 体重的 kg/斤 **只在身体数据页里切**（实时生效），
+          // 这页只负责把初始值与"切了之后通知上层"接过去。
+          profile: widget.profile,
+          onUnitChanged: widget.onBodyUnitChanged,
           onSaved: _load,
         ),
       ),
@@ -440,48 +411,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const SizedBox(height: Tokens.s5),
-        // 规格（docs/screens.md S15）把「单位」列在设置里。
-        // 放在最上面：它是唯一会改变**所有其它数字怎么念**的设置。
-        _sectionTitle('单位'),
-        _card(<Widget>[
-          Padding(
-            padding: const EdgeInsets.all(Tokens.s4),
-            child: Row(
-              children: <Widget>[
-                _unitChip(WeightUnit.kg),
-                const SizedBox(width: Tokens.s2),
-                _unitChip(WeightUnit.lb),
-                const Spacer(),
-                const Text(
-                  '只影响显示，数据按 kg 存',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          // **体重单独一行**：中国用户称体重说斤（1 斤 = 500 g），
-          // 而杠铃重量说 kg —— 一个开关管两件事就会打架：
-          // 把训练切到磅的人，不该连体重也变成磅。
-          Padding(
-            padding: const EdgeInsets.all(Tokens.s4),
-            child: Row(
-              children: <Widget>[
-                const Text('体重',
-                    style: TextStyle(color: Tokens.text2, fontSize: 13)),
-                const SizedBox(width: Tokens.s3),
-                _bodyUnitChip(BodyWeightUnit.kg),
-                const SizedBox(width: Tokens.s2),
-                _bodyUnitChip(BodyWeightUnit.jin),
-                const Spacer(),
-                const Text(
-                  '1 斤 = 500 g',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ]),
+        // ⚠️ 单位不在这页顶部了（2026-09-29 用户反馈："我这个页面不需要显示单位的切换，
+        // 把单位的切换下沉到没那么显眼的位置"）。两条处理：
+        //   * **体重的单位**从这页**删掉** —— 它只在「身体数据」页里实时切
+        //     （称体重时才想起来要按斤看，不该退出来翻设置）
+        //   * **训练重量的单位**下沉到页面最下面的「显示」一节，做成不起眼的一行
         _sectionTitle('休息时长'),
         _card(<Widget>[
           Padding(
@@ -647,6 +581,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ]),
         const SizedBox(height: Tokens.s5),
+        // 训练重量的单位：**下沉到最下面**、样式也弱化（一行文字 + 两个小 chip）。
+        // 它确实会改变所有数字怎么念，但那是"设置一次就不管"的东西，
+        // 不该占着设置页的第一屏。
+        _sectionTitle('显示'),
+        _card(<Widget>[
+          Padding(
+            padding: const EdgeInsets.all(Tokens.s4),
+            child: Row(
+              children: <Widget>[
+                const Text('重量单位',
+                    style: TextStyle(color: Tokens.text2, fontSize: 13)),
+                const SizedBox(width: Tokens.s3),
+                _unitChip(WeightUnit.kg),
+                const SizedBox(width: Tokens.s2),
+                _unitChip(WeightUnit.lb),
+                const Spacer(),
+                const Text(
+                  '只影响显示',
+                  style: TextStyle(color: Tokens.text3, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ]),
         _sectionTitle('关于'),
         _card(<Widget>[
           Padding(

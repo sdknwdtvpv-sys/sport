@@ -12,6 +12,8 @@
 ///      这是一个有意的例外，不是忘了规矩。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -19,22 +21,34 @@ import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/db.dart';
+import '../../data/profile_repository.dart';
 
 class BodyMetricScreen extends StatefulWidget {
   const BodyMetricScreen({
     super.key,
     required this.repository,
     this.unit = BodyWeightUnit.kg,
+    this.profile,
     this.clock,
     this.onSaved,
+    this.onUnitChanged,
   });
 
   final BodyMetricRepository repository;
 
-  /// 体重的显示与输入单位（**千克 / 斤**）。**存储始终是 kg**（见 core/units.dart）。
+  /// 体重的显示与输入单位（**千克 / 斤**）的**初始值**。
+  /// **存储始终是 kg**（见 core/units.dart）。
   ///
-  /// 它与训练重量的 kg/lb 是**两个**设置：把训练切到 lb 的人，体重也不该跟着变磅。
+  /// 它在**本页内**可以实时切换（[onUnitChanged] / 页内那个小开关）——
+  /// 用户的理由很直接：称体重的时候才想起来"我要按斤看"，
+  /// 那时不该退出去到「我」页翻设置。
   final BodyWeightUnit unit;
+
+  /// 用户偏好仓库。传了才会把实时切换的单位**落库**（测试可以不传）。
+  final ProfileRepository? profile;
+
+  /// 单位在本页被切换后通知上层（让「进步」页那张卡片也跟着变）。
+  final ValueChanged<BodyWeightUnit>? onUnitChanged;
 
   /// 便于测试固定"今天"。不传则用真实时间。
   final DateTime Function()? clock;
@@ -48,6 +62,9 @@ class BodyMetricScreen extends StatefulWidget {
 
 class _BodyMetricScreenState extends State<BodyMetricScreen> {
   final TextEditingController _weight = TextEditingController();
+
+  /// 本页当前使用的体重单位。**初值来自构造参数，之后由页内那个开关实时改。**
+  late BodyWeightUnit _unit = widget.unit;
   final TextEditingController _note = TextEditingController();
   List<BodyMetricData> _recent = const <BodyMetricData>[];
   late DateTime _selected;
@@ -98,10 +115,51 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       // 软删除过的不填 —— 用户已经删掉它了
       final bool usable = row != null && row.deletedAt == null;
       _weight.text = usable
-          ? trimNumber(round1(toDisplayBodyWeight(row.weightKg ?? 0, widget.unit)))
+          ? trimNumber(round1(toDisplayBodyWeight(row.weightKg ?? 0, _unit)))
           : '';
       _note.text = usable ? (row.note ?? '') : '';
     });
+  }
+
+  @override
+  void didUpdateWidget(BodyMetricScreen old) {
+    super.didUpdateWidget(old);
+    // 上层换了单位（比如整棵树按新偏好重建）→ 跟着换，并把输入框里的数字一起换过去。
+    // 本地已经切过（_switchUnit 已经通知过上层）时这里通常是 no-op。
+    if (old.unit != widget.unit && widget.unit != _unit) {
+      _adoptUnit(widget.unit, persist: false, notify: false);
+    }
+  }
+
+  /// 把当前单位换成 [next]：输入框里的数字**跟着换成同一个体重**，其余不动。
+  void _adoptUnit(BodyWeightUnit next,
+      {required bool persist, required bool notify}) {
+    if (next == _unit) return;
+    final double? asKg = _parsedWeight;
+    setState(() {
+      _unit = next;
+      if (asKg != null) {
+        _weight.text = trimNumber(round1(toDisplayBodyWeight(asKg, next)));
+      }
+    });
+    if (persist) unawaited(_persistUnit(next));
+    if (notify) widget.onUnitChanged?.call(next);
+  }
+
+  /// 实时切换体重单位。
+  ///
+  /// **数字要跟着变**（"实时数据变动"）：输入框里已经填的值是**旧单位**下的数，
+  /// 切换后换成新单位下**同一个体重**的值 —— 85.5 切到斤就是 171，而不是留个 85.5
+  /// 让人以为自己体重变了。已经存进库的 kg 一个字节都不动。
+  ///
+  /// 输入框里的内容解析不出来（空的、半截的、超范围的）就原样留着，不猜。
+  void _switchUnit(BodyWeightUnit next) =>
+      _adoptUnit(next, persist: true, notify: true);
+
+  Future<void> _persistUnit(BodyWeightUnit u) async {
+    final ProfileRepository? p = widget.profile;
+    if (p == null) return;
+    await p.setBodyWeightUnit(u);
   }
 
   /// 只接受数字与小数点的输入。
@@ -113,9 +171,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     // 明显不合理的值当作没填，避免把 720kg 存进去。
     // 范围按**显示单位**判断：400 kg / 800 斤（两者等价），再换成 kg 存库。
     final double maxInDisplay =
-        widget.unit == BodyWeightUnit.kg ? 400 : 400 * kJinPerKg;
+        _unit == BodyWeightUnit.kg ? 400 : 400 * kJinPerKg;
     if (v <= 0 || v > maxInDisplay) return null;
-    return round1(bodyWeightToKg(v, widget.unit));
+    return round1(bodyWeightToKg(v, _unit));
   }
 
   bool get _canSave => !_saving && _parsedWeight != null;
@@ -203,7 +261,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         ],
                       ),
                     ),
-                    _label('体重 (${widget.unit.label})'),
+                    // 标签本身带一个**行内实时开关**：称体重的时候才想起来要按斤看，
+                    // 那时不该退出去到「我」页翻设置。
+                    _weightUnitRow(),
                     TextField(
                       key: const Key('body-weight'),
                       controller: _weight,
@@ -328,7 +388,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           Text(
             r.weightKg == null
                 ? '—'
-                : formatBodyWeight(r.weightKg, widget.unit),
+                : formatBodyWeight(r.weightKg, _unit),
             style: const TextStyle(color: Tokens.text, fontSize: 16,
                 fontWeight: FontWeight.w600),
           ),
@@ -341,6 +401,45 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 style: const TextStyle(color: Tokens.text3, fontSize: 13),
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 「体重  [kg][斤]」——标签行右边挂两个小 chip，切换立即生效。
+  Widget _weightUnitRow() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Tokens.s2),
+      child: Row(
+        children: <Widget>[
+          const Text('体重',
+              style: TextStyle(
+                  color: Tokens.text2, fontSize: 13, fontWeight: FontWeight.w600)),
+          const Spacer(),
+          for (final BodyWeightUnit u in BodyWeightUnit.values) ...<Widget>[
+            GestureDetector(
+              key: Key('body-unit-${u.wire}'),
+              onTap: () => _switchUnit(u),
+              child: Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
+                height: 28,
+                decoration: BoxDecoration(
+                  color: _unit == u ? Tokens.volt : Tokens.surface,
+                  borderRadius: BorderRadius.circular(Tokens.rPill),
+                ),
+                child: Text(
+                  u.label,
+                  style: TextStyle(
+                    color: _unit == u ? Tokens.voltInk : Tokens.text2,
+                    fontSize: 12,
+                    fontWeight: _unit == u ? FontWeight.w700 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+            if (u != BodyWeightUnit.values.last) const SizedBox(width: Tokens.s2),
           ],
         ],
       ),

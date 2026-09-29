@@ -468,8 +468,13 @@ class _HomeShellState extends State<HomeShell> {
             store: _store,
             repository: _repo,
             bodyMetrics: _bodyMetrics,
+            profile: _profile,
             unit: _unit,
             bodyUnit: _bodyUnit,
+            // 身体数据页里切了体重单位 → 整棵树按新单位重建
+            onBodyUnitChanged: (BodyWeightUnit u) {
+              setState(() => _bodyUnit = u);
+            },
           );
       default:
         return ProfileScreen(
