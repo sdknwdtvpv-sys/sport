@@ -34,9 +34,16 @@ const FINE_MUSCLES = [
   'front_delts', 'side_delts', 'rear_delts',
   'quads', 'hamstrings', 'glutes', 'calves', 'adductors', 'abductors',
   'abs', 'obliques', 'hip_flexors',
+  // 2026-09-29 按上游补的三个（上游用它们，我们的词表里没有）：
+  //   chest       —— 大肌群也会出现在"次要"位置（负重双杠、倒立撑、前平举）
+  //   upper_back  —— 我们原来只有 lats/traps，装不下"上背"这个整体
+  //   grip        —— 硬拉、悬垂类动作的握力
+  'chest', 'upper_back', 'grip',
 ];
 const SECONDARY_OK = new Set([...MUSCLE_GROUPS, ...FINE_MUSCLES]);
-const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight'];
+// 2026-09-29 按上游补两个：弹力带与壶铃都是**独立器械**，
+// 硬塞进 dumbbell 会直接写成错数据（上游有 19 个弹力带动作）。
+const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'band', 'kettlebell'];
 // 怎么记这个动作（docs/data-model.md）。time/weight_time 的数字是**秒**不是次数。
 // 这两个值是 2026-09-29 按上游 exerciseType 补齐的：
 //   distance_time   ← 上游 distance_duration（有氧：跑/走/骑行/划船…）
@@ -120,7 +127,7 @@ for (const [i, e] of exercises.entries()) {
   }
   if (!Number.isFinite(inc) || inc < 0) errors.push(`${at}：weight_increment 必须 >= 0`);
 
-  const EQUIPMENT_INCREMENT = { barbell: 2.5, dumbbell: 2, cable: 2.5, machine: 5 };
+  const EQUIPMENT_INCREMENT = { barbell: 2.5, dumbbell: 2, cable: 2.5, machine: 5, kettlebell: 4 };
   const expect = EQUIPMENT_INCREMENT[e.equipment];
   if (!bodyweightMode && expect !== undefined && inc !== expect) {
     warnings.push(`${at}：${e.equipment} 的加重步长通常为 ${expect}，当前为 ${inc}`);

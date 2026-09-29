@@ -4,6 +4,7 @@
 /// 这样测试不依赖 asset bundle 的装配，跑起来更快也更好定位问题。
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
@@ -13,6 +14,18 @@ import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 
 Future<String> _readAsset() => File('assets/exercises.json').readAsString();
+
+/// 种子里到底有多少个动作 —— **从资产文件本身数出来，不写死**。
+///
+/// 踩过的坑：这里原先写死 `165`，2026-09-29 从上游补库到 318 个之后，
+/// 6 条测试一起红。写死数字的问题不是"要改"，而是**改的时候很容易顺手改成新数字
+/// 而不去想它在守什么**。真正该守的是"导入一个不少、重复导入不翻倍"，
+/// 所以基准值从资产里数；另外 `种子规模` 那条测试专门守"库不该悄悄缩水"。
+Future<int> _seedCount() async {
+  final Map<String, dynamic> json =
+      jsonDecode(await _readAsset()) as Map<String, dynamic>;
+  return (json['exercises'] as List<dynamic>).length;
+}
 
 void main() {
   late AppDatabase db;
@@ -25,10 +38,19 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('导入种子后动作数为 165', () async {
+  test('种子规模：318 个动作（库不该悄悄缩水；改种子时这个数字要一起改）', () async {
+    // 这一条是"故意的写死"：它是**人对当前库规模的一次背书**。
+    // 加动作 / 减动作都会让它红，逼着改动的人确认"是我干的、且我认这个数字"。
+    // 318 = 165（手工维护的 01/02/03）+ 153（2026-09-29 从上游补的库，
+    // 上游明确标了 Cardio / 拉伸的 47 个没进，见 tool/add-upstream-exercises.mjs）。
+    expect(await _seedCount(), 318);
+  });
+
+  test('导入种子后动作数与资产一致（一个不少）', () async {
+    final int seeded = await _seedCount();
     final int n = await repo.importSeed(loadJson: _readAsset);
-    expect(n, 165);
-    expect(await repo.builtinCount(), 165);
+    expect(n, seeded);
+    expect(await repo.builtinCount(), seeded);
   });
 
   test('重复导入是幂等的（冷启动每次都调也不会翻倍）', () async {
@@ -36,7 +58,7 @@ void main() {
     await repo.importSeed(loadJson: _readAsset);
     await repo.importSeed(loadJson: _readAsset);
 
-    expect(await repo.builtinCount(), 165);
+    expect(await repo.builtinCount(), await _seedCount());
   });
 
   test('全文检索：名称与别名都参与匹配', () async {
@@ -155,7 +177,8 @@ void main() {
 
     expect(created.isBuiltin, isFalse);
     expect(created.popularity, 0, reason: '不该挤掉内置动作在「常用」区的位置');
-    expect(await repo.builtinCount(), 165, reason: '内置动作数不受影响');
+    expect(await repo.builtinCount(), await _seedCount(),
+        reason: '内置动作数不受影响');
 
     // search 不按 isBuiltin 过滤，所以建完就该能搜到
     final List<ExerciseData> found = await repo.search(query: '坐姿划船机');
@@ -174,7 +197,7 @@ void main() {
     await repo.importSeed(loadJson: _readAsset);
 
     expect(await repo.byId(created.id), isNotNull);
-    expect(await repo.builtinCount(), 165);
+    expect(await repo.builtinCount(), await _seedCount());
   });
 
   test('步长 > 0 的自定义动作一定有起始重量（否则会被当成自重动作）', () async {
@@ -237,7 +260,7 @@ void main() {
 
     test('不传 equipment 时行为与以前完全一致（全都要）', () async {
       final List<ExerciseData> all = await repo.search(limit: 500);
-      expect(all.length, 165);
+      expect(all.length, await _seedCount());
     });
   });
 }

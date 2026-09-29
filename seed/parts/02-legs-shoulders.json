@@ -847,7 +847,8 @@
       "front_delts",
       "triceps",
       "abs",
-      "core"
+      "core",
+      "chest"
     ],
     "equipment": "bodyweight",
     "track_type": "reps_only",
@@ -867,7 +868,8 @@
     ],
     "muscle_group": "shoulders",
     "secondary_muscles": [
-      "side_delts"
+      "side_delts",
+      "upper_back"
     ],
     "equipment": "dumbbell",
     "track_type": "weight_reps",
@@ -884,7 +886,8 @@
     "aliases": [],
     "muscle_group": "shoulders",
     "secondary_muscles": [
-      "side_delts"
+      "side_delts",
+      "upper_back"
     ],
     "equipment": "cable",
     "track_type": "weight_reps",
@@ -901,7 +904,8 @@
     "aliases": [],
     "muscle_group": "shoulders",
     "secondary_muscles": [
-      "side_delts"
+      "side_delts",
+      "upper_back"
     ],
     "equipment": "machine",
     "track_type": "weight_reps",
@@ -973,7 +977,8 @@
     ],
     "muscle_group": "shoulders",
     "secondary_muscles": [
-      "front_delts"
+      "front_delts",
+      "chest"
     ],
     "equipment": "dumbbell",
     "track_type": "weight_reps",
@@ -1007,7 +1012,8 @@
     "aliases": [],
     "muscle_group": "shoulders",
     "secondary_muscles": [
-      "front_delts"
+      "front_delts",
+      "chest"
     ],
     "equipment": "cable",
     "track_type": "weight_reps",
@@ -1086,7 +1092,8 @@
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "rear_delts",
-      "traps"
+      "traps",
+      "upper_back"
     ],
     "equipment": "machine",
     "track_type": "weight_reps",
@@ -1105,7 +1112,8 @@
     "secondary_muscles": [
       "traps",
       "side_delts",
-      "biceps"
+      "biceps",
+      "upper_back"
     ],
     "equipment": "barbell",
     "track_type": "weight_reps",

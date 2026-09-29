@@ -21,6 +21,8 @@ const Map<String, String> kEquipmentLabels = <String, String>{
   'machine': '器械',
   'cable': '绳索',
   'bodyweight': '自重',
+  'band': '弹力带',
+  'kettlebell': '壶铃',
 };
 
 /// 查不到就原样返回 —— 宁可显示英文 key，也不要显示空白

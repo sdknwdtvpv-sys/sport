@@ -177,5 +177,24 @@
       "upstream": "T-Bar Row",
       "reason": "剩余项：命名相近但动作不同（复核第二节）"
     }
+  },
+  "_decided_note": "2026-09-29 的两处**已拍板**：主肌群归类分歧、以及次肌群词表要不要扩。map-upstream.mjs 消费它们 —— 已决策的从「等人拍板」里移出，理由留档。改这里等于改结论。",
+  "primary_muscle_kept": {
+    "ex_chin_up": {
+      "ours": "back",
+      "upstream": "Biceps",
+      "reason": "引体向上是**背**的动作（背阔为主，肱二头只是协同）。上游只看主动屈肘就归到 Biceps，按它归会把引体塞进「手臂日」—— 那是把辅助肌当主角。部位轮转按 muscle_group 走，所以保持 back。"
+    },
+    "ex_weighted_dip": {
+      "ours": "chest",
+      "upstream": "Triceps",
+      "reason": "负重双杠臂屈伸在双杠上躯干前倾、主推**胸**；上游按伸肘归 Triceps。我们的动作名与用法都是胸主导，保持 chest。"
+    }
+  },
+  "vocab_not_extended": {
+    "cardio": {
+      "count": 6,
+      "reason": "**不扩**。cardio 不是肌肉，是体能/供能系统的标签；我们的次肌群词表是给肌群热力图与恢复建议用的，塞进去会让热力图多出一块不存在的「肌肉」。上游拿它当次肌群用（波比跳、壶铃摆荡、滑冰跳…），我们在补库时也按同一把尺子把纯体能动作挡在库外（见 tool/add-upstream-exercises.mjs）。"
+    }
   }
 }

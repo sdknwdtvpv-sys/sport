@@ -985,13 +985,14 @@
       "传统硬拉",
       "dl"
     ],
-    "muscle_group": "back",
+    "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
       "glutes",
       "lower_back",
       "traps",
-      "lats"
+      "lats",
+      "grip"
     ],
     "equipment": "barbell",
     "track_type": "weight_reps",
@@ -1008,7 +1009,7 @@
     "aliases": [
       "宽站距硬拉"
     ],
-    "muscle_group": "back",
+    "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
       "quads",

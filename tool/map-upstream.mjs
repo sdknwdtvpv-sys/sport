@@ -2,7 +2,7 @@
 /**
  * 练了么 · 上游动作库映射（生成 `docs/exercise-mapping.md`）
  *
- * **它解决什么**：我们的种子有 165 个动作，上游 `bryllim/workout-guide` 有 302 个。
+ * **它解决什么**：我们的种子有 318 个动作（165 手工 + 153 补库），上游 `bryllim/workout-guide` 有 302 个。
  * 名字能精确对上的只有 85 个 —— 剩下的 80 个里，大部分只是**命名习惯不同**。
  * 这份表给**人**逐条复核用：工具只给候选与相似度，**不下结论**
  * （`Romanian Deadlift` 与 `Deadlift` 名字极近但是两个动作，自动接受等于往动作库里灌错数据）。
@@ -94,8 +94,17 @@ if (problems.length) {
 }
 
 const exactByNorm = new Map(upstream.map((u) => [norm(u.name), u]));
-/** 我们次肌群词表里**已经有的**标签集合。 */
-const ourSecondaryVocab = new Set(ours.flatMap((o) => o.secondary_muscles));
+
+/**
+ * 我们的次肌群词表 —— **读 `00-header.json` 的声明，而不是"哪些标签被用过"**。
+ * 两者不等价：刚声明、还没用上的标签（本次扩的 chest/upper_back/grip）如果按"被用过"算，
+ * 就会得出"词表里没有它"的荒谬结论，于是永远补不上（踩过这个死循环）。
+ */
+const header = JSON.parse(readFileSync(join(ROOT, 'seed/parts/00-header.json'), 'utf8'));
+const ourSecondaryVocab = new Set([
+  ...Object.keys(header.fine_muscles ?? {}),
+  ...Object.keys(header.muscle_groups ?? {}),
+]);
 
 const matchedExact = [];   // 英文名精确命中
 const unmatched = [];      // 未命中
@@ -134,6 +143,7 @@ for (const { o, u } of linked) {
     const k = norm(m);
     const t = MUSCLE_SYNONYM[k] ?? k;
     if (have.has(k) || have.has(norm(t))) continue;
+    if (t === o.muscle_group) continue;   // 与主肌群重复没有信息量（build.mjs 也会警告）
     if (ourSecondaryVocab.has(t) && !add.includes(t)) add.push(t);
   }
   if (add.length) secondaryAdds[o.id] = add;
@@ -143,12 +153,21 @@ const typeFixes = linked
   .map(({ o, u }) => ({ o, u, want: TYPE_MAP[u.exerciseType] }))
   .filter((f) => f.want !== f.o.track_type);
 
-/** 主肌群归类分歧。 */
+/** 主肌群归类分歧。**已拍板保留我们归类的**不算分歧（结论在 upstream-confirmed.json）。 */
+const groupKept = review.primary_muscle_kept ?? {};
 const groupConflicts = linked
   .map(({ o, u }) => ({ o, u, mapped: GROUP_OF[norm(u.primaryMuscle)] }))
-  .filter((c) => c.mapped && c.mapped !== c.o.muscle_group);
+  .filter((c) => c.mapped && c.mapped !== c.o.muscle_group)
+  .filter((c) => {
+    if (!groupKept[c.o.id]) return true;
+    // 留档的结论要真的还成立：上游改了 primaryMuscle、或我们改了归类，就该重新看一遍
+    if (groupKept[c.o.id].ours !== c.o.muscle_group) return true;
+    if (groupKept[c.o.id].upstream !== c.u.primaryMuscle) return true;
+    return false;
+  });
 
-/** 上游提到、我们词表里没有的次肌群标签（要扩词表才能补）。 */
+/** 上游提到、我们词表里没有的次肌群标签（要扩词表才能补）。**已拍板不扩的**不算待决策。 */
+const vocabKept = review.vocab_not_extended ?? {};
 const vocabGaps = new Map();
 for (const { o, u } of linked) {
   const have = new Set(o.secondary_muscles.map(norm));
@@ -157,6 +176,7 @@ for (const { o, u } of linked) {
     const t = MUSCLE_SYNONYM[k] ?? k;
     if (have.has(k) || have.has(norm(t))) continue;
     if (ourSecondaryVocab.has(t)) continue;
+    if (vocabKept[t]) continue; // 已拍板：这个词表不扩
     if (!vocabGaps.has(t)) vocabGaps.set(t, []);
     vocabGaps.get(t).push(o.id);
   }
@@ -247,14 +267,18 @@ if (pendingCandidates.length) {
   P('相似度 ≥ 0.5 的候选已全部被复核过（确认或否掉）。');
   P('');
 }
-P(`## 五、仍需决策的两件事（工具算出来的，等人拍板）`);
+const groupKeptRows = Object.entries(groupKept);
+const vocabKeptRows = Object.entries(vocabKept);
+const stillPending = vocabGaps.size + groupConflicts.length;
+
+P(`## 五、仍需人工拍板的事：${stillPending ? `**${stillPending} 项**` : '**已清空 ✅**'}`);
 P('');
 P(`### 5.1 上游提到、我们词表里没有的次肌群标签（${vocabGaps.size} 个标签）`);
 P('');
 if (!vocabGaps.size) {
   P('（无）');
 } else {
-  P('这些标签上游在用、我们的 21 值词表里没有。**补它们要先决定扩不扩词表** ——');
+  P(`这些标签上游在用、我们的 ${ourSecondaryVocab.size} 值词表里没有。**补它们要先决定扩不扩词表** ——`);
   P('扩了以后 `docs/data-model.md` 与 `app/lib/core/labels.dart` 都要跟着改。');
   P('');
   P('| 上游标签 | 涉及我们的动作数 | 例 |');
@@ -263,15 +287,37 @@ if (!vocabGaps.size) {
     P(`| \`${label}\` | ${ids.length} | ${ids.slice(0, 4).map((i) => `\`${i}\``).join(' ')} |`);
   }
 }
+if (vocabKeptRows.length) {
+  P('');
+  P(`**已拍板不扩的（${vocabKeptRows.length} 个，结论留档）：**`);
+  P('');
+  for (const [label, v] of vocabKeptRows) {
+    P(`- \`${label}\`（上游用在 ${v.count} 个动作上）—— ${v.reason}`);
+  }
+}
 P('');
 P(`### 5.2 主肌群归类与上游不一致（${groupConflicts.length} 个）`);
 P('');
 P('**改这些会改变"今天练什么"的部位轮转**（部位轮转按 `muscle_group` 走），所以是产品决策：');
 P('');
-P('| 我们的 id | 我们 | 上游 primaryMuscle | 按映射会归到 |');
-P('|---|---|---|---|');
-for (const c of groupConflicts.sort((a, b) => a.o.id.localeCompare(b.o.id))) {
-  P(`| \`${c.o.id}\` | ${c.o.muscle_group} | ${c.u.primaryMuscle} | ${c.mapped} |`);
+if (!groupConflicts.length) {
+  P('（无）');
+} else {
+  P('| 我们的 id | 我们 | 上游 primaryMuscle | 按映射会归到 |');
+  P('|---|---|---|---|');
+  for (const c of groupConflicts.sort((a, b) => a.o.id.localeCompare(b.o.id))) {
+    P(`| \`${c.o.id}\` | ${c.o.muscle_group} | ${c.u.primaryMuscle} | ${c.mapped} |`);
+  }
+}
+if (groupKeptRows.length) {
+  P('');
+  P(`**已拍板保留我们归类的（${groupKeptRows.length} 个，结论留档）：**`);
+  P('');
+  P('| 我们的 id | 我们 | 上游 primaryMuscle | 为什么不改 |');
+  P('|---|---|---|---|');
+  for (const [id, v] of groupKeptRows) {
+    P(`| \`${id}\` | ${v.ours} | ${v.upstream} | ${v.reason} |`);
+  }
 }
 P('');
 const addTotal = Object.values(secondaryAdds).reduce((a, v) => a + v.length, 0);

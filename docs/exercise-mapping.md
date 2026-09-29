@@ -13,14 +13,14 @@
 
 | 项 | 数量 |
 |---|---|
-| 我们的动作 | 165 |
+| 我们的动作 | 318 |
 | 上游动作 | 302 |
-| **有上游对应**（精确命中 85 + 人工确认 17） | **102** |
+| **有上游对应**（精确命中 238 + 人工确认 17） | **255** |
 | 已复核：确认一致 | 17 |
 | 已复核：命名相近但动作不同 | 39 |
 | 待人工复核的候选（相似度 ≥ 0.5） | 0 |
 | 未命中且相似度 < 0.5（自行维护） | 26 |
-| 上游有、我们没有 | 200 |
+| 上游有、我们没有 | 47 |
 
 ## 一、有上游对应、但类型标错的动作（当前为空 ✅）
 
@@ -99,30 +99,28 @@
 
 相似度 ≥ 0.5 的候选已全部被复核过（确认或否掉）。
 
-## 五、仍需决策的两件事（工具算出来的，等人拍板）
+## 五、仍需人工拍板的事：**已清空 ✅**
 
-### 5.1 上游提到、我们词表里没有的次肌群标签（3 个标签）
+### 5.1 上游提到、我们词表里没有的次肌群标签（0 个标签）
 
-这些标签上游在用、我们的 21 值词表里没有。**补它们要先决定扩不扩词表** ——
-扩了以后 `docs/data-model.md` 与 `app/lib/core/labels.dart` 都要跟着改。
+（无）
 
-| 上游标签 | 涉及我们的动作数 | 例 |
-|---|---|---|
-| `chest` | 6 | `ex_weighted_dip` `ex_handstand_push_up` `ex_cable_front_raise` `ex_close_grip_bench` |
-| `upper_back` | 5 | `ex_cable_lateral_raise` `ex_machine_lateral_raise` `ex_reverse_pec_deck` `ex_upright_row` |
-| `grip` | 3 | `ex_deadlift` `ex_hanging_leg_raise` `ex_hanging_knee_raise` |
+**已拍板不扩的（1 个，结论留档）：**
 
-### 5.2 主肌群归类与上游不一致（5 个）
+- `cardio`（上游用在 6 个动作上）—— **不扩**。cardio 不是肌肉，是体能/供能系统的标签；我们的次肌群词表是给肌群热力图与恢复建议用的，塞进去会让热力图多出一块不存在的「肌肉」。上游拿它当次肌群用（波比跳、壶铃摆荡、滑冰跳…），我们在补库时也按同一把尺子把纯体能动作挡在库外（见 tool/add-upstream-exercises.mjs）。
+
+### 5.2 主肌群归类与上游不一致（0 个）
 
 **改这些会改变"今天练什么"的部位轮转**（部位轮转按 `muscle_group` 走），所以是产品决策：
 
-| 我们的 id | 我们 | 上游 primaryMuscle | 按映射会归到 |
+（无）
+
+**已拍板保留我们归类的（2 个，结论留档）：**
+
+| 我们的 id | 我们 | 上游 primaryMuscle | 为什么不改 |
 |---|---|---|---|
-| `ex_back_extension` | core | Lower Back | back |
-| `ex_chin_up` | back | Biceps | arms |
-| `ex_deadlift` | back | Posterior Chain | legs |
-| `ex_sumo_deadlift` | back | Posterior Chain | legs |
-| `ex_weighted_dip` | chest | Triceps | arms |
+| `ex_chin_up` | back | Biceps | 引体向上是**背**的动作（背阔为主，肱二头只是协同）。上游只看主动屈肘就归到 Biceps，按它归会把引体塞进「手臂日」—— 那是把辅助肌当主角。部位轮转按 muscle_group 走，所以保持 back。 |
+| `ex_weighted_dip` | chest | Triceps | 负重双杠臂屈伸在双杠上躯干前倾、主推**胸**；上游按伸肘归 Triceps。我们的动作名与用法都是胸主导，保持 chest。 |
 
 ## 六、次肌群对齐情况（还差 0 个动作 / 0 个标签）
 
@@ -139,11 +137,10 @@
 
 | 上游类型 | 数量 | 例 |
 |---|---|---|
-| `bodyweight_reps` | 90 | Dip, Neutral-Grip Pull-up, Nordic Hamstring Curl, Glute-Focused Back Extension, Reverse Hyperextension, Jump Squat |
-| `weight_reps` | 62 | Cable Fly, Weighted Push-up, Rear Delt Fly, Dumbbell Bent Over Row, Step-Up, Leg Curl |
-| `duration` | 36 | Stair Climber, Wall Sit, Cable Pallof Hold, Elliptical, Jump Rope, Battle Ropes |
+| `duration` | 25 | Stair Climber, Elliptical, Jump Rope, Battle Ropes, Plank Jack, Bear Crawl |
+| `weight_reps` | 11 | Cable Fly, Rear Delt Fly, Dumbbell Bent Over Row, Leg Curl, Bicep Curl, Bent-Over Rear Delt Raise |
 | `distance_duration` | 10 | Running, Walking, Cycling, Rowing, Farmer Carry, Swimming |
-| `assisted_bodyweight` | 2 | Assisted Dip, Assisted Chin-up |
+| `bodyweight_reps` | 1 | Dip |
 
 其中 **14 个是拉伸动作**（上游 `isStretch: true`）—— 我们种子里一个都没有：
 

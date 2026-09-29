@@ -15,7 +15,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 part 'db.g.dart';
 
-/// 动作库。种子数据见 `seed/exercises.sql`（165 条，已用 sqlite3 实测导入）。
+/// 动作库。种子数据见 `seed/exercises.sql`（318 条，已用 sqlite3 实测导入）。
 class Exercise extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();

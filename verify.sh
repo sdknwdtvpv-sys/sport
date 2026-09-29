@@ -98,6 +98,13 @@ if node tool/map-upstream.mjs --check >"$LOG" 2>&1; then
 else
   strip "$LOG"; echo "${RED}✗ 上游映射表过期${OFF}"; fail=1
 fi
+# seed/parts/04-from-upstream.json 同理：它是从上游快照 + 中文名表生成的。
+# 这一层同时守住"排除规则没有被绕过"（改规则不同步重生成就会红）。
+if node tool/add-upstream-exercises.mjs --check >"$LOG" 2>&1; then
+  echo "${GREEN}✓${OFF} 上游补库文件与快照/中文名表一致"
+else
+  strip "$LOG"; echo "${RED}✗ 上游补库文件过期${OFF}"; fail=1
+fi
 echo
 
 # ── 2. JS 引擎：向量 + 场景 eval ───────────────────────────────────────
@@ -222,7 +229,8 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          engine/scenarios.json engine/run-scenarios.mjs \
          seed/upstream-workout-guide.json seed/upstream-workout-guide-LICENSE.txt \
          seed/upstream-confirmed.json docs/exercise-mapping-review.md \
-         tool/map-upstream.mjs docs/exercise-mapping.md \
+         seed/upstream-zh-names.json seed/parts/04-from-upstream.json \
+         tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
          app/lib/features/workout/workout_controller.dart \

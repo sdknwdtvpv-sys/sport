@@ -22,7 +22,7 @@ CREATE TABLE exercise (
   aliases           TEXT,                       -- JSON 数组，搜索用："平板卧推","bp"
   muscle_group      TEXT NOT NULL,              -- chest/back/legs/shoulders/arms/core
   secondary_muscles TEXT,                       -- JSON 数组
-  equipment         TEXT NOT NULL,              -- barbell/dumbbell/machine/bodyweight/cable
+  equipment         TEXT NOT NULL,              -- barbell/dumbbell/machine/cable/bodyweight/band/kettlebell
   track_type        TEXT NOT NULL DEFAULT 'weight_reps',
                                                 -- 怎么记这个动作，见下方「track_type 词表」
   default_rest_sec  INTEGER NOT NULL DEFAULT 90,
@@ -100,13 +100,23 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
   方向是反的。引擎目前按负重推进，`seed/build.mjs` 会为它发一条**警告**（不阻断）。
   要做对得加一条"减少助力"的推进分支，那是产品决策，不是字段问题。
 
-**次肌群已按上游补全（2026-09-29）**：51 个动作 / 59 个标签，**纯增量**
+**次肌群词表 2026-09-29 扩到 24 值**（原 21 值 + `chest` / `upper_back` / `grip`）：
+上游拿它们当次肌群用（`chest` 6 个动作、`upper_back` 5 个、`grip` 3 个 —— 硬拉与悬垂的握力），
+我们原来只有 `lats`/`traps` 装不下"上背"这个整体，也没有"握力"和"大肌群出现在次要位置"的位置。
+同步改了 `app/lib/core/labels.dart`（中文标签）与 `seed/parts/00-header.json`（词表声明）。
+
+**同样在这一轮，次肌群按上游补全**：51 个动作 / 59 个标签，**纯增量**
 （只加不减 —— 我们自己更细的标签如 `front_delts` 一律保留）。
 补全来自上游 `secondaryMuscles`，且只取我们**已有**的标签。
 
-**次肌群词表还差 3 个值**（`docs/exercise-mapping.md` §5.1，**待决策**）：
-上游用 `chest`（作为次肌群，6 个动作）、`upper_back`（5 个）、`grip`（3 个，硬拉与悬垂动作），
-我们的 21 值词表里没有。补它们要先决定扩不扩词表 —— 扩了 `labels.dart` 与本文都要跟着改。
+**器械词表 2026-09-29 扩到 7 值**（原 5 值 + `band` / `kettlebell`）：
+上游有 19 个弹力带动作、2 个壶铃动作。原来的 5 值里没有它们的位置，
+硬塞进 `dumbbell` 就是**直接写错数据**（壶铃摆荡的起始重量、步长都和哑铃不是一回事）。
+步长：弹力带 0（靠阻力档位，不走配重片）、壶铃 4 kg。
+
+**唯一一个「上游在用、我们决定不扩」的标签**：`cardio`（6 个动作）。
+它不是肌肉，是供能系统的标签 —— 我们的次肌群词表是给肌群热力图与恢复建议用的，
+塞进去会让热力图多出一块不存在的"肌肉"。结论留档在 `seed/upstream-confirmed.json`。
 
 **与上游的映射**：`docs/exercise-mapping.md`（由 `tool/map-upstream.mjs` 从
 `seed/upstream-workout-guide.json` 生成）。上游 `exerciseType` 的五值与我们的对应关系：
@@ -119,10 +129,21 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | `distance_duration` | `distance_time` | 10 |
 | `assisted_bodyweight` | `assisted_reps` | 3 |
 
-**主肌群归类与上游不一致 5 处**（`docs/exercise-mapping.md` §5.2，**待决策**）：
-`ex_deadlift` / `ex_sumo_deadlift`（我们 back，上游 Posterior Chain）、`ex_chin_up`（back vs Biceps）、
-`ex_weighted_dip`（chest vs Triceps）、`ex_back_extension`（core vs Lower Back）。
-**改这些会改变"今天练什么"的部位轮转**（轮转按 `muscle_group` 走），所以不是数据问题而是产品决策。
+**主肌群归类 vs 上游（2026-09-29 已全部拍板，`docs/exercise-mapping.md` §5.2 现在是 0 项待决策）**：
+
+改主肌群会改变"今天练什么"的部位轮转（轮转按 `muscle_group` 走），所以是产品决策，逐条给理由：
+
+| 动作 | 原 | 现 | 为什么 |
+|---|---|---|---|
+| `ex_deadlift` | back | legs | 传统硬拉是**腿**主导（髋伸），背只是等长维持。按 back 归会把它排进"背日" |
+| `ex_sumo_deadlift` | back | legs | 同上，相扑硬拉股四头参与更多 |
+| `ex_back_extension` | core | back | 山羊挺身练的是**竖脊肌**（下背），不是腹肌 |
+| `ex_chin_up` | back | back（不改） | 上游按屈肘归 Biceps；引体是背的动作，肱二头只是协同 |
+| `ex_weighted_dip` | chest | chest（不改） | 上游按伸肘归 Triceps；双杠臂屈伸躯干前倾时主推胸 |
+
+**结论留档在 `seed/upstream-confirmed.json`**（`primary_muscle_kept`），
+`tool/map-upstream.mjs` 消费它：如果哪天上游改了 `primaryMuscle`、或我们又改了归类，
+这一条会重新出现在"待决策"表里 —— 留档的结论不是免检通行证。
 
 **已知限制（记在这儿，不藏着）**：`weight_time` 动作的"容量"仍是 `重量 × 秒数`，
 量纲上说不通（负重平板 5kg × 30 秒 = 150）。目前只有 1 个这样的动作，

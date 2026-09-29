@@ -1,6 +1,6 @@
 -- 练了么 · 内置动作库种子数据（自动生成，请勿手改）
 -- 修改请编辑 seed/parts/*.json 后重新运行：node seed/build.mjs
--- 动作总数：165
+-- 动作总数：318
 -- 生成时间戳：1767225600000（固定值，保证可复现）
 
 BEGIN TRANSACTION;
@@ -67,8 +67,8 @@ VALUES
   ('ex_machine_row', '器械划船', 'Seated Row Machine', '["坐姿器械划船"]', 'back', '["lats","biceps"]', 'machine', 'weight_reps', 90, 35, 5, 1, 60, 1767225600000, 1767225600000, NULL),
   ('ex_single_arm_machine_row', '单臂器械划船', 'Single-Arm Machine Row', '[]', 'back', '["arms"]', 'machine', 'weight_reps', 90, 20, 5, 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_inverted_row', '澳式划船', 'Inverted Row', '["反向划船","自重划船"]', 'back', '["lats","biceps","abs","core"]', 'bodyweight', 'reps_only', 90, NULL, 0, 1, 48, 1767225600000, 1767225600000, NULL),
-  ('ex_deadlift', '硬拉', 'Deadlift', '["屈腿硬拉","传统硬拉","dl"]', 'back', '["hamstrings","glutes","lower_back","traps","lats"]', 'barbell', 'weight_reps', 180, 50, 2.5, 1, 98, 1767225600000, 1767225600000, NULL),
-  ('ex_sumo_deadlift', '相扑硬拉', 'Sumo Deadlift', '["宽站距硬拉"]', 'back', '["glutes","quads","lower_back"]', 'barbell', 'weight_reps', 180, 50, 2.5, 1, 55, 1767225600000, 1767225600000, NULL),
+  ('ex_deadlift', '硬拉', 'Deadlift', '["屈腿硬拉","传统硬拉","dl"]', 'legs', '["hamstrings","glutes","lower_back","traps","lats","grip"]', 'barbell', 'weight_reps', 180, 50, 2.5, 1, 98, 1767225600000, 1767225600000, NULL),
+  ('ex_sumo_deadlift', '相扑硬拉', 'Sumo Deadlift', '["宽站距硬拉"]', 'legs', '["glutes","quads","lower_back"]', 'barbell', 'weight_reps', 180, 50, 2.5, 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_rack_pull', '架上硬拉', 'Rack Pull', '["半程硬拉"]', 'back', '["traps","lower_back","glutes","hamstrings"]', 'barbell', 'weight_reps', 180, 60, 2.5, 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_straight_arm_pulldown', '直臂下压', 'Straight-Arm Pulldown', '["直臂下拉"]', 'back', '["lats","triceps","core"]', 'cable', 'weight_reps', 60, 20, 2.5, 1, 58, 1767225600000, 1767225600000, NULL),
   ('ex_face_pull', '面拉', 'Face Pull', '["绳索面拉"]', 'back', '["rear_delts","traps","front_delts"]', 'cable', 'weight_reps', 60, 15, 2.5, 1, 66, 1767225600000, 1767225600000, NULL),
@@ -125,25 +125,25 @@ VALUES
   ('ex_arnold_press', '阿诺德推举', 'Arnold Press', '["阿诺德"]', 'shoulders', '["front_delts","side_delts","triceps"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 60, 1767225600000, 1767225600000, NULL),
   ('ex_smith_shoulder_press', '史密斯推举', 'Smith Machine Shoulder Press', '[]', 'shoulders', '["front_delts","triceps"]', 'machine', 'weight_reps', 120, 20, 5, 1, 50, 1767225600000, 1767225600000, NULL),
   ('ex_machine_shoulder_press', '器械推肩', 'Machine Shoulder Press', '["推肩机"]', 'shoulders', '["front_delts","triceps"]', 'machine', 'weight_reps', 120, 25, 5, 1, 58, 1767225600000, 1767225600000, NULL),
-  ('ex_handstand_push_up', '倒立撑', 'Handstand Push-up', '["靠墙倒立撑"]', 'shoulders', '["front_delts","triceps","abs","core"]', 'bodyweight', 'reps_only', 120, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
-  ('ex_db_lateral_raise', '哑铃侧平举', 'Dumbbell Lateral Raise', '["侧平举","侧举"]', 'shoulders', '["side_delts"]', 'dumbbell', 'weight_reps', 60, 5, 2, 1, 95, 1767225600000, 1767225600000, NULL);
+  ('ex_handstand_push_up', '倒立撑', 'Handstand Push-up', '["靠墙倒立撑"]', 'shoulders', '["front_delts","triceps","abs","core","chest"]', 'bodyweight', 'reps_only', 120, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_db_lateral_raise', '哑铃侧平举', 'Dumbbell Lateral Raise', '["侧平举","侧举"]', 'shoulders', '["side_delts","upper_back"]', 'dumbbell', 'weight_reps', 60, 5, 2, 1, 95, 1767225600000, 1767225600000, NULL);
 
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
-  ('ex_cable_lateral_raise', '绳索侧平举', 'Cable Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'cable', 'weight_reps', 60, 5, 2.5, 1, 55, 1767225600000, 1767225600000, NULL),
-  ('ex_machine_lateral_raise', '器械侧平举', 'Machine Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'machine', 'weight_reps', 60, 15, 5, 1, 48, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_lateral_raise', '绳索侧平举', 'Cable Lateral Raise', '[]', 'shoulders', '["side_delts","upper_back"]', 'cable', 'weight_reps', 60, 5, 2.5, 1, 55, 1767225600000, 1767225600000, NULL),
+  ('ex_machine_lateral_raise', '器械侧平举', 'Machine Lateral Raise', '[]', 'shoulders', '["side_delts","upper_back"]', 'machine', 'weight_reps', 60, 15, 5, 1, 48, 1767225600000, 1767225600000, NULL),
   ('ex_single_arm_cable_lateral', '单臂绳索侧平举', 'Single-Arm Cable Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'cable', 'weight_reps', 60, 5, 2.5, 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_lean_away_lateral', '斜托侧平举', 'Lean-Away Lateral Raise', '["单手斜托侧平举"]', 'shoulders', '["side_delts"]', 'dumbbell', 'weight_reps', 60, 6, 2, 1, 38, 1767225600000, 1767225600000, NULL),
   ('ex_smith_lateral_raise', '史密斯侧平举', 'Smith Machine Lateral Raise', '[]', 'shoulders', '["side_delts"]', 'machine', 'weight_reps', 60, 10, 5, 1, 32, 1767225600000, 1767225600000, NULL),
-  ('ex_db_front_raise', '哑铃前平举', 'Dumbbell Front Raise', '["前平举"]', 'shoulders', '["front_delts"]', 'dumbbell', 'weight_reps', 60, 6, 2, 1, 72, 1767225600000, 1767225600000, NULL),
+  ('ex_db_front_raise', '哑铃前平举', 'Dumbbell Front Raise', '["前平举"]', 'shoulders', '["front_delts","chest"]', 'dumbbell', 'weight_reps', 60, 6, 2, 1, 72, 1767225600000, 1767225600000, NULL),
   ('ex_bb_front_raise', '杠铃前平举', 'Barbell Front Raise', '[]', 'shoulders', '["front_delts"]', 'barbell', 'weight_reps', 60, 15, 2.5, 1, 48, 1767225600000, 1767225600000, NULL),
-  ('ex_cable_front_raise', '绳索前平举', 'Cable Front Raise', '[]', 'shoulders', '["front_delts"]', 'cable', 'weight_reps', 60, 7.5, 2.5, 1, 44, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_front_raise', '绳索前平举', 'Cable Front Raise', '[]', 'shoulders', '["front_delts","chest"]', 'cable', 'weight_reps', 60, 7.5, 2.5, 1, 44, 1767225600000, 1767225600000, NULL),
   ('ex_single_arm_cable_front', '单臂绳索前平举', 'Single-Arm Cable Front Raise', '[]', 'shoulders', '["front_delts"]', 'cable', 'weight_reps', 60, 5, 2.5, 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_bent_over_db_fly', '俯身哑铃飞鸟', 'Bent-Over Reverse Fly', '["反向飞鸟","后束飞鸟"]', 'shoulders', '["rear_delts","traps"]', 'dumbbell', 'weight_reps', 60, 5, 2, 1, 78, 1767225600000, 1767225600000, NULL),
   ('ex_bent_over_cable_fly', '俯身绳索飞鸟', 'Bent-Over Cable Fly', '["绳索反向飞鸟"]', 'shoulders', '["rear_delts","traps"]', 'cable', 'weight_reps', 60, 5, 2.5, 1, 40, 1767225600000, 1767225600000, NULL),
-  ('ex_reverse_pec_deck', '反向蝴蝶机', 'Reverse Pec Deck', '["反向蝴蝶机飞鸟","后束器械"]', 'shoulders', '["rear_delts","traps"]', 'machine', 'weight_reps', 60, 15, 5, 1, 66, 1767225600000, 1767225600000, NULL),
-  ('ex_upright_row', '直立划船', 'Upright Row', '[]', 'shoulders', '["traps","side_delts","biceps"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 52, 1767225600000, 1767225600000, NULL),
+  ('ex_reverse_pec_deck', '反向蝴蝶机', 'Reverse Pec Deck', '["反向蝴蝶机飞鸟","后束器械"]', 'shoulders', '["rear_delts","traps","upper_back"]', 'machine', 'weight_reps', 60, 15, 5, 1, 66, 1767225600000, 1767225600000, NULL),
+  ('ex_upright_row', '直立划船', 'Upright Row', '[]', 'shoulders', '["traps","side_delts","biceps","upper_back"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 52, 1767225600000, 1767225600000, NULL),
   ('ex_bb_curl', '杠铃弯举', 'Barbell Curl', '["弯举"]', 'arms', '["biceps","forearms"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 90, 1767225600000, 1767225600000, NULL),
   ('ex_ez_bar_curl', 'EZ杠弯举', 'EZ-Bar Curl', '["曲杠弯举"]', 'arms', '["biceps","forearms"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 68, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_bb_curl', '反握杠铃弯举', 'Reverse Barbell Curl', '["反握弯举"]', 'arms', '["forearms","biceps"]', 'barbell', 'weight_reps', 90, 15, 2.5, 1, 50, 1767225600000, 1767225600000, NULL),
@@ -167,7 +167,7 @@ VALUES
   ('ex_straight_bar_pushdown', '直杆下压', 'Straight-Bar Pushdown', '["横杆下压"]', 'arms', '["triceps","front_delts"]', 'cable', 'weight_reps', 60, 20, 2.5, 1, 62, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_grip_pushdown', '反握下压', 'Reverse-Grip Pushdown', '[]', 'arms', '["triceps","forearms"]', 'cable', 'weight_reps', 60, 15, 2.5, 1, 45, 1767225600000, 1767225600000, NULL),
   ('ex_single_arm_pushdown', '单臂绳索下压', 'Single-Arm Pushdown', '[]', 'arms', '["triceps"]', 'cable', 'weight_reps', 60, 10, 2.5, 1, 40, 1767225600000, 1767225600000, NULL),
-  ('ex_close_grip_bench', '窄握卧推', 'Close-Grip Bench Press', '["窄距卧推","窄握推胸"]', 'arms', '["triceps","front_delts"]', 'barbell', 'weight_reps', 120, 30, 2.5, 1, 72, 1767225600000, 1767225600000, NULL),
+  ('ex_close_grip_bench', '窄握卧推', 'Close-Grip Bench Press', '["窄距卧推","窄握推胸"]', 'arms', '["triceps","front_delts","chest"]', 'barbell', 'weight_reps', 120, 30, 2.5, 1, 72, 1767225600000, 1767225600000, NULL),
   ('ex_close_grip_smith', '窄握史密斯卧推', 'Close-Grip Smith Press', '[]', 'arms', '["triceps","front_delts"]', 'machine', 'weight_reps', 120, 25, 5, 1, 34, 1767225600000, 1767225600000, NULL),
   ('ex_skull_crusher', '仰卧臂屈伸', 'Skull Crusher', '["碎颅式","法式卧推"]', 'arms', '["triceps","front_delts"]', 'barbell', 'weight_reps', 90, 15, 2.5, 1, 70, 1767225600000, 1767225600000, NULL),
   ('ex_overhead_db_extension', '哑铃颈后臂屈伸', 'Overhead Dumbbell Extension', '["颈后臂屈伸"]', 'arms', '["triceps","front_delts"]', 'dumbbell', 'weight_reps', 90, 10, 2, 1, 68, 1767225600000, 1767225600000, NULL),
@@ -179,7 +179,7 @@ VALUES
 INSERT INTO exercise
   (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
 VALUES
-  ('ex_diamond_push_up', '窄握俯卧撑', 'Diamond Push-up', '["钻石俯卧撑"]', 'arms', '["triceps","front_delts","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 50, 1767225600000, 1767225600000, NULL),
+  ('ex_diamond_push_up', '窄握俯卧撑', 'Diamond Push-up', '["钻石俯卧撑"]', 'arms', '["triceps","front_delts","core","chest"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 50, 1767225600000, 1767225600000, NULL),
   ('ex_wrist_curl', '腕弯举', 'Wrist Curl', '["正握腕弯举"]', 'arms', '["forearms"]', 'dumbbell', 'weight_reps', 60, 8, 2, 1, 40, 1767225600000, 1767225600000, NULL),
   ('ex_reverse_wrist_curl', '反向腕弯举', 'Reverse Wrist Curl', '[]', 'arms', '["forearms"]', 'dumbbell', 'weight_reps', 60, 6, 2, 1, 35, 1767225600000, 1767225600000, NULL),
   ('ex_crunch', '卷腹', 'Crunch', '["仰卧卷腹"]', 'core', '["abs"]', 'bodyweight', 'reps_only', 45, NULL, 0, 1, 82, 1767225600000, 1767225600000, NULL),
@@ -187,8 +187,8 @@ VALUES
   ('ex_reverse_crunch', '反向卷腹', 'Reverse Crunch', '[]', 'core', '["abs"]', 'bodyweight', 'reps_only', 45, NULL, 0, 1, 55, 1767225600000, 1767225600000, NULL),
   ('ex_side_crunch', '侧卷腹', 'Side Crunch', '["侧腹卷腹"]', 'core', '["obliques"]', 'bodyweight', 'weight_reps', 45, NULL, 0, 1, 45, 1767225600000, 1767225600000, NULL),
   ('ex_heel_touch', '仰卧交替触踝', 'Heel Touch', '["触踝"]', 'core', '["obliques"]', 'bodyweight', 'weight_reps', 45, NULL, 0, 1, 32, 1767225600000, 1767225600000, NULL),
-  ('ex_hanging_leg_raise', '悬垂举腿', 'Hanging Leg Raise', '["单杠举腿"]', 'core', '["abs","hip_flexors"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 72, 1767225600000, 1767225600000, NULL),
-  ('ex_hanging_knee_raise', '悬垂举膝', 'Hanging Knee Raise', '["单杠举膝"]', 'core', '["abs","hip_flexors"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 58, 1767225600000, 1767225600000, NULL),
+  ('ex_hanging_leg_raise', '悬垂举腿', 'Hanging Leg Raise', '["单杠举腿"]', 'core', '["abs","hip_flexors","grip"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 72, 1767225600000, 1767225600000, NULL),
+  ('ex_hanging_knee_raise', '悬垂举膝', 'Hanging Knee Raise', '["单杠举膝"]', 'core', '["abs","hip_flexors","grip"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 58, 1767225600000, 1767225600000, NULL),
   ('ex_hanging_side_leg_raise', '悬垂侧举腿', 'Hanging Side Leg Raise', '[]', 'core', '["obliques","hip_flexors"]', 'bodyweight', 'weight_reps', 60, NULL, 0, 1, 30, 1767225600000, 1767225600000, NULL),
   ('ex_lying_leg_raise', '仰卧举腿', 'Lying Leg Raise', '[]', 'core', '["abs","hip_flexors","quads"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 60, 1767225600000, 1767225600000, NULL),
   ('ex_plank', '平板支撑', 'Plank', '["平板"]', 'core', '["abs","obliques","front_delts"]', 'bodyweight', 'time', 60, NULL, 0, 1, 85, 1767225600000, 1767225600000, NULL),
@@ -207,10 +207,191 @@ VALUES
   ('ex_bird_dog', '鸟狗式', 'Bird Dog', '[]', 'core', '["lower_back","glutes","front_delts"]', 'bodyweight', 'reps_only', 45, NULL, 0, 1, 32, 1767225600000, 1767225600000, NULL),
   ('ex_mountain_climber', '登山跑', 'Mountain Climber', '["登山者"]', 'core', '["abs","hip_flexors","front_delts","quads"]', 'bodyweight', 'time', 45, NULL, 0, 1, 42, 1767225600000, 1767225600000, NULL),
   ('ex_pallof_press', '帕洛夫抗旋转', 'Pallof Press', '["抗旋转推"]', 'core', '["obliques","abs","front_delts"]', 'cable', 'weight_reps', 45, 10, 2.5, 1, 35, 1767225600000, 1767225600000, NULL),
-  ('ex_back_extension', '山羊挺身', 'Back Extension', '["罗马椅挺身","背屈伸"]', 'core', '["lower_back","glutes","hamstrings"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 60, 1767225600000, 1767225600000, NULL);
+  ('ex_back_extension', '山羊挺身', 'Back Extension', '["罗马椅挺身","背屈伸"]', 'back', '["lower_back","glutes","hamstrings"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 60, 1767225600000, 1767225600000, NULL),
+  ('ex_active_hang', '主动悬垂', 'Active Hang', '[]', 'back', '["upper_back","forearms","core"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_archer_push_up', '弓手俯卧撑', 'Archer Push-up', '["单臂俯卧撑辅助版"]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_assisted_chin_up', '辅助反握引体向上', 'Assisted Chin-up', '[]', 'arms', '["lats"]', 'machine', 'assisted_reps', 60, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_assisted_dip', '辅助双杠臂屈伸', 'Assisted Dip', '[]', 'arms', '["chest"]', 'machine', 'assisted_reps', 60, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_assisted_pistol_squat', '辅助单腿深蹲', 'Assisted Pistol Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_band_pull_apart', '弹力带扩胸', 'Band Pull-Apart', '[]', 'back', '["rear_delts","front_delts"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_clamshell', '弹力带蚌式开合', 'Banded Clamshell', '[]', 'legs', '["core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_dead_bug', '弹力带死虫', 'Banded Dead Bug', '[]', 'core', '["glutes","front_delts"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_donkey_kick', '弹力带跪姿后踢腿', 'Banded Donkey Kick', '[]', 'legs', '["hamstrings","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_face_pull', '弹力带面拉', 'Banded Face Pull', '[]', 'back', '["rear_delts","front_delts"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_fire_hydrant', '弹力带消防栓式', 'Banded Fire Hydrant', '[]', 'legs', '["core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_frog_pump', '弹力带蛙式臀冲', 'Banded Frog Pump', '[]', 'legs', '["hamstrings"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_glute_bridge', '弹力带臀桥', 'Banded Glute Bridge', '[]', 'legs', '["hamstrings","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_hip_thrust', '弹力带臀推', 'Banded Hip Thrust', '[]', 'legs', '["hamstrings","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_kickback', '弹力带后踢腿', 'Banded Kickback', '[]', 'legs', '["hamstrings","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL);
+
+INSERT INTO exercise
+  (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
+VALUES
+  ('ex_banded_lat_pulldown', '弹力带高位下拉', 'Banded Lat Pulldown', '[]', 'back', '["biceps","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_lateral_walk', '弹力带侧向走', 'Banded Lateral Walk', '["螃蟹走"]', 'legs', '["quads","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_monster_walk', '弹力带怪兽走', 'Banded Monster Walk', '[]', 'legs', '["quads","hamstrings","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_pallof_press', '弹力带帕洛夫推', 'Banded Pallof Press', '[]', 'core', '["glutes","front_delts"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_row', '弹力带划船', 'Banded Row', '[]', 'back', '["biceps","upper_back"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_seated_hip_abduction', '弹力带坐姿髋外展', 'Banded Seated Hip Abduction', '[]', 'legs', '["core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_squat', '弹力带深蹲', 'Banded Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_standing_hip_abduction', '弹力带站姿髋外展', 'Banded Standing Hip Abduction', '[]', 'legs', '["core"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_banded_woodchop', '弹力带伐木', 'Banded Woodchop', '[]', 'core', '["front_delts","glutes"]', 'band', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_barbell_glute_bridge', '杠铃臀桥', 'Barbell Glute Bridge', '[]', 'legs', '["hamstrings","core"]', 'barbell', 'weight_reps', 120, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_bear_plank', '熊式平板支撑', 'Bear Plank', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_belt_squat', '腰带深蹲', 'Belt Squat', '[]', 'legs', '["glutes"]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_bench_dip', '凳上臂屈伸', 'Bench Dip', '["长凳臂屈伸"]', 'arms', '["chest","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_bicycle_crunch', '自行车卷腹', 'Bicycle Crunch', '["空中蹬车"]', 'core', '["quads"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_burpee', '波比跳', 'Burpee', '["立卧撑跳"]', 'legs', '["chest","front_delts","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_kickback', '绳索后踢腿', 'Cable Kickback', '[]', 'legs', '["hamstrings"]', 'cable', 'weight_reps', 120, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_pallof_hold', '绳索帕洛夫静力保持', 'Cable Pallof Hold', '[]', 'core', '["glutes","front_delts"]', 'cable', 'time', 60, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_pull_through', '绳索胯下拉', 'Cable Pull-Through', '["绳索拉胯"]', 'legs', '["hamstrings","lower_back"]', 'cable', 'weight_reps', 120, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_rear_delt_fly', '绳索反向飞鸟', 'Cable Rear Delt Fly', '[]', 'shoulders', '["upper_back"]', 'cable', 'weight_reps', 90, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_standing_hip_abduction', '绳索站姿髋外展', 'Cable Standing Hip Abduction', '[]', 'legs', '["core"]', 'cable', 'weight_reps', 120, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL);
+
+INSERT INTO exercise
+  (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
+VALUES
+  ('ex_cable_standing_hip_adduction', '绳索站姿髋内收', 'Cable Standing Hip Adduction', '[]', 'legs', '["core","glutes"]', 'cable', 'weight_reps', 120, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_cable_woodchop', '绳索伐木', 'Cable Woodchop', '["绳索斜劈"]', 'core', '["front_delts"]', 'cable', 'weight_reps', 60, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_calf_raise', '徒手提踵', 'Calf Raise', '[]', 'legs', '[]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_captains_chair_knee_raise', '船长椅举膝', 'Captain''s Chair Knee Raise', '["罗马椅举膝"]', 'core', '["front_delts"]', 'machine', 'reps_only', 60, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_chair_dip', '椅上臂屈伸', 'Chair Dip', '[]', 'arms', '["chest","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_clamshell', '蚌式开合', 'Clamshell', '[]', 'legs', '["core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_commando_pull_up', '突击队引体向上', 'Commando Pull-up', '["平行引体"]', 'back', '["biceps","upper_back","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_copenhagen_plank', '哥本哈根平板支撑', 'Copenhagen Plank', '[]', 'core', '["quads","glutes"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_cossack_squat', '哥萨克深蹲', 'Cossack Squat', '["侧向深蹲"]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_crab_walk', '螃蟹爬', 'Crab Walk', '[]', 'arms', '["glutes","core","front_delts"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_curtsy_lunge', '交叉箭步蹲', 'Curtsy Lunge', '[]', 'legs', '["quads","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dead_hang', '静态悬垂', 'Dead Hang', '[]', 'arms', '["lats","front_delts","core"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_decline_sit_up', '下斜仰卧起坐', 'Decline Sit-Up', '[]', 'core', '["quads"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_deficit_reverse_lunge', '垫高反向箭步蹲', 'Deficit Reverse Lunge', '[]', 'legs', '["quads","hamstrings","core"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_donkey_calf_raise', '驴式提踵', 'Donkey Calf Raise', '[]', 'legs', '[]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_donkey_kick', '跪姿后踢腿', 'Donkey Kick', '["驴踢"]', 'legs', '["hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_doorway_row', '门框划船', 'Doorway Row', '[]', 'back', '["biceps","upper_back","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_drag_curl', '拖拽弯举', 'Drag Curl', '[]', 'arms', '["forearms"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dragon_flag', '龙旗', 'Dragon Flag', '[]', 'core', '["lats","quads"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_curtsy_lunge', '哑铃交叉箭步蹲', 'Dumbbell Curtsy Lunge', '[]', 'legs', '["quads","hamstrings","core"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL);
+
+INSERT INTO exercise
+  (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
+VALUES
+  ('ex_dumbbell_glute_bridge', '哑铃臀桥', 'Dumbbell Glute Bridge', '[]', 'legs', '["hamstrings","core"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_hip_thrust', '哑铃臀推', 'Dumbbell Hip Thrust', '[]', 'legs', '["hamstrings"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_lateral_lunge', '哑铃侧向弓步', 'Dumbbell Lateral Lunge', '[]', 'legs', '["glutes","adductors","hamstrings"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_romanian_deadlift', '哑铃罗马尼亚硬拉', 'Dumbbell Romanian Deadlift', '["哑铃直腿硬拉"]', 'legs', '["glutes","lower_back"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_side_bend', '哑铃体侧屈', 'Dumbbell Side Bend', '[]', 'core', '["grip"]', 'dumbbell', 'weight_reps', 60, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_skull_crusher', '双哑铃仰卧臂屈伸', 'Two Dumbbell Skullcrusher', '[]', 'arms', '["front_delts"]', 'dumbbell', 'weight_reps', 90, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_sumo_deadlift', '哑铃相扑硬拉', 'Dumbbell Sumo Deadlift', '[]', 'legs', '["glutes","quads","adductors"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_dumbbell_sumo_squat', '哑铃相扑深蹲', 'Dumbbell Sumo Squat', '["相扑深蹲"]', 'legs', '["quads","adductors","hamstrings"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_explosive_push_up', '爆发俯卧撑', 'Explosive Push-up', '["击掌俯卧撑"]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_feet_elevated_pike_push_up', '垫脚派克俯卧撑', 'Feet-Elevated Pike Push-up', '[]', 'shoulders', '["triceps","chest","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_fire_hydrant', '消防栓式', 'Fire Hydrant', '[]', 'legs', '["core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_flutter_kick', '仰卧交替打腿', 'Flutter Kick', '["剪式打腿"]', 'core', '["quads"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_forward_lunge', '前箭步蹲', 'Forward Lunge', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_frog_pump', '蛙式臀冲', 'Frog Pump', '[]', 'legs', '["hamstrings"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_front_foot_elevated_split_squat', '前脚垫高分腿蹲', 'Front-Foot Elevated Split Squat', '[]', 'legs', '["glutes","core"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_glute_bridge_march', '臀桥踏步', 'Glute Bridge March', '[]', 'legs', '["hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_glute_focused_back_extension', '臀部集中山羊挺身', 'Glute-Focused Back Extension', '[]', 'legs', '["hamstrings","lower_back"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_good_morning', '早安式体前屈', 'Good Morning', '["早安式"]', 'legs', '["glutes","lower_back"]', 'barbell', 'weight_reps', 120, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_half_burpee', '半程波比跳', 'Half Burpee', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_half_kneeling_pallof_press', '半跪姿帕洛夫推', 'Half-Kneeling Pallof Press', '[]', 'core', '["glutes","front_delts"]', 'cable', 'weight_reps', 60, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL);
+
+INSERT INTO exercise
+  (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
+VALUES
+  ('ex_heel_elevated_goblet_squat', '垫脚高脚杯深蹲', 'Heel-Elevated Goblet Squat', '[]', 'legs', '["glutes","core"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_heel_tap', '仰卧触踝', 'Heel Tap', '[]', 'core', '[]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_hindu_push_up', '印度俯卧撑', 'Hindu Push-up', '["潜水式俯卧撑"]', 'chest', '["front_delts","triceps","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_hip_airplane', '髋部飞机式', 'Hip Airplane', '[]', 'legs', '["hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_hollow_body_hold', '空心支撑', 'Hollow Body Hold', '[]', 'core', '["quads"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_hollow_rock', '空心摇摆', 'Hollow Rock', '[]', 'core', '["quads"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_inchworm', '毛毛虫爬行', 'Inchworm', '[]', 'core', '["front_delts","hamstrings","chest"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_incline_cable_fly', '上斜绳索飞鸟', 'Incline Cable Fly', '[]', 'chest', '["front_delts"]', 'cable', 'weight_reps', 120, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_jump_squat', '深蹲跳', 'Jump Squat', '[]', 'legs', '["glutes","calves"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_kettlebell_romanian_deadlift', '壶铃罗马尼亚硬拉', 'Kettlebell Romanian Deadlift', '[]', 'legs', '["glutes","lower_back"]', 'kettlebell', 'weight_reps', 120, 12, 4, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_kettlebell_swing', '壶铃摆荡', 'Kettlebell Swing', '["壶铃摇摆"]', 'legs', '["hamstrings","core"]', 'kettlebell', 'weight_reps', 120, 12, 4, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_knee_push_up', '跪姿俯卧撑', 'Knee Push-up', '[]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_l_sit_hold', 'L 式支撑', 'L-Sit Hold', '[]', 'core', '["triceps","quads","front_delts"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_l_sit_pull_up', 'L 式引体向上', 'L-Sit Pull-up', '[]', 'back', '["biceps","core","forearms"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_landmine_press', '地雷管推举', 'Landmine Press', '[]', 'shoulders', '["chest","triceps"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_landmine_romanian_deadlift', '地雷管罗马尼亚硬拉', 'Landmine Romanian Deadlift', '[]', 'legs', '["glutes","lower_back"]', 'barbell', 'weight_reps', 120, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_landmine_squat', '地雷管深蹲', 'Landmine Squat', '[]', 'legs', '["glutes","core"]', 'barbell', 'weight_reps', 120, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_lying_hamstring_walkout', '仰卧腘绳肌走', 'Lying Hamstring Walkout', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_machine_glute_kickback', '器械后踢腿', 'Machine Glute Kickback', '[]', 'legs', '["hamstrings"]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_meadows_row', '梅多斯划船', 'Meadows Row', '[]', 'back', '["biceps","rear_delts"]', 'barbell', 'weight_reps', 120, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL);
+
+INSERT INTO exercise
+  (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
+VALUES
+  ('ex_negative_pull_up', '离心引体向上', 'Negative Pull-up', '["退让引体"]', 'back', '["biceps","upper_back","forearms"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_neutral_grip_pull_up', '对握引体向上', 'Neutral-Grip Pull-up', '["锤式引体"]', 'back', '["biceps","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_nordic_hamstring_curl', '北欧腘绳肌弯举', 'Nordic Hamstring Curl', '["北欧挺"]', 'legs', '["glutes","calves"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_pike_push_up', '派克俯卧撑', 'Pike Push-up', '["屈体俯卧撑"]', 'shoulders', '["triceps","chest","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_pistol_squat', '单腿深蹲', 'Pistol Squat', '["手枪深蹲"]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_plank_shoulder_tap', '平板支撑交替摸肩', 'Plank Shoulder Tap', '[]', 'core', '["front_delts","chest"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_plate_front_raise', '杠铃片前平举', 'Plate Front Raise', '[]', 'shoulders', '["chest"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_prone_t_raise', '俯卧 T 字举', 'Prone T Raise', '[]', 'back', '["rear_delts","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_prone_y_raise', '俯卧 Y 字举', 'Prone Y Raise', '[]', 'back', '["rear_delts","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_push_press', '借力推举', 'Push Press', '[]', 'shoulders', '["triceps","quads"]', 'barbell', 'weight_reps', 90, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_push_up_shoulder_tap', '俯卧撑交替摸肩', 'Push-up Shoulder Tap', '[]', 'core', '["chest","front_delts","triceps"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_reverse_hyperextension', '反向山羊挺身', 'Reverse Hyperextension', '[]', 'legs', '["hamstrings","lower_back"]', 'machine', 'reps_only', 60, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_reverse_snow_angel', '俯卧反向雪天使', 'Reverse Snow Angel', '[]', 'back', '["rear_delts","lower_back","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_scapular_pull_up', '肩胛引体向上', 'Scapular Pull-up', '[]', 'back', '["upper_back","forearms","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_scapular_push_up', '肩胛俯卧撑', 'Scapular Push-up', '[]', 'back', '["chest","front_delts","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_seated_knee_tuck', '坐姿收膝', 'Seated Knee Tuck', '[]', 'core', '["quads"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_shrimp_squat', '虾式深蹲', 'Shrimp Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_side_lying_hip_abduction', '侧卧髋外展', 'Side-Lying Hip Abduction', '[]', 'legs', '["core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_side_lying_leg_raise', '侧卧举腿', 'Side-Lying Leg Raise', '[]', 'legs', '["core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_side_plank_hip_dip', '侧平板转髋', 'Side Plank Hip Dip', '[]', 'core', '["front_delts","glutes"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL);
+
+INSERT INTO exercise
+  (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
+VALUES
+  ('ex_single_arm_dumbbell_tricep_extension', '单臂哑铃臂屈伸', 'Single Arm Dumbbell Tricep Extension', '[]', 'arms', '["front_delts"]', 'dumbbell', 'weight_reps', 90, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_single_dumbbell_skullcrusher', '单哑铃仰卧臂屈伸', 'Single Dumbbell Skullcrusher', '[]', 'arms', '["front_delts"]', 'dumbbell', 'weight_reps', 90, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_single_leg_box_squat', '单腿箱式深蹲', 'Single-Leg Box Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_sissy_squat', '西西深蹲', 'Sissy Squat', '[]', 'legs', '["core","calves"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_skater_hop', '滑冰跳', 'Skater Hop', '[]', 'legs', '["glutes","calves"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_skater_squat', '滑冰深蹲', 'Skater Squat', '[]', 'legs', '["glutes","hamstrings","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_smith_machine_bulgarian_split_squat', '史密斯保加利亚分腿蹲', 'Smith Machine Bulgarian Split Squat', '[]', 'legs', '["glutes","core"]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_smith_machine_hip_thrust', '史密斯臀推', 'Smith Machine Hip Thrust', '[]', 'legs', '["hamstrings","core"]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_smith_machine_reverse_lunge', '史密斯反向箭步蹲', 'Smith Machine Reverse Lunge', '[]', 'legs', '["glutes","hamstrings","core"]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_smith_machine_romanian_deadlift', '史密斯罗马尼亚硬拉', 'Smith Machine Romanian Deadlift', '[]', 'legs', '["glutes","lower_back"]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_smith_machine_split_squat', '史密斯分腿蹲', 'Smith Machine Split Squat', '[]', 'legs', '["glutes","core"]', 'machine', 'weight_reps', 120, 20, 5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_spider_curl', '蜘蛛弯举', 'Spider Curl', '[]', 'arms', '["forearms"]', 'dumbbell', 'weight_reps', 90, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_sprawl', '扑地起身', 'Sprawl', '[]', 'legs', '["core","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_squat_thrust', '深蹲提膝', 'Squat Thrust', '[]', 'core', '["quads","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_stability_ball_hamstring_curl', '瑞士球腘绳肌弯举', 'Stability Ball Hamstring Curl', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_standing_dumbbell_press', '站姿哑铃推举', 'Standing Dumbbell Press', '["站姿肩推"]', 'shoulders', '["triceps","core"]', 'dumbbell', 'weight_reps', 90, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_step_down', '台阶下步', 'Step-Down', '[]', 'legs', '["glutes","hamstrings","calves"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_step_up', '哑铃台阶上步', 'Step-Up', '[]', 'legs', '["glutes"]', 'dumbbell', 'weight_reps', 120, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_superman', '超人式', 'Superman', '[]', 'back', '["glutes","upper_back","hamstrings"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_superman_hold', '超人式保持', 'Superman Hold', '[]', 'back', '["glutes","upper_back","hamstrings"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL);
+
+INSERT INTO exercise
+  (id, name, name_en, aliases, muscle_group, secondary_muscles, equipment, track_type, default_rest_sec, default_weight_kg, weight_increment, is_builtin, popularity, created_at, updated_at, deleted_at)
+VALUES
+  ('ex_toe_touch', '仰卧摸脚', 'Toe Touch', '[]', 'core', '[]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_towel_hamstring_curl', '毛巾腘绳肌弯举', 'Towel Hamstring Curl', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_towel_pull_up', '毛巾引体向上', 'Towel Pull-up', '[]', 'back', '["biceps","forearms","upper_back"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_towel_row', '毛巾划船', 'Towel Row', '[]', 'back', '["biceps","upper_back","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_trap_bar_deadlift', '六角杠硬拉', 'Trap Bar Deadlift', '["陷阱杠硬拉"]', 'legs', '["quads","grip"]', 'barbell', 'weight_reps', 120, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_typewriter_push_up', '打字机俯卧撑', 'Typewriter Push-up', '[]', 'chest', '["triceps","front_delts","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_v_up', 'V 字两头起', 'V-Up', '["两头起"]', 'core', '["quads"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_wall_handstand_push_up', '靠墙倒立撑', 'Wall Handstand Push-up', '[]', 'shoulders', '["triceps","core","chest"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_wall_push_up', '靠墙俯卧撑', 'Wall Push-up', '["站立俯卧撑"]', 'chest', '["triceps","front_delts"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_wall_sit', '靠墙静蹲', 'Wall Sit', '[]', 'legs', '["glutes","core"]', 'bodyweight', 'time', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_wall_walk', '爬墙', 'Wall Walk', '[]', 'shoulders', '["core","chest","triceps"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_weighted_chin_up', '负重反握引体向上', 'Weighted Chin-up', '["负重引体"]', 'arms', '["lats"]', 'bodyweight', 'weight_reps', 90, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_weighted_crunch', '负重卷腹', 'Weighted Crunch', '[]', 'core', '[]', 'barbell', 'weight_reps', 60, 20, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_weighted_push_up', '负重俯卧撑', 'Weighted Push-up', '[]', 'chest', '["triceps","core"]', 'bodyweight', 'weight_reps', 120, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_weighted_russian_twist', '负重俄罗斯转体', 'Weighted Russian Twist', '[]', 'core', '["front_delts"]', 'dumbbell', 'weight_reps', 60, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_wide_grip_lat_pulldown', '宽握高位下拉', 'Wide-Grip Lat Pulldown', '[]', 'back', '["biceps"]', 'cable', 'weight_reps', 120, 10, 2.5, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_wide_push_up', '宽距俯卧撑', 'Wide Push-up', '[]', 'chest', '["front_delts","triceps","core"]', 'bodyweight', 'reps_only', 60, NULL, 0, 1, 20, 1767225600000, 1767225600000, NULL),
+  ('ex_wrist_extension', '腕伸展', 'Wrist Extension', '["正握腕弯举"]', 'arms', '[]', 'dumbbell', 'weight_reps', 90, 8, 2, 1, 20, 1767225600000, 1767225600000, NULL);
 
 COMMIT;
 
--- 自检：执行后应各返回 165
+-- 自检：执行后应各返回 318
 --   SELECT COUNT(*) FROM exercise WHERE is_builtin = 1;
 --   SELECT muscle_group, COUNT(*) FROM exercise WHERE is_builtin = 1 GROUP BY muscle_group;

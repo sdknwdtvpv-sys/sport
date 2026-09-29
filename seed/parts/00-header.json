@@ -16,14 +16,16 @@
     "dumbbell": "哑铃",
     "machine": "器械",
     "cable": "绳索",
-    "bodyweight": "自重"
+    "bodyweight": "自重",
+    "band": "弹力带",
+    "kettlebell": "壶铃"
   },
   "field_notes": {
     "id": "稳定标识，进库后不可变更（用户历史数据引用它）",
     "default_weight_kg": "首次使用的建议起始重量，按 70kg 男性新手基准估算，仅作为无历史数据时的兜底；有历史后一律由规则引擎接管。后续版本应按用户体重比例缩放。null = 自重动作。",
-    "weight_increment": "加重步长。barbell=2.5（最小杠铃片对），dumbbell=2，cable=2.5，machine=5（配重片档位），bodyweight=0（引擎必须改为加次数推进，不能回落次数）",
+    "weight_increment": "加重步长。barbell=2.5（最小杠铃片对），dumbbell=2，cable=2.5，machine=5（配重片档位），kettlebell=4（壶铃跳档），band=0 与 bodyweight=0（引擎必须改为加次数/加秒数推进，不能回落）",
     "popularity": "0-100，用于『常用动作』排序与动作选择器默认排序",
-    "track_type": "MVP 全部为 weight_reps；reps_only / time 预留给后续版本",
+    "track_type": "怎么记这个动作。weight_reps 负重次数 / reps_only 自重次数 / time 按时长（数字是秒）/ weight_time 负重时长 / distance_time 有氧（**只保留词表，引擎未支持**）/ assisted_reps 辅助自重（**推进方向未实现**）。见 docs/data-model.md",
     "default_rest_sec": "默认组间休息秒数：复合动作 90-180，孤立动作 60，核心 45",
     "secondary_muscles": "细粒度词汇（见 fine_muscles），用于肌群热力图；主部位仍是 muscle_group 的 6 个粗粒度分组，用于部位轮转"
   },
@@ -45,6 +47,9 @@
     "abductors": "外展肌",
     "abs": "腹直肌",
     "obliques": "腹斜肌",
-    "hip_flexors": "髂腰肌"
+    "hip_flexors": "髂腰肌",
+    "chest": "胸大肌",
+    "upper_back": "上背",
+    "grip": "握力"
   }
 }

@@ -271,7 +271,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   /// 浏览态分区：**最近做过 / 常用 / 全部动作**。
   ///
   /// 分区的意义就是规格那条「从打开到选中 ≤ 5 秒，不滚动」：
-  /// 把最可能被选的动作顶到首屏，而不是让人在 165 个动作里翻。
+  /// 把最可能被选的动作顶到首屏，而不是让人在 318 个动作里翻。
   Widget _browseList() {
     final Set<String> recentIds =
         _recent.map((ExerciseData e) => e.id).toSet();

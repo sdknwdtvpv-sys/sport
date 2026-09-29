@@ -36,7 +36,7 @@ class ExerciseRepository {
     final List<Map<String, dynamic>> list =
         (decoded['exercises'] as List<dynamic>).cast<Map<String, dynamic>>();
 
-    // 整个过程放进一个事务：165 条逐个 upsert，分开提交会慢一个数量级
+    // 整个过程放进一个事务：318 条逐个 upsert，分开提交会慢一个数量级
     await _db.transaction(() async {
       for (final Map<String, dynamic> e in list) {
         await _db.into(_db.exercise).insertOnConflictUpdate(_toData(e));
@@ -97,7 +97,7 @@ class ExerciseRepository {
   /// 把库里的行转成引擎要的输入
   ///
   /// `trackType` 必须带上：它决定引擎对平板支撑这类动作说的是"次"还是"秒"。
-  /// （这个字段曾经躺在库里没人读 —— 165 个动作全是 weight_reps，
+  /// （这个字段曾经躺在库里没人读 —— 当时 165 个动作全是 weight_reps，
   /// 于是平板支撑被开成「3 组 × 8–10 次」。）
   ExerciseSpec specOf(ExerciseData e) => ExerciseSpec(
         id: e.id,
