@@ -74,9 +74,11 @@ void main() {
   });
 
   test('推荐位上会出现的动作都有动作说明（内容承诺，不是覆盖率）', () async {
-    // 351 个动作不可能一次写完说明，所以这里守的**不是**覆盖率，而是那条更硬的承诺：
-    // **用户真的会看到的那些**（各部位按常用度前 8 —— 默认推荐取前 3、「换一批」往下取）
-    // 必须都有说明。长尾空白由 tool/content-report.mjs 量化，但推荐位不能空。
+    // 这一条原来守的是"全库写不完，至少推荐位不能空"——**2026-09-30 全库写满了**
+    // （351/351），下面那条"全库都有"已经覆盖它。
+    // 这里保留它是因为它守的东西不一样：**推荐位是按各部位常用度前 8 动态算出来的**
+    // （默认推荐取前 3、「换一批」往下取），将来加新动作时它会先红 ——
+    // 比"全库都有"更早暴露"新加的动作没写说明"。
     await repo.importSeed(loadJson: _readAsset);
     final List<ExerciseData> all = await repo.search(limit: 500);
 
@@ -114,23 +116,21 @@ void main() {
     }
   });
 
-  test('动作说明：常用度 ≥ 30 全都有（本版铺到的台阶，从高往低推）', () async {
-    // 和上面那条"推荐位"不同：这条守的是**这一版铺到哪一档**。
-    // 台阶数字是"人的一次背书"（同 `种子规模：351` 的写法）：内容不再从高往低铺、
-    // 或者有人删掉某条说明，这里会红。下一版往下铺到 20 时，把这个数字改成 20 即可
-    // ——想清楚"我认这个新台阶"再改，正是这条测试存在的意义。
+  test('动作说明：全库 351 个全都有（2026-09-30 写满，从此不再降）', () async {
+    // 这条以前是"本版铺到哪一档"的台阶（45 → 30 → 全库）。台阶走完了，
+    // 它就该变成**不变量**：动作数可以涨，但**涨进来的新动作必须带说明** ——
+    // 加动作的人要么自己写，要么这条测试红给他看。覆盖率没有"下次再补"的余地了。
     await repo.importSeed(loadJson: _readAsset);
     final List<ExerciseData> all = await repo.search(limit: 500);
-    final List<ExerciseData> tier =
-        all.where((ExerciseData e) => e.popularity >= 30).toList();
 
-    expect(tier.length, 304, reason: '常用度 ≥ 30 的动作有 304 个（改种子规模时一起改）');
-    final List<String> missing = tier
+    expect(all.length, await _seedCount(), reason: '先确认拿到的是全库');
+    final List<String> missing = all
         .where((ExerciseData e) =>
             e.instructions == null || e.instructions!.trim().isEmpty)
         .map((ExerciseData e) => '${e.id}(${e.name})')
         .toList();
-    expect(missing, isEmpty, reason: '这一档还没写说明：$missing');
+    expect(missing, isEmpty,
+        reason: '这些动作还没有说明（新加动作时请一并写）：$missing');
   });
 
   test('距离类动作的 track_type 是 distance_time（有氧 + 农夫行走）', () async {

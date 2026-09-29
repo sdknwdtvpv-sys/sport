@@ -941,7 +941,8 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "instructions": "自由倒立的下撑，先从靠墙版练起；手腕一定要充分热身。"
   },
   {
     "id": "ex_db_lateral_raise",

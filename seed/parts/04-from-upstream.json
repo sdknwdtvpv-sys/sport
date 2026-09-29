@@ -50,7 +50,7 @@
     "name": "绕臂",
     "name_en": "Arm Circles",
     "aliases": [],
-    "instructions": null,
+    "instructions": "手臂伸直画圈，从小到大、再换反方向；肩关节热身的第一件事。",
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "chest",
@@ -74,7 +74,7 @@
       "空气单车",
       "风扇单车"
     ],
-    "instructions": null,
+    "instructions": "手脚同时推拉，核心稳住；先短冲刺 20 秒，再慢慢加量。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts"
@@ -577,7 +577,7 @@
     "aliases": [
       "甩绳"
     ],
-    "instructions": null,
+    "instructions": "半蹲、核心收紧，用肩带动手臂甩出波浪；甩得动才算有效。",
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "core"
@@ -597,7 +597,7 @@
     "name": "熊爬",
     "name_en": "Bear Crawl",
     "aliases": [],
-    "instructions": null,
+    "instructions": "四点撑地、膝离地一点，手脚交替小幅前进；臀别左右晃。",
     "muscle_group": "core",
     "secondary_muscles": [
       "front_delts",
@@ -728,7 +728,7 @@
     "name": "蝴蝶式拉伸",
     "name_en": "Butterfly Stretch",
     "aliases": [],
-    "instructions": null,
+    "instructions": "脚掌相对、膝自然下沉；从髋往前折，别用手硬压膝盖。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "adductors"
@@ -937,7 +937,7 @@
     "aliases": [
       "猫牛式拉伸"
     ],
-    "instructions": null,
+    "instructions": "吸气塌腰抬头、呼气拱背低头，跟着呼吸走；动作别快。",
     "muscle_group": "core",
     "secondary_muscles": [
       "lats"
@@ -978,7 +978,7 @@
     "name": "婴儿式",
     "name_en": "Child's Pose",
     "aliases": [],
-    "instructions": null,
+    "instructions": "跪坐、上身趴向地面、手臂前伸；呼吸放慢，背和肩一起松开。",
     "muscle_group": "back",
     "secondary_muscles": [
       "front_delts",
@@ -1021,7 +1021,7 @@
     "aliases": [
       "平行引体"
     ],
-    "instructions": null,
+    "instructions": "拉到顶后身体偏向一侧、把下巴送过杠；左右交替，别摆荡。",
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -1110,7 +1110,7 @@
     "name": "交叉肩部拉伸",
     "name_en": "Cross-Body Shoulder Stretch",
     "aliases": [],
-    "instructions": null,
+    "instructions": "手臂横过胸前、另一只手压住大臂；肩别耸起来。",
     "muscle_group": "shoulders",
     "secondary_muscles": [
       "upper_back"
@@ -1155,7 +1155,7 @@
       "单车",
       "自行车"
     ],
-    "instructions": null,
+    "instructions": "坐垫高度调到踩到底时膝微屈；踏频保持 80–90 更省力。",
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
@@ -1278,7 +1278,7 @@
     "name": "门框胸部拉伸",
     "name_en": "Doorway Chest Stretch",
     "aliases": [],
-    "instructions": null,
+    "instructions": "小臂贴在门框上、身体往前送；有拉伸感就停，别顶到疼。",
     "muscle_group": "chest",
     "secondary_muscles": [
       "front_delts"
@@ -1557,7 +1557,7 @@
     "aliases": [
       "椭圆仪"
     ],
-    "instructions": null,
+    "instructions": "脚掌踩满踏板、别只用脚尖；阻力调到能连着踩 20 分钟。",
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
@@ -1599,7 +1599,7 @@
     "name": "快速碎步",
     "name_en": "Fast Feet",
     "aliases": [],
-    "instructions": null,
+    "instructions": "前脚掌快速交替点地，重心压低；手臂配合摆起来。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads"
@@ -1853,7 +1853,7 @@
     "name": "腘绳肌拉伸",
     "name_en": "Hamstring Stretch",
     "aliases": [],
-    "instructions": null,
+    "instructions": "一只脚跟点地、腿伸直，从髋往前折；别锁膝到发疼。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "calves"
@@ -1912,7 +1912,7 @@
     "name": "高抬腿",
     "name_en": "High Knees",
     "aliases": [],
-    "instructions": null,
+    "instructions": "原地把膝抬到髋的高度，手臂配合摆；用前脚掌落地。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "core"
@@ -1935,7 +1935,7 @@
       "徒步走",
       "登山"
     ],
-    "instructions": null,
+    "instructions": "上坡小步走、下坡放慢；带足水，别一上来就冲速度。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -1957,7 +1957,7 @@
     "aliases": [
       "潜水式俯卧撑"
     ],
-    "instructions": null,
+    "instructions": "先下压成眼镜蛇式、再推成下犬式；路线是连续的弧线，别塌腰。",
     "muscle_group": "chest",
     "secondary_muscles": [
       "front_delts",
@@ -1979,7 +1979,7 @@
     "name": "髋部飞机式",
     "name_en": "Hip Airplane",
     "aliases": [],
-    "instructions": null,
+    "instructions": "单腿站立、身体前倾，另一条腿后伸并左右转髋；靠髋控制而不是腰。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "hamstrings",
@@ -2082,7 +2082,7 @@
     "name": "跳绳",
     "name_en": "Jump Rope",
     "aliases": [],
-    "instructions": null,
+    "instructions": "手腕摇绳、前脚掌落地；先不用绳原地空跳找节奏。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts"
@@ -2123,7 +2123,7 @@
     "name": "开合跳",
     "name_en": "Jumping Jack",
     "aliases": [],
-    "instructions": null,
+    "instructions": "跳起时手脚同时打开，落地膝盖微屈；这是最简单的热身。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts",
@@ -2210,7 +2210,7 @@
     "name": "跪姿髂腰肌拉伸",
     "name_en": "Kneeling Hip Flexor Stretch",
     "aliases": [],
-    "instructions": null,
+    "instructions": "单膝跪地、髋往前顶、臀夹紧；久坐的人最该做这个。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "quads"
@@ -2252,7 +2252,7 @@
     "name": "L 式引体向上",
     "name_en": "L-Sit Pull-up",
     "aliases": [],
-    "instructions": null,
+    "instructions": "引体时腿伸直成 L 字，靠背发力；腿举不住就先做普通引体。",
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -2337,7 +2337,7 @@
     "name": "侧向滑步",
     "name_en": "Lateral Shuffle",
     "aliases": [],
-    "instructions": null,
+    "instructions": "半蹲姿势左右横移，脚不要交叉；重心压低、步幅小。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2358,7 +2358,7 @@
     "name": "摆腿",
     "name_en": "Leg Swings",
     "aliases": [],
-    "instructions": null,
+    "instructions": "扶墙前后摆腿，幅度从小到大；练腿之前最该做的就是它。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2380,7 +2380,7 @@
     "name": "仰卧腘绳肌走",
     "name_en": "Lying Hamstring Walkout",
     "aliases": [],
-    "instructions": null,
+    "instructions": "躺着把一条腿伸直慢慢往下放，再用腘绳收回来；腰别离地。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2707,7 +2707,7 @@
     "name": "俯卧反向雪天使",
     "name_en": "Reverse Snow Angel",
     "aliases": [],
-    "instructions": null,
+    "instructions": "趴着把手臂从体侧扫到头顶，肩胛全程夹紧；幅度小、动作慢。",
     "muscle_group": "back",
     "secondary_muscles": [
       "rear_delts",
@@ -2731,7 +2731,7 @@
     "aliases": [
       "划船"
     ],
-    "instructions": null,
+    "instructions": "腿先蹬、再挺身、最后拉手；顺序颠倒就成了只用手臂在拉。",
     "muscle_group": "back",
     "secondary_muscles": [
       "quads"
@@ -2753,7 +2753,7 @@
     "aliases": [
       "户外跑"
     ],
-    "instructions": null,
+    "instructions": "先能连续慢跑 20 分钟再加量；每周增量别超过一成。",
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -2815,7 +2815,7 @@
     "name": "海豹跳",
     "name_en": "Seal Jack",
     "aliases": [],
-    "instructions": null,
+    "instructions": "开合跳的同时双手在胸前拍掌；比普通开合跳更练肩，落地要轻。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "front_delts",
@@ -2836,7 +2836,7 @@
     "name": "坐姿体前屈",
     "name_en": "Seated Forward Fold",
     "aliases": [],
-    "instructions": null,
+    "instructions": "坐直、从髋往前折，背别弓；够了就停，不是越疼越好。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "lats",
@@ -2877,7 +2877,7 @@
     "name": "虾式深蹲",
     "name_en": "Shrimp Squat",
     "aliases": [],
-    "instructions": null,
+    "instructions": "单腿蹲到底，后腿脚背贴地并用手抓住它；非常难，先扶架子。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -2980,7 +2980,7 @@
     "name": "单哑铃仰卧臂屈伸",
     "name_en": "Single Dumbbell Skullcrusher",
     "aliases": [],
-    "instructions": null,
+    "instructions": "两手共握一只哑铃，肘固定住只伸小臂；下放到额头附近就够。",
     "muscle_group": "arms",
     "secondary_muscles": [
       "front_delts"
@@ -3022,7 +3022,7 @@
     "name": "西西深蹲",
     "name_en": "Sissy Squat",
     "aliases": [],
-    "instructions": null,
+    "instructions": "脚跟抬起、膝往前送、身体后仰；膝有伤别做，先扶架子。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "core",
@@ -3086,7 +3086,7 @@
     "name": "滑雪机",
     "name_en": "SkiErg",
     "aliases": [],
-    "instructions": null,
+    "instructions": "先屈髋下沉，再用背和手臂往下拉；弯着腰硬拉容易伤腰。",
     "muscle_group": "back",
     "secondary_muscles": [
       "triceps",
@@ -3298,7 +3298,7 @@
     "aliases": [
       "台阶机"
     ],
-    "instructions": null,
+    "instructions": "整只脚踩上去再蹬，扶手只为平衡；别把体重压在手把上。",
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "machine",
@@ -3339,7 +3339,7 @@
     "name": "站姿股四头肌拉伸",
     "name_en": "Standing Quad Stretch",
     "aliases": [],
-    "instructions": null,
+    "instructions": "单手抓脚背往臀部靠，膝并拢、髋往前顶；另一只手扶墙。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -3445,7 +3445,7 @@
     "name": "游泳",
     "name_en": "Swimming",
     "aliases": [],
-    "instructions": null,
+    "instructions": "以自由泳为主，先把呼吸节奏稳住；肩不舒服就换蛙泳或减量。",
     "muscle_group": "back",
     "secondary_muscles": [
       "front_delts"
@@ -3483,7 +3483,7 @@
     "name": "躯干转体",
     "name_en": "Torso Twists",
     "aliases": [],
-    "instructions": null,
+    "instructions": "两臂展开、上身左右转，髋尽量朝前；幅度以腰不别扭为准。",
     "muscle_group": "core",
     "secondary_muscles": [
       "lats"
@@ -3503,7 +3503,7 @@
     "name": "毛巾腘绳肌弯举",
     "name_en": "Towel Hamstring Curl",
     "aliases": [],
-    "instructions": null,
+    "instructions": "脚踩毛巾躺地上，先把髋顶起来，再用脚跟把身体收回；臀别落地。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
@@ -3524,7 +3524,7 @@
     "name": "毛巾引体向上",
     "name_en": "Towel Pull-up",
     "aliases": [],
-    "instructions": null,
+    "instructions": "毛巾搭在杠上，握着毛巾做引体；握力会先到极限，别硬撑到滑脱。",
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -3546,7 +3546,7 @@
     "name": "毛巾划船",
     "name_en": "Towel Row",
     "aliases": [],
-    "instructions": null,
+    "instructions": "把毛巾绕在固定物上，身体后倾、把胸口拉向手；脚越靠前越难。",
     "muscle_group": "back",
     "secondary_muscles": [
       "biceps",
@@ -3594,7 +3594,7 @@
       "爬坡走",
       "坡度快走"
     ],
-    "instructions": null,
+    "instructions": "坡度 8–12%、速度以能走稳为准；扶着把手会少掉一半效果。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes"
@@ -3614,7 +3614,7 @@
     "name": "打字机俯卧撑",
     "name_en": "Typewriter Push-up",
     "aliases": [],
-    "instructions": null,
+    "instructions": "撑住不动，身体左右平移像打字机；臀别翘起来。",
     "muscle_group": "chest",
     "secondary_muscles": [
       "triceps",
@@ -3658,7 +3658,7 @@
     "name": "快走",
     "name_en": "Walking",
     "aliases": [],
-    "instructions": null,
+    "instructions": "到能说话但没法唱歌的速度就够；抬头挺胸，别低头看手机。",
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -3676,7 +3676,7 @@
     "name": "靠墙小腿拉伸",
     "name_en": "Wall Calf Stretch",
     "aliases": [],
-    "instructions": null,
+    "instructions": "脚掌踩墙、脚跟贴地，身体往前靠；膝伸直才拉得到腓肠肌。",
     "muscle_group": "legs",
     "secondary_muscles": [],
     "equipment": "bodyweight",
@@ -3907,7 +3907,7 @@
     "aliases": [
       "最伟大拉伸"
     ],
-    "instructions": null,
+    "instructions": "弓步下沉、同侧手撑地，另一只手向上打开转体；整套放慢做。",
     "muscle_group": "legs",
     "secondary_muscles": [
       "glutes",
