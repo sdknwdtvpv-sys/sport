@@ -146,6 +146,19 @@ required-reason API 就要在清单里声明理由"，并且**对着二进制扫
 `tool/asset-check.mjs` 里有一条**跨文件**守卫钉着这对互斥关系（没声明读权限就不许直接带相簿名），
 三个分支都负向验证过。
 
+**iPad 支持：实测过了，建议先只支持 iPhone**（2026-09-30）。把模拟器的分辨率与密度调到
+iPad Pro 12.9 吋的规格（`wm size 2048x2732` / `wm density 320`，约 4:3），跑完整套 11 步截图脚本：
+
+| 项 | 结果 |
+|---|---|
+| 崩溃 / 布局溢出 | **0**（logcat 里 `overflowed` / `RenderFlex` 命中 0 次，11 步全过） |
+| 观感 | **拉伸的手机布局**：大按钮变成通栏横条、内容靠左、大片空白 |
+| 证据 | `docs/images/ipad-width-home.png`、`docs/images/ipad-width-workout.png` |
+
+也就是说 `TARGETED_DEVICE_FAMILY = "1,2"` 现在**能通过**，但商店页会写「支持 iPad」，
+而用户打开看到的是拉长的手机界面。**建议这一版改成 `"1"`**（只支持 iPhone），
+等真的做了平板布局（两栏、更大的信息密度）再开 iPad —— 那时还要补 iPad 尺寸的截图。
+
 **2026-09-30 更新（工具链状态变了）**：**Xcode 27.0 已经装好**
 （`/Applications/Xcode.app`，`xcode-select` 已指向它）。现在卡住的只剩**许可证**：
 
