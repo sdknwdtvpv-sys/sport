@@ -86,6 +86,17 @@ void main() {
     await settle(6000); // 冷启动：建库 / 导入 351 个动作 / 读设置
     mark('app-started');
 
+    // 首次启动多了一道**隐私政策同意门**（法律要求，见
+    // features/onboarding/privacy_consent_screen.dart）：干净安装的包里
+    // 主界面在同意之前一个像素都不渲染。所以这里必须先同意 ——
+    // 这一步同时也算"在真机上真的点过那道门"的证据。
+    if (find.byKey(const Key('consent-agree')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const Key('consent-agree')));
+      await settle(2500);
+      mark('privacy-consent-agreed');
+    }
+
+
     // ---------------------------------------------------------------- 1. 先有数据
     await tester.tap(find.byKey(const Key('start-workout')));
     await settle(2500);

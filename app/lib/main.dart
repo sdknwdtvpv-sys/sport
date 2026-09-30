@@ -34,6 +34,7 @@ import 'domain/tap_meter.dart';
 import 'features/exercise/exercise_picker_screen.dart';
 import 'features/today/today_planner.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/onboarding/privacy_consent_screen.dart';
 import 'features/today/today_screen.dart';
 import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
@@ -131,6 +132,13 @@ class _HomeShellState extends State<HomeShell> {
   /// 当前 Tab。三个封顶（见 docs/screens.md）。
   int _tab = 0;
 
+  /// 有没有同意过隐私政策。**null = 还没从库里读出来**（读出来之前什么都不做）。
+  ///
+  /// 这一屏是法律要求：国内商店要求"首次运行时以弹窗等明显方式提示用户阅读隐私政策
+  /// 并征得同意"，且**同意之前不得收集任何个人信息**。所以它不只是 UI ——
+  /// `_initAnalytics()` 也被挪到同意之后（见下面 initState 的注释）。
+  bool? _consented;
+
   /// 显示单位。启动时从 user_profile 读一次，用户在 S10 改了之后整棵树重建。
   /// **只影响显示**：存储、引擎、埋点始终是 kg（见 core/units.dart）。
   WeightUnit _unit = WeightUnit.kg;
@@ -183,6 +191,37 @@ class _HomeShellState extends State<HomeShell> {
     super.initState();
     _refreshWeekSessions();
     unawaited(_loadUnit());
+    unawaited(_loadConsentThenStart());
+  }
+
+  /// 先问"同意过吗"，再决定起不起埋点。
+  ///
+  /// ⚠️ **顺序是这个功能的关键**：埋点（哪怕默认包没有上报地址、事件只落本地队列）
+  /// 也是"收集"，而规则明确要求**同意之前不收集**。所以 `_initAnalytics()` 和
+  /// 种子导入都挪到同意之后 —— 第一版若照原样放在 initState 里，
+  /// 就等于"还没问就先开始记了"，那正是这一屏要避免的事。
+  Future<void> _loadConsentThenStart() async {
+    bool consented = false;
+    try {
+      consented = await _profile.privacyConsentAtMs() != null;
+    } catch (_) {
+      // 读不出来时**当作没同意**：宁可多问一次，也不要在没同意的情况下开始收集
+      consented = false;
+    }
+    if (!mounted) return;
+    setState(() => _consented = consented);
+
+    if (consented) {
+      unawaited(_initAnalytics());
+      unawaited(_importSeedQuietly());
+    }
+  }
+
+  Future<void> _onPrivacyAgreed() async {
+    await _profile.setPrivacyConsent();
+    if (!mounted) return;
+    setState(() => _consented = true);
+    // 同意之后才开始：埋点 + 第一次种子导入
     unawaited(_initAnalytics());
     unawaited(_importSeedQuietly());
   }
@@ -572,6 +611,14 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    // 还没读出同意状态：先给一块同色底（不闪、也不提前渲染任何内容）
+    if (_consented == null) {
+      return const Scaffold(backgroundColor: Tokens.bg, body: SizedBox.expand());
+    }
+    // 没同意过：整屏征求同意 —— 主界面**一个像素都不渲染**
+    if (_consented == false) {
+      return PrivacyConsentScreen(onAgree: _onPrivacyAgreed);
+    }
     return Scaffold(
       backgroundColor: Tokens.bg,
       body: SafeArea(

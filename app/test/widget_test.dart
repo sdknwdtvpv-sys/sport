@@ -11,6 +11,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart';
+import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/main.dart';
 
 void main() {
@@ -20,6 +21,9 @@ void main() {
     final AppDatabase db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
 
+    // 预置"已同意隐私政策"：首次启动多了一道同意门（法律要求）。
+    // 那道门本身由 privacy_consent_test.dart 覆盖 —— 这里测的是启动冒烟。
+    await ProfileRepository(db).setPrivacyConsent(nowMs: 1);
     await tester.pumpWidget(LianLeMeApp(database: db));
     await tester.pumpAndSettle();
 
@@ -37,14 +41,20 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('空态不要求先做计划——没有任何前置弹窗或授权请求',
+  testWidgets('同意隐私政策之后，空态不再有任何前置弹窗',
       (WidgetTester tester) async {
     final AppDatabase db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
 
+    // ⚠️ 这条断言的**前提变了**（2026-09-30）：以前是"启动没有任何前置弹窗"，
+    // 现在首次启动**必须有**一道隐私政策同意门（国内商店的硬要求）。
+    // 所以改成"同意之后不再有别的门" —— 把变化写在这里，而不是悄悄放宽断言。
+    await ProfileRepository(db).setPrivacyConsent(nowMs: 1);
     await tester.pumpWidget(LianLeMeApp(database: db));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const Key('consent-agree')), findsNothing,
+        reason: '同意过就不该再弹');
     // 第一屏不应该出现引导、登录、权限之类的东西
     expect(find.byType(Dialog), findsNothing);
     expect(find.byType(AlertDialog), findsNothing);

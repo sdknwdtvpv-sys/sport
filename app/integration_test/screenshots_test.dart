@@ -93,6 +93,15 @@ void main() {
     // 冷启动要做：建库 / 导入 351 个动作 / 读设置。给足时间。
     await settle(6000);
 
+    // 首次启动多了一道**隐私政策同意门**（法律要求）：干净安装的包里主界面在同意之前
+    // 一个像素都不渲染。截图与流程都必须先过这道门 —— 而这一步（在真机上真的点一下）
+    // 本身就是"那道门能用"的证据。
+    if (find.byKey(const Key('consent-agree')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const Key('consent-agree')));
+      await settle(2500);
+      debugPrint('LIANLEME-SHOT privacy-consent-agreed');
+    }
+
     await step('01-home', () async {
       expect(find.byKey(const Key('start-workout')), findsOneWidget,
           reason: '首页没起来，后面都别谈了');

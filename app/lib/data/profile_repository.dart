@@ -46,6 +46,10 @@ class ProfileRepository {
             defaultRestSec: existing?.defaultRestSec ?? 90,
             // 同样：带 withDefault 的列在 Dart 数据类里仍必填，且必须保留已有值
             analyticsEnabled: existing?.analyticsEnabled ?? true,
+            // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
+            // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
+            // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -76,6 +80,7 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: enabled,
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -125,6 +130,10 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: sec ?? kRestFollowExercise,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
+            // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
+            // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
+            // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -174,6 +183,10 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? kRestFollowExercise,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
+            // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
+            // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
+            // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -217,6 +230,10 @@ class ProfileRepository {
             bodyWeightUnit: unit.wire,
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
+            // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
+            // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
+            // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -242,6 +259,42 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
+            // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
+            // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
+            // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  // ---------------------------------------------------------------- 隐私政策同意
+
+  /// 首次启动的隐私政策同意时刻。null = 还没同意过（要弹窗）。
+  Future<int?> privacyConsentAtMs() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.privacyConsentAtMs;
+  }
+
+  /// 记下"用户同意了隐私政策"。**只写不清** —— 同意了就不再问。
+  Future<void> setPrivacyConsent({int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
+            defaultRestSec: existing?.defaultRestSec ?? 90,
+            analyticsEnabled: existing?.analyticsEnabled ?? true,
+            privacyConsentAtMs: existing?.privacyConsentAtMs ?? now,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),

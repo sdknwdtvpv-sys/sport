@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:lianleme/analytics/outbox.dart';
 import 'package:lianleme/core/app_info.dart';
 import 'package:lianleme/data/db.dart';
+import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/main.dart';
 
@@ -57,6 +58,10 @@ void main() {
   tearDown(() => db.close());
 
   Future<void> pumpApp(WidgetTester tester) async {
+    // 先"同意过隐私政策"：首次启动多了一道同意门（法律要求，见
+    // features/onboarding/privacy_consent_screen.dart）。这里测的是**主流程**，
+    // 所以把库预置成"已经同意"的状态；那道门本身由 privacy_consent_test.dart 覆盖。
+    await ProfileRepository(db).setPrivacyConsent(nowMs: 1);
     await tester.pumpWidget(LianLeMeApp(
       database: db,
       seedLoader: () async => seedJson,

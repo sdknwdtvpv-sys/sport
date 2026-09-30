@@ -105,7 +105,13 @@ CREATE TABLE IF NOT EXISTS set_record (
 /// v1～v5 的 `user_profile`：与当前 db.dart 一致，**只少 `body_weight_unit` 一列**。
 ///
 /// v6 第一次给这张表加列，所以 fixture 必须有它。
-const String legacyUserProfileDdl = '''
+/// `user_profile` 在各版本里的形状。
+///
+/// ⚠️ 2026-09-30 把它改成**按版本生成**：在此之前它只有 v1 的形状，
+/// 于是"拿 version: 10 建库"造出来的其实是一张**缺列的 v1 表**，
+/// 而迁移只会补 `from < N` 那些分支 —— 结果是个四不像，谁用它测谁踩坑。
+/// 夹具必须真的长得像它声称的那个版本。
+String legacyUserProfileDdl(int version) => '''
 CREATE TABLE IF NOT EXISTS user_profile (
   user_id TEXT NOT NULL PRIMARY KEY,
   goal TEXT NULL,
@@ -113,8 +119,8 @@ CREATE TABLE IF NOT EXISTS user_profile (
   unit_pref TEXT NOT NULL DEFAULT 'kg',
   default_rest_sec INTEGER NOT NULL DEFAULT 90,
   progression_mode TEXT NOT NULL DEFAULT 'double',
-  analytics_enabled INTEGER NOT NULL DEFAULT 1 CHECK (analytics_enabled IN (0, 1)),
-  created_at INTEGER NOT NULL,
+  analytics_enabled INTEGER NOT NULL DEFAULT 1 CHECK (analytics_enabled IN (0, 1))${version >= 6 ? ",\n  body_weight_unit TEXT NOT NULL DEFAULT 'kg'" : ''}
+  ,created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 )
 ''';
@@ -142,7 +148,7 @@ void legacySetup(dynamic raw, {required int version}) {
   raw.execute(legacyWorkoutDdl);
   raw.execute(legacyWorkoutItemDdl);
   raw.execute(legacySetRecordDdl);
-  raw.execute(legacyUserProfileDdl);
+  raw.execute(legacyUserProfileDdl(version));
   if (version >= 2) raw.execute(legacyBodyMetricDdl);
   raw.execute('PRAGMA user_version = $version');
 }

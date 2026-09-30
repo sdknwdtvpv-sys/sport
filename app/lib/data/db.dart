@@ -193,6 +193,17 @@ class UserProfile extends Table {
 
   /// 「帮助改进产品」开关。关掉后除崩溃外一律不上报（见 analytics-sdk.md §10）。
   BoolColumn get analyticsEnabled => boolean().withDefault(const Constant(true))();
+
+  /// **首次启动征求隐私政策同意的时刻**。null = 还没同意过（要弹窗）。
+  ///
+  /// 为什么必须落库：国内商店要求"首次运行时通过弹窗等明显方式提示用户阅读隐私政策
+  /// 并征得同意"（小米的隐私合规指引，规则来源国信办秘字〔2019〕191 号）。
+  /// 记不住的话每次冷启动都弹 —— 那比不弹更糟。
+  ///
+  /// 为什么不复用 `analytics_enabled`：那是**使用统计**的开关（可以随时关掉、
+  /// 关掉后功能完全不受影响），而这一条是**法律意义上的同意**，两件事不能混。
+  IntColumn get privacyConsentAtMs => integer().nullable()();
+
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
 
@@ -330,11 +341,12 @@ class AppDatabase extends _$AppDatabase {
   /// v8：`exercise` 新增 `default_target_distance_m`（距离处方：每组多少米）。
   /// v9：`exercise` 新增 `instructions`（动作说明：怎么做 + 最常见的错）。
   /// v10：新增 `backup_account`（云备份账号：恢复码 + 上次备份时间）。
+  /// v11：`user_profile` 新增 `privacy_consent_at_ms`（首次启动的隐私政策同意时刻）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -419,6 +431,12 @@ class AppDatabase extends _$AppDatabase {
           // 那正是我们要的：**云备份默认关闭**，没有那行就代表"这台机器还没开过"。
           if (from < 10) {
             await m.createTable(backupAccount);
+          }
+          // v10 → v11：给 `user_profile` 加一列（隐私政策同意时刻）。老库升上来时它是
+          // **null = 还没同意过** —— 于是老用户也会看到一次同意弹窗。
+          // 这是有意的：他们当年装的那个版本里，应用内根本没有隐私政策可读。
+          if (from < 11) {
+            await m.addColumn(userProfile, userProfile.privacyConsentAtMs);
           }
         },
       );

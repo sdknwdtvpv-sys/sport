@@ -259,6 +259,47 @@ void main() {
     await legacy.close();
   });
 
+  test('v10 的库升到 v11：多出隐私同意那一列，**老库是 null**（所以要再问一次）',
+      () async {
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 10);
+        raw.execute(legacySeedExerciseSql);
+      }),
+    );
+    await legacy.customSelect('SELECT 1').get(); // 触发迁移
+
+    // 升级后这张表要能真的用起来，而且**默认是"没同意过"**
+    expect(await ProfileRepository(legacy).privacyConsentAtMs(), isNull,
+        reason: '老用户当年装的那个版本里，应用内根本没有隐私政策可读 —— '
+            '所以升级后该重新问一次，而不是替他们默认同意');
+
+    await ProfileRepository(legacy).setPrivacyConsent(nowMs: 1234);
+    expect(await ProfileRepository(legacy).privacyConsentAtMs(), 1234);
+
+    final cols = await legacy
+        .customSelect("SELECT name FROM pragma_table_info('user_profile')")
+        .get();
+    expect(cols.map((r) => r.read<String>('name')), contains('privacy_consent_at_ms'));
+
+    await legacy.close();
+  });
+
+  test('**其它设置不能把同意状态抹掉**（可空列在 insertOnConflictUpdate 里会被写成 null）',
+      () async {
+    final AppDatabase db = AppDatabase(NativeDatabase.memory());
+    await ProfileRepository(db).setPrivacyConsent(nowMs: 111);
+    // 换单位、开关渐进建议、改休息时长 —— 每个 setter 都会整行写入
+    await ProfileRepository(db).setUnit(WeightUnit.lb);
+    await ProfileRepository(db).setProgressionMode(ProgressionMode.linear);
+    await ProfileRepository(db).setRestOverrideSec(120);
+    await ProfileRepository(db).setAnalyticsEnabled(false);
+
+    expect(await ProfileRepository(db).privacyConsentAtMs(), 111,
+        reason: '少带一次这个字段，用户点一下别的开关就会再被问一遍隐私政策');
+    await db.close();
+  });
+
   test('老库里**没有** category 列 —— fixture 本身也要守着', () async {
     // 这一条是防"有人把 fixture 改成当前 schema 的样子"从而让上面两条变成空转。
     // 迁移测试最隐蔽的失败方式就是：fixture 悄悄跟上了新 schema，测试永远绿。
