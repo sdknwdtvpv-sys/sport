@@ -1,0 +1,302 @@
+#!/usr/bin/env node
+/**
+ * 练了么 · 商店表单对账（事实源 ↔ Google Play 数据安全 ←→ App Store 隐私标签）
+ *
+ * **它为什么存在**：两张商店表单都是**提交材料**，填错不是"文案不美"，是**拒审或下架**。
+ * 而它们现在只是两份 Markdown，谁也没核过 —— 埋点字段改过好几轮（v1.19 一次补了 9 个事件，
+ * 现在 18 个），每一次都可能让某张表**悄悄变成假话**：
+ *   * 新字段进了事件，Play 的「健康与健身」那行却没跟着改；
+ *   * 某天把匿名统计改成默认开，而两张表还写着"可选 / 关闭即零上报"；
+ *   * 有人图省事，把变体 A 的"不收集任何数据"抄成通用答案 ——
+ *     而那个答案只对"没编上报地址的包"成立，对配了地址的包就是**假话**。
+ *
+ * 它核六类事（每条都是一种真会发生的漂移）：
+ *   1. **两个变体都在**：A（没编地址的包）与 B（配了地址的包）必须分别成立 ——
+ *      因为这个项目的包**确实有两种形态**（编译期开关）；
+ *   2. **"不收集"只在变体 A 里说**：绝对化的否定答案不许出现在 A 的小节之外
+ *      （抄成通用答案就等于对变体 B 撒谎）；
+ *   3. **事实 → 表格**：只要 `privacy-facts.json` 里的事件带某个敏感字段
+ *      （`weight_kg` / `reps` / `distance_m`），Play 的「健康与健身」那行就必须出现对应的中文词，
+ *      App Store 那张表也必须有 Health & Fitness 那一行；
+ *   4. **默认关**：事实源里 `analyticsOptIn.defaultOn === false` ⇒ 两张表都要写出这一点；
+ *   5. **公共字段要披露**：事实源的 `commonFields` 里有 `device_id` / `app_version` ⇒
+ *      两张表都要提到它们（Play 的「设备或其他 ID」、Apple 的 Device ID）；
+ *   6. **不追踪**：事实源 `neverCollected` 里写着"设备广告标识符（无广告 SDK）"⇒
+ *      两张表都要写出「无广告 SDK」这一句 —— 它是"Used for Tracking = 否"这句话的依据。
+ *
+ * 用法：
+ *   node tool/check-store-forms.mjs              # 核仓库里那两张表
+ *   node tool/check-store-forms.mjs --selftest   # 自检（造几套动过手脚的，验它抓得住）
+ *
+ * 退出码：任何一项不符 → 1。
+ */
+
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/** 事实里的字段 → 商店表格里该出现的词（Play 用中文，Apple 用类别名）。 */
+const FIELD_TO_WORD = [
+  ['weight_kg', '重量', '训练明细会随埋点出去：set_logged 带 weight_kg'],
+  ['reps', '次数', '同上：reps'],
+  ['distance_m', '距离', '同上：distance_m'],
+];
+
+/**
+ * **已经决定过"不需要单独披露"**的事件字段。
+ *
+ * 为什么要有这份名单：事实源里的字段是"工程侧"的东西（事件字段名），而商店表单是
+ * "要披露什么"的东西。两者的对应关系**不能靠猜** —— 所以这里写成显式清单：
+ * 新加一个字段（例如哪天真的开始上报 `body_fat`）时，如果它既不在
+ * [FIELD_TO_WORD] 里、也不在这份名单里，工具就判红，**逼人做一次决定**：
+ * 要么加进上面那张映射（那就得改两张表），要么加进这里（那就等于签字说它不敏感）。
+ * 少了这一步，"新字段悄悄进了统计、表单没动"就没人拦得住。
+ */
+const FIELDS_OK = new Set([
+  'add_method', 'auto', 'channel', 'delta_reps', 'delta_weight_kg', 'direction',
+  'duration_sec', 'entry', 'error', 'exercise_count', 'exercise_id', 'field', 'from',
+  'has_note', 'has_weight', 'is_first_open', 'method', 'ms_since_launch', 'planned_sec',
+  'pr_type', 'prev_value', 'reason_code', 'rpe', 'seconds_after_log', 'set_index',
+  'set_type', 'skipped', 'source', 'step_index', 'suggested_reps', 'suggested_weight_kg',
+  'suggestion_id', 'tap_count', 'tap_kinds', 'to', 'total_sets', 'total_volume_kg',
+  'value', 'workout_id',
+]);
+
+/** 事实里的公共字段 → 两张表分别该出现什么。 */
+const COMMON_FIELD_WORDS = [
+  ['device_id', 'device_id', 'Device ID'],
+  ['app_version', 'app_version', 'Product Interaction'],
+];
+
+function inspect(root) {
+  const problems = [];
+  const facts = [];
+
+  const factsPath = join(root, 'docs/privacy-facts.json');
+  const playPath = join(root, 'docs/store-listing.md');
+  const iosPath = join(root, 'docs/store-listing-ios.md');
+  for (const [label, p] of [['privacy-facts.json', factsPath], ['store-listing.md', playPath],
+    ['store-listing-ios.md', iosPath]]) {
+    if (!existsSync(p)) {
+      problems.push(`找不到 docs/${label} —— 对账的任一端没了，这条检查已经失效`);
+    }
+  }
+  if (problems.length) return { problems, facts };
+
+  const data = JSON.parse(readFileSync(factsPath, 'utf8'));
+  const play = readFileSync(playPath, 'utf8');
+  const ios = readFileSync(iosPath, 'utf8');
+
+  // 事件里出现过的字段（含公共字段）
+  const eventFields = new Set();
+  for (const e of data.events ?? []) for (const f of e.fields ?? []) eventFields.add(f);
+  const commonFields = (data.commonFields ?? []).map((c) => c.name);
+  facts.push(`事实源：${(data.events ?? []).length} 个事件 · 公共字段 ${commonFields.length} 个 · `
+    + `默认开启统计=${data.analyticsOptIn?.defaultOn}`);
+
+  // ── 1. 两个变体都在，而且各自的标题点明了"这个包配没配地址"
+  for (const [label, text] of [['store-listing.md', play], ['store-listing-ios.md', ios]]) {
+    // ⚠️ 必须锚在 `### 变体 A：…` 这种**小节标题**上：两份文档的正文里也会提到
+    // "变体 A/B"（例如"任一个配了地址 → 用变体 B"），按正文匹配会匹配到那一段。
+    const a = /^###\s*变体\s*A[：:](.*)$/m.exec(text);
+    const b = /^###\s*变体\s*B[：:](.*)$/m.exec(text);
+    if (!a) problems.push(`${label} 里找不到「变体 A」小节 —— 两张商店表单都必须按"配没配地址"分两套`);
+    if (!b) problems.push(`${label} 里找不到「变体 B」小节`);
+    if (a && !/未配|没配|没编/.test(a[1])) {
+      problems.push(`${label} 的变体 A 标题没说清"这个包没配上报地址" —— `
+        + '读者会把它当成通用答案（而它对配了地址的包是假话）');
+    }
+    if (b && !/配了|已配|配过一个|任一个配了/.test(b[1])) {
+      problems.push(`${label} 的变体 B 标题没说清"这个包配了地址"`);
+    }
+  }
+
+  // ── 2. "不收集"这类绝对化答案只许出现在变体 A 的小节里
+  const ABSOLUTE = /不收集任何|Data Not Collected|数据只存在设备本地|不发生传输/;
+  for (const [label, text] of [['store-listing.md', play], ['store-listing-ios.md', ios]]) {
+    const idxB = text.search(/^###\s*变体\s*B/m);
+    const idxA = text.search(/^###\s*变体\s*A/m);
+    if (idxB < 0 || idxA < 0) continue;
+    // 变体 B 之后（到下一个同级标题）不许再出现绝对化的否定答案
+    const afterB = text.slice(idxB);
+    const nextHeading = afterB.slice(1).search(/\n##\s/);
+    const bSection = nextHeading > 0 ? afterB.slice(0, nextHeading + 1) : afterB;
+    if (ABSOLUTE.test(bSection)) {
+      problems.push(`${label} 的变体 B 小节里出现了绝对化的"不收集/不出设备"答案 —— `
+        + '配了地址的包不是这样，这句话会让整张表变成假话');
+    }
+  }
+
+  // ── 3. 事实里的敏感字段 → Play 的健康与健身那行 + Apple 的类别行
+  const playHealth = /健康与健身[^\n]*\|/.test(play)
+    ? (play.match(/健康与健身[^\n]*/) ?? [''])[0]
+    : '';
+  for (const [field, word, why] of FIELD_TO_WORD) {
+    if (!eventFields.has(field)) continue;
+    if (!playHealth) {
+      problems.push(`事件里有 ${field}（${why}），但 store-listing.md 里找不到「健康与健身」那一行`);
+      continue;
+    }
+    if (!playHealth.includes(word)) {
+      problems.push(`事件里有 ${field}，Play 的「健康与健身」那行却没写「${word}」—— `
+        + '数据安全表填漏一项就是拒审/下架的理由');
+    }
+  }
+  if ([...eventFields].some((f) => FIELD_TO_WORD.some(([k]) => k === f))
+    && !/Health & Fitness/.test(ios)) {
+    problems.push('play 表有健康数据，但 store-listing-ios.md 里没有 Health & Fitness 那一行 —— '
+      + '两张表必须一致');
+  }
+
+  // ── 4. 默认关：事实源说了，两张表都得写出来
+  if (data.analyticsOptIn?.defaultOn === false) {
+    if (!/默认关/.test(play)) {
+      problems.push('事实源里匿名统计是**默认关**的，但 store-listing.md 没写这一点 —— '
+        + '"可选"这个词必须配一句"默认关"才站得住');
+    }
+    if (!/默认关闭|默认关/.test(ios)) {
+      problems.push('事实源里匿名统计是**默认关**的，但 store-listing-ios.md 没写这一点');
+    }
+  }
+
+  // ── 5. 公共字段（device_id / app_version）两张表都要披露
+  for (const [field, playWord, iosWord] of COMMON_FIELD_WORDS) {
+    if (!commonFields.includes(field)) continue;
+    if (!play.includes(playWord)) {
+      problems.push(`公共字段里有 ${field}，store-listing.md 里却没提「${playWord}」—— `
+        + 'Play 的数据安全表要求逐类披露');
+    }
+    if (!ios.includes(iosWord)) {
+      problems.push(`公共字段里有 ${field}，store-listing-ios.md 里却没提「${iosWord}」`);
+    }
+  }
+
+  // ── 6. 新字段必须做过决定（映射表 / 免披露名单，二选一）
+  const mapped = new Set(FIELD_TO_WORD.map(([f]) => f));
+  const undecided = [...eventFields]
+    .filter((f) => !mapped.has(f) && !FIELDS_OK.has(f) && !commonFields.includes(f));
+  if (undecided.length) {
+    problems.push(`事实源里出现了没做过披露决定的字段：${undecided.join(', ')} —— `
+      + '要么加进 FIELD_TO_WORD 并同步改两张商店表，要么加进 FIELDS_OK（等于签字说它不敏感）');
+  }
+  facts.push(`字段决定：映射 ${mapped.size} 个 · 免披露名单 ${FIELDS_OK.size} 个 · 未决定 ${undecided.length} 个`);
+
+  // ── 7. "不追踪"的依据那句话必须还在
+  const noAdSdk = (data.neverCollected ?? []).some((s) => /广告 SDK|广告标识符/.test(s));
+  if (noAdSdk) {
+    for (const [label, text] of [['store-listing.md', play], ['store-listing-ios.md', ios]]) {
+      if (!/(没有|无)\s*广告\s*SDK/.test(text)) {
+        problems.push(`事实源里写着"无广告 SDK"，但 ${label} 里找不到这句 —— `
+          + '它是"Used for Tracking = 否"那句话的依据，删了就只剩结论没有理由');
+      }
+    }
+  }
+
+  return { problems, facts };
+}
+
+// ───────────────────────────────────────────────────────────── 自检
+function selftest() {
+  const makeTree = (mutate) => {
+    const root = mkdtempSync(join(tmpdir(), 'lianleme-forms-'));
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    for (const f of ['privacy-facts.json', 'store-listing.md', 'store-listing-ios.md']) {
+      cpSync(join(ROOT, 'docs', f), join(root, 'docs', f));
+    }
+    if (mutate) mutate(root);
+    return root;
+  };
+  const swap = (root, rel, from, to) => {
+    const p = join(root, 'docs', rel);
+    const s = readFileSync(p, 'utf8');
+    if (!s.includes(from)) throw new Error(`自检夹具失效：${rel} 里没有 ${from}`);
+    const out = s.split(from).join(to);
+    if (out.includes(from)) throw new Error(`自检夹具没换干净：${rel} 里还剩 ${from}`);
+    writeFileSync(p, out);
+  };
+
+  const cases = [
+    ['好的两张表：全绿', null, true, null],
+    ['Play 的健康与健身那行漏了「重量」', (r) => swap(r, 'store-listing.md',
+      '训练记录：动作、重量、次数、距离、组序、是否热身、完成时间', '训练记录：动作、次数、组序'), false,
+      'Play 的「健康与健身」那行却没写「重量」'],
+    // 这一条守的是**假阳性**：新加的事件字段若已被覆盖，就不该乱报
+    ['事实源加一个字段已被覆盖的事件 → 不该误报', (r) => {
+      const p = join(r, 'docs/privacy-facts.json');
+      const d = JSON.parse(readFileSync(p, 'utf8'));
+      d.events.push({ name: 'body_logged', when: '记体重时', fields: ['reps'] });
+      writeFileSync(p, JSON.stringify(d, null, 2));
+    }, true, null],
+    ['事实源里冒出一个没做过披露决定的字段 → 必须报', (r) => {
+      const p = join(r, 'docs/privacy-facts.json');
+      const d = JSON.parse(readFileSync(p, 'utf8'));
+      d.events.push({ name: 'body_logged', when: '记体重时', fields: ['body_fat'] });
+      writeFileSync(p, JSON.stringify(d, null, 2));
+    }, false, '没做过披露决定的字段：body_fat'],
+    ['把变体 A 的"不收集"抄进了变体 B', (r) => swap(r, 'store-listing.md',
+      '另外三个必须如实勾选的项：', '另外三个必须如实勾选的项（数据只存在设备本地）：'), false,
+      '变体 B 小节里出现了绝对化'],
+    ['事实源改成默认开统计，两张表还写着默认关', (r) => {
+      const p = join(r, 'docs/privacy-facts.json');
+      const d = JSON.parse(readFileSync(p, 'utf8'));
+      d.analyticsOptIn.defaultOn = true;
+      writeFileSync(p, JSON.stringify(d, null, 2));
+    }, true, null],
+    ['Play 表漏了 device_id 这一行', (r) => swap(r, 'store-listing.md',
+      '| **设备或其他 ID** | `device_id`', '| **设备或其他 ID** |'), false, '没提「device_id」'],
+    ['App Store 表漏了 Device ID 那一行', (r) => swap(r, 'store-listing-ios.md',
+      '**Identifiers → Device ID**', '**Identifiers**'), false, '没提「Device ID」'],
+    ['两张表里删掉了"无广告 SDK"那句依据', (r) => swap(r, 'store-listing-ios.md',
+      '没有广告 SDK、没有 IDFA、不做跨 App 关联', '不做跨 App 关联'), false, '找不到这句'],
+    ['变体 B 的标题不再说明"这个包配了地址"', (r) => swap(r, 'store-listing.md',
+      '### 变体 B：**配了上报地址的包**（开关打开时）', '### 变体 B：**另一种填法**'), false,
+      '变体 B 标题没说清'],
+    ['变体 A 的标题没说"这个包没配地址"', (r) => swap(r, 'store-listing.md',
+      '### 变体 A：**当前发布的包**（未配上报地址）', '### 变体 A：**推荐的填法**'), false,
+      '变体 A 标题没说清'],
+  ];
+
+  let bad = 0;
+  for (const [label, mutate, wantGreen, expect] of cases) {
+    const root = makeTree(mutate);
+    const { problems } = inspect(root);
+    const green = problems.length === 0;
+    let ok = green === wantGreen;
+    let why = green ? '' : `　→ ${problems[0].slice(0, 66)}`;
+    if (ok && !wantGreen && expect && !problems.some((p) => p.includes(expect))) {
+      ok = false;
+      why = `　→ 红了，但不是因为「${expect}」（红在：${problems[0].slice(0, 50)}）`;
+    }
+    if (!ok) bad += 1;
+    console.log(`  ${ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m'} ${label}${why}`);
+    rmSync(root, { recursive: true, force: true });
+  }
+  if (bad) {
+    console.error(`\n✗ 自检失败 ${bad} 项 —— 这个工具本身不可信，先修它`);
+    process.exit(1);
+  }
+  console.log('\n✓ 自检通过：漏字段、没做过决定的新字段、把变体 A 的答案抄进 B、'
+    + '漏披露 device_id / 删掉"无广告 SDK"都藏不住（同时不乱报"已覆盖字段"）；');
+}
+
+// ───────────────────────────────────────────────────────────────── 跑
+if (process.argv.includes('--selftest')) {
+  selftest();
+} else {
+  // `--root=<dir>`：排查/自检用（默认仓库根，与 check-deploy 同一个约定）
+  const rootArg = process.argv.find((a) => a.startsWith('--root='));
+  const { problems, facts } = inspect(rootArg ? rootArg.slice('--root='.length) : ROOT);
+  console.log('商店表单对账（事实源 ↔ Play 数据安全 ↔ App Store 隐私标签）\n');
+  for (const f of facts) console.log(`  ${f}`);
+  if (problems.length) {
+    console.log('');
+    for (const p of problems) console.error(`  \x1b[31m✗\x1b[0m ${p}`);
+    console.error(`\n✗ ${problems.length} 处对不上 —— 商店表单填错是拒审/下架的理由，不是文案问题`);
+    process.exit(1);
+  }
+  console.log('\n✓ 两张表都与事实源一致：变体结构在、"不收集"没被抄进 B、'
+    + '敏感字段都披露了、默认关与不追踪都写了依据');
+}

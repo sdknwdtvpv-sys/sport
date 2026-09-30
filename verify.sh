@@ -237,6 +237,15 @@ else
 fi
 echo
 
+# 商店表单对账工具的**自检**：两张商店表单是提交材料，填错是拒审/下架的理由，
+# 而它们此前只是两份 Markdown（埋点字段改过好几轮，每次都可能让某张表变成假话）。
+if node tool/check-store-forms.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 商店表单对账自检通过（漏字段/漏披露/抄错变体都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 商店表单对账工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 部署包核对工具的**自检**：`server/deploy/` 里全是配置文本，漂了平时看不出来、
 # 只在部署那一刻炸（或者更糟：不炸但违背承诺，比如反代开了访问日志 = 记了客户端 IP）。
 if node tool/check-deploy.mjs --selftest >"$LOG" 2>&1; then
@@ -413,6 +422,15 @@ if node tool/asset-check.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 发行资源（图标/启动图/应用名）齐全"
 else
   strip "$LOG"; echo "${RED}✗ 发行资源有问题（上架前必须修）${OFF}"; fail=1
+fi
+echo
+
+# 商店表单：事实源 ↔ Google Play 数据安全 ←→ App Store 隐私标签 三边对账
+# （变体结构、"不收集"不许抄进变体 B、敏感字段披露、默认关、新字段必须做过决定）。
+if node tool/check-store-forms.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 两张商店表单与事实源一致"
+else
+  strip "$LOG"; echo "${RED}✗ 商店表单与事实源对不上（填错是拒审/下架的理由）${OFF}"; fail=1
 fi
 echo
 
@@ -611,6 +629,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
+         tool/check-store-forms.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
