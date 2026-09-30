@@ -17,4 +17,4 @@ library;
 /// 与 `pubspec.yaml` 的 `version:` 前缀一致（不含 build number）。
 ///
 /// 切版 bump pubspec 时改这里 —— 忘了改 `flutter test` 会红，不用靠人记得。
-const String kAppVersion = '1.19.0';
+const String kAppVersion = '1.20.0';

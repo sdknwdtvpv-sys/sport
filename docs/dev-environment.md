@@ -45,6 +45,40 @@ Gradle 读出来就是乱码，于是"找不到 Flutter 的 gradle 插件"。
 
 **所以这个目录叫 `harness-deps`：纯 ASCII、没有空格。改名前先想清楚这两条。**
 
+## ⚠️ 还有一份"影子配置"：`flutter config`（搬完家最容易漏的东西）
+
+`source tool/dev-env.sh` 只设了环境变量。**Flutter 自己还有一份持久配置**
+（`~/.config/flutter/settings`），里面的 `jdk-dir` / `android-sdk`
+**优先级高于 `JAVA_HOME` / `ANDROID_SDK_ROOT`**。
+
+搬去 SSD 时旧路径留在了里面，后果是 2026-09-30 真实发生的这一幕：
+
+```
+ERROR: JAVA_HOME is set to an invalid directory: /Users/elliot.li/development/jdk-17
+```
+
+那个目录**已经不存在了**（JDK 搬去了 SSD），于是 release 构建直接失败 ——
+而**六层门禁全绿**，因为 `verify.sh` 一行 Gradle 都不跑。
+CHANGELOG 里那句"从新位置成功构建了 release APK"就是这么过期的：
+它当时是真的，后来旧 JDK 被删掉，就再没人重新构建过。
+
+现在有两道保险：
+
+| 在哪 | 做什么 |
+|---|---|
+| `verify.sh` 前置探测 | 读 `~/.config/flutter/settings`，发现指向**不存在的目录**就**判红**（不是测试失败，是打包的硬前提坏了） |
+| `tool/dev-env.sh` | 与 `$JAVA_HOME` / `$ANDROID_SDK_ROOT` 不一致时，自动 `flutter config` 对齐到 SSD（正常情况一次 flutter 调用都不会发生） |
+
+手工修：
+
+```bash
+flutter config --jdk-dir="$JAVA_HOME" --android-sdk="$ANDROID_SDK_ROOT"
+```
+
+> **教训**：搬依赖不是 `mv` 一下就完了。任何**自己记着绝对路径**的工具
+> （`flutter config`、`local.properties`、`~/.android`、IDE 的 SDK 设置）
+> 都要跟着改。判据很简单：**做一次 release 构建**，别只看门禁绿不绿。
+
 ## 没搬的东西，以及为什么
 
 | 没搬 | 为什么 |

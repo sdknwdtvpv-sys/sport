@@ -208,7 +208,7 @@
 | 关闭后什么都不记 | `app/lib/analytics/analytics.dart`（`NoopAnalytics`）、`analytics.dart` 的 `if (!enabled) return;` |
 | 当前不联网 | `app/lib/main.dart`（`_NullTransport`）、`app/lib/data/sync_queue.dart`（`InMemorySyncQueue`） |
 | 训练期间不发请求 | `app/lib/analytics/flusher.dart` 的 `suspend()` / `resume()`，有测试守着 |
-| 只有 INTERNET 权限 | `app/android/app/src/main/AndroidManifest.xml` |
+| 权限就那两项（另有一项仅 API ≤29 生效） | `app/android/app/src/main/AndroidManifest.xml`（**打包后**用 `aapt2 dump badging` 核，见附录 B） |
 | 删除权可用（第四十七条） | `app/lib/features/profile/profile_screen.dart`（`_deleteAll`）、`app/lib/data/local_store.dart`（`deleteAllUserData`） |
 | 删除含待发埋点 | `app/lib/data/drift_local_store.dart`（同一事务内删 `analyticsOutbox`） |
 | 无账号系统 | 全仓库无登录/注册代码；`app/lib/data/` 下只有本地库 |

@@ -197,7 +197,7 @@
 <tr><td>关闭后什么都不记</td><td><code>app/lib/analytics/analytics.dart</code>（<code>NoopAnalytics</code>）、<code>analytics.dart</code> 的 <code>if (!enabled) return;</code></td></tr>
 <tr><td>当前不联网</td><td><code>app/lib/main.dart</code>（<code>_NullTransport</code>）、<code>app/lib/data/sync_queue.dart</code>（<code>InMemorySyncQueue</code>）</td></tr>
 <tr><td>训练期间不发请求</td><td><code>app/lib/analytics/flusher.dart</code> 的 <code>suspend()</code> / <code>resume()</code>，有测试守着</td></tr>
-<tr><td>只有 INTERNET 权限</td><td><code>app/android/app/src/main/AndroidManifest.xml</code></td></tr>
+<tr><td>权限就那两项（另有一项仅 API ≤29 生效）</td><td><code>app/android/app/src/main/AndroidManifest.xml</code>（<strong>打包后</strong>用 <code>aapt2 dump badging</code> 核，见附录 B）</td></tr>
 <tr><td>删除权可用（第四十七条）</td><td><code>app/lib/features/profile/profile_screen.dart</code>（<code>_deleteAll</code>）、<code>app/lib/data/local_store.dart</code>（<code>deleteAllUserData</code>）</td></tr>
 <tr><td>删除含待发埋点</td><td><code>app/lib/data/drift_local_store.dart</code>（同一事务内删 <code>analyticsOutbox</code>）</td></tr>
 <tr><td>无账号系统</td><td>全仓库无登录/注册代码；<code>app/lib/data/</code> 下只有本地库</td></tr>

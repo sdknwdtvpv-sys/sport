@@ -190,8 +190,11 @@ if (isMain) {
 
   const store = createSqliteStore({ path: dbPath });
   const { server } = createBackend({ store });
+  // `--port 0` 让内核挑一个空闲端口；**必须把真实端口打出来**，
+  // 否则自动化测试拿到 "0" 就没法连上（app/test/cloud_backup_test.dart 正靠这一行）。
   server.listen(port, () => {
-    console.log(`✓ 极薄后端在 http://127.0.0.1:${port}`);
+    const actual = server.address().port;
+    console.log(`✓ 极薄后端在 http://127.0.0.1:${actual}`);
     console.log(`  库：${dbPath}`);
     console.log('  接口：POST /v1/account · GET /v1/account/me · PUT|GET /v1/backup · DELETE /v1/account');
     console.log('  ⚠️ 服务端只存密文；生产必须走 HTTPS（凭据在 Authorization 头里）。');

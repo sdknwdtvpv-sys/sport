@@ -70,8 +70,8 @@ NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$NODE_MAJOR" -lt 18 ] && { echo "${RED}✗ Node 版本过低（$(node -v)），需要 18+。${OFF}"; exit 1; }
 echo "${GREEN}✓${OFF} Node $(node -v)"
 
-# 依赖装在 SSD 的「harness 依赖」目录里（见 ~/HARNESS/lianleme/flutter-env.sh）。
-# 那个目录名**有空格**，所以这里处处加引号。
+# 依赖装在 SSD 的 `harness-deps` 目录里（见 ~/HARNESS/lianleme/flutter-env.sh）。
+# 卷名 `Elliot's SSD` 里有个**撇号**，所以这里处处加引号。
 DEPS="/Volumes/Elliot's SSD/harness-deps"
 
 FLUTTER_BIN="$(command -v flutter 2>/dev/null || true)"
@@ -86,6 +86,30 @@ fi
 
 [ -n "$FLUTTER_BIN" ] && echo "${GREEN}✓${OFF} Flutter → $FLUTTER_BIN" || echo "${YELLOW}!${OFF} 未找到 Flutter"
 [ -n "$DART_BIN" ] && echo "${GREEN}✓${OFF} Dart    → $DART_BIN" || echo "${YELLOW}!${OFF} 未找到 Dart"
+
+# flutter 还有一份**持久配置**（`~/.config/flutter/settings`），**它的优先级高于环境变量**。
+# 2026-09-30 把依赖搬去 SSD 时旧路径留在了里面 —— 于是 release 构建报
+# "JAVA_HOME is set to an invalid directory"，而**六层门禁全绿**：门禁一行 Gradle 都不跑。
+# 这种"绿着烂掉"比测试失败危险得多（CHANGELOG 里那句"从新位置成功构建了 release APK"
+# 就是这么过期的）。所以这里自己查一遍：不是测试失败，是打包的硬前提坏了。
+FLUTTER_SETTINGS="$HOME/.config/flutter/settings"
+if [ -f "$FLUTTER_SETTINGS" ]; then
+  STALE_PATHS="$(node -e '
+    const fs = require("fs");
+    let s = {};
+    try { s = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch (e) { process.exit(0); }
+    const bad = [];
+    for (const k of ["jdk-dir", "android-sdk"]) {
+      if (s[k] && !fs.existsSync(s[k])) bad.push(k + "=" + s[k]);
+    }
+    if (bad.length) { console.log(bad.join(" · ")); process.exit(1); }
+  ' "$FLUTTER_SETTINGS" 2>/dev/null)" || {
+    echo "${RED}✗ flutter 持久配置指向不存在的目录：$STALE_PATHS${OFF}"
+    echo "${DIM}  （环境坏了，不是测试失败；但 release 构建一定失败）修：${OFF}"
+    echo "${DIM}  flutter config --jdk-dir=\"\$JAVA_HOME\" --android-sdk=\"\$ANDROID_SDK_ROOT\"${OFF}"
+    fail=1
+  }
+fi
 echo
 
 # ── 1. 动作库 ───────────────────────────────────────────────────────────

@@ -15,9 +15,14 @@
 # 用法（在你自己的终端里）：
 #     source ~/HARNESS/lianleme/flutter-env.sh
 #
-# ⚠️ **依赖全部装在 SSD 上的「harness 依赖」目录**（2026-09-30 起，为了给内置盘腾空间）。
-#    那个目录名里**有空格**，所以下面每一处引用都必须加引号 —— 这点和仓库路径里的
-#    撇号是同一类坑（本项目的 `~/HARNESS/lianleme` 跑道就是因为撇号才存在的）。
+# ⚠️ **依赖全部装在 SSD 上的 `harness-deps` 目录**（2026-09-30 起，为给内置盘腾空间）。
+#    引用它的路径都要加引号 —— 卷名 `Elliot's SSD` 里有个**撇号**，和仓库跑道
+#    `~/HARNESS/lianleme` 存在的原因是同一类坑。
+#
+#    目录名**必须是纯 ASCII**，这不是洁癖：最初叫「harness 依赖」，Android 构建直接失败
+#    （`Included build '/Volumes/Elliot's SSD/harness ä¾èµ/flutter/…' does not exist.`）——
+#    Java 的 `.properties` 按 ISO-8859-1 解码，而 `local.properties` 里的 `flutter.sdk`
+#    是 Flutter 用 UTF-8 写的中文路径。详见 docs/dev-environment.md。
 #
 # 装了什么（约 13G）：
 #     flutter/      Flutter SDK          ~3.9G
@@ -57,6 +62,26 @@ export PATH="$FLUTTER_ROOT/bin:$JAVA_HOME/bin:$ANDROID_SDK_ROOT/platform-tools:$
 # pub 走镜像：pub.dev 实测约 40KB/s，不换源 pub get 会慢到超时
 export PUB_HOSTED_URL="https://pub.flutter-io.cn"
 export FLUTTER_STORAGE_BASE_URL="https://storage.flutter-io.cn"
+
+# ── 顺手把 flutter 的**持久配置**对齐（2026-09-30 踩出来的） ──────────────────
+# `~/.config/flutter/settings` 里的 `jdk-dir` / `android-sdk` **优先级高于上面这些环境变量**。
+# 搬去 SSD 时旧路径留在了里面（jdk-dir 指向已删除的 `~/development/jdk-17`），后果是：
+#     release 构建报 "JAVA_HOME is set to an invalid directory"，
+#     而**六层门禁全绿** —— verify.sh 一行 Gradle 都不跑。
+# 所以：真的不一致才动它（正常情况下一次 flutter 调用都不会发生）。
+FLUTTER_SETTINGS="$HOME/.config/flutter/settings"
+if [ -f "$FLUTTER_SETTINGS" ] && command -v flutter >/dev/null 2>&1; then
+  FLUTTER_TOOLCHAIN="$(node -e '
+    try {
+      const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+      process.stdout.write([s["jdk-dir"] || "", s["android-sdk"] || ""].join("|"));
+    } catch (e) {}
+  ' "$FLUTTER_SETTINGS" 2>/dev/null)"
+  if [ "$FLUTTER_TOOLCHAIN" != "$JAVA_HOME|$ANDROID_SDK_ROOT" ]; then
+    flutter config --jdk-dir="$JAVA_HOME" --android-sdk="$ANDROID_SDK_ROOT" >/dev/null 2>&1
+    echo "    （flutter 的持久配置原本指向别处，已对齐到 SSD）"
+  fi
+fi
 
 echo "✓ Flutter/Android 环境已就绪（依赖在 SSD）"
 echo "    flutter  → $(command -v flutter)"

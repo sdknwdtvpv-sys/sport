@@ -1,7 +1,7 @@
 name: lianleme
 description: 练了么 —— 一次点击记一组的力量训练记录工具
 publish_to: 'none'
-version: 1.19.0+21
+version: 1.20.0+22
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -18,7 +18,8 @@ environment:
 #     所以隐私政策里「只申请 INTERNET 一项权限」那句话仍然成立。
 #   * gal —— 存到系统相册。Android 10+ 走 MediaStore 免权限；
 #     Android 9 及以下需要 WRITE_EXTERNAL_STORAGE，因此在 AndroidManifest 里
-#     声明时带了 `android:maxSdkVersion="28"`，新系统上看不到这条权限。
+#     声明时带了 `android:maxSdkVersion="29"`，新系统上看不到这条权限。
+#     （原来这里写的是 28 —— 2026-09-30 用 aapt2 核打包后的合并 manifest 时改正。）
 #
 #   为什么不用自写平台通道：那要同时写 Kotlin 与 Swift 两套，
 #   而 iOS 那一半在本机**无法验证**（只有 Command Line Tools，没有完整 Xcode）。
@@ -30,6 +31,7 @@ dependencies:
   drift_flutter: ^0.3.1
   share_plus: ^13.3.0
   gal: ^2.3.3
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:
