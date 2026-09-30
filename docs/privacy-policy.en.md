@@ -30,7 +30,7 @@ paths, verification commands) and would look wrong on a public page or inside th
 | App | **LianLeMe (练了么)**, Android package `com.sdknwdtvpv.lianleme` |
 | Operator | **Elliot.LI** (individual developer) |
 | Contact | **https://github.com/sdknwdtvpv-sys/sport/issues** |
-| Effective date | **date of first release** (to be filled in when publishing) |
+| Effective date | **the date of first release** |
 
 <!-- These three are **required public information** (who processes your data, how to reach us,
 from which date this applies), so they sit outside the internal block. -->

@@ -11,6 +11,8 @@
 ///   2. **可达性**：从「我」页两次点击能到；备案号没填时那一行不许出现
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/app_info.dart';
@@ -94,6 +96,30 @@ void main() {
       await tester.pumpWidget(_wrapPolicy(loader: () async => throw StateError('缺资产')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('privacy-error')), findsOneWidget);
+    });
+  });
+
+  group('随包政策是给**用户**看的，不许夹带"写给我们自己"的话', () {
+    // 为什么单列一条：政策正文里那些「（上架时替换为实际日期）」是给我们自己的待办，
+    // 而 app/assets/privacy-policy.txt 是**用户会读到**的（2026-09-30 在真机上翻政策时
+    // 当场看见了那一句 —— 它就是这么漏出去的）。源码 docs/*.md 的 `<!-- 内部 -->` 块
+    // 允许写这类话，所以这里只守**随包资产**。
+    // ⚠️ 这里是**读磁盘**而不是 `rootBundle`：实测在这份文件的 widget 测试之后，
+    // 无论 `test()` 直接读还是 `testWidgets` + `runAsync`，资产通道都会**挂住**
+    // （30s 超时 / did not complete）—— 而"有没有夹带内部记号"这条只需要文件内容。
+    // 资产**真的随包**这件事由本文件第一条测试（binding 读得到）+ 产物核对守着，不靠这一条。
+    test('资产里没有内部记号（上架时替换 / 待填 / 占位 / TODO…）', () {
+      final File f = File('assets/privacy-policy.txt');
+      expect(f.existsSync(), isTrue, reason: '读不到 ${f.path}（flutter test 的工作目录是 app/）');
+      final String text = f.readAsStringSync();
+      for (final String marker in <String>['上架时替换', '待填', '占位', 'TODO', 'FIXME']) {
+        expect(text.contains(marker), isFalse,
+            reason: '随包政策里出现了「$marker」—— 那是写给我们自己的说明，用户会读到');
+      }
+      // 生效日期那一行必须在，而且必须是一句**对用户成立**的话
+      expect(text.contains('生效日期'), isTrue);
+      expect(text.contains('首次发布之日'), isTrue,
+          reason: '生效日期要写成用户看得懂的一句话（发布前是"首次发布之日"）');
     });
   });
 

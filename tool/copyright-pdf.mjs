@@ -433,6 +433,28 @@ const src = sourceHtml();
  *
  * 目录不存在（例如干净克隆上）时跳过 —— dist/ 是 .gitignore 的。
  */
+/**
+ * 生成完之后**自动清掉旧版本**。
+ *
+ * 为什么由工具来做而不是让人记得删：这个目录是**它自己拥有**的产物目录，而"留着上一版"
+ * 已经在 2026-09-30 让提交材料差一点拿错（当时目录里躺着 V1.28.0 与 V1.31.0 两份）。
+ * 切版时生成新版 + 删旧版应当是**同一个动作**，否则迟早会忘 —— 忘了的代价是把旧版本的
+ * 材料交上去（页眉的版本号与申请表对不上）。
+ */
+function pruneStaleDist() {
+  if (!existsSync(OUT)) return [];
+  const current = `V${APP_VERSION}`;
+  const removed = [];
+  for (const f of readdirSync(OUT)) {
+    if (/V\d+\.\d+\.\d+/.test(f) && !f.includes(current)) {
+      rmSync(join(OUT, f));
+      removed.push(f);
+    }
+  }
+  return removed;
+}
+
+/** 只查不删（`--check-docs` 用）：文档守卫不该有副作用。 */
 function checkStaleDist() {
   const problems = [];
   if (!existsSync(OUT)) return problems;
@@ -442,7 +464,7 @@ function checkStaleDist() {
   for (const f of stale) {
     const v = f.match(/V\d+\.\d+\.\d+/)[0];
     problems.push(`dist/copyright/${f}：版本 ${v} 不是当前版本（${current}）—— `
-      + '提交材料是从这个目录拿的，留着旧的就有"拿错一份"的风险，删掉或重出');
+      + '提交材料是从这个目录拿的，留着旧的就有"拿错一份"的风险，重跑一次本工具会自动清掉');
   }
   return problems;
 }
@@ -458,6 +480,11 @@ if (argv.includes('--check-docs')) {
   if (problems.length) { for (const p of problems) console.log(`✗ ${p}`); process.exit(1); }
   console.log('✓ 说明书与申请表里的源程序量与实际一致，dist/copyright 里没有旧版本残留');
   process.exit(0);
+}
+
+const pruned = pruneStaleDist();
+if (pruned.length) {
+  console.log(`  已清掉旧版本产物 ${pruned.length} 个：${pruned.join('、')}`);
 }
 
 if (!owner) {

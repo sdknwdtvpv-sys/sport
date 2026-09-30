@@ -404,6 +404,32 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑩之三 交给用户看的文本里**不许留"给我们自己看的说明"**
+  //
+  // 为什么单列一条：政策正文里那些"（上架时替换为实际日期）"是我们写给自己的待办，
+  // 而生成物（`app/assets/privacy-policy.txt`、商店页 HTML）是**用户会读到**的。
+  // 2026-09-30 在真机上翻政策时当场看见那一句 —— 它就是这么漏出去的。
+  // 源码（docs/*.md）里的 `<!-- 内部 -->` 块允许写这类话，所以**只扫生成物**。
+  {
+    const MARKERS = ['上架时替换', '待填', '占位', 'to be filled in', 'TODO', 'FIXME'];
+    const generated = [
+      ['app/assets/privacy-policy.txt', join(ROOT, 'app/assets/privacy-policy.txt')],
+      ['app/assets/collection-list.txt', join(ROOT, 'app/assets/collection-list.txt')],
+      ['store-assets/privacy/index.html', join(ROOT, 'store-assets/privacy/index.html')],
+      ['store-assets/privacy/en.html', join(ROOT, 'store-assets/privacy/en.html')],
+    ];
+    for (const [label, p] of generated) {
+      if (!existsSync(p)) continue;
+      const text = readFileSync(p, 'utf8');
+      for (const m of MARKERS) {
+        if (text.includes(m)) {
+          errors.push(`${label} 里出现了「${m}」—— 那是写给我们自己的说明，`
+            + '而这份文本是给用户看的（真机上翻政策时就会读到它）');
+        }
+      }
+    }
+  }
+
   // ⑪ 中英两版政策的**结构**必须一一对应（2026-09-30 补）
   //
   // 为什么单列一条：这份政策有中英两份**正文**，它们靠"同源生成"只保证了渲染方式一致，
