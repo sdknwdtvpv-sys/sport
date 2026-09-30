@@ -205,9 +205,17 @@ fi
 # 而 v1.26.0 干脆漏写）—— 人翻不出来，机器一眼能查。
 if node -e '
   const fs = require("fs");
-  const vs = [...fs.readFileSync("CHANGELOG.md", "utf8")
-    .matchAll(/^## v(\d+)\.(\d+)\.(\d+)/gm)]
+  const text = fs.readFileSync("CHANGELOG.md", "utf8");
+  const vs = [...text.matchAll(/^## v(\d+)\.(\d+)\.(\d+)/gm)]
     .map((m) => [Number(m[1]), Number(m[2]), Number(m[3])]);
+  // 别只看行首那些：**粘到上一行去的标题**（少一个换行）在 `^## v` 眼里根本不存在，
+  // 于是"降序"照样成立 —— 2026-09-30 就是这么漏掉一个真缺陷的：
+  // `…→ 1.27.2+36。## v1.27.1 · iOS 上「存相册」…` 挤在同一行，守护全程绿灯。
+  const anywhere = [...text.matchAll(/## v(\d+)\.(\d+)\.(\d+)/g)].length;
+  if (anywhere !== vs.length) {
+    console.log(`有 ${anywhere - vs.length} 个版本小节没从行首开始（被粘到上一行？少了个换行）`);
+    process.exit(1);
+  }
   for (let i = 1; i < vs.length; i++) {
     const a = vs[i - 1], b = vs[i];
     const desc = a[0] !== b[0] ? a[0] > b[0] : (a[1] !== b[1] ? a[1] > b[1] : a[2] >= b[2]);
@@ -235,6 +243,24 @@ else
   echo "${GREEN}✓${OFF} README 顶部的版本号（v$README_VER）与 app_info.dart 一致"
 fi
 echo
+
+# docs/your-todo.md 顶部「更新于 …（vX.Y.Z）」是**唯一的待办入口**自己的时间戳。
+# 它漂过：写着 v1.23.1，而仓库已经 1.27.2 —— 一份"待办清单"自己都过期了，最伤信任。
+# 与 README 那条同一个模式，真源同样是 app/lib/core/app_info.dart。
+# ⚠️ 括号是**全角**的（中文文档），第一版写成 ASCII 括号 → 一条都匹配不上，
+# 而"匹配不上"当时只报警告不报错 —— 于是这条守卫**静默失效**，门禁照样全绿。
+# 所以这里两处都改了：括号改全角，且**匹配不上直接判红**（找不到时间戳 = 这条守卫死了，
+# 不是"一切正常"）。
+TODO_VER="$(grep -oE '更新于 [0-9-]+（v[0-9]+\.[0-9]+\.[0-9]+）' docs/your-todo.md 2>/dev/null | head -1 | sed 's/.*（v\(.*\)）/\1/')"
+if [ -z "$TODO_VER" ]; then
+  echo "${RED}✗ docs/your-todo.md 里找不到「更新于 YYYY-MM-DD（vX.Y.Z）」（全角括号）—— 这条守卫已经失效，别当成通过${OFF}"
+  fail=1
+elif [ "$TODO_VER" != "$APP_VER" ]; then
+  echo "${RED}✗ docs/your-todo.md 顶部写的是 v$TODO_VER，实际版本是 $APP_VER${OFF}"
+  fail=1
+else
+  echo "${GREEN}✓${OFF} docs/your-todo.md 的时间戳（v$TODO_VER）与 app_info.dart 一致"
+fi
 
 # iOS 可用性：每个直接依赖都得声明支持 iOS。
 # 挡的是"顺手加一个只有 Android 实现的插件" —— 它在本机（只有安卓真机）完全正常，
