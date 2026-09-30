@@ -30,6 +30,19 @@ source ~/HARNESS/lianleme/flutter-env.sh   # 跑道上的副本（内容相同�
 环境脚本导出的变量：`FLUTTER_ROOT` / `JAVA_HOME` / `ANDROID_SDK_ROOT`（= `ANDROID_HOME`）
 / `GRADLE_USER_HOME` / `PUB_CACHE` / `PATH`。
 
+## Node 的版本要求（两个门槛，别混）
+
+| 用途 | 最低版本 | 为什么 |
+|---|---|---|
+| 契约层（seed 构建 / 向量 / 场景 eval / 各 tool） | **18+** | `verify.sh` 会检查这一条 |
+| `server/backend*.mjs` 与 `app/test/cloud_backup_test.dart` | **22.5+** | 服务端用 **`node:sqlite`**，那是 Node 22.5 才有的内置模块 |
+
+第二个门槛容易漏：`app/test/cloud_backup_test.dart` 会**真的把服务端拉起来**跑云备份的
+端到端，所以**跑 flutter test 的那台机器也得有够新的 Node**。
+CI 的 `app` job 一开始就漏了（只给契约层装了 Node）—— 现在两个 job 都钉 `node-version: '22'`。
+测试里也加了前置检查：Node 不够新会**直接说清原因**，而不是让服务端起不来、
+再以"端口等待超时"的样子报出来。
+
 ## ⚠️ 目录名必须是 ASCII —— 这是踩过的坑，不是洁癖
 
 你最初要的名字是「harness 依赖」。它**直接把 Android 构建弄坏了**：

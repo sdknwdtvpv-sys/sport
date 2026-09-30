@@ -198,6 +198,31 @@ void main() {
     final List<String> serverLog = <String>[];
 
     setUpAll(() async {
+      // 先把**前置条件**查清楚再起服务端。
+      //
+      // 没有这一步的话，"Node 太旧"会长成"端口等不到"的样子：服务端 import
+      // `node:sqlite` 失败直接退出，测试在 30 秒超时后报"极薄后端没起来"，
+      // 看起来像备份功能坏了。CI 上（没装够新的 Node）就会踩这个。
+      final ProcessResult nodeVersion;
+      try {
+        nodeVersion = await Process.run('node', <String>['-v']);
+      } on ProcessException catch (e) {
+        // `fail()` 的返回类型是 Never，所以这后面不需要 return（写了反而是死代码）
+        fail('这一组测试需要 node（跑真实的极薄后端）：${e.message}');
+      }
+      final String v = (nodeVersion.stdout as String).trim();
+      final List<int> parts = v
+          .replaceFirst('v', '')
+          .split('.')
+          .map((String x) => int.tryParse(x) ?? 0)
+          .toList();
+      final int major = parts.isNotEmpty ? parts[0] : 0;
+      final int minor = parts.length > 1 ? parts[1] : 0;
+      if (major < 22 || (major == 22 && minor < 5)) {
+        fail('这一组测试需要 Node ≥ 22.5（服务端用 node:sqlite），当前是 $v。'
+            'CI 的 app job 里要有 actions/setup-node（见 .github/workflows/ci.yml）。');
+      }
+
       final String script = _findBackendScript();
       tmp = await Directory.systemTemp.createTemp('lianleme-e2e-');
       server = await Process.start('node', <String>[

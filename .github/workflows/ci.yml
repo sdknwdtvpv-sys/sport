@@ -20,9 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # 钉 **22**（与本地验证时用的 22.22 同一大版本）：这一层的服务端自检用
+      # `node:sqlite`，那是 Node 22.5+ 才有的东西，版本漂了会莫名其妙地红。
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: 重建动作库种子（校验失败即退出非 0）
         run: node seed/build.mjs
@@ -49,6 +51,16 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v5
+
+      # ⚠️ 这个 job 也需要 Node —— 别以为只有契约层要。
+      # `app/test/cloud_backup_test.dart` 会**真的把 server/backend.mjs 拉起来**
+      # 跑一遍云备份的端到端（建号 → 加密上传 → 找回），而那个服务端用 `node:sqlite`。
+      # `node:sqlite` 是 **Node 22.5+** 才有的：跑在旧 Node 上会是
+      # "Cannot find module 'node:sqlite'" → 服务端起不来 → 测试在端口等待上超时，
+      # 报出来的却像是"备份坏了"。所以这里显式钉一个够新的版本。
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
 
       - uses: subosito/flutter-action@v2
         with:

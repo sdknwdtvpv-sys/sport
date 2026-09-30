@@ -6,9 +6,26 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
-## 未切版（v1.22.0 之后的改动，尚未打 tag）
+## v1.22.1 · CI 的 app job 漏了 Node（会红）+ 商店产物 AAB 的真相
 
-> 按版本号策略（本文件开头那条）：只改文档与工具**不切版**，这些改动并进下一次改 `app/` 的发布。
+这一版切的是 `app/`（一个测试文件加了前置检查），按版本号策略把上一批**只改文档与工具**
+的改动一并并进来 —— 原话是"那些改动并进下一次改 `app/` 的发布"。
+
+### CI 的 app job 里没有 Node，而那里现在真的需要它
+
+`app/test/cloud_backup_test.dart` 会**真的把 `server/backend.mjs` 拉起来**跑云备份的
+端到端，而那个服务端用 **`node:sqlite`** —— 那是 **Node 22.5+** 才有的内置模块。
+CI 里只有契约层装了 Node（20），跑 `flutter test` 的那个 job **没有**。
+后果会长得很误导：服务端 `Cannot find module 'node:sqlite'` 直接退出，
+测试在端口等待上超时，报出来像是"备份坏了"。
+
+两处修：
+
+* `.github/workflows/ci.yml`：两个 job 都钉 `node-version: '22'`
+  （与本地验证用的 22.22 同一大版本 —— 上一批刚吃过"环境漂了、门禁却绿"的亏）。
+* 测试里加**前置检查**：Node 不存在或低于 22.5 时**直接说清原因**，
+  而不是让服务端起不来、再以超时收场。`fail()` 的返回类型是 `Never`，
+  所以后面不能写 `return`（第一版写了，`dart analyze --fatal-infos` 当场报死代码）。
 
 ### 商店产物（AAB）其实一直是好的，只是 flutter 会假报失败
 
@@ -48,8 +65,19 @@ apkanalyzer: line 173: test: : integer expression expected
   （没有真 keystore 时必须带 `ORG_GRADLE_PROJECT_allowDebugSigning=true`）、
   补上 `check-aab.mjs` 这一步，并把"AAB 未在本版重跑"换成核过的实况。
 
-顺带把 `dist/copyright/` 的软著鉴别材料按当前版本重新生成（V1.22.0，60 页 / A4 纵向，
-`dist/` 不入库）。
+### 验证
+
+六层门禁全绿：**685 个测试**、变异 **24 杀 / 0 存活 = 100%**、`dart analyze --fatal-infos` 零问题。
+`.aab` 用新的 `node tool/check-aab.mjs` 核过：117 条目 / 55.9 MB / 三 ABI 齐全 / 版本号一致。
+真机 Redmi `flourite`（Android 16 / API 36）覆盖安装 1.22.0 → **1.22.1**，冷启动无异常。
+
+顺带把 `dist/copyright/` 的软著鉴别材料按当前版本重新生成（**V1.22.1**，128 文件 / 33,596 行，
+60 页 A4 纵向），并删掉 V1.12.0 / V1.17.0 / V1.22.0 的旧 PDF —— 那里页眉是旧版本号，
+和申请表对不上，混在一起容易交错提交（`dist/` 不入库）。
+
+> 关于 CI 的一句实话：我**没法在本地验证 GitHub Actions**。这两处改动是按
+> "Node 22.5+ 才有 `node:sqlite`"这条硬事实推出来的，下一次 push 会给出答案 ——
+> 如果还是红的，第一步就是看 app job 里 `node -v` 到底是多少。
 
 ## v1.22.0 · 「删除全部数据」现在会问云端那一声
 
