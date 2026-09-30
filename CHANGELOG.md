@@ -93,6 +93,40 @@ cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
 
 > 只改文档与工具、不切版。
 
+### 补上一张**一直缺着的**商店素材：Google Play 特征图片（1024×500）
+
+Play 商店条目顶部那条横幅是**必填**，规格是死的：**精确 1024×500**、JPEG 或 24 位 PNG
+（不带透明）。我们此前只有图标与截图 —— **这张图根本没做过**，而在 Play Console 里
+不填就提交不了。现在补上：
+
+* `tool/gen-feature-graphic.py`（Pillow，与 `gen-icons.py` 同一套品牌 token：
+  `#0B0B0D` 底 + `#D8FF47` volt + `#12180A` 墨色），产物
+  `store-assets/feature-graphic-1024x500.png`。
+* 画的是**品牌标记 + 一句话**（左边 volt 圆角方块里的「练」，右边「练了么」+
+  「一次点击记一组」+ 一条 volt 短杠）—— Play 明确要求这张图**不要画界面、不要堆字、
+  不要号召语**（"立即下载"这类会被判违规），而且推荐位会**裁切**它，所以四周留白。
+* `tool/asset-check.mjs` 加了一条守卫：**精确 1024×500 + 不许带透明通道**。
+  两个方向都负向验证过（拿 1080×2400 的截图冒充 → 报尺寸错；换成 RGBA → 报透明错）。
+
+### 上一轮那条"第一次 iOS 构建会改 4 个文件"——**少算了一个，现在是 6 个**
+
+顺着同一个思路继续读 flutter_tools 的源码，发现
+`build_system/targets/ios.dart:742` 的 `_updateMinimumOSVersion` 会在构建时
+**往 `ios/Flutter/AppFrameworkInfo.plist` 里写 `MinimumOSVersion`** —— 那个文件也要提交。
+于是清单从 4 项变 6 项（`docs/release-admin.md` §二之四之一 已更正）。
+
+顺便核掉两条"本来会以为要发生"的惊喜：`IOSDeploymentTargetMigration` 只改**旧值**
+（8.0/9.0/11.0/12.0），我们的部署目标是 15.0、`AppFrameworkInfo.plist` 里连那个键都没有，
+所以它什么都不做；而且我们那个 plist 与当前 Flutter 模板**逐字节同形**。
+
+### 验证
+
+门禁六层全绿（693 测试、变异 24 杀 / 0 存活 = 100%）。本轮不动 `app/lib`，不切版、不重装真机。
+
+
+
+> 只改文档与工具、不切版。
+
 ### 新增 `docs/your-todo.md`：**"等你做的事"终于只有一个入口了**
 
 "还差什么、哪些必须你来做"以前散在 **7 份文档**里（release-admin / release-checklist /

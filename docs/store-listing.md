@@ -155,13 +155,14 @@
 | 素材 | 规格 | 谁做 |
 |---|---|---|
 | 应用图标 | 512×512 PNG（Google Play）；各国内商店尺寸略异 | ✅ **已做**：`store-assets/icon-512.png`（512×512、无透明） |
-| 截图 | 3–8 张；**必须来自真实 App**，不能拿 `prototype/index.html` 充数 | ✅ **11 屏已生成**（`store-assets/screenshots/`，1080×2337，Android 14）；见 [`screenshots.md`](screenshots.md) |
+| **特征图片（Feature Graphic）** | **精确 1024×500**，JPEG 或 24 位 PNG（无透明）；Play 条目顶部那条横幅，**必填** | ✅ **已做（2026-09-30 才补上，之前一直缺）**：`store-assets/feature-graphic-1024x500.png`，由 `python3 tool/gen-feature-graphic.py` 生成（品牌色与图标同源）；`tool/asset-check.mjs` 守着尺寸与透明通道 |
+| 截图 | 3–8 张（**Play 最多 8 张**）；**必须来自真实 App**，不能拿 `prototype/index.html` 充数 | ✅ **11 屏已生成**，两套尺寸：Play 用 `store-assets/screenshots-play/`（**1080×1920，9:16**），国内商店用 `store-assets/screenshots/`（1080×2400，设备真实比例）；见 [`screenshots.md`](screenshots.md) 与第五之五节 |
 | 功能视频（可选） | 15–30 秒 | ⬜ 你 |
 | 短描述 / 长描述 / 分级问卷 / 数据安全表单 | 本文第二、三、四、五节 | ✅ **已备好，你审核** |
 | 每张截图的文案 | 本文第六节 | ✅ **已写好**（8 张，对应到具体文件） |
 | 隐私政策 URL | 见 `docs/release-admin.md` 第四节 | 🟡 **静态页已生成**（`store-assets/privacy/index.html`，中文 + `en.html` 英文）；只差你选托管方式并上传 |
 | 软著源代码文档（60 页） | `node tool/copyright-export.mjs` → `dist/copyright/` | ✅ **已备好（一条命令重新生成）** |
-| 软著说明书 | [`copyright-manual.md`](copyright-manual.md) | ✅ 已起草，差 7 屏截图 |
+| 软著说明书 | [`copyright-manual.md`](copyright-manual.md) | ✅ 已成稿（6 页 PDF，界面图取自当前版本的 11 屏截图）；`dist/copyright/` 里那两份即可提交 |
 
 ## 八、软著材料
 

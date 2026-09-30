@@ -254,6 +254,26 @@ if (existsSync(pbx) && /PRODUCT_BUNDLE_IDENTIFIER = com\.example\./.test(readFil
   bad('iOS 的 bundle id 还是模板的 com.example.* —— 上架前必须改成自己的');
 }
 
+// ── Google Play 特征图片（1024×500，精确尺寸、不带透明） ──────────────────
+//
+// 它是 Play 商店条目顶部那张横幅，**必填**，而规格是死的：精确 1024×500、
+// JPEG 或 24 位 PNG（不带 alpha）。我们直到 2026-09-30 才发现这张图**根本没做**
+// （只有图标与截图）—— 所以和图标一样钉住：尺寸和透明通道都不许错。
+const feature = join(ROOT, 'store-assets/feature-graphic-1024x500.png');
+if (!existsSync(feature)) {
+  bad('缺少 Google Play 特征图片 store-assets/feature-graphic-1024x500.png'
+    + '（跑 python3 tool/gen-feature-graphic.py 生成）');
+} else {
+  const info = pngInfo(feature);
+  if (info.width !== 1024 || info.height !== 500) {
+    bad(`特征图片尺寸是 ${info.width}×${info.height}，Play 要求**精确 1024×500**`);
+  } else if (info.hasAlpha) {
+    bad('特征图片带透明通道 —— Play 要求 JPEG 或 24 位 PNG（无 alpha）');
+  } else {
+    ok.push('Google Play 特征图片：1024×500、无透明通道');
+  }
+}
+
 // ── 报告 ─────────────────────────────────────────────────────────────────
 console.log('练了么 · 发行资源自检（图标 / 启动图 / 应用名）\n');
 for (const m of ok) console.log(`  ${m}`);

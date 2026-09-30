@@ -136,13 +136,20 @@ cocoapods.dart:307-310
 
 | 文件 | 会发生什么 | 要不要提交 |
 |---|---|---|
-| `ios/Flutter/Debug.xcconfig`、`Release.xcconfig` | 被 Flutter 自动加一行 `#include? "Pods/…"` | **要**（不然下次构建又会被改一遍） |
+| `ios/Flutter/Debug.xcconfig`、`Release.xcconfig` | 被 Flutter 自动加一行 `#include? "Pods/…"`（`cocoapods.dart:303-310`） | **要**（不然下次构建又会被改一遍） |
+| `ios/Flutter/AppFrameworkInfo.plist` | 被 Flutter 写入 `MinimumOSVersion`（`build_system/targets/ios.dart:742` 的 `_updateMinimumOSVersion`） | **要** |
 | `ios/Podfile` | 由 `pod install` 新建 | **要**（团队/CI 都靠它复现依赖） |
 | `ios/Podfile.lock` | 由 `pod install` 新建 | **要**（锁版本；不提交等于每次解析出不同版本） |
 | `ios/Runner.xcworkspace/contents.xcworkspacedata` | `pod install` 会往工作区里加 `Pods/Pods.xcodeproj` 引用 | **要** |
 | `ios/Pods/`、`Flutter/Generated.xcconfig`、`Flutter/ephemeral/` | 生成物 | **不要**（`ios/.gitignore` 已经忽略了） |
 
-也就是说：**装好 Xcode + CocoaPods 之后的第一次构建，会留下 4 个需要提交的改动**，
+> 顺带核过两条**不会**发生的"惊喜"：① `IOSDeploymentTargetMigration` 只改**旧值**
+> （8.0/9.0/11.0/12.0），我们的 `IPHONEOS_DEPLOYMENT_TARGET = 15.0` 与
+> `AppFrameworkInfo.plist` 里根本没有这个键，所以它什么都不做；
+> ② 我们的 `AppFrameworkInfo.plist` 与当前 Flutter 模板**逐字节同形**
+> （模板这版确实不含 `MinimumOSVersion`，是构建时才写进去的）。
+
+也就是说：**装好 Xcode + CocoaPods 之后的第一次构建，会留下 6 个需要提交的改动**，
 这是正常的、预期的。不写清楚的话，下一次 `git status` 会让人以为"谁动了工程文件"。
 
 ## 二之四之二、依赖的 iOS 可用性（静态核过，2026-09-30）
