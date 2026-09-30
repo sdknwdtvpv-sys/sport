@@ -68,6 +68,24 @@
 `### 5.5 Complaints and reports` —— 按同一个约定（三之五 ↔ 3.5）英文应该是 **5.2**。
 已改。这类不一致单看两份文件都不会觉得有问题，只有横着对才看得见。
 
+### 同版追加：商店材料与代码的**身份一致性**守卫（两份材料此前没有任何对账）
+
+`docs/store-listing.md`（国内/Play）与 `docs/store-listing-ios.md`（App Store）是**手写**的，
+彼此之间、以及与代码之间**没有任何检查**。也就是说：改了 `applicationId`（比如换成公司域名）、
+或材料里手打错一个字母，都要等提交时被商店打回才发现。
+
+补一条守卫（`tool/asset-check.mjs`）：以代码为真源 —— 安卓 `build.gradle.kts` 的
+`applicationId`、iOS `project.pbxproj` 的 `PRODUCT_BUNDLE_IDENTIFIER`、`strings.xml` 的
+`app_name` —— 要求：**两端 bundle id 一致**（「双端先上」意味着同一个应用）、
+两份商店材料里都出现这个 id 与应用名。负向验证三条：材料里 id 打错 → 红；
+iOS bundle id 改成别的域名 → 红（两端不一致）；`strings.xml` 改名而材料没改 → 红。
+
+⚠️ 这条守卫是**被负向验证逼着改好的**：第一版用 `text.includes(appId)` 判断，
+而 `com.xxx.lianlemee` **包含** `com.xxx.lianleme` —— 多打一个字母照样"通过"。
+改成"把文档里所有 `com.*` 标识符抠出来逐个精确比对"之后才真的守得住。
+（顺带记一笔：这是本项目第二次栽在"加后缀/多打一字母"的负向验证上 —— 上回是正则那种。
+ 教训：**mutate 要做成"不再包含原值"，否则测的是自己的幻觉**。）
+
 版本 1.30.0+39 → 1.31.0+40。
 
 ## v1.30.0 · 锁竖屏：横屏下首页本来是坏的（实测）

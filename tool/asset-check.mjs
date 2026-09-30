@@ -415,6 +415,70 @@ if (!existsSync(MANIFEST)) {
   }
 }
 
+// ── 身份一致性：两端 + 两份商店材料必须是**同一个应用** ──────────────────
+//
+// 2026-09-30 补。此前没有任何东西把"代码里的应用身份"与"商店材料里写的"绑起来：
+// 改了 `applicationId`（比如换成公司域名）、或商店材料里手滑打错一个字母，
+// 都要等到提交时被商店打回才发现。而两份商店材料是**手写**的、彼此也没有对账。
+//
+// 真源各一处：安卓 `build.gradle.kts` 的 applicationId、
+// iOS `project.pbxproj` 的 PRODUCT_BUNDLE_IDENTIFIER、安卓 `strings.xml` 的 app_name。
+const gradlePath = join(ROOT, 'app/android/app/build.gradle.kts');
+const stringsPath = join(ROOT, 'app/android/app/src/main/res/values/strings.xml');
+const gradleSrc = existsSync(gradlePath) ? readFileSync(gradlePath, 'utf8') : '';
+const stringsSrc = existsSync(stringsPath) ? readFileSync(stringsPath, 'utf8') : '';
+const appIdMatch = gradleSrc.match(/applicationId\s*=\s*"([^"]+)"/);
+const appNameMatch = stringsSrc.match(/<string name="app_name">([^<]+)<\/string>/);
+
+if (!appIdMatch) {
+  bad('读不到 app/android/app/build.gradle.kts 里的 applicationId（措辞变了？检查要跟着改）');
+} else {
+  const appId = appIdMatch[1];
+  // iOS 侧：pbxproj 里 PRODUCT_BUNDLE_IDENTIFIER 出现多次（Runner 与 RunnerTests），
+  // 取**不带 .RunnerTests 后缀**的那个才是主 target。
+  const pbxSrc = existsSync(pbx) ? readFileSync(pbx, 'utf8') : '';
+  const iosIds = [...pbxSrc.matchAll(/PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);/g)]
+    .map((m) => m[1].trim())
+    .filter((v) => !v.includes('RunnerTests'));
+  if (!iosIds.length) {
+    bad('读不到 iOS 的 PRODUCT_BUNDLE_IDENTIFIER —— 两端身份对账失效了');
+  } else if (iosIds[0] !== appId) {
+    bad(`两端 bundle id 不一致：安卓 ${appId} / iOS ${iosIds[0]} —— `
+      + '「双端先上」意味着同一个应用，两端身份必须一样');
+  } else {
+    ok.push(`应用身份：两端 bundle id 一致（${appId}）`);
+  }
+
+  // 两份商店材料里都 must 出现这个 id 与应用名
+  for (const doc of ['docs/store-listing.md', 'docs/store-listing-ios.md']) {
+    const full = join(ROOT, doc);
+    if (!existsSync(full)) { bad(`缺 ${doc}`); continue; }
+    const text = readFileSync(full, 'utf8');
+    // ⚠️ 用 `includes` 是不够的：`com.xxx.lianlemee` **包含** `com.xxx.lianleme`，
+    // 少打一个字母/多打一个字母都照样"通过"（负向验证时抓到的）。
+    // 所以把文档里所有 `com.*` 形式的标识符抠出来，**逐个**要求它等于 appId
+    // （允许 appId 后面接 .RunnerTests 这种明确的子标识）。
+    const tokens = [...new Set([...text.matchAll(/\bcom\.[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)+/g)]
+      .map((m) => m[0]))];
+    if (!tokens.length) {
+      bad(`${doc} 里没有写 bundle id/包名 ${appId}（商店表单必填）`);
+    }
+    for (const t of tokens) {
+      if (t !== appId && t !== `${appId}.RunnerTests`) {
+        bad(`${doc} 里出现了一个不是本应用身份的标识符「${t}」（应为 ${appId}）——`
+          + ' 商店表单里打错一个字母会被打回');
+      }
+    }
+    if (appNameMatch && !text.includes(appNameMatch[1])) {
+      bad(`${doc} 里没有出现应用名「${appNameMatch[1]}」—— 与 strings.xml 不一致`);
+    }
+  }
+}
+
+if (!appNameMatch) {
+  bad('读不到 app/android/app/src/main/res/values/strings.xml 里的 app_name');
+}
+
 // ── Google Play 特征图片（1024×500，精确尺寸、不带透明） ──────────────────
 //
 // 它是 Play 商店条目顶部那张横幅，**必填**，而规格是死的：精确 1024×500、
