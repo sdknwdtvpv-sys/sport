@@ -180,7 +180,7 @@ adb -s emulator-5554 install -r "dist/练了么-v<版本>.apk"
 |---|---|---|
 | 常规竖屏 1080×2400 | 默认 | ✅ 11/11、0 溢出 |
 | **横屏** 2400×1080 | `adb shell wm size 2400x1080` | ❌ **首页 `RenderFlex overflowed by 80px`**（另有 44px 一处），入口文字与底部导航重叠 —— **已用"锁竖屏"修掉**（v1.30.0，两端各一条守卫） |
-| **iPad Pro 12.9 吋** 2048×2732（≈4:3） | `wm size 2048x2732` + `wm density 320` | ⚠️ 不崩、0 溢出，但**是拉长的手机布局**（大按钮变通栏、内容靠左、大片空白）→ 建议 `TARGETED_DEVICE_FAMILY = "1"`；证据图 `docs/images/ipad-width-*.png` |
+| **iPad Pro 12.9 吋** 2048×2732（≈4:3） | `wm size 2048x2732` + `wm density 320` | ⚠️ 不崩、0 溢出，但**是拉长的手机布局**（大按钮变通栏、内容靠左、大片空白）→ **已据此拍板只支持 iPhone**（`TARGETED_DEVICE_FAMILY = "1"`，2026-09-30，见 `docs/release-admin.md`）；证据图 `docs/images/ipad-width-*.png` |
 | **系统浅色模式** | `adb shell cmd uimode night no` | ✅ 11/11、0 溢出；App 仍是深色（与 iOS 的 `UIUserInterfaceStyle=Dark` 一致），没有白底/白闪 |
 | **大字号** 1.3× | `adb shell settings put system font_scale 1.3` | ✅ 11/11、0 溢出；长句正常换行（截图里「每个动作用它自带的休息时长……」折成两行） |
 | **小屏** 720×1280 @320dpi | `wm size 720x1280` + `wm density 320` | ✅ 11/11、0 溢出 |

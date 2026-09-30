@@ -129,7 +129,7 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 | **iPhone 6.9"** | **1320×2868**（8 位 RGB、无 alpha） | ✅ **13 张已就绪**：`store-assets/screenshots-ios/`（2026-09-30 于 v1.32.0 重出：iPhone 17 Pro Max 模拟器 iOS 27.0，干净安装那一跑，13 张 / 0 步失败；出图后过 `tool/flatten-png.mjs` 压平 —— iOS 模拟器给的是 **16 位 RGBA**） |
 | iPhone 6.5" | 1284×2778 或 1242×2688 | ⬜ 未出。按第三方整理的规格，**6.9" 或 6.5" 二选一即可**，其余档位由 App Store Connect 自动降采样（见下面的口径说明） |
 | iPhone 5.5" | 1242×2208 | ⬜ 未出（同上，规格里是**可选**档） |
-| iPad 13" | 2064×2752 | ⬜ **取决于是否声明支持 iPad**（见 `docs/release-admin.md` §二之四 的待拍板项）—— 若改成"只支持 iPhone"，这一档就不需要 |
+| iPad 13" | 2064×2752 | ➖ **不需要**（2026-09-30 拍板：`TARGETED_DEVICE_FAMILY = "1"`，**只支持 iPhone**；`tool/check-ios-app.mjs` 里"产物含 iPad"判红，见 `docs/release-admin.md` §二之四之四） |
 | App 图标 | 1024×1024，**不带透明** | ✅ 已有（`tool/gen-icons.py` 出，`tool/asset-check.mjs` 守着） |
 | 启动屏 | 由 `LaunchScreen.storyboard` 提供，无需单独素材 | ✅ 已有（深色 + volt「练」） |
 

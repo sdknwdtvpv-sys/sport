@@ -22,6 +22,10 @@ const Map<String, String> kMuscleLabels = <String, String>{
   'shoulders': '肩',
   'arms': '手臂',
   'core': '核心',
+  // 跨库恢复出来的自定义动作**不知道**它练哪儿（备份里只存了 id→名字）。
+  // 与其随便挑一个部位（那会是假话），不如给一个明说的"未分类" —— 它不会落进任何部位筛选，
+  // 只在「全部」里出现。见 `ExerciseRepository.restoreFromBackup`。
+  'unspecified': '未分类',
   // 辅助肌群（更细）
   'lats': '背阔肌',
   'upper_back': '上背',
@@ -53,6 +57,8 @@ const Map<String, String> kEquipmentLabels = <String, String>{
   'bodyweight': '自重',
   'band': '弹力带',
   'kettlebell': '壶铃',
+  // 同上：恢复出来的自定义动作不知道用什么器械
+  'unspecified': '未分类',
 };
 
 /// 动作类别（`seed/exercises.json` 的 `category`）。

@@ -141,7 +141,7 @@ void main() {
         reason: '设置回到默认值（不是原手机的 lb）');
   });
 
-  test('备份里带了动作名，但导入时**不读它** —— 本机没有那个动作就只能显示 id', () async {
+  test('备份里带了动作名：导入时**按原 id 补建**本机缺的动作（2026-09-30 起）', () async {
     // 老手机：建一个**自定义动作**，并记一组
     final DriftLocalStore oldPhone = await seedRichDevice(db);
     final ExerciseData custom = await ExerciseRepository(db).createCustom(
@@ -182,23 +182,68 @@ void main() {
     );
     final BackupParse parsed = parseBackup(bundle.json);
     expect(parsed.error, isNull);
-    await applyBackup(newPhone, parsed);
+    // ⚠️ 2026-09-30 起行为变了（用户点头："动作名表**用起来**"）：
+    // 导入时会用备份里的名字**按原 id 补建**本机缺的动作。
+    final BackupApplyResult applied = await applyBackup(
+      newPhone,
+      parsed,
+      exercises: ExerciseRepository(db2),
+    );
 
     expect(await newPhone.allSets(), hasLength(2),
         reason: '记录本身不会丢（自定义动作那一组也在）');
-    expect(await ExerciseRepository(db2).byId(custom.id), isNull,
-        reason: '导入**不会**把缺失的动作补进本机库');
+    expect(applied.restoredExercises, 1, reason: '这一次导入应该补建 1 个动作');
 
-    // 界面上的名字是按 `names[id] ?? id` 取的（progress / training_stats / CSV 都是这个写法）
+    final ExerciseData? restored = await ExerciseRepository(db2).byId(custom.id);
+    expect(restored, isNotNull,
+        reason: '补齐之后，历史里显示的才是他自己的动作名，而不是一串 ex_xxxxxxxx');
+    expect(restored!.name, custom.name, reason: '名字要来自备份里那张表');
+
+    // 界面上的名字是按 `names[id] ?? id` 取的（progress / training_stats / CSV 都是这个写法）——
+    // 补建之后这个兜底用不上了：查得到真名
     final List<ExerciseData> rows = await ExerciseRepository(db2).search(limit: 500);
     final Map<String, String> names2 = <String, String>{
       for (final ExerciseData r in rows) r.id: r.name,
     };
-    expect(names2[custom.id] ?? custom.id, custom.id,
-        reason: '查不到就用 id 兜底 —— 所以恢复之后这个动作在界面上显示成 '
-            '"${custom.id}" 而不是备份里那个中文名。「动作名表」目前是**只写不读**的，'
-            '设计稿里"恢复时即使动作库变了也能显示中文名"这句**没有兑现**'
-            '（要不要用起来见 docs/your-todo.md）');
+    expect(names2[custom.id] ?? custom.id, custom.name,
+        reason: '恢复后界面上显示的是备份里的中文名（设计稿那句承诺现在兑现了）');
+  });
+
+  test('补建是**幂等**的：导两遍不会多出动作，也不会覆盖已有动作', () async {
+    await seedRichDevice(db);
+    final ExerciseData custom = await ExerciseRepository(db).createCustom(
+      name: '我的壶铃摇摆', muscleGroup: 'legs', equipment: 'kettlebell',
+      weightIncrement: 4,
+    );
+    await DriftLocalStore(db).saveSet(SetRecord(
+      id: 's_custom', workoutId: 'w_custom', exerciseId: custom.id,
+      setIndex: 1, weightKg: 24, reps: 12, completedAtMs: 1000,
+    ));
+    await DriftLocalStore(db).saveWorkout(Workout(
+      id: 'w_custom', startedAtMs: 1000, endedAtMs: 2000,
+    ));
+    final BackupBundle bundle = await collectBackup(
+      store: DriftLocalStore(db), repository: ExerciseRepository(db), nowMs: 1000,
+    );
+
+    // 新手机：先导入，再**把名字改掉**，然后再导一次同一份备份
+    final AppDatabase db2 = AppDatabase(NativeDatabase.memory());
+    addTearDown(db2.close);
+    await ExerciseRepository(db2).importSeed(
+      loadJson: () => File('assets/exercises.json').readAsString(),
+    );
+    final BackupParse parsed = parseBackup(bundle.json);
+    final BackupApplyResult first = await applyBackup(
+      DriftLocalStore(db2), parsed, exercises: ExerciseRepository(db2));
+    expect(first.restoredExercises, 1);
+
+    final ExerciseData? afterFirst = await ExerciseRepository(db2).byId(custom.id);
+    expect(afterFirst!.name, custom.name);
+
+    final BackupApplyResult second = await applyBackup(
+      DriftLocalStore(db2), parsed, exercises: ExerciseRepository(db2));
+    expect(second.restoredExercises, 0,
+        reason: '第二次导入时动作已经在了 —— 不该重复建（幂等）');
   });
 
   test('动作库变了也能显示名字：备份里带了一份"动作 id → 中文名"', () async {

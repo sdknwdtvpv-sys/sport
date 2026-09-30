@@ -83,6 +83,7 @@ class BackupApplyResult {
     required this.workouts,
     required this.sets,
     required this.skippedSets,
+    this.restoredExercises = 0,
   });
 
   /// 写进库的训练次数
@@ -94,11 +95,17 @@ class BackupApplyResult {
   /// 解析时就没认出来、被跳过的组数
   final int skippedSets;
 
+  /// 这次导入**补建**了几个动作（备份里有名字、而本机没有的那些）。
+  /// 0 表示不需要补（动作本来都在），界面就不提这一句。
+  final int restoredExercises;
+
   /// 给人看的一句话
   String get summary {
     final String skipped =
         skippedSets > 0 ? '，跳过 $skippedSets 条没认出来的' : '';
-    return '已导入 $workouts 次训练 / $sets 组$skipped';
+    final String created =
+        restoredExercises > 0 ? '，补建 $restoredExercises 个本机没有的动作' : '';
+    return '已导入 $workouts 次训练 / $sets 组$created$skipped';
   }
 }
 
@@ -108,8 +115,9 @@ class BackupApplyResult {
 /// 所以同一份备份导两遍不会翻倍 —— 这一点在"云端恢复了、又手动粘一遍"时很重要。
 Future<BackupApplyResult> applyBackup(
   LocalStore store,
-  BackupParse parsed,
-) async {
+  BackupParse parsed, {
+  ExerciseRepository? exercises,
+}) async {
   for (final Workout w in parsed.workouts) {
     for (final SetRecord s in w.sets) {
       await store.saveSet(s);
@@ -117,9 +125,27 @@ Future<BackupApplyResult> applyBackup(
     // 训练行本身也要写：时长要用 started_at / ended_at
     await store.saveWorkout(w);
   }
+
+  // 记录写完了，再处理"本机缺的动作"（用户点头要的行为，2026-09-30）：
+  // 只补**这次导入的记录里真的用到**、而本机又找不到的那些 ——
+  // 备份里那张表可能列着几百个动作，全建一遍会往用户的动作库里塞一堆没碰过的东西。
+  int created = 0;
+  if (exercises != null) {
+    final Set<String> used = <String>{
+      for (final Workout w in parsed.workouts)
+        for (final SetRecord s in w.sets) s.exerciseId,
+    };
+    for (final String id in used) {
+      final String? name = parsed.exerciseNames[id];
+      if (name == null) continue; // 备份里没留名字 → 只能维持原样（显示 id）
+      if (await exercises.restoreFromBackup(id: id, name: name)) created += 1;
+    }
+  }
+
   return BackupApplyResult(
     workouts: parsed.workoutCount,
     sets: parsed.setCount,
     skippedSets: parsed.skippedSets,
+    restoredExercises: created,
   );
 }

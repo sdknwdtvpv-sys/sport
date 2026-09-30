@@ -19,8 +19,8 @@
 |---|---|
 | **Flutter 而非 RN** | 一套渲染管线，双端像素级一致。`less is more` 的设计经不起两端体验漂移，也不该维护两套 UI 分支。60fps 列表与自绘图表完全可控 |
 | **本地优先：drift (SQLite)** | 响应式查询 + schema 迁移成熟，训练中零网络依赖（见 `data-model.md` 的同步设计） |
-| **Apple Watch 用原生 Swift 扩展** | **手表独立 App 双端框架无解，必须原生**。MVP 不做手表独立 App，只做 HealthKit 读写 |
-| **Android 侧** | 对接 Health Connect，替代 HealthKit |
+| **Apple Watch 用原生 Swift 扩展** | **手表独立 App 双端框架无解，必须原生**。MVP 不做手表独立 App，**也不接 HealthKit** —— 2026-09-30 拍板推到**后续版本**（它是敏感健康数据，要走单独同意 + 政策 + 授权说明 + 审核 5.1.3，是一条独立工作流） |
+| **Android 侧** | 同理，**Health Connect 也推到后续版本**（与 iOS 同一版节奏，不同步做半套） |
 
 > **备选 RN 也完全成立** —— 训记本身就是 RN（包名 `com.trainnote.rn`），在该场景已被验证。若团队是 JS 背景，选 RN 的成本远低于切 Flutter。**这条取决于团队的人，不取决于技术优劣。**
 
@@ -169,9 +169,12 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 |---|---|---|
 | Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
 | 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v14**） |
+| **只支持 iPhone**（不承诺 iPad） | ✅ 2026-09-30 拍板 | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1"`；`tool/check-ios-app.mjs` 把"产物含 iPad"判红；依据（iPad 上只是拉长的手机版）见 `release-admin.md` §二之四之四 |
+| **CI 跑的就是门禁本身** | ✅ 2026-09-30 拍板 | `.github/workflows/ci.yml` 只有一条 `./verify.sh`；守卫 `tool/check-ci.mjs`（此前 CI 只是子集，"CI 绿 ≠ 门禁绿"） |
+| **备份只备份训练记录** | ✅ 2026-09-30 拍板（范围就此定死） | 边界由 `app/test/backup_scope_test.dart` 钉住；要做"全都要"就得同时动 format 版本 + 政策 + 隐私事实表 + 云备份 |
 | Apple Watch 原生 Swift 扩展 | ⏸ MVP 就不做 | — |
-| **HealthKit 读写** | ❌ **代码里一行都没有**（也没有 iOS 的 HealthKit 授权说明） | 已进 `your-todo.md` 第 10d 条；**建议明确改成"后续版本"** |
-| **Android 对接 Health Connect** | ❌ 同上（也没有 Android 的 health 权限声明） | 同上 |
+| **HealthKit 读写** | ⏸ **明确不做（后续版本）** —— 2026-09-30 用户拍板 | `your-todo.md` 第 5 条已结；上线材料里**不再出现"MVP 只做 HealthKit"**这种没实现的话 |
+| **Android 对接 Health Connect** | ⏸ 同上，同一版节奏 | 同上 |
 | 服务端只做三件事 | ✅（**增量同步一期有意不做**） | `backend-design.md` §五、§八 |
 | Postgres + REST | ⚠️ 实现是 `node:sqlite` + 零依赖 HTTP | 见本节上方那处改动与 `backend-design.md` §七之五 |
 | 规则引擎跑在客户端 | ✅ | `engine/progression.mjs`；向量 + 场景级 eval + 变异测试都在门禁里 |

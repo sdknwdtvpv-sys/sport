@@ -274,7 +274,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     // 落库的活儿同样在 backup_source.dart 里（与"从云端恢复"共用）
-    final BackupApplyResult applied = await applyBackup(widget.store, parsed);
+    // 把 repository 传进去：恢复到的库若缺某个动作，用备份里的名字按原 id 补建一个
+    final BackupApplyResult applied =
+        await applyBackup(widget.store, parsed, exercises: widget.repository);
     if (!mounted) return;
 
     await _load();

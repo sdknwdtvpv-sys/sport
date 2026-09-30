@@ -173,6 +173,52 @@ class ExerciseRepository {
     return (await byId(row.id))!;
   }
 
+  /// 跨库恢复时**按备份里的 id 补建**一个动作（用户点头要的行为，2026-09-30）。
+  ///
+  /// **它解决的问题**：备份里有一张 `exercise_names`（id → 名字）。恢复到的库如果**没有**这个动作
+  /// （用户自建的、或这个版本的动作库里没有），记录虽然不丢，但**动作名会退化成 `ex_xxxxxxxx`** ——
+  /// 换手机的人看到的是一串 id。补建之后，历史里显示的还是他自己的动作名。
+  ///
+  /// 三条刻意的选择：
+  ///   * **按原 id 建**（不是 `createCustom` 那种新生成 id）—— 否则记录里的 `exercise_id`
+  ///     依然指不到它，等于白建；
+  ///   * **已存在就什么都不做**（幂等）：用户可能改过名字/部位，不能拿备份里的旧名字盖回去；
+  ///   * **部位与器械写 `unspecified`（未分类）**、步长 2.5kg（起始 20kg）：备份里**没有**这两样信息，
+  ///     与其瞎猜一个部位（那会是假话），不如明说"未分类"——它不会落进任何部位筛选，只在「全部」里出现。
+  ///
+  /// 返回 true 表示这次真的建了；false 表示本来就有（或名字是空的，没建）。
+  Future<bool> restoreFromBackup({
+    required String id,
+    required String name,
+    int? nowMs,
+  }) async {
+    final String trimmed = name.trim();
+    if (trimmed.isEmpty) return false;
+    if (await byId(id) != null) return false;
+
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    await _db.into(_db.exercise).insertOnConflictUpdate(ExerciseData(
+          id: id,
+          name: trimmed,
+          nameEn: null,
+          aliases: jsonEncode(const <String>[]),
+          muscleGroup: 'unspecified',
+          secondaryMuscles: jsonEncode(const <String>[]),
+          equipment: 'unspecified',
+          category: 'strength',
+          trackType: 'weight_reps',
+          defaultRestSec: 90,
+          // 步长 > 0 就必须有起始重量（见 createCustom 里那条不变量），20kg 是保守起步值
+          defaultWeightKg: 20,
+          weightIncrement: 2.5,
+          isBuiltin: false,
+          popularity: 0,
+          createdAt: now,
+          updatedAt: now,
+        ));
+    return true;
+  }
+
   /// ⚠️ 这里的必填字段是照 db.g.dart 里的 ExerciseData 构造签名核对的。
   /// drift 的 withDefault() 只加 SQL 层 DEFAULT，Dart 数据类里这些字段仍是 required
   /// （踩过一次坑：SetRecordData 的 isPr）。

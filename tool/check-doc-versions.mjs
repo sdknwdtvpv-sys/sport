@@ -47,6 +47,19 @@ const PATTERNS = [
 ];
 const HISTORY = /历史|曾经|之前|旧|改来|当时|停在|CHANGELOG|复盘/;
 
+/**
+ * 一处版本说法要不要跳过，看**它自己周围**有没有"这是过去的事"的标记。
+ *
+ * ⚠️ 这里踩过一次坑（2026-09-30）：判据原本是**整行**匹配 HISTORY —— 而文档里的表格行很长，
+ * 行尾一句"旧行写的 59.8M 是 v1.22 那会儿的"就能把**同一行里当期的版本说法**一起放过。
+ * 结果 `release-checklist.md` 的"构建链"行写着"在 v1.32.2 上重编重核"，
+ * 而仓库已经 v1.33.0 —— 守卫全绿。现在改成看**这一处说法前后 40 个字**。
+ */
+const WINDOW = 40;
+function isHistorical(line, index, len) {
+  return HISTORY.test(line.slice(Math.max(0, index - WINDOW), index + len + WINDOW));
+}
+
 function inspect(root) {
   const problems = [];
   const { version, build } = truth(root);
@@ -57,9 +70,9 @@ function inspect(root) {
     let text;
     try { text = readFileSync(join(root, rel), 'utf8'); } catch { continue; }
     text.split('\n').forEach((line, i) => {
-      if (HISTORY.test(line)) return;
       for (const [rx, what, kind] of PATTERNS) {
         for (const m of line.matchAll(new RegExp(rx.source, 'g'))) {
+          if (isHistorical(line, m.index, m[0].length)) continue;
           checked += 1;
           const bad = (kind === 'build' && m[1] !== build)
             || (kind === 'version' && m[1] !== version)
@@ -96,6 +109,12 @@ function selftest() {
     ['重核版本过期 → 必须报', '**2026-09-30 在 v9.9.8 上重编重核**\n', false, '重核版本'],
     ['历史叙述不算（不能误报）', '首次装上真机时是 v1.0.0 / versionCode 1（历史记录）\n', true, null],
     ['"之前停在 vX"这类也不算', '这条之前停在 v1.31.0\n', true, null],
+    // ⚠️ 这一条是踩过的坑：判据原本按**整行**看有没有"历史"字样，
+    // 于是长表格行里行尾一句"旧行写的…"就能把同一行里**当期**的版本说法一起放过
+    // （`release-checklist.md` 的"构建链"行就这么绿着过期了）。
+    ['长行里别处的"旧"不能放过当期版本 → 必须报',
+      '旧行写的 59.8M/55.9M 是 v1.22 那会儿的；**2026-09-30 在 v9.9.8 上重编重核**\n', false, '重核版本'],
+    ['历史标记紧挨着这处说法 → 也算历史', '历史上装的是 v1.0.0 / versionCode 1（当时）\n', true, null],
   ];
   let bad = 0;
   for (const [label, doc, wantGreen, expect] of cases) {

@@ -268,7 +268,9 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         setState(() => _error = '云端的备份读不出来：${parsed.error}');
         return;
       }
-      final BackupApplyResult r = await applyBackup(widget.store, parsed);
+      // 同上：云端恢复也要补建本机缺的动作（否则换手机后动作名退化成 id）
+      final BackupApplyResult r =
+          await applyBackup(widget.store, parsed, exercises: widget.repository);
       if (!mounted) return;
       widget.onDataChanged?.call();
       setState(() => _notice = '已从云端恢复：${r.summary}');

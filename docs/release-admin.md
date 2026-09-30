@@ -152,8 +152,9 @@ required-reason API 就要在清单里声明理由"，并且**对着二进制扫
 就明确只支持竖屏：安卓 `android:screenOrientation="portrait"`、
 iOS 手机那份方向数组只留 Portrait。两端各有一条守卫钉着（缺一边 = 那一端转一下就坏）。
 
-**iPad 支持：实测过了，建议先只支持 iPhone**（2026-09-30）。把模拟器的分辨率与密度调到
-iPad Pro 12.9 吋的规格（`wm size 2048x2732` / `wm density 320`，约 4:3），跑完整套 11 步截图脚本：
+**iPad 支持：已拍板"只支持 iPhone"，`TARGETED_DEVICE_FAMILY = "1"`**（2026-09-30）。
+决定依据是实测：把模拟器的分辨率与密度调到 iPad Pro 12.9 吋的规格
+（`wm size 2048x2732` / `wm density 320`，约 4:3），跑完整套 11 步截图脚本：
 
 | 项 | 结果 |
 |---|---|
@@ -161,9 +162,12 @@ iPad Pro 12.9 吋的规格（`wm size 2048x2732` / `wm density 320`，约 4:3）
 | 观感 | **拉伸的手机布局**：大按钮变成通栏横条、内容靠左、大片空白 |
 | 证据 | `docs/images/ipad-width-home.png`、`docs/images/ipad-width-workout.png` |
 
-也就是说 `TARGETED_DEVICE_FAMILY = "1,2"` 现在**能通过**，但商店页会写「支持 iPad」，
-而用户打开看到的是拉长的手机界面。**建议这一版改成 `"1"`**（只支持 iPhone），
-等真的做了平板布局（两栏、更大的信息密度）再开 iPad —— 那时还要补 iPad 尺寸的截图。
+原来那个 `TARGETED_DEVICE_FAMILY = "1,2"` **能通过门禁**，但商店页会写「支持 iPad」，
+而用户打开看到的是拉长的手机界面 —— 等于拿一个没验证过的承诺换一个标签。所以拍板：
+**这一版只支持 iPhone**（`project.pbxproj` 三处都改成 `"1"`），并且把这条做成了**硬要求**：
+`tool/check-ios-app.mjs` 现在看到产物里含 iPad（`UIDeviceFamily` 有 2）就**判红**
+（在此之前只是提示）。等真的做了平板布局（两栏、更大的信息密度）再开 iPad ——
+那时还要把这条判据改回去，并补 iPad 尺寸的截图。**iPad 13" 那档截图现在不需要了。**
 
 **2026-09-30 更新（工具链状态变了）**：**Xcode 27.0 已经装好**
 （`/Applications/Xcode.app`，`xcode-select` 已指向它）。现在卡住的只剩**许可证**：
@@ -276,7 +280,7 @@ cocoapods.dart:307-310
 | 版本号 | `versionCode` / `versionName` | `CFBundleVersion` / `CFBundleShortVersionString` | 都由 pubspec 的 version 生成 |
 | 出口合规 | 不涉及 | `ITSAppUsesNonExemptEncryption=false` | 已声明，免得每次提审都被问 |
 | 商店表单 | 数据安全表单（Play）/ 各商店自有表单 | **App Privacy 隐私标签** | 见 `docs/store-listing-ios.md` |
-| 设备族 | 手机（未锁方向） | **`TARGETED_DEVICE_FAMILY = "1,2"`（iPhone + iPad）** | ⚠️ 见下方待拍板 |
+| 设备族 | 手机（未锁方向） | **`TARGETED_DEVICE_FAMILY = "1"`（只支持 iPhone）** | 2026-09-30 拍板；产物核对里有硬要求（含 2 判红） |
 
 **只有 Xcode 能给的答案（2026-09-30 逐条落地）**：
 
@@ -292,19 +296,20 @@ cocoapods.dart:307-310
 > （已授权时不会白弹一次），而**被拒之后如实告知**而不是假装成功 —— 这正是小米 191 号文
 > 与 OPPO 规范那类要求想看到的行为。
 
-## 二之四之四、需要你拍板：要不要在 iPad 上跑
+## 二之四之四、iPad：**已拍板只支持 iPhone**（2026-09-30）
 
-`TARGETED_DEVICE_FAMILY = "1,2"` 是 Flutter 模板的默认值，意思是 **iPhone + iPad 都支持**。
-两条路：
+`TARGETED_DEVICE_FAMILY` 是 Flutter 模板里给的默认值 `"1,2"`（iPhone + iPad 都支持）。
+**已改成 `"1"`**：与"单手、在健身房站着用"这个定位一致，iPad 用户仍能在兼容模式
+（放大显示）下用。理由很实在：**我们从没在 iPad 上看过任何一屏**，宣布"支持 iPad"
+等于承诺一件没验证过的事；实测也只是把手机布局拉长（见上一节）。
 
-* **A（我建议）改成 `"1"`（只支持 iPhone）**：与"单手、在健身房站着用"这个定位一致；
-  iPad 用户仍能在兼容模式（放大显示）下用。**不需要 iPad 截图**，商店材料少一大块。
-  理由很实在：**我们从没在 iPad 上看过任何一屏**，宣布"支持 iPad"等于承诺一件没验证过的事。
-* **B 保持 `"1,2"`**：需要 **iPad 13" 截图**，并且要在 iPad 模拟器上逐屏走查
-  （大屏下 S4 那个 88pt 大按钮的位置、列表宽度、横屏布局都要重新看）。
+配套的两件事都做了：① `docs/store-listing-ios.md` 的截图表里 **iPad 13" 那一档标成
+"不需要"**；② `tool/check-ios-app.mjs` 里"产物含 iPad"从**提示**升级成**判红** ——
+产物说的必须和商店页说的一致，改回去必须是有意的（改代码 + 改守卫，两处一起）。
 
-它动的是**产品承诺**（商店页会写"支持 iPad"），所以**等你定**。
-`docs/store-listing-ios.md` 的截图表已按这条分叉。
+**将来要开 iPad**：先做平板布局（两栏、更大的信息密度）、在 iPad 模拟器上逐屏走查
+（大屏下 S4 那个 88pt 大按钮的位置、列表宽度、横屏布局），再补 iPad 尺寸截图，
+最后把上面那条判据改回来。
 
 **iOS 商店材料**：见 `docs/store-listing-ios.md`（与安卓那份组织方式一致，
 含 App Privacy 标签的两个变体、截图规格、审核备注）。

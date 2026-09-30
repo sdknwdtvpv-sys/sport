@@ -37,8 +37,13 @@ String backupFileName(int nowMs) {
 
 /// 把训练数据编码成备份文本。
 ///
-/// [exerciseNames] 只是**给人看的**（id → 名称）—— 导入时不依赖它，
-/// 因为它可能过期（动作被改名/删除）。真正的关联永远是 id。
+/// [exerciseNames]（id → 名称）**导入时会用到**（2026-09-30 起，用户点头要的行为）：
+/// 恢复到的库里如果缺某个动作，就用这里的名字**按原 id 补建**一个（见
+/// `ExerciseRepository.restoreFromBackup`）—— 否则历史里的动作名会退化成 `ex_xxxxxxxx`。
+///
+/// ⚠️ 它的作用**仅限"补建缺失的动作"**：已有动作一律不动（用户可能改过名字），
+/// 记录与动作的关联永远靠 id，不靠名字。
+/// 它可能过期（动作被改名/删除）—— 所以名字只用于"新建一个"，不用于"改已有的"。
 String encodeBackup({
   required List<Workout> workouts,
   required Map<String, String> exerciseNames,
@@ -81,11 +86,16 @@ String encodeBackup({
 class BackupParse {
   const BackupParse({
     this.workouts = const <Workout>[],
+    this.exerciseNames = const <String, String>{},
     this.skippedSets = 0,
     this.error,
   });
 
   final List<Workout> workouts;
+
+  /// 备份里的 `exercise_names`（id → 名字）。**导入时用它补建本机缺的动作**：
+  /// 只用名字建新行，绝不覆盖已有动作（名字可能过期）。
+  final Map<String, String> exerciseNames;
 
   /// 因为缺字段/类型不对被跳过的组数。> 0 时界面必须如实说出来。
   final int skippedSets;
@@ -142,6 +152,18 @@ BackupParse parseBackup(String text) {
   final Object? workoutsRaw = decoded['workouts'];
   if (workoutsRaw is! List) {
     return const BackupParse(error: '这不是有效的备份内容（没有 workouts 列表）');
+  }
+
+  // `exercise_names` 是**可选**的（老备份、或手抄的片段里可能没有）—— 缺了不影响导入，
+  // 只是"本机缺的动作"没法补建，动作名会退化成 id（老行为）。
+  final Map<String, String> names = <String, String>{};
+  final Object? namesRaw = decoded['exercise_names'];
+  if (namesRaw is Map) {
+    for (final MapEntry<Object?, Object?> e in namesRaw.entries) {
+      final Object? k = e.key;
+      final Object? v = e.value;
+      if (k is String && v is String && v.trim().isNotEmpty) names[k] = v;
+    }
   }
 
   final List<Workout> out = <Workout>[];
@@ -206,5 +228,5 @@ BackupParse parseBackup(String text) {
     if (w.sets.isNotEmpty) out.add(w);
   }
 
-  return BackupParse(workouts: out, skippedSets: skipped);
+  return BackupParse(workouts: out, exerciseNames: names, skippedSets: skipped);
 }

@@ -6,6 +6,61 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.33.0 · 六件拍板的事：只支持 iPhone、备份范围定死、动作名表用起来、HealthKit 推到后续版本、CI 就是门禁
+
+这一版没有新功能，全部来自**你拍板的六件事**（`docs/your-todo.md` §③ 那一屏）。
+之所以切版，是因为其中一件（③）动了 `app/` 的行为。
+
+### 你拍板的六件事，逐条落地
+
+| # | 你的决定 | 做了什么 | 怎么验 |
+|---|---|---|---|
+| ① | **只支持 iPhone** | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1,2"` → `"1"`；`tool/check-ios-app.mjs` 里"产物含 iPad"从**提示**升级为**红**；iPad 13" 截图不再需要 | `node tool/check-ios-app.mjs --selftest`（新增两条：设备族含 2 → 必须红；没有 1 → 必须红） |
+| ② | **备份只备份训练记录** | 范围就此定死（实现原本就是这样）；将来要扩就得同时动备份 format 版本 + 中英政策 + 隐私事实表 + 云备份 | `app/test/backup_scope_test.dart` |
+| ③ | **动作名表用起来** | 导入时按映射里的名字、**按原 id 补建**本机缺的动作；导入结果多报一句「补建 N 个本机没有的动作」；补建**幂等** | `app/test/backup_scope_test.dart`（正/负/幂等三条）+ 相关 63 项 |
+| ④ | **HealthKit / Health Connect 推到后续版本** | `docs/tech-decisions.md` 的客户端选型与「决策 vs 代码现状」两处都写成 **⏸ 后续版本**；`PRODUCT.md` 的 MVP 清单把 HealthKit 摘了出去 | 文档三处同改（不再留一句没实现的话） |
+| ⑤ | **CI 直接跑 `./verify.sh`** | workflow 现在只有一条门禁命令；为了能在 ubuntu 上真跑完，补了 `tool/lib/plist.mjs`（不依赖 macOS `plutil`），并把"开发机专属"的环境检查改成**不适用**而不是失败 | `node tool/check-ci.mjs --selftest`（11 例） |
+| ⑥ | **仓库转 public** | CI 结论我这边**匿名 API 能读到了**（此前"CI 到底绿不绿"是一条归你的证据）—— job 日志仍要凭据，所以失败的那几行会被 workflow 抬成**注解**（公开可读） | `https://api.github.com/repos/sdknwdtvpv-sys/sport/actions/runs` |
+
+### ③ 备份：动作名表从"只写不读"变成"导入时补建"
+
+原先它是**纯开销**：占用备份一半体积，导入时却既不读、也不把缺失的动作补进本机库 ——
+在一台没有那个动作的手机上导入，记录不丢，但动作名显示成 `ex_xxxxxxxx`。现在：
+
+* `BackupParse` 多带一份 `exerciseNames`（`exercise_names`，可选、非空才收；
+  老备份没有这个字段也照样能导）；
+* `applyBackup` 对**被导入记录引用到、而本机没有**的动作，用 `ExerciseRepository.restoreFromBackup`
+  **按原 id** 建一条自定义动作（`isBuiltin: false`，分组/器械记为「未分类」）；
+* 补建是**幂等**的：同一份备份导两次不会建出两个动作（第二次报「补建 0 个」）；
+* 标签表补了 `unspecified → 未分类`（两侧 `kMuscleLabels` / `kEquipmentLabels` 都有，
+  否则新动作会在界面上显示成英文键名）。
+
+### ⑤ CI 现在跑的就是门禁本身（为此门禁变成"哪台机器都能跑"）
+
+* `.github/workflows/ci.yml` 只有一条 `./verify.sh`（六层原样，不许 `--fast`）；
+  另一步**不做检查**，只在失败时把门禁里红的那几行抬成 `::error::` 注解 —— 因为
+  GitHub 的 job 日志要凭据才读得到（匿名 403），而"CI 红了"必须能看出红在哪一层。
+* `tool/check-ci.mjs` 换模型：以前核"CI 是不是门禁的子集"，现在核"**CI 跑的是不是门禁本身**"
+  （不跑门禁、用 `--fast` 偷跳第 5 层、混进门禁不管的命令、`ubuntu-24.04`/node 22/flutter 3.47.5
+  没钉住、头部说法与事实不符 → 判红）。自检 11 例。
+* **`tool/lib/plist.mjs`（新）**：核 iOS 产物要读 `Info.plist`，此前只走 macOS 的
+  `/usr/bin/plutil` —— 在 ubuntu 上那条自检只能"跳过"，等于悄悄没有。现在自带一个
+  最小 XML plist 读写（dict/array/string/integer/real/true/false；`<data>`/`<date>` 读成 null，
+  **没核过的就不猜**），有 plutil 时仍用 plutil，并且**两种读法各跑一遍**整份自检；
+  库里还带自检：解析与序列化互逆、坏输入必须抛、在 macOS 上与系统 plutil 结果对照。
+* `verify.sh` 里那条"依赖目录与 `docs/dev-environment.md` 是否一致"改成**三态**：
+  读不到 DEPS → 红；DEPS 的上级目录不存在（CI 上 `/Volumes/...` 根本没有）→ **不适用**
+  （与这台机器无关，不红也不阻塞）；上级目录在而依赖缺 → 红（依赖搬过家、文档没跟着改）。
+  收尾还会打印"另有 N 项与这台机器无关，已跳过"。
+
+### 同版追加：三处"话说满"的收尾
+
+* `docs/release-admin.md` §二之四之四 从"等你拍板"改成"已拍板只支持 iPhone"，
+  并写明将来要开 iPad 得改哪几处（先做平板布局 → 改判据 → 补截图）；
+* `docs/store-listing-ios.md` 的截图表把 iPad 13" 标成**不需要**；
+* `docs/screenshots.md` 里那条 iPad 宽度实测保留（它是做决定的证据），
+  但补上"已据此拍板"。
+
 ## v1.32.2 · 用户会读到/会被上报的"技术细节"：整条异常
 
 上一版清掉了三类"我们写给自己的说明"。这一版处理**同一类问题的另一面**：

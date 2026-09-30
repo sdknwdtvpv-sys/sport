@@ -47,6 +47,7 @@ esac
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; DIM=$'\033[2m'; BOLD=$'\033[1m'; OFF=$'\033[0m'
 fail=0
 blocked=0
+skipped=0
 LOG=/tmp/lianleme-verify.log
 strip() { grep -vE 'UNDICI|trace-warnings' "$1" 2>/dev/null; }
 
@@ -208,6 +209,16 @@ else
   strip "$LOG"; echo "${RED}✗ 极薄后端自检失败${OFF}"; fail=1
 fi
 
+# plist 读写库的**自检**：核 iOS 产物要读 Info.plist，macOS 上靠 /usr/bin/plutil，
+# 而 CI 是 ubuntu（**没有 plutil**）—— 那就得有一个自己的解析器，且它必须被验过
+# （解析/序列化互逆、坏输入会抛、与系统 plutil 结果一致）。
+if node tool/lib/plist.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} plist 读写库自检通过（解析/序列化互逆、坏输入会抛）"
+else
+  strip "$LOG"; echo "${RED}✗ plist 读写库自检失败${OFF}"; fail=1
+fi
+echo
+
 # iOS 产物核对工具的**自检**（造几份动过手脚的 .app，要求它抓得住）。
 # 安卓那边有 check-aab.mjs 核产物，iOS 这边此前没有任何东西核过产物；
 # 2026-09-30 首次真的编出 iOS 包之后才补上（真产物怎么核见 docs/release-checklist.md）。
@@ -246,8 +257,9 @@ else
 fi
 echo
 
-# CI 与门禁关系核对工具的**自检**：workflow 头部写着"这是门禁的子集"，
-# 而那是**承诺**：CI 里加一条门禁不管的命令就当场变假，且本地门禁永远复现不了它。
+# CI 与门禁关系核对工具的**自检**：「CI 绿 = 门禁绿」是写在 README 与政策里的**承诺**
+# （2026-09-30 起 CI 跑的就是这条 `verify.sh`）。用 --fast 偷跳第 5 层、混进门禁不管的
+# 命令、版本没钉死，都会当场变假，而本地门禁按定义复现不了 CI 自己加的东西。
 if node tool/check-ci.mjs --selftest >"$LOG" 2>&1; then
   strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} CI↔门禁核对自检通过（偷跑命令/少步骤/没钉版本都藏不住）"
 else
@@ -386,9 +398,26 @@ fi
 # 环境文档必须与**磁盘上的真实布局**一致（2026-09-30 补）。
 # 起因：依赖搬到 SSD 之后，ROADMAP 里那三个旧路径还带着 ✅ 摆了很久没人发现 ——
 # 这类"环境文档漂了"没有任何东西会红，而它会让下一个人按错误路径去找 SDK。
+#
+# 2026-09-30：用户拍板"CI 直接跑 ./verify.sh"之后，这条要能在 **ubuntu** 上活下来。
+# 它核的是「**这台机器上**依赖目录的布局与文档写的一致吗」—— 换一台机器（CI 的
+# ubuntu runner）那套 SSD 路径根本不存在，这里无从核起。所以分三种：
+#   * 读不到 DEPS            → 红（那是 dev-env.sh 被改坏了，哪台机器都该知道）
+#   * DEPS 的**上级目录**不在 → 不适用（这台机器不是那台开发机）——不红也不阻塞，
+#                              因为这不是"没验完"，而是"与这台机器无关"。
+#                              （CI 上就是这个分支：/Volumes/... 不存在）
+#   * 上级目录在、harness-deps 缺 → 红（依赖搬过家而文档没跟着改 —— 这才是要抓的）
 DEPS_ROOT="$(grep -oE '^DEPS="[^"]+"' tool/dev-env.sh 2>/dev/null | head -1 | sed 's/^DEPS="//; s/"$//')"
-if [ -z "$DEPS_ROOT" ] || [ ! -d "$DEPS_ROOT" ]; then
-  echo "${RED}✗ 读不到 tool/dev-env.sh 里的 DEPS，或它指向的目录不存在（$DEPS_ROOT）${OFF}"
+DEPS_PARENT="$(dirname "$DEPS_ROOT")"
+if [ -z "$DEPS_ROOT" ]; then
+  echo "${RED}✗ 读不到 tool/dev-env.sh 里的 DEPS${OFF}"
+  fail=1
+elif [ ! -d "$DEPS_PARENT" ]; then
+  echo "${DIM}⊘ 不适用${OFF} —— 这台机器上没有 $DEPS_PARENT（不是那台开发机，例如 CI）。"
+  echo "${DIM}    这条核的是开发机的依赖布局与 docs/dev-environment.md 是否一致，与 CI 无关。${OFF}"
+  skipped=$((skipped + 1))
+elif [ ! -d "$DEPS_ROOT" ]; then
+  echo "${RED}✗ tool/dev-env.sh 的 DEPS 指向不存在的目录（$DEPS_ROOT）—— 依赖搬过家就要同时改文档与它${OFF}"
   fail=1
 else
   MISSING_DEPS=""
@@ -497,12 +526,13 @@ else
 fi
 echo
 
-# CI 与门禁的关系：CI 只许跑门禁覆盖得了的命令、核心步骤不许少、版本必须钉死、
-# 头部那份"没覆盖什么"的清单必须点明（"CI 绿 ≠ 门禁绿"是写在三处文档里的承诺）。
+# CI 与门禁的关系：2026-09-30 用户拍板"CI 直接跑 ./verify.sh"（在此之前 CI 只是子集，
+# 于是"CI 绿"不等于"门禁绿"）。现在核的是：CI 跑的就是这条命令本身、不许加门禁不管的
+# 步骤、也不许用 --fast 偷偷跳过某一层，三个版本仍要钉死。
 if node tool/check-ci.mjs >"$LOG" 2>&1; then
-  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 仍是门禁的子集（命令/步骤/版本都对得上）"
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 跑的就是门禁本身（命令/触发/版本都对得上）"
 else
-  strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（"子集"这句话已经不成立）${OFF}"; fail=1
+  strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（CI 跑的不是门禁本身）${OFF}"; fail=1
 fi
 echo
 
@@ -756,7 +786,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
          tool/check-user-text.mjs tool/check-doc-paths.mjs tool/check-doc-tables.mjs \
          tool/check-doc-versions.mjs tool/check-guards-wired.mjs \
-         tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
+         tool/flatten-png.mjs tool/lib/png.mjs tool/lib/plist.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
          tool/ios-deps.mjs docs/store-listing-ios.md docs/your-todo.md \
@@ -775,6 +805,7 @@ echo
 if [ "$fail" -eq 0 ]; then
   echo "${GREEN}${BOLD}未发现失败。${OFF}"
   [ "$blocked" -eq 1 ] && echo "${YELLOW}但有步骤被环境阻塞，未完成验证。${OFF}"
+  [ "$skipped" -gt 0 ] && echo "${DIM}另有 $skipped 项与这台机器无关，已跳过（不是没验，是这台机器上无从核起）。${OFF}"
   echo "${DIM}下一步：open prototype/index.html 看原型；或读 docs/usability-test-kit.md 去招人做测试。${OFF}"
 else
   echo "${RED}${BOLD}有检查未通过，见上方输出。${OFF}"

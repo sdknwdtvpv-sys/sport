@@ -19,18 +19,23 @@
  *   6. 原生依赖真的进了包：`sqlite3.framework` 与 `objective_c.framework`；
  *   7. 编译后的**启动屏**（`Base.lproj/LaunchScreen.storyboardc`）与**图标**
  *      （`Assets.car` + `AppIcon*.png`）真的进了包 —— 少一个就是"冷启动白闪"或"图标是空白"；
- *   8. 设备族里若含 iPad（`UIDeviceFamily` 里有 2）→ **大声提示**：
- *      商店页会承诺支持 iPad，而那是个还没拍板的产品决定。
+ *   8. 设备族**只有 iPhone**（`UIDeviceFamily` == `[1]`）—— 2026-09-30 拍板"只支持 iPhone"，
+ *      所以含 2（iPad）现在是**红**，不再是提示：商店页会承诺支持 iPad，
+ *      而 iPad 上只是拉长的手机版，没人给它做过适配。
  *
  *   9. **出口合规的"决定"有没有留痕**：包里确实有加密代码（`cryptography` 做的
  *      AES-256-GCM + HKDF-SHA256，给云备份用），而 `Info.plist` 断言
  *      `ITSAppUsesNonExemptEncryption=false` —— 这是个**法律声明**，所以文档里必须
  *      写明算法、两种口径与"谁来决定"。少了它，提审那天就得现场编答案。
  *
+ * **读 plist 的两种读法（2026-09-30）**：有 `/usr/bin/plutil`（macOS）时用它读真产物；
+ * 没有时（Linux/CI）用仓库自己的 `tool/lib/plist.mjs` —— 用户拍板"CI 直接跑 `./verify.sh`"
+ * 之后，这条自检必须在 ubuntu 上也能跑，否则它就成了"只在某台机器上存在"的假守卫。
+ *
  * 用法：
  *   node tool/check-ios-app.mjs <Runner.app 路径>
  *   node tool/check-ios-app.mjs                 # 自动找 build/ios 下最新的 Runner.app
- *   node tool/check-ios-app.mjs --selftest      # 自检（8 项产物 + 3 项出口合规）
+ *   node tool/check-ios-app.mjs --selftest      # 自检（9 项产物 + 3 项出口合规）
  *
  * 退出码：有任何一项不符合 → 1。
  */
@@ -40,27 +45,15 @@ import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statS
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { hasPlutil, readPlistJson, readPlistRaw, toPlistXml } from './lib/plist.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const APP_DIR = join(ROOT, 'app');
 
-function plistRaw(plistPath, key) {
-  try {
-    return execFileSync('/usr/bin/plutil', ['-extract', key, 'raw', '-o', '-', plistPath],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-  } catch {
-    return null;
-  }
-}
-
-function plistJson(plistPath, key) {
-  try {
-    return JSON.parse(execFileSync('/usr/bin/plutil', ['-extract', key, 'json', '-o', '-', plistPath],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-  } catch {
-    return null;
-  }
-}
+/** 读法跟着机器走：有 plutil 用它，没有就用仓库自己的解析器（CI 上）。 */
+let PLIST_ENGINE = hasPlutil() ? 'plutil' : 'builtin';
+const plistRaw = (plistPath, key) => readPlistRaw(plistPath, key, PLIST_ENGINE);
+const plistJson = (plistPath, key) => readPlistJson(plistPath, key, PLIST_ENGINE);
 
 /** 从仓库里读"应该是多少" */
 function expectations() {
@@ -228,11 +221,12 @@ function inspect(appPath, root = ROOT) {
   facts.push(`启动屏：${existsSync(launch) ? '已编译进包' : '缺'} · `
     + `图标：${hasAssetsCar ? 'Assets.car ' : ''}${iconPngs.length} 个 AppIcon PNG`);
 
-  // ⑧ 设备族：iPad 是**还没拍板**的产品决定，产物里必须让人看见
+  // ⑧ 设备族：2026-09-30 拍板"只支持 iPhone"（`TARGETED_DEVICE_FAMILY = "1"`），
+  //    所以含 2 从"提示"升级成"红"—— 产物说的必须和商店页说的一致。
   const family = plistJson(plist, 'UIDeviceFamily') ?? [];
   if (family.includes(2)) {
-    warnings.push('UIDeviceFamily 含 2（iPad）→ 商店页会承诺"支持 iPad"。'
-      + '那是个还没拍板的产品决定（`docs/your-todo.md` 第 10 条），实测 iPad 上只是拉长的手机版。');
+    problems.push('UIDeviceFamily 含 2（iPad）—— 已经拍板只支持 iPhone'
+      + '（`docs/your-todo.md` 第 2 条），商店页不该承诺 iPad，iPad 上也只是拉长的手机版');
   }
   if (!family.includes(1)) {
     problems.push('UIDeviceFamily 里没有 1（iPhone）—— 这不是一个手机包');
@@ -277,14 +271,12 @@ function selftest() {
       ITSAppUsesNonExemptEncryption: false,
       UIUserInterfaceStyle: 'Dark',
       UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
-      UIDeviceFamily: [1, 2],
+      UIDeviceFamily: [1],
     };
     mutate(entries);
-    // 用 plutil 从 JSON 生成一份合法的 plist（避免手写 XML 出错）
-    const jsonPath = join(app, 'info.json');
-    writeFileSync(jsonPath, JSON.stringify(entries));
-    execFileSync('/usr/bin/plutil', ['-convert', 'xml1', '-o', join(app, 'Info.plist'), jsonPath]);
-    rmSync(jsonPath);
+    // 用仓库自己的序列化写一份合法的 plist（**不再依赖 plutil**：
+    // CI 是 ubuntu，没有 plutil —— 靠系统工具造夹具的自检在 CI 上根本跑不起来）
+    writeFileSync(join(app, 'Info.plist'), toPlistXml(entries));
     return app;
   };
 
@@ -294,6 +286,8 @@ function selftest() {
     ['缺"仅新增"相册权限 → 必须红', mk('bad-noadd', (e) => { delete e.NSPhotoLibraryAddUsageDescription; }), true],
     ['多了"读相册"权限 → 必须红', mk('bad-read', (e) => { e.NSPhotoLibraryUsageDescription = '读相册'; }), true],
     ['版本对不上 → 必须红', mk('bad-ver', (e) => { e.CFBundleVersion = '999'; }), true],
+    ['设备族里带上了 iPad → 必须红', mk('bad-ipad', (e) => { e.UIDeviceFamily = [1, 2]; }), true],
+    ['设备族里没有 iPhone → 必须红', mk('bad-nophone', (e) => { e.UIDeviceFamily = [2]; }), true],
     ['方向放开横屏 → 必须红', mk('bad-orient', (e) => {
       e.UISupportedInterfaceOrientations = ['UIInterfaceOrientationPortrait', 'UIInterfaceOrientationLandscapeLeft'];
     }), true],
@@ -341,14 +335,22 @@ function selftest() {
 
   console.log('iOS 产物核对自检：');
   let bad = 0;
-  for (const [label, app, shouldFail] of cases) {
-    const r = inspect(app);
-    const failed = r.problems.length > 0;
-    const ok = failed === shouldFail;
-    if (!ok) bad++;
-    console.log(`  ${ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m'} ${label}`
-      + (r.problems.length ? `　→ ${r.problems[0].slice(0, 60)}…` : ''));
+  // **两种读法各跑一遍**：macOS 上默认是 plutil，CI 上是内置解析器。
+  // 只跑默认那条的话，"另一种读法"永远没人验过 —— 而 CI 用的恰好是另一种。
+  const engines = hasPlutil() ? ['plutil', 'builtin'] : ['builtin'];
+  for (const engine of engines) {
+    PLIST_ENGINE = engine;
+    console.log(`  ${engine === 'plutil' ? '（读法：系统 plutil）' : '（读法：内置 XML 解析器 —— CI 用的就是这条）'}`);
+    for (const [label, app, shouldFail] of cases) {
+      const r = inspect(app);
+      const failed = r.problems.length > 0;
+      const ok = failed === shouldFail;
+      if (!ok) bad++;
+      console.log(`  ${ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m'} ${label}`
+        + (r.problems.length ? `　→ ${r.problems[0].slice(0, 60)}…` : ''));
+    }
   }
+  PLIST_ENGINE = hasPlutil() ? 'plutil' : 'builtin';
   rmSync(dir, { recursive: true, force: true });
   // ⚠️ 两条自检的失败数必须**合起来**算：分开算的话，出口合规那三条即使全红，
   // 这里也会打印"自检通过"并 exit 0 —— 那等于没有自检（自己给自己发的假绿灯）。
