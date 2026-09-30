@@ -411,7 +411,13 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
   // 2026-09-30 在真机上翻政策时当场看见那一句 —— 它就是这么漏出去的。
   // 源码（docs/*.md）里的 `<!-- 内部 -->` 块允许写这类话，所以**只扫生成物**。
   {
-    const MARKERS = ['上架时替换', '待填', '占位', 'to be filled in', 'TODO', 'FIXME'];
+    // 这张表是按"真机上真的漏出去过的东西"长的，不是拍脑袋：
+    //   * `上架时替换` —— 政策里那句「（上架时替换为实际日期）」；
+    //   * `由仓库自动生成` / `生成物` / `请勿手改` —— 收集清单开头那三句
+    //     （2026-09-30 在真机上翻这一页时当场看见）。
+    // 以后每在真机上抓到一次，就把那个词加进来 —— 这样同类问题只会漏一次。
+    const MARKERS = ['上架时替换', '待填', '占位', 'to be filled in', 'TODO', 'FIXME',
+      '由仓库自动生成', '生成物', '请勿手改', '不要手改'];
     const generated = [
       ['app/assets/privacy-policy.txt', join(ROOT, 'app/assets/privacy-policy.txt')],
       ['app/assets/collection-list.txt', join(ROOT, 'app/assets/collection-list.txt')],
