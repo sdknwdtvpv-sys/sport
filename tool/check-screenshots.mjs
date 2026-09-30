@@ -147,6 +147,38 @@ function docCountProblems(root, counts) {
   return problems;
 }
 
+/**
+ * 文档里**点名的截图文件**必须真的存在（反向检查：不是"目录里多了图"，而是"文档指向了不存在的图"）。
+ *
+ * 为什么单列一条：商店文案（`docs/store-listing.md` 第六节每张配一句）与两处清单都是**按文件名**
+ * 引用的 —— 哪天清单一改（重命名、删一张），文档就会指向一个不存在的文件，而**没人会去点一遍**。
+ * 那种漂移在提审前一刻才被发现，代价是把材料重新对一遍。
+ *
+ * 只认"看起来像我们截图名"的记号（`01-home.png`、`11a-body-consent.png`、`01b-…`），
+ * 这样不会把图标（`icon-512.png`）与特征图（`feature-graphic-1024x500.png`）混进来。
+ * 含「历史」「旧」的行跳过 —— 文档里复盘旧材料是正常的。
+ */
+function docReferenceProblems(root, sets) {
+  const problems = [];
+  const dirs = sets.map((x) => join(root, x.dir));
+  for (const rel of ['docs/screenshots.md', 'docs/release-checklist.md',
+    'docs/store-listing.md', 'docs/store-listing-ios.md']) {
+    const p = join(root, rel);
+    if (!existsSync(p)) continue;
+    for (const line of readFileSync(p, 'utf8').split('\n')) {
+      if (line.includes('历史') || line.includes('旧')) continue;
+      for (const m of line.matchAll(/\b(\d{2}[a-z]?-[a-z0-9-]+\.png)\b/g)) {
+        const name = m[1];
+        if (!dirs.some((d) => existsSync(join(d, name)))) {
+          problems.push(`${rel} 里点名了 ${name}，但三套截图里都没有这个文件 `
+            + '—— 商店文案/清单按文件名引用，改名单时必须一起改');
+        }
+      }
+    }
+  }
+  return problems;
+}
+
 /** PNG 头（宽高/位深/颜色类型）：用 `tool/lib/png.mjs` 里那份只读头的实现，别在这儿再写一遍。 */
 const pngSize = (path) => readHeader(path);
 
@@ -221,6 +253,7 @@ function inspect(root) {
   }
 
   for (const p of docCountProblems(root, counts)) problems.push(p);
+  for (const p of docReferenceProblems(root, SETS)) problems.push(p);
 
   return { problems, lines };
 }
@@ -273,6 +306,12 @@ function selftest() {
       if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：那一行里没有「14 张（1080×2400，国内/软著）」');
       writeFileSync(p, t);
     }, false, '说「15 张」'],
+    ['文档点名了一张不存在的截图', (r) => {
+      const p = join(r, 'docs/store-listing.md');
+      const t = readFileSync(p, 'utf8').replace('`01-home.png`', '`01-home-v2.png`');
+      if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：store-listing.md 里没有 `01-home.png`');
+      writeFileSync(p, t);
+    }, false, '三套截图里都没有这个文件'],
     ['文档把 App Store 那套写成 14 张（实际 13）', (r) => {
       const p = join(r, 'docs/store-listing.md');
       const t = readFileSync(p, 'utf8').replace('1320×2868，13 张', '1320×2868，14 张');
@@ -301,7 +340,7 @@ function selftest() {
     process.exit(1);
   }
   console.log('\n✓ 自检通过：好图过得去；少一张、多一张、尺寸不对、夹带现场图、'
-    + 'App Store 那套带 alpha 或 16 位、**文档里的张数是旧的**都藏不住');
+    + 'App Store 那套带 alpha 或 16 位、文档里的张数是旧的、**文档点名了不存在的图**都藏不住');
 }
 
 // ───────────────────────────────────────────────────────────────── 跑

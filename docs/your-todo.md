@@ -18,16 +18,18 @@
 | 项 | 怎么复现 |
 |---|---|
 | 六层门禁 | `./verify.sh`（**干净克隆也能直接跑**：会先自动 pub get + 生成 drift 代码；最近一次在 `2f66d40` 的干净克隆上实测：753 项测试全绿、`未发现失败`、零阻塞）|
-| 推送后 CI 状态 | GitHub Actions —— ⚠️ 它只是门禁的**子集**（见 §三 第 6 条）|
+| 推送后 CI 状态 | ⚠️ **只有你能看**：仓库是**私有**的（匿名 API / HTML 都是 404，HTTPS `ls-remote` 要凭据），我这边看不到 CI 绿不绿 —— 见 §三 第 6 条。而"CI 只是门禁子集"这件事本身有守卫（`node tool/check-ci.mjs`）|
 | 云备份端到端（**两个平台的模拟器都跑通了**）| `docs/backend-design.md` §七之七 的命令块（含 `node tool/check-ciphertext.mjs <服务端库>`）；安卓模拟器 + **iOS 模拟器**（2026-09-30，各自 `E2E-OK` 且服务端库里搜不到明文）|
 | **服务端只有密文** | `node tool/check-ciphertext.mjs <库>`（自检：`--selftest`，故意造含明文的库要求它报错）|
 | 删除权（逐表清空 + 表清单守门）| `app/test/delete_all_test.dart` |
 | 默认不收集（真实库里的待发条数）| `app/integration_test/analytics_outbox_e2e_test.dart`（跑两遍：默认 0 条 / 预置开 11 条）；**安卓与 iOS 两个平台都跑过，结论一致**|
 | 云备份入口跟编译期开关走 | `app/integration_test/cloud_entry_gate_test.dart`（跑两次：只给地址 → 入口隐藏；地址+声明 → 入口出现）；同上，**两端都跑过** |
 | 体重的**单独同意** | `app/test/body_consent_test.dart` + 截图 `store-assets/screenshots/11a-body-consent.png`（干净安装那一跑拍的）|
-| 三套商店截图 | `docs/screenshots.md`（安卓真机 1080×2400 与 1080×1920；**App Store 1320×2868，iOS 模拟器出图 + 压平**）；核它的是 `node tool/check-screenshots.mjs`（自检 9 例：少一张 / 多一张 / 尺寸不对 / 夹带失败现场图 / 带 alpha / 16 位 …）|
+| 三套商店截图 | `docs/screenshots.md`（安卓真机 1080×2400 与 1080×1920；**App Store 1320×2868，iOS 模拟器出图 + 压平**）；核它的是 `node tool/check-screenshots.mjs`（自检 **13 例**：少一张 / 多一张 / 尺寸不对 / 夹带失败现场图 / 带 alpha / 16 位 / **文档里的张数是旧的** / **文档点名了不存在的图** …）|
 | 截图压平（16 位 → 8 位、去 alpha）| `node tool/flatten-png.mjs`（自检：5 种 filter 读回、16 位降 8 位无损、半透明会被挡下）|
-| 产物核对 | `docs/release-checklist.md` 的「终局核验」一节（APK/AAB/真机/软著逐项）|
+| 产物核对 | `docs/release-checklist.md` 的「终局核验」一节（APK/AAB/真机/软著逐项）；**2026-09-30 在 v1.32.0 上重核过**：APK 60.8M（包内 `1.32.0 (41)`）、AAB 56.6M / 119 条目 / 三 ABI，由 `tool/check-dist.mjs` 每次核 |
+| iOS 产物的**出口合规留痕** | `node tool/check-ios-app.mjs`（第 9 条）：包里有 `cryptography` 就必须在 `docs/store-listing-ios.md` 里看到那节决定记录；负向测试验过 |
+| 「存相册」两个平台的行为 | `app/integration_test/share_card_gallery_test.dart`：iOS 两条权限路（先说明目的 → 被拒如实告知 / 已授权不白问）+ 安卓免权限那条；两端各有一张实拍图作证 |
 
 ### ② 已固化成守卫（哪样东西漂了会被抓住）
 
@@ -40,7 +42,8 @@ iOS 依赖的 iOS 可用性（含原生资源包与 Apple 隐私清单）/ 密�
 App Store 那套是不是 8 位无 alpha）/ 截图压平工具的 5 种 filter 自检 /
 **部署包自洽**（install.sh ↔ 两个 systemd 单元 ↔ Caddyfile 的端口一致、ExecStart 的入口存在、
 占位符全被替换、与客户端三个 `--dart-define` 逐字对得上、加固没被删、**没开访问日志**）/
-**截图张数与文档一致**（三份文档里写的"14/11/13 张"必须与磁盘一致 —— 图加一张就判红）/
+**截图张数与文档一致 / 文档点名的图必须存在**（张数：三份文档里写的"14/11/13"必须与磁盘一致；
+文件名：文案与清单里点名的 `NN-*.png` 必须真的在某一套里 —— 改名单时两处一起改）/
 **交付目录**（`dist/` 里只许有当前版本的 APK/AAB，且**包内** versionName/versionCode 与
 `kAppVersion` + pubspec 的 build number 一致 —— 文件名可以改、包里的版本号改不了）/
 **CI 与门禁的关系**（CI 只许跑门禁覆盖得了的命令、核心步骤不许少、`ubuntu-24.04`/node 22/
@@ -54,7 +57,7 @@ flutter 3.47.5 三个版本必须钉死、头部必须点明"没覆盖什么"）
 
 | # | 事项 | 一句话 | 我的建议 |
 |---|---|---|---|
-| 1 | ~~**`sudo xcodebuild -license accept`**~~ ✅ **你已做完（2026-09-30）** | 装完 Xcode 必须接受许可证；没接受时 `xcodebuild`/`xcrun` 被拒，**连带 git/python3/flutter 一起挂** | 已生效：iOS 首编通过（模拟器包 + release 真机包）、产物逐项核对过、`/tmp/fixbin` 那套绕行已作废。**还差模拟器运行时那 8G** —— 正在后台下载（`xcodebuild -downloadPlatform iOS`），不用你管 |
+| 1 | ~~**`sudo xcodebuild -license accept`**~~ ✅ **你已做完（2026-09-30）** | 装完 Xcode 必须接受许可证；没接受时 `xcodebuild`/`xcrun` 被拒，**连带 git/python3/flutter 一起挂** | 已全部生效：许可证已接受 → 模拟器运行时（iOS 27.0，8G）也装好了 → iOS 侧**已在模拟器上跑通**（13 张 App Store 截图、云备份端到端、默认不收集、入口开关、存相册两条权限路）。**这条不再需要你做任何事** |
 | 2 | **iPad 支持拍板** | `TARGETED_DEVICE_FAMILY "1,2"` 是模板默认 | 改成 `"1"`（只支持 iPhone）：实测过，iPad 上就是拉长的手机版；证据在 `docs/images/ipad-width-*.png` |
 | 3 | **备份范围拍板** | 设计稿说"全都要（设置也备份）"，实现里只有训练记录 | 按现状先上（训练记录是主体）；边界已用测试钉死 |
 | 4 | **「动作名表」用起来还是去掉** | 它是只写不读的：跨库恢复时动作名退化成 id，而它占了备份一半体积 | **用起来**（导入时按它补建缺失动作）——本来就是设计意图 |
