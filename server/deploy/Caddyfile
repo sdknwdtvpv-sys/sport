@@ -1,0 +1,39 @@
+# 练了么 · 反向代理（Caddy）
+#
+# 由 `install.sh` 渲染：__DOMAIN__ / __BACKEND_PORT__ / __COLLECTOR_PORT__。
+# Caddy 会**自动**为这个域名申请并续期 HTTPS 证书（前提：域名已解析到本机，
+# 且大陆机房的域名已备案 —— 否则 80/443 会被拦，证书申请会失败）。
+#
+# ⚠️ **这里故意没有 `log` 指令**：我们在隐私政策里写着"不做 IP 记录"，
+# 而 Caddy 的 access log 会把客户端 IP 写进磁盘。想加日志之前先改政策，
+# `tool/check-deploy.mjs` 会盯着这条（加了就判红）。
+
+__DOMAIN__ {
+	encode zstd gzip
+
+	# 埋点收集端：只收 /v1/events（匿名统计，默认关闭，用户主动打开才发）
+	handle /v1/events* {
+		reverse_proxy 127.0.0.1:__COLLECTOR_PORT__
+	}
+
+	# 备份服务：账号 / 备份 / 删除
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:__BACKEND_PORT__
+	}
+
+	handle /healthz {
+		reverse_proxy 127.0.0.1:__BACKEND_PORT__
+	}
+
+	# 别的一律不代理（不给自己留一个"顺手加接口"的口子）
+	handle {
+		respond "lianleme" 200
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}

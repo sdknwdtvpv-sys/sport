@@ -1,0 +1,35 @@
+[Unit]
+Description=练了么 · 极薄后端（账号 / 备份 / 删除，只存密文）
+Documentation=file://__APP_DIR__/server/backend.mjs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+WorkingDirectory=__APP_DIR__
+# 只监听本机：对外只有 Caddy 一个入口（端口不暴露到公网）
+ExecStart=__NODE__ __APP_DIR__/server/backend.mjs --port __BACKEND_PORT__ --db __DATA_DIR__/backend.sqlite
+Restart=always
+RestartSec=3
+
+# ── 加固（服务被攻破也走不出去）────────────────────────────────────────
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+# 唯一的可写路径：库文件就在这儿
+ReadWritePaths=__DATA_DIR__
+
+[Install]
+WantedBy=multi-user.target

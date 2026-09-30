@@ -237,6 +237,15 @@ else
 fi
 echo
 
+# 部署包核对工具的**自检**：`server/deploy/` 里全是配置文本，漂了平时看不出来、
+# 只在部署那一刻炸（或者更糟：不炸但违背承诺，比如反代开了访问日志 = 记了客户端 IP）。
+if node tool/check-deploy.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 部署包核对自检通过（端口/日志/加固/占位符都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 部署包核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 截图"压平"工具（去掉 alpha + 16 位降 8 位）的自检：App Store 只收 8 位无 alpha，
 # 而 iOS 模拟器截出来的是 **16 位 RGBA**（2026-09-30 实测）。读的那 5 种 filter
 # 也在这里逐种验过 —— 读错了会一路错到商店上传被拒。
@@ -404,6 +413,15 @@ if node tool/asset-check.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 发行资源（图标/启动图/应用名）齐全"
 else
   strip "$LOG"; echo "${RED}✗ 发行资源有问题（上架前必须修）${OFF}"; fail=1
+fi
+echo
+
+# 部署包：端口一致（install.sh ↔ 两个 systemd 单元 ↔ Caddyfile）、入口存在、
+# 与客户端的 dart-define 逐字对得上、加固没被删、没开访问日志（承诺"不做 IP 记录"）。
+if node tool/check-deploy.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 部署包自洽（端口/入口/加固/无访问日志）"
+else
+  strip "$LOG"; echo "${RED}✗ 部署包有矛盾（部署那一刻才会炸，现在先拦住）${OFF}"; fail=1
 fi
 echo
 
@@ -593,7 +611,9 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
-         tool/flatten-png.mjs tool/lib/png.mjs \
+         tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
+         server/deploy/install.sh server/deploy/Caddyfile \
+         server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
          tool/ios-deps.mjs docs/store-listing-ios.md docs/your-todo.md \
          tool/gen-feature-graphic.py store-assets/feature-graphic-1024x500.png \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \

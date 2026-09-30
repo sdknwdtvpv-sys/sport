@@ -1,0 +1,33 @@
+[Unit]
+Description=练了么 · 埋点收集端（匿名统计，服务端只落盘不清洗）
+Documentation=file://__APP_DIR__/server/collector.mjs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+WorkingDirectory=__APP_DIR__
+ExecStart=__NODE__ __APP_DIR__/server/collector.mjs --port __COLLECTOR_PORT__ --out __DATA_DIR__
+Restart=always
+RestartSec=3
+
+# ── 加固（与后端同一套）──────────────────────────────────────────────
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+ReadWritePaths=__DATA_DIR__
+
+[Install]
+WantedBy=multi-user.target
