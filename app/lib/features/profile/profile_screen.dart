@@ -27,6 +27,9 @@ import '../../data/profile_repository.dart';
 import '../../domain/models.dart';
 import '../body/body_metric_screen.dart';
 import 'backup.dart';
+import '../../backup/backup_config.dart';
+import '../backup/cloud_backup_screen.dart';
+import 'backup_source.dart';
 import 'backup_exporter.dart';
 import 'training_stats.dart';
 
@@ -46,6 +49,7 @@ class ProfileScreen extends StatefulWidget {
     this.onRestOverrideChanged,
     this.backupExporter = const PluginBackupExporter(),
     this.onDataChanged,
+    this.cloudBackupAvailable,
   });
 
   final LocalStore store;
@@ -83,6 +87,14 @@ class ProfileScreen extends StatefulWidget {
   /// 数据被改动过（删光 / 导入）—— 外壳要跟着刷新首页那个"我上周练了 N 次"。
   /// 只清库不刷新的话，界面还显示着刚被删掉的数据（用户会以为没删掉）。
   final VoidCallback? onDataChanged;
+
+  /// 要不要显示「云备份」入口。**null = 按编译期配置判断**
+  /// （`isCloudBackupConfigured`：没配服务器地址就不显示 —— 详见 lib/backup/backup_config.dart）。
+  ///
+  /// 做成可覆盖的参数是为了**能测**：编译期常量在测试里改不了，
+  /// 于是"配了地址会怎样"这条路径就会永远没人验证过。测试显式传 true / false，
+  /// 正式包走默认值。
+  final bool? cloudBackupAvailable;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -154,54 +166,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 这一份带上组 id、训练 id、热身标记、RPE、秒级时间，重量一律 kg，
   /// 导回来是同一批数据。对手最集中的抱怨就是数据丢失，这是我们的答案。
   Future<void> _exportBackup() async {
-    // allSets() 只给正式组，正好用来枚举"练过哪些训练"；
-    // 再按训练把**整份**记录（含热身组）读回来。
-    final List<SetRecord> normal = await widget.store.allSets();
-    final List<String> ids = <String>[];
-    for (final SetRecord s in normal) {
-      if (!ids.contains(s.workoutId)) ids.add(s.workoutId);
-    }
-
-    final List<Workout> workouts = <Workout>[];
-    for (final String id in ids) {
-      final List<SetRecord> sets = await widget.store.setsFor(id);
-      if (sets.isEmpty) continue;
-      // 训练行只用来拿起止时间，**不作为数据来源**：项目里真发生过
-      // "只写了 set_record、没写 workout 行"的缺陷，那时 loadWorkout 返回 null ——
-      // 如果备份依赖它，那一整次训练就会被静默丢掉。备份是最后一道防线，
-      // 所以缺训练行时用最早那一组的完成时间兜底，宁可时间粗一点也不丢数据。
-      final Workout? loaded = await widget.store.loadWorkout(id);
-      final Workout w = Workout(
-        id: id,
-        startedAtMs: loaded?.startedAtMs ?? sets.first.completedAtMs,
-        endedAtMs: loaded?.endedAtMs,
-      );
-      w.sets.addAll(sets);
-      workouts.add(w);
-    }
-
-    final List<ExerciseData> rows = await widget.repository.search(limit: 500);
-    final Map<String, String> names = <String, String>{
-      for (final ExerciseData r in rows) r.id: r.name,
-    };
-
+    // 攒备份的活儿在 backup_source.dart 里，**和云备份共用同一份实现** ——
+    // 两条路径各写一遍的下场是"导出的能导回、云端的导不回"。
     final int now = DateTime.now().millisecondsSinceEpoch;
-    final String json = encodeBackup(
-      workouts: workouts,
-      exerciseNames: names,
+    final BackupBundle bundle = await collectBackup(
+      store: widget.store,
+      repository: widget.repository,
       nowMs: now,
     );
     await widget.backupExporter
-        .shareBackup(json, fileName: backupFileName(now));
+        .shareBackup(bundle.json, fileName: backupFileName(now));
     if (!mounted) return;
 
-    final int sets = workouts.fold<int>(0, (int a, Workout w) => a + w.sets.length);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('已导出 ${workouts.length} 次训练 / $sets 组'),
+        content: Text('已导出 ${bundle.workouts} 次训练 / ${bundle.sets} 组'),
         backgroundColor: Tokens.elevated,
       ),
     );
+  }
+
+  /// 打开云备份。
+  ///
+  /// 从云端恢复之后要让上层刷新和 `onDataChanged` —— 与导入同一条路径，
+  /// 否则首页那张"我上周练了 N 次"还显示着恢复前的数字。
+  Future<void> _openCloudBackup() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) => CloudBackupScreen(
+          store: widget.store,
+          repository: widget.repository,
+          profile: widget.profile,
+          onDataChanged: () {
+            _load();
+            widget.onDataChanged?.call();
+          },
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await _load();
   }
 
   /// 粘贴导入备份。
@@ -225,25 +229,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    for (final Workout w in parsed.workouts) {
-      for (final SetRecord s in w.sets) {
-        await widget.store.saveSet(s);
-      }
-      // 训练行本身也要写：时长要用 started_at / ended_at
-      await widget.store.saveWorkout(w);
-    }
+    // 落库的活儿同样在 backup_source.dart 里（与"从云端恢复"共用）
+    final BackupApplyResult applied = await applyBackup(widget.store, parsed);
     if (!mounted) return;
 
     await _load();
     widget.onDataChanged?.call();
     if (!mounted) return;
 
-    final String skipped =
-        parsed.skippedSets > 0 ? '，跳过 ${parsed.skippedSets} 条没认出来的' : '';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-            '已导入 ${parsed.workoutCount} 次训练 / ${parsed.setCount} 组$skipped'),
+        content: Text(applied.summary),
         backgroundColor: Tokens.elevated,
       ),
     );
@@ -566,6 +562,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             trailing: const Icon(Icons.download, color: Tokens.text3, size: 20),
           ),
           const Divider(height: 1, color: Tokens.line),
+          // 云备份的入口**只在配了服务器地址的包里存在**（见 lib/backup/backup_config.dart）：
+          // 一个点进去必然报错的入口，比没有这个功能更伤。正式包没配地址 → 这里什么也不显示。
+          if (widget.cloudBackupAvailable ?? isCloudBackupConfigured) ...<Widget>[
+            ListTile(
+              key: const Key('cloud-backup'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+              onTap: _openCloudBackup,
+              title: const Text(
+                '云备份',
+                style: TextStyle(color: Tokens.text, fontSize: 15),
+              ),
+              subtitle: const Text(
+                '加密后存到服务器，换手机能取回。默认关闭',
+                style: TextStyle(color: Tokens.text3, fontSize: 13),
+              ),
+              trailing: const Icon(Icons.cloud_outlined, color: Tokens.text3, size: 20),
+            ),
+            const Divider(height: 1, color: Tokens.line),
+          ],
           ListTile(
             key: const Key('delete-all'),
             contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
@@ -613,7 +628,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               // 版本号来自 core/app_info.dart，由 app_version_test 与 pubspec 对齐。
               // 以前这里写死 '1.0.0'，两次切版后界面上的版本号就错了两个版本。
-              '版本 $kAppVersion · 数据只存在这台设备上，不上传任何人。',
+              //
+              // ⚠️ 后半句**必须跟着配置走**：这个包一旦配了备份服务器，
+              // 再写"不上传任何人"就是界面在撒谎（而隐私政策那边是硬门禁，
+              // 界面这边只能靠这条注释 + 测试守着）。
+              (widget.cloudBackupAvailable ?? isCloudBackupConfigured)
+                  ? '版本 $kAppVersion · 数据默认只在本机；云备份要你手动开启，且内容端到端加密。'
+                  : '版本 $kAppVersion · 数据只存在这台设备上，不上传任何人。',
               style: const TextStyle(
                   color: Tokens.text3, fontSize: 13, height: 1.5),
             ),

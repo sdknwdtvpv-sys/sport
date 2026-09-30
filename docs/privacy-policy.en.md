@@ -115,6 +115,10 @@ it is a fact of the code:
   `_NullTransport`, which **always fails** — events only accumulate
   in the on-device outbox.
 - The workout sync channel is `InMemorySyncQueue`: memory only, no network, gone when the app closes.
+- **This version does not include cloud backup.** The cloud-backup code exists (end-to-end
+  encrypted, off by default), but it needs a server address to switch on — and that address is
+  configured **at build time** as well: in a build without one, the "Cloud backup" entry does not
+  even appear in the app.
 
 In other words, **even we cannot access your data right now.** We state this plainly because
 describing a future feature as already shipped would be dishonest — and so would pretending
@@ -150,6 +154,14 @@ Three notes on the second one:
   a PNG and **is never uploaded to our servers**. Tapping "Share" hands the image to the
   system share sheet; which app you then pick (WeChat, Photos, …) is your choice, and that
   step is governed by that app's privacy policy.
+
+**One more "read" permission shows up after packaging, and we want to be explicit about it.**
+On **API ≤29** devices, merely declaring `WRITE_EXTERNAL_STORAGE` makes Android **imply** and
+grant `READ_EXTERNAL_STORAGE` as well (`aapt2 dump badging` reports it as
+`uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'`). We **never read** your
+photos or files — that permission comes from platform behaviour, not from a request of ours;
+on API 30+ neither permission exists (MediaStore writes need none). Verify it yourself:
+`aapt2 dump badging <apk> | grep permission`.
 
 Beyond these, we request **no** location, contacts, camera, microphone, calendar, or
 background permissions.

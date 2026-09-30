@@ -127,7 +127,8 @@
 <ul>
 <li>上报地址是<strong>编译期配置</strong>的：没配地址时埋点通道是 <code>_NullTransport</code>，它<strong>永远失败</strong> —— 事件只会留在本机的 outbox 里。当前发布的包<strong>没有配地址</strong>。</li>
 <li>训练数据同步通道是 <code>InMemorySyncQueue</code>，只存内存、不上网，App 一关就没了。</li>
-<li><strong>你可以自己验</strong>：附录 B 给了三条命令（看权限、看埋点字段、看通道是不是 NullTransport）。</li>
+<li><strong>本版本未提供云备份</strong>。云端备份的代码已经写好（端到端加密、默认关闭）， 但它需要一个服务器地址才能启用，而地址同样是<strong>编译期配置</strong>的： 没配地址的包，界面上连「云备份」这个入口都不会出现。</li>
+<li><strong>你可以自己验</strong>：附录 B 给了几条命令（看权限、看埋点字段、看通道是不是 NullTransport、 看云备份有没有配地址）。</li>
 </ul>
 <p>换句话说，<strong>现在连我们自己也拿不到你的数据。</strong> 我们如实标注这一点，是因为把 &quot;将来会做&quot;写成&quot;已经在做&quot;是欺骗，反过来把&quot;其实没做&quot;说成&quot;做了&quot;同样没必要。</p>
 <h3 id="3-2-接入真实上报之后">3.2 接入真实上报之后</h3>
@@ -151,6 +152,7 @@
 <li>它只能写图片，且只在你自己点「存相册」时才会用到。</li>
 <li>分享卡是<strong>在本机画出来的</strong>：图片由设备上的界面直接渲染成 PNG， <strong>不会上传到我们的服务器</strong>。点「分享」是把这张图交给系统分享面板， 之后你选了哪个应用（微信、相册……）由你决定，那一步的数据处理适用那个应用的隐私政策。</li>
 </ul>
+<p><strong>打包后还会多出一条「读」权限，这一步要说清楚</strong>：在 <strong>API ≤29</strong> 的设备上， 只要声明了 <code>WRITE_EXTERNAL_STORAGE</code>，Android 就会由系统<strong>隐含</strong>并同时授予 <code>READ_EXTERNAL_STORAGE</code>（<code>aapt2 dump badging</code> 会把它标成 <code>uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'</code>）。 我们<strong>从不读取</strong>你的照片或文件 —— 这条权限是平台行为带来的，不是我们要的； API 30+ 上这两条都不存在（走 MediaStore 免权限写入）。 要自己核对：<code>aapt2 dump badging &lt;apk&gt; | grep permission</code>。</p>
 <p>除此之外<strong>不申请</strong>定位、通讯录、相机、麦克风、日历、后台运行等任何权限。</p>
 <blockquote><p>实现说明：Flutter 模板默认只在 debug/profile 变体里加 INTERNET（为了热重载）， release 版原本没有这个权限。本项目把它显式声明到 main，使三个变体行为一致 —— 否则将来接上报地址时，release 版会<strong>静默失败</strong>且不报错。</p>
 </blockquote>

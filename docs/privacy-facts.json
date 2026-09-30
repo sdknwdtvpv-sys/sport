@@ -226,5 +226,42 @@
     "剪贴板内容（「导出记录」是写入剪贴板给你，我们不读取）",
     "体重等身体数据的数值（只上报 has_weight / has_note 这类布尔值，数值不出设备）",
     "训练备注、自定义动作名称等自由文本"
+  ],
+  "cloudBackup": {
+    "enabledInDistributedBuild": false,
+    "_why": "云备份是第一个会让数据离开设备的功能。它的开关是**编译期**的（--dart-define=LIANLEME_BACKUP_URL，默认空串）——代码里那条通道始终存在，但没配地址的包里；界面上连入口都不出现，任何数据都不会发出去。tool/privacy-audit.mjs 会按这个布尔值双向核对政策正文：false 时要求政策写明「本版本未提供云备份」，true 时要求逐条披露离开设备的东西。改这一位之前先改政策。",
+    "_endpoint": "--dart-define=LIANLEME_BACKUP_URL（默认空；正式包必须 https）。见 app/lib/backup/backup_config.dart",
+    "disabledStatement": {
+      "zh": "本版本未提供云备份",
+      "en": "This version does not include cloud backup"
+    },
+    "enabledPhrases": {
+      "zh": [
+        "云备份",
+        "端到端加密",
+        "恢复码",
+        "服务端只拿到密文"
+      ],
+      "en": [
+        "cloud backup",
+        "end-to-end encrypted",
+        "recovery code"
+      ]
+    },
+    "whatLeavesDeviceWhenEnabled": [
+      "端到端加密后的整包备份（密文）—— 服务端看不到动作名、重量、体重",
+      "account_id：恢复码的 SHA-256（服务端反推不出恢复码，因此也解不开密文）",
+      "密文字节数与最后更新时间"
+    ],
+    "_neverLeaves": "恢复码本身、明文训练数据、体重数值 —— 这些只在设备上"
+  },
+  "impliedPermissions": [
+    {
+      "name": "android.permission.READ_EXTERNAL_STORAGE",
+      "maxSdkVersion": 29,
+      "policyPhrase": "READ_EXTERNAL_STORAGE",
+      "why": "系统因 WRITE 隐含授予；我们从不读用户文件",
+      "howToVerify": "aapt2 dump badging | grep implied"
+    }
   ]
 }

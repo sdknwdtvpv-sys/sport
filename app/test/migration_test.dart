@@ -221,6 +221,44 @@ void main() {
     await legacy.close();
   });
 
+  test('v9 的库升到 v10：多出 backup_account 表，而且**是空的**', () async {
+    late List<String> tablesBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 9);
+        raw.execute(legacySeedExerciseSql);
+        tablesBefore = raw
+            .select("SELECT name FROM sqlite_master WHERE type='table'")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+
+    // `setup` 是**第一次真正查库时**才跑的（drift 是懒的），所以要先戳一下，
+    // 否则 `tablesBefore` 还是一个没初始化的 late 变量。
+    await legacy.customSelect('SELECT 1').get();
+
+    // 老库升级上来必须是"没开过云备份"，而不是"开过但恢复码是空的"——
+    // 后者会让界面显示成一团糟的已开启状态。所以查的是**没有那一行**。
+    expect(tablesBefore, isNot(contains('backup_account')),
+        reason: 'fixture 不该有这张表，否则这条测试是空转');
+    expect(await ProfileRepository(legacy).cloudAccount(), isNull);
+
+    final after = await legacy
+        .customSelect("SELECT name FROM sqlite_master WHERE type='table'")
+        .get();
+    expect(after.map((r) => r.read<String>('name')), contains('backup_account'));
+
+    // 升级之后这张表要能真的用起来（只是存在还不够）
+    await ProfileRepository(legacy)
+        .setCloudAccount('ABCDEFGHJKMNPQRSTVWXYZ01234', nowMs: 1000);
+    final BackupAccountData? row = await ProfileRepository(legacy).cloudAccount();
+    expect(row!.recoveryCode, 'ABCDEFGHJKMNPQRSTVWXYZ01234');
+    expect(row.lastUploadAtMs, isNull);
+
+    await legacy.close();
+  });
+
   test('老库里**没有** category 列 —— fixture 本身也要守着', () async {
     // 这一条是防"有人把 fixture 改成当前 schema 的样子"从而让上面两条变成空转。
     // 迁移测试最隐蔽的失败方式就是：fixture 悄悄跟上了新 schema，测试永远绿。

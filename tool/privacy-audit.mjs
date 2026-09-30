@@ -185,16 +185,84 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
-  // ⑤ 打包后的合并权限（发布前用 --apk 跑）
+  // ⑤ 权限名字必须出现在两版政策里。
+  //
+  // 为什么连 implied 也要查：`READ_EXTERNAL_STORAGE` 是系统因 WRITE 隐含授予的，
+  // 它**会出现在 API ≤29 老系统的权限列表里**。只在 facts 里登记、政策里不提，
+  // 等于"机器知道、用户看不到" —— 那正是隐私政策最不该有的状态。
+  if (existsSync(POLICY_EN)) {
+    const policyEnText = readFileSync(POLICY_EN, 'utf8');
+    for (const perm of [...facts.permissions, ...(facts.impliedPermissions ?? [])]) {
+      // 政策正文里可能写全名，也可能在句子里用短名（`READ_EXTERNAL_STORAGE`）——
+      // 所以要求写在 `policyPhrase` 里，别让检查去猜措辞（猜错就会一直误报，然后被忽略）。
+      const phrase = perm.policyPhrase ?? perm.name;
+      if (!policy.includes(phrase)) {
+        errors.push(`政策正文里没有提到权限「${phrase}」（隐私事实里登记了它）`);
+      }
+      if (!policyEnText.includes(phrase)) {
+        errors.push(`英文政策里没有提到权限「${phrase}」`);
+      }
+    }
+  }
+
+  // ⑥ 云备份：能力已经写进代码，但**当前发布配置下没有启用**。
+  //
+  // 为什么值得单独一条：这是本项目第一个"数据可能离开设备"的功能，
+  // 而它的开关是**编译期**的（--dart-define=LIANLEME_BACKUP_URL）。
+  // 门禁看不到你打算怎么打包，所以这里的 `enabledInDistributedBuild` 是面镜子：
+  //   * false → 政策里必须写明"本版本未提供云备份"（说了"不上传"就必须真的没这条通道）
+  //   * true  → 政策里必须逐条披露离开设备的东西
+  // 两个方向都查，改哪边忘了另一边都会红。**故意不查代码里有没有那个地址**：
+  // 代码里恒有（默认空串），查它等于空转。
+  {
+    const cb = facts.cloudBackup;
+    if (!cb) {
+      errors.push('privacy-facts.json 少了 cloudBackup —— 云备份会（在启用后）把数据送出设备，'
+        + '这条数据流向必须显式声明，不能靠"默认关着"含糊过去');
+    } else {
+      const policyEnText = existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '';
+      if (cb.enabledInDistributedBuild === true) {
+        for (const phrase of cb.enabledPhrases?.zh ?? []) {
+          if (!policy.includes(phrase)) {
+            errors.push(`云备份已启用，但政策正文里没有「${phrase}」`);
+          }
+        }
+        for (const phrase of cb.enabledPhrases?.en ?? []) {
+          if (!policyEnText.includes(phrase)) {
+            errors.push(`云备份已启用，但英文政策里没有「${phrase}」`);
+          }
+        }
+      } else {
+        const zh = cb.disabledStatement?.zh;
+        const en = cb.disabledStatement?.en;
+        if (!zh || !en) {
+          errors.push('cloudBackup 没启用时，必须在 disabledStatement 里写清中英各自那句话');
+        } else {
+          if (!policy.includes(zh)) {
+            errors.push(`云备份当前未启用，政策正文必须写明「${zh}」——`
+              + `否则读者会以为这份政策的"不上传"覆盖了一个其实存在的通道`);
+          }
+          if (!policyEnText.includes(en)) {
+            errors.push(`云备份当前未启用，英文政策必须写明「${en}」`);
+          }
+        }
+      }
+    }
+  }
+
+  // ⑦ 打包后的合并权限（发布前用 --apk 跑）
   if (apkPermissions) {
     const allowed = new Set([
       ...facts.permissions.map((p) => p.name),
       ...(facts.injectedPermissions ?? []),
+      // implied（系统因别的权限隐含授予的）也算已披露 —— 但必须在事实源里有一条，
+      // 不能靠"反正没人声明"糊过去。
+      ...(facts.impliedPermissions ?? []).map((p) => p.name),
     ]);
     for (const p of apkPermissions) {
       if (!allowed.has(p)) {
         errors.push(`打包后的 APK 里出现了未披露的权限「${p}」—— `
-          + `很可能是某个插件加进来的，必须在政策与隐私事实里说明`);
+          + `插件加的、或系统隐含授予的，都必须在政策与隐私事实里说明`);
       }
     }
   }
@@ -214,22 +282,46 @@ if (process.argv[1] && process.argv[1].endsWith('privacy-audit.mjs')) {
   let apkPermissions = null;
   const apk = argOf('--apk', null);
   if (apk) {
-    // 用 aapt2 读合并后的权限（构建工具在 Android SDK 里；找不到就明确跳过）
+    // 用 aapt2 读合并后的权限。
+    //
+    // ⚠️ 这里原本只找 `~/Library/Android/sdk` —— 2026-09-30 依赖搬去 SSD 之后，
+    // 那个路径**已经不存在了**，于是 `--apk` 这档检查**静默变成空转**：
+    // 打印一行 "找不到 aapt2，跳过"，然后照常退出 0。
+    // 而政策附录 B 恰恰教用户用这条命令去核"打包后的合并权限"——
+    // 结果就是 `READ_EXTERNAL_STORAGE`（gal 带的）谁都没发现，是我手工 aapt2 才翻出来的。
+    // 所以现在：① 按 ANDROID_SDK_ROOT 找；② **既然你明确要了 --apk，找不到就不是跳过而是报错**。
     const { execFileSync } = await import('node:child_process');
-    const sdk = join(process.env.HOME ?? '', 'Library/Android/sdk/build-tools');
+    const sdkRoots = [
+      process.env.ANDROID_SDK_ROOT,
+      process.env.ANDROID_HOME,
+      "/Volumes/Elliot's SSD/harness-deps/android-sdk",
+      join(process.env.HOME ?? '', 'Library/Android/sdk'),
+    ].filter(Boolean);
     let aapt2 = null;
-    if (existsSync(sdk)) {
-      const versions = readdirSync(sdk).sort();
+    for (const root of sdkRoots) {
+      const bt = join(root, 'build-tools');
+      if (!existsSync(bt)) continue;
+      const versions = readdirSync(bt).sort();
       for (const v of versions.reverse()) {
-        const cand = join(sdk, v, 'aapt2');
+        const cand = join(bt, v, 'aapt2');
         if (existsSync(cand)) { aapt2 = cand; break; }
       }
+      if (aapt2) break;
     }
     if (!aapt2) {
-      console.error('⊘ 找不到 aapt2，跳过打包权限核对（静态对账仍然有效）');
+      console.error('✗ 你要了 --apk，但找不到 aapt2 —— **这不是"跳过"，是这条检查没做**。');
+      console.error('  设好 ANDROID_SDK_ROOT（或装上 Android SDK build-tools）再跑。');
+      console.error(`  找过：${sdkRoots.join(' · ')}`);
+      process.exit(1);
     } else {
-      const out = execFileSync(aapt2, ['dump', 'permissions', apk], { encoding: 'utf8' });
-      apkPermissions = [...out.matchAll(/uses-permission: name='([^']+)'/g)].map((m) => m[1]);
+      // ⚠️ 用 badging 而不是 `dump permissions`：后者**不报 implied 权限**。
+      // 2026-09-30 就是这么漏掉的：`READ_EXTERNAL_STORAGE` 不是谁声明的，
+      // 而是"声明了 WRITE_EXTERNAL_STORAGE"之后 Android 在 API ≤29 上隐含授予的，
+      // 只有 badging 会打出 `uses-implied-permission ... reason='requested WRITE...'`。
+      // 而它**会出现在老系统的权限列表里** —— 政策里不写就是漏披露。
+      const out = execFileSync(aapt2, ['dump', 'badging', apk], { encoding: 'utf8' });
+      apkPermissions = [...out.matchAll(/^uses-(?:implied-)?permission: name='([^']+)'/gm)]
+        .map((m) => m[1]);
     }
   }
 

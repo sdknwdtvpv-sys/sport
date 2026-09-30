@@ -127,6 +127,7 @@
 <ul>
 <li>The upload endpoint is configured <strong>at build time</strong>: with no endpoint the analytics channel is <code>_NullTransport</code>, which <strong>always fails</strong> — events only accumulate in the on-device outbox.</li>
 <li>The workout sync channel is <code>InMemorySyncQueue</code>: memory only, no network, gone when the app closes.</li>
+<li><strong>This version does not include cloud backup.</strong> The cloud-backup code exists (end-to-end encrypted, off by default), but it needs a server address to switch on — and that address is configured <strong>at build time</strong> as well: in a build without one, the &quot;Cloud backup&quot; entry does not even appear in the app.</li>
 </ul>
 <p>In other words, <strong>even we cannot access your data right now.</strong> We state this plainly because describing a future feature as already shipped would be dishonest — and so would pretending &quot;nothing happens&quot; is a feature.</p>
 <h3 id="3-2-after-a-real-endpoint-is-connected">3.2 After a real endpoint is connected</h3>
@@ -148,6 +149,7 @@
 <li>It only grants image writes, and is used only when you tap &quot;Save to gallery&quot;.</li>
 <li>The share card is <strong>rendered on your device</strong>: the image is drawn directly from the UI into a PNG and <strong>is never uploaded to our servers</strong>. Tapping &quot;Share&quot; hands the image to the system share sheet; which app you then pick (WeChat, Photos, …) is your choice, and that step is governed by that app's privacy policy.</li>
 </ul>
+<p><strong>One more &quot;read&quot; permission shows up after packaging, and we want to be explicit about it.</strong> On <strong>API ≤29</strong> devices, merely declaring <code>WRITE_EXTERNAL_STORAGE</code> makes Android <strong>imply</strong> and grant <code>READ_EXTERNAL_STORAGE</code> as well (<code>aapt2 dump badging</code> reports it as <code>uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'</code>). We <strong>never read</strong> your photos or files — that permission comes from platform behaviour, not from a request of ours; on API 30+ neither permission exists (MediaStore writes need none). Verify it yourself: <code>aapt2 dump badging &lt;apk&gt; | grep permission</code>.</p>
 <p>Beyond these, we request <strong>no</strong> location, contacts, camera, microphone, calendar, or background permissions.</p>
 <blockquote><p>Implementation note: the Flutter template only adds INTERNET to the debug/profile variants (for hot reload), so the release build originally had no such permission. We declare it in <code>main</code> so all three variants behave identically — otherwise, once a real endpoint is wired, release builds would <strong>fail silently</strong> with no error.</p>
 </blockquote>

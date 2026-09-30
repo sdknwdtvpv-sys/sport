@@ -247,4 +247,60 @@ class ProfileRepository {
           ),
         );
   }
+
+  // ---------------------------------------------------------------- 云备份
+
+  /// 云备份账号（**没有就是 null = 这台机器还没开过云备份**）。
+  ///
+  /// 默认关闭是靠"这张表空着"表达的，不另设一个 boolean ——
+  /// 两个来源（开关 + 恢复码）早晚会打架，而只有一个来源时不可能不一致。
+  Future<BackupAccountData?> cloudAccount() async {
+    return (_db.select(_db.backupAccount)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+  }
+
+  /// 开启云备份：把恢复码记下来。重复调用就用新的码覆盖。
+  ///
+  /// ⚠️ 覆盖恢复码等于**换了一个账号**（`account_id` 由它派生），
+  /// 云上旧那份就再也打不开了。所以界面上必须拦一道，不能悄悄覆盖。
+  Future<void> setCloudAccount(String recoveryCode, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await cloudAccount();
+    await _db.into(_db.backupAccount).insertOnConflictUpdate(
+          BackupAccountData(
+            userId: kLocalUserId,
+            recoveryCode: recoveryCode,
+            enabledAtMs: existing?.enabledAtMs ?? now,
+            lastUploadAtMs: existing?.lastUploadAtMs,
+            lastUploadBytes: existing?.lastUploadBytes,
+          ),
+        );
+  }
+
+  /// 记下"刚成功备份过"。失败时**不要**调它 —— 界面上的"上次备份于…"
+  /// 一旦会撒谎，用户就会以为数据安全了。
+  Future<void> markCloudUpload(int bytes, {int? nowMs}) async {
+    final existing = await cloudAccount();
+    if (existing == null) return;
+    await _db.into(_db.backupAccount).insertOnConflictUpdate(
+          BackupAccountData(
+            userId: kLocalUserId,
+            recoveryCode: existing.recoveryCode,
+            enabledAtMs: existing.enabledAtMs,
+            lastUploadAtMs: nowMs ?? DateTime.now().millisecondsSinceEpoch,
+            lastUploadBytes: bytes,
+          ),
+        );
+  }
+
+  /// 关闭云备份：**只清本机凭据**。
+  ///
+  /// 云上那份仍然在（用户可能想留着，用恢复码在别的设备上还能取回来）。
+  /// 真要连云端一起删，走 [CloudBackup.deleteAccount]。
+  Future<void> clearCloudAccount() async {
+    await (_db.delete(_db.backupAccount)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .go();
+  }
 }

@@ -219,25 +219,32 @@ flutter build apk --release                      # 旁加载用（APK）
 | 构建链 | ✅ 可产出。release APK 58.5M（`flutter-apk/app-release.apk`）；**AAB 未在本版重跑** |
 | 签名接线 | ✅ 接线与硬失败**已验证**（缺 `key.properties` 时构建直接失败、逃生开关有效） |
 | 正式签名 | ❌ **还没有真 keystore**。所以 `dist/*.apk` 是**debug 签名的旁加载包** —— 能装自己手机，**商店必拒收**。生成：`app/android/tool/gen-upload-keystore.sh`（在你那边） |
-| 权限 | ⚠️ 源码 manifest 是**两项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29）；但**打包后的合并 manifest 多出一项** `READ_EXTERNAL_STORAGE`（≤29，`gal` 带来的）—— 见下方"待处理" |
+| 权限 | ✅ 源码 manifest **两项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29）。打包后多一条**隐含**的 `READ_EXTERNAL_STORAGE`（≤29，系统因 WRITE 授予，不是谁声明的）—— **已在政策里如实披露** |
 | 隐私政策 | 🚧 中英文已成文、占位符已填；**待法务审核 + 公网 URL + 填生效日**。⚠️ 云备份一旦上线，§3.1/§3.2 必须重写（数据**会**离机） |
 | 删除数据入口 | ✅ 已实现并测试，待真机再点一次 |
-| 真机验证 | ✅ Redmi `flourite`（Android 16 / API 36）上跑的是 **v1.20.0**（覆盖安装 1.19.0 → 1.20.0，冷启动无异常） |
+| 真机验证 | ✅ Redmi `flourite`（Android 16 / API 36）上跑的是 **v1.21.0**（逐版覆盖安装；冷启动无异常） |
 | 测试 | ✅ 门禁 666 项全绿、变异 24 杀 / 0 存活 = 100% |
 | `tap_count` 门禁 | ❌ 口径已改端到端、目标值**待用真实测试数据重新校准**。按项目规则**不允许上架**（旁边加载到自己的开发机不受此限） |
 
-### 待处理（本版核对时新发现，都不是"以后再说"，是上架前必须收掉的）
+### 待处理（2026-09-30 核对时发现，**第 1 条已在本版收掉**）
 
-1. **`READ_EXTERNAL_STORAGE` 不在政策里**。`docs/privacy-policy.md` §四写的是"声明**两项**"，
-   而 `aapt2 dump badging` 显示打包后有第三项用户可见权限（`gal` 的 manifest 带的，仍限 API ≤29）。
-   政策 §附录 B 自己就写着"再核一次**打包后**的合并权限" —— 这次核出来了。
-   两条路，**需要你拍板**：
-   * **A（更省权限）**：在 `app/android/app/src/main/AndroidManifest.xml` 用
-     `tools:node="remove"` 把 `READ_EXTERNAL_STORAGE` 删掉 —— 我们只**写**相册，从不读用户照片。
-     风险：手边只有 API 36 的设备，**≤29 的保存路径无法实测**。
-   * **B（更保守）**：政策与 `docs/privacy-facts.json` 各补一行，说明它在 API ≤29 上出现、
-     用途仍是"存分享卡"。
-   我倾向 A，但**不改**：这条动的是权限面，要么能实测、要么你点头。
+1. ~~**`READ_EXTERNAL_STORAGE` 不在政策里**~~ —— **已披露**（v1.21.0）。
+   而且当初那个"两条路，需要你拍板"的说法**是错的**，如实记下来：
+   我以为可以在 manifest 里用 `tools:node="remove"` 把它删掉，实际上
+   **它根本不是一条 `<uses-permission>`** —— 它是"声明了 `WRITE_EXTERNAL_STORAGE`"之后
+   Android 在 API ≤29 上**由系统隐含授予**的（`aapt2 dump badging` 里那行
+   `uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'`）。
+   宿主要么不给 WRITE（那就等于放弃"存分享卡到相册"这条功能），要么接受这条隐含的读权限。
+   所以真正可选的只有"如实写进政策"这一条，已经写了：中文 §四、英文 §4 各加一段，
+   并进 `docs/privacy-facts.json` 的 `impliedPermissions`。
+
+   **顺带修掉两个"检查在空转"的坑**（比这条权限本身更值得记）：
+   * `privacy-audit.mjs --apk` 去 `~/Library/Android/sdk` 找 aapt2 —— 依赖搬去 SSD 之后
+     那个路径已经不存在，于是它打印一行"找不到 aapt2，跳过"就**照常退出 0**。
+     而政策附录 B 恰恰教用户用这条命令核"打包后的合并权限"。
+     现在：按 `ANDROID_SDK_ROOT` 找，且**既然你明确要了 `--apk`，找不到就报错**（不是跳过）。
+   * 它原来用 `aapt2 dump permissions`，**这个子命令不报 implied 权限** ——
+     上面那条 READ 就是这么漏掉的。改用 `dump badging` 并把 implied 一起收进来。
 2. `app/pubspec.yaml` 里那句注释写的是 `maxSdkVersion="28"`，实际是 `29`（已改）。
 
 > ⚠️ **门禁查不到 release 构建**：`verify.sh` 一行 Gradle 都不跑，

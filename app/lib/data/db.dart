@@ -278,6 +278,33 @@ class RoutineItem extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// 云备份账号（**最多一行**）。
+///
+/// 恢复码就是账号密钥，所以这张表存的是**打开云端备份的唯一凭据**。
+/// 三条设计决定：
+///
+///   * **和 `user_profile` 一样按 `user_id` 做主键**（现在恒为 `local`）——
+///     多用户是以后的事，但先把位置留出来，免得将来再加一次表重建。
+///   * **存规范形态（27 位、无连字符）**，不存给人看的那版分组写法。
+///     展示时再分组 —— 两处都存就会出现"哪份是真的"这种问题。
+///   * **它会被「删除全部数据」一起清掉**（见 `drift_local_store.deleteAllUserData`）。
+///     ⚠️ 但那只清了本机 —— **云上那份要另外删**，否则恢复码一丢，用户的数据
+///     就永远留在一台他控制不了的服务器上了。
+class BackupAccount extends Table {
+  TextColumn get userId => text()();
+  TextColumn get recoveryCode => text()();
+
+  /// 开启云备份的时间
+  IntColumn get enabledAtMs => integer()();
+
+  /// 最后一次成功上传的时间与密文字节数（界面上显示"上次备份于…"）
+  IntColumn get lastUploadAtMs => integer().nullable()();
+  IntColumn get lastUploadBytes => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{userId};
+}
+
 @DriftDatabase(tables: <Type>[
   Exercise,
   Workout,
@@ -289,6 +316,7 @@ class RoutineItem extends Table {
   BodyMetric,
   Routine,
   RoutineItem,
+  BackupAccount,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -301,11 +329,12 @@ class AppDatabase extends _$AppDatabase {
   /// v7：新增 `analytics_meta`（设备 ID / 会话 ID / 首次启动时间 —— 埋点公共字段）。
   /// v8：`exercise` 新增 `default_target_distance_m`（距离处方：每组多少米）。
   /// v9：`exercise` 新增 `instructions`（动作说明：怎么做 + 最常见的错）。
+  /// v10：新增 `backup_account`（云备份账号：恢复码 + 上次备份时间）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -385,6 +414,11 @@ class AppDatabase extends _$AppDatabase {
           // 覆盖率工具会把"还没写的"如实算进去，不假装有。
           if (from < 9) {
             await m.addColumn(exercise, exercise.instructions);
+          }
+          // v9 → v10：加一张新表（只放云备份账号）。老库升上来时这张表是空的 ——
+          // 那正是我们要的：**云备份默认关闭**，没有那行就代表"这台机器还没开过"。
+          if (from < 10) {
+            await m.createTable(backupAccount);
           }
         },
       );

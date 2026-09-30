@@ -237,6 +237,13 @@ class DriftLocalStore implements LocalStore {
       // 但用户说"删除全部数据"时，一个能把他和过去关联起来的标识就不该留下。
       // 后果如实记录：删过数据的设备再打开会被算成一台新设备（分母多一个）。
       await _db.delete(_db.analyticsMeta).go();
+      // 云备份账号（恢复码）也清掉。
+      // ⚠️ 这只清了**本机**那串凭据。政策里承诺的"云端也删"是另一件事：
+      // 客户端必须另外调 `DELETE /v1/account`，否则用户的数据会一直留在服务器上，
+      // 而他连打开它的钥匙都没了（恢复码刚被他自己删掉）。
+      // 所以「删除全部数据」必须多问一句"云端备份也删吗"。**这一条还没做**，
+      // 记在 docs/release-checklist.md「待处理」与 docs/backend-design.md §七。
+      await _db.delete(_db.backupAccount).go();
       // exercise（动作库）刻意不删：那是产品资产，不是用户数据，
       // 删了用户就没法再记录任何动作。
     });
