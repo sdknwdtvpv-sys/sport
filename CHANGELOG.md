@@ -317,6 +317,23 @@ bytes=22567`（与设备报的 22.0 KB 对得上）；`tool/check-ciphertext.mjs
 ⚠️ **不等于"用手指走一遍"**：注入是输入层的事件，**手感、误触、单手可达性、出汗时按不按得到
 大按钮**它测不到。README 与 `your-todo` 的那一条**继续挂着**，只是措辞改准了（自动化那半已完成）。
 
+### 同版追加：云备份端到端**在真机上也跑通了**（第三种环境）
+
+手机解锁当天除了手势走查，还把**云备份真机端到端**补了 —— 它是 `your-todo` 第 12 条里
+"模拟器跑通但 Doze / 厂商后台策略 / 真实网络只能在真机验"的那一条：
+
+Redmi `flourite`（Android 16 / API 36）+ `adb reverse tcp:8790 tcp:8790` + 本地后端，
+同一份测试与 driver：`account-created` → `uploaded: 22.0 KB 密文` → `local-data-deleted (cloud kept)`
+→ `adopted-existing-code` → `restored: 已导入 1 次训练 / 2 组` → `verified-2-sets-restored` → **`E2E-OK`**。
+
+宿主侧同一时刻：`accounts: 1 · backups: 1 · bytes=22567`（与设备报的一致）、
+`check-ciphertext` 判绿、**明文记号全部阴性**（`ex_bb_bench_press`/`weight_kg`/`"reps"`/`40.0`/`卧推`）。
+**"服务端看不到训练明细"这句话，现在在「安卓模拟器 / iOS 模拟器 / 安卓真机」三种环境下各有一份成对证据。**
+跑完把 release 包装回真机（文档里写的那个状态），冷启动 `E/flutter` 0 条。
+
+> ⚠️ 没验到的照旧写明：**Doze 深度睡眠下的后台上传**（这次是前台跑的）、弱网/切网重试、
+> "关掉 App 之后自己补传" —— 那几条要人真的把手机放兜里过一天，仍在第 12 条挂着。
+
 版本 1.31.0+40 → 1.32.0+41。
 
 ## v1.31.0 · 体重的**单独同意**：敏感个人信息不能靠"政策总同意"顶替

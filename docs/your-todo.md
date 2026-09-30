@@ -19,7 +19,7 @@
 |---|---|
 | 六层门禁 | `./verify.sh`（**干净克隆也能直接跑**：会先自动 pub get + 生成 drift 代码；最近一次在 `2f66d40` 的干净克隆上实测：753 项测试全绿、`未发现失败`、零阻塞）|
 | 推送后 CI 状态 | ⚠️ **只有你能看**：仓库是**私有**的（匿名 API / HTML 都是 404，HTTPS `ls-remote` 要凭据），我这边看不到 CI 绿不绿 —— 见 §三 第 6 条。而"CI 只是门禁子集"这件事本身有守卫（`node tool/check-ci.mjs`）|
-| 云备份端到端（**两个平台的模拟器都跑通了**）| `docs/backend-design.md` §七之七 的命令块（含 `node tool/check-ciphertext.mjs <服务端库>`）；安卓模拟器 + **iOS 模拟器**（2026-09-30，各自 `E2E-OK` 且服务端库里搜不到明文）|
+| 云备份端到端（**安卓模拟器 + iOS 模拟器 + 安卓真机**）| `docs/backend-design.md` §七之七 的命令块（含 `node tool/check-ciphertext.mjs <服务端库>`）；2026-09-30 三种环境各跑通一次、各自 `E2E-OK`，服务端库里都搜不到明文（真机那次走 `adb reverse`）|
 | **服务端只有密文** | `node tool/check-ciphertext.mjs <库>`（自检：`--selftest`，故意造含明文的库要求它报错）|
 | 删除权（逐表清空 + 表清单守门）| `app/test/delete_all_test.dart` |
 | 默认不收集（真实库里的待发条数）| `app/integration_test/analytics_outbox_e2e_test.dart`（跑两遍：默认 0 条 / 预置开 11 条）；**安卓与 iOS 两个平台都跑过，结论一致**|
@@ -189,7 +189,7 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 
 | # | 事项 | 解锁什么 |
 |---|---|---|
-| 12 | **解锁真机**（Redmi `flourite`，现在锁屏 + Dozing） | ① 云备份的**真机**端到端（**两个平台的模拟器都已跑通**，但 Doze、厂商后台策略、真实网络切换只能在真机验）；② 界面逐屏走查（注入权限你已经打开了，就差解锁）；③ 真机版商店截图 |
+| 12 | **解锁真机**（Redmi `flourite`） | ① ~~云备份的**真机**端到端~~ ✅ **2026-09-30 手机解锁当天跑通了**（`E2E-OK`，服务端库里只有密文）；**仍然没验的**：Doze 深度睡眠下的**后台**上传（这次是前台跑）、弱网/切网重试、"关掉 App 自己补传" —— 那几条要你真的把手机放兜里过一天（原话是"厂商后台策略与真实网络切换只能在真机验"）；② 界面逐屏走查（注入权限你已经打开了，就差解锁）；③ 真机版商店截图 |
 | 13 | ~~装 Xcode~~ **✅ 已装（Xcode 27.0）—— 只差一条命令接受许可证** | ⚠️ **现在是这一条在挡着线 1**：许可证没接受时 `xcodebuild` / `xcrun` 被拒，连带 `git`、`python3`、`flutter`、`dart` 一起挂（`/usr/bin/git` 与 `/usr/bin/python3` 都是 xcrun 的壳）。请在终端跑：**`sudo xcodebuild -license accept`**（装完第一次可顺手 `sudo xcodebuild -runFirstLaunch`）。跑完我就能做 iOS 编译与逐屏验证。⚠️ 附一件**只有上传后才知道答案**的事：Apple 的隐私清单（`PrivacyInfo.xcprivacy`）—— 首次上传若收到 `ITMS-91053: Missing API declaration`，就要加 app 级清单（判据与起手内容在 `docs/release-admin.md` §二之四；**我没有替你改 `project.pbxproj`**，因为本机没 Xcode、改完无法验证） |
 
 > 模拟器这条后路我已经铺好了（`emulator-5554`，一条命令起来）：**不需要解锁真机**就能跑

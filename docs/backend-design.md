@@ -354,8 +354,25 @@ cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
 `"reps"`、`40.0`、`卧推` 全部阴性。**两端同一份证据，同一句话成立**：
 服务端手里只有密文。
 
-⚠️ **仍然是模拟器**：真机（Doze / 厂商后台策略 / 真实网络切换）那一档由 §八 阶段 5 的复述保留，
-见 `docs/your-todo.md` 第 12 条。
+⚠️ 上面两个都是**模拟器**。**真机那一档 2026-09-30 也补上了**（手机解锁当天）：
+
+在 Redmi `flourite`（Android 16 / API 36）上，用同一份测试与 driver + `adb reverse tcp:8790 tcp:8790`：
+
+| 步 | 真机上的实际输出 |
+|---|---|
+| 建号 / 上传 | `account-created` → `uploaded: 已备份 1 次训练 / 2 组（22.0 KB 密文）` |
+| 删本机（云端留着） | `local-data-deleted (cloud kept)` |
+| 用恢复码取回 | `adopted-existing-code` → `restored: 已从云端恢复：已导入 1 次训练 / 2 组` |
+| 逐字段断言 | `verified-2-sets-restored (field-by-field)` → **`E2E-OK`** |
+
+宿主侧同一时刻读服务端那份库：`accounts: 1 · backups: 1 · bytes=22567`（与设备报的 22.0 KB 一致）、
+`tool/check-ciphertext.mjs` 判绿、**明文记号全部阴性**（`ex_bb_bench_press` / `weight_kg` / `"reps"` /
+`40.0` / `卧推`）。**到这一步，"服务端看不到训练明细"这句话在安卓模拟器、iOS 模拟器、安卓真机
+三种环境下各有一份成对证据。** 跑完把 release 包装回真机（文档里写的那个状态），冷启动 `E/flutter` 0 条。
+
+> ⚠️ 仍然要说清楚**没验到的**：Doze 深度睡眠下的**后台**上传（这次是在前台跑的）、
+> 弱网/切网重试、以及"关掉 App 之后它自己补传"这类后台行为 —— 那几条要靠人真的把手机放兜里过一天。
+> 见 `docs/your-todo.md` 第 12 条。
 
 > 为什么是**两个**开关：地址一旦配上，界面就会出现云备份入口，而政策正文是按「是否启用」写的（没启用时必须写「本版本未提供云备份」）—— 只给地址会做出一个**界面与政策自相矛盾**的包。所以少了声明开关就当作**没配**：入口不出现、一个字节都不发。`tool/privacy-audit.mjs` 会检查「教人开云备份」的地方有没有同时写这两个开关。
 
