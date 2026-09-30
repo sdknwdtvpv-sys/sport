@@ -1,4 +1,4 @@
-/// 练了么 · 「存相册」在 **iOS** 上的真实行为（权限两条路各走一遍）
+/// 练了么 · 「存相册」在 **两个平台**上的真实行为（iOS 两条权限路 + 安卓免权限那条）
 ///
 /// **为什么单为它写一个**：`docs/release-admin.md` 的「iOS 与安卓的差异清单」里列着
 /// 一条只有 Xcode 能回答的问题 —— *"分享面板与『存到相册』在 iOS 上的真实行为
@@ -13,6 +13,10 @@
 ///     `Gal.requestAccess()` 返回 false → 界面**如实**说「没有相册权限，没存成」，
 ///     而且**不崩**（用户刚练完，最不该看到的就是崩溃）。
 ///
+/// 安卓那一侧验的是**相反**的一件事（`LIANLEME_GALLERY_MODE=android`）：
+/// Android 10+ 走 MediaStore **根本不需要权限**，所以**说明框不该出现**、
+/// 存完直接说「已存进相册」——"不需要问的时候别白问一次"这条规矩的另一半。
+///
 /// 跑法（**必须先装一次 App 再设权限**，`simctl privacy` 要求这个 bundle 已经存在）：
 /// ```bash
 /// UDID=$(xcrun simctl create t com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max \
@@ -23,6 +27,13 @@
 /// xcrun simctl privacy "$UDID" revoke photos-add com.sdknwdtvpv.lianleme   # 或 grant
 /// flutter test integration_test/share_card_gallery_test.dart -d "$UDID" \
 ///     --dart-define=LIANLEME_GALLERY_MODE=deny                            # 或 =grant
+/// ```
+///
+/// 安卓（模拟器 API 36 = Android 16，MediaStore 免权限那条路）：
+/// ```bash
+/// flutter test integration_test/share_card_gallery_test.dart -d emulator-5554 \
+///     --dart-define=LIANLEME_GALLERY_MODE=android
+/// adb shell ls /sdcard/Pictures /sdcard/DCIM   # 图真的落进系统相册了吗
 /// ```
 library;
 
@@ -52,10 +63,14 @@ void main() {
       }
     }
 
-    expect(kMode == 'grant' || kMode == 'deny', isTrue,
-        reason: '必须显式指定 LIANLEME_GALLERY_MODE=grant|deny —— '
-            '不指定的话这条测试不知道自己在验哪条路');
-    expect(Platform.isIOS, isTrue, reason: '这条只对 iOS 有意义（安卓 10+ 免权限）');
+    if (Platform.isAndroid) {
+      expect(kMode, 'android',
+          reason: '安卓这边用 LIANLEME_GALLERY_MODE=android（验的是"免权限、不该白问"那条路）');
+    } else {
+      expect(kMode == 'grant' || kMode == 'deny', isTrue,
+          reason: 'iOS 必须显式指定 LIANLEME_GALLERY_MODE=grant|deny —— '
+              '不指定的话这条测试不知道自己在验哪条路');
+    }
 
     app.main();
     await settle(6000);
@@ -102,7 +117,13 @@ void main() {
       await settle(2500);
     }
 
-    if (kMode == 'grant') {
+    if (kMode == 'android') {
+      expect(rationale, isFalse,
+          reason: 'Android 10+ 走 MediaStore 免权限，不该白弹一次说明框');
+      expect(find.text('已存进相册'), findsOneWidget,
+          reason: '免权限那条路必须真的存成，并如实告诉用户');
+      mark('toast=已存进相册（安卓免权限）');
+    } else if (kMode == 'grant') {
       expect(rationale, isFalse,
           reason: '已经有权限了还弹说明框 —— 等于白问一次（与安卓免权限那条规矩相反）');
       expect(find.text('已存进相册'), findsOneWidget,

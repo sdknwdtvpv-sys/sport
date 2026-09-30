@@ -268,7 +268,8 @@ cocoapods.dart:307-310
 | 显示名 | 练了么 | 练了么 | 与商店名一致（三处一致是硬要求） |
 | 包标识 | `com.sdknwdtvpv.lianleme` | 同 | 上架后不能改 |
 | 图标 / 启动屏 | 一套配方两端生成 | 同 | `tool/gen-icons.py` 出，`asset-check.mjs` 守着 |
-| 相册权限 | `WRITE_EXTERNAL_STORAGE`（仅 API ≤29）+ 系统隐含的 READ | `NSPhotoLibraryAddUsageDescription`（**仅新增**） | iOS 那边**更窄**：完全不读相册 |
+| 相册权限 | `WRITE_EXTERNAL_STORAGE`（仅 API ≤29）；**Android 10+ 走 MediaStore 免权限** | `NSPhotoLibraryAddUsageDescription`（**仅新增**） | iOS 那边**更窄**：完全不读相册；两端**都验过**（见下方第 3 条） |
+| 存相册的落点 | 建一个名为「练了么」的相册（`/sdcard/Pictures/练了么/`） | **不建相册**，直接进「最近项目」（`shareAlbumNameFor` 在 iOS 上返回 null） | 2026-09-30 两端**实拍**：安卓 `lianleme_20260930.png` 落在 `Pictures/练了么/`；iOS `IMG_0007.PNG` 落在相册根。iOS 不建相册是因为**建相册要读相册**，与"仅新增"的承诺冲突 |
 | 其他权限 | INTERNET | 无（iOS 联网不需要声明） | |
 | 最低系统 | `minSdk 24` | `IPHONEOS_DEPLOYMENT_TARGET = 15.0` | |
 | 数据库 | `libsqlite3.so`（三 ABI，native assets） | sqlite3 预编译 `arm64` | 同一个 `sqlite3` 包，取库的方式不同 |
@@ -283,7 +284,7 @@ cocoapods.dart:307-310
 |---|---|---|---|
 | 1 | 真的能编过吗 | ✅ 编过两次 | `flutter build ios --simulator` → 183M；`--release --no-codesign` → **20.3M / arm64 / 最低 iOS 15.0**；`tool/check-ios-app.mjs` 逐项核过 |
 | 2 | 布局在 iOS 上长什么样 | ✅ 逐屏看过 | **13 张** App Store 截图（1320×2868，`store-assets/screenshots-ios/`）：首页、建议卡、选动作、训练屏、总结、进步、全部数据、我、身体数据、同意门、撤回入口都正常；汉字与字号正常，无溢出 |
-| 3 | 分享面板与"存到相册"的真实行为（权限文案、被拒路径） | ✅ **两条权限路各走一遍** | 新增 `app/integration_test/share_card_gallery_test.dart`（**iOS 专用**）：`revoke photos-add` → 先弹**说明目的**的框 → 「继续」→ 界面如实说「没有相册权限，没存成」且不崩；`grant photos-add` → **不再白问**（说明框不出现）→ 「已存进相册」，且**模拟器相册里真的多了一张卡**（`data/Media/DCIM/100APPLE/IMG_0007.PNG`，62 KB）。⚠️ **系统分享面板本身**（选微信/存文件那一步）是系统 UI，自动化点不到 —— 那一步仍只能人工看 |
+| 3 | 分享面板与"存到相册"的真实行为（权限文案、被拒路径） | ✅ **iOS 两条权限路 + 安卓免权限那条，三条都走过** | 新增 `app/integration_test/share_card_gallery_test.dart`（宿主机预置 TCC / 安卓直接跑）：`revoke photos-add` → 先弹**说明目的**的框 → 「继续」→ 界面如实说「没有相册权限，没存成」且不崩；`grant photos-add` → **不再白问**（说明框不出现）→ 「已存进相册」，且**模拟器相册里真的多了一张卡**（`data/Media/DCIM/100APPLE/IMG_0007.PNG`，62 KB）。安卓（模拟器 API 36 / Android 16）：`LIANLEME_GALLERY_MODE=android` → **说明框不出现**（免权限就别白问）、「已存进相册」，图落在 `/sdcard/Pictures/练了么/lianleme_20260930.png`。⚠️ **系统分享面板本身**（选微信/存文件那一步）是系统 UI，自动化点不到 —— 那一步仍只能人工看 |
 | 4 | 深色主题 + 启动屏的观感（有没有白闪） | 🟡 **部分** | 冷启动连拍 8 帧：**首帧就是启动屏本身**（深色卡片 + volt「练」，见下方截图描述），平均亮度 50.9 / 近白像素 0.1%，其后各帧 12.4（App 的深色界面）—— **没有偏白的帧**。⚠️ 采样间隔约 1 秒，**毫秒级白闪理论上仍可能漏过**；要彻底证明得录屏逐帧看 |
 | 5 | 横屏 | ✅ 已锁竖屏 | v1.30.0 起两端都锁（曾经的欠账：横屏下首页 `RenderFlex overflowed by 80px`）；安卓侧守卫 + iOS 侧 `check-ios-app` 都在盯 |
 
