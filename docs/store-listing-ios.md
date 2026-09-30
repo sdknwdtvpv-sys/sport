@@ -131,6 +131,7 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 | iPhone 5.5" | 1242×2208 | ⬜ 未出（同上，规格里是**可选**档） |
 | iPad 13" | 2064×2752 | ⬜ **取决于是否声明支持 iPad**（见 `docs/release-admin.md` §二之四 的待拍板项）—— 若改成"只支持 iPhone"，这一档就不需要 |
 | App 图标 | 1024×1024，**不带透明** | ✅ 已有（`tool/gen-icons.py` 出，`tool/asset-check.mjs` 守着） |
+| 启动屏 | 由 `LaunchScreen.storyboard` 提供，无需单独素材 | ✅ 已有（深色 + volt「练」） |
 
 > ⚠️ **安卓那两套都不能直接拿来用**：Apple 按设备档位要**精确像素**，而安卓那两套是
 > 1080×2400（20:9）与 1080×1920（9:16）—— 都不是 Apple 要的尺寸。iOS 那套是同一份脚本
@@ -147,7 +148,6 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 > [Adalo 2026 指南](https://studio.adalo.com/blog/app-store-screenshot-sizes-2026)）：
 > **提交时 iPhone 档必须有 6.9" 或 6.5" 之一，其余档缺失由 App Store Connect 降采样补**。
 > 最终以**上传时 App Store Connect 的校验**为准 —— 我们按最保险的来（6.9" 出全并压平）。
-| 启动屏 | 由 `LaunchScreen.storyboard` 提供，无需单独素材 | ✅ 已有（深色 + volt「练」） |
 
 截图里那句"数据只在你手机上"属于**变体 A** 的措辞 —— 换变体时截图说明也要改
 （`docs/store-listing.md` 末尾同样提醒过一次）。

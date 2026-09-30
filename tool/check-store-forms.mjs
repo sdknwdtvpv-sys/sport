@@ -174,6 +174,71 @@ function inspect(root) {
     }
   }
 
+  // ── 5之五. 表格完整性：**markdown 表格不许被截断**
+  //
+  // 为什么单列一条：2026-09-30 我往 Play 数据安全表里插了一段说明，插在了**表格中间** ——
+  // 于是后半张表（"设备或其他 ID"往下）没有了表头，渲染出来是一堆竖线。
+  // 而这两张表是**提交材料**，用户会照着它逐项填。表格断了没人发现，直到有人照着填错。
+  //
+  // 判据：连续的 `|` 行为一组，每组的第一行后面**必须**紧跟分隔行（`|---|`）。
+  // 这一条能抓住"被插入内容截断""中间夹了空行"两种坏法。
+  {
+    for (const [label, text] of [['store-listing.md', play], ['store-listing-ios.md', ios]]) {
+      const lines = text.split('\n');
+      let i = 0;
+      while (i < lines.length) {
+        if (!lines[i].startsWith('|')) { i += 1; continue; }
+        const start = i;
+        while (i < lines.length && lines[i].startsWith('|')) i += 1;
+        const block = lines.slice(start, i);
+        const sep = /^\|[-\s|:]+\|$/.test(block[1] ?? '');
+        if (!sep) {
+          problems.push(`${label}:${start + 1} 起有 ${block.length} 行表格，但**第二行不是分隔行** —— `
+            + '表格被截断了（中间插了说明或空行？），渲染出来是一堆竖线，而这是提交材料');
+        }
+      }
+    }
+  }
+
+  // ── 5之六. 标签的**取值**必须与事实一致（不只看类别，还看那两列怎么勾）
+  //
+  // 为什么单列一条：`check-store-forms` 此前只核"类别在不在、措辞对不对"，
+  // 而 App Privacy 与 Play 数据安全表里真正会判错的是**那两列怎么勾**：
+  // 「是否与身份关联」「是否用于追踪」「是否共享」。而这个 App 的事实是：
+  // **没有账号系统**（user_id 恒为 null，只有随机 device_id）、**没有广告 SDK / 没有 IDFA**、
+  // **不向第三方共享**。所以这几列的答案只能是「否」—— 填成"是"就是在商店里
+  // 自愿多背一条不应有的合规义务（而且与政策正文矛盾）。
+  {
+    const noAccount = (data.commonFields ?? [])
+      .some((c) => c.name === 'user_id' && /恒为 null|没有账号/.test(c.why ?? ''));
+    const noAdSdk = (data.neverCollected ?? []).some((x) => /广告/.test(x));
+    if (noAdSdk || noAccount) {
+      // App Store 那张表：末两列是「是否与身份关联」「是否用于追踪」
+      const iosRows = ios.split('\n').filter((l) => l.startsWith('| **'));
+      for (const row of iosRows) {
+        const cells = row.split('|').map((c) => c.trim()).filter(Boolean);
+        if (cells.length < 5) continue;
+        for (const [idx, what] of [[3, '是否与身份关联'], [4, '是否用于追踪']]) {
+          if (!/^否/.test(cells[idx].replace(/[*\s]/g, ''))) {
+            problems.push(`store-listing-ios.md 的「${cells[0]}」把「${what}」填成了`
+              + `「${cells[idx]}」—— 事实是${noAccount ? '没有账号系统、' : ''}`
+              + `${noAdSdk ? '没有广告 SDK/IDFA' : ''}，这一列只能是「否」`);
+          }
+        }
+      }
+      // Play 那张表：第 4 列是「是否共享」
+      const playRows = play.split('\n').filter((l) => l.startsWith('| **'));
+      for (const row of playRows) {
+        const cells = row.split('|').map((c) => c.trim()).filter(Boolean);
+        if (cells.length < 6) continue;
+        if (!/^否/.test(cells[3].replace(/[*\s]/g, ''))) {
+          problems.push(`store-listing.md 的「${cells[0]}」把「是否共享」填成了`
+            + `「${cells[3]}」—— 事实是不向第三方共享`);
+        }
+      }
+    }
+  }
+
   // ── 6. 新字段必须做过决定（映射表 / 免披露名单，二选一）
   const mapped = new Set(FIELD_TO_WORD.map(([f]) => f));
   const undecided = [...eventFields]
@@ -257,6 +322,22 @@ function selftest() {
     ['变体 A 的标题没说"这个包没配地址"', (r) => swap(r, 'store-listing.md',
       '### 变体 A：**当前发布的包**（未配上报地址）', '### 变体 A：**推荐的填法**'), false,
       '变体 A 标题没说清'],
+    // 这条是"插入"不是"替换"：锚点那行本来就该留着，所以不能用 swap 的"没换干净"断言
+    ['表格被一段说明截断了', (r) => {
+      const p = join(r, 'docs/store-listing.md');
+      const t = readFileSync(p, 'utf8');
+      const anchor = '| **应用活动** | 冷启动、进入训练屏、训练结束、休息计时、撤销一组 | 是 | 否 | 可选 | 同上（漏斗与流失分析） |';
+      if (!t.includes(anchor)) throw new Error('自检夹具失效：找不到锚点行');
+      writeFileSync(p, t.replace(anchor, `${anchor}\n\n> 中间插一段说明\n`));
+    }, false, '表格被截断'],
+    ['App Store 表的"用于追踪"填成了是', (r) => swap(r, 'store-listing-ios.md',
+      '| **Health & Fitness → Fitness** | 是 | Analytics | 否 | **否** |',
+      '| **Health & Fitness → Fitness** | 是 | Analytics | 否 | **是** |'),
+      false, '「是否用于追踪」填成了'],
+    ['Play 表的"是否共享"填成了是', (r) => swap(r, 'store-listing.md',
+      '| **应用活动** | 冷启动、进入训练屏、训练结束、休息计时、撤销一组 | 是 | 否 | 可选 |',
+      '| **应用活动** | 冷启动、进入训练屏、训练结束、休息计时、撤销一组 | 是 | 是 | 可选 |'),
+      false, '「是否共享」填成了'],
   ];
 
   let bad = 0;
@@ -279,7 +360,8 @@ function selftest() {
     process.exit(1);
   }
   console.log('\n✓ 自检通过：漏字段、没做过决定的新字段、把变体 A 的答案抄进 B、'
-    + '漏披露 device_id / 删掉"无广告 SDK"都藏不住（同时不乱报"已覆盖字段"）；');
+    + '漏披露 device_id / 删掉"无广告 SDK"、**表格被截断**、'
+    + '**把"关联/追踪/共享"填成"是"**都藏不住（同时不乱报"已覆盖字段"）；');
 }
 
 // ───────────────────────────────────────────────────────────────── 跑
