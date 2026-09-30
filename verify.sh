@@ -674,6 +674,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \
          app/test/workout_flow_test.dart app/test/backup_test.dart \
          app/test/time_exercise_test.dart app/test/progression_wiring_test.dart \
+         app/integration_test/share_card_gallery_test.dart \
          app/test/home_entry_test.dart app/test/app_version_test.dart \
          .github/workflows/ci.yml; do
   [ -f "$f" ] && printf '  %s✓%s %s\n' "$GREEN" "$OFF" "$f" || { printf '  %s✗ 缺失%s %s\n' "$RED" "$OFF" "$f"; missing=1; }
