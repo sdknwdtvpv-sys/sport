@@ -139,6 +139,9 @@ class _HomeShellState extends State<HomeShell> {
   /// `_initAnalytics()` 也被挪到同意之后（见下面 initState 的注释）。
   bool? _consented;
 
+  /// 用户**明确拒绝过**（拒绝后不弹第二次；且**永远不启动埋点**）。
+  bool _declined = false;
+
   /// 显示单位。启动时从 user_profile 读一次，用户在 S10 改了之后整棵树重建。
   /// **只影响显示**：存储、引擎、埋点始终是 kg（见 core/units.dart）。
   WeightUnit _unit = WeightUnit.kg;
@@ -202,19 +205,38 @@ class _HomeShellState extends State<HomeShell> {
   /// 就等于"还没问就先开始记了"，那正是这一屏要避免的事。
   Future<void> _loadConsentThenStart() async {
     bool consented = false;
+    bool declined = false;
     try {
       consented = await _profile.privacyConsentAtMs() != null;
+      declined = await _profile.privacyDeclinedAtMs() != null;
     } catch (_) {
       // 读不出来时**当作没同意**：宁可多问一次，也不要在没同意的情况下开始收集
       consented = false;
     }
     if (!mounted) return;
-    setState(() => _consented = consented);
+    setState(() {
+      _consented = consented;
+      _declined = declined;
+    });
 
     if (consented) {
       unawaited(_initAnalytics());
       unawaited(_importSeedQuietly());
     }
+  }
+
+  /// 用户选择"不同意"：**照样让他用 App**，但我们不收集任何东西。
+  ///
+  /// 这是 191 号文第四条 2 项的直接要求（不得因用户不同意收集非必要信息而拒绝提供业务功能）。
+  /// 本地记录本来就不需要联网与权限，所以"不同意的代价"只是没有匿名统计。
+  Future<void> _onPrivacyDeclined() async {
+    await _profile.setPrivacyDeclined();
+    if (!mounted) return;
+    setState(() {
+      _declined = true;
+      _consented = false;
+    });
+    // 刻意**不**调用 `_initAnalytics()` —— 拒绝之后一条事件都不该产生
   }
 
   Future<void> _onPrivacyAgreed() async {
@@ -616,8 +638,11 @@ class _HomeShellState extends State<HomeShell> {
       return const Scaffold(backgroundColor: Tokens.bg, body: SizedBox.expand());
     }
     // 没同意过：整屏征求同意 —— 主界面**一个像素都不渲染**
-    if (_consented == false) {
-      return PrivacyConsentScreen(onAgree: _onPrivacyAgreed);
+    if (_consented == false && !_declined) {
+      return PrivacyConsentScreen(
+        onAgree: _onPrivacyAgreed,
+        onDecline: _onPrivacyDeclined,
+      );
     }
     return Scaffold(
       backgroundColor: Tokens.bg,

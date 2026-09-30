@@ -20,7 +20,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show SystemNavigator;
 
 import '../../core/theme.dart';
 import '../profile/privacy_policy_screen.dart';
@@ -29,11 +28,21 @@ class PrivacyConsentScreen extends StatefulWidget {
   const PrivacyConsentScreen({
     super.key,
     required this.onAgree,
+    required this.onDecline,
     this.nowMs,
   });
 
   /// 用户点了「同意并继续」。调用方负责落库并放行主界面。
   final Future<void> Function() onAgree;
+
+  /// 用户点了「不同意」。调用方负责记下"拒绝过"并放行主界面 ——
+  /// **但不是放行收集**：调用方不会启动埋点，App 只用离线功能。
+  ///
+  /// ⚠️ 这里刻意**不是**"退出 App"。191 号文第四条第 2 项禁止的正是
+  /// 「因用户不同意收集非必要个人信息…拒绝提供业务功能」——
+  /// 而我们收集里唯一非必需的就是匿名统计，本地记录本来就不需要联网与权限，
+  /// 所以"不同意也能用离线功能、只是不收集"才是对的形态。
+  final Future<void> Function() onDecline;
 
   /// 便于测试固定时间
   final int Function()? nowMs;
@@ -43,15 +52,13 @@ class PrivacyConsentScreen extends StatefulWidget {
 }
 
 class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
-  /// 用户点了「不同意」之后进入的状态（不是退出，而是把话说清楚）
-  bool _refused = false;
   bool _busy = false;
 
-  Future<void> _agree() async {
+  Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await widget.onAgree();
+      await action();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -84,7 +91,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
               ),
               const SizedBox(height: Tokens.s3),
               Text(
-                _refused ? '你选择了不同意' : '开始之前，请先看一下隐私政策',
+                '开始之前，请先看一下隐私政策',
                 key: const Key('consent-title'),
                 style: const TextStyle(
                   color: Tokens.text,
@@ -97,16 +104,12 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Text(
-                    _refused
-                        ? '不同意也可以 —— 这不会影响你手机上的任何东西，因为同意之前我们什么都不收集。\n\n'
-                            '但练了么目前没有"不同意也能用"的模式：所有功能都在本地跑，'
-                            '而隐私政策要说明的正是这些本地数据怎么处理。\n\n'
-                            '如果你想再看一遍政策，点下面的按钮；想好了也可以随时回来同意。'
-                        : '我们不会要求注册、不要手机号、不要定位、不读通讯录。\n\n'
+                    '我们不会要求注册、不要手机号、不要定位、不读通讯录。\n\n'
                             '你的训练记录只存在这台手机上。唯一的联网行为是'
                             '「帮助改进产品」的匿名使用统计 —— 那个开关默认开着，'
                             '可以随时在「我」页关掉，关了功能完全不受影响。\n\n'
-                            '详细的收集范围、用途与你的权利，都写在隐私政策里。',
+                            '点「不同意」也没关系：**练了么照样能用**（记训练、看进步全在本机跑），'
+                            '只是我们一条数据都不会收集。',
                     key: const Key('consent-body'),
                     style: const TextStyle(color: Tokens.text2, fontSize: 14, height: 1.8),
                   ),
@@ -127,7 +130,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
                 height: 52,
                 child: TextButton(
                   key: const Key('consent-agree'),
-                  onPressed: _busy ? null : _agree,
+                  onPressed: _busy ? null : () => _run(widget.onAgree),
                   style: TextButton.styleFrom(
                     backgroundColor: Tokens.volt,
                     foregroundColor: Tokens.voltInk,
@@ -140,39 +143,21 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
                 ),
               ),
               const SizedBox(height: Tokens.s3),
-              if (_refused)
-                SizedBox(
-                  height: 44,
-                  child: TextButton(
-                    key: const Key('consent-exit'),
-                    // 拒绝之后**不做任何收集**，也不假装能用 —— 如实退出
-                    onPressed: () => SystemNavigator.pop(),
-                    style: TextButton.styleFrom(
-                      backgroundColor: Tokens.elevated,
-                      foregroundColor: Tokens.text2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(Tokens.rPill),
-                      ),
+              SizedBox(
+                height: 44,
+                child: TextButton(
+                  key: const Key('consent-refuse'),
+                  onPressed: _busy ? null : () => _run(widget.onDecline),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Tokens.elevated,
+                    foregroundColor: Tokens.text2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Tokens.rPill),
                     ),
-                    child: const Text('退出练了么', style: TextStyle(fontSize: 14)),
                   ),
-                )
-              else
-                SizedBox(
-                  height: 44,
-                  child: TextButton(
-                    key: const Key('consent-refuse'),
-                    onPressed: _busy ? null : () => setState(() => _refused = true),
-                    style: TextButton.styleFrom(
-                      backgroundColor: Tokens.elevated,
-                      foregroundColor: Tokens.text2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(Tokens.rPill),
-                      ),
-                    ),
-                    child: const Text('不同意', style: TextStyle(fontSize: 14)),
-                  ),
+                  child: const Text('不同意（只用离线功能）', style: TextStyle(fontSize: 14)),
                 ),
+              ),
             ],
           ),
         ),

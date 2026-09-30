@@ -105,22 +105,36 @@ void main() {
     await teardown(tester);
   });
 
-  testWidgets('点「不同意」：说清后果、给两条出路，且**仍然不收集**',
-      (WidgetTester tester) async {
+  testWidgets('点「不同意」：**照样能用**（离线），但一条都不收集', (WidgetTester tester) async {
     await boot(tester);
     await tester.tap(find.byKey(const Key('consent-refuse')));
-    await settle(tester, 600);
+    await settle(tester, 1500);
 
-    expect(find.textContaining('你选择了不同意'), findsOneWidget);
-    expect(find.byKey(const Key('consent-exit')), findsOneWidget,
-        reason: '拒绝之后要有明确出路（退出），不能装死');
-    expect(find.byKey(const Key('consent-read-policy')), findsOneWidget);
-    expect(find.byKey(const Key('consent-agree')), findsOneWidget,
-        reason: '想通了还能回来同意');
-    expect(find.byKey(const Key('start-workout')), findsNothing);
+    // 191 号文四.2 禁止"因不同意收集非必要信息而拒绝提供业务功能" ——
+    // 所以拒绝之后必须能进 App，而不是被请出去。
+    expect(find.byType(PrivacyConsentScreen), findsNothing, reason: '拒绝之后要放行');
+    expect(find.byKey(const Key('start-workout')), findsOneWidget,
+        reason: '本地记录不需要联网与权限，拒绝的代价只是没有匿名统计');
+    expect(find.byKey(const Key('consent-exit')), findsNothing,
+        reason: '不该再有"退出练了么"那条路');
+
+    // 但**不收集**：outbox 一条都没有，且同意状态没有被写成"同意过"
     expect(await _queued(db), 0, reason: '拒绝了就更不该收集');
-    expect(await ProfileRepository(db).privacyConsentAtMs(), isNull);
-    // 拒绝不落库 —— 下次冷启动还会再问一遍（这是有意的：不能替用户默认）
+    expect(await ProfileRepository(db).privacyConsentAtMs(), isNull,
+        reason: '拒绝不能写成同意 —— 那是撒谎');
+    expect(await ProfileRepository(db).privacyDeclinedAtMs(), isNotNull,
+        reason: '要记住他拒绝过，否则每次冷启动都再问一遍（那是骚扰）');
+
+    await teardown(tester);
+  });
+
+  testWidgets('拒绝过之后：不再弹门，但仍然不收集', (WidgetTester tester) async {
+    await ProfileRepository(db).setPrivacyDeclined(nowMs: 1);
+    await boot(tester);
+
+    expect(find.byType(PrivacyConsentScreen), findsNothing);
+    expect(find.byKey(const Key('start-workout')), findsOneWidget);
+    expect(await _queued(db), 0, reason: '拒绝过就永远不启动埋点');
     await teardown(tester);
   });
 

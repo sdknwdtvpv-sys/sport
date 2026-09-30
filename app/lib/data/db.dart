@@ -204,6 +204,12 @@ class UserProfile extends Table {
   /// 关掉后功能完全不受影响），而这一条是**法律意义上的同意**，两件事不能混。
   IntColumn get privacyConsentAtMs => integer().nullable()();
 
+  /// **用户明确拒绝过**的时刻。null = 没拒绝过（也没同意过）。
+  ///
+  /// 为什么单独记一列：拒绝之后不能让每次冷启动都再弹一遍（那是骚扰），
+  /// 但也不能把"拒绝"写成"同意"（那是撒谎）。两列各自为真，门只看这两个都是 null。
+  IntColumn get privacyDeclinedAtMs => integer().nullable()();
+
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
 
@@ -342,11 +348,12 @@ class AppDatabase extends _$AppDatabase {
   /// v9：`exercise` 新增 `instructions`（动作说明：怎么做 + 最常见的错）。
   /// v10：新增 `backup_account`（云备份账号：恢复码 + 上次备份时间）。
   /// v11：`user_profile` 新增 `privacy_consent_at_ms`（首次启动的隐私政策同意时刻）。
+  /// v12：`user_profile` 新增 `privacy_declined_at_ms`（**拒绝过**的时刻）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -437,6 +444,11 @@ class AppDatabase extends _$AppDatabase {
           // 这是有意的：他们当年装的那个版本里，应用内根本没有隐私政策可读。
           if (from < 11) {
             await m.addColumn(userProfile, userProfile.privacyConsentAtMs);
+          }
+          // v11 → v12：再加一列（拒绝时刻）。老库升上来两列都是 null → 会问一次；
+          // 用户在这一次里选"不同意"就能进 App 用离线功能，而我们记得他拒绝过。
+          if (from < 12) {
+            await m.addColumn(userProfile, userProfile.privacyDeclinedAtMs);
           }
         },
       );

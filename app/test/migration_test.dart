@@ -300,6 +300,29 @@ void main() {
     await db.close();
   });
 
+  test('v11 的库升到 v12：多出"拒绝时刻"那一列，老库是 null', () async {
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 11);
+        raw.execute(legacySeedExerciseSql);
+      }),
+    );
+    await legacy.customSelect('SELECT 1').get();
+
+    expect(await ProfileRepository(legacy).privacyDeclinedAtMs(), isNull);
+    await ProfileRepository(legacy).setPrivacyDeclined(nowMs: 777);
+    expect(await ProfileRepository(legacy).privacyDeclinedAtMs(), 777);
+    // 拒绝**不能**把同意那一列也写脏
+    expect(await ProfileRepository(legacy).privacyConsentAtMs(), isNull);
+
+    final cols = await legacy
+        .customSelect("SELECT name FROM pragma_table_info('user_profile')")
+        .get();
+    expect(cols.map((r) => r.read<String>('name')), contains('privacy_declined_at_ms'));
+
+    await legacy.close();
+  });
+
   test('老库里**没有** category 列 —— fixture 本身也要守着', () async {
     // 这一条是防"有人把 fixture 改成当前 schema 的样子"从而让上面两条变成空转。
     // 迁移测试最隐蔽的失败方式就是：fixture 悄悄跟上了新 schema，测试永远绿。

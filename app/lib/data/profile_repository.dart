@@ -50,6 +50,7 @@ class ProfileRepository {
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -81,6 +82,7 @@ class ProfileRepository {
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: enabled,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -134,6 +136,7 @@ class ProfileRepository {
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -187,6 +190,7 @@ class ProfileRepository {
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -234,6 +238,7 @@ class ProfileRepository {
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -263,6 +268,7 @@ class ProfileRepository {
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -295,6 +301,42 @@ class ProfileRepository {
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? true,
             privacyConsentAtMs: existing?.privacyConsentAtMs ?? now,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// 用户**明确拒绝过**的时刻（null = 没拒绝过）。
+  Future<int?> privacyDeclinedAtMs() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.privacyDeclinedAtMs;
+  }
+
+  /// 记下"用户选择了不同意"。
+  ///
+  /// ⚠️ **这不是同意**，两列各自为真：同意过就写 [setPrivacyConsent]，拒绝过就写这里。
+  /// 拒绝之后 App 照常可用（离线功能本来就不需要联网与权限），**只是不收集任何东西**：
+  /// 埋点根本不会启动（见 `main.dart` 的 `_loadConsentThenStart`）。
+  Future<void> setPrivacyDeclined({int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
+            defaultRestSec: existing?.defaultRestSec ?? 90,
+            analyticsEnabled: existing?.analyticsEnabled ?? true,
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs ?? now,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
