@@ -19,7 +19,7 @@
 |---|---|
 | 六层门禁 | `./verify.sh`（**干净克隆也能直接跑**：会先自动 pub get + 生成 drift 代码；最近一次在 `2f66d40` 的干净克隆上实测：753 项测试全绿、`未发现失败`、零阻塞）|
 | 推送后 CI 状态 | GitHub Actions —— ⚠️ 它只是门禁的**子集**（见 §三 第 6 条）|
-| 云备份端到端（模拟器/真机）| `docs/backend-design.md` §七之七 的命令块（含 `node tool/check-ciphertext.mjs <服务端库>`）|
+| 云备份端到端（**两个平台的模拟器都跑通了**）| `docs/backend-design.md` §七之七 的命令块（含 `node tool/check-ciphertext.mjs <服务端库>`）；安卓模拟器 + **iOS 模拟器**（2026-09-30，各自 `E2E-OK` 且服务端库里搜不到明文）|
 | **服务端只有密文** | `node tool/check-ciphertext.mjs <库>`（自检：`--selftest`，故意造含明文的库要求它报错）|
 | 删除权（逐表清空 + 表清单守门）| `app/test/delete_all_test.dart` |
 | 默认不收集（真实库里的待发条数）| `app/integration_test/analytics_outbox_e2e_test.dart`（跑两遍：默认 0 条 / 预置开 11 条）|
@@ -181,7 +181,7 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 
 | # | 事项 | 解锁什么 |
 |---|---|---|
-| 12 | **解锁真机**（Redmi `flourite`，现在锁屏 + Dozing） | ① 云备份的**真机**端到端（模拟器已跑通，但 Doze、厂商后台策略、真实网络切换只能在真机验）；② 界面逐屏走查（注入权限你已经打开了，就差解锁）；③ 真机版商店截图 |
+| 12 | **解锁真机**（Redmi `flourite`，现在锁屏 + Dozing） | ① 云备份的**真机**端到端（**两个平台的模拟器都已跑通**，但 Doze、厂商后台策略、真实网络切换只能在真机验）；② 界面逐屏走查（注入权限你已经打开了，就差解锁）；③ 真机版商店截图 |
 | 13 | ~~装 Xcode~~ **✅ 已装（Xcode 27.0）—— 只差一条命令接受许可证** | ⚠️ **现在是这一条在挡着线 1**：许可证没接受时 `xcodebuild` / `xcrun` 被拒，连带 `git`、`python3`、`flutter`、`dart` 一起挂（`/usr/bin/git` 与 `/usr/bin/python3` 都是 xcrun 的壳）。请在终端跑：**`sudo xcodebuild -license accept`**（装完第一次可顺手 `sudo xcodebuild -runFirstLaunch`）。跑完我就能做 iOS 编译与逐屏验证。⚠️ 附一件**只有上传后才知道答案**的事：Apple 的隐私清单（`PrivacyInfo.xcprivacy`）—— 首次上传若收到 `ITMS-91053: Missing API declaration`，就要加 app 级清单（判据与起手内容在 `docs/release-admin.md` §二之四；**我没有替你改 `project.pbxproj`**，因为本机没 Xcode、改完无法验证） |
 
 > 模拟器这条后路我已经铺好了（`emulator-5554`，一条命令起来）：**不需要解锁真机**就能跑
@@ -221,4 +221,4 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 | **国内安卓商店** | 🟡 代码与材料就绪 | 软著（§1）、备案（§2）、keystore（§3）、隐私政策 URL（§4）、`tap_count` 校准（§8） |
 | **Google Play** | 🟡 同上 | 同上 + 数据安全表单（`docs/store-listing.md` 有两个变体，按包选） |
 | **App Store** | 🟡 **能构建、也能在模拟器上跑**（2026-09-30：首编 → 运行时到位 → App Store 那套 12 张图出齐、逐屏看过） | Apple Developer 账号 → 签名与上传；§10（iPad 决定）；6.5"/5.5" 档要不要出（按第三方规格是"6.9 或 6.5 二选一"，上传时以 App Store Connect 校验为准） |
-| **云备份功能本身** | ✅ 代码侧完成，模拟器端到端已跑通 | 服务器 + 域名 + 备案（§2）；真机端到端（§12） |
+| **云备份功能本身** | ✅ 代码侧完成，**安卓与 iOS 两个模拟器的端到端都已跑通**（各自 `E2E-OK`）| 服务器 + 域名 + 备案（§2）；真机端到端（§12） |

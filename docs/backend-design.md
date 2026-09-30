@@ -318,6 +318,45 @@ cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
     --dart-define=LIANLEME_BACKUP_DISCLOSED=true      # 少了这个，入口不出现（失败往关闭倒）
 ```
 
+### 同一套端到端**在 iOS 上也跑通了**（2026-09-30）
+
+线 1 要做"iOS 与安卓同等可发布"，那么云备份这条主功能就不能只在安卓上验过。
+在 **iPhone 17 Pro Max 模拟器（iOS 27.0）** 上用**同一份**测试与 driver 跑了一遍：
+
+```bash
+UDID=$(xcrun simctl create lianleme-e2e \
+        com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max \
+        com.apple.CoreSimulator.SimRuntime.iOS-27-0)
+xcrun simctl boot "$UDID"
+xcrun simctl uninstall "$UDID" com.sdknwdtvpv.lianleme   # 等价于安卓那边的 pm clear
+cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
+    --target=integration_test/cloud_backup_e2e_test.dart -d "$UDID" \
+    --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790 \
+    --dart-define=LIANLEME_BACKUP_DISCLOSED=true
+```
+
+⚠️ **iOS 模拟器不需要 `adb reverse`** —— 它和宿主共用回环，`127.0.0.1` 直接就是宿主。
+
+结果与安卓那次逐项一致（`LIANLEME-E2E` 日志）：
+
+| 步 | iOS 上的实际输出 |
+|---|---|
+| 建号 | `account-created code=YZTZC-…` |
+| 上传 | `uploaded: 已备份 1 次训练 / 2 组（22.0 KB 密文）` |
+| 服务端状态 | `server-state: 云端：22.0 KB · 09-30 20:43` |
+| 删本机（云端留着） | `local-data-deleted (cloud kept)` |
+| 用恢复码恢复 | `restored: 已从云端恢复：已导入 1 次训练 / 2 组` |
+| 逐字段断言 | `verified-2-sets-restored (field-by-field)` → `E2E-OK` |
+
+宿主侧同一时刻读服务端那份库：`accounts: 1 · backups: 1 · bytes=22567`（与设备报的 22.0 KB 一致）；
+`node tool/check-ciphertext.mjs /tmp/e2e-ios/backend.sqlite` 判绿（信封 `AES-256-GCM` /
+`HKDF-SHA256` / `{"v":1` 都在），而**明文记号一个都搜不到**：`ex_bb_bench_press`、`weight_kg`、
+`"reps"`、`40.0`、`卧推` 全部阴性。**两端同一份证据，同一句话成立**：
+服务端手里只有密文。
+
+⚠️ **仍然是模拟器**：真机（Doze / 厂商后台策略 / 真实网络切换）那一档由 §八 阶段 5 的复述保留，
+见 `docs/your-todo.md` 第 12 条。
+
 > 为什么是**两个**开关：地址一旦配上，界面就会出现云备份入口，而政策正文是按「是否启用」写的（没启用时必须写「本版本未提供云备份」）—— 只给地址会做出一个**界面与政策自相矛盾**的包。所以少了声明开关就当作**没配**：入口不出现、一个字节都不发。`tool/privacy-audit.mjs` 会检查「教人开云备份」的地方有没有同时写这两个开关。
 
 > ⚠️ **不能用模拟器那套 `10.0.2.2`**：`dart:io` 会拒绝明文 HTTP 发往非回环地址

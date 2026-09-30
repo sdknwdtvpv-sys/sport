@@ -192,6 +192,24 @@ README 与 `your-todo` 都写着"**干净克隆也能直接跑**"。这条在本
 * 新守卫的自检全部在克隆里跑过；`check-dist.mjs` 因为 `dist/` 不在而**正确跳过**
   （"没有交付物可核"路径也验到了）。
 
+### 同版追加：云备份端到端**在 iOS 上也跑通了**（线 1 与线 2 的交点）
+
+线 1 的目标是"iOS 与安卓同等可发布"，那么云备份这条主功能就不能只在安卓上验过。
+在 **iPhone 17 Pro Max 模拟器（iOS 27.0）** 上用**同一份**端到端测试与 driver 跑了一遍：
+`account-created` → `uploaded: 22.0 KB 密文` → `server-state: 云端 22.0 KB` →
+`local-data-deleted (cloud kept)` → 用恢复码 `restored: 已导入 1 次训练 / 2 组` →
+`verified-2-sets-restored (field-by-field)` → **`E2E-OK`**。
+
+宿主侧同一时刻读服务端那份库，成对证据与安卓那次一致：`accounts: 1 · backups: 1 ·
+bytes=22567`（与设备报的 22.0 KB 对得上）；`tool/check-ciphertext.mjs` 判绿；
+**明文记号全部阴性** —— `ex_bb_bench_press` / `weight_kg` / `"reps"` / `40.0` / `卧推`
+在整个库文件里一个都搜不到。"服务端看不到训练明细"这句话现在**两个平台各有一份证据**。
+
+顺带记一条只有真跑才知道的事：**iOS 模拟器不需要 `adb reverse`** —— 它与宿主共用回环，
+`127.0.0.1` 直接就是宿主（安卓那边必须 reverse，见 §七之七）。复现命令已写进
+`docs/backend-design.md`。⚠️ 仍然都是**模拟器**：真机（Doze / 厂商后台策略 / 真实网络切换）
+那一档没变，仍挂在 `docs/your-todo.md` 第 12 条。
+
 版本 1.31.0+40 → 1.32.0+41。
 
 ## v1.31.0 · 体重的**单独同意**：敏感个人信息不能靠"政策总同意"顶替
