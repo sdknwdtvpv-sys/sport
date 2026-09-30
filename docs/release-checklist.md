@@ -330,3 +330,24 @@ cd .. && node tool/check-aab.mjs
 > 所以工具链坏掉时它照样全绿。2026-09-30 就真发生过：`~/.config/flutter/settings` 里
 > `jdk-dir` 还指着已删除的内置盘 JDK，release 构建直接失败而门禁全绿。
 > 现在门禁里有这条检查（前置探测那段），`tool/dev-env.sh` 也会顺手把配置对齐到 SSD。
+
+---
+
+## 终局核验（2026-09-30，逐项实测）
+
+出门之前把"产物 / 真机 / 对外数字"对齐了一遍。**每一项都是当场跑出来的**，不是抄上面的表：
+
+| 项 | 实测结果 |
+|---|---|
+| `dist/` 内容 | `练了么-v1.31.0.apk` + `copyright/`（V1.31.0 的源程序与说明书 PDF/HTML + measure.html）+ `README.md` —— **没有上一版的残留** |
+| APK（旁加载包） | `versionCode 40 · versionName 1.31.0`，与 `app_info.dart` / `pubspec.yaml` 一致；manifest 合并后 **2 条声明**（INTERNET、WRITE_EXTERNAL_STORAGE ≤29）+ 1 条注入（DYNAMIC_RECEIVER）+ 1 条隐含（READ ≤29，系统因 WRITE 授予） |
+| `privacy-audit.mjs --apk`（发布前必跑） | ✅ 对得上：18 事件 / 7 公共字段 / 2 声明权限 / **打包后合并 5 条**全部已披露 |
+| AAB（Google Play 通道） | ✅ `tool/check-aab.mjs`：119 条目 · 56.6 MB · **三 ABI** 原生库齐全（arm64-v8a / armeabi-v7a / x86_64）· 版本 1.31.0 与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 仍会**假报** "failed to strip debug symbols"（卷名空格），产物没问题 |
+| 真机 `75caf509` | 装的是 **1.31.0（versionCode 40）**；`force-stop` 后冷启动正常、`E/flutter` **0 条**；屏幕尺寸已复位（1280×2772） |
+| 商店截图两套 | `store-assets/screenshots/` 12 张（1080×2400）· `screenshots-play/` 11 张（1080×1920，Play 要的 9:16） |
+| 全新克隆 | ✅ `git clone` 后直接 `./verify.sh` → 六层全跑、168 个 ✓、`未发现失败`（见 CHANGELOG：为此加了第 0 步引导） |
+| 软著材料 | `dist/copyright/` 里是 **V1.31.0**：源程序全文 737+ 页、提交用前 30 + 后 30 页、说明书 6 页；著作权人仍是占位符（**待你实名提交**） |
+
+**这份核验能证明什么、不能证明什么**：能证明"我们这边该做的都做了、且对得上"；
+**不能**证明"商店会收"—— 那还需要真 keystore（现在仍是 debug 签名）、备案、软著证书、
+以及 iOS 那一次真实构建。这几件的入口都在 `docs/your-todo.md`。
