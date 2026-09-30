@@ -72,6 +72,13 @@ This data lives in the app's private local database (SQLite, managed by drift) a
 > To be explicit about purpose: it is used **only so you can see your own long-term change** —
 > never for advertising or any other purpose (App Store Guideline 5.1.3 likewise forbids
 > using health data for advertising or sale).
+>
+> **You can withdraw that consent at any time** (PIPL Article 15). The entry sits at the
+> bottom of the Body metrics screen — "Withdraw my consent". After withdrawal we stop
+> collecting new weight readings immediately and that screen asks for your consent again
+> the next time you open it; **records you already saved are not deleted automatically**
+> (withdrawing consent and deleting data are two different things — delete data yourself
+> under "All data").
 
 ### 2.2 Collected only when "Help improve the product" is ON
 

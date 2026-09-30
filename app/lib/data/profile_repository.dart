@@ -4,6 +4,8 @@
 /// 现在真的被用到的只有 `progression_mode` —— S10「我」的那个开关。
 library;
 
+import 'package:drift/drift.dart' show Value;
+
 import '../core/units.dart';
 import '../domain/models.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
@@ -350,6 +352,38 @@ class ProfileRepository {
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs ?? now,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
+          ),
+        );
+  }
+
+  /// **撤回**"处理体重"的同意（PIPL 第 15 条给的是撤回权，不只是删除权）。
+  ///
+  /// 撤回只做一件事：把那条同意记录清成 null —— 于是「身体数据」页下次进来会
+  /// **重新弹那道门**（不再收集），而**已经记下来的体重数据一个字都不动**：
+  /// 删数据是另一件事，得由用户单独决定（那在「全部数据」里做）。
+  /// 把两件事合成一个动作是这类功能最常见的错：用户点"撤回同意"，
+  /// 结果把历史记录一起抹了。
+  ///
+  /// ⚠️ **必须用 Companion + `Value(null)`**，不能照抄上面那些 setter 的写法：
+  /// drift 对 `UserProfileData` 用 `nullToAbsent: true`，字段是 null 就当作
+  /// "这次没提供"而**跳过这一列**，冲突时保留旧值 —— 那样写出来的效果是
+  /// "点了撤回，同意还在"（同一个坑在 `body_metric_repository.dart` 里已经踩过一次，
+  /// 那次是软删除的记录复活不了）。
+  Future<void> clearBodyMetricConsent({int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    // 连这一行都还没建过：没有"同意"可撤回，就什么都别写（不新建行）
+    if (existing == null) return;
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileCompanion(
+            userId: Value<String>(kLocalUserId),
+            bodyMetricConsentAtMs: const Value<int?>(null),
+            // createdAt 是**非空列**，Companion 里必须显式给（否则 drift 直接判无效）
+            createdAt: Value<int>(existing.createdAt),
+            updatedAt: Value<int>(now),
           ),
         );
   }

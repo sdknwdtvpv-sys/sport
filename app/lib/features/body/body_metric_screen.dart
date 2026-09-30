@@ -152,6 +152,48 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     await _load();
   }
 
+  /// 撤回"处理体重"的同意：先问一声，并说清**撤回的是同意、不是数据**。
+  Future<void> _revokeConsent() async {
+    final ProfileRepository? profile = widget.profile;
+    if (profile == null) return;
+    final bool? yes = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('撤回后不再收集体重',
+            style: TextStyle(color: Tokens.text)),
+        content: const Text(
+          '撤回的是「同意」，不是数据：\n\n'
+          '· 这一页下次进来会重新问你一次；\n'
+          '· 你不同意之前，不会再读、也不会再写体重；\n'
+          '· 已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
+          key: Key('body-revoke-note'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('body-revoke-no'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('算了', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('body-revoke-yes'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('撤回', style: TextStyle(color: Tokens.volt)),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await profile.clearBodyMetricConsent();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已撤回：下次进这一页会重新问你')),
+    );
+    // 撤回后立刻退出这一页：留在这里就等于"刚撤回还在处理"
+    Navigator.of(context).maybePop();
+  }
+
   @override
   void dispose() {
     _weight.dispose();
@@ -401,6 +443,47 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                       for (final BodyMetricData r in _recent.take(10))
                         _historyRow(r),
                     ],
+                    // ── 撤回同意（PIPL 第 15 条：同意不是一次性的）──────────
+                    // 放在这一页，因为**收集发生在哪儿，撤回入口就该在哪儿**。
+                    // 没有 profile（嵌入/测试场景）时不显示 —— 那种场景没有落库的地方。
+                    if (widget.profile != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Tokens.s6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            TextButton(
+                              key: const Key('body-revoke'),
+                              onPressed: _revokeConsent,
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 32),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                foregroundColor: Tokens.text2,
+                              ),
+                              child: const Text(
+                                '撤回我的同意',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: Tokens.s1),
+                            const Text(
+                              // ⚠️ 这里同样不能出现 markdown 的星号（Text 不渲染 markdown）
+                              key: Key('body-revoke-caption'),
+                              '撤回后不再收集新的体重，这一页会重新问你一次；'
+                              '已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
+                              style: TextStyle(
+                                color: Tokens.text3,
+                                fontSize: 12,
+                                height: 1.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),

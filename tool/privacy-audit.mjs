@@ -375,6 +375,21 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
         errors.push('「身体数据」页里找不到单独同意那道门（body-consent-agree）—— '
           + '政策承诺了"第一次进入时单独征求同意"，代码里就必须有它');
       }
+      // PIPL 第 15 条：给了同意就得给**撤回**的路。政策里现在写了"随时可以撤回"，
+      // 所以这一条是"政策说法 ↔ 代码有没有那个入口"的对账 —— 少一个就是空承诺。
+      if (!/Key\('body-revoke'\)/.test(screenSrc)) {
+        errors.push('政策里承诺了"随时可以撤回同意"，但「身体数据」页里找不到撤回入口'
+          + "（Key('body-revoke')）—— 撤回权不能只写在政策里");
+      }
+      const repoPath = join(ROOT, 'app/lib/data/profile_repository.dart');
+      const repoSrc = existsSync(repoPath) ? readFileSync(repoPath, 'utf8') : '';
+      if (!/Future<void> clearBodyMetricConsent\(/.test(repoSrc)) {
+        errors.push('找不到 clearBodyMetricConsent —— 撤回入口必须真的能把同意清掉，'
+          + '否则用户点了"撤回"而同意还在（这一条是真会骗人的那种 bug）');
+      } else if (!/UserProfileCompanion\(/.test(repoSrc)) {
+        errors.push('clearBodyMetricConsent 没有用 Companion 写 null —— drift 对 DataClass 是 '
+          + 'nullToAbsent，那样写出来是"点了撤回，同意还在"（负向测试验过）');
+      }
       const enText = existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '';
       for (const phrase of sl.policyPhrases?.zh ?? []) {
         if (!policy.includes(phrase)) {

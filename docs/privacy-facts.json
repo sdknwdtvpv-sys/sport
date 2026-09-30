@@ -288,7 +288,7 @@
     }
   ],
   "sensitiveLocal": {
-    "_why": "体重属于敏感个人信息（医疗健康类），PIPL 第 29 条要求**单独同意** —— 首次启动那道政策总同意不等于它。这个块是机器可核的那一半：tool/privacy-audit.mjs 会要求中英政策正文出现下面的说法，并核对代码里确实有那条单独同意记录（schema v14 的 user_profile.body_metric_consent_at_ms）。",
+    "_why": "体重属于敏感个人信息（医疗健康类），PIPL 第 29 条要求**单独同意**、第 15 条要求**提供撤回同意的方式** —— 首次启动那道政策总同意**不等于前者**，而「只能删数据」也**不等于后者**。这个块是机器可核的那一半：tool/privacy-audit.mjs 会要求中英政策正文出现下面的说法，并核对代码里确实有那条单独同意记录（schema v14 的 user_profile.body_metric_consent_at_ms）与那条撤回入口（body_metric_screen.dart 的 body-revoke → clearBodyMetricConsent）。",
     "item": {
       "zh": "体重（身体数据）",
       "en": "body weight (body metrics)"
@@ -302,13 +302,21 @@
       "zh": [
         "敏感个人信息",
         "单独同意",
-        "不用于广告"
+        "不用于广告",
+        "撤回"
       ],
       "en": [
         "sensitive personal information",
         "separate consent",
-        "never for advertising"
+        "never for advertising",
+        "withdraw"
       ]
+    },
+    "revoke": {
+      "where": "app/lib/features/body/body_metric_screen.dart::_revokeConsent（入口 Key('body-revoke')）",
+      "whatItDoes": "清空 user_profile.body_metric_consent_at_ms（撤回同意），**不删任何体重数据**",
+      "repository": "ProfileRepository.clearBodyMetricConsent（必须用 Companion + Value(null)：drift 对 DataClass 是 nullToAbsent）",
+      "test": "app/test/body_consent_test.dart（撤回清空同意 / 历史一条不删 / 点「算了」不动 / 撤回后重新问）"
     }
   }
 }

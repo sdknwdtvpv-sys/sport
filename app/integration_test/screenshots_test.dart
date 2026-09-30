@@ -217,6 +217,19 @@ void main() {
         await settle(1800);
       }
       await capture('11-body-metric');
+
+      await step('11b-body-revoke', () async {
+        // 撤回同意（PIPL 第 15 条）的入口在这一页最下面，滚到底才可见 ——
+        // 单独留一张，作为"这个入口真的在、而且没渲染坏"的证
+        // （`**` 那类漏字只有截图看得见，单测看的是 key）。
+        await tester.dragUntilVisible(
+          find.byKey(const Key('body-revoke')),
+          find.byType(ListView),
+          const Offset(0, -220),
+        );
+        await settle(800);
+        await capture('11b-body-revoke');
+      });
     });
 
     debugPrint('LIANLEME-SHOT-SUMMARY 成功 ${shot.length} 张（${shot.join(',')}）'

@@ -126,6 +126,135 @@ void main() {
       expect(await profile.analyticsEnabled(), isTrue, reason: '统计开关不能被抹掉');
       expect(await profile.privacyConsentAtMs(), 1000, reason: '政策总同意不能被抹掉');
     });
+
+    // ── 撤回同意（PIPL 第 15 条）────────────────────────────────────────
+    //
+    // 这三条守的是"撤回权"与"删除权"**不被合成一件事** ——
+    // 那种把用户历史一起抹掉的做法是这类功能最常见的错。
+
+    /// 「撤回我的同意」在这一页的**最下面**（表单 + 历史记录之后），
+    /// 懒构建的 ListView 不滚过去就根本不存在 —— 已经栽过一次，先滚再点。
+    Future<void> tapRevoke(WidgetTester tester) async {
+      await tester.dragUntilVisible(
+        find.byKey(const Key('body-revoke')),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('body-revoke')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('撤回同意：确认后同意记录清空、**历史数据一条都不删**，再进来重新问',
+        (WidgetTester tester) async {
+      await profile.setBodyMetricConsent(nowMs: 2000);
+      await repo.save(date: dayKey(DateTime(2026, 9, 28)), weightKg: 72.5, nowMs: 2000);
+      expect(await repo.count(), 1);
+
+      await pump(tester);
+      await tapRevoke(tester);
+
+      // 先看到说明：撤回的是同意，不是数据
+      expect(find.byKey(const Key('body-revoke-note')), findsOneWidget);
+      final String note = tester
+          .widget<Text>(find.byKey(const Key('body-revoke-note')))
+          .data!;
+      expect(note.contains('**'), isFalse, reason: '说明里出现了 markdown 记号');
+      expect(note.contains('不会被删掉'), isTrue,
+          reason: '必须先说清"撤回不等于删数据"，否则用户不敢点');
+
+      // 入口下面那行说明同样不能漏星号（弹层与正文是两处文案，只守一处等于没守）
+      final String caption = tester
+          .widget<Text>(find.byKey(const Key('body-revoke-caption')))
+          .data!;
+      expect(caption.contains('**'), isFalse,
+          reason: '撤回入口下面的说明里出现了 markdown 记号');
+      expect(caption.contains('要删请去「全部数据」'), isTrue,
+          reason: '要告诉用户"想删去哪儿删"，否则等于把两件事混在一起');
+
+      await tester.tap(find.byKey(const Key('body-revoke-yes')));
+      await tester.pumpAndSettle();
+
+      expect(await profile.bodyMetricConsentAtMs(), isNull,
+          reason: '同意必须真的被清掉，否则下次进来不会再问');
+      expect(await repo.count(), 1,
+          reason: '撤回的是同意，不是数据 —— 历史体重必须还在');
+      expect(find.byKey(const Key('body-consent')), findsNothing,
+          reason: '撤回之后这一页已经退出去了');
+    });
+
+    testWidgets('撤回确认框点「算了」：同意记录与数据都不动',
+        (WidgetTester tester) async {
+      await profile.setBodyMetricConsent(nowMs: 2000);
+      await repo.save(date: dayKey(DateTime(2026, 9, 28)), weightKg: 72.5, nowMs: 2000);
+
+      await pump(tester);
+      await tapRevoke(tester);
+      await tester.tap(find.byKey(const Key('body-revoke-no')));
+      await tester.pumpAndSettle();
+
+      expect(await profile.bodyMetricConsentAtMs(), 2000, reason: '没确认就不该撤回');
+      expect(await repo.count(), 1);
+      expect(find.byKey(const Key('body-revoke')), findsOneWidget,
+          reason: '取消之后还留在这一页');
+    });
+
+    testWidgets('撤回之后再进来：那道门重新出现，且拒绝之前不读不写',
+        (WidgetTester tester) async {
+      await profile.setBodyMetricConsent(nowMs: 2000);
+      await repo.save(date: dayKey(DateTime(2026, 9, 28)), weightKg: 72.5, nowMs: 2000);
+
+      await profile.clearBodyMetricConsent(nowMs: 3000);
+      await pump(tester);
+
+      expect(find.byKey(const Key('body-consent')), findsOneWidget,
+          reason: '撤回之后必须重新征求同意');
+      expect(await profile.bodyMetricConsentAtMs(), isNull);
+
+      // 这时候拒绝：历史数据仍在（不是"撤回了就把库清空"）
+      await tester.tap(find.byKey(const Key('body-consent-decline')));
+      await tester.pumpAndSettle();
+      expect(await repo.count(), 1);
+      expect(await profile.bodyMetricConsentAtMs(), isNull);
+    });
+
+    testWidgets('撤回不碰别的设置（与 setBodyMetricConsent 同一条纪律）',
+        (WidgetTester tester) async {
+      await profile.setUnit(WeightUnit.lb, nowMs: 1000);
+      await profile.setAnalyticsEnabled(true, nowMs: 1000);
+      await profile.setPrivacyConsent(nowMs: 1000);
+      await profile.setBodyMetricConsent(nowMs: 2000);
+
+      await profile.clearBodyMetricConsent(nowMs: 3000);
+
+      expect(await profile.bodyMetricConsentAtMs(), isNull);
+      expect(await profile.unit(), WeightUnit.lb);
+      expect(await profile.analyticsEnabled(), isTrue);
+      expect(await profile.privacyConsentAtMs(), 1000);
+    });
+
+    testWidgets('没有 profile 的场景（嵌入/测试）不显示撤回入口',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: BodyMetricScreen(
+          repository: repo,
+          clock: () => DateTime(2026, 9, 28, 9),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // 没有 profile 就没有"单独同意"这道门，也就没有可撤回的东西
+      expect(find.byKey(const Key('body-consent')), findsNothing);
+      await tester.dragUntilVisible(
+        find.byKey(const Key('body-save')),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('body-revoke')), findsNothing,
+          reason: '没有落库的地方就不该给一个按了没用的入口');
+    });
   });
 
   group('迁移', () {
