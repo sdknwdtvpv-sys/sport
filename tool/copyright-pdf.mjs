@@ -24,7 +24,7 @@
  * 产物：`dist/copyright/*.pdf`（dist 已 gitignore —— 那是源码的副本，不进仓库）
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync, rmSync, mkdtempSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync, rmSync, mkdtempSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { dirname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -422,15 +422,41 @@ console.log(`软著鉴别材料 PDF　${APP_NAME} V${APP_VERSION}　著作权人
 
 const src = sourceHtml();
 
+/**
+ * `dist/copyright/` 里**不该留着旧版本的 PDF**。
+ *
+ * 为什么单独看一眼：软著提交材料是**从 dist/ 里拿的**，而那是生成物、不进仓库。
+ * 切版重出之后，上一版那份还躺在同一个目录里（2026-09-30 就真的捞出来过 V1.28.0 与
+ * V1.31.0 两份）—— 提交时随手挑一个，就可能把**旧版本**的材料交上去，
+ * 而页眉的版本号与申请表里填的对不上。这条不检查"文件内容对不对"，只检查
+ * **"目录里有没有不该在的版本"**：它存在的意义就是防止拿错。
+ *
+ * 目录不存在（例如干净克隆上）时跳过 —— dist/ 是 .gitignore 的。
+ */
+function checkStaleDist() {
+  const problems = [];
+  if (!existsSync(OUT)) return problems;
+  const current = `V${APP_VERSION}`;
+  const stale = readdirSync(OUT)
+    .filter((f) => /V\d+\.\d+\.\d+/.test(f) && !f.includes(current));
+  for (const f of stale) {
+    const v = f.match(/V\d+\.\d+\.\d+/)[0];
+    problems.push(`dist/copyright/${f}：版本 ${v} 不是当前版本（${current}）—— `
+      + '提交材料是从这个目录拿的，留着旧的就有"拿错一份"的风险，删掉或重出');
+  }
+  return problems;
+}
+
 if (argv.includes('--check-docs')) {
   const problems = [
     ...checkDocNumbers(src.fileCount, src.lineCount, APP_VERSION),
     ...checkManualNumbers(APP_VERSION, schemaVersionFromDb()),
+    ...checkStaleDist(),
   ];
   console.log(`实际：${src.fileCount} 个源文件 / ${src.lineCount} 行`);
   console.log(`     版本 V${APP_VERSION} · 数据库模式 v${schemaVersionFromDb()}`);
   if (problems.length) { for (const p of problems) console.log(`✗ ${p}`); process.exit(1); }
-  console.log('✓ 说明书与申请表里的源程序量与实际一致');
+  console.log('✓ 说明书与申请表里的源程序量与实际一致，dist/copyright 里没有旧版本残留');
   process.exit(0);
 }
 
