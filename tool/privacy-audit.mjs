@@ -436,6 +436,53 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑩之四 事实源说的默认值，**对外文档一个字都不许写反**
+  //
+  // 为什么单列一条：`analyticsOptIn.defaultOn` 是 `false`（v1.28.0 起，审计 A 的后半段），
+  // 而 2026-09-30 一查，**三份对外文档里都还写着"默认开启"** —— 其中最要命的是
+  // App Store 的**审核备注**（那段话是逐字粘给审核员的），以及软著说明书。
+  // 这三处都不是"措辞不美"：它们是对苹果/对版权局/对用户的**事实陈述**，说反了就是假话。
+  //
+  // 判据写得能区分"历史注记"与"写反了"：一行同时提到统计开关、又出现"默认开"，
+  // **且这一行里没有"默认关"** → 判红。于是"（2026-09-30 由「默认开」改来）"这种注记不会误报，
+  // "如果哪天把云备份默认打开"这种假设句也不会（它不提统计开关）。
+  {
+    const defaultOn = facts.analyticsOptIn?.defaultOn === false;
+    if (defaultOn) {
+      const docs = [
+        'docs/privacy-policy.md',
+        'docs/privacy-policy.en.md',
+        'docs/store-listing.md',
+        'docs/store-listing-ios.md',
+        'docs/copyright-manual.md',
+        'docs/copyright-application.md',
+      ];
+      const switchZh = /(统计|帮助改进产品)/;
+      const wrongZh = /默认(开启|打开|开)/;
+      const rightZh = /默认(关闭|关)/;
+      const switchEn = /(analytics|statistics|help improve)/i;
+      const wrongEn = /(on by default|enabled by default|default on\b)/i;
+      const rightEn = /(off by default|default off|disabled by default)/i;
+      for (const rel of docs) {
+        const p = join(ROOT, rel);
+        if (!existsSync(p)) continue;
+        const lines = readFileSync(p, 'utf8').split('\n');
+        lines.forEach((line, i) => {
+          const isEn = rel.endsWith('.en.md');
+          const mentionsSwitch = isEn ? switchEn.test(line) : switchZh.test(line);
+          if (!mentionsSwitch) return;
+          const wrong = isEn ? wrongEn.test(line) : wrongZh.test(line);
+          const right = isEn ? rightEn.test(line) : rightZh.test(line);
+          // "默认开" 这三个字也出现在"默认开关"这种词里 —— 那一行只要同时有"默认关"就放过
+          if (wrong && !right) {
+            errors.push(`${rel}:${i + 1} 把统计开关说成"默认开"了，而事实源里 `
+              + '`analyticsOptIn.defaultOn` 是 false —— 这行是对外的事实陈述，说反了就是假话');
+          }
+        });
+      }
+    }
+  }
+
   // ⑪ 中英两版政策的**结构**必须一一对应（2026-09-30 补）
   //
   // 为什么单列一条：这份政策有中英两份**正文**，它们靠"同源生成"只保证了渲染方式一致，

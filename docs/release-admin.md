@@ -191,8 +191,8 @@ Command Line Tools —— 与 Xcode 装之前的状态等价）：把 `DEVELOPER
 
 1. 从 App Store 装 **Xcode**（约 20G，**只能装在 `/Applications`**，不能放 SSD）
    —— 装好后我做：模拟器跑通、用 integration_test 出 iOS 截图、逐屏差异走查
-2. 装 **CocoaPods**（⚠️ **这台机器上没有，是本轮新查出来的缺口**）。
-   我们有 `share_plus` / `gal` 两个插件，**没有 CocoaPods 就必然构建失败**。
+2. ~~装 **CocoaPods**~~ ✅ **不需要了**（同文件下一小节已查证，且 2026-09-30 的两次真实 iOS 构建
+   都是**没有 CocoaPods** 编过的：模拟器包 183M、release 真机包 20.3M）。
    本机也**没有 Homebrew**，所以三条路：
    * `brew install cocoapods` —— 得先装 Homebrew（装到内置盘，约 1G）；
    * 系统自带的 Ruby 是 **2.6**（Apple 已不维护）→ `sudo gem install cocoapods`
@@ -231,7 +231,7 @@ cocoapods.dart:307-310
 > ② 我们的 `AppFrameworkInfo.plist` 与当前 Flutter 模板**逐字节同形**
 > （模板这版确实不含 `MinimumOSVersion`，是构建时才写进去的）。
 
-也就是说：**装好 Xcode + CocoaPods 之后的第一次构建，会留下 6 个需要提交的改动**，
+也就是说：**装好 Xcode 之后的第一次构建，会留下 6 个需要提交的改动**，
 这是正常的、预期的。不写清楚的话，下一次 `git status` 会让人以为"谁动了工程文件"。
 
 ## 二之四之二、依赖的 iOS 可用性（静态核过，2026-09-30）

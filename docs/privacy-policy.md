@@ -307,7 +307,7 @@ API 30+ 上这两条都不存在（走 MediaStore 免权限写入）。
 | 7 个公共字段（含 `device_id`） | `app/lib/analytics/analytics_context.dart`；匿名 ID 存在 `analytics_meta` 表 |
 | 删除数据会清掉匿名标识 | `app/lib/data/drift_local_store.dart`（同一事务内删 `analyticsMeta`） |
 | 事实源与政策正文的对应 | `docs/privacy-facts.json`（机器可查） |
-| 开关默认开启、落库 | `app/lib/data/db.dart`（`analyticsEnabled`，默认 `true`）、`app/lib/data/profile_repository.dart` |
+| 开关**默认关闭**、落库 | `app/lib/data/db.dart`（`analyticsEnabled` 列 `withDefault(const Constant(false))`）、`app/lib/data/profile_repository.dart`。⚠️ 2026-09-30 之前这里写着"默认开启" —— 审计 A 的结论是"默认同意站不住"，v1.28.0 改掉了代码，**这张表当时没跟着改** |
 | 关闭后什么都不记 | `app/lib/analytics/analytics.dart`（`NoopAnalytics`）、`analytics.dart` 的 `if (!enabled) return;` |
 | 当前不联网 | `app/lib/main.dart`（`_NullTransport`）、`app/lib/data/sync_queue.dart`（`InMemorySyncQueue`） |
 | 训练期间不发请求 | `app/lib/analytics/flusher.dart` 的 `suspend()` / `resume()`，有测试守着 |

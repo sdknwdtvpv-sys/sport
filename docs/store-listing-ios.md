@@ -159,8 +159,9 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 > · 相册权限（`NSPhotoLibraryAddUsageDescription`）只用于"把训练分享卡存进相册"，
 >   是**仅新增**权限，我们**不读取**用户的任何照片或文件。触发路径：
 >   训练结束 → 总结页 → 分享卡 → 存到相册。
-> · 使用统计开关默认打开（「我」→ 帮助改进产品），但**当前发布的版本没有配上报地址，
->   因此不会发送任何数据**；关掉它不影响任何功能。
+> · 使用统计开关**默认关闭**（「我」→ 帮助改进产品）：只有用户主动打开、**并且**这个包配了
+>   上报地址时才会发送。当前发布的版本**没有配上报地址**，所以即使打开也不会有任何数据发出；
+>   开关关着不影响任何功能。
 > · **云备份在当前版本不可用**（需要服务器地址，编译期决定），界面上不会出现入口；
 >   若你在审核中看到相关代码，那是为后续版本准备的，默认关闭。
 > · 无内购、无广告、无第三方登录。
@@ -171,6 +172,6 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 |---|---|---|
 | Apple Developer 账号 | 你 | 个人 ¥688/年。上架与真机调试都需要；**模拟器不需要** |
 | Xcode（App Store，约 20G，只能装 `/Applications`） | 你 | 见 `docs/release-admin.md` §二之四 |
-| **CocoaPods** | 你（或装好 Xcode 后我来） | ⚠️ **这台机器上没有**，而 `share_plus` / `gal` 都是插件 —— 没有它 iOS 构建必然失败（`flutter doctor` 原文：*Without CocoaPods, plugins will not work on iOS or macOS*）。本机也没有 Homebrew，两条路见 `docs/release-admin.md` §二之四 |
+| ~~**CocoaPods**~~ | — | ✅ **不需要**（2026-09-30 查证 + 两次真实构建确认）：两个插件都自带 `Package.swift`，`app/ios/` 里**没有 `Podfile`**，走的是 **Swift Package Manager** 路线。`flutter doctor` 那句"没有 CocoaPods 插件就不工作"是通用提示，与本工程无关 |
 | 支持 URL / 隐私政策 URL | 你 | 隐私政策页面已生成在 `store-assets/privacy/`，需要放上公网 |
 | 开发者名称 / 联系邮箱 | 你 | 商店与隐私政策里要一致 |
