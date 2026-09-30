@@ -141,6 +141,66 @@ void main() {
         reason: '设置回到默认值（不是原手机的 lb）');
   });
 
+  test('备份里带了动作名，但导入时**不读它** —— 本机没有那个动作就只能显示 id', () async {
+    // 老手机：建一个**自定义动作**，并记一组
+    final DriftLocalStore oldPhone = await seedRichDevice(db);
+    final ExerciseData custom = await ExerciseRepository(db).createCustom(
+      name: '我的弹力带划船',
+      muscleGroup: '背',
+      equipment: 'band',
+      weightIncrement: 2,
+      nowMs: 1000,
+    );
+    await oldPhone.saveSet(SetRecord(
+      id: 's9',
+      workoutId: 'w9',
+      exerciseId: custom.id,
+      setIndex: 1,
+      reps: 12,
+      completedAtMs: 1000,
+      setType: SetType.normal,
+    ));
+
+    final BackupBundle bundle = await collectBackup(
+      store: oldPhone,
+      repository: ExerciseRepository(db),
+      nowMs: 1000,
+    );
+    final Map<String, Object?> root =
+        jsonDecode(bundle.json) as Map<String, Object?>;
+    final Map<String, Object?> names =
+        (root['exercise_names'] as Map<Object?, Object?>).cast<String, Object?>();
+    expect(names[custom.id], '我的弹力带划船',
+        reason: '导出时确实把中文名写进了"动作名表"（那份是给人看的）');
+
+    // 新手机：全新安装，动作库里**没有**那个自定义动作
+    final AppDatabase db2 = AppDatabase(NativeDatabase.memory());
+    addTearDown(db2.close);
+    final DriftLocalStore newPhone = DriftLocalStore(db2);
+    await ExerciseRepository(db2).importSeed(
+      loadJson: () => File('assets/exercises.json').readAsString(),
+    );
+    final BackupParse parsed = parseBackup(bundle.json);
+    expect(parsed.error, isNull);
+    await applyBackup(newPhone, parsed);
+
+    expect(await newPhone.allSets(), hasLength(2),
+        reason: '记录本身不会丢（自定义动作那一组也在）');
+    expect(await ExerciseRepository(db2).byId(custom.id), isNull,
+        reason: '导入**不会**把缺失的动作补进本机库');
+
+    // 界面上的名字是按 `names[id] ?? id` 取的（progress / training_stats / CSV 都是这个写法）
+    final List<ExerciseData> rows = await ExerciseRepository(db2).search(limit: 500);
+    final Map<String, String> names2 = <String, String>{
+      for (final ExerciseData r in rows) r.id: r.name,
+    };
+    expect(names2[custom.id] ?? custom.id, custom.id,
+        reason: '查不到就用 id 兜底 —— 所以恢复之后这个动作在界面上显示成 '
+            '"${custom.id}" 而不是备份里那个中文名。「动作名表」目前是**只写不读**的，'
+            '设计稿里"恢复时即使动作库变了也能显示中文名"这句**没有兑现**'
+            '（要不要用起来见 docs/your-todo.md）');
+  });
+
   test('动作库变了也能显示名字：备份里带了一份"动作 id → 中文名"', () async {
     // 这一条是设计上的**有意补偿**：动作名表让恢复后仍能显示中文，
     // 所以即使服务端/新版本的库里没有那个动作，用户也看得懂。
