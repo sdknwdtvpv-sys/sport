@@ -389,6 +389,57 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑪ 中英两版政策的**结构**必须一一对应（2026-09-30 补）
+  //
+  // 为什么单列一条：这份政策有中英两份**正文**，它们靠"同源生成"只保证了渲染方式一致，
+  // **内容结构**谁都没对过。事实驱动的名字（事件/字段/权限/SDK）已经各查一遍了，
+  // 但"某一版多了一整节"这种漂移没人拦。而这恰好是本项目反复踩的那类坑。
+  //
+  // 编号约定：中文「三之五」= 3.5、「五之二」= 5.2（同一个约定，两份必须一致）。
+  {
+    const CN = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+    const tokens = (text, level) => {
+      const out = [];
+      const re = new RegExp(`^#{${level}} (.+)$`, 'gm');
+      for (const m of text.matchAll(re)) {
+        const head = m[1].trim();
+        const cn = head.match(/^([一二三四五六七八九十])(?:之([一二三四五六七八九十]))?[、.]/);
+        if (cn) {
+          out.push(cn[2] ? `${CN[cn[1]]}.${CN[cn[2]]}` : String(CN[cn[1]]));
+          continue;
+        }
+        const num = head.match(/^(\d+(?:\.\d+)?)[.\s]/);
+        if (num) {
+          out.push(num[1]);
+          continue;
+        }
+        const app = head.match(/^(?:附录|Appendix)\s*([AB])/i);
+        if (app) out.push(`APPENDIX_${app[1].toUpperCase()}`);
+      }
+      return out;
+    };
+    const zhText = readFileSync(POLICY, 'utf8');
+    const enText2 = existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '';
+    if (!enText2) {
+      errors.push('英文版政策不存在 —— 它是要发布的那一份，不能只有中文');
+    } else {
+      for (const level of [2, 3]) {
+        const a = tokens(zhText, level);
+        const b = tokens(enText2, level);
+        if (a.length !== b.length) {
+          errors.push(`政策中英两版的 h${level} 小节数不一致（中文 ${a.length} / 英文 ${b.length}）——`
+            + ' 加/删小节要两边一起改（编号约定见 tool/privacy-audit.mjs 这一节）');
+        }
+        const onlyZh = a.filter((x) => !b.includes(x));
+        const onlyEn = b.filter((x) => !a.includes(x));
+        if (onlyZh.length || onlyEn.length) {
+          errors.push(`政策中英两版的小节编号对不上：只有中文有 [${onlyZh.join('、')}]；`
+            + `只有英文有 [${onlyEn.join('、')}]`);
+        }
+      }
+    }
+  }
+
   // ⑧ 「怎么开云备份」这件事，教一半比不教更危险
   //
   // 云备份现在是**两个**编译期开关：地址 + 「政策已按启用态改写」的声明。

@@ -273,7 +273,7 @@ What deletion covers, to avoid misunderstanding:
 
 ---
 
-### 5.5 Complaints and reports
+### 5.2 Complaints and reports
 
 - **Channel**: `https://github.com/sdknwdtvpv-sys/sport/issues` (the contact in the table above).
 - **Response time**: we answer within **15 working days**; if it takes longer we say why first.
