@@ -32,6 +32,7 @@ import '../../backup/backup_transport.dart';
 import '../../backup/cloud_backup.dart';
 import '../backup/cloud_backup_screen.dart';
 import 'backup_source.dart';
+import 'privacy_policy_screen.dart';
 import 'backup_exporter.dart';
 import 'training_stats.dart';
 
@@ -189,6 +190,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       SnackBar(
         content: Text('已导出 ${bundle.workouts} 次训练 / ${bundle.sets} 组'),
         backgroundColor: Tokens.elevated,
+      ),
+    );
+  }
+
+  /// 打开隐私政策（应用内必须能读到 —— 见 privacy_policy_screen.dart 的说明）
+  Future<void> _openPrivacyPolicy() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) => const PrivacyPolicyScreen(),
       ),
     );
   }
@@ -687,6 +697,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ]),
         _sectionTitle('关于'),
         _card(<Widget>[
+          // 隐私政策入口。**必须在四步之内能到**（小米的隐私合规指引）：
+          // 冷启动 → 「我」→ 这里 = 两次点击，够了。
+          ListTile(
+            key: const Key('privacy-policy'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+            onTap: _openPrivacyPolicy,
+            title: const Text(
+              '隐私政策',
+              style: TextStyle(color: Tokens.text, fontSize: 15),
+            ),
+            subtitle: const Text(
+              '我们收集什么、不收集什么，逐条写在里面',
+              style: TextStyle(color: Tokens.text3, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+          ),
+          const Divider(height: 1, color: Tokens.line),
           Padding(
             padding: const EdgeInsets.all(Tokens.s4),
             child: Text(

@@ -17,4 +17,11 @@ library;
 /// 与 `pubspec.yaml` 的 `version:` 前缀一致（不含 build number）。
 ///
 /// 切版 bump pubspec 时改这里 —— 忘了改 `flutter test` 会红，不用靠人记得。
-const String kAppVersion = '1.23.1';
+const String kAppVersion = '1.24.0';
+
+/// APP 备案号（工业和信息化部要求：**备案通过后要在应用内展示**）。
+///
+/// **现在是空的** —— 备案在用户那边（见 `docs/your-todo.md`）。空字符串表示"还没备案"，
+/// 隐私政策页那一行就**不显示**：与其印一句"备案号：待填"，不如不出现。
+/// 拿到号之后把它填在这里（形如 `京ICP备12345678号-1A`），那一行会自动出现。
+const String kAppFilingNumber = '';

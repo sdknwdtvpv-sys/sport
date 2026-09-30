@@ -1,7 +1,7 @@
 name: lianleme
 description: 练了么 —— 一次点击记一组的力量训练记录工具
 publish_to: 'none'
-version: 1.23.1+27
+version: 1.24.0+28
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -48,3 +48,8 @@ flutter:
   assets:
     # 由 node seed/build.mjs 生成；唯一真源是 seed/parts/*.json
     - assets/exercises.json
+    # 应用内的隐私政策（纯文本）。由 tool/gen-privacy-page.mjs 从 docs/privacy-policy.md
+    # **同一份 Markdown** 生成 —— 商店要求应用内能直接读到隐私政策（小米的合规指引：
+    # "应用内的隐私政策必须是可以正常打开和查看的状态"，且四步之内能到）。
+    # ⚠️ 它和公网那份一样有防漂守卫（gen-privacy-page.mjs --check）。
+    - assets/privacy-policy.txt

@@ -1,22 +1,40 @@
 # LianLeMe (练了么) · Privacy Policy
 
+<!--
+Maintainer note (never appears in generated artifacts — HTML comments are stripped, and the
+in-app copy drops them too):
+
+This Markdown is the single source for two generated artifacts:
+  * store-assets/privacy/en.html  — the page hosted publicly and given to the stores
+  * (the in-app copy is generated from the Chinese original)
+
+Paragraphs wrapped in the pair of HTML comment markers named with the Chinese word for
+"internal" exist only in this source file: they are developer-facing (status, TODOs, file
+paths, verification commands) and would look wrong on a public page or inside the app.
+-->
+
+<!-- 内部 -->
 > **Status: DRAFT — not yet reviewed by counsel; do not use for store submission as-is.**
 >
 > This is the English translation of `docs/privacy-policy.md`. **In case of any discrepancy,
 > the Chinese version prevails.**
 >
-> Every statement below was **verified against the source code**, not copied from a template
-> (see Appendix B for how to check it yourself).
->
 > **Two things remain before submission:**
 > 1. ⬜ Legal review — workout data is **sensitive personal information** under China's PIPL
 > 2. ⬜ Replace the "Effective date" with the actual first release date
 >
-> | | |
-> |---|---|
-> | Operator | **Elliot.LI** (individual developer) |
-> | Contact | **https://github.com/sdknwdtvpv-sys/sport/issues** |
-> | Effective date | **date of first release** (currently: `not released` — must be filled in before publishing) |
+<!-- /内部 -->
+
+| | |
+|---|---|
+| Operator | **Elliot.LI** (individual developer) |
+| Contact | **https://github.com/sdknwdtvpv-sys/sport/issues** |
+| Effective date | **date of first release** (to be filled in when publishing) |
+
+<!-- These three are **required public information** (who processes your data, how to reach us,
+from which date this applies), so they sit outside the internal block. -->
+<!-- (This note itself must stay inside a comment — the first version was a blockquote and
+shipped with the policy.) -->
 
 ---
 
@@ -223,7 +241,7 @@ When this policy changes we will announce it in-app and in the release notes, an
 effective date at the top. For material changes (for example, beginning real uploads) we will ask
 for your consent separately.
 
----
+<!-- 内部 -->
 
 ## Appendix A: where these statements come from
 
@@ -253,3 +271,5 @@ grep -rn "track('" app/lib/
 # 3. Whether anything is uploaded today (should be the always-failing _NullTransport)
 grep -n "_NullTransport" app/lib/main.dart
 ```
+
+<!-- /内部 -->

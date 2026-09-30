@@ -34,23 +34,14 @@
 <body>
 <main>
 <h1 id="lianleme-练了么-privacy-policy">LianLeMe (练了么) · Privacy Policy</h1>
-<blockquote><p><strong>Status: DRAFT — not yet reviewed by counsel; do not use for store submission as-is.</strong></p>
-<p>This is the English translation of <code>docs/privacy-policy.md</code>. <strong>In case of any discrepancy, the Chinese version prevails.</strong></p>
-<p>Every statement below was <strong>verified against the source code</strong>, not copied from a template (see Appendix B for how to check it yourself).</p>
-<p><strong>Two things remain before submission:</strong></p>
-<ul>
-<li>⬜ Legal review — workout data is <strong>sensitive personal information</strong> under China's PIPL</li>
-<li>⬜ Replace the &quot;Effective date&quot; with the actual first release date</li>
-</ul>
 <table>
 <thead><tr><th></th><th></th></tr></thead>
 <tbody>
 <tr><td>Operator</td><td><strong>Elliot.LI</strong> (individual developer)</td></tr>
 <tr><td>Contact</td><td><strong>https://github.com/sdknwdtvpv-sys/sport/issues</strong></td></tr>
-<tr><td>Effective date</td><td><strong>date of first release</strong> (currently: <code>not released</code> — must be filled in before publishing)</td></tr>
+<tr><td>Effective date</td><td><strong>date of first release</strong> (to be filled in when publishing)</td></tr>
 </tbody>
 </table>
-</blockquote>
 <hr>
 <h2 id="1-in-one-sentence">1. In one sentence</h2>
 <p><strong>LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone. There is no sign-up, no phone number, no location, no contacts. The only network activity is anonymous usage statistics when the &quot;Help improve the product&quot; switch is on — and you can turn that off at any time.</strong></p>
@@ -184,32 +175,6 @@
 <hr>
 <h2 id="8-changes-to-this-policy">8. Changes to this policy</h2>
 <p>When this policy changes we will announce it in-app and in the release notes, and update the effective date at the top. For material changes (for example, beginning real uploads) we will ask for your consent separately.</p>
-<hr>
-<h2 id="appendix-a-where-these-statements-come-from">Appendix A: where these statements come from</h2>
-<table>
-<thead><tr><th>Statement</th><th>Source</th></tr></thead>
-<tbody>
-<tr><td>The 18 analytics events and their fields</td><td><code>app/lib/features/workout/workout_controller.dart</code> (<code>track(...)</code> call sites)</td></tr>
-<tr><td>Switch defaults to ON and is persisted</td><td><code>app/lib/data/db.dart</code> (<code>analyticsEnabled</code>, default <code>true</code>), <code>app/lib/data/profile_repository.dart</code></td></tr>
-<tr><td>When off, nothing is recorded</td><td><code>app/lib/analytics/analytics.dart</code> (<code>NoopAnalytics</code>, and <code>if (!enabled) return;</code>)</td></tr>
-<tr><td>Nothing is uploaded today</td><td><code>app/lib/main.dart</code> (<code>_NullTransport</code>), <code>app/lib/data/sync_queue.dart</code> (<code>InMemorySyncQueue</code>)</td></tr>
-<tr><td>No requests during a workout</td><td><code>app/lib/analytics/flusher.dart</code> (<code>suspend()</code> / <code>resume()</code>), guarded by tests</td></tr>
-<tr><td>Only the INTERNET permission</td><td><code>app/android/app/src/main/AndroidManifest.xml</code></td></tr>
-<tr><td>Right to deletion is available</td><td><code>app/lib/features/profile/profile_screen.dart</code> (<code>_deleteAll</code>), <code>app/lib/data/local_store.dart</code> (<code>deleteAllUserData</code>)</td></tr>
-<tr><td>Deletion includes pending events</td><td><code>app/lib/data/drift_local_store.dart</code> (deletes <code>analyticsOutbox</code> in the same transaction)</td></tr>
-<tr><td>No account system</td><td>No login/sign-up code anywhere; <code>app/lib/data/</code> contains only local storage</td></tr>
-</tbody>
-</table>
-<h2 id="appendix-b-verify-it-yourself">Appendix B: verify it yourself</h2>
-<p>You do not have to take this document on faith:</p>
-<pre><code class="lang-bash"># 1. Permissions: the merged release manifest should list only INTERNET
-grep uses-permission app/build/app/intermediates/merged_manifest/release/*/AndroidManifest.xml
-
-# 2. What the analytics layer actually sends
-grep -rn &quot;track('&quot; app/lib/
-
-# 3. Whether anything is uploaded today (should be the always-failing _NullTransport)
-grep -n &quot;_NullTransport&quot; app/lib/main.dart</code></pre>
 
 <footer>本页由 <code>tool/gen-privacy-page.mjs</code> 从仓库里的
 <code>docs/privacy-policy.md</code> 生成 —— 页面内容与随包发布的那份同源，

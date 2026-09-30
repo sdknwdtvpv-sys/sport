@@ -34,22 +34,14 @@
 <body>
 <main>
 <h1 id="练了么-隐私政策">练了么 · 隐私政策</h1>
-<blockquote><p><strong>状态：草案 —— 未经法务审核，不得直接用于上架。</strong></p>
-<p>本文档中的每一项<strong>都是从代码里核对出来的</strong>，不是套模板写的（核对方式见文末「附录 B」）。 英文版见 <code>docs/privacy-policy.en.md</code>；<strong>中英不一致时以中文版为准</strong>。</p>
-<p><strong>上架前只剩两件事：</strong></p>
-<ul>
-<li>⬜ 由法务或有资质的人审核 —— 健康数据属《个人信息保护法》的<strong>敏感个人信息</strong></li>
-<li>⬜ 把「生效日期」改成实际的首次发布日</li>
-</ul>
 <table>
 <thead><tr><th></th><th></th></tr></thead>
 <tbody>
 <tr><td>运营者</td><td><strong>Elliot.LI</strong>（个人开发者）</td></tr>
 <tr><td>联系方式</td><td><strong>https://github.com/sdknwdtvpv-sys/sport/issues</strong></td></tr>
-<tr><td>生效日期</td><td><strong>首次上架日</strong>（当前：<code>未发布</code> —— 上架前必须替换为实际日期）</td></tr>
+<tr><td>生效日期</td><td><strong>首次上架日</strong>（上架时替换为实际日期）</td></tr>
 </tbody>
 </table>
-</blockquote>
 <hr>
 <h2 id="一-一句话概括">一、一句话概括</h2>
 <p><strong>练了么是一款离线优先的训练记录工具。你的训练数据只存在你自己的手机里。 我们不要求注册、不要你的手机号、不要定位、不要通讯录。 唯一的联网行为是「帮助改进产品」开关打开时的匿名使用统计，而这个开关你可以随时关掉。</strong></p>
@@ -66,7 +58,7 @@
 </table>
 <p>这些数据存放在应用私有的本地数据库（SQLite，经 drift 管理），<strong>不会离开设备</strong>。</p>
 <h3 id="2-2-帮助改进产品-打开时才会产生的数据">2.2 「帮助改进产品」打开时才会产生的数据</h3>
-<p>这是一个<strong>默认开启、随时可关</strong>的开关（路径：「我」→「帮助改进产品」）。它只产生下面 18 类事件 —— 字段是<strong>有限且固定</strong>的（完整清单在 <code>docs/privacy-facts.json</code>， 由 <code>tool/privacy-audit.mjs</code> 与代码逐条对账）：</p>
+<p>这是一个<strong>默认开启、随时可关</strong>的开关（路径：「我」→「帮助改进产品」）。它只产生下面 18 类事件 —— 字段是<strong>有限且固定</strong>的，逐条列在下面这张表里（不多不少）：</p>
 <table>
 <thead><tr><th>事件</th><th>什么时候发</th><th>携带的字段</th></tr></thead>
 <tbody>
@@ -128,7 +120,7 @@
 <li>上报地址是<strong>编译期配置</strong>的：没配地址时埋点通道是 <code>_NullTransport</code>，它<strong>永远失败</strong> —— 事件只会留在本机的 outbox 里。当前发布的包<strong>没有配地址</strong>。</li>
 <li>训练数据同步通道是 <code>InMemorySyncQueue</code>，只存内存、不上网，App 一关就没了。</li>
 <li><strong>本版本未提供云备份</strong>。云端备份的代码已经写好（端到端加密、默认关闭）， 但它需要一个服务器地址才能启用，而地址同样是<strong>编译期配置</strong>的： 没配地址的包，界面上连「云备份」这个入口都不会出现。</li>
-<li><strong>你可以自己验</strong>：附录 B 给了几条命令（看权限、看埋点字段、看通道是不是 NullTransport、 看云备份有没有配地址）。</li>
+<li><strong>你可以自己验</strong>：装上之后用任意抓包工具看着它跑一整天 —— 只要「帮助改进产品」的开关 在设置里是开着的、而包又没配地址，你就应该看到<strong>零个</strong>发往我们的请求。 （我们自己在开发时也是这么验的：一次配了地址的构建收得到事件，一次没配的收不到。）</li>
 </ul>
 <p>换句话说，<strong>现在连我们自己也拿不到你的数据。</strong> 我们如实标注这一点，是因为把 &quot;将来会做&quot;写成&quot;已经在做&quot;是欺骗，反过来把&quot;其实没做&quot;说成&quot;做了&quot;同样没必要。</p>
 <h3 id="3-2-接入真实上报之后">3.2 接入真实上报之后</h3>
@@ -187,42 +179,6 @@
 <hr>
 <h2 id="八-政策变更">八、政策变更</h2>
 <p>本政策更新时，我们会在应用内与版本更新说明中提示，并更新文首的生效日期。 涉及重大变更（例如开始真实上报）时，会单独征求你的同意。</p>
-<hr>
-<h2 id="附录-a-本政策的事实来源">附录 A：本政策的事实来源</h2>
-<table>
-<thead><tr><th>说法</th><th>代码/文件位置</th></tr></thead>
-<tbody>
-<tr><td>18 类埋点事件与字段</td><td><code>app/lib</code> 下所有 <code>track(...)</code> 调用点；<strong>逐条对账见 <code>tool/privacy-audit.mjs</code></strong></td></tr>
-<tr><td>7 个公共字段（含 <code>device_id</code>）</td><td><code>app/lib/analytics/analytics_context.dart</code>；匿名 ID 存在 <code>analytics_meta</code> 表</td></tr>
-<tr><td>删除数据会清掉匿名标识</td><td><code>app/lib/data/drift_local_store.dart</code>（同一事务内删 <code>analyticsMeta</code>）</td></tr>
-<tr><td>事实源与政策正文的对应</td><td><code>docs/privacy-facts.json</code>（机器可查）</td></tr>
-<tr><td>开关默认开启、落库</td><td><code>app/lib/data/db.dart</code>（<code>analyticsEnabled</code>，默认 <code>true</code>）、<code>app/lib/data/profile_repository.dart</code></td></tr>
-<tr><td>关闭后什么都不记</td><td><code>app/lib/analytics/analytics.dart</code>（<code>NoopAnalytics</code>）、<code>analytics.dart</code> 的 <code>if (!enabled) return;</code></td></tr>
-<tr><td>当前不联网</td><td><code>app/lib/main.dart</code>（<code>_NullTransport</code>）、<code>app/lib/data/sync_queue.dart</code>（<code>InMemorySyncQueue</code>）</td></tr>
-<tr><td>训练期间不发请求</td><td><code>app/lib/analytics/flusher.dart</code> 的 <code>suspend()</code> / <code>resume()</code>，有测试守着</td></tr>
-<tr><td>权限就那两项（另有一项仅 API ≤29 生效）</td><td><code>app/android/app/src/main/AndroidManifest.xml</code>（<strong>打包后</strong>用 <code>aapt2 dump badging</code> 核，见附录 B）</td></tr>
-<tr><td>删除权可用（第四十七条）</td><td><code>app/lib/features/profile/profile_screen.dart</code>（<code>_deleteAll</code>）、<code>app/lib/data/local_store.dart</code>（<code>deleteAllUserData</code>）</td></tr>
-<tr><td>删除含待发埋点</td><td><code>app/lib/data/drift_local_store.dart</code>（同一事务内删 <code>analyticsOutbox</code>）</td></tr>
-<tr><td>无账号系统</td><td>全仓库无登录/注册代码；<code>app/lib/data/</code> 下只有本地库</td></tr>
-</tbody>
-</table>
-<h2 id="附录-b-怎么自己核对">附录 B：怎么自己核对</h2>
-<p>不必相信本文档，可以直接验：</p>
-<pre><code class="lang-bash"># 0. 一条命令把&quot;代码 ↔ 隐私事实 ↔ 政策正文&quot;全对一遍（对不上会退出码 1）
-node tool/privacy-audit.mjs
-#    再核一次**打包后**的合并权限（插件的权限在这一步才会露出来）
-node tool/privacy-audit.mjs --apk app/build/apk/&lt;你的包&gt;.apk
-
-# 1. 看权限：可以自己解包看合并后的 manifest
-unzip -p app/build/apk/&lt;你的包&gt;.apk AndroidManifest.xml | strings | grep -i permission
-
-# 2. 看埋点发了什么
-grep -rn &quot;track('&quot; app/lib/
-
-# 3. 看当前是否真的不联网（应该是永远失败的 _NullTransport 或没配地址）
-grep -n &quot;LIANLEME_ANALYTICS_URL\|_NullTransport&quot; app/lib/main.dart
-
-# 4. 抓包验证&quot;训练中零请求&quot;（需要真机，见 docs/analytics-sdk.md §12）</code></pre>
 
 <footer>本页由 <code>tool/gen-privacy-page.mjs</code> 从仓库里的
 <code>docs/privacy-policy.md</code> 生成 —— 页面内容与随包发布的那份同源，
