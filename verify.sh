@@ -237,6 +237,15 @@ else
 fi
 echo
 
+# CI 与门禁关系核对工具的**自检**：workflow 头部写着"这是门禁的子集"，
+# 而那是**承诺**：CI 里加一条门禁不管的命令就当场变假，且本地门禁永远复现不了它。
+if node tool/check-ci.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} CI↔门禁核对自检通过（偷跑命令/少步骤/没钉版本都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ CI↔门禁核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 商店表单对账工具的**自检**：两张商店表单是提交材料，填错是拒审/下架的理由，
 # 而它们此前只是两份 Markdown（埋点字段改过好几轮，每次都可能让某张表变成假话）。
 if node tool/check-store-forms.mjs --selftest >"$LOG" 2>&1; then
@@ -422,6 +431,15 @@ if node tool/asset-check.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 发行资源（图标/启动图/应用名）齐全"
 else
   strip "$LOG"; echo "${RED}✗ 发行资源有问题（上架前必须修）${OFF}"; fail=1
+fi
+echo
+
+# CI 与门禁的关系：CI 只许跑门禁覆盖得了的命令、核心步骤不许少、版本必须钉死、
+# 头部那份"没覆盖什么"的清单必须点明（"CI 绿 ≠ 门禁绿"是写在三处文档里的承诺）。
+if node tool/check-ci.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 仍是门禁的子集（命令/步骤/版本都对得上）"
+else
+  strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（"子集"这句话已经不成立）${OFF}"; fail=1
 fi
 echo
 
@@ -629,7 +647,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
-         tool/check-store-forms.mjs \
+         tool/check-store-forms.mjs tool/check-ci.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
