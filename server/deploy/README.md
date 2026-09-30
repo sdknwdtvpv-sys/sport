@@ -68,6 +68,11 @@ flutter build apk --release \
 
 ## 这一包**没有**做的事（别误会）
 
+* **没有被真正的 systemd / Caddy 验过** —— 开发机是 macOS，`systemd-analyze verify` 与
+  `caddy validate` 都跑不了。目前验到的是：`bash -n install.sh`、`--dry-run` 全流程走通、
+  以及 `tool/check-deploy.mjs` 的结构与交叉对账（端口/入口/占位符/加固/dart-define）。
+  **第一次真的部署时，如果有 systemd 或 Caddy 的报错，那是这一包第一次面对真实环境** ——
+  报错发我，改完再记进 CHANGELOG；
 * 不买服务器、不解析域名、不备案 —— 那些只能你来做；
 * 不做监控告警、不做异地备份 —— 一期只有"服务活着 + 库在磁盘上"，
   真出问题由 `install.sh` 的最后那步 healthz + systemd 重启兜底；
