@@ -233,6 +233,8 @@ adb shell cmd uimode night no    # 若原来是自动/夜间，按原值改回
 - **App Store 那套（`store-assets/screenshots-ios/`）是 12 张**：上面这 11 屏 + 那道同意门，
   尺寸 1320×2868，来源是 iPhone 17 Pro Max 模拟器（干净安装那一跑），**出完图立刻压平**
   （16 位 RGBA → 8 位 RGB）。它没有 `01b` —— 模拟器那一跑本身就是全新安装。
+  ⚠️ 它**还没有** `11b-body-revoke`（那条入口是 v1.32.0 才做的，那套图出在它之前）——
+  下次重出 iOS 那套时补上；`tool/check-screenshots.mjs` 目前只对国内那套要求这一张。
 
 商店通常逐张接收、不要求尺寸一致；若要统一，用 11 张那套即可（它自己也齐了）。
 
