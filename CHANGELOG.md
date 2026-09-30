@@ -180,6 +180,30 @@ CHANGELOG 降序、软著数字）其实都在 **第 2 层**；第 5 层只有"�
 同时把 §五「我这边接下来会做的」按现状改写 —— 那节列的事**已经全部做完**了；
 如实写明：**没有你的输入，我这边已经没有能推进"上架"的工作**。
 
+### 同版追加：**iOS 第一次构建通过**（许可证接受之后）
+
+用户接受了 Xcode 许可证，工具链立刻可用：`git` / `python3` 恢复正常，
+`xcrun --sdk iphonesimulator --show-sdk-path` 指向 iPhoneSimulator27.0 SDK。
+于是把拖了很多轮的那件事做了 —— **两种 iOS 构建都编出来了**：
+
+* `flutter build ios --simulator --no-codesign` → 183M 的 `Runner.app`；
+* `flutter build ios --release --no-codesign` → **19M / arm64 / 最低 iOS 15.0**。
+
+**产物逐项核对**（这些正是此前一直靠静态守卫的东西，现在在真产物里被证实）：
+
+| 项 | 实测 |
+|---|---|
+| 显示名 / bundle id | 练了么 / `com.sdknwdtvpv.lianleme` |
+| 版本 | `1.31.0` / build `40`（与 `app_info.dart`、`pubspec` 一致） |
+| 相册权限 | **只有 `NSPhotoLibraryAddUsageDescription`**；`NSPhotoLibraryUsageDescription` 不存在（v1.27.1 那个「只申请仅新增」的决定，在产物里成立） |
+| 出口加密 | `ITSAppUsesNonExemptEncryption = false` |
+| 主题 / 方向 | `UIUserInterfaceStyle = Dark`；方向数组**只有 `UIInterfaceOrientationPortrait`**（v1.30.0 的锁） |
+| 原生依赖 | `Frameworks/` 里有 **`sqlite3.framework` 与 `objective_c.framework`** —— 正是第 35 轮那条守卫发现的「原版守卫对它完全瞎」的两个原生资源包；它们确实被编进了 iOS 包 |
+| 依赖路线 | **没有 Pods 目录** → SPM 路线由真实构建确认（此前只是结构上推断） |
+
+**还差什么**：① **模拟器运行时**（Xcode 26+ 起要单独下载，约 8G）—— 有了它才能「在模拟器上跑通 +
+逐屏截图」；② **Apple Developer 账号** —— 签名与真机调试（模拟器不需要）。两件都在用户那边。
+
 版本 1.30.0+39 → 1.31.0+40。
 
 ## v1.30.0 · 锁竖屏：横屏下首页本来是坏的（实测）

@@ -142,4 +142,4 @@
 | 合规 4：不上传动作视频/照片 | ✅ 一期不采集 | — |
 | 场景级 eval 的 7 条红线 | ✅ **全在**（理由非空 / ≤40 字 / 无占位符 / 双重渐进 / 单步 ≤ 一个步长 / 重量不下降 / 自重恒 null 且永不 linear_progress） | `engine/scenarios.json` 的 `invariants` + `engine/run-scenarios.mjs`（40 字上限在第 96 行） |
 | 变异测试的四条约定 | ✅ | `tool/mutation.mjs`（24 杀 / 0 存活 / 2 等价） |
-| **双端同步上线**（硬约束） | ⚠️ **处于风险状态**：iOS 一次都没构建过 | Xcode 已装但许可证未接受；见 `release-checklist.md` 的 iOS 行 |
+| **双端同步上线**（硬约束） | 🟡 **不再是「一次都没构建过」**：2026-09-30 首编通过（模拟器包 + release 真机包，产物逐项核对） | 还差模拟器运行时（约 8G）与 Apple 账号签名；见 `release-checklist.md` 的 iOS 行 |
