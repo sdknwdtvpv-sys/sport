@@ -249,7 +249,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 现在它是**不变量而不是覆盖率**：动作数可以涨，涨进来的新动作必须带说明。
 `tool/content-report.mjs` 保留下来是给"以后要不要加动作"用的，不再是一条欠账。
 
-内容由人撰写（`seed/parts/01-03.json` 与 `seed/upstream-zh-names.json`），
+内容由人撰写（`seed/parts/` 下的 `01-chest-back.json` / `02-legs-shoulders.json` / `03-arms-core.json`，与 `seed/upstream-zh-names.json`），
 **不由脚本推导** —— 动作要点写错的代价比不写大得多。
 
 ### 距离处方（`default_target_distance_m`，2026-09-29 补齐）

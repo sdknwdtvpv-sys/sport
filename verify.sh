@@ -255,6 +255,15 @@ else
 fi
 echo
 
+# 文档路径核对工具的**自检**：文档里到处都是 `tool/xxx.mjs` 这种引用，
+# 文件改名/搬家之后它们会**悄悄指空** —— 读者照着敲就是"文件不存在"。
+if node tool/check-doc-paths.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 文档路径核对自检通过（指空的引用藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 文档路径核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 用户可见文案核对工具的**自检**：`Text` 不渲染 markdown —— `**` 是三个星号印在屏幕上。
 # 这个项目为此付过三次学费（同意弹层、政策里的待办、收集清单开头的说明），每次都是眼睛先看见的。
 if node tool/check-user-text.mjs --selftest >"$LOG" 2>&1; then
@@ -467,6 +476,15 @@ if node tool/check-ci.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 仍是门禁的子集（命令/步骤/版本都对得上）"
 else
   strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（"子集"这句话已经不成立）${OFF}"; fail=1
+fi
+echo
+
+# 文档路径：README 与 docs/*.md 里带斜杠的路径引用必须真的存在
+# （裸文件名、构建产物、URL、占位符、以及"不在仓库里"的名单都跳过 —— 名单要写理由）。
+if node tool/check-doc-paths.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 文档里引用的路径都存在"
+else
+  strip "$LOG"; echo "${RED}✗ 文档里有指空的路径引用${OFF}"; fail=1
 fi
 echo
 
@@ -684,7 +702,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
          tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
-         tool/check-user-text.mjs \
+         tool/check-user-text.mjs tool/check-doc-paths.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
