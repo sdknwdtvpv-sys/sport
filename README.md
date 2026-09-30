@@ -1,6 +1,6 @@
 # 练了么
 
-**v1.2.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+**v1.22.1** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
 
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
@@ -32,7 +32,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 | JS 规则引擎（45 向量 + 4 红线 + 4 条 1RM） | `node engine/run-tests.mjs` | ✅ 53/53 |
 | Dart 规则引擎（**同一份** `engine/vectors.json`） | `dart app/tool/check_domain.dart` | ✅ 60/60 |
 | 静态分析（最严格档，info 级也算失败） | `cd app && dart analyze --fatal-infos` | ✅ **No issues found!** |
-| Flutter 测试（引擎 + 持久化契约 + 数据库迁移 + 有氧记录 + 全部界面 + 埋点上报 + 冒烟） | `cd app && flutter test` | ✅ **553/553** |
+| Flutter 测试（引擎 + 持久化契约 + 数据库迁移 + 有氧记录 + 全部界面 + 埋点上报 + 云备份 + 冒烟） | `cd app && flutter test` | ✅ **全绿**（当前条数见 `docs/release-checklist.md` 的"当前状态速览"） |
 | **场景 eval**（把产品红线写成序列级断言：连练 12 周之后还讲不讲道理） | `node engine/run-scenarios.mjs` | ✅ 8 场景 / 152 步 / 12 条红线 |
 | **埋点链路**（收集端收/拒/落盘 + 北极星 24h 边界 + 漏斗 + `tap_count` 门禁口径） | `node server/collector.selftest.mjs` | ✅ 通过 |
 | **可用性测试口径**（中位数 / 硬错误拦截 / 判定与 §8 目标一致） | `node tool/usability-selftest.mjs` | ✅ 通过 |
@@ -55,7 +55,7 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 > `ensure()`/`flush()` 语义），并暴露了两处工具自身的假阳性。见 `tool/mutation.mjs` 的文件头。
 
 三层引擎校验共用同一份 `engine/vectors.json`，所以「Dart 与 JS 行为一致」是被证实的**事实**，不是声称。
-`flutter test` 的 553 项 = 43 项引擎向量/红线/1RM + 10 项 `tap_count` 边界 + **18 项 widget 交互测试**
+`flutter test` 的构成：引擎向量/红线/1RM + `tap_count` 边界 + **widget 交互测试**
 + **56 项持久化契约测试**（28 条断言 × 2 个实现：内存版与 drift 版）
 + **22 项动作库** + 4 项多动作 + **25 项动作选择页** + 2 项启动冒烟 + **22 项今日规划**
 + 6 项今日建议卡 + **3 项首页入口** + 18 项训练总结 + 15 项分享卡 + **20 项身体数据** + **22 项「我」页** + **23 项「进步」页**
@@ -259,7 +259,7 @@ flutter test
 |---|---|---|---|
 | 产品定义 | `PRODUCT.md` | 散文 | 创始人 / 合伙人 |
 | 交互 | `prototype/index.html`（**13 屏，零依赖，双击就开**）+ `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
-| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：351 条种子可直接导入；drift 落库有 56 项契约测试 + 9 次数据库迁移有测试 | 客户端 / 后端 |
+| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：351 条种子可直接导入；drift 落库有契约测试，**每一次 schema 迁移（v1→v10）都有测试** | 客户端 / 后端 |
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 45 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
 | 验证 | `docs/usability-test.md` + `-kit.md` | 流程手册 + **7 个数字可一键算**（`tool/usability-report.mjs`）；现场打印 `usability/记录表.md` | 你本人 |
@@ -297,7 +297,7 @@ engine/vectors.json ──┬──> engine/run-tests.mjs        （Node）
 | 4 | `app/lib/features/workout/` | 对照 `docs/interaction-spec.md` 扩展其余屏 |
 | 5 | `docs/analytics-sdk.md` | 接真实上报地址 —— 客户端管线已就绪（outbox + 批量 ≤100 + 退避重试 + **训练期间挂起**），现用 `_NullTransport` 兜底 |
 
-**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被 **553 条测试**锁住；
+**当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被**六层门禁**（测试 + 变异测试）锁住；
 UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 **351 个**
 （318 力量 + 11 热身 + 13 有氧 + 9 拉伸，其中有氧支持**记距离**）。
 还没做的见上文「现在还没有的东西（别期待）」，下一步见 [`ROADMAP.md`](ROADMAP.md)。
@@ -384,17 +384,18 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.2.0 release**，启动冒烟已过；**「杀掉重开数据还在」已在真机上验证**（冷启动后读回 12 组 / 3,680 kg）。剩下的是**真的用手指走一遍** —— 目标机型的注入被 MIUI 禁掉，这一步只能人来做 | 553 条测试全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
+| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.22.1 release**（逐版覆盖安装，冷启动无异常）。**「杀掉重开数据还在」早在真机上验证过**（冷启动读回 12 组）。剩下的是**真的用手指走一遍** —— 好消息：USB 注入**已经打开了**（当初被 MIUI 禁掉，后来你放开了），所以这一步现在能自动化做，**只差把手机解锁** | 六层门禁全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
 | ✅ ~~v1 → v2 迁移的真机验证~~（已在真机过） | 真机里原本是 `v1.0.0` 留下的**老库**，直接覆盖安装 `v1.2.0`（`schemaVersion` 1 → 3）后，`onUpgrade` 跑完、**数据一条没丢**（冷启动读回 12 组） | 这是"老库升级必须真机过一次"的实测通过 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |
 | 🚧 **隐私政策** | 中英文均已成文、占位符已填（运营者 `Elliot.LI`） | 待**法务审核** + 公网可访问 URL |
 | ❌ **真实埋点上报地址** | 客户端已就绪（outbox + 批量 ≤100 + 退避重试 + 训练期间挂起），只缺后端接收，现用 `_NullTransport` 兜底 | 事件不丢，但看板没有数据源 |
-| ❌ **后端接口** | 一期极薄，还没开始 | — |
+| 🚧 **云端（账号 + 备份）** | **服务端与客户端都已落地**：`server/backend.mjs`（零依赖 HTTP + 17 条自检）· 客户端加密/账号层（恢复码 + HKDF + AES-256-GCM，**服务端只存密文**）· 云备份界面（默认关闭、**没配地址的包里连入口都不出现**）· 「删除全部数据」会问是否一并删云端。**还差一台服务器 + 域名 + 备案**（阶段 4，在你那边） | 现在**装到手机上的包看不到云备份**（编译期没配地址）—— 这是设计，不是没做完。端到端"服务端看不到明文"已有测试证明（真的把服务端起起来、翻它的 sqlite 找明文） |
 | ❌ **S14 会员页** | `PRODUCT.md` 列的四大权益（AI 动态调整 / 多端云同步 / 无限历史对比 / 教练协作）**全部依赖后端**，一项都不存在 | 做出来等于向用户宣传不存在的功能，比不做更糟 —— 等后端落地再说 |
 | ⚠️ **`tap_count` 目标值未校准** | `docs/analytics.md` 的 55% 与 `tap_count` 目标都还是**估计值**，且口径已改端到端、旧目标作废，要靠阶段 5 拿真实数字 | **按项目自己的门禁，校准前不允许发布** |
 
 已实现 **13 屏**：S1 / S2 / S3 / S4 / S5 / S6 / S7 / S8 / S9 / S10 / S11 / S12 / **S13**。
+另有二级页 **云备份**（v1.21.0，入口只在配了服务器地址的包里出现；见 `docs/screens.md` S10 那节）。
 未做：**S14 会员页**（原因见下表）。
 （**S15 设置的内容已并入 S10**：单位 / 默认休息 / 渐进开关 / 导出都在那儿。）
 

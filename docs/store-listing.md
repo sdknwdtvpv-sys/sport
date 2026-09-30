@@ -2,14 +2,27 @@
 
 > 与 `docs/release-admin.md` 配套：那份讲**行政流程**，这份是**表单里要填的内容**。
 >
-> ⚠️ **填数据安全表单之前，先确认要发布的那个包有没有配上报地址**：
+> ⚠️ **填数据安全表单之前，先确认要发布的那个包配了哪些地址** —— **两条通道**，别只看一条：
+>
+> | 通道 | 编译期开关 | 决定了什么 |
+> |---|---|---|
+> | 匿名使用统计 | `--dart-define=LIANLEME_ANALYTICS_URL`（`app/lib/main.dart`） | 事件会不会发出去 |
+> | **云备份** | `--dart-define=LIANLEME_BACKUP_URL`（`app/lib/backup/backup_config.dart`） | 训练数据会不会**加密后存到服务器** |
+>
 > ```bash
-> grep -n "LIANLEME_ANALYTICS_URL" app/lib/main.dart     # 看默认值是不是空
-> unzip -p <你的包>.apk classes.dex | strings | grep -c "LIANLEME_ANALYTICS_URL"  # 打包后仍会带这个 key
+> grep -n "fromEnvironment" app/lib/main.dart app/lib/backup/backup_config.dart   # 两个默认值都该是空串
+> node tool/privacy-audit.mjs --apk <你的包>            # 权限与披露对账（发布前必跑）
+> grep -n enabledInDistributedBuild docs/privacy-facts.json   # 云备份那一格：它必须与你要发的包一致
 > ```
-> * **没配地址**（当前发布的包就是这种）→ 用下面的 **变体 A**：数据只在本机，不上传
-> * **配了地址** → 必须用 **变体 B**，并先跑 `node tool/privacy-audit.mjs --apk <包>`
+>
+> * **两个都没配**（当前发布的包就是这种）→ 用下面的 **变体 A**：数据只在本机，不上传
+> * **任一个配了** → 必须用 **变体 B**，并在提交前确认 `docs/privacy-policy.md` 的
+>   §3.1/§3.2 已经按实际行为改过（云备份那份的"启用即须改政策"由
+>   `privacy-facts.json` 的 `cloudBackup` 双向守着，门禁会红）
+>
 > 填错这一项属于"申报不实"，被查到要下架 —— 它取决于**构建参数**，所以每次发版都要重核。
+> ⚠️ 变体 A 那句"数据只在你手机上"同时出现在**商店描述的截图说明**里（见本文末尾），
+> 换变体时别只改正文。
 
 ---
 
@@ -19,7 +32,7 @@
 |---|---|
 | 应用名称 | **练了么** |
 | 包名 / applicationId | **`com.sdknwdtvpv.lianleme`**（⚠️ 备案后不能改） |
-| 版本号 | 见 `app/pubspec.yaml`（当前 `1.12.0`） |
+| 版本号 | **以 `app/pubspec.yaml` 为准**（这里刻意不抄数字：抄一次就多一处会过期的地方，`app_info.dart` 与它是门禁钉住的） |
 | 分类 | **健康健美**（Google Play：Health & Fitness） |
 | 支持语言 | 简体中文（界面文案全是中文；英文只在文档与隐私政策里） |
 | 价格 | 免费（一期没有内购 —— S14 已明确砍掉） |

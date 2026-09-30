@@ -199,6 +199,20 @@ if node tool/copyright-pdf.mjs --check-docs >"$LOG" 2>&1; then
 else
   strip "$LOG"; echo "${RED}✗ 软著材料里的源程序量过期（改文档或重新导出）${OFF}"; fail=1
 fi
+
+# README 顶部那行 `**vX.Y.Z**` 是访客看到的"现在到哪了"。它漂过：写着 v1.2.0
+# 而仓库已经 1.22.x。和软著那两条同一个道理 —— 没人会为了改一个数字去翻 README，
+# 所以钉住它。真源只有一个：`app/lib/core/app_info.dart`。
+README_VER="$(grep -oE '\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*' README.md 2>/dev/null | head -1 | tr -d '*v')"
+APP_VER="$(grep -oE "kAppVersion = '[^']+'" app/lib/core/app_info.dart | head -1 | sed "s/.*'\\(.*\\)'/\\1/")"
+if [ -z "$README_VER" ]; then
+  echo "${YELLOW}!${OFF} README.md 里找不到 `**vX.Y.Z**`（措辞变了？检查要跟着改）"
+elif [ "$README_VER" != "$APP_VER" ]; then
+  echo "${RED}✗ README.md 顶部写的是 v$README_VER，实际版本是 $APP_VER${OFF}"
+  fail=1
+else
+  echo "${GREEN}✓${OFF} README 顶部的版本号（v$README_VER）与 app_info.dart 一致"
+fi
 echo
 
 # 发行资源自检：图标不能是 Flutter 默认图（那是 Google 的商标，也不能上架）、
@@ -289,6 +303,30 @@ else
       bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" test --reporter compact' >"$LOG" 2>&1; rc=$?
     strip "$LOG" | tail -25
     [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 应用层通过" || { echo "${RED}✗ 应用层测试失败（退出码 $rc）${OFF}"; fail=1; }
+
+    # ── 文档里那句"门禁 N 项全绿"必须是真的 ──────────────────────────────
+    # 这个数字每加一个测试都会变，而它偏偏是读文档的人唯一的进度指标。
+    # 2026-09-30 它已经漂过三个版本（文档还写着 666、实际 685），原因很朴素：
+    # **没人会为了改一个数字专门去翻文档**。所以跟软著那两条一样，变成能跑的命令。
+    # 唯一的事实源是 docs/release-checklist.md 的"当前状态速览"那行；README 不再抄数字。
+    TEST_COUNT="$(grep -oE '\+[0-9]+: All tests passed' "$LOG" | tail -1 | grep -oE '[0-9]+')"
+    if [ -n "$TEST_COUNT" ]; then
+      # ⚠️ 正则必须容忍 markdown 的 `**`：第一版写的是 `门禁 [0-9]+ 项全绿`，
+      # 而文档里是「门禁 **685 项全绿**」—— 于是它**永远匹配不上**，
+      # 每次都只打一句"找不到"就过去了。**空转的守卫比没有守卫更危险**：
+      # 我把数字故意改成 666 试过，门禁照样绿。现在改成"数字前后允许任何非数字"，
+      # 而且**找不到就判红**（措辞变了就该有人来看一眼）。
+      CLAIMED="$(grep -oE '门禁[^0-9]*[0-9]+[^0-9]*项全绿' docs/release-checklist.md 2>/dev/null | head -1 | grep -oE '[0-9]+' | head -1)"
+      if [ -z "$CLAIMED" ]; then
+        echo "${RED}✗ docs/release-checklist.md 里找不到「门禁 N 项全绿」—— 这段检查已经空转，请跟着改${OFF}"
+        fail=1
+      elif [ "$CLAIMED" != "$TEST_COUNT" ]; then
+        echo "${RED}✗ docs/release-checklist.md 写的是「门禁 $CLAIMED 项全绿」，实际是 $TEST_COUNT 项${OFF}"
+        fail=1
+      else
+        echo "  ${GREEN}✓${OFF} 文档里的测试数（$TEST_COUNT 项）与实际一致"
+      fi
+    fi
   fi
 fi
 echo
