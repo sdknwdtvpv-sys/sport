@@ -54,11 +54,13 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- **手机只支持竖屏**（2026-09-30 实测：横屏下首页会 layout overflow，
+	     入口文字与底部导航重叠）。与安卓那边的 android:screenOrientation="portrait"
+	     是同一个决定、同一份证据（docs/release-admin.md §二之四）。
+	     模板原本给了三个方向（竖屏 + 左右横屏），我们一个横屏设计都没有。 -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

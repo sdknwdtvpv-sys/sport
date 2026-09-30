@@ -24,11 +24,18 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:requestLegacyExternalStorage="true">
+        <!-- **锁竖屏**（2026-09-30 实测后定的）：横屏下首页那条大按钮所在的 Column
+             会 RenderFlex overflow（现场日志："BOTTOM OVERFLOWED BY 80 PIXELS"），
+             入口文字还会与底部导航撞在一起。我们一个横屏设计都没有 —— 与其留着
+             "转一下就坏"的状态，不如明确只支持竖屏。实测记录见 docs/release-admin.md §二之四。
+             ⚠️ 这条注释必须在 <activity> **外面**：XML 不允许把注释塞在开始标签的属性之间，
+             第一版就是那么写的，结果 aapt2 直接报 "not a valid XML document"。 -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
+            android:screenOrientation="portrait"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

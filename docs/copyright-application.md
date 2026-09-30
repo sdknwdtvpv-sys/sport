@@ -16,7 +16,7 @@
 |---|---|---|
 | 软件全称 | **练了么**（或 全称写长、简称填「练了么」） | ⚠️ 见下方"名称必须三处一致" |
 | 软件简称 | 练了么 | 与 App 名称、APP 备案名称一致 |
-| 版本号 | **V1.29.0** | `app/pubspec.yaml` 与 `app/lib/core/app_info.dart` 必须一致（有测试守着） |
+| 版本号 | **V1.30.0** | `app/pubspec.yaml` 与 `app/lib/core/app_info.dart` 必须一致（有测试守着） |
 | 开发完成日期 | **2026-09-27** 起持续开发；首次发布日填上架当天 | 首个提交：`git log --reverse --format=%ad --date=short \| head -1` |
 | 首次发表日期 | **待定**（上架当天） | 未发布则选「未发表」，先登记也可 |
 | 开发形式 | **独立开发** | |
@@ -58,7 +58,7 @@
 | 开发工具/软件环境 | Flutter 3.47.5（stable）、Dart SDK ≥ 3.5.0、Android SDK、Gradle |
 | 运行软件环境 | **Android 7.0（API 24）及以上**（编译 targetSdk 36） |
 | 编程语言 | Dart、JavaScript、Python |
-| 源程序量 | **142 个源文件 / 37,304 行**（截至 V1.29.0） |
+| 源程序量 | **142 个源文件 / 37,346 行**（截至 V1.30.0） |
 
 > 源程序量的口径（如被问到就照这个答）：**只统计自研源码**（`app/lib`、`app/test`、
 > `app/tool`、`engine`、`server`、`tool`），**不含**生成代码（如 `*.g.dart`）、

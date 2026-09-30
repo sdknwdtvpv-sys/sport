@@ -373,6 +373,48 @@ if (existsSync(pbx) && /PRODUCT_BUNDLE_IDENTIFIER = com\.example\./.test(readFil
   bad('iOS 的 bundle id 还是模板的 com.example.* —— 上架前必须改成自己的');
 }
 
+// ── 方向锁：**手机只支持竖屏** ─────────────────────────────────────────────
+//
+// 2026-09-30 实测后定的：把模拟器换成横屏尺寸跑完整套截图脚本，首页那条大按钮的 Column
+// 会 `RenderFlex overflowed by 80 pixels on the bottom`，入口文字还与底部导航重叠
+// （证据图 docs/images/ 里那两张 iPad 宽的 + 现场截图）。我们**一个横屏设计都没有** ——
+// 既然如此，与其留着"转一下就坏"，不如明确只支持竖屏，并把这件事钉在门禁上。
+//
+// 两端各一处，缺一个就会出现"某一端转一下坏掉而另一端好好的"：
+//   * 安卓：`android:screenOrientation="portrait"`（manifest 里）
+//   * iOS：`UISupportedInterfaceOrientations` 这份（**手机那份**）只能有 Portrait
+const MANIFEST = join(ROOT, 'app/android/app/src/main/AndroidManifest.xml');
+if (!existsSync(MANIFEST)) {
+  bad('缺 app/android/app/src/main/AndroidManifest.xml');
+} else if (!/android:screenOrientation="portrait"/.test(readFileSync(MANIFEST, 'utf8'))) {
+  bad('安卓 manifest 没有锁竖屏（android:screenOrientation="portrait"）—— '
+    + '横屏下首页会 layout overflow（实测过），而这一端漏了锁就会出现"安卓转一下就坏"');
+} else {
+  ok.push('方向锁：安卓已锁竖屏');
+}
+
+{
+  const plistText = existsSync(iosPlist) ? readFileSync(iosPlist, 'utf8') : '';
+  // 取**第一份** UISupportedInterfaceOrientations（= 手机那份；iPad 那份的 key 带 ~ipad）
+  const m = plistText.match(
+    /<key>UISupportedInterfaceOrientations<\/key>\s*<array>([\s\S]*?)<\/array>/);
+  if (!m) {
+    bad('iOS Info.plist 里找不到 UISupportedInterfaceOrientations（措辞变了？'
+      + '这条守卫已经失效，别当成通过）');
+  } else {
+    const dirs = [...m[1].matchAll(/<string>([^<]+)<\/string>/g)].map((x) => x[1]);
+    const landscape = dirs.filter((d) => /Landscape/.test(d));
+    if (landscape.length) {
+      bad(`iOS 手机那份允许了横屏（${landscape.join('、')}）—— 横屏下首页会 layout overflow`
+        + '（实测过），要锁成只有 UIInterfaceOrientationPortrait');
+    } else if (!dirs.includes('UIInterfaceOrientationPortrait')) {
+      bad('iOS 手机那份方向里居然没有竖屏 —— 检查要跟着改');
+    } else {
+      ok.push('方向锁：iOS 手机只剩竖屏');
+    }
+  }
+}
+
 // ── Google Play 特征图片（1024×500，精确尺寸、不带透明） ──────────────────
 //
 // 它是 Play 商店条目顶部那张横幅，**必填**，而规格是死的：精确 1024×500、

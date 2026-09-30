@@ -146,6 +146,12 @@ required-reason API 就要在清单里声明理由"，并且**对着二进制扫
 `tool/asset-check.mjs` 里有一条**跨文件**守卫钉着这对互斥关系（没声明读权限就不许直接带相簿名），
 三个分支都负向验证过。
 
+**方向：手机锁竖屏（已做，v1.30.0）**。横屏实测（`wm size 2400x1080` 跑完整套截图脚本）：
+首页 `today_screen.dart:46` 的 `Column` **`RenderFlex overflowed by 80 pixels`**，
+还有一处 44 像素；现场能看到黄黑条纹、入口文字与底部导航重叠。既然没有横屏设计，
+就明确只支持竖屏：安卓 `android:screenOrientation="portrait"`、
+iOS 手机那份方向数组只留 Portrait。两端各有一条守卫钉着（缺一边 = 那一端转一下就坏）。
+
 **iPad 支持：实测过了，建议先只支持 iPhone**（2026-09-30）。把模拟器的分辨率与密度调到
 iPad Pro 12.9 吋的规格（`wm size 2048x2732` / `wm density 320`，约 4:3），跑完整套 11 步截图脚本：
 
