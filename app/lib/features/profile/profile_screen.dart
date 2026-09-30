@@ -28,6 +28,8 @@ import '../../domain/models.dart';
 import '../body/body_metric_screen.dart';
 import 'backup.dart';
 import '../../backup/backup_config.dart';
+import '../../backup/backup_transport.dart';
+import '../../backup/cloud_backup.dart';
 import '../backup/cloud_backup_screen.dart';
 import 'backup_source.dart';
 import 'backup_exporter.dart';
@@ -50,6 +52,7 @@ class ProfileScreen extends StatefulWidget {
     this.backupExporter = const PluginBackupExporter(),
     this.onDataChanged,
     this.cloudBackupAvailable,
+    this.cloud,
   });
 
   final LocalStore store;
@@ -87,6 +90,10 @@ class ProfileScreen extends StatefulWidget {
   /// 数据被改动过（删光 / 导入）—— 外壳要跟着刷新首页那个"我上周练了 N 次"。
   /// 只清库不刷新的话，界面还显示着刚被删掉的数据（用户会以为没删掉）。
   final VoidCallback? onDataChanged;
+
+  /// 云备份服务。**null = 按编译期配置建一个真身**（没配地址就是 null）。
+  /// 只有「删除全部数据」会用到它 —— 那一句"云端也删吗"得真的删得掉。
+  final CloudBackup? cloud;
 
   /// 要不要显示「云备份」入口。**null = 按编译期配置判断**
   /// （`isCloudBackupConfigured`：没配服务器地址就不显示 —— 详见 lib/backup/backup_config.dart）。
@@ -340,16 +347,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 删掉的是本机的训练、组记录、个人设置、以及还没发出去的埋点事件；
   /// **动作库保留**（那是产品资产，不是用户数据）。详见 `LocalStore.deleteAllUserData`。
   Future<void> _deleteAll() async {
+    // 先看看这台机器上有没有云备份账号 —— 有的话，弹层里必须多问一句
+    // （政策里承诺了"删除全部数据时会问是否一并删除云端备份"）。
+    final BackupAccountData? account = await widget.profile.cloudAccount();
+    final CloudBackup? cloud = widget.cloud ?? CloudBackup.fromConfig();
+    final bool cloudInvolved = account != null && cloud != null;
+
+    // ⚠️ 顺序是这个功能的全部难点：
+    //   1. **先删云端、再删本机**。反过来的话，本机那串恢复码一没，
+    //      云端那份就**永远打不开了**（服务端只有密钥的哈希，帮不了任何人）——
+    //      用户想删的是自己的数据，不是把数据锁死在一台他控制不了的服务器上。
+    //   2. **云端删失败就整个中止**，本机一个字都不删。宁可让他重试，
+    //      也不要留下"删了一半"的状态（那比不删更糟）。
+    bool alsoCloud = true;
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         key: const Key('delete-all-dialog'),
         backgroundColor: Tokens.elevated,
         title: const Text('删除全部数据？'),
-        content: const Text(
-          '会删掉这台手机上所有训练记录、组记录和个人设置。\n\n'
-          '无法撤销，也无法恢复。内置的动作库会保留。',
-          style: TextStyle(height: 1.5),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text(
+              '会删掉这台手机上所有训练记录、组记录和个人设置。\n\n'
+              '无法撤销，也无法恢复。内置的动作库会保留。',
+              style: TextStyle(height: 1.5),
+            ),
+            if (cloudInvolved)
+              StatefulBuilder(
+                builder: (BuildContext _, StateSetter setInner) =>
+                    CheckboxListTile(
+                  key: const Key('delete-all-cloud'),
+                  value: alsoCloud,
+                  onChanged: (bool? v) => setInner(() => alsoCloud = v ?? false),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  dense: true,
+                  title: const Text('同时删除云端备份并注销',
+                      style: TextStyle(fontSize: 13)),
+                  subtitle: const Text(
+                    '不勾的话云端那份会留着 —— 但本机的恢复码会被清掉，'
+                    '之后只能靠你自己抄下来的那串取回。',
+                    style: TextStyle(fontSize: 12, height: 1.4),
+                  ),
+                ),
+              ),
+          ],
         ),
         actions: <Widget>[
           TextButton(
@@ -369,6 +414,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // 用户点了取消、或点了外面关掉 —— 都不能删
     if (confirmed != true) return;
 
+    // 云端先删；失败就中止，本机原封不动
+    if (cloudInvolved && alsoCloud) {
+      try {
+        // cloudInvolved 已经蕴含两者非空（见上面那行），这里不必再判
+        await cloud.deleteAccount(account.recoveryCode);
+      } on BackupTransportException catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('云端备份没删掉，所以本机数据也**没删**：${e.message}'),
+            backgroundColor: Tokens.danger,
+          ),
+        );
+        return;
+      }
+    }
+
     await widget.store.deleteAllUserData();
     if (!mounted) return;
 
@@ -381,8 +443,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已删除全部数据'),
+      SnackBar(
+        content: Text(
+          cloudInvolved && alsoCloud ? '已删除全部数据与云端备份' : '已删除全部数据',
+        ),
         backgroundColor: Tokens.elevated,
       ),
     );

@@ -240,12 +240,14 @@
         "云备份",
         "端到端加密",
         "恢复码",
-        "服务端只拿到密文"
+        "服务端只拿到密文",
+        "删除全部数据时，会问你是否一并删除云端备份"
       ],
       "en": [
         "cloud backup",
         "end-to-end encrypted",
-        "recovery code"
+        "recovery code",
+        "ask whether to delete the cloud backup as well"
       ]
     },
     "whatLeavesDeviceWhenEnabled": [
@@ -253,7 +255,8 @@
       "account_id：恢复码的 SHA-256（服务端反推不出恢复码，因此也解不开密文）",
       "密文字节数与最后更新时间"
     ],
-    "_neverLeaves": "恢复码本身、明文训练数据、体重数值 —— 这些只在设备上"
+    "_neverLeaves": "恢复码本身、明文训练数据、体重数值 —— 这些只在设备上",
+    "_enabledPhrasesWhy": "启用之后政策必须逐条出现这些说法。最后一条是删除权：政策写了'云端也删'，客户端就必须真的做出来（app/lib/features/profile/profile_screen.dart 的 _deleteAll：先删云端、失败就整个中止，再清本机）。"
   },
   "impliedPermissions": [
     {

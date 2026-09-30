@@ -192,6 +192,11 @@ What deletion covers, to avoid misunderstanding:
   contains nothing about you
 - It is a **hard delete**, not a flag. Deletion cannot be undone, and we hold no backup that
   could restore it.
+- **If a build has cloud backup enabled** (see 3.1 — the current release does not), deleting all
+  data will ask whether to delete the cloud backup as well and close the account; the default is
+  to delete both. The order is deliberate: the cloud copy is deleted **first**, and if that fails
+  the whole operation stops. We would rather have you retry than leave you with local data gone
+  and a cloud copy you can no longer open.
 
 ---
 

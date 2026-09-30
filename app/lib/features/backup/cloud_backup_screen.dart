@@ -19,7 +19,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../backup/backup_config.dart';
 import '../../backup/backup_crypto.dart';
 import '../../backup/backup_transport.dart';
 import '../../backup/cloud_backup.dart';
@@ -69,12 +68,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   int get _nowMs => (widget.clock?.call() ?? DateTime.now()).millisecondsSinceEpoch;
 
   /// 没注入就按编译期配置建；没配地址则返回 null（这一屏不该被打开）
-  CloudBackup? get _cloud {
-    if (widget.cloud != null) return widget.cloud;
-    final Uri? base = cloudBackupBaseUrl;
-    if (base == null) return null;
-    return CloudBackup(transport: HttpBackupTransport(baseUrl: base));
-  }
+  CloudBackup? get _cloud => widget.cloud ?? CloudBackup.fromConfig();
 
   @override
   void initState() {

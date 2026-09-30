@@ -379,16 +379,133 @@ void main() {
     });
   });
 
+  group('「删除全部数据」必须问云端那一声（政策承诺过）', () {
+    /// 把「我」页挂起来，并先造一份云端备份
+    Future<void> pumpProfileWithCloud(WidgetTester tester) async {
+      await h.profile.setCloudAccount(_code(), nowMs: 1);
+      await h.store.saveSet(_set());
+      await h.cloud.upload(recoveryCode: _code(), plaintext: '{"n":1}');
+      // ⚠️ 必须套 Scaffold：ProfileScreen 自己返回的是一个 ListView，
+      // 没有 Scaffold 时 SnackBar 没有地方画 —— `find.textContaining('已删除…')`
+      // 会落空，而你会以为是文案写错了。
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: ProfileScreen(
+            store: h.store,
+            repository: h.repository,
+            profile: h.profile,
+            cloud: h.cloud,
+            cloudBackupAvailable: true,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> tapDeleteAll(WidgetTester tester) async {
+      await _scrollTo(tester, find.byKey(const Key('delete-all')));
+      await tester.tap(find.byKey(const Key('delete-all')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('有云备份时多问一句，而且默认就是"也删"', (WidgetTester tester) async {
+      await pumpProfileWithCloud(tester);
+      expect(h.transport.stored, isNotEmpty);
+
+      await tapDeleteAll(tester);
+      final Finder box = find.byKey(const Key('delete-all-cloud'));
+      expect(box, findsOneWidget, reason: '政策承诺了要问这一句');
+      expect(
+        tester.widget<CheckboxListTile>(box).value,
+        isTrue,
+        reason: '用户说的是"删除全部数据"，云端那份默认就该一起删',
+      );
+
+      await tester.tap(find.byKey(const Key('delete-all-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(h.transport.stored.values.every((String v) => v.isEmpty), isTrue,
+          reason: '云端那份应该真没了');
+      expect(await h.profile.cloudAccount(), isNull);
+      expect(await h.store.allSets(), isEmpty);
+      expect(find.textContaining('与云端备份'), findsOneWidget);
+    });
+
+    testWidgets('不勾 → 云端那份留着，本机照样清干净', (WidgetTester tester) async {
+      await pumpProfileWithCloud(tester);
+      final String accountId = h.transport.stored.keys.first;
+
+      await tapDeleteAll(tester);
+      await tester.tap(find.byKey(const Key('delete-all-cloud')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('delete-all-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(h.transport.stored[accountId], isNotEmpty,
+          reason: '没勾就不该动云端');
+      expect(await h.profile.cloudAccount(), isNull);
+      expect(await h.store.allSets(), isEmpty);
+      expect(find.textContaining('已删除全部数据'), findsOneWidget);
+    });
+
+    testWidgets('云端删失败 → **本机一个字都不删**，并如实报错', (WidgetTester tester) async {
+      await pumpProfileWithCloud(tester);
+      h.transport.failWith = const BackupTransportException('连不上服务器');
+
+      await tapDeleteAll(tester);
+      expect(tester.widget<CheckboxListTile>(
+        find.byKey(const Key('delete-all-cloud'))).value, isTrue);
+
+      await tester.tap(find.byKey(const Key('delete-all-confirm')));
+      await tester.pumpAndSettle();
+
+      // 关键：删了一半比不删更糟。云端没删掉，本机就必须原封不动 ——
+      // 否则本机的恢复码一没，云端那份就永远打不开了。
+      expect(await h.store.allSets(), hasLength(1));
+      expect(await h.profile.cloudAccount(), isNotNull);
+      expect(find.textContaining('没删'), findsOneWidget);
+    });
+
+    testWidgets('没有云备份时，弹层保持原样（不出现那个勾选框）', (WidgetTester tester) async {
+      await h.store.saveSet(_set());
+      // ⚠️ 必须套 Scaffold：ProfileScreen 自己返回的是一个 ListView，
+      // 没有 Scaffold 时 SnackBar 没有地方画 —— `find.textContaining('已删除…')`
+      // 会落空，而你会以为是文案写错了。
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: ProfileScreen(
+            store: h.store,
+            repository: h.repository,
+            profile: h.profile,
+            cloud: h.cloud,
+            cloudBackupAvailable: true,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      await tapDeleteAll(tester);
+      expect(find.byKey(const Key('delete-all-cloud')), findsNothing);
+      await tester.tap(find.byKey(const Key('delete-all-confirm')));
+      await tester.pumpAndSettle();
+      expect(await h.store.allSets(), isEmpty);
+    });
+  });
+
   group('「我」页的入口（决定这个功能到底出不出现在用户面前）', () {
     testWidgets('没配服务器地址 → 连入口都没有，而且不说"不上传"以外的话',
         (WidgetTester tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
-        home: ProfileScreen(
-          store: h.store,
-          repository: h.repository,
-          profile: h.profile,
-          cloudBackupAvailable: false,
+        home: Scaffold(
+          body: ProfileScreen(
+            store: h.store,
+            repository: h.repository,
+            profile: h.profile,
+            cloudBackupAvailable: false,
+          ),
         ),
       ));
       await tester.pumpAndSettle();
@@ -402,12 +519,14 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
-        home: ProfileScreen(
-          store: h.store,
-          repository: h.repository,
-          profile: h.profile,
-          cloudBackupAvailable: true,
-          unit: WeightUnit.kg,
+        home: Scaffold(
+          body: ProfileScreen(
+            store: h.store,
+            repository: h.repository,
+            profile: h.profile,
+            cloudBackupAvailable: true,
+            unit: WeightUnit.kg,
+          ),
         ),
       ));
       await tester.pumpAndSettle();

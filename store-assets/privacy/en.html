@@ -169,6 +169,7 @@
 <li><strong>Deleted</strong>: all workout and set records, preferences (including all switches), <strong>and any analytics events not yet uploaded</strong>, and the anonymous analytics identifiers (<code>device_id</code> / session id / first-open timestamp) — with the honest consequence that this device then counts as a new device in aggregate statistics</li>
 <li><strong>Not deleted</strong>: the built-in exercise catalog (351 exercises) — that is product content and contains nothing about you</li>
 <li>It is a <strong>hard delete</strong>, not a flag. Deletion cannot be undone, and we hold no backup that could restore it.</li>
+<li><strong>If a build has cloud backup enabled</strong> (see 3.1 — the current release does not), deleting all data will ask whether to delete the cloud backup as well and close the account; the default is to delete both. The order is deliberate: the cloud copy is deleted <strong>first</strong>, and if that fails the whole operation stops. We would rather have you retry than leave you with local data gone and a cloud copy you can no longer open.</li>
 </ul>
 <hr>
 <h2 id="6-retention">6. Retention</h2>

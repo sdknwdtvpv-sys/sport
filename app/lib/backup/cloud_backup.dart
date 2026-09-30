@@ -19,6 +19,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'backup_config.dart';
 import 'backup_crypto.dart';
 import 'backup_transport.dart';
 import 'recovery_code.dart';
@@ -58,6 +59,16 @@ class CloudBackup {
   CloudBackup({required this.transport});
 
   final BackupTransport transport;
+
+  /// 按**编译期配置**建一个真身；没配服务器地址就是 null。
+  ///
+  /// 为什么集中在这里：屏幕与「删除全部数据」都要用它，各写一遍
+  /// （`HttpBackupTransport(baseUrl: cloudBackupBaseUrl!)`）迟早会有一处忘了判空。
+  static CloudBackup? fromConfig() {
+    final Uri? base = cloudBackupBaseUrl;
+    if (base == null) return null;
+    return CloudBackup(transport: HttpBackupTransport(baseUrl: base));
+  }
 
   /// 新开一个云备份账号。
   ///
