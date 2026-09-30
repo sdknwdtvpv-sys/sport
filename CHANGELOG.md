@@ -53,8 +53,26 @@ app（Runner）自己那份清单要不要加，**只有首次上传后 Apple �
 而"正常全绿"的那次运行完全看不出来（压根没走到那行）。是负向验证把它逼出来的：
 现在两条失败路径都验过会给出人话并 `exit=1`。
 
-版本 1.27.1+35 → 1.27.2+36。
-## v1.27.1 · iOS 上「存相册」本来是坏的（而且让政策说了假话）
+### 同版追加：这道开关在设备上真的挡住了一整个功能（设备证据）
+
+新增 `app/integration_test/cloud_entry_gate_test.dart`，断言写成「入口与
+`isCloudBackupConfigured` 一致」，所以**同一份代码在两种构建下都必须过**：
+
+| 构建 | 结果 |
+|---|---|
+| 只给 `LIANLEME_BACKUP_URL`（不给声明开关） | ✓ 入口**不出现**（模拟器 · API 36 · 冷启动 + 过同意门） |
+| 两个都给 | ✓ 入口**出现** |
+
+两跑都是 `All tests passed`，日志里能看到 `LIANLEME-GATE url="已配" disclosed=false
+→ 期望入口=不出现 / ok: entry=hidden` 与 `disclosed=true → ok: entry=shown`。
+
+**为什么这条非有不可**：`test/backup_config_test.dart` 证的是判定公式，
+`test/cloud_backup_screen_test.dart` 用的是**注入**的开关
+（`cloudBackupAvailable: true/false`）—— 所以"「我」页真的去读了编译期配置"这件事，
+在设备上跑一次之前**没有任何东西证明过**。顺带把「关于」里那句版本说明也钉上
+（同一个开关的第二处用处，防止有人只改一处）。
+
+版本 1.27.1+35 → 1.27.2+36。## v1.27.1 · iOS 上「存相册」本来是坏的（而且让政策说了假话）
 
 **iOS 上这条路径此前必然失败，而安卓一切正常、所有测试全绿** —— 典型的
 "只有另一个平台才会暴露"的洞，靠 `flutter test` 永远看不见。查出来的是三件事叠在一起：

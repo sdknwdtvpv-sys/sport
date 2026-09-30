@@ -132,6 +132,17 @@ flutter build apk --release \
       | `end-to-end encrypted` | `docs/privacy-policy.en.md` |
       | `recovery code` | `docs/privacy-policy.en.md` |
 
+- [ ] 在设备上确认这道开关真的挡得住（**不需要后端**，只看到入口为止）：
+      ```bash
+      # ① 只给地址 —— 期望：入口不出现（失败往关闭倒）
+      cd app && flutter test integration_test/cloud_entry_gate_test.dart -d <设备> \
+          --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790
+      # ② 两个都给 —— 期望：入口出现
+      cd app && flutter test integration_test/cloud_entry_gate_test.dart -d <设备> \
+          --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790 \
+          --dart-define=LIANLEME_BACKUP_DISCLOSED=true
+      ```
+      两次都跑才是证据：同一份代码、两种构建、相反的结果。
 - [ ] `node tool/privacy-audit.mjs` 必须绿（它会逐条核对上面四句）
 - [ ] 商店表单也要从"变体 A：Data Not Collected"改成"变体 B" ——
       见 `docs/store-listing.md` 与 `docs/store-listing-ios.md`
