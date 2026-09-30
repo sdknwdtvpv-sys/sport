@@ -130,6 +130,27 @@ function inspect(root, { aapt2 = findAapt2() } = {}) {
     }
   }
 
+  // ── 3. dist/ 里那个 AAB 交给 check-aab.mjs 深核一遍（它此前**从没在门禁里跑过**）
+  //
+  // 为什么放在这里：`check-aab.mjs` 需要一份**真的 AAB**，而"真的 AAB"就在 `dist/` 里
+  // （干净克隆上没有 → 自然跳过）。不这么接的话，那个工具只在人想起来时被跑一次 ——
+  // 而它核的是"能不能拿去商店"（骨架三件套 + 三 ABI + 版本号），正好是交付口这一环。
+  const currentAab = aabs.find((f) => f.includes(version));
+  if (currentAab && aapt2) {
+    const p = join(dist, currentAab);
+    try {
+      const out = execFileSync(process.execPath,
+        [join(ROOT, 'tool/check-aab.mjs'), p], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      const last = out.trim().split('\n').slice(-1)[0];
+      facts.push(`AAB 深核（check-aab.mjs）：${last.replace(/\u001b\[[0-9;]*m/g, '').trim()}`);
+    } catch (e) {
+      const detail = `${e.stdout ?? ''}${e.stderr ?? ''}`.trim().split('\n').slice(-1)[0];
+      problems.push(`dist/${currentAab} 没通过 check-aab.mjs 的深核：${detail || e.message}`);
+    }
+  } else if (currentAab) {
+    facts.push(`AAB（${currentAab}）没深核 —— 找不到 aapt2`);
+  }
+
   return { problems, facts, skipped: false };
 }
 

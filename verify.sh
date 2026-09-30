@@ -255,6 +255,15 @@ else
 fi
 echo
 
+# "守卫有没有真的在跑"的**自检**：写了一个守卫 ≠ 它在门禁里跑 ——
+# `check-aab.mjs` 就曾经存在很久却从没在门禁里跑过（一个不跑的守卫等于没有）。
+if node tool/check-guards-wired.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 守卫接线自检通过（存在但从不跑、假的代跑关系都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 守卫接线核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 文档版本核对工具的**自检**：版本号是这仓库最勤劳的一类漂移 ——
 # 第 2 层已守"三处真机版本"，但文档里还有别处**陈述现状**（产物行、终局核验、iOS 那一行）。
 if node tool/check-doc-versions.mjs --selftest >"$LOG" 2>&1; then
@@ -494,6 +503,14 @@ if node tool/check-ci.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 仍是门禁的子集（命令/步骤/版本都对得上）"
 else
   strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（"子集"这句话已经不成立）${OFF}"; fail=1
+fi
+echo
+
+# 守卫接线：每个守卫要么在门禁里直接跑，要么写明"由谁代跑/为什么按需"（名单在工具里，逐条有理由）
+if node tool/check-guards-wired.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 没有"存在但从不跑"的守卫"
+else
+  strip "$LOG"; echo "${RED}✗ 有守卫没在跑（不跑的守卫等于没有）${OFF}"; fail=1
 fi
 echo
 
@@ -738,7 +755,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
          tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
          tool/check-user-text.mjs tool/check-doc-paths.mjs tool/check-doc-tables.mjs \
-         tool/check-doc-versions.mjs \
+         tool/check-doc-versions.mjs tool/check-guards-wired.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
