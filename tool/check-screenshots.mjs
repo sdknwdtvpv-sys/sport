@@ -35,7 +35,7 @@
  * 退出码：有任何一项不符合 → 1。
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -100,12 +100,60 @@ const SETS = [
   },
 ];
 
+/**
+ * 文档里"这套有几张"的说法必须与磁盘一致。
+ *
+ * 为什么单列一条：这三套图是**交付物**（软著说明书、国内商店、Play、App Store），
+ * 而三份文档都写着具体张数（"14 张 / 11 张 / 13 张"）。图加一张、删一张，
+ * 文档就变成假话 —— 而"文档说 14 张、目录里 15 张"这种漂移，此前没有任何东西会发现。
+ *
+ * 判据写得宽松但有效：**命中目录名的那一行里，出现的任何一个「N 张」都必须等于实际张数**。
+ * （一行里可能同时写三套图，所以不要求"紧挨着目录名"，只要求"这一行的数字里没有错的"。）
+ * 没写张数的行不检查 —— 文档可以只提目录不给数字。
+ */
+function docCountProblems(root, counts) {
+  const problems = [];
+  // ⚠️ 用**带斜杠的短路径**当记号：`screenshots-play/` 里不含 `screenshots/`
+  // （少了斜杠就互为子串，第一版正是这么踩的 —— 那一版还会把"同一行里别的套图的张数"
+  // 算到本套头上，于是在真仓库里报了 17 条假问题）。
+  const tokens = Object.keys(counts).map((dir) => [dir.split('/').pop() + '/', dir]);
+  for (const rel of ['docs/screenshots.md', 'docs/release-checklist.md',
+    'docs/store-listing.md', 'docs/store-listing-ios.md']) {
+    const p = join(root, rel);
+    if (!existsSync(p)) continue;
+    for (const line of readFileSync(p, 'utf8').split('\n')) {
+      // 这一行里出现的所有记号，按位置排序
+      const hits = [];
+      for (const [tok, dir] of tokens) {
+        let i = line.indexOf(tok);
+        while (i >= 0) {
+          hits.push({ dir, i, len: tok.length });
+          i = line.indexOf(tok, i + 1);
+        }
+      }
+      hits.sort((a, b) => a.i - b.i);
+      hits.forEach((h, k) => {
+        // 只认"这个记号到下一个记号之间"的第一个「N 张」—— 那才是它的张数
+        const end = k + 1 < hits.length ? hits[k + 1].i : line.length;
+        const seg = line.slice(h.i + h.len, end);
+        const m = /(\d+)\s*张/.exec(seg);
+        if (m && Number(m[1]) !== counts[h.dir]) {
+          problems.push(`${rel} 里那行说「${m[1]} 张」，而 ${h.dir} 实际有 ${counts[h.dir]} 张`
+            + '　—— 截图是交付物，文档里的张数不能是旧的');
+        }
+      });
+    }
+  }
+  return problems;
+}
+
 /** PNG 头（宽高/位深/颜色类型）：用 `tool/lib/png.mjs` 里那份只读头的实现，别在这儿再写一遍。 */
 const pngSize = (path) => readHeader(path);
 
 function inspect(root) {
   const problems = [];
   const lines = [];
+  const counts = {};
 
   for (const set of SETS) {
     const dir = join(root, set.dir);
@@ -169,7 +217,10 @@ function inspect(root) {
 
     lines.push(`  ${set.dir}　${checked}/${set.files.length} 张 · `
       + `规定 ${set.width}×${set.height} · 目录里共 ${found.length} 个 PNG`);
+    counts[set.dir] = set.files.length;
   }
+
+  for (const p of docCountProblems(root, counts)) problems.push(p);
 
   return { problems, lines };
 }
@@ -189,6 +240,12 @@ function makeTree(mutate) {
       fixturePng(join(root, set.dir, `${name}.png`), set);
     }
   }
+  // 文档也要进夹具：否则"文档里的张数"那条在自检里永远无事可做（假通过）
+  for (const rel of ['docs/screenshots.md', 'docs/release-checklist.md',
+    'docs/store-listing.md', 'docs/store-listing-ios.md']) {
+    mkdirSync(dirname(join(root, rel)), { recursive: true });
+    cpSync(join(ROOT, rel), join(root, rel));
+  }
   if (mutate) mutate(root);
   return root;
 }
@@ -198,7 +255,7 @@ function selftest() {
   const PLAY = SETS[1];
   const IOS_SET = SETS[2];
   const cases = [
-    ['好的两套：全绿', null, true],
+    ['好的三套：全绿', null, true],
     ['少一张 11-body-metric', (r) => rmSync(join(r, 'store-assets/screenshots-play/11-body-metric.png')), false],
     ['那道门不见了（旧 bug 的形状）', (r) => rmSync(join(r, 'store-assets/screenshots/11a-body-consent.png')), false],
     ['夹带一张失败现场图', (r) => fixturePng(join(r, 'store-assets/screenshots-play/zz-fail-05-workout.png'), PLAY, {}), false],
@@ -207,25 +264,44 @@ function selftest() {
     ['整套没了', (r) => rmSync(join(r, 'store-assets/screenshots-play'), { recursive: true }), false],
     ['App Store 那张忘了压平（还是 RGBA）', (r) => fixturePng(join(r, 'store-assets/screenshots-ios/09-all-data.png'), IOS_SET, { channels: 4 }), false],
     ['App Store 那张还是 16 位（只去了 alpha）', (r) => fixturePng(join(r, 'store-assets/screenshots-ios/05-workout.png'), IOS_SET, { channels: 3, bitDepth: 16 }), false],
+    // ⚠️ 变异必须打在**带目录名的那一行**上：判据认的是"目录名到下一个目录名之间"的张数，
+    // 打在别处（比如 screenshots.md 那句"共 14 张"）根本进不了检查范围 —— 第一版就是这么写的，
+    // 于是"变异"其实没发生，用例红在一个假的原因上。
+    ['文档把国内那套写成 15 张（实际 14）', (r) => {
+      const p = join(r, 'docs/release-checklist.md');
+      const t = readFileSync(p, 'utf8').replace('14 张（1080×2400，国内/软著）', '15 张（1080×2400，国内/软著）');
+      if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：那一行里没有「14 张（1080×2400，国内/软著）」');
+      writeFileSync(p, t);
+    }, false, '说「15 张」'],
+    ['文档把 App Store 那套写成 14 张（实际 13）', (r) => {
+      const p = join(r, 'docs/store-listing.md');
+      const t = readFileSync(p, 'utf8').replace('1320×2868，13 张', '1320×2868，14 张');
+      if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：store-listing.md 里没有「1320×2868，13 张」');
+      writeFileSync(p, t);
+    }, false, '说「14 张」'],
   ];
 
   let bad = 0;
-  for (const [label, mutate, wantGreen] of cases) {
+  for (const [label, mutate, wantGreen, expect] of cases) {
     const root = makeTree(mutate);
     const { problems } = inspect(root);
     const green = problems.length === 0;
-    const ok = green === wantGreen;
+    let ok = green === wantGreen;
+    let why = green ? '' : `　→ ${problems[0].slice(0, 62)}`;
+    if (ok && !wantGreen && expect && !problems.some((p) => p.includes(expect))) {
+      ok = false;
+      why = `　→ 红了，但不是因为「${expect}」（红在：${problems[0].slice(0, 46)}）`;
+    }
     if (!ok) bad += 1;
-    console.log(`  ${ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m'} ${label}`
-      + (green ? '' : `　→ ${problems[0].slice(0, 62)}`));
+    console.log(`  ${ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m'} ${label}${why}`);
     rmSync(root, { recursive: true, force: true });
   }
   if (bad) {
     console.error(`\n✗ 自检失败 ${bad} 项 —— 这个工具本身不可信，先修它`);
     process.exit(1);
   }
-  console.log('\n✓ 自检通过：好图过得去，少一张、多一张、尺寸不对、夹带现场图、'
-    + 'App Store 那套带 alpha 或 16 位都藏不住');
+  console.log('\n✓ 自检通过：好图过得去；少一张、多一张、尺寸不对、夹带现场图、'
+    + 'App Store 那套带 alpha 或 16 位、**文档里的张数是旧的**都藏不住');
 }
 
 // ───────────────────────────────────────────────────────────────── 跑
