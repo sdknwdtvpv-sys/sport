@@ -162,7 +162,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         backgroundColor: Tokens.elevated,
         title: const Text('开启云备份', style: TextStyle(color: Tokens.text)),
         content: const Text(
-          '备份会**加密后**存到服务器上。\n\n'
+          '备份会先加密、再存到服务器上。\n\n'
           '· 服务端只拿到密文，看不到动作名、重量、体重\n'
           '· 钥匙是一串「恢复码」，只显示这一次 —— 请抄在纸上\n'
           '· 恢复码丢了，连我们也帮不了你（服务端没有你的钥匙）',
@@ -281,7 +281,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         title: const Text('关闭云备份', style: TextStyle(color: Tokens.text)),
         content: const Text(
           '只清掉本机这串恢复码。\n\n'
-          '云端那份**还在** —— 抄下来的恢复码以后还能把它取回来。\n'
+          '云端那份还在 —— 抄下来的恢复码以后还能把它取回来。\n'
           '但本机不再备份，直到你重新输入恢复码。',
           style: TextStyle(color: Tokens.text2, height: 1.6),
         ),
@@ -315,7 +315,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         backgroundColor: Tokens.elevated,
         title: const Text('删除云端备份并注销', style: TextStyle(color: Tokens.text)),
         content: const Text(
-          '服务器上的备份会**连同账号一起删掉**，不可撤销。\n\n'
+          '服务器上的备份会连同账号一起删掉，不可撤销。\n\n'
           '本机数据不受影响。',
           style: TextStyle(color: Tokens.text2, height: 1.6),
         ),
@@ -588,7 +588,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               ),
               child: const Text(
                 '云端那份比这台设备记录的要新 —— 可能是另一台设备备份的。\n'
-                '现在点「立即备份」会**覆盖**它。想先保住它，就先点下面的「从云端恢复」。',
+                '现在点「立即备份」会覆盖它。想先保住它，就先点下面的「从云端恢复」。',
                 style: TextStyle(color: Tokens.pr, fontSize: 12, height: 1.5),
               ),
             ),
@@ -719,7 +719,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const Text(
-            '这是取回备份的唯一钥匙，**只显示这一次**。',
+            '这是取回备份的唯一钥匙，只显示这一次，务必抄下来。',
             style: TextStyle(color: Tokens.text2, fontSize: 13, height: 1.5),
           ),
           const SizedBox(height: Tokens.s3),

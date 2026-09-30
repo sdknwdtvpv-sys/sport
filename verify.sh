@@ -255,6 +255,15 @@ else
 fi
 echo
 
+# 用户可见文案核对工具的**自检**：`Text` 不渲染 markdown —— `**` 是三个星号印在屏幕上。
+# 这个项目为此付过三次学费（同意弹层、政策里的待办、收集清单开头的说明），每次都是眼睛先看见的。
+if node tool/check-user-text.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 用户文案核对自检通过（字符串里的记号藏不住，注释里的不误报）"
+else
+  strip "$LOG"; echo "${RED}✗ 用户文案核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 商店表单对账工具的**自检**：两张商店表单是提交材料，填错是拒审/下架的理由，
 # 而它们此前只是两份 Markdown（埋点字段改过好几轮，每次都可能让某张表变成假话）。
 if node tool/check-store-forms.mjs --selftest >"$LOG" 2>&1; then
@@ -458,6 +467,15 @@ if node tool/check-ci.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 仍是门禁的子集（命令/步骤/版本都对得上）"
 else
   strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（"子集"这句话已经不成立）${OFF}"; fail=1
+fi
+echo
+
+# 用户可见文案：`app/lib` 的字符串字面量里不许有 `**`（markdown 记号）或"给我们自己看"的说明
+# （仓库/生成物/请勿手改/TODO/待填…）—— 注释不算，不误报。
+if node tool/check-user-text.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 界面文案干净（无 markdown 记号、无内部说明）"
+else
+  strip "$LOG"; echo "${RED}✗ 界面文案里漏出了不该给用户看的东西${OFF}"; fail=1
 fi
 echo
 
@@ -666,6 +684,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
          tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
+         tool/check-user-text.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \

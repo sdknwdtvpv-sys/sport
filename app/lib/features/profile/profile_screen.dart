@@ -460,7 +460,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('云端备份没删掉，所以本机数据也**没删**：${e.message}'),
+            content: Text('云端备份没删掉，所以本机数据也一并保留：${e.message}'),
             backgroundColor: Tokens.danger,
           ),
         );
