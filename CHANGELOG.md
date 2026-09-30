@@ -6,7 +6,67 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
-## 未切版（v1.23.0 之后的改动，尚未打 tag）
+## v1.23.1 · 云备份的"换手机"端到端跑通了（在模拟器上，打真后端）
+
+设计稿阶段 5 写的是"备份 → 卸载重装 → 恢复 → 数据一致"。**这一条跑通了**，
+而且**全程只用 App 自己的界面**（不是拿 Dart 脚本冒充）：新增
+`app/integration_test/cloud_backup_e2e_test.dart` + 一个 driver，一次 run 里演完"换手机"：
+
+| 步 | 现场证据（`LIANLEME-E2E` 日志） |
+|---|---|
+| 真实 App 里记两组 | `logged-2-sets` |
+| 我 → 云备份 → 开启（**真后端建号**） | `account-created code=XC5NE-SGYPG-DSA7G-E6CYX-SJ5PB-0M` |
+| 立即备份 | `uploaded: 已备份 1 次训练 / 2 组（22.0 KB 密文）` |
+| 界面显示**服务端**那份的状态 | `server-state: 云端：22.0 KB · 09-30 13:33` |
+| **删除全部数据**（故意**不勾**"同时删除云端备份"）← 等于换了台新手机 | 本机回到空态、云端那份仍在 |
+| 用恢复码"取回已有备份" → 从云端恢复 | `restored: 已从云端恢复：已导入 1 次训练 / 2 组` |
+| 断言数据真的回来了 | `verified-2-sets-restored`（「我」页总组数 = **2 组**） |
+
+**宿主侧同时翻了服务端的库**（同一时刻读 `/tmp/e2e-cloud/backend.sqlite`）：
+1 个账号、1 份备份、`bytes=22567`（与设备报的 22.0 KB 一致），
+blob 开头是 `{"v":1,"alg":"AES-256-GCM","kdf":"HKDF-SHA256","nonce":"8t/R…`。
+**阳性对照**（必须先成立，否则下面的"搜不到"是空转）：`AES-256-GCM` / `HKDF-SHA256` /
+`{"v":1` 在库文件字节里都能搜到；**阴性**：`ex_bb_bench_press` / `weight_kg` / `"reps"` /
+`40.0` 在**整个库文件**里都搜不到。于是"服务端看不到训练明细"这句话，现在有成对的证据，
+而且用的是**真机产生的载荷**。
+
+**这一版抓到我自己五个错**（都是"我以为"）：
+
+1. 提示横幅的 key 落在 `Container` 上，我却 `widget<Text>(...)` 取值 →
+   `type 'Container' is not a subtype of type 'Text'`。写了个两种都能吃的帮手。
+2. **懒构建列表里"找到了"不等于"点得到"**：目标卡在视口下沿时 `tap` 会打在视口外，
+   **不报错也点不动** —— 表现却像"没配服务器地址"。加 `ensureVisible` 才真点到。
+3. 删完数据后断言"0 组"，而空态下「我」页**根本不显示统计行**（那是空态，不是 0）。
+4. 空态那句在**视口上方**，而我的滚动帮手只会往下滚。
+5. 我为了"干净"直接 `rm` 了后端的 sqlite 文件，**而服务端还开着旧句柄** →
+   接口 500、建号失败。表现是"恢复码对话框没出来"。改成先杀进程再删。
+
+**顺带修了软著材料收集器的一个不一致**：`INCLUDE_DIRS` 收了 `app/test` 却漏了
+`app/integration_test` 与 `app/test_driver` —— 同一个原则（"自己写的源码"）不该一半收一半不收。
+补进去后是 **133 个源文件 / 34,617 行**，鉴别材料按 V1.23.1 重新生成。
+
+**怎么复现**（命令写在 `docs/backend-design.md` §七之七）：
+```bash
+node server/backend.mjs --port 8790 --db /tmp/e2e/backend.sqlite &
+adb -s <设备> reverse tcp:8790 tcp:8790 && adb -s <设备> shell pm clear com.sdknwdtvpv.lianleme
+cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
+    --target=integration_test/cloud_backup_e2e_test.dart -d <设备> \
+    --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790
+```
+⚠️ **必须走 `adb reverse` + `127.0.0.1`**：`dart:io` 拒绝明文 HTTP 发往非回环地址
+（"Insecure HTTP is not allowed by platform"），回环才豁免；生产永远走 https。
+
+**当时的设备是 Android 模拟器**（Pixel 6 / API 36，无头）。**真机仍锁着** ——
+链路、加密、服务端行为都有证据了，但**真机特有**的（Doze、厂商后台策略、真实网络切换）
+还没验过，这一点在文档里也写明了，不混着说。
+
+### 验证
+
+六层门禁全绿（**693 测试**、变异 24 杀 / 0 存活 = 100%、`dart analyze --fatal-infos` 零问题）。
+真机 Redmi `flourite` 覆盖安装 1.23.0 → **1.23.1**（冷启动无异常）。
+端到端见上（模拟器 + 真后端）。
+
+## 未切版（v1.23.1 之后）
 
 > 只改文档与工具、不切版（版本号策略见本文件开头）。
 

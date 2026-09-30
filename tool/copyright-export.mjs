@@ -32,7 +32,13 @@ export const APP_VERSION = readFileSync(join(ROOT, 'app/lib/core/app_info.dart')
   .match(/kAppVersion = '([^']+)'/)?.[1] ?? '0.0.0';
 
 /** 收录我们自己的源码目录（按路径字典序，可复现） */
-const INCLUDE_DIRS = ['app/lib', 'app/test', 'app/tool', 'engine', 'server', 'tool', 'seed'];
+// ⚠️ `app/integration_test` 与 `app/test_driver` 2026-09-30 才补进来。
+// 原先漏了它们，而 `app/test` 是在里面的 —— 同一个原则（"自己写的源码"）不该一半收一半不收。
+// 这也是它们第一次真的有了内容：云备份端到端（`cloud_backup_e2e_test.dart`）。
+const INCLUDE_DIRS = [
+  'app/lib', 'app/test', 'app/integration_test', 'app/test_driver',
+  'app/tool', 'engine', 'server', 'tool', 'seed',
+];
 
 /** 明确排除：生成物、资源、数据 */
 function excluded(rel) {

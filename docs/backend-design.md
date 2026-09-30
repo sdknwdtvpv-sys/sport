@@ -208,6 +208,55 @@ sync_ops(account_id text, seq bigint,  -- 增量同步：客户端产生、服�
   "Connection reset by peer"，之后全部 "Connection refused"，看起来像服务端有 bug。
   改成广播流 + 一个永不取消的订阅把管道一直抽干（stderr 同理）。
 
+## 七之七、阶段 5 实况：真机端到端（2026-09-30，在**模拟器**上完成）
+
+设计稿里阶段 5 写的是"备份 → 卸载重装 → 恢复 → 数据一致"。这一条**已经跑通了**，
+而且**全程只用 App 自己的界面**（不是拿 Dart 脚本冒充）：
+
+| 步 | 做了什么 | 现场证据（`LIANLEME-E2E` 日志） |
+|---|---|---|
+| 1 | 真实 App 里记两组 | `logged-2-sets` |
+| 2 | 我 → 云备份 → 开启（**真后端建号**） | `account-created code=XC5NE-SGYPG-DSA7G-E6CYX-SJ5PB-0M` |
+| 3 | 立即备份 | `uploaded: 已备份 1 次训练 / 2 组（22.0 KB 密文）` |
+| 4 | 界面显示**服务端**那份的状态 | `server-state: 云端：22.0 KB · 09-30 13:33` |
+| 5 | **删除全部数据**（故意**不勾**"同时删除云端备份"）← 等于换了台新手机 | `local-data-deleted (cloud kept)`；本机回到空态 |
+| 6 | 用那串恢复码"取回已有备份" → 从云端恢复 | `adopted-existing-code` / `restored: 已从云端恢复：已导入 1 次训练 / 2 组` |
+| 7 | 断言数据真的回来了 | `verified-2-sets-restored`（「我」页总组数 = 2 组） |
+
+**宿主侧同时核了服务端手里到底是什么**（同一时刻读它的 sqlite）：
+
+```
+accounts: 1 条        backups: 1 条   bytes=22567（与设备报的 22.0 KB 一致）
+blob 开头: {"v":1,"alg":"AES-256-GCM","kdf":"HKDF-SHA256","nonce":"8t/R…
+```
+
+* **阳性对照**（必须先成立，否则下面的"搜不到"是空转）：
+  `AES-256-GCM` / `HKDF-SHA256` / `{"v":1` 在**库文件字节**里都能搜到 → 密文确实躺在那里。
+* **阴性**：`ex_bb_bench_press` / `weight_kg` / `"reps"` / `40.0` 在**整个库文件**里都搜不到。
+
+也就是说："**服务端看不到训练明细**"这句话，现在有成对的证据（设备侧断言 + 宿主侧翻库），
+而且用的是**真机产生的载荷**，不是测试里构造的那一份。
+
+**怎么复现**（测试与 driver 已入库）：
+
+```bash
+node server/backend.mjs --port 8790 --db /tmp/e2e/backend.sqlite &
+adb -s <设备> reverse tcp:8790 tcp:8790          # 必须走回环，见下
+adb -s <设备> shell pm clear com.sdknwdtvpv.lianleme
+cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
+    --target=integration_test/cloud_backup_e2e_test.dart -d <设备> \
+    --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790
+```
+
+> ⚠️ **不能用模拟器那套 `10.0.2.2`**：`dart:io` 会拒绝明文 HTTP 发往非回环地址
+> （"Insecure HTTP is not allowed by platform"），而**回环有豁免** ——
+> 所以一律用 `adb reverse` + `127.0.0.1`。生产永远走 https，这条只影响本地验证。
+
+**当时的设备**：Android **模拟器**（Pixel 6 / API 36 / arm64，无头）。
+**真机（Redmi `flourite`）仍然锁着**，所以"真机"这两个字在本文里要看得仔细：
+链路、加密、服务端行为都由这次跑通；**真机特有的**（Doze、厂商后台策略、真实网络切换）
+还没有验过 —— 那需要解锁真机。
+
 ## 八、实施顺序（我这边能做的 vs 需要你的）
 
 | 阶段 | 谁 | 内容 |
@@ -216,7 +265,7 @@ sync_ops(account_id text, seq bigint,  -- 增量同步：客户端产生、服�
 | 2 | **我** 🟡 | 客户端：加密层 + 账号/恢复码 ✅（见"阶段 2 实况"）；备份/恢复 UI + 政策同步 ⬜ |
 | 3 | **我** | 隐私政策与事实源同步、埋点披露、门禁全绿、切版装真机 |
 | 4 | **你** | 买服务器与域名、HTTPS 证书、备案（接入信息这时就能填了）、把服务端部署上去 |
-| 5 | **我** | 真机端到端：备份 → 卸载重装 → 恢复 → 数据一致（与第 9 轮埋点那次同款验证） |
+| 5 | **我** | ✅ **已在模拟器上端到端跑通 2026-09-30**（备份 → 删本机 → 用恢复码恢复 → 数据一致），见"阶段 5 实况"。⚠️ **真机**（Doze / 厂商后台策略 / 真实网络）仍待解锁后补验 |
 
 阶段 1–3 **不依赖你买任何东西**（本地就能跑通并验证），阶段 4 开始才需要钱与账号。
 

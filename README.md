@@ -1,6 +1,6 @@
 # 练了么
 
-**v1.23.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+**v1.23.1** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
 
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
@@ -384,7 +384,7 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.23.0 release**（逐版覆盖安装，冷启动无异常）。**「杀掉重开数据还在」早在真机上验证过**（冷启动读回 12 组）。剩下的是**真的用手指走一遍** —— 好消息：USB 注入**已经打开了**（当初被 MIUI 禁掉，后来你放开了），所以这一步现在能自动化做，**只差把手机解锁** | 六层门禁全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
+| 🚧 **真机交互验收** | 真机（Redmi `flourite` / Android 16）上装的是 **v1.23.1 release**（逐版覆盖安装，冷启动无异常）。**「杀掉重开数据还在」早在真机上验证过**（冷启动读回 12 组）。剩下的是**真的用手指走一遍** —— 好消息：USB 注入**已经打开了**（当初被 MIUI 禁掉，后来你放开了），所以这一步现在能自动化做，**只差把手机解锁** | 六层门禁全绿，但真实手势（大按钮在出汗/单手时点得到吗）**只能靠真机** —— **这是最大的一条** |
 | ✅ ~~v1 → v2 迁移的真机验证~~（已在真机过） | 真机里原本是 `v1.0.0` 留下的**老库**，直接覆盖安装 `v1.2.0`（`schemaVersion` 1 → 3）后，`onUpgrade` 跑完、**数据一条没丢**（冷启动读回 12 组） | 这是"老库升级必须真机过一次"的实测通过 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |
