@@ -192,7 +192,13 @@ class UserProfile extends Table {
   TextColumn get progressionMode => text().withDefault(const Constant('double'))();
 
   /// 「帮助改进产品」开关。关掉后除崩溃外一律不上报（见 analytics-sdk.md §10）。
-  BoolColumn get analyticsEnabled => boolean().withDefault(const Constant(true))();
+  ///
+  /// **默认关闭**（2026-09-30，审计 A 的后半段）。此前是默认开着：政策正文虽然写了
+  /// 「可以随时关掉」，但"默认同意"在 PIPL 下站不住 —— 非必需的收集必须由用户**主动**开启。
+  /// 默认关的语义很干净：**谁都不会被统计，除非他自己去打开那个开关。**
+  /// `tool/privacy-audit.mjs` 会拿 `docs/privacy-facts.json` 的
+  /// `analyticsOptIn.defaultOn` 跟这一行的默认值对账 —— 改这里就要同时改那里和政策正文。
+  BoolColumn get analyticsEnabled => boolean().withDefault(const Constant(false))();
 
   /// **首次启动征求隐私政策同意的时刻**。null = 还没同意过（要弹窗）。
   ///
@@ -353,7 +359,7 @@ class AppDatabase extends _$AppDatabase {
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -449,6 +455,13 @@ class AppDatabase extends _$AppDatabase {
           // 用户在这一次里选"不同意"就能进 App 用离线功能，而我们记得他拒绝过。
           if (from < 12) {
             await m.addColumn(userProfile, userProfile.privacyDeclinedAtMs);
+          }
+          // v12 → v13：**统计开关的默认值从"开"改成"关"**。
+          // 列默认值只影响以后新插入的行，老库里那几个 `true` 必须显式翻过来 ——
+          // 否则"默认同意"这个毛病会跟着老用户一直活下去。
+          // （写这一刀时还没有真实用户，所以它没有覆盖掉任何人的选择。）
+          if (from < 13) {
+            await customStatement('UPDATE user_profile SET analytics_enabled = 0');
           }
         },
       );

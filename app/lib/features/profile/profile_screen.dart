@@ -111,7 +111,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   TrainingStats? _stats;
   ProgressionMode _mode = ProgressionMode.doubleProgression;
-  bool _analyticsEnabled = true;
+  bool _analyticsEnabled = false; // 默认关（见 db.dart 那一列的注释）
   bool _loading = true;
 
   @override
@@ -124,6 +124,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final List<SetRecord> sets = await widget.store.allSets();
     final ProgressionMode mode = await widget.profile.progressionMode();
     final bool enabled = await widget.profile.analyticsEnabled();
+    // 页面读到的值也同步给 analytics：用户可能在别处改过（或刚启动），
+    // 界面与"到底记不记"必须是同一个事实。
+    widget.analytics?.setEnabled(enabled);
     if (!mounted) return;
     setState(() {
       _stats = TrainingStats.fromSets(sets, unit: widget.unit);
@@ -580,7 +583,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(color: Tokens.text, fontSize: 15),
             ),
             subtitle: const Text(
-              '关掉后不再上报任何使用数据，功能完全不受影响',
+              // 默认是**关**的（v1.28.0），所以这句话要从"打开会怎样"写起 ——
+              // 旧文案「关掉后不再上报」是给"默认开"写的，对新装用户是错的。
+              '默认关闭。打开后会匿名上报使用数据；关闭时一条都不发，功能完全不受影响',
               style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
             ),
           ),

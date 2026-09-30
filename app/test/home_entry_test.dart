@@ -57,11 +57,17 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> pumpApp(WidgetTester tester) async {
+  Future<void> pumpApp(WidgetTester tester, {bool analyticsOn = false}) async {
     // 先"同意过隐私政策"：首次启动多了一道同意门（法律要求，见
     // features/onboarding/privacy_consent_screen.dart）。这里测的是**主流程**，
     // 所以把库预置成"已经同意"的状态；那道门本身由 privacy_consent_test.dart 覆盖。
     await ProfileRepository(db).setPrivacyConsent(nowMs: 1);
+    // 匿名统计**默认关**（2026-09-30，审计 A 的后半段）。要测"漏斗有没有真的发出去"，
+    // 就得先像用户那样把它打开 —— 库里写 true，启动时会被同步进 analytics。
+    // 默认不打开，是为了让别的测试也活在"新装用户"的真实状态里。
+    if (analyticsOn) {
+      await ProfileRepository(db).setAnalyticsEnabled(true, nowMs: 2);
+    }
     await tester.pumpWidget(LianLeMeApp(
       database: db,
       seedLoader: () async => seedJson,
@@ -83,7 +89,8 @@ void main() {
     // 而 `docs/analytics.md` 定义了 31 个 —— 其中 `app_open` 与 `workout_finished`
     // 从来没发过，等于**北极星的分母和分子都是空的**。
     // 所以这条测试不看字段拼得对不对，只看"那条链路到底有没有走通"。
-    await pumpApp(tester);
+    // ⚠️ 前置条件：用户已经**主动打开**了「帮助改进产品」（默认是关的）。
+    await pumpApp(tester, analyticsOn: true);
 
     // 环 1：冷启动
     expect(await _names(db), contains('app_open'));

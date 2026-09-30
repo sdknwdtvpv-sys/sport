@@ -43,8 +43,8 @@ shipped with the policy.) -->
 
 **LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone.
 There is no sign-up, no phone number, no location, no contacts. The only network activity is
-anonymous usage statistics when the "Help improve the product" switch is on — and you can turn
-that off at any time.**
+anonymous usage statistics — and that switch is **off by default**: you have to
+**turn it on yourself**, and you can turn it off again at any time.**
 
 ---
 
@@ -63,8 +63,9 @@ This data lives in the app's private local database (SQLite, managed by drift) a
 
 ### 2.2 Collected only when "Help improve the product" is ON
 
-This is a **switch that is on by default and can be turned off at any time**
-(Profile → "Help improve the product"). It produces exactly **18 event types** with a
+This is a **switch that is off by default**: nothing below is produced unless you
+**turn it on yourself** (Profile → "Help improve the product");
+once on, you can turn it off again at any time, effective immediately. It produces exactly **18 event types** with a
 **fixed, limited** set of fields (the full list lives in `docs/privacy-facts.json` and is
 checked against the code by `tool/privacy-audit.mjs`):
 
@@ -237,7 +238,7 @@ background permissions.
 
 | Right | How |
 |---|---|
-| **Turn off usage statistics** | Profile → "Help improve the product". Takes effect immediately; no feature is affected |
+| **Turn usage statistics on or off** | **It is off by default** (nobody is counted). To take part, **turn it on yourself** in Profile → "Help improve the product". Both directions take effect immediately; no feature is affected |
 | **Export all your data** | Profile → "Export all records" — generates a CSV copied to your clipboard |
 | **Delete all data** | Profile → "Delete all data". After a confirmation prompt, local records and settings are wiped immediately |
 | **Uninstall to delete** | Uninstalling the app removes the local database |

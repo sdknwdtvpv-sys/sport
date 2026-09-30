@@ -323,6 +323,30 @@ void main() {
     await legacy.close();
   });
 
+  test('v12 的库升到 v13：老库里的 analytics_enabled=1 被翻成 0（默认改关）', () async {
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 12);
+        raw.execute(legacySeedProfileSql); // fixture 里 analytics_enabled = 1
+        raw.execute(legacySeedExerciseSql);
+      }),
+    );
+    // 打开即触发 onUpgrade
+    final bool after = await ProfileRepository(legacy).analyticsEnabled();
+    expect(after, isFalse,
+        reason: '列默认值只影响新插入的行；老库里的 true 必须由 v13 的迁移显式翻过来，'
+            '否则"默认同意"这个毛病会跟着老用户一直活下去');
+
+    // 迁移不能顺手把别的设置也抹了
+    final cols = await legacy
+        .customSelect('SELECT unit_pref, progression_mode FROM user_profile')
+        .get();
+    expect(cols.first.read<String>('unit_pref'), 'lb');
+    expect(cols.first.read<String>('progression_mode'), 'double');
+
+    await legacy.close();
+  });
+
   test('老库里**没有** category 列 —— fixture 本身也要守着', () async {
     // 这一条是防"有人把 fixture 改成当前 schema 的样子"从而让上面两条变成空转。
     // 迁移测试最隐蔽的失败方式就是：fixture 悄悄跟上了新 schema，测试永远绿。

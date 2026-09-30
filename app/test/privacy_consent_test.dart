@@ -81,7 +81,23 @@ void main() {
     await teardown(tester);
   });
 
-  testWidgets('点了「同意并继续」：落库 + 放行主界面 + 这才开始记事件',
+  testWidgets('把开关打开（库里的值）→ 冷启动才真的开始记 —— 启动必须同步用户的选择',
+      (WidgetTester tester) async {
+    // 这一条守的是 2026-09-30 改默认值时差点漏掉的那根线：库里那一列的默认值改成"关"
+    // 之后，若启动时不把**用户的选择**同步进 analytics 对象，就会出现两种最坏情况之一 ——
+    // 要么开关显示关着却还在收集，要么开了却一直不发。所以先写 true，看它认不认。
+    await ProfileRepository(db).setPrivacyConsent(nowMs: 1);
+    await ProfileRepository(db).setAnalyticsEnabled(true, nowMs: 2);
+    await boot(tester);
+    await settle(tester, 1500);
+
+    expect(await _queued(db), greaterThan(0),
+        reason: '库里是开着的 → 冷启动就该开始记（启动时同步了用户的选择）');
+
+    await teardown(tester);
+  });
+
+  testWidgets('点了「同意并继续」：落库 + 放行主界面 + **默认仍然一条都不记**',
       (WidgetTester tester) async {
     await boot(tester);
     await tester.tap(find.byKey(const Key('consent-agree')));
@@ -91,8 +107,14 @@ void main() {
     expect(find.byKey(const Key('start-workout')), findsOneWidget);
     expect(await ProfileRepository(db).privacyConsentAtMs(), isNotNull,
         reason: '同意状态必须落库，否则下次冷启动又弹');
-    expect(await _queued(db), greaterThan(0),
-        reason: '同意之后才开始记 app_open（顺序错了就是"先收集后征求同意"）');
+    // 同意 = 同意那份**政策**；它**不等于**同意匿名统计。
+    // 统计是非必需的收集，默认关，要用户自己去「我」页打开（审计 A 的后半段）。
+    // 所以这里的期望是 0 —— 而且这比原来那条断言更硬：
+    // 顺序错了（先收集后征求同意）会红，把"同意"当成"同意统计"也会红。
+    expect(await _queued(db), 0,
+        reason: '同意之后仍然一条都不记：匿名统计默认关');
+    expect(await ProfileRepository(db).analyticsEnabled(), isFalse,
+        reason: '默认关是库里的默认值，不是界面上的假象');
 
     await teardown(tester);
   });

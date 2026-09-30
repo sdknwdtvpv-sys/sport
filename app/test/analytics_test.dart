@@ -246,6 +246,30 @@ void main() {
       expect((await f.flushOnce()).outcome, FlushOutcome.sent);
     });
 
+    test('「帮助改进产品」关着 → 连队列里的也不发（关闭立即生效）', () async {
+      await put('set_logged', priority: 0);
+      final FakeAnalyticsTransport t = FakeAnalyticsTransport();
+      bool on = false;
+      final AnalyticsFlusher f = AnalyticsFlusher(
+          db: db, transport: t, outbox: outbox, enabled: () => on);
+
+      final FlushResult r = await f.flushOnce();
+      expect(r.outcome, FlushOutcome.disabled);
+      expect(t.received, isEmpty, reason: '关着的时候一次网络请求都不该发');
+      expect(await outbox.pending(), 1, reason: '事件留着（不是删掉）—— 重新打开后照常送');
+
+      on = true;
+      expect((await f.flushOnce()).outcome, FlushOutcome.sent);
+      expect(await outbox.pending(), 0);
+    });
+
+    test('默认（不传 enabled）不检查开关 —— 老调用点行为不变', () async {
+      await put('set_logged', priority: 0);
+      final FakeAnalyticsTransport t = FakeAnalyticsTransport();
+      final AnalyticsFlusher f = AnalyticsFlusher(db: db, transport: t, outbox: outbox);
+      expect((await f.flushOnce()).outcome, FlushOutcome.sent);
+    });
+
     test('冷启动放行 parked 并清零失败计数', () async {
       await put('set_logged', priority: 0);
       final AnalyticsFlusher f = AnalyticsFlusher(

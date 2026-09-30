@@ -46,7 +46,12 @@ class OutboxAnalytics implements Analytics {
   final TapMeter _meter = TapMeter();
 
   /// 「帮助改进产品」开关。关掉后除崩溃（独立通道）外一律不记。
-  bool enabled = true;
+  ///
+  /// **默认 false —— 失败要往"关"那边倒**（2026-09-30，审计 A 的后半段）。
+  /// 库里那一列的默认值也是关；但那是"数据"，这是"内存里的对象"：
+  /// 万一启动时忘了把库里的值同步进来（这个 bug 真发生过 —— 只改默认值没接线，
+  /// 结果是"开关显示关着、实际上还在收集"），这里必须是关的，一条都不该记。
+  bool enabled = false;
 
   @override
   void setEnabled(bool value) => enabled = value;

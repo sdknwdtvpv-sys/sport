@@ -115,8 +115,13 @@ class _HomeShellState extends State<HomeShell> {
     // 事件发生时的离线状态：公共字段 is_offline 的真源
     offline: () => _syncQueue.offline,
   );
-  late final AnalyticsFlusher _flusher =
-      AnalyticsFlusher(db: _db, transport: _buildTransport(), outbox: _outbox);
+  late final AnalyticsFlusher _flusher = AnalyticsFlusher(
+    db: _db,
+    transport: _buildTransport(),
+    outbox: _outbox,
+    // 关掉之后**连队列里的也不发**（见 FlushOutcome.disabled 的注释）
+    enabled: () => _analytics.enabled,
+  );
   Timer? _flushTimer;
   Timer? _coldStartTimer;
   late final LocalStore _store = DriftLocalStore(_db);
@@ -309,6 +314,11 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Future<void> _initAnalytics() async {
+    // ⚠️ **先问用户的选择，再做任何记录**（2026-09-30，审计 A 的后半段）。
+    // 库里那一列的默认值改成"关"了，但这个对象在内存里的默认值未必跟着变 ——
+    // 而"开关显示关着、实际上还在收集"是所有失败方式里最坏的一种。
+    // 所以这一步在 `_trackAppOpen()` 与任何 flush 之前，顺序就是它的意义。
+    _analytics.setEnabled(await _profile.analyticsEnabled());
     await _flusher.onColdStart(); // 放行上次 parked 的事件
     await _trackAppOpen();
     // 冷启动 5 秒后试一次（analytics-sdk.md §5 的五个触发时机之一）

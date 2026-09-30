@@ -45,7 +45,7 @@
 </table>
 <hr>
 <h2 id="1-in-one-sentence">1. In one sentence</h2>
-<p><strong>LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone. There is no sign-up, no phone number, no location, no contacts. The only network activity is anonymous usage statistics when the &quot;Help improve the product&quot; switch is on — and you can turn that off at any time.</strong></p>
+<p><strong>LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone. There is no sign-up, no phone number, no location, no contacts. The only network activity is anonymous usage statistics — and that switch is </strong>off by default<strong>: you have to </strong>turn it on yourself<strong>, and you can turn it off again at any time.</strong></p>
 <hr>
 <h2 id="2-what-we-collect">2. What we collect</h2>
 <h3 id="2-1-stored-only-on-your-device-never-uploaded">2.1 Stored only on your device, never uploaded</h3>
@@ -59,7 +59,7 @@
 </table>
 <p>This data lives in the app's private local database (SQLite, managed by drift) and <strong>never leaves the device</strong>.</p>
 <h3 id="2-2-collected-only-when-help-improve-the-product-is-on">2.2 Collected only when &quot;Help improve the product&quot; is ON</h3>
-<p>This is a <strong>switch that is on by default and can be turned off at any time</strong> (Profile → &quot;Help improve the product&quot;). It produces exactly <strong>18 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
+<p>This is a <strong>switch that is off by default</strong>: nothing below is produced unless you <strong>turn it on yourself</strong> (Profile → &quot;Help improve the product&quot;); once on, you can turn it off again at any time, effective immediately. It produces exactly <strong>18 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
 <table>
 <thead><tr><th>Event</th><th>When</th><th>Fields</th></tr></thead>
 <tbody>
@@ -172,7 +172,7 @@
 <table>
 <thead><tr><th>Right</th><th>How</th></tr></thead>
 <tbody>
-<tr><td><strong>Turn off usage statistics</strong></td><td>Profile → &quot;Help improve the product&quot;. Takes effect immediately; no feature is affected</td></tr>
+<tr><td><strong>Turn usage statistics on or off</strong></td><td><strong>It is off by default</strong> (nobody is counted). To take part, <strong>turn it on yourself</strong> in Profile → &quot;Help improve the product&quot;. Both directions take effect immediately; no feature is affected</td></tr>
 <tr><td><strong>Export all your data</strong></td><td>Profile → &quot;Export all records&quot; — generates a CSV copied to your clipboard</td></tr>
 <tr><td><strong>Delete all data</strong></td><td>Profile → &quot;Delete all data&quot;. After a confirmation prompt, local records and settings are wiped immediately</td></tr>
 <tr><td><strong>Uninstall to delete</strong></td><td>Uninstalling the app removes the local database</td></tr>

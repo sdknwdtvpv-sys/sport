@@ -320,6 +320,40 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑨ 「匿名统计默认关」必须**三处一致**：事实源、代码里的默认值、中英政策正文。
+  //
+  // 这是审计 A 的后半段：非必需的收集要用户**主动**开启。它天然容易烂 ——
+  // 改代码不改政策、或改政策不改代码，两边看起来都"没问题"。所以横着查。
+  {
+    const opt = facts.analyticsOptIn;
+    if (!opt) {
+      errors.push('privacy-facts.json 少了 analyticsOptIn —— 匿名统计是「非必需」的收集，'
+        + '它的默认值（开/关）必须显式声明，不能靠代码默认值含糊过去');
+    } else {
+      const dbSrc = readFileSync(join(ROOT, 'app/lib/data/db.dart'), 'utf8');
+      const m = dbSrc.match(
+        /analyticsEnabled\s*=>\s*boolean\(\)\.withDefault\(\s*const Constant\((true|false)\)/);
+      if (!m) {
+        errors.push('app/lib/data/db.dart 里找不到 analyticsEnabled 的默认值 —— '
+          + '这条跨文件检查已经失效，别当成通过');
+      } else if ((m[1] === 'true') !== opt.defaultOn) {
+        errors.push(`匿名统计：事实源写的是 defaultOn=${opt.defaultOn}，`
+          + `而代码里的默认值是 ${m[1]} —— 两者必须一致`);
+      }
+      const enText = existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '';
+      for (const phrase of opt.policyPhrases?.zh ?? []) {
+        if (!policy.includes(phrase)) {
+          errors.push(`匿名统计默认关：政策正文里没有「${phrase}」`);
+        }
+      }
+      for (const phrase of opt.policyPhrases?.en ?? []) {
+        if (!enText.includes(phrase)) {
+          errors.push(`匿名统计默认关：英文政策里没有「${phrase}」`);
+        }
+      }
+    }
+  }
+
   // ⑧ 「怎么开云备份」这件事，教一半比不教更危险
   //
   // 云备份现在是**两个**编译期开关：地址 + 「政策已按启用态改写」的声明。

@@ -202,6 +202,25 @@
       "why": "事件发生时是否离线"
     }
   ],
+  "analyticsOptIn": {
+    "_why": "匿名统计是「非必需」的那一项，所以它必须由用户**主动**开启（默认关）。这个字段是机器可核的那一半：tool/privacy-audit.mjs 会拿 defaultOn 去对app/lib/data/db.dart 里那一列的默认值，并要求中英政策正文出现下面的说法。2026-09-30 之前它是默认开的 —— 审计判定「默认同意」站不住，这一版改成默认关（审计 A 的后半段）。",
+    "defaultOn": false,
+    "codeDefault": "app/lib/data/db.dart：analyticsEnabled 列 withDefault(const Constant(false))",
+    "switchPath": {
+      "zh": "「我」→「帮助改进产品」",
+      "en": "Profile → \"Help improve the product\""
+    },
+    "policyPhrases": {
+      "zh": [
+        "默认关闭",
+        "主动"
+      ],
+      "en": [
+        "off by default",
+        "turn it on yourself"
+      ]
+    }
+  },
   "permissions": [
     {
       "name": "android.permission.INTERNET",

@@ -119,6 +119,9 @@ void main() {
         offline: () => true,
         clock: () => 5000,
       );
+      // 生产实现现在是**失败关闭**（默认不记）—— 这组测的是字段与身份，
+      // 不是开关本身，所以要显式打开。这一行本身就是"默认关"生效的证据。
+      analytics.setEnabled(true);
 
       // 调用方故意也传一个 is_offline（客户端以前就是各处自己传的）——
       // 公共层必须赢，否则同一个字段两个来源，早晚对不上。
@@ -148,6 +151,7 @@ void main() {
         context: _BrokenContext(),
         clock: () => 5000,
       );
+      analytics.setEnabled(true); // 默认关（失败关闭），见上一条的注释
 
       analytics.track('set_logged', <String, Object?>{'reps': 8});
       await Future<void>.delayed(Duration.zero);

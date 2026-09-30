@@ -105,10 +105,10 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     '我们不会要求注册、不要手机号、不要定位、不读通讯录。\n\n'
-                            '你的训练记录只存在这台手机上。唯一的联网行为是'
-                            '「帮助改进产品」的匿名使用统计 —— 那个开关默认开着，'
-                            '可以随时在「我」页关掉，关了功能完全不受影响。\n\n'
-                            '点「不同意」也没关系：**练了么照样能用**（记训练、看进步全在本机跑），'
+                            '你的训练记录只存在这台手机上。唯一可能的联网行为是'
+                            '「帮助改进产品」的匿名使用统计 —— 它默认是关闭的，'
+                            '只有你主动去「我」页打开，才会有数据发出去。\n\n'
+                            '点「不同意」也没关系：练了么照样能用（记训练、看进步全在本机跑），'
                             '只是我们一条数据都不会收集。',
                     key: const Key('consent-body'),
                     style: const TextStyle(color: Tokens.text2, fontSize: 14, height: 1.8),

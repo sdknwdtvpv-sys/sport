@@ -147,8 +147,8 @@ void main() {
       expect(await profile.progressionMode(), ProgressionMode.doubleProgression);
     });
 
-    test('隐私开关默认是开的', () async {
-      expect(await profile.analyticsEnabled(), isTrue);
+    test('隐私开关默认是关的（PIPL：非必需收集要用户主动开启）', () async {
+      expect(await profile.analyticsEnabled(), isFalse);
     });
 
     test('关掉隐私开关能落库，且不影响其他设置', () async {
@@ -280,7 +280,7 @@ void main() {
           reason: '关掉必须真的落库，否则重启就白关了');
     });
 
-    testWidgets('隐私开关默认开着，关掉后立刻生效且落库',
+    testWidgets('隐私开关默认**关着**：不主动打开就一条都不记，打开后立刻生效且落库',
         (WidgetTester tester) async {
       final RecordingAnalytics analytics = RecordingAnalytics();
       await tester.pumpWidget(MaterialApp(
@@ -301,18 +301,31 @@ void main() {
       await scrollTo(tester, find.byKey(const Key('analytics-switch')));
       expect(
         tester.widget<SwitchListTile>(find.byKey(const Key('analytics-switch'))).value,
-        isTrue,
+        isFalse,
+        reason: '默认必须是关的 —— "默认同意"在 PIPL 下站不住',
       );
+      expect(await profile.analyticsEnabled(), isFalse, reason: '库里也必须是关的');
 
+      // 关着的时候不该记任何东西
+      analytics.track('set_logged');
+      expect(analytics.countOf('set_logged'), 0, reason: '没主动打开就不该有数据');
+
+      // 主动打开 → 立刻生效 + 落库
       await tester.tap(find.byKey(const Key('analytics-switch')));
       await tester.pumpAndSettle();
 
-      expect(await profile.analyticsEnabled(), isFalse, reason: '必须落库');
-      expect(analytics.enabled, isFalse, reason: '必须立刻生效，等重启就晚了');
-
-      // 关掉之后确实不记了
+      expect(await profile.analyticsEnabled(), isTrue, reason: '打开也必须落库');
+      expect(analytics.enabled, isTrue, reason: '必须立刻生效，等重启就晚了');
       analytics.track('set_logged');
-      expect(analytics.countOf('set_logged'), 0);
+      expect(analytics.countOf('set_logged'), 1, reason: '打开了才开始记');
+
+      // 再关掉 → 立刻停
+      await tester.tap(find.byKey(const Key('analytics-switch')));
+      await tester.pumpAndSettle();
+      expect(await profile.analyticsEnabled(), isFalse);
+      expect(analytics.enabled, isFalse);
+      analytics.track('set_logged');
+      expect(analytics.countOf('set_logged'), 1, reason: '关掉之后不该再多一条');
     });
 
     testWidgets('点导出会把 CSV 放进剪贴板', (WidgetTester tester) async {

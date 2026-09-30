@@ -63,6 +63,14 @@ enum FlushOutcome {
 
   /// 训练进行中，被挂起 —— 不是错误，是设计
   suspended,
+
+  /// 「帮助改进产品」开关关着 —— 不上报。也不是错误：用户的选择。
+  ///
+  /// 为什么连**队列里的**也不发：政策对用户说的是"关掉立即生效"，
+  /// 而 `docs/analytics-sdk.md` 的验收清单写的是"关闭隐私开关 → 除崩溃外零上报"。
+  /// 队列里那些只可能是"开着的时候"收集的，但用户已经在关的那一刻表达了不要发 ——
+  /// 所以停发，并留着（重新打开后仍可发，语义上仍是"开着期间产生的数据"）。
+  disabled,
 }
 
 class FlushResult {
@@ -82,11 +90,15 @@ class AnalyticsFlusher {
     required AppDatabase db,
     required AnalyticsTransport transport,
     AnalyticsOutboxStore? outbox,
+    /// 「帮助改进产品」开关。给了就把"关着不发"接上；不给 = 不检查（老测试不受影响）。
+    bool Function()? enabled,
     this.batchSize = AnalyticsOutboxStore.maxBatch,
   })  : outbox = outbox ?? AnalyticsOutboxStore(db),
+        _enabled = enabled,
         _transport = transport;
 
   final AnalyticsOutboxStore outbox;
+  final bool Function()? _enabled;
   final AnalyticsTransport _transport;
   final int batchSize;
 
@@ -106,6 +118,10 @@ class AnalyticsFlusher {
   /// 尝试送一批。**不抛异常**。
   Future<FlushResult> flushOnce({double jitter = 0}) async {
     if (_suspended) return const FlushResult(FlushOutcome.suspended);
+    // 开关关着 → 一条都不发（放在挂起检查之后、动 outbox 之前）
+    if (_enabled != null && !_enabled()) {
+      return const FlushResult(FlushOutcome.disabled);
+    }
 
     try {
       final List<AnalyticsEventPayload> batch =

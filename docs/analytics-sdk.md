@@ -221,7 +221,7 @@ CREATE INDEX idx_outbox_flush ON analytics_outbox(priority, created_at);
 | 不上报自由文本 | `track()` 内部对属性值做白名单校验，拒绝长度 > 64 的字符串（疑似备注） |
 | 不上报 HealthKit 原始值 | SDK 层不提供任何 HealthKit 读取入口 |
 | 体重只报布尔 | `body_metric_logged` 的 props 只有 `has_weight` / `has_note` |
-| 隐私开关 | 设置项「帮助改进产品」默认开。关闭后仅保留崩溃上报，**不影响任何功能** |
+| 隐私开关 | 设置项「帮助改进产品」**默认关**（2026-09-30 由「默认开」改来，审计 A 的后半段）。打开后关闭，除崩溃上报外**零上报**（连队列里没发出去的也停发，见 `FlushOutcome.disabled`）；开关本身**不影响任何功能** |
 | 游客上报 | `user_id` 可为 null，但事件必须上报（否则北极星分母缺失） |
 
 ---
