@@ -44,6 +44,11 @@ Redmi flourite 上现在没有「练了么」）。恢复方法（**必须在手
 
 ## 真机装不上时的替代路径：Android 模拟器（2026-09-30 打通）
 
+> ⚠️ **当前未安装**：`emulator` 与 `system-images;android-34;google_apis;arm64-v8a`
+> 已在 2026-09-30 按你的要求卸载（它们占 6.5G，而截图已经取完）。
+> 需要再出图时按下面命令装回即可（约 2G 下载）。真机的输入注入现在可用了，
+> 走真机比走模拟器更快。
+
 MIUI 锁住 USB 安装时（见上），**模拟器不受影响** —— 能装、能跑、能截，
 而且**输入注入是通的**（真机被 MIUI 禁了，模拟器没有）。
 
@@ -72,8 +77,8 @@ adb -s emulator-5554 install -r "dist/练了么-v<版本>.apk"
   （到 `10-profile`），driver 侧的写盘迟迟不返回（截图字节要等整个 run 结束才回传）。
   要用模拟器出图，**先把机器空出来**，或者用真机。
 - 截图落盘目录仍是 `store-assets/screenshots/`（driver 不区分来源，文件名要自己标）。
-- **它占约 5.3GB 磁盘**（emulator 1.1GB + 系统镜像 4.2GB）。磁盘紧张时这样回收
-  （下次要用再重装，命令就在上面）：
+- **它占约 6.5GB 磁盘**（emulator 1.1GB + 系统镜像 4.2GB + AVD 1.2GB）。
+  2026-09-30 已按此回收（命令如下），下次要用再重装：
   ```bash
   sdkmanager --uninstall "emulator" "system-images;android-34;google_apis;arm64-v8a"
   avdmanager delete avd -n lianleme

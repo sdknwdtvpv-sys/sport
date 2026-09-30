@@ -32,7 +32,7 @@
 | 本地数据库 | SQLite（经 drift 管理），当前模式版本 **v9** |
 | 开发环境 | macOS（Apple Silicon），Android SDK，Gradle |
 | 运行环境 | Android 7.0（API 24）～ Android 16（API 36），arm64 / armeabi-v7a / x86_64 |
-| 源程序量 | **108 个源文件 / 27,077 行**（截至 V1.17.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
+| 源程序量 | **113 个源文件 / 28,972 行**（截至 V1.17.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
 
 ## 三、主要功能模块
 
@@ -93,7 +93,8 @@
 
 ### 3.6 身体数据
 
-记录体重与体脂。体重单位可在**千克 / 斤**之间实时切换（换算比例为 1 千克 = 2 斤），
+记录体重与备注（"空腹"、"练后"这类）。体重单位可在**千克 / 斤**之间实时切换
+（换算比例为 1 千克 = 2 斤），
 切换立即生效并写入本地库。
 
 ### 3.7 进步
@@ -124,7 +125,7 @@
 | ![](../store-assets/screenshots/05-workout.png) | **训练屏**：大按钮上直接写着建议的重量与次数，点一下记一组；长按打开步进弹层。 |
 | ![](../store-assets/screenshots/07-summary.png) | **训练完成**：容量 / 时长 / 组数，破纪录单独标出，可分享训练卡。 |
 | ![](../store-assets/screenshots/08-progress.png) | **进步**：本周容量、周训练次数、个人纪录墙、逐动作最好成绩。 |
-| ![](../store-assets/screenshots/11-body-metric.png) | **身体数据**：记录体重与体脂；体重单位可在千克 / 斤之间**实时切换**。 |
+| ![](../store-assets/screenshots/11-body-metric.png) | **身体数据**：记录体重与备注；体重单位可在千克 / 斤之间**实时切换**。 |
 
 > 全部 11 屏（含训练屏、记完一组、全部数据、我页）见
 > [`../store-assets/screenshots/`](../store-assets/screenshots/) 与 [`screenshots.md`](screenshots.md)。
