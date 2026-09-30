@@ -143,6 +143,8 @@ flutter build apk --release \
           --dart-define=LIANLEME_BACKUP_DISCLOSED=true
       ```
       两次都跑才是证据：同一份代码、两种构建、相反的结果。
+- [ ] 跑完云备份端到端之后，核**服务端手里只有密文**：
+      `node tool/check-ciphertext.mjs <服务端的 sqlite>`（空库会判红 —— 「没有数据」不等于「没有明文」）
 - [ ] `node tool/privacy-audit.mjs` 必须绿（它会逐条核对上面四句）
 - [ ] 商店表单也要从"变体 A：Data Not Collected"改成"变体 B" ——
       见 `docs/store-listing.md` 与 `docs/store-listing-ios.md`

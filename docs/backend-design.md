@@ -199,6 +199,21 @@ sync_ops(account_id text, seq bigint,  -- 增量同步：客户端产生、服�
 所以测试里先做**阳性对照**：先确认密文那一长串 base64 确实躺在文件里，
 再确认明文一个片段都不在。少了这一步，这条测试就是在自我欺骗。
 
+**2026-09-30 补：真机端到端之后，宿主端那次"手工核 sqlite"已经固化成命令了** ——
+当时是一次性动作（查完就没了），下一个人没法原样重跑：
+
+```bash
+node tool/check-ciphertext.mjs /tmp/e2e/backend.sqlite      # 核服务端那份库
+node tool/check-ciphertext.mjs <库> --absent 深蹲,102.5      # 追加你要找的明文记号
+node tool/check-ciphertext.mjs --selftest                  # 自检（verify.sh 第 2 层每次跑）
+```
+
+它查四件事：`backups` 里**至少有一行**（空库不算"安全"，算"还没跑"）、
+信封结构是 `{v, alg, kdf, nonce, ct, mac}` 且 `alg` 是 AES-256-GCM、
+`ct` 解出来**不像 JSON**且可打印率低、整包搜不到任何明文记号。
+`--selftest` 会**故意造一份"ct 其实是明文"的库**，要求工具报错 ——
+少了这一步，这条检查可能只是"永远打印 ✓"的假守卫（已接进门禁第 2 层）。
+
 **踩到的两个坑**（都留了注释）：
 
 * 服务端 `--port 0` 时原来打印的是 `0`，自动化测试拿到就没法连 —— 改成打印

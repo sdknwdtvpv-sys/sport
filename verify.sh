@@ -172,6 +172,14 @@ if node server/backend.selftest.mjs >"$LOG" 2>&1; then
 else
   strip "$LOG"; echo "${RED}✗ 极薄后端自检失败${OFF}"; fail=1
 fi
+
+# 密文核验工具的**自检**：它故意造一份"ct 其实是明文"的库，要求工具报错。
+# 少了这一步，那条检查可能只是"永远打印 ✓"的假守卫（2026-09-30 补）。
+if node tool/check-ciphertext.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 密文核验自检通过（明文藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 密文核验工具的自检失败${OFF}"; fail=1
+fi
 echo
 
 # 隐私政策对账：客户端会发的事件/字段、manifest 权限，都必须与政策正文一致。
