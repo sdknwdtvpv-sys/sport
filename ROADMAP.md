@@ -153,10 +153,17 @@ dev_dependencies:
 
 | | 状态 |
 |---|---|
-| Flutter SDK 3.47.5 | ✅ `~/development/flutter` |
-| JDK 17（Temurin） | ✅ `~/development/jdk-17` |
-| Android SDK / adb / build-tools 36 / NDK | ✅ `~/Library/Android/sdk` |
+| Flutter SDK 3.47.5 | ✅ `/Volumes/Elliot's SSD/harness-deps/flutter` |
+| JDK 17（Temurin） | ✅ `/Volumes/Elliot's SSD/harness-deps/jdk-17` |
+| Android SDK / adb / build-tools 36 / NDK | ✅ `/Volumes/Elliot's SSD/harness-deps/android-sdk` |
 | 平台目录 `app/android`、`app/ios` | ✅ 已生成，包名 `com.sdknwdtvpv.lianleme` |
+
+> ⚠️ **2026-09-30 更正**：这三行原先写的是 `~/development/flutter`、`~/development/jdk-17`、
+> `~/Library/Android/sdk` —— 那是**装的时候**的位置。为了给内置盘腾空间，依赖已经全部搬到
+> SSD 上的 `harness-deps/`（见 `docs/dev-environment.md` 与 `tool/dev-env.sh` 的 `DEPS`）。
+> 旧路径在本机**已经不存在**，而这里带着 ✅ 摆了很久没人发现 —— 所以现在多了一条门禁：
+> **`docs/dev-environment.md` 里列出的每个依赖目录都必须在磁盘上真的存在**，
+> 并且 `tool/dev-env.sh` 定义的 `DEPS` 必须指得到。
 
 **没有装 Android Studio** —— JDK tarball + Android 命令行工具就够了，免管理员权限，
 装法与踩坑见 `README.md` 的「Android 工具链」一节。这纯属本机环境，与仓库无关。

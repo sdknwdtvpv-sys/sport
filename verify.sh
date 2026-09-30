@@ -237,6 +237,28 @@ else
   fail=1
 fi
 
+# 环境文档必须与**磁盘上的真实布局**一致（2026-09-30 补）。
+# 起因：依赖搬到 SSD 之后，ROADMAP 里那三个旧路径还带着 ✅ 摆了很久没人发现 ——
+# 这类"环境文档漂了"没有任何东西会红，而它会让下一个人按错误路径去找 SDK。
+DEPS_ROOT="$(grep -oE '^DEPS="[^"]+"' tool/dev-env.sh 2>/dev/null | head -1 | sed 's/^DEPS="//; s/"$//')"
+if [ -z "$DEPS_ROOT" ] || [ ! -d "$DEPS_ROOT" ]; then
+  echo "${RED}✗ 读不到 tool/dev-env.sh 里的 DEPS，或它指向的目录不存在（$DEPS_ROOT）${OFF}"
+  fail=1
+else
+  MISSING_DEPS=""
+  for name in $(grep -oE '`harness-deps/[a-zA-Z0-9._-]+' docs/dev-environment.md 2>/dev/null \
+      | sed 's/`harness-deps\///' | sort -u); do
+    [ -d "$DEPS_ROOT/$name" ] || MISSING_DEPS="$MISSING_DEPS $name"
+  done
+  if [ -n "$MISSING_DEPS" ]; then
+    echo "${RED}✗ docs/dev-environment.md 里列的依赖目录在磁盘上不存在：$MISSING_DEPS${OFF}"
+    echo "    （依赖搬过家就要同时改文档与 tool/dev-env.sh 的 DEPS）"
+    fail=1
+  else
+    echo "${GREEN}✓${OFF} 环境文档列的依赖目录都真实存在（$DEPS_ROOT）"
+  fi
+fi
+
 # README 顶部那行 `**vX.Y.Z**` 是访客看到的"现在到哪了"。它漂过：写着 v1.2.0
 # 而仓库已经 1.22.x。和软著那两条同一个道理 —— 没人会为了改一个数字去翻 README，
 # 所以钉住它。真源只有一个：`app/lib/core/app_info.dart`。
