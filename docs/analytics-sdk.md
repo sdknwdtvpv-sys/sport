@@ -285,7 +285,8 @@ flutter build apk --release --dart-define=LIANLEME_ANALYTICS_URL=https://your.ho
 - [ ] 连点大按钮 2 次 → 两条 `set_logged` 各自 `tap_count = 1`（单测覆盖）
 - [ ] 长按 + 步进 + 确定 → `tap_count = 4`（单测覆盖）
 - [ ] 埋点抛异常注入 → 记录功能完全不受影响，训练可正常完成
-- [x] **关闭隐私开关 → 除崩溃外零上报**（2026-09-30 在设备上验过，见 `app/integration_test/analytics_outbox_e2e_test.dart`）：默认（关）状态下跑完整轮训练后，应用**自己的库**里 `analytics_enabled=false · pending=0`；同一个流程把开关预置成开，则是 `analytics_enabled=true · pending=11` —— 两跑缺一不可，否则「0 条」可能只是测量坏了
+- [x] **关闭隐私开关 → 除崩溃外零上报**（2026-09-30 在设备上验过，见 `app/integration_test/analytics_outbox_e2e_test.dart`）：默认（关）状态下跑完整轮训练后，应用**自己的库**里 `analytics_enabled=false · pending=0`；同一个流程把开关预置成开，则是 `analytics_enabled=true · pending=11` —— 两跑缺一不可，否则「0 条」可能只是测量坏了。
+      **2026-09-30 又在 iOS 上跑了两跑**（iPhone 17 Pro Max 模拟器 / iOS 27.0）：`pending=0` 与 `pending=11` 逐项一致 —— 也就是说这条设备级证明**不是安卓独有**，两端同结论（线 1 的"同等可发布"要求这个）
 - [ ] outbox 灌到 10000 行 → 丢弃顺序符合优先级，且上报了 `outbox_overflow`
 - [ ] 手动把系统时间改到未来 → 所有耗时属性仍为非负
 - [ ] 训练进行中抓包 → **无任何网络请求**
