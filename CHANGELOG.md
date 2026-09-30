@@ -43,7 +43,30 @@ blob 开头是 `{"v":1,"alg":"AES-256-GCM","kdf":"HKDF-SHA256","nonce":"8t/R…`
 
 **顺带修了软著材料收集器的一个不一致**：`INCLUDE_DIRS` 收了 `app/test` 却漏了
 `app/integration_test` 与 `app/test_driver` —— 同一个原则（"自己写的源码"）不该一半收一半不收。
-补进去后是 **133 个源文件 / 34,617 行**，鉴别材料按 V1.23.1 重新生成。
+补进去后是 **133 个源文件 / 34,617 行**（后来 driver 加了输出目录参数，变成 34,626），
+鉴别材料按 V1.23.1 重新生成。
+
+### 商店截图：多出一套 **9:16** 的，给 Google Play 用
+
+核商店规格时发现一个**可能会被拒**的问题：那 11 张截图是 **1080×2400（20:9）**，
+而 Google Play 对手机截图要求宽高比在 **9:16**（一处第三方口径）或 **1:2～2:1**（另一处）之间
+—— [官方页](https://support.google.com/googleplay/android-developer/answer/9866151)
+在我这儿取不到，两处第三方资料**互相矛盾**，但**两种口径都排除 20:9**。
+
+所以没去争论"到底会不会被拒"，直接把合规的那套做出来：同一份
+`integration_test/screenshots_test.dart`，把设备逻辑分辨率切成 `1080x1920` 再跑一遍
+（driver 现在支持 `SHOT_DIR` 环境变量）：
+
+```bash
+adb -s <设备> shell wm size 1080x1920
+cd app && SHOT_DIR=../store-assets/screenshots-play flutter drive … && adb -s <设备> shell wm size reset
+```
+
+产物 11 张、**都是 1080×1920（9:16）**（两种口径下都合法），落在
+`store-assets/screenshots-play/`；原来那套 20:9 保留给国内商店与软著说明书。
+`docs/store-listing.md` 补了"哪套给哪个商店"（Play 最少 2 张、**最多 8 张**，我们有 11 张 → 挑 8），
+`docs/store-listing-ios.md` 写明**安卓这两套都不能给 Apple**（它按设备档位要精确像素，
+等模拟器跑通后单独出）。
 
 **怎么复现**（命令写在 `docs/backend-design.md` §七之七）：
 ```bash

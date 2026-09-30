@@ -2,6 +2,30 @@
 
 **一句话**：截图不该靠"拿手机一张张手工截"。这里是**一条命令从真实 App 里生成**的。
 
+## 两套图，别拿错
+
+| 目录 | 尺寸 | 给谁用 |
+|---|---|---|
+| `store-assets/screenshots/` | **1080×2400**（20:9，设备真实比例） | 软著说明书、国内安卓商店（对宽高比宽松） |
+| `store-assets/screenshots-play/` | **1080×1920**（**9:16**） | **Google Play** —— 它要求宽高比在 9:16 或（另一种说法）1:2～2:1 之间，**两种口径都排除 20:9** |
+
+两套是**同一个测试**跑出来的，只是把设备的逻辑分辨率换了一下：
+
+```bash
+adb -s <设备> shell wm size 1080x1920      # 切到 9:16
+cd app && SHOT_DIR=../store-assets/screenshots-play \
+  flutter drive --driver=test_driver/screenshot_driver.dart \
+               --target=integration_test/screenshots_test.dart -d <设备>
+adb -s <设备> shell wm size reset          # 记得还原
+```
+
+> ⚠️ **口径本身就有一处分歧**：第三方整理的 Play 规格里，一处写"必须 9:16 或 16:9"，
+> 另一处写"1:2 ～ 2:1"（[官方页](https://support.google.com/googleplay/android-developer/answer/9866151)在我这儿取不到）。
+> 9:16 的 1080×1920 在**两种口径下都合法**，所以那套是安全的。国内商店用 20:9 那套即可。
+>
+> Apple 那边**既不认 9:16 也不认 20:9**：它按设备档位要求精确像素（6.7" = 1290×2796 等），
+> 要等 iOS 模拟器跑通之后单独出图 —— 见 `docs/store-listing-ios.md`。
+
 ## 怎么跑
 
 ```bash

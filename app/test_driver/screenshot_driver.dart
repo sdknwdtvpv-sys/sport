@@ -12,7 +12,16 @@ import 'dart:io';
 import 'package:integration_test/integration_test_driver_extended.dart';
 
 Future<void> main() async {
-  final Directory out = Directory('../store-assets/screenshots');
+  // 输出目录可以用环境变量覆盖 —— 商店对**宽高比**的要求不一样：
+  // 这套截图是从设备上按逻辑分辨率抓的，而 Google Play 要求
+  // 宽高比在 1:2 ～ 2:1 之间（第三方资料对"必须 9:16"还是"1:2～2:1"有分歧，
+  // 但**两边都排除 20:9**）。所以需要另一套时把设备调成 1080×1920 再跑：
+  //   adb shell wm size 1080x1920
+  //   SHOT_DIR=../store-assets/screenshots-play flutter drive ...
+  //   adb shell wm size reset
+  final Directory out = Directory(
+    Platform.environment['SHOT_DIR'] ?? '../store-assets/screenshots',
+  );
   out.createSync(recursive: true);
 
   await integrationDriver(
