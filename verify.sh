@@ -262,6 +262,30 @@ else
   echo "${GREEN}✓${OFF} docs/your-todo.md 的时间戳（v$TODO_VER）与 app_info.dart 一致"
 fi
 
+# 「真机上装的是哪一版」这三行**每切一版都该改**，而没人会为了改一个数字去翻它们。
+# 它们烂过：README 与 ROADMAP 停在 v1.27.0，release-checklist 甚至停在 v1.21.0 ——
+# 而这三行是用户判断"到底验到哪一步了"的依据，说错了就是**把没验的说成验了**。
+# 真源同样只有 app/lib/core/app_info.dart。
+check_installed_ver() {
+  local file="$1" pattern="$2" label="$3"
+  local got
+  got="$(grep -oE "$pattern" "$file" 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+  if [ -z "$got" ]; then
+    echo "${RED}✗ $file 里找不到「$label」（措辞变了？这条守卫已经失效，别当成通过）${OFF}"
+    fail=1
+  elif [ "$got" != "$APP_VER" ]; then
+    echo "${RED}✗ $file 写的是真机装 v$got，实际版本是 $APP_VER${OFF}"
+    fail=1
+  else
+    echo "${GREEN}✓${OFF} $file 的真机版本（v$got）与 app_info.dart 一致"
+  fi
+}
+# ⚠️ README 那行是 `**v1.27.2 release**` —— 粗体**跨过了版本号**，
+# 所以模式末尾**不能**要求 `**`（第一版就是那么写的，于是"匹配不到"→守卫死掉）。
+check_installed_ver README.md '上装的是 \*\*v[0-9]+\.[0-9]+\.[0-9]+' '上装的是 **vX.Y.Z'
+check_installed_ver ROADMAP.md '已装 `v[0-9]+\.[0-9]+\.[0-9]+`' '已装 `vX.Y.Z`'
+check_installed_ver docs/release-checklist.md '上跑的是 \*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*' '上跑的是 **vX.Y.Z**'
+
 # iOS 可用性：每个直接依赖都得声明支持 iOS。
 # 挡的是"顺手加一个只有 Android 实现的插件" —— 它在本机（只有安卓真机）完全正常，
 # 等装上 Xcode 才发现 iOS 编不过，而那时已经过去很久、也忘了是谁加的。
