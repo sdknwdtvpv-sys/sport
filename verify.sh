@@ -194,10 +194,15 @@ echo "${BOLD}[4/6] 静态分析（dart analyze --fatal-infos）${OFF}"
 # （这个错犯过两次，所以固化成检查。）
 conflict=0
 for f in $(grep -rlE "db\.dart'" app/lib app/test 2>/dev/null | grep -v '\.tmpdir'); do
-  grep -qE "models\.dart'" "$f" || continue
-  grep -E "db\.dart'" "$f" | head -1 | grep -q ' hide ' && continue
-  grep -E "models\.dart'" "$f" | head -1 | grep -q ' as ' && continue
-  echo "  ${RED}✗${OFF} ${f#app/}：db.dart 与 models.dart 裸 import，需 hide 或 as"
+  # ⚠️ 先把整个文件压成一行再匹配：import 语句**可以跨行**，
+  # 而仓库自己的风格就是跨行（main.dart：`import '...db.dart'` 换行再 `hide ...`）。
+  # 2026-09-30 这个检查因此误报了 4 个文件 —— 修的是检查，不是那些文件。
+  flat=$(tr '\n' ' ' < "$f")
+  echo "$flat" | grep -qE "models\.dart'" || continue
+  # hide 与 show 都能消除歧义（show 只放进来指定的名字），两者都算数
+  echo "$flat" | grep -oE "import '[^']*db\.dart'[^;]*;" | head -1 | grep -qE ' (hide|show) ' && continue
+  echo "$flat" | grep -oE "import '[^']*models\.dart'[^;]*;" | head -1 | grep -q ' as ' && continue
+  echo "  ${RED}✗${OFF} ${f#app/}：db.dart 与 models.dart 裸 import，需 hide / show / as"
   conflict=1
 done
 [ "$conflict" -eq 0 ] && echo "  ${GREEN}✓${OFF} 无 import 命名冲突" || fail=1
