@@ -32,6 +32,9 @@
 
 - 只做三件事：**账号、增量同步、云备份**
 - Postgres + REST，不做实时协同、不做服务端计算
+  > ⚠️ 2026-09-30 核对：**一期实现用的是 `node:sqlite` + 零依赖 HTTP**（不是为了省事，
+  > 是为了「本地就能跑通并自检」）。换 Postgres 时只改 `server/backend-store.mjs` 一个文件，
+  > 见 `docs/backend-design.md` §七之五。
 - **规则引擎跑在客户端**：离线可用、零延迟、零推理成本（健身房地下层没信号，这个选择是被场景逼出来的，不是技术偏好）
 
 ---
@@ -114,3 +117,29 @@
 | 实时多端协同 | 出现真实的"教练 - 学员"使用场景后再做 |
 
 > 这三条写在这里的目的：**防止团队在规则引擎还没被验证时就去追大模型。**
+
+---
+
+## 逐条核对（2026-09-30，拿本文档的说法去代码与门禁里找对应物）
+
+方法：**每一条都在代码或门禁里找对应物**；找不到的标出来、并进 `docs/your-todo.md`。
+这么做是因为本项目已经抓到过好几次"文档承诺了、代码没做"（备份的"全都要"、动作名表"能显示中文名"、
+体重的"单独同意"）—— 这一节把这类核对固定下来。
+
+| 决策 | 代码现状 | 证据 / 指针 |
+|---|---|---|
+| Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
+| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v14**） |
+| Apple Watch 原生 Swift 扩展 | ⏸ MVP 就不做 | — |
+| **HealthKit 读写** | ❌ **代码里一行都没有**（也没有 iOS 的 HealthKit 授权说明） | 已进 `your-todo.md` 第 10d 条；**建议明确改成"后续版本"** |
+| **Android 对接 Health Connect** | ❌ 同上（也没有 Android 的 health 权限声明） | 同上 |
+| 服务端只做三件事 | ✅（**增量同步一期有意不做**） | `backend-design.md` §五、§八 |
+| Postgres + REST | ⚠️ 实现是 `node:sqlite` + 零依赖 HTTP | 见本节上方那处改动与 `backend-design.md` §七之五 |
+| 规则引擎跑在客户端 | ✅ | `engine/progression.mjs`；向量 + 场景级 eval + 变异测试都在门禁里 |
+| 合规 1：HealthKit 数据禁用于广告 | N/A（尚未接入）；但政策里已写明健康数据**不用于广告** | `privacy-policy.md` §2.1 那段 |
+| 合规 2：收集清单 + 健康数据**单独同意** | ✅ 双清单 v1.29.0；**单独同意 v1.31.0** | `app/test/body_consent_test.dart` + 硬门禁两处横查（政策 ↔ 代码那道门） |
+| 合规 3：一键全量导出 + 注销删除 | ✅ 导出（CSV / JSON）；删除全部数据（逐表核对 v1.30.0）；条件式云端注销（v1.22.0） | `app/test/delete_all_test.dart`、`profile_screen.dart::_deleteAll` |
+| 合规 4：不上传动作视频/照片 | ✅ 一期不采集 | — |
+| 场景级 eval 的 7 条红线 | ✅ **全在**（理由非空 / ≤40 字 / 无占位符 / 双重渐进 / 单步 ≤ 一个步长 / 重量不下降 / 自重恒 null 且永不 linear_progress） | `engine/scenarios.json` 的 `invariants` + `engine/run-scenarios.mjs`（40 字上限在第 96 行） |
+| 变异测试的四条约定 | ✅ | `tool/mutation.mjs`（24 杀 / 0 存活 / 2 等价） |
+| **双端同步上线**（硬约束） | ⚠️ **处于风险状态**：iOS 一次都没构建过 | Xcode 已装但许可证未接受；见 `release-checklist.md` 的 iOS 行 |
