@@ -147,7 +147,11 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
       // 意料之外的错也要说出来，不能吞 —— 但别把栈甩给用户
-      if (mounted) setState(() => _error = '出错了：$e');
+      // 给用户看的一句话：我们自己抛的异常，消息本来就是中文人话（"连不上服务器：…"）；
+      // 别的（平台异常、底层 IO 异常）一律兜底 —— `'$e'` 会把类名一起印在屏幕上。
+      // 这一条由 `tool/check-user-text.mjs` 的"不许把整个异常插进字符串"守着。
+      debugPrint('云备份出错了：$e');
+      if (mounted) setState(() => _error = '出错了：${_userFacing(e)}');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -424,7 +428,14 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         '${two(t.hour)}:${two(t.minute)}';
   }
 
-  @override
+  /// 把异常翻译成**给用户看的一句话**。
+  String _userFacing(Object e) {
+    if (e is BackupTransportException) return e.message;
+    if (e is BackupFormatException) return e.message;
+    if (e is BackupDecryptException) return e.message;
+    return '请稍后再试（详情见日志）';
+  }
+
   Widget build(BuildContext context) {
     final CloudBackup? cloud = _cloud;
     return Scaffold(

@@ -52,6 +52,21 @@ const BAD = [
   ['上架时替换', '同上'],
 ];
 
+/**
+ * 整条异常（`$e` / `${e}`）不许直接插进字符串。
+ *
+ * 为什么单列一条：`'没成功：$e'` 在屏幕上会变成 `没成功：PlatformException(…, null, null)` ——
+ * 用户看不懂，而且可能带出路径之类的设备细节。我们自己的异常（消息本来就是中文人话）
+ * 走 `_userFacing()` 之类的小助手，别的兜底成一句人话，细节进 `debugPrint`。
+ *
+ * ⚠️ 只匹配**整个变量**：`${e.key}` / `${e.id}` / `${e.aliasList}` 这类取字段是正常的
+ * （那些 `e` 是数据模型，不是异常），不能误伤 —— 所以规则写成"`$e` 后面既不是点也不是字母"。
+ */
+const RAW_EXCEPTION = /\$(?:\{e\}|e(?![.\w]))/;
+
+/** 遥测里也不许整条插（政策的字段说明写的是"错误类型，不含内容"）。 */
+const TELEMETRY_HINT = 'analytics.track';
+
 /** 是不是"整行都是注释"（含块注释的行首 `*`）。 */
 function isCommentLine(line) {
   const t = line.trimStart();
@@ -89,6 +104,12 @@ function inspect(root) {
             problems.push(`${relative(root, p)}:${i + 1} 的字符串里有「${needle}」——${why}`);
           }
         }
+        if (RAW_EXCEPTION.test(line) && !line.includes('debugPrint')) {
+          const where = line.includes(TELEMETRY_HINT) ? '遥测字段' : '字符串';
+          problems.push(`${relative(root, p)}:${i + 1} 把**整条异常**插进了${where}（\`$e\`）——`
+            + '屏幕上会连类名一起印出来；我们自己的异常取 `.message`，别的兜底成一句人话，'
+            + '细节进 debugPrint');
+        }
       });
     }
   };
@@ -114,6 +135,11 @@ function selftest() {
     ['块注释行首的 * 不算', { 'app/lib/a.dart': " * TODO 写在块注释里\nText('你好'),\n" }, true, null],
     ['行尾注释里写记号不算', { 'app/lib/a.dart': "Text('你好'), // TODO 稍后\n" }, true, null],
     ['待填这种占位也不许', { 'app/lib/a.dart': "Text('生效日期：待填'),\n" }, false, '「待填」'],
+    ['整条异常插进界面字符串', { 'app/lib/a.dart': "Text('没成功：$e'),\n" }, false, '整条异常'],
+    ['遥测里整条插异常也不许', { 'app/lib/a.dart': "a.track('x', {'error': '$e'});\n" }, false, '整条异常'],
+    ['取异常的 message 是允许的', { 'app/lib/a.dart': "Text('连不上：${e.message}'),\n" }, true, null],
+    ['数据模型取字段不算异常（不能误伤）', { 'app/lib/a.dart': "Text('也叫：${e.aliasList}'),\nKey('equip-${e.key}')\n" }, true, null],
+    ['debugPrint 里插整条是允许的（日志）', { 'app/lib/a.dart': "debugPrint('失败：$e');\n" }, true, null],
   ];
   let bad = 0;
   for (const [label, files, wantGreen, expect] of cases) {
@@ -134,8 +160,8 @@ function selftest() {
     console.error(`\n✗ 自检失败 ${bad} 项 —— 这个工具本身不可信，先修它`);
     process.exit(1);
   }
-  console.log('\n✓ 自检通过：字符串里的 markdown 记号与"给我们自己看"的说明都藏不住，'
-    + '注释里的不算（不误报）');
+  console.log('\n✓ 自检通过：markdown 记号、"给我们自己看"的说明、整条异常插进界面/遥测都藏不住；'
+    + '注释、取 .message、数据模型取字段、debugPrint 都不误报');
 }
 
 // ───────────────────────────────────────────────────────────────── 跑

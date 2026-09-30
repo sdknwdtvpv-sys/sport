@@ -295,7 +295,12 @@ class _HomeShellState extends State<HomeShell> {
     } catch (e) {
       // 刷新失败不该挡住启动：库里已有上一份，用户照常能练。
       // 但要留痕 —— 否则"新动作没出现"会变成一个查不下去的问题。
-      _analytics.track('seed_import_failed', <String, Object?>{'error': '$e'});
+      //
+      // ⚠️ 只发**错误类型**，不发整条消息：政策里 `error` 那一栏写的就是「错误类型，不含内容」，
+      // 而整条消息可能带文件路径之类的设备细节（`'$e'` 连类名一起发出去）。
+      // 这条纪律由 `tool/check-user-text.mjs` 那条"不许把整个异常插进字符串"的规则一起守着。
+      _analytics.track('seed_import_failed',
+          <String, Object?>{'error': e.runtimeType.toString()});
     }
   }
 

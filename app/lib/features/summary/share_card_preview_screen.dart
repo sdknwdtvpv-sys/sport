@@ -82,7 +82,9 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
       final Uint8List png = await widget.capture(_boundaryKey);
       await action(png);
     } catch (e) {
-      _toast('没成功：$e');
+      // `'$e'` 会把 `PlatformException(...)` 之类印给用户看 —— 兜底一句人话，细节进日志。
+      debugPrint('分享卡导出失败：$e');
+      _toast('没成功，请稍后再试');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
