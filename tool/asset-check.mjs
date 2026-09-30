@@ -18,6 +18,9 @@
  *   3. 启动图不是模板的纯白（App 是深色的，纯白启动图 = 每次冷启动闪一下白）
  *   4. 启动器名不是模板默认值，且走的是 `@string/app_name`
  *   5. 商店图标 512×512 且**没有 alpha**（应用商店不收带透明的图）
+ *   6. iOS 图标清单（Contents.json）与磁盘双向对账：清单里写的都在、目录里的都被引用、
+ *      声明尺寸与 PNG 真实像素一致、19 个必需槽位一个不少
+ *   7. iOS Info.plist（显示名 / 存相册权限 / 出口加密声明）、启动屏不是纯白、bundle id 不是模板的
  *
  * 零依赖：PNG 的尺寸与颜色类型直接从 IHDR 头读，不装任何图形库。
  *
@@ -190,16 +193,107 @@ if (!existsSync(store)) {
 const IOS = join(ROOT, 'app/ios/Runner');
 const IOS_ICONS = join(IOS, 'Assets.xcassets/AppIcon.appiconset');
 
+// Xcode 认的不是"目录里有几个 PNG"，而是 Contents.json 里的那张**清单**。
+// 所以只数文件是不够的 —— 必须拿清单和磁盘**双向对账**：
+//   · 清单里有、磁盘上没有  → 对应机型没图标（Xcode 只会警告，构建照样过）
+//   · 磁盘上有、清单里没有  → 那个 PNG 白做了，永远不会被打进包
+//   · 清单声明的尺寸 ≠ PNG 真实尺寸 → 图标发虚/被裁，而**构建不会失败**
+// 这三条以前一条都查不出来：旧版守卫只遍历磁盘上的 PNG，从没打开过 Contents.json，
+// 而且只对 1024 那一张做了尺寸校验。
+const IOS_REQUIRED_SLOTS = [
+  'iphone 20x20@2x', 'iphone 20x20@3x',
+  'iphone 29x29@1x', 'iphone 29x29@2x', 'iphone 29x29@3x',
+  'iphone 40x40@2x', 'iphone 40x40@3x',
+  'iphone 60x60@2x', 'iphone 60x60@3x',
+  'ipad 20x20@1x', 'ipad 20x20@2x',
+  'ipad 29x29@1x', 'ipad 29x29@2x',
+  'ipad 40x40@1x', 'ipad 40x40@2x',
+  'ipad 76x76@1x', 'ipad 76x76@2x',
+  'ipad 83.5x83.5@2x',
+  'ios-marketing 1024x1024@1x',
+];
+
 if (!existsSync(IOS_ICONS)) {
   bad('缺 app/ios/Runner/Assets.xcassets/AppIcon.appiconset —— iOS 没配图标');
 } else {
   const files = readdirSync(IOS_ICONS).filter((f) => f.endsWith('.png'));
   if (!files.length) bad('iOS 图标目录里一个 PNG 都没有');
+
+  const manifestPath = join(IOS_ICONS, 'Contents.json');
+  let images = null;
+  if (!existsSync(manifestPath)) {
+    bad('缺 iOS 图标的 Contents.json —— 目录里有 PNG 也不会生效');
+  } else {
+    try {
+      // Xcode 写出来的 Contents.json 是"JSON5 风格"（允许尾逗号），我们这份没有，
+      // 用 JSON.parse 足够；真被改了格式这里会明确报出来，而不是静默跳过。
+      images = JSON.parse(readFileSync(manifestPath, 'utf8')).images;
+      if (!Array.isArray(images) || !images.length) {
+        bad('iOS 图标的 Contents.json 里没有 images 清单');
+        images = null;
+      }
+    } catch (e) {
+      bad(`iOS 图标的 Contents.json 解析失败：${e.message}`);
+    }
+  }
+
+  if (images) {
+    const referenced = new Set();
+    const slots = new Set();
+    let missing = 0;
+    let mismatch = 0;
+
+    for (const img of images) {
+      const size = String(img.size ?? '');
+      const scale = String(img.scale ?? '');
+      const idiom = String(img.idiom ?? '');
+      slots.add(`${idiom} ${size}@${scale}`);
+
+      const name = img.filename;
+      if (!name) { bad(`iOS 图标清单有一条没有 filename（${idiom} ${size}@${scale}）`); continue; }
+      referenced.add(name);
+
+      const p = join(IOS_ICONS, name);
+      if (!existsSync(p)) {
+        missing++;
+        bad(`iOS 图标清单里写了 ${name}，但磁盘上没有 —— 对应机型会缺图标`);
+        continue;
+      }
+      // 声明尺寸 × 倍率 = 应有的像素数（83.5 这类小数尺寸也能算）
+      const declared = parseFloat(size);
+      const factor = parseFloat(scale);
+      const info = pngInfo(p);
+      if (!info) { bad(`iOS 图标 ${name} 不是合法 PNG`); continue; }
+      if (Number.isFinite(declared) && Number.isFinite(factor)) {
+        const want = Math.round(declared * factor);
+        if (info.width !== want || info.height !== want) {
+          mismatch++;
+          bad(`iOS 图标 ${name} 声明 ${size}@${scale}（应为 ${want}×${want}），`
+            + `实际是 ${info.width}×${info.height}`);
+        }
+      }
+    }
+
+    const missingSlots = IOS_REQUIRED_SLOTS.filter((s) => !slots.has(s));
+    if (missingSlots.length) {
+      bad(`iOS 图标清单缺 ${missingSlots.length} 个必需槽位：${missingSlots.join('、')}`
+        + '（缺了对应机型就没有图标，而构建不会失败）');
+    }
+    const orphans = files.filter((f) => !referenced.has(f));
+    if (orphans.length) {
+      bad(`iOS 图标目录里这 ${orphans.length} 个 PNG 没被 Contents.json 引用，永远不会生效：`
+        + `${orphans.join('、')}`);
+    }
+    if (!missing && !mismatch && !missingSlots.length && !orphans.length) {
+      ok.push(`iOS 图标清单：${images.length} 个槽位齐全、尺寸与声明一致、无孤儿文件`);
+    }
+  }
+
   let alpha = 0;
   let isDefault = 0;
   for (const f of files) {
     const info = pngInfo(join(IOS_ICONS, f));
-    if (!info) { bad(`iOS 图标 ${f} 不是合法 PNG`); continue; }
+    if (!info) continue; // 非法 PNG 已在上面报过，不重复刷屏
     // iOS 图标**不能有 alpha**（App Store 会拒收）
     if (info.hasAlpha) alpha++;
     if (tplHashes?.has(info.md5)) isDefault++;

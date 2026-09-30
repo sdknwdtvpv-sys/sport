@@ -333,6 +333,7 @@ function a4Check(p) {
 // 实际已经是 108 / 26,910。所以把它变成一条能跑的命令。
 const DOCS = ['docs/copyright-manual.md', 'docs/copyright-application.md'];
 const NUM_RE = /(\d+) 个源文件 \/ ([\d,]+) 行/g;
+const AS_OF_RE = /截至 V(\d+\.\d+\.\d+)/g;
 
 // 说明书里还有两个数字会跟着代码漂：**软件版本**与**数据库模式版本**。
 // 2026-09-30 就抓过一次：说明书正文写着 V1.17.0 / 模式 v9，而仓库已经是 V1.23.0 / v10 ——
@@ -384,7 +385,7 @@ function schemaVersionFromDb() {
   return Number(m[1]);
 }
 
-function checkDocNumbers(fileCount, lineCount) {
+function checkDocNumbers(fileCount, lineCount, appVersion) {
   const problems = [];
   for (const rel of DOCS) {
     const text = readFileSync(join(ROOT, rel), 'utf8');
@@ -399,6 +400,18 @@ function checkDocNumbers(fileCount, lineCount) {
         problems.push(`${rel}：写的是 ${n} 个源文件 / ${l} 行，实际是 ${fileCount} / ${lineCount}`);
       }
     }
+    // 「（截至 Vx.y.z）」这枚印章单独钉住：切一个版本如果只改 app_info.dart，
+    // **行数一个字都不变**，上面那条源程序量守卫不会红 —— 印章就会悄悄烂掉。
+    // 2026-09-30 就是这么发现的：两处都还写着「截至 V1.23.0」，而仓库已是 V1.27.0。
+    const asOf = [...text.matchAll(AS_OF_RE)];
+    if (!asOf.length) {
+      problems.push(`${rel}：找不到「截至 Vx.y.z」（措辞变了？检查要跟着改）`);
+    }
+    for (const m of asOf) {
+      if (m[1] !== appVersion) {
+        problems.push(`${rel}：源程序量写的是「截至 V${m[1]}」，实际是 V${appVersion}`);
+      }
+    }
   }
   return problems;
 }
@@ -411,7 +424,7 @@ const src = sourceHtml();
 
 if (argv.includes('--check-docs')) {
   const problems = [
-    ...checkDocNumbers(src.fileCount, src.lineCount),
+    ...checkDocNumbers(src.fileCount, src.lineCount, APP_VERSION),
     ...checkManualNumbers(APP_VERSION, schemaVersionFromDb()),
   ];
   console.log(`实际：${src.fileCount} 个源文件 / ${src.lineCount} 行`);
