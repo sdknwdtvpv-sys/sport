@@ -255,6 +255,15 @@ else
 fi
 echo
 
+# 文档版本核对工具的**自检**：版本号是这仓库最勤劳的一类漂移 ——
+# 第 2 层已守"三处真机版本"，但文档里还有别处**陈述现状**（产物行、终局核验、iOS 那一行）。
+if node tool/check-doc-versions.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 文档版本核对自检通过（过期的 versionCode/设备版本/重核版本都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 文档版本核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 文档表格核对工具的**自检**：这些表大半是要照着填的（商店表单/软著申请表/清单），
 # 而 markdown 表格坏起来很安静 —— 被截断、错列，只有眼睛看得出来。
 if node tool/check-doc-tables.mjs --selftest >"$LOG" 2>&1; then
@@ -485,6 +494,15 @@ if node tool/check-ci.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 仍是门禁的子集（命令/步骤/版本都对得上）"
 else
   strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（"子集"这句话已经不成立）${OFF}"; fail=1
+fi
+echo
+
+# 文档里的"当前版本"：产物行/设备行/重核行写的版本必须等于 kAppVersion + pubspec 的 build
+# （历史叙述跳过 —— 复盘旧版本是正常的）。
+if node tool/check-doc-versions.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 文档里陈述现状的版本号都与真源一致"
+else
+  strip "$LOG"; echo "${RED}✗ 有文档的版本说法过期（过期比没有更坏）${OFF}"; fail=1
 fi
 echo
 
@@ -720,6 +738,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
          tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
          tool/check-user-text.mjs tool/check-doc-paths.mjs tool/check-doc-tables.mjs \
+         tool/check-doc-versions.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \

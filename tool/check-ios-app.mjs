@@ -36,7 +36,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -369,16 +369,36 @@ if (args.includes('--selftest')) {
   let app = args.find((a) => !a.startsWith('--'));
   if (!app) {
     // 自动找：simulator 与 iphoneos 各看一眼，取修改时间最新的
+    // ⚠️ 按**修改时间**挑最新那份，**不再固定先看模拟器包**：
+    // 2026-09-30 踩到过 —— 磁盘上留着 21:04 编的模拟器包（v1.32.0/41），而当天 23:05 编的是
+    // 真机包（v1.32.2/43）；旧代码固定挑模拟器包，于是**拿一份过期产物当"当前产物"核**，
+    // 报出来的两条"版本不符"其实是它自己挑错了对象。
     const candidates = [
       join(APP_DIR, 'build/ios/iphonesimulator/Runner.app'),
       join(APP_DIR, 'build/ios/iphoneos/Runner.app'),
-    ].filter(existsSync);
+    ].filter(existsSync)
+      .map((p) => {
+        let mtime = 0;
+        try { mtime = statSync(join(p, 'Info.plist')).mtimeMs; } catch { /* 忽略 */ }
+        return { p, mtime };
+      })
+      .sort((a, b) => b.mtime - a.mtime);
     if (!candidates.length) {
       console.error('找不到已构建的 Runner.app —— 先跑一次 `flutter build ios --simulator`');
       console.error('用法：node tool/check-ios-app.mjs <Runner.app 路径>');
       process.exit(1);
     }
-    app = candidates[0];
+    app = candidates[0].p;
+    // 同一台机器上还有别的 Runner.app 时，把它们的版本也报出来 ——
+    // "磁盘上躺着一份旧的"正是最容易拿去上传的那一份。
+    for (const c of candidates.slice(1)) {
+      try {
+        const v = plistRaw(join(c.p, 'Info.plist'), 'CFBundleShortVersionString');
+        const b = plistRaw(join(c.p, 'Info.plist'), 'CFBundleVersion');
+        console.log(`\x1b[33m!\x1b[0m 磁盘上还有一份更旧的产物：${c.p}（${v} (${b})，`
+          + `${new Date(c.mtime).toISOString().slice(0, 16).replace('T', ' ')}）—— 别拿它去上传`);
+      } catch { /* 读不出来就算了，主产物已经核过 */ }
+    }
   }
   const { problems, facts, warnings } = inspect(app);
   console.log(`iOS 产物核对　${app}\n`);
