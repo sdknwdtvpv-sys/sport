@@ -105,7 +105,7 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 
 | # | 选择 | 为什么问你 | 我的建议 |
 |---|---|---|---|
-| 9 | ~~**CocoaPods 怎么装**~~ **可能不用装了** | 2026-09-30 查证：我们两个插件（`share_plus`、`gal`）**都自带 `Package.swift`**，Flutter 也已经生成了 `FlutterGeneratedPluginSwiftPackage` —— 也就是 **Swift Package Manager 能接管**，`flutter doctor` 那句"没有 CocoaPods 插件就不工作"是通用提示，对我们未必成立 | **等 Xcode 许可证好了我用一次真实构建确认**：能编过就说明不需要 CocoaPods（省掉 Homebrew/系统 Ruby 那一堆麻烦）。真需要再按原三条路选 |
+| 9 | ~~**CocoaPods 怎么装**~~ **不需要了（已查证）** | 2026-09-30 查证三条证据：① 我们的两个插件 `share_plus`、`gal` **都自带 `Package.swift`**；② Flutter 已生成 `FlutterGeneratedPluginSwiftPackage`；③ **`app/ios/` 里根本没有 `Podfile`**，`Runner.xcworkspace` 对 Pods 的引用数是 **0** —— 这个工程本来就是 **Swift Package Manager 路线**。`flutter doctor` 那句"没有 CocoaPods 插件就不工作"是通用提示 | 不需要你决定任何事。等许可证接受后我用一次真实构建做最终确认（能编过即闭环） |
 | 10 | **要不要在 iPad 上跑** | `TARGETED_DEVICE_FAMILY = "1,2"` 是模板默认；改它动的是**商店页的产品承诺** | 建议改成 `"1"`（只支持 iPhone）：**我们从没在 iPad 上看过任何一屏**，而商店页会写"支持 iPad" |
 | 11b | **`android:requestLegacyExternalStorage` 要不要删** | 它只在 Android 10 上有意义（让那一版「存相册」走老路径），API 30+ 被忽略；政策已如实披露 | 建议**留着**：手边只有 API 36 设备，删了之后「Android 10 还能不能存相册」我们**验证不了** —— 拿不确定换一点干净，不划算 |
 | 11 | **Android SDK 路径里的空格怎么根治** | 卷名 `Elliot's SSD` 有空格，而 Android 工具链不支持带空格的 SDK 路径 —— 已经咬了三次（AAB 误报、`privacy-audit --apk` 空转、`sdkmanager`/`avdmanager` 直接报错） | 三条路：① 在这块 SSD 上再建一个**名字没有空格的 APFS 卷**（同一个容器，空间共享）；② 把 SDK 放回内置盘（约 3.5G）；③ 继续用我写的绕法（`docs/dev-environment.md` 里四条命令） |

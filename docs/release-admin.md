@@ -161,9 +161,12 @@ Command Line Tools —— 与 Xcode 装之前的状态等价）：把 `DEVELOPER
 包一层、并直接调 `flutter_tools.snapshot` 与 `dart-sdk/bin/dart`。具体命令见
 `docs/dev-environment.md` 的「Xcode 装了但许可证没接受时怎么办」。
 
-**CocoaPods 可能不需要了**：我们的两个插件 `share_plus` 与 `gal` **都自带 `Package.swift`**，
-Flutter 也已生成 `FlutterGeneratedPluginSwiftPackage` —— Swift Package Manager 能接管。
-`flutter doctor` 那句"CocoaPods not installed"是通用提示。许可证好了我用一次真实构建确认。
+**CocoaPods 不需要了（已查证，非推测）**：三条证据 —— ① `share_plus` 与 `gal` **都自带 `Package.swift`**；
+② Flutter 已生成 `FlutterGeneratedPluginSwiftPackage`；③ **`app/ios/` 里没有 `Podfile`**，
+`Runner.xcworkspace/contents.xcworkspacedata` 里对 Pods 的引用数是 **0**。
+也就是说这个工程本来就是 **Swift Package Manager 路线**，`flutter doctor` 那句
+"CocoaPods not installed" 是通用提示、与我们无关。
+**仍然要在许可证接受后用一次真实构建做最终确认**（能编过即闭环）—— 结构上成立不代表编译器同意。
 
 需要你：
 
