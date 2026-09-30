@@ -65,6 +65,17 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   String? _error;
   String? _notice;
 
+  /// 云端那份的元信息（只读）。null 有两种可能：**还没取到/取不到**，
+  /// 或者**云端还没有备份** —— 所以配合 [_infoError] 区分，别让界面猜。
+  CloudBackupInfo? _cloudInfo;
+  bool _infoError = false;
+
+  /// 判断"云端那份比本机记录新"时要容忍的时钟偏差（毫秒）。
+  ///
+  /// 服务端与本机的时间不可能分秒不差，所以**不能用相等来判断**。一分钟足够
+  /// 盖住正常的 NTP 偏差，又远小于"另一台设备真的备份过"的时间尺度。
+  static const int _clockSkewMs = 60 * 1000;
+
   int get _nowMs => (widget.clock?.call() ?? DateTime.now()).millisecondsSinceEpoch;
 
   /// 没注入就按编译期配置建；没配地址则返回 null（这一屏不该被打开）
@@ -80,6 +91,39 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     final BackupAccountData? row = await widget.profile.cloudAccount();
     if (!mounted) return;
     setState(() => _account = row);
+    await _loadCloudInfo(row);
+  }
+
+  /// 拉一次云端状态。
+  ///
+  /// **失败不弹错**：这一行只是"顺带告诉你"，不能因为服务器抽风就影响用户
+  /// 备份/恢复（那些动作自己会报错）。但也不装作没事 —— 界面上如实写"取不到"。
+  Future<void> _loadCloudInfo(BackupAccountData? row) async {
+    final CloudBackup? cloud = _cloud;
+    if (row == null || cloud == null) {
+      if (mounted) setState(() { _cloudInfo = null; _infoError = false; });
+      return;
+    }
+    try {
+      final CloudBackupInfo? info = await cloud.info(row.recoveryCode);
+      if (!mounted) return;
+      setState(() { _cloudInfo = info; _infoError = false; });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _cloudInfo = null; _infoError = true; });
+    }
+  }
+
+  /// 云端那份是不是**比这台设备最后一次备份还新**（那多半是另一台设备写的）。
+  ///
+  /// 快照式备份是"最后写的赢"，所以这件事必须在按钮上面说清楚 ——
+  /// 否则用户会在另一台设备上备份过之后，回来一点「立即备份」，
+  /// 把那份更新的悄悄盖掉，还以为"备份好了"。
+  bool get _cloudIsNewer {
+    final CloudBackupInfo? info = _cloudInfo;
+    final BackupAccountData? row = _account;
+    if (info == null || row == null || info.updatedAtMs == null) return false;
+    return info.updatedAtMs! > (row.lastUploadAtMs ?? 0) + _clockSkewMs;
   }
 
   /// 跑一次会碰网络的操作：统一 busy 状态 + 把异常翻译成人话。
@@ -365,6 +409,13 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
   }
 
+  /// 只给时间（`09-30 12:31`）—— "云端"那一行已经有前缀了
+  static String _clockLabel(int ms) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(ms);
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
+  }
+
   static String _timeLabel(int? ms) {
     if (ms == null) return '还没备份过';
     final DateTime t = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -500,6 +551,48 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           if (account.lastUploadBytes != null)
             Text('密文大小 ${_sizeLabel(account.lastUploadBytes!)}',
                 style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+          const SizedBox(height: Tokens.s2),
+          // 云端那份的**真实**状态（本机记录的只是"这台设备上次看到的样子"）
+          if (_cloudInfo != null && _cloudInfo!.hasBackup)
+            Text(
+              '云端：${_sizeLabel(_cloudInfo!.bytes)} · '
+              '${_clockLabel(_cloudInfo!.updatedAtMs!)}'
+              '${_cloudInfo!.devices > 1 ? ' · ${_cloudInfo!.devices} 台设备' : ''}',
+              key: const Key('cloud-server-state'),
+              style: const TextStyle(color: Tokens.text3, fontSize: 12),
+            )
+          else if (_cloudInfo != null)
+            const Text('云端还没有备份',
+                key: Key('cloud-server-state'),
+                style: TextStyle(color: Tokens.text3, fontSize: 12))
+          // ⚠️ "云端没有备份"和"服务器上根本没有这个账号"是**两件事**，
+          // 第一版把它们混成了一句 —— 测试当场问住了：账号被别的设备注销过、
+          // 或者服务器换过库时，界面会什么都不说，用户以为一切正常。
+          else if (!_infoError)
+            const Text('服务器上没有这个账号（被注销过？）',
+                key: Key('cloud-server-state'),
+                style: TextStyle(color: Tokens.text3, fontSize: 12))
+          else
+            const Text('云端状态取不到（离线？）',
+                key: Key('cloud-server-state'),
+                style: TextStyle(color: Tokens.text3, fontSize: 12)),
+          if (_cloudIsNewer) ...<Widget>[
+            const SizedBox(height: Tokens.s3),
+            Container(
+              key: const Key('cloud-newer-warning'),
+              padding: const EdgeInsets.all(Tokens.s3),
+              decoration: BoxDecoration(
+                color: Tokens.elevated,
+                borderRadius: BorderRadius.circular(Tokens.rCard),
+                border: Border.all(color: Tokens.pr.withValues(alpha: 0.5)),
+              ),
+              child: const Text(
+                '云端那份比这台设备记录的要新 —— 可能是另一台设备备份的。\n'
+                '现在点「立即备份」会**覆盖**它。想先保住它，就先点下面的「从云端恢复」。',
+                style: TextStyle(color: Tokens.pr, fontSize: 12, height: 1.5),
+              ),
+            ),
+          ],
           const SizedBox(height: Tokens.s4),
           _primaryButton(const Key('cloud-upload'), '立即备份', _uploadNow),
           const SizedBox(height: Tokens.s3),

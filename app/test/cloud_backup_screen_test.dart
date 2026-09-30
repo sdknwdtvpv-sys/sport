@@ -43,6 +43,12 @@ String _code() => encodeRecoveryKey(
 /// 给人看的那一版（5 位一组）
 String _shownCode() => formatRecoveryCode(_code());
 
+/// 当前恢复码对应的 account_id（假传输是按它存东西的）
+Future<String?> _idOf(_Harness h) async {
+  final BackupAccountData? row = await h.profile.cloudAccount();
+  return row == null ? null : accountIdFromRecoveryCode(row.recoveryCode);
+}
+
 /// 一条训练 —— 用它来验证"备份出去的确实是库里的东西"
 SetRecord _set({String id = 's1', int atMs = 1000000}) => SetRecord(
       id: id,
@@ -114,6 +120,7 @@ void main() {
   late _Harness h;
   setUp(() async => h = await _harness());
   tearDown(() async => h.dispose());
+
 
   group('未开启', () {
     testWidgets('只给「开启」和「我有恢复码」，不显示任何恢复码', (WidgetTester tester) async {
@@ -376,6 +383,90 @@ void main() {
       expect(find.textContaining('已删除'), findsOneWidget);
       // 本机数据不受影响
       expect(await h.store.allSets(), hasLength(1));
+    });
+  });
+
+  group('云端状态：另一台设备写过，必须看得见', () {
+    testWidgets('显示云端的真实状态（大小 / 时间 / 设备数）', (WidgetTester tester) async {
+      await h.profile.setCloudAccount(_code(), nowMs: 1);
+      await h.store.saveSet(_set());
+      await h.cloud.upload(recoveryCode: _code(), plaintext: '{"n":1}');
+      h.transport.devices = 2;
+
+      await tester.pumpWidget(_wrap(h));
+      await tester.pumpAndSettle();
+
+      final String shown =
+          tester.widget<Text>(find.byKey(const Key('cloud-server-state'))).data!;
+      expect(shown, startsWith('云端：'));
+      expect(shown, contains('2 台设备'));
+      expect(shown, contains('·'), reason: '要有大小与时间两段');
+    });
+
+    testWidgets('账号在但还没备份 → 说"云端还没有备份"', (WidgetTester tester) async {
+      await h.profile.setCloudAccount(_code(), nowMs: 1);
+      // 先登记账号（本地那一行不代表服务端认识它）
+      await h.cloud.register(_code());
+      await tester.pumpWidget(_wrap(h));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.byKey(const Key('cloud-server-state'))).data,
+        '云端还没有备份',
+      );
+    });
+
+    testWidgets('**服务器上没有这个账号** → 也要说，不能沉默', (WidgetTester tester) async {
+      // 只在本地存了恢复码、服务端没有这条记录（被别的设备注销过 / 换了库）
+      await h.profile.setCloudAccount(_code(), nowMs: 1);
+      await tester.pumpWidget(_wrap(h));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.byKey(const Key('cloud-server-state'))).data,
+        contains('服务器上没有这个账号'),
+      );
+    });
+
+    testWidgets('取不到 → 说"取不到"，但不影响备份按钮', (WidgetTester tester) async {
+      await h.profile.setCloudAccount(_code(), nowMs: 1);
+      h.transport.failWith = const BackupTransportException('连不上服务器');
+
+      await tester.pumpWidget(_wrap(h));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.byKey(const Key('cloud-server-state'))).data,
+        '云端状态取不到（离线？）',
+      );
+      // 顺带告诉你"这一行只是顺带告诉你"：按钮还在，点了会给出真实错误
+      expect(find.byKey(const Key('cloud-upload')), findsOneWidget);
+    });
+
+    testWidgets('云端比本机记录新 → 警告"可能是另一台设备"', (WidgetTester tester) async {
+      await h.profile.setCloudAccount(_code(), nowMs: 1);
+      await h.store.saveSet(_set());
+      await h.cloud.upload(recoveryCode: _code(), plaintext: '{"n":1}');
+      // 本机记录停在"很久以前"，而云端是刚刚 —— 正是另一台设备写过的样子
+      await h.profile.markCloudUpload(4096, nowMs: 1000);
+      h.transport.updatedAt[(await _idOf(h))!] = DateTime.now().millisecondsSinceEpoch;
+
+      await tester.pumpWidget(_wrap(h));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('cloud-newer-warning')), findsOneWidget);
+      expect(find.textContaining('覆盖'), findsWidgets);
+    });
+
+    testWidgets('就是本机刚备份的（只差几秒）→ **不该**瞎警告', (WidgetTester tester) async {
+      await h.profile.setCloudAccount(_code(), nowMs: 1);
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      // 服务端与本机时钟不可能分秒不差 —— 容忍一分钟，别为几秒钟的偏差吓用户
+      await h.profile.markCloudUpload(4096, nowMs: now - 5000);
+      final String id = (await _idOf(h))!;
+      h.transport.stored[id] = 'x';
+      h.transport.updatedAt[id] = now;
+
+      await tester.pumpWidget(_wrap(h));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('cloud-newer-warning')), findsNothing);
     });
   });
 

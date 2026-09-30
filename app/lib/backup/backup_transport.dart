@@ -28,6 +28,31 @@ class BackupTransportException implements Exception {
       '${statusCode == null ? '' : ' · HTTP $statusCode'})';
 }
 
+/// 云端那份备份的**元信息**：多大、什么时候更新的、有几台设备登记过。
+///
+/// **刻意不含内容** —— 想知道里面是什么就得 GET `/v1/backup` 把密文整包拉下来。
+/// 界面上"云端：3.2 MB · 09-30 12:31"这一行只需要元信息，
+/// 而它同时也是"这台设备之外有没有人写过"的唯一线索。
+class CloudBackupInfo {
+  const CloudBackupInfo({
+    required this.bytes,
+    required this.updatedAtMs,
+    required this.devices,
+  });
+
+  /// 密文字节数（0 = 云端还没有备份）
+  final int bytes;
+
+  /// 服务端记的最后更新时间。**null = 还没备份过**
+  final int? updatedAtMs;
+
+  /// 登记过的设备数（这个数据我们不细究，只用来判断"是不是只有我"）
+  final int devices;
+
+  /// 云端到底有没有东西
+  bool get hasBackup => updatedAtMs != null;
+}
+
 abstract class BackupTransport {
   /// 创建账号（幂等：已存在也算成功）。[accountId] 由恢复码导出，服务端只认这一串。
   Future<void> createAccount(String accountId);
@@ -40,6 +65,9 @@ abstract class BackupTransport {
 
   /// 注销：账号、设备、备份一起删。
   Future<void> deleteAccount(String accountId);
+
+  /// 问一下云端那份现在是什么状态（只读）。**账号不存在 → null**（不是错误）。
+  Future<CloudBackupInfo?> backupInfo(String accountId);
 }
 
 /// 测试用：全内存，可以一键让它失败。
@@ -51,6 +79,13 @@ class FakeBackupTransport implements BackupTransport {
 
   /// account_id → 密文信封
   final Map<String, String> stored = <String, String>{};
+
+  /// account_id → 服务端记的 updated_at。测试可以直接改大它，
+  /// 模拟"**另一台设备刚备份过**"（那是这个字段唯一的用途）。
+  final Map<String, int> updatedAt = <String, int>{};
+
+  /// 登记过的设备数（默认 1）
+  int devices = 1;
 
   final List<String> calls = <String>[];
 
@@ -69,7 +104,22 @@ class FakeBackupTransport implements BackupTransport {
     calls.add('put:$accountId');
     if (failWith != null) throw failWith!;
     stored[accountId] = envelope;
-    return utf8.encode(envelope).length;
+    final int bytes = utf8.encode(envelope).length;
+    updatedAt[accountId] = DateTime.now().millisecondsSinceEpoch;
+    return bytes;
+  }
+
+  @override
+  Future<CloudBackupInfo?> backupInfo(String accountId) async {
+    calls.add('info:$accountId');
+    if (failWith != null) throw failWith!;
+    if (!stored.containsKey(accountId)) return null;
+    final int? at = updatedAt[accountId];
+    return CloudBackupInfo(
+      bytes: at == null ? 0 : utf8.encode(stored[accountId]!).length,
+      updatedAtMs: at,
+      devices: devices,
+    );
   }
 
   @override
@@ -86,6 +136,7 @@ class FakeBackupTransport implements BackupTransport {
     calls.add('delete:$accountId');
     if (failWith != null) throw failWith!;
     stored.remove(accountId);
+    updatedAt.remove(accountId);
   }
 }
 
@@ -157,6 +208,25 @@ class HttpBackupTransport implements BackupTransport {
     await _json('DELETE', '/v1/account', accountId, null, accept: <int>[200]);
   }
 
+  @override
+  Future<CloudBackupInfo?> backupInfo(String accountId) async {
+    final Map<String, Object?>? decoded = await _jsonOrNull(
+      'GET',
+      '/v1/account/me',
+      accountId,
+      accept404: true,
+    );
+    if (decoded == null) return null;
+    final Object? bytes = decoded['bytes'];
+    final Object? updatedAt = decoded['updatedAt'];
+    final Object? devices = decoded['devices'];
+    return CloudBackupInfo(
+      bytes: bytes is int ? bytes : 0,
+      updatedAtMs: updatedAt is int ? updatedAt : null,
+      devices: devices is int ? devices : 1,
+    );
+  }
+
   void close() => _client.close(force: true);
 
   Future<Map<String, Object?>> _json(
@@ -181,6 +251,27 @@ class HttpBackupTransport implements BackupTransport {
         _explain(res.statusCode, text),
         statusCode: res.statusCode,
       );
+    }
+    if (text.isEmpty) return const <String, Object?>{};
+    final Object? decoded = jsonDecode(text);
+    return decoded is Map<String, Object?> ? decoded : const <String, Object?>{};
+  }
+
+  /// 和 [_json] 一样，但**404 返回 null 而不是抛** —— "账号不存在"在业务上是
+  /// 一种正常答案（恢复码抄错了、或者对面已经注销了），不该长成异常。
+  Future<Map<String, Object?>?> _jsonOrNull(
+    String method,
+    String path,
+    String accountId, {
+    bool accept404 = false,
+  }) async {
+    final HttpClientResponse res =
+        await _send(method, path, accountId, body: null, contentType: null);
+    final String text = await res.transform(utf8.decoder).join();
+    if (res.statusCode == 404 && accept404) return null;
+    if (res.statusCode != 200) {
+      throw BackupTransportException(_explain(res.statusCode, text),
+          statusCode: res.statusCode);
     }
     if (text.isEmpty) return const <String, Object?>{};
     final Object? decoded = jsonDecode(text);

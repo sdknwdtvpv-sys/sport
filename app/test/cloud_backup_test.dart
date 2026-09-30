@@ -16,6 +16,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/backup/backup_crypto.dart';
@@ -379,6 +380,61 @@ void main() {
         cloud.download(account.recoveryCode),
         throwsA(isA<BackupDecryptException>()),
       );
+    });
+
+    e2e('云端状态：没登记过 → null；登记过没备份 → 有账号无内容；备份后 → 有大小有时间',
+        () async {
+      final CloudBackup cloud = CloudBackup(transport: transport);
+
+      // 没登记过的恢复码：服务端不认识它 —— **这是 null，不是错误**
+      final CloudAccount other = CloudAccount(
+        recoveryCode: encodeRecoveryKey(
+          Uint8List.fromList(List<int>.generate(16, (int i) => (i * 3 + 1) % 256)),
+        ),
+        accountId: '',
+      );
+      final CloudAccount anonymous =
+          await cloud.register(other.recoveryCode); // 登记一下才有 accountId
+      await cloud.deleteAccount(anonymous.recoveryCode); // 再注销掉
+      expect(await cloud.info(anonymous.recoveryCode), isNull,
+          reason: '注销之后，"服务器上没有这个账号"必须是可区分的状态');
+
+      // 登记但不备份
+      final CloudAccount fresh = await cloud.createAccount(Random(101));
+      final CloudBackupInfo? before = await cloud.info(fresh.recoveryCode);
+      expect(before, isNotNull);
+      expect(before!.hasBackup, isFalse);
+      expect(before.bytes, 0);
+      expect(before.updatedAtMs, isNull);
+
+      // 备份之后
+      await cloud.upload(recoveryCode: fresh.recoveryCode, plaintext: _payload);
+      final CloudBackupInfo after = (await cloud.info(fresh.recoveryCode))!;
+      expect(after.hasBackup, isTrue);
+      expect(after.bytes, greaterThan(0));
+      expect(after.updatedAtMs, isNotNull);
+      expect(after.updatedAtMs!,
+          greaterThan(DateTime.now().millisecondsSinceEpoch - 60000));
+    });
+
+    e2e('**另一台设备**备份过 → 本机的 info 会看到更新的时间', () async {
+      final CloudBackup mine = CloudBackup(transport: transport);
+      final CloudBackup theirs = CloudBackup(transport: transport);
+      final CloudAccount account = await mine.createAccount(Random(103));
+
+      expect((await mine.info(account.recoveryCode))!.updatedAtMs, isNull);
+
+      // 这台先备份
+      await mine.upload(recoveryCode: account.recoveryCode, plaintext: '{"n":1}');
+      final int first = (await mine.info(account.recoveryCode))!.updatedAtMs!;
+
+      // 隔开一点时间，"另一台设备"（同一个恢复码）再备份一次
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await theirs.upload(recoveryCode: account.recoveryCode, plaintext: '{"n":2}');
+
+      final int second = (await mine.info(account.recoveryCode))!.updatedAtMs!;
+      expect(second, greaterThan(first),
+          reason: '快照式备份是"最后写的赢"，本机必须能看出云端被别人写过');
     });
 
     e2e('真实备份载荷（encodeBackup 的产物）可以整个走一遍云备份', () async {

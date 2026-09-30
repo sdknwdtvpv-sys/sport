@@ -128,6 +128,16 @@ class CloudBackup {
     return utf8.decode(clear);
   }
 
+  /// 问一下云端那份现在是什么状态（只读，不拉内容）。
+  ///
+  /// 界面上那一行"云端：3.2 MB · 09-30 12:31"就是它；它也是**"我之外还有没有人写过"**
+  /// 的唯一线索 —— 快照式备份是"最后写的赢"，所以这件事必须让用户看见，
+  /// 而不是等他发现另一台设备的数据被覆盖了才知道。
+  Future<CloudBackupInfo?> info(String recoveryCode) async {
+    final Uint8List key = decodeRecoveryKey(recoveryCode);
+    return transport.backupInfo(await accountIdFromKey(key));
+  }
+
   /// 注销账号：账号、设备、备份一起删。
   ///
   /// 恢复码先本地校验，所以抄错码不会误删别人的账号。
