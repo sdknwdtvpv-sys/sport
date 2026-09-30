@@ -111,6 +111,33 @@ adb -s emulator-5554 install -r "dist/练了么-v<版本>.apk"
   avdmanager delete avd -n lianleme
   ```
 
+## 显示配置矩阵（2026-09-30 实测，同一套脚本换配置跑）
+
+同一个 emulator（`lianleme_api36` / API 36）上，用同一份 `screenshots_test.dart` 换显示配置跑，
+看**会不会坏**。判据是两条：`logcat` 里 `overflowed` 命中数（布局溢出）+ 人眼看截图。
+
+| 配置 | 怎么设 | 结果 |
+|---|---|---|
+| 常规竖屏 1080×2400 | 默认 | ✅ 11/11、0 溢出 |
+| **横屏** 2400×1080 | `adb shell wm size 2400x1080` | ❌ **首页 `RenderFlex overflowed by 80px`**（另有 44px 一处），入口文字与底部导航重叠 —— **已用"锁竖屏"修掉**（v1.30.0，两端各一条守卫） |
+| **iPad Pro 12.9 吋** 2048×2732（≈4:3） | `wm size 2048x2732` + `wm density 320` | ⚠️ 不崩、0 溢出，但**是拉长的手机布局**（大按钮变通栏、内容靠左、大片空白）→ 建议 `TARGETED_DEVICE_FAMILY = "1"`；证据图 `docs/images/ipad-width-*.png` |
+| **系统浅色模式** | `adb shell cmd uimode night no` | ✅ 11/11、0 溢出；App 仍是深色（与 iOS 的 `UIUserInterfaceStyle=Dark` 一致），没有白底/白闪 |
+| **大字号** 1.3× | `adb shell settings put system font_scale 1.3` | ✅ 11/11、0 溢出；长句正常换行（截图里「每个动作用它自带的休息时长……」折成两行） |
+| **小屏** 720×1280 @320dpi | `wm size 720x1280` + `wm density 320` | ✅ 11/11、0 溢出 |
+
+跑完记得**还原**（这几条都会改设备状态）：
+
+```bash
+adb shell wm size reset          # 屏幕尺寸
+adb shell wm density reset       # 密度
+adb shell settings put system font_scale 1.0
+adb shell cmd uimode night no    # 若原来是自动/夜间，按原值改回
+```
+
+> ⚠️ **这张表能证明的是"这些配置下不会坏"，不能证明"好看"**。横屏那次就是靠它抓出来的；
+> 而「手感、误触、单手可达性」这类只有人用手指走一遍才知道 —— 那件事仍挂在
+> `docs/your-todo.md` 里，没有被这张表顶掉。
+
 ## 已覆盖 / 还缺
 
 **11 屏全部到手**（2026-09-30，Android 14 模拟器，1080×2337）：
