@@ -17,7 +17,9 @@
  *      方向**只有竖屏**（v1.30.0 的锁）；
  *   5. 应用内资产真的进了包：`privacy-policy.txt` / `collection-list.txt` / `exercises.json`；
  *   6. 原生依赖真的进了包：`sqlite3.framework` 与 `objective_c.framework`；
- *   7. 设备族里若含 iPad（`UIDeviceFamily` 里有 2）→ **大声提示**：
+ *   7. 编译后的**启动屏**（`Base.lproj/LaunchScreen.storyboardc`）与**图标**
+ *      （`Assets.car` + `AppIcon*.png`）真的进了包 —— 少一个就是"冷启动白闪"或"图标是空白"；
+ *   8. 设备族里若含 iPad（`UIDeviceFamily` 里有 2）→ **大声提示**：
  *      商店页会承诺支持 iPad，而那是个还没拍板的产品决定。
  *
  * 用法：
@@ -157,7 +159,24 @@ function inspect(appPath) {
   }
   facts.push(`原生框架：sqlite3 + objective_c 都在${manifests.length ? ` · 自带隐私清单的：${manifests.join('、')}` : ''}`);
 
-  // ⑦ 设备族：iPad 是**还没拍板**的产品决定，产物里必须让人看见
+  // ⑦ 启动屏与图标（编译后的那份）
+  const launch = join(appPath, 'Base.lproj/LaunchScreen.storyboardc');
+  if (!existsSync(launch)) {
+    problems.push('包里没有编译后的启动屏（Base.lproj/LaunchScreen.storyboardc）—— '
+      + 'iOS 会退回默认启动图，冷启动会闪一下（深色 App 上就是白闪）');
+  }
+  const hasAssetsCar = existsSync(join(appPath, 'Assets.car'));
+  const iconPngs = existsSync(appPath)
+    ? execFileSync('/bin/ls', [appPath], { encoding: 'utf8' })
+        .split('\n').filter((f) => /^AppIcon.*\.png$/.test(f))
+    : [];
+  if (!hasAssetsCar && !iconPngs.length) {
+    problems.push('包里既没有 Assets.car 也没有 AppIcon*.png —— 图标没被打进去');
+  }
+  facts.push(`启动屏：${existsSync(launch) ? '已编译进包' : '缺'} · `
+    + `图标：${hasAssetsCar ? 'Assets.car ' : ''}${iconPngs.length} 个 AppIcon PNG`);
+
+  // ⑧ 设备族：iPad 是**还没拍板**的产品决定，产物里必须让人看见
   const family = plistJson(plist, 'UIDeviceFamily') ?? [];
   if (family.includes(2)) {
     warnings.push('UIDeviceFamily 含 2（iPad）→ 商店页会承诺"支持 iPad"。'
@@ -188,6 +207,11 @@ function selftest() {
     for (const f of ['privacy-policy.txt', 'collection-list.txt', 'exercises.json']) {
       writeFileSync(join(app, 'Frameworks/App.framework/flutter_assets/assets', f), 'x');
     }
+    // 编译后的启动屏 + 图标：真实产物里长这样（少一个就是"白闪"或"没图标"）
+    mkdirSync(join(app, 'Base.lproj/LaunchScreen.storyboardc'), { recursive: true });
+    writeFileSync(join(app, 'Base.lproj/LaunchScreen.storyboardc/Info.plist'), '<plist/>');
+    writeFileSync(join(app, 'Assets.car'), 'x');
+    writeFileSync(join(app, 'AppIcon60x60@2x.png'), 'x');
     const entries = {
       CFBundleDisplayName: exp.displayName,
       CFBundleIdentifier: exp.iosId,
@@ -217,6 +241,17 @@ function selftest() {
     ['方向放开横屏 → 必须红', mk('bad-orient', (e) => {
       e.UISupportedInterfaceOrientations = ['UIInterfaceOrientationPortrait', 'UIInterfaceOrientationLandscapeLeft'];
     }), true],
+    ['启动屏没打进包 → 必须红', (() => {
+      const a = mk('bad-launch');
+      rmSync(join(a, 'Base.lproj/LaunchScreen.storyboardc'), { recursive: true, force: true });
+      return a;
+    })(), true],
+    ['图标没打进包 → 必须红', (() => {
+      const a = mk('bad-icon');
+      rmSync(join(a, 'Assets.car'), { force: true });
+      rmSync(join(a, 'AppIcon60x60@2x.png'), { force: true });
+      return a;
+    })(), true],
   ];
   console.log('iOS 产物核对自检：');
   let bad = 0;
