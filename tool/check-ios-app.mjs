@@ -22,16 +22,21 @@
  *   8. 设备族里若含 iPad（`UIDeviceFamily` 里有 2）→ **大声提示**：
  *      商店页会承诺支持 iPad，而那是个还没拍板的产品决定。
  *
+ *   9. **出口合规的"决定"有没有留痕**：包里确实有加密代码（`cryptography` 做的
+ *      AES-256-GCM + HKDF-SHA256，给云备份用），而 `Info.plist` 断言
+ *      `ITSAppUsesNonExemptEncryption=false` —— 这是个**法律声明**，所以文档里必须
+ *      写明算法、两种口径与"谁来决定"。少了它，提审那天就得现场编答案。
+ *
  * 用法：
  *   node tool/check-ios-app.mjs <Runner.app 路径>
  *   node tool/check-ios-app.mjs                 # 自动找 build/ios 下最新的 Runner.app
- *   node tool/check-ios-app.mjs --selftest      # 自检（造几份假的 .app，验它抓得住）
+ *   node tool/check-ios-app.mjs --selftest      # 自检（8 项产物 + 3 项出口合规）
  *
  * 退出码：有任何一项不符合 → 1。
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -73,7 +78,54 @@ function expectations() {
   return { version, buildNumber, displayName, iosId, androidId };
 }
 
-function inspect(appPath) {
+/**
+ * 出口合规的**决定**有没有留痕。
+ *
+ * **为什么要这条**：`Info.plist` 里那句 `ITSAppUsesNonExemptEncryption=false` 是**法律声明**
+ * （责任人是我们之外的 exporter），而包里**确实有自研用途的加密代码**（`cryptography` 包做的
+ * AES-256-GCM + HKDF-SHA256，给云备份做端到端加密）。断言 `false` 本身有守卫，
+ * 但"**为什么可以是 false**、谁来决定、ASC 追问时按什么口径答"此前一个字都没写下来 ——
+ * 那种状态最容易在提审那天变成现场编答案。
+ *
+ * 所以：只要 `app/pubspec.yaml` 里有 `cryptography`，就必须在
+ * `docs/store-listing-ios.md` 里看到那节决定记录（算法、plist 的值、两种口径、谁决定），
+ * 并在 `docs/your-todo.md` 里挂成待你点头的一条。
+ */
+export function exportComplianceProblems(root) {
+  const problems = [];
+  const pubspec = join(root, 'app/pubspec.yaml');
+  const hasCrypto = existsSync(pubspec)
+    && /^\s+cryptography:/m.test(readFileSync(pubspec, 'utf8'));
+  if (!hasCrypto) return problems;
+
+  const doc = join(root, 'docs/store-listing-ios.md');
+  const docText = existsSync(doc) ? readFileSync(doc, 'utf8') : '';
+  if (!docText) {
+    problems.push('docs/store-listing-ios.md 不见了 —— 出口合规的决定记录没地方放');
+    return problems;
+  }
+  const must = [
+    ['出口合规', '那一节的标题'],
+    ['AES-256-GCM', '包里实际用的算法（不然读者不知道在给什么做声明）'],
+    ['ITSAppUsesNonExemptEncryption', 'Info.plist 里那个键'],
+    ['非豁免', '要回答的问题本身（"是否使用非豁免加密"）'],
+  ];
+  for (const [needle, why] of must) {
+    if (!docText.includes(needle)) {
+      problems.push(`包里有 cryptography（自研用途的加密代码），但 docs/store-listing-ios.md 里`
+        + `找不到「${needle}」（${why}）—— 出口合规的决定必须留痕，不能只留一个 false`);
+    }
+  }
+  const todo = join(root, 'docs/your-todo.md');
+  const todoText = existsSync(todo) ? readFileSync(todo, 'utf8') : '';
+  if (!todoText.includes('出口合规')) {
+    problems.push('docs/your-todo.md 里没有把"出口合规声明"挂成待用户点头的一条 —— '
+      + '它是法律声明，不能由我们代签');
+  }
+  return problems;
+}
+
+function inspect(appPath, root = ROOT) {
   const problems = [];
   const facts = [];
   const warnings = [];
@@ -187,6 +239,9 @@ function inspect(appPath) {
   }
   facts.push(`设备族：${JSON.stringify(family)}${family.includes(2) ? '（含 iPad）' : ''}`);
 
+  // 出口合规的"决定"有没有留痕（与 plist 那个值是一对：值 + 理由）
+  problems.push(...exportComplianceProblems(root));
+
   return { problems, facts, warnings };
 }
 
@@ -196,6 +251,7 @@ function inspect(appPath) {
 // 没有这一步，这个工具可能只是"永远打印 ✓"的假守卫。
 function selftest() {
   const dir = mkdtempSync(join(tmpdir(), 'lianleme-iosapp-'));
+  let bad0 = 0;
   const exp = expectations();
   const mk = (name, mutate = () => {}) => {
     const app = join(dir, name, 'Runner.app');
@@ -253,6 +309,36 @@ function selftest() {
       return a;
     })(), true],
   ];
+  // 出口合规那三条：造临时仓库根，只动 pubspec 与两份文档
+  const docRoot = (mutate) => {
+    const r = mkdtempSync(join(tmpdir(), 'lianleme-crypto-'));
+    mkdirSync(join(r, 'app'), { recursive: true });
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    cpSync(join(ROOT, 'app/pubspec.yaml'), join(r, 'app/pubspec.yaml'));
+    cpSync(join(ROOT, 'docs/store-listing-ios.md'), join(r, 'docs/store-listing-ios.md'));
+    cpSync(join(ROOT, 'docs/your-todo.md'), join(r, 'docs/your-todo.md'));
+    if (mutate) mutate(r);
+    return r;
+  };
+  for (const [label, root, wantProblems] of [
+    ['有加密依赖 + 决定留痕 → 出口合规那条不报', docRoot(), 0],
+    ['有加密依赖但文档没写那节 → 必须报', docRoot((r) => {
+      const p = join(r, 'docs/store-listing-ios.md');
+      writeFileSync(p, readFileSync(p, 'utf8').replaceAll('AES-256-GCM', '某种算法'));
+    }), 1],
+    ['政策待办里没挂这条 → 必须报', docRoot((r) => {
+      const p = join(r, 'docs/your-todo.md');
+      writeFileSync(p, readFileSync(p, 'utf8').replaceAll('出口合规', '某件事'));
+    }), 1],
+  ]) {
+    const got = exportComplianceProblems(root).length;
+    const ok = wantProblems === 0 ? got === 0 : got > 0;
+    if (!ok) bad0++;
+    console.log(`  ${ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m'} ${label}`
+      + (got ? `　→ ${exportComplianceProblems(root)[0].slice(0, 60)}` : ''));
+    rmSync(root, { recursive: true, force: true });
+  }
+
   console.log('iOS 产物核对自检：');
   let bad = 0;
   for (const [label, app, shouldFail] of cases) {
@@ -264,11 +350,15 @@ function selftest() {
       + (r.problems.length ? `　→ ${r.problems[0].slice(0, 60)}…` : ''));
   }
   rmSync(dir, { recursive: true, force: true });
-  if (bad) {
-    console.error(`\n✗ 自检失败 ${bad} 项 —— 这个工具本身不可信，先修它`);
+  // ⚠️ 两条自检的失败数必须**合起来**算：分开算的话，出口合规那三条即使全红，
+  // 这里也会打印"自检通过"并 exit 0 —— 那等于没有自检（自己给自己发的假绿灯）。
+  const total = bad + bad0;
+  if (total) {
+    console.error(`\n✗ 自检失败 ${total} 项 —— 这个工具本身不可信，先修它`);
     process.exit(1);
   }
-  console.log('\n✓ 自检通过：好包过得去，改坏任何一项都藏不住');
+  console.log(`\n✓ 自检通过：产物那 ${cases.length} 项 + 出口合规那 3 项，`
+    + '改坏任何一项都藏不住');
 }
 
 // ---------------------------------------------------------------- 跑

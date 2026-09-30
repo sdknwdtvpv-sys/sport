@@ -49,6 +49,7 @@ App Store 那套是不是 8 位无 alpha）/ 截图压平工具的 5 种 filter 
 | 2 | **iPad 支持拍板** | `TARGETED_DEVICE_FAMILY "1,2"` 是模板默认 | 改成 `"1"`（只支持 iPhone）：实测过，iPad 上就是拉长的手机版；证据在 `docs/images/ipad-width-*.png` |
 | 3 | **备份范围拍板** | 设计稿说"全都要（设置也备份）"，实现里只有训练记录 | 按现状先上（训练记录是主体）；边界已用测试钉死 |
 | 4 | **「动作名表」用起来还是去掉** | 它是只写不读的：跨库恢复时动作名退化成 id，而它占了备份一半体积 | **用起来**（导入时按它补建缺失动作）——本来就是设计意图 |
+| 4b | **出口合规声明**（App Store Connect 上传时会问） | 这是**法律声明**，责任人是你/公司（exporter），我不能代签 | 包里确实有**标准算法**的加密代码（AES-256-GCM + HKDF-SHA256，给云备份做端到端加密），而 `Info.plist` 现在写的是 `ITSAppUsesNonExemptEncryption=false` | 上线前你点头：按 `false` 提交（标准算法/量产消费类口径），若 ASC 追问再补"量产市场豁免"文档与自分类报告 | 事实清单、两种口径的含义、出处边界都写在 `docs/store-listing-ios.md` §三之「出口合规」 |
 | 5 | **HealthKit / Health Connect** | `tech-decisions.md` 写着"MVP 只做 HealthKit 读写"，代码里一行都没有 | 明确改成"后续版本"，别留一句没实现的话 |
 | 6 | **CI 要不要直接跑 `./verify.sh`** | 现在 CI 只是门禁子集，"CI 绿"不等于"门禁绿" | 你点一下我就改（本地干净克隆已实测可跑，CI 上未实测，所以我不擅自改） |
 

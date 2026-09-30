@@ -90,6 +90,38 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 3. **没有追踪**：没有广告 SDK、没有 IDFA、不做跨 App 关联 → "Used for Tracking" 全部选**否**，
    因此**不需要** App Tracking Transparency 弹窗。
 
+### 出口合规（App Store Connect 会问，而且这是**法律声明**）
+
+**先说清性质**：这一栏不是技术填空，是**出口合规声明**，责任在开发者/公司（exporter）身上 ——
+我不能代签，所以它同时挂在 `docs/your-todo.md` 里。
+
+**已核实的事实**（都能自己复现）：
+
+| 事实 | 怎么复现 |
+|---|---|
+| 包里**确实有加密代码**：`app/lib/backup/backup_crypto.dart` 用 `cryptography` 包做 **AES-256-GCM**（认证加密）+ **HKDF-SHA256**（密钥派生）+ SHA-256 | `grep -n "AesGcm\|Hkdf\|Sha256" app/lib/backup/backup_crypto.dart`；依赖在 `app/pubspec.yaml` 的 `cryptography` |
+| 全是**公开标准算法**，没有自创算法、没有自研密钥交换（恢复码只是被哈希成账号 id / 密钥派生输入） | 同上那个文件，全部 200 行 |
+| 这套加密只服务于**用户自己发起、默认关闭**的云备份 | `app/lib/backup/backup_config.dart`（两个编译期开关） |
+| 但**不管功能开没开，这些代码都在包里** —— 编译期开关只关界面与网络，不删代码 | `isCloudBackupConfigured` 只看两个 define |
+| `Info.plist` 现在写着 `ITSAppUsesNonExemptEncryption = false` | `node tool/check-ios-app.mjs`（每次核对这个值） |
+
+**要回答的问题**：这个 App 是否使用/包含**非豁免**的加密？
+`false` 的含义是"只用豁免范围内的加密"（例如仅系统提供的，或标准算法用于量产消费类用途）；
+`true` 的含义是需要选择豁免类别并准备文档（标准算法的量产市场豁免通常还伴随**一年一次的
+自分类报告**）。
+
+> ⚠️ **出处边界**：Apple 那两页（`developer.apple.com/documentation/Security/complying-with-encryption-export-regulations`
+> 与 ASC Help 的 `overview-of-export-compliance`）在**本环境取不到正文**（JS 渲染 + 抓取被截断），
+> 所以上面这段是**框架**、不是逐字引文 —— **上传时以 App Store Connect 的实际提问为准**。
+> 这与截图档位那次是同一种处理：拿不到全文就说明拿不到，不装作引过。
+
+**现状与建议**：
+
+* 现在按 `false` 提交（口径：标准算法、量产消费类用途、数据只在用户自己的账号之间流转）；
+* 如果 ASC 追问或要求文档，就按"标准算法的量产市场豁免"回答，必要时补自分类报告；
+* **如果哪天把云备份默认打开并对外宣传"端到端加密"，这一栏要重新过一遍** —— 同一句话
+  在商店描述里是卖点，在出口合规里是需要交代的事实。
+
 ## 四、截图与素材
 
 | 项 | 规格 | 状态 |
