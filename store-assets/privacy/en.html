@@ -125,6 +125,25 @@
 <p>In a future version, when the switch above is ON, the events in 2.2 will be sent over HTTPS to a receiver we operate. This policy will be updated with a new version and effective date, and the app will notify you. <strong>Whenever the switch is off, not a single event is sent.</strong></p>
 <p>We <strong>never sell, rent, or share</strong> your personal information with third parties. No third-party advertising. No data brokers.</p>
 <hr>
+<h2 id="3-5-third-party-dependencies-sdk-list">3.5 Third-party dependencies (SDK list)</h2>
+<p>The following is <strong>all third-party code shipped inside the app package</strong> — not services we call, but libraries distributed with the app. Chinese app stores require third-party SDKs to be listed centrally with their name, function, and how they handle personal information, so here they are:</p>
+<table>
+<thead><tr><th>Name</th><th>Version</th><th>Function</th><th>Does it collect or upload anything?</th><th>License</th></tr></thead>
+<tbody>
+<tr><td><code>drift</code></td><td>2.35.0</td><td>Local database (a SQLite wrapper): workout records and settings live here</td><td><strong>No.</strong> Pure local reads and writes, no network code</td><td>MIT</td></tr>
+<tr><td><code>drift_flutter</code></td><td>0.3.1</td><td>Provides the platform-specific storage path for that database</td><td><strong>No</strong></td><td>MIT</td></tr>
+<tr><td><code>sqlite3</code></td><td>3.6.0</td><td>The actual SQLite engine (prebuilt binary per platform)</td><td><strong>No.</strong> It is the database itself</td><td>MIT</td></tr>
+<tr><td><code>share_plus</code></td><td>13.3.0</td><td>Hands a share card or backup file to the <strong>system</strong> share sheet</td><td><strong>No.</strong> It only calls system APIs — you choose the destination in the sheet; we never touch it</td><td>BSD-3-Clause</td></tr>
+<tr><td><code>gal</code></td><td>2.3.3</td><td>Saves the share card into the <strong>system photo library</strong></td><td><strong>No.</strong> Write-only; it <strong>never reads</strong> your photos</td><td>BSD-3-Clause</td></tr>
+<tr><td><code>cryptography</code></td><td>2.9.0</td><td>End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM)</td><td><strong>No.</strong> Pure Dart, no network</td><td>Apache-2.0</td></tr>
+</tbody>
+</table>
+<p>Three notes:</p>
+<ul>
+<li><strong>No advertising SDK, no analytics SDK, no crash-reporting SDK.</strong> None of the six libraries above sends anything to a third party.</li>
+<li>Our own code goes online only when <strong>you</strong> enable cloud backup, or when &quot;Help improve the product&quot; is on <strong>and</strong> the build has an endpoint configured — see 3.1 (the current release has none).</li>
+<li><strong>Development-only dependencies never ship</strong>: <code>build_runner</code> / <code>drift_dev</code> (code generation) and <code>integration_test</code> (our own test harness) exist only in development and CI.</li>
+</ul>
 <h2 id="4-permissions">4. Permissions</h2>
 <p>The app declares two permissions; the second <strong>only takes effect on old systems</strong>:</p>
 <table>

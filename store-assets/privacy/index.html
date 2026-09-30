@@ -129,6 +129,25 @@
 </blockquote>
 <p>我们<strong>不向任何第三方出售、出租或共享</strong>你的个人信息。不接入第三方广告、不接入数据经纪。</p>
 <hr>
+<h2 id="三之五-第三方依赖-sdk-清单">三之五、第三方依赖（SDK）清单</h2>
+<p>下面是我们<strong>装进安装包里的全部第三方代码</strong>（不是&quot;用到的服务&quot;，而是随包分发的库）。 国内商店明确要求把第三方 SDK 集中展示、写清&quot;名称、功能、以及它怎么处理个人信息&quot; （小米《隐私政策不合规的问题解析和修改指引》），所以这里逐条列出：</p>
+<table>
+<thead><tr><th>名称</th><th>版本</th><th>功能</th><th>它会收集或上传任何信息吗</th><th>许可</th></tr></thead>
+<tbody>
+<tr><td><code>drift</code></td><td>2.35.0</td><td>本地数据库（SQLite 的封装）：训练记录、设置都存在这里</td><td><strong>不会</strong>。纯本地读写，不含网络代码</td><td>MIT</td></tr>
+<tr><td><code>drift_flutter</code></td><td>0.3.1</td><td>给本地数据库提供各平台的存放路径</td><td><strong>不会</strong></td><td>MIT</td></tr>
+<tr><td><code>sqlite3</code></td><td>3.6.0</td><td>真正的 SQLite 引擎（各平台预编译二进制）</td><td><strong>不会</strong>。它就是数据库本体</td><td>MIT</td></tr>
+<tr><td><code>share_plus</code></td><td>13.3.0</td><td>把分享卡或备份文件交给<strong>系统</strong>分享面板</td><td><strong>不会</strong>。它只调用系统接口 —— 分享给谁由你在面板上选，我们不经手</td><td>BSD-3-Clause</td></tr>
+<tr><td><code>gal</code></td><td>2.3.3</td><td>把分享卡存进<strong>系统相册</strong></td><td><strong>不会</strong>。只写入，<strong>从不读取</strong>你的相册</td><td>BSD-3-Clause</td></tr>
+<tr><td><code>cryptography</code></td><td>2.9.0</td><td>云备份的端到端加密（HKDF-SHA256 + AES-256-GCM）</td><td><strong>不会</strong>。纯 Dart 实现，不联网</td><td>Apache-2.0</td></tr>
+</tbody>
+</table>
+<p>三点补充说明：</p>
+<ul>
+<li><strong>没有广告 SDK、没有数据分析 SDK、没有崩溃上报 SDK</strong>。上面六个库里没有任何一个会把数据 发往第三方。</li>
+<li>我们的代码本身只在<strong>你开启</strong>云备份、或「帮助改进产品」的开关打开且包内配了地址时才会联网； 这件事的细节写在 §3.1（当前发布的版本<strong>没有配地址</strong>）。</li>
+<li><strong>开发期依赖不会进你的安装包</strong>：<code>build_runner</code> / <code>drift_dev</code>（代码生成）与 <code>integration_test</code>（我们自己跑测试用）只在开发与 CI 里出现，不会出现在正式包中。</li>
+</ul>
 <h2 id="四-权限">四、权限</h2>
 <p>应用声明<strong>两项</strong>系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项<strong>只在老系统上生效</strong>：</p>
 <table>

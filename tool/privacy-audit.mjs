@@ -205,6 +205,59 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑤之五 第三方依赖（SDK）清单：**装进包里的每个直接依赖都要在政策里出现**。
+  //
+  // 为什么要有这一条：国内商店明确要求把第三方 SDK 集中展示、写清名称/功能/怎么处理个人信息
+  // （小米《隐私政策不合规的问题解析和修改指引》）。而"加一个新依赖"这件事在本仓库里
+  // 太容易了 —— pubspec 加一行就完事，政策没人会想起来改。所以让它变成一条能跑的命令：
+  // 直接从 `app/pubspec.yaml` 读运行时依赖，逐个要求在政策的"第三方依赖清单"那一段里出现。
+  {
+    const pubspec = readFileSync(join(ROOT, 'app/pubspec.yaml'), 'utf8');
+    // 只取 `dependencies:` 段（dev 依赖不进包，所以不要求在清单里）
+    const lines = pubspec.split('\n');
+    const start = lines.findIndex((l) => l.startsWith('dependencies:'));
+    const deps = [];
+    for (let i = start + 1; i >= 0 && i < lines.length; i++) {
+      const line = lines[i];
+      if (!/^\s/.test(line) && line.trim() !== '') break;
+      const m = line.match(/^ {2}([a-z0-9_]+):/);
+      if (m && m[1] !== 'flutter') deps.push(m[1]);
+    }
+
+    // 清单那一段：中文按 `## 三之五、第三方依赖（SDK）清单` 起、到下一个 `## ` 止
+    const sectionOf = (text, head) => {
+      const i = text.indexOf(head);
+      if (i < 0) return null;
+      const rest = text.slice(i + head.length);
+      const j = rest.indexOf('\n## ');
+      return j < 0 ? rest : rest.slice(0, j);
+    };
+    const zhList = sectionOf(policy, '第三方依赖（SDK）清单');
+    const enList = existsSync(POLICY_EN)
+      ? sectionOf(readFileSync(POLICY_EN, 'utf8'), 'Third-party dependencies (SDK list)')
+      : '';
+
+    if (!zhList) {
+      errors.push('政策正文里找不到「第三方依赖（SDK）清单」那一段 —— '
+        + '国内商店要求集中展示第三方 SDK（措辞变了？检查要跟着改）');
+    } else {
+      for (const d of deps) {
+        // 用反引号包起来的包名，避免误匹配（例如 gal 会出现在别的词里）
+        if (!zhList.includes('`' + d + '`')) {
+          errors.push(`直接依赖「${d}」没有出现在政策的第三方依赖清单里 `
+            + '（加了依赖就要在政策里写清楚它是干什么的、会不会收集信息）');
+        }
+      }
+      if (enList) {
+        for (const d of deps) {
+          if (!enList.includes('`' + d + '`')) {
+            errors.push(`直接依赖「${d}」没有出现在英文政策的 SDK 清单里`);
+          }
+        }
+      }
+    }
+  }
+
   // ⑥ 云备份：能力已经写进代码，但**当前发布配置下没有启用**。
   //
   // 为什么值得单独一条：这是本项目第一个"数据可能离开设备"的功能，

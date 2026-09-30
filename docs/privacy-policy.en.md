@@ -153,6 +153,30 @@ advertising. No data brokers.
 
 ---
 
+## 3.5 Third-party dependencies (SDK list)
+
+The following is **all third-party code shipped inside the app package** — not services we call,
+but libraries distributed with the app. Chinese app stores require third-party SDKs to be listed
+centrally with their name, function, and how they handle personal information, so here they are:
+
+| Name | Version | Function | Does it collect or upload anything? | License |
+|---|---|---|---|---|
+| `drift` | 2.35.0 | Local database (a SQLite wrapper): workout records and settings live here | **No.** Pure local reads and writes, no network code | MIT |
+| `drift_flutter` | 0.3.1 | Provides the platform-specific storage path for that database | **No** | MIT |
+| `sqlite3` | 3.6.0 | The actual SQLite engine (prebuilt binary per platform) | **No.** It is the database itself | MIT |
+| `share_plus` | 13.3.0 | Hands a share card or backup file to the **system** share sheet | **No.** It only calls system APIs — you choose the destination in the sheet; we never touch it | BSD-3-Clause |
+| `gal` | 2.3.3 | Saves the share card into the **system photo library** | **No.** Write-only; it **never reads** your photos | BSD-3-Clause |
+| `cryptography` | 2.9.0 | End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM) | **No.** Pure Dart, no network | Apache-2.0 |
+
+Three notes:
+
+- **No advertising SDK, no analytics SDK, no crash-reporting SDK.** None of the six libraries above
+  sends anything to a third party.
+- Our own code goes online only when **you** enable cloud backup, or when "Help improve the product"
+  is on **and** the build has an endpoint configured — see 3.1 (the current release has none).
+- **Development-only dependencies never ship**: `build_runner` / `drift_dev` (code generation) and
+  `integration_test` (our own test harness) exist only in development and CI.
+
 ## 4. Permissions
 
 The app declares two permissions; the second **only takes effect on old systems**:
