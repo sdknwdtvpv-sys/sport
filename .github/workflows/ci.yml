@@ -1,4 +1,11 @@
 name: CI
+# ⚠️ 这个 workflow 是 `./verify.sh`（六层门禁）的**子集**，不是它本身：
+#   覆盖：动作库种子 + JS 向量 + Dart 领域校验 + dart analyze + flutter test
+#   没覆盖：场景级 eval（engine/run-scenarios.mjs）、隐私/发行资源/依赖等一批 node 守卫、
+#           文档数字守卫（README 版本、your-todo 时间戳、三处真机版本、CHANGELOG 降序、软著数字）、
+#           以及第 6 层的**变异测试**。
+#   所以「CI 绿」不等于「门禁绿」。要一致，最省事的做法是让 CI 直接跑 `./verify.sh`
+#   （它在干净克隆上已实测可跑）—— 但 CI 上还没真跑过，见 docs/your-todo.md 第 10e 条。
 
 # 环境钉版本 —— 与"锁定 Flutter 3.47.5"同一个理由：
 # CI 必须验证一个**已知环境**，不能让上游悄悄换掉它。

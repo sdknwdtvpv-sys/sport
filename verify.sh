@@ -2,7 +2,7 @@
 # 练了么 · 一键自检
 #
 # 用法：
-#   ./verify.sh          # 全部五层
+#   ./verify.sh          # 全部六层（**全新克隆也能直接跑**：会先自动 pub get + 生成 drift 代码）
 #   ./verify.sh --fast   # 跳过 Flutter widget 测试（日常迭代用）
 #
 # 分层（按"需要什么"切）：
@@ -111,6 +111,41 @@ if [ -f "$FLUTTER_SETTINGS" ]; then
   }
 fi
 echo
+
+# ── 0. 引导：新克隆 / 新机器上先把依赖与生成物准备好 ─────────────────────
+#
+# **为什么要有这一步（2026-09-30 在一份全新克隆上实测出来的）**：
+# 第 2、4、5 层都依赖 `flutter pub get` 的产物，而**它们对"没有产物"的反应互相矛盾** ——
+#   * 第 2 层（iOS 依赖可用性）直接判红，还说"有直接依赖不支持 iOS"（其实只是没 pub get）；
+#   * 第 4 层（静态分析）判**阻塞**（对，但只是不红）；
+#   * 第 5 层自己偷偷 `pub get`，然后因为 `db.g.dart` 没生成而测出失败。
+# 于是"全新克隆 → ./verify.sh"是**红的，而且红得莫名其妙**。门禁号称"一条命令跑完六层"，
+# 那就该在一条命令里把引导也做掉。
+if [ -n "$FLUTTER_BIN" ] && [ ! -f app/.dart_tool/package_config.json ]; then
+  echo "${BOLD}[0] 首次运行：拉依赖（pub get）${OFF}"
+  PUBLOG=/tmp/lianleme-bootstrap-pubget.log
+  if with_timeout 420 env VERIFY_APP="$REPO/app" VERIFY_CACHE="$REPO/.pub-cache" VERIFY_FLUTTER="$FLUTTER_BIN" \
+      bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" pub get' >"$PUBLOG" 2>&1; then
+    echo "  ${GREEN}✓${OFF} 依赖就绪（缓存 $REPO/.pub-cache）"
+  else
+    echo "  ${YELLOW}⊘ 阻塞${OFF} —— pub get 没成功：属环境问题，不是测试失败。"
+    strip "$PUBLOG" | tail -5 | sed 's/^/    /'
+    blocked=1
+  fi
+fi
+if [ -n "$DART_BIN" ] && [ -f app/.dart_tool/package_config.json ] && [ ! -f app/lib/data/db.g.dart ]; then
+  echo "${BOLD}[0] 首次运行：生成 drift 代码（build_runner）${OFF}"
+  # db.g.dart 是 part 文件：缺了它第 4 层必然报 URI 不存在、第 5 层必然编译失败。
+  if (cd app && PUB_CACHE="$REPO/.pub-cache" "$DART_BIN" run build_runner build --delete-conflicting-outputs) \
+      >>"$LOG" 2>&1; then
+    echo "  ${GREEN}✓${OFF} app/lib/data/db.g.dart 已生成"
+  else
+    echo "  ${YELLOW}⊘ 阻塞${OFF} —— build_runner 没成功：属环境问题。"
+    strip "$LOG" | tail -5 | sed 's/^/    /'
+    blocked=1
+  fi
+fi
+[ -f app/.dart_tool/package_config.json ] && echo
 
 # ── 1. 动作库 ───────────────────────────────────────────────────────────
 echo "${BOLD}[1/6] 动作库种子构建与校验${OFF}"
@@ -319,7 +354,14 @@ check_installed_ver docs/release-checklist.md '上跑的是 \*\*v[0-9]+\.[0-9]+\
 # iOS 可用性：每个直接依赖都得声明支持 iOS。
 # 挡的是"顺手加一个只有 Android 实现的插件" —— 它在本机（只有安卓真机）完全正常，
 # 等装上 Xcode 才发现 iOS 编不过，而那时已经过去很久、也忘了是谁加的。
-if node tool/ios-deps.mjs >"$LOG" 2>&1; then
+if [ ! -f app/.dart_tool/package_config.json ]; then
+  # 没有 package_config 时这个工具会把每个依赖都判成"missing"，于是报出
+  # **"有直接依赖不支持 iOS"** —— 那是句假话（真实原因只是 pub get 没成功）。
+  # 按本脚本的约定：环境导致的无法执行算"阻塞"，不算失败。
+  echo "${YELLOW}⊘ 阻塞${OFF} —— 尚无 app/.dart_tool/package_config.json（pub get 未成功），"
+  echo "${DIM}    iOS 依赖可用性这一条跑不了。${OFF}"
+  blocked=1
+elif node tool/ios-deps.mjs >"$LOG" 2>&1; then
   echo "${GREEN}✓${OFF} 直接依赖都支持 iOS（或本来就是纯 Dart）"
 else
   strip "$LOG"; echo "${RED}✗ 有直接依赖不支持 iOS —— 「双端先上」会被它挡住${OFF}"; fail=1
