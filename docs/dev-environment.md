@@ -208,3 +208,44 @@ SSD 上再建一个名字没有空格的 APFS 卷 / 把 SDK 放回内置盘 / �
   `xcode-select` 之后用 `xcodebuild -derivedDataPath`、模拟器设备放在
   `~/Library/Developer/CoreSimulator`（可用软链指到 SSD）
 - CocoaPods 的缓存同理（`~/.cocoapods` 可搬，装好后按同一原则处理）
+
+## Xcode 装了但许可证没接受时怎么办（2026-09-30 记）
+
+装了 Xcode 之后，`xcode-select` 会指向 `/Applications/Xcode.app`。**在许可证被接受之前**，
+`xcrun` 拒绝服务，于是这些东西**一起挂**：
+
+| 命令 | 为什么也挂 |
+|---|---|
+| `xcodebuild` / `clang` | 直接要许可证 |
+| `git` | macOS 的 `/usr/bin/git` 是 xcrun 的壳 |
+| `python3` | 同上，`/usr/bin/python3` 也是壳 |
+| `flutter` / `dart` | 包装脚本会探测 Xcode；`flutter test` 的原生资源构建还要问 Apple SDK 路径 |
+
+**正式解法只有一条**（需要 sudo 密码，所以只能你来）：
+
+```bash
+sudo xcodebuild -license accept        # 装完第一次可顺手：sudo xcodebuild -runFirstLaunch
+```
+
+**在等这一步期间**，本机可以继续跑门禁与测试 —— 做法是**绕开 Xcode、改用 Command Line
+Tools**（等价于 `sudo xcode-select --switch /Library/Developer/CommandLineTools`，
+但不需要 sudo）：
+
+```bash
+mkdir -p /tmp/fixbin
+printf '#!/bin/sh\nDEVELOPER_DIR=/Library/Developer/CommandLineTools exec /usr/bin/xcrun "$@"\n' > /tmp/fixbin/xcrun
+printf '#!/bin/sh\nDEVELOPER_DIR=/Library/Developer/CommandLineTools exec /usr/bin/python3 "$@"\n' > /tmp/fixbin/python3
+printf '#!/bin/sh\nexec /Applications/Xcode.app/Contents/Developer/usr/bin/git "$@"\n' > /tmp/fixbin/git
+FL="/Volumes/Elliot's SSD/harness-deps/flutter"
+printf '#!/bin/sh\nexport DEVELOPER_DIR=/Library/Developer/CommandLineTools\nexec %s %s "$@"\n' \
+  "$FL/bin/cache/dart-sdk/bin/dart" "$FL/bin/cache/flutter_tools.snapshot" > /tmp/fixbin/flutter
+printf '#!/bin/sh\nexec %s "$@"\n' "$FL/bin/cache/dart-sdk/bin/dart" > /tmp/fixbin/dart
+chmod +x /tmp/fixbin/* && export PATH=/tmp/fixbin:$PATH
+```
+
+⚠️ 这只让**测试/门禁/安卓构建**继续能跑，**iOS 构建仍然要正式的许可证**
+（`xcrun --sdk iphonesimulator` 拿不到 SDK）。也不是"破解"许可证 ——
+只是不用 Xcode、用 CLT 那套（Xcode 装之前本来就是这么跑的）。
+
+> 注意 `flutter doctor` 在这个状态下会报 "Xcode installation is incomplete" ——
+> 那是它透过 CLT 看 Xcode，属于预期，不是新的故障。

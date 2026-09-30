@@ -105,7 +105,7 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 
 | # | 选择 | 为什么问你 | 我的建议 |
 |---|---|---|---|
-| 9 | **CocoaPods 怎么装** | 本机**没有 Homebrew**（系统 Ruby 是 2.6），三条路各有代价，涉及动系统或装东西 | 建议**装一份自带 Ruby 3.x 到 SSD**（最守"依赖都在 SSD"这条约定），其次 `brew install cocoapods` |
+| 9 | ~~**CocoaPods 怎么装**~~ **可能不用装了** | 2026-09-30 查证：我们两个插件（`share_plus`、`gal`）**都自带 `Package.swift`**，Flutter 也已经生成了 `FlutterGeneratedPluginSwiftPackage` —— 也就是 **Swift Package Manager 能接管**，`flutter doctor` 那句"没有 CocoaPods 插件就不工作"是通用提示，对我们未必成立 | **等 Xcode 许可证好了我用一次真实构建确认**：能编过就说明不需要 CocoaPods（省掉 Homebrew/系统 Ruby 那一堆麻烦）。真需要再按原三条路选 |
 | 10 | **要不要在 iPad 上跑** | `TARGETED_DEVICE_FAMILY = "1,2"` 是模板默认；改它动的是**商店页的产品承诺** | 建议改成 `"1"`（只支持 iPhone）：**我们从没在 iPad 上看过任何一屏**，而商店页会写"支持 iPad" |
 | 11b | **`android:requestLegacyExternalStorage` 要不要删** | 它只在 Android 10 上有意义（让那一版「存相册」走老路径），API 30+ 被忽略；政策已如实披露 | 建议**留着**：手边只有 API 36 设备，删了之后「Android 10 还能不能存相册」我们**验证不了** —— 拿不确定换一点干净，不划算 |
 | 11 | **Android SDK 路径里的空格怎么根治** | 卷名 `Elliot's SSD` 有空格，而 Android 工具链不支持带空格的 SDK 路径 —— 已经咬了三次（AAB 误报、`privacy-audit --apk` 空转、`sdkmanager`/`avdmanager` 直接报错） | 三条路：① 在这块 SSD 上再建一个**名字没有空格的 APFS 卷**（同一个容器，空间共享）；② 把 SDK 放回内置盘（约 3.5G）；③ 继续用我写的绕法（`docs/dev-environment.md` 里四条命令） |
@@ -115,7 +115,7 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 | # | 事项 | 解锁什么 |
 |---|---|---|
 | 12 | **解锁真机**（Redmi `flourite`，现在锁屏 + Dozing） | ① 云备份的**真机**端到端（模拟器已跑通，但 Doze、厂商后台策略、真实网络切换只能在真机验）；② 界面逐屏走查（注入权限你已经打开了，就差解锁）；③ 真机版商店截图 |
-| 13 | **装 Xcode**（App Store，约 20G，只能装 `/Applications`） | 线 1 剩下的**全部**：`pod install` + 编译、模拟器跑通、iOS 截图逐屏验证、上架材料定稿。⚠️ 附一件**只有上传后才知道答案**的事：Apple 的隐私清单（`PrivacyInfo.xcprivacy`）—— 首次上传若收到 `ITMS-91053: Missing API declaration`，就要加 app 级清单（判据与起手内容在 `docs/release-admin.md` §二之四；**我没有替你改 `project.pbxproj`**，因为本机没 Xcode、改完无法验证） |
+| 13 | ~~装 Xcode~~ **✅ 已装（Xcode 27.0）—— 只差一条命令接受许可证** | ⚠️ **现在是这一条在挡着线 1**：许可证没接受时 `xcodebuild` / `xcrun` 被拒，连带 `git`、`python3`、`flutter`、`dart` 一起挂（`/usr/bin/git` 与 `/usr/bin/python3` 都是 xcrun 的壳）。请在终端跑：**`sudo xcodebuild -license accept`**（装完第一次可顺手 `sudo xcodebuild -runFirstLaunch`）。跑完我就能做 iOS 编译与逐屏验证。⚠️ 附一件**只有上传后才知道答案**的事：Apple 的隐私清单（`PrivacyInfo.xcprivacy`）—— 首次上传若收到 `ITMS-91053: Missing API declaration`，就要加 app 级清单（判据与起手内容在 `docs/release-admin.md` §二之四；**我没有替你改 `project.pbxproj`**，因为本机没 Xcode、改完无法验证） |
 
 > 模拟器这条后路我已经铺好了（`emulator-5554`，一条命令起来）：**不需要解锁真机**就能跑
 > `integration_test` 出图、看屏、跑云备份端到端。但"真机特有的"只有真机能验，这两件事别混。

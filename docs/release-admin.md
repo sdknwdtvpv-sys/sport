@@ -146,15 +146,24 @@ required-reason API 就要在清单里声明理由"，并且**对着二进制扫
 `tool/asset-check.mjs` 里有一条**跨文件**守卫钉着这对互斥关系（没声明读权限就不许直接带相簿名），
 三个分支都负向验证过。
 
-**还缺的（卡在工具链上）**：这台机器**没有 Xcode**（只有 Command Line Tools），
-所以 iOS 一行都跑不了。`flutter doctor` 的原话：
+**2026-09-30 更新（工具链状态变了）**：**Xcode 27.0 已经装好**
+（`/Applications/Xcode.app`，`xcode-select` 已指向它）。现在卡住的只剩**许可证**：
 
-```
-[!] Xcode - develop for iOS and macOS
-    ✗ Xcode installation is incomplete; a full installation is necessary for iOS and macOS development.
-    ! CocoaPods not installed.
-      Without CocoaPods, plugins will not work on iOS or macOS.
-```
+* 许可证没接受时，`xcodebuild` / `xcrun` 一律被拒 —— 而且会**连带**
+  `git`、`python3`、`flutter`、`dart` 一起挂（macOS 上 `/usr/bin/git` 与 `/usr/bin/python3`
+  本身就是 xcrun 的壳）。`flutter test` 的原生资源构建也会去问 Apple SDK 路径
+  （`objective_c` 的 hook 跑 `xcrun --show-sdk-path`），没许可证时它把那句错误信息当成了路径。
+* 一条命令解决：**`sudo xcodebuild -license accept`**（装完第一次可顺手
+  `sudo xcodebuild -runFirstLaunch`）。**这一步必须你来**（需要 sudo 密码）。
+
+**在许可证接受之前，本机可以这样继续跑门禁与测试**（不是给 Xcode 开后门，而是绕开它去用
+Command Line Tools —— 与 Xcode 装之前的状态等价）：把 `DEVELOPER_DIR` 固定成 CLT 的 `xcrun`
+包一层、并直接调 `flutter_tools.snapshot` 与 `dart-sdk/bin/dart`。具体命令见
+`docs/dev-environment.md` 的「Xcode 装了但许可证没接受时怎么办」。
+
+**CocoaPods 可能不需要了**：我们的两个插件 `share_plus` 与 `gal` **都自带 `Package.swift`**，
+Flutter 也已生成 `FlutterGeneratedPluginSwiftPackage` —— Swift Package Manager 能接管。
+`flutter doctor` 那句"CocoaPods not installed"是通用提示。许可证好了我用一次真实构建确认。
 
 需要你：
 
