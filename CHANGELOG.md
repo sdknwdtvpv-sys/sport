@@ -8,6 +8,38 @@
 
 ## 未切版（v1.19.0 之后的改动，尚未打 tag）
 
+### 开发环境：依赖全部搬到 SSD（内置盘腾出 14G）
+
+**约定**：所有第三方依赖放在 `/Volumes/Elliot's SSD/harness-deps/`
+（flutter 3.9G / jdk-17 309M / android-sdk 3.5G / gradle 4.8G / pub-cache 848M ≈ 13G），
+内置盘从 **38G → 52G 空闲**。环境脚本是唯一事实来源，并已**收进仓库**
+（`tool/dev-env.sh`，跑道上的 `~/HARNESS/lianleme/flutter-env.sh` 是它的副本）。
+
+**⚠️ 目录名必须是 ASCII —— 这是实测出来的，不是洁癖**：原本要叫「harness 依赖」，
+结果 Android 构建直接失败：
+
+```
+Included build '/Volumes/Elliot's SSD/harness ä¾èµ/flutter/.../gradle' does not exist.
+```
+
+`依赖` 变乱码。根因是 **Java 的 `.properties` 按 ISO-8859-1 解码**，而
+`local.properties` 里的 `flutter.sdk` 是 Flutter 用 UTF-8 写的中文路径 ——
+Gradle 读出来就是乱码。（同一类坑的另一种形态：卷名里的撇号逼出了 `~/HARNESS/lianleme`
+这条干净跑道。）改名为 `harness-deps` 后构建恢复正常（53 秒，走 SSD 上的 Gradle 缓存）。
+
+**两个有意的例外**：`~/.workbuddy/binaries/node`（707M，是 harness 自带的运行时，
+搬了不省空间还要多维护一份；环境脚本已把它的 bin 加进 PATH）、
+`~/.android`（3.6M，里面是调试签名密钥，换位置可能让签名变化导致覆盖安装失败）。
+
+**没有搬依赖的后果也写清楚了**：SSD 是外置盘，没插上就构建不了 ——
+但项目本来就在这块盘上，所以不是新风险；环境脚本会**明确报错**而不是让人看工具乱报。
+
+新增 `docs/dev-environment.md`（含 iOS 规矩：Xcode 本体必须留在 /Applications，
+但 DerivedData / 模拟器可以重定向到 SSD）。
+
+**验证**：六层门禁全绿（621 测试、变异 100%），并且从新位置**成功构建了 release APK**
+（Gradle + Android SDK + JDK 全部走 SSD）。
+
 ## v1.19.0 · 补发 9 个埋点事件（建议采纳链终于有数了）
 
 `docs/analytics.md` §9 那张"还没发的"清单里，**9 个现在能做的都做了**。

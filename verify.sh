@@ -70,15 +70,19 @@ NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$NODE_MAJOR" -lt 18 ] && { echo "${RED}✗ Node 版本过低（$(node -v)），需要 18+。${OFF}"; exit 1; }
 echo "${GREEN}✓${OFF} Node $(node -v)"
 
+# 依赖装在 SSD 的「harness 依赖」目录里（见 ~/HARNESS/lianleme/flutter-env.sh）。
+# 那个目录名**有空格**，所以这里处处加引号。
+DEPS="/Volumes/Elliot's SSD/harness-deps"
+
 FLUTTER_BIN="$(command -v flutter 2>/dev/null || true)"
-[ -z "$FLUTTER_BIN" ] && [ -x "$HOME/development/flutter/bin/flutter" ] && FLUTTER_BIN="$HOME/development/flutter/bin/flutter"
+[ -z "$FLUTTER_BIN" ] && [ -x "$DEPS/flutter/bin/flutter" ] && FLUTTER_BIN="$DEPS/flutter/bin/flutter"
 
 DART_BIN="$(command -v dart 2>/dev/null || true)"
 if [ -z "$DART_BIN" ] && [ -n "$FLUTTER_BIN" ]; then
   CAND="$(dirname "$FLUTTER_BIN")/cache/dart-sdk/bin/dart"; [ -x "$CAND" ] && DART_BIN="$CAND"
 fi
-[ -z "$DART_BIN" ] && [ -x "$HOME/development/flutter/bin/cache/dart-sdk/bin/dart" ] && \
-  DART_BIN="$HOME/development/flutter/bin/cache/dart-sdk/bin/dart"
+[ -z "$DART_BIN" ] && [ -x "$DEPS/flutter/bin/cache/dart-sdk/bin/dart" ] && \
+  DART_BIN="$DEPS/flutter/bin/cache/dart-sdk/bin/dart"
 
 [ -n "$FLUTTER_BIN" ] && echo "${GREEN}✓${OFF} Flutter → $FLUTTER_BIN" || echo "${YELLOW}!${OFF} 未找到 Flutter"
 [ -n "$DART_BIN" ] && echo "${GREEN}✓${OFF} Dart    → $DART_BIN" || echo "${YELLOW}!${OFF} 未找到 Dart"
