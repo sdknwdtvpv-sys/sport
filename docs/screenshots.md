@@ -7,8 +7,11 @@
 ```bash
 cd app
 flutter drive --driver=test_driver/screenshot_driver.dart \
-              --target=integration_test/screenshots_test.dart
+              --target=integration_test/screenshots_test.dart -d <设备 id>
 ```
+**`-d` 一定要给**：接了两台设备时（例如真机 + 模拟器），不指定就是薛定谔的截图。
+本仓库的做法与踩过的坑见 `docs/dev-environment.md`「安卓模拟器」一节（
+`emulator-5554` 就是在那台无头模拟器上跑的，**不需要解锁真机**）。
 
 产物写进 `store-assets/screenshots/`（**入库**：它是交付物，不是 `dist/` 那种构建产物）。
 
@@ -104,10 +107,13 @@ adb -s emulator-5554 install -r "dist/练了么-v<版本>.apk"
 | `11-body-metric.png` | 身体数据（**kg / 斤 实时切换**） |
 | `docs/images/launcher-icon-verified.png` | 启动器图标与名字（不算商店素材，是验证证据） |
 
-两处尺寸差异（如实记，不藏着）：
+尺寸（如实记，不藏着）：
 
-- 11 张是 **1080×2337**（`integration_test` 抓的是 Flutter 自己的 surface，不含系统状态栏）
-- `01b-home-fresh-install.png` 是 **1080×2400**（`adb screencap` 抓的整屏，含状态栏）
+- **2026-09-30 在无头模拟器（Pixel 6 / API 36 / 1080×2400）上整套重跑过**，
+  11 张现在都是 **1080×2400**（`integration_test` 抓 Flutter 自己的 surface，不含系统状态栏）。
+  重跑的原因：上一批是 **v1.17.0** 的界面，而那之后加了动作详情页与"练完拉伸一下"，
+  说明书与商店图会跟实际界面不一致。
+- `01b-home-fresh-install.png` 是 **`adb screencap` 抓的整屏**（含状态栏）
 
 商店通常逐张接收、不要求尺寸一致；若要统一，用 11 张那套即可（它自己也齐了）。
 

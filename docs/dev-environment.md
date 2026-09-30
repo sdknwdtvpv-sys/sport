@@ -126,6 +126,60 @@ flutter_tools 拿不到输出 → 认定"没剥掉调试符号" → 报失败。
 > 这一条和"依赖装在 SSD"是**真的冲突**，不是配置没调好：Android 的工具链对空格路径
 > 本来就不支持（`flutter doctor` 也会为此报一条 `[!]`）。
 
+## 安卓模拟器（2026-09-30 装好）—— 以及那个空格坑的第三个受害者
+
+**为什么装它**：真机（Redmi `flourite`）长期锁屏、拿不到解锁凭据，于是
+"界面到底长什么样""截图是不是当前版本"这两件事一直卡着。
+模拟器没有锁屏，能跑 `integration_test` 出图、能 `screencap` 看屏、也能当云备份端到端的设备
+（宿主机后端在模拟器里是 `10.0.2.2`）。**它不能替代真机验收**，但能让"看不见"变成"看得见"。
+
+装的东西（都在 SSD 上）：
+
+| 项 | 位置 | 大小 |
+|---|---|---|
+| emulator | `harness-deps/android-sdk/emulator` | 1.1G |
+| 系统镜像 | `harness-deps/android-sdk/system-images/android-36/google_apis/arm64-v8a` | 4.3G |
+| AVD | `harness-deps/avd/lianleme_api36.avd`（`ANDROID_AVD_HOME` 指过去） | 数 G（用到才长） |
+
+```bash
+export ANDROID_AVD_HOME="/Volumes/Elliot's SSD/harness-deps/avd"
+export ANDROID_EMULATOR_HOME="/Volumes/Elliot's SSD/harness-deps/emulator-home"
+"$ANDROID_SDK_ROOT/emulator/emulator" -avd lianleme_api36 \
+    -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot &
+# 约 40 秒后：adb -s emulator-5554 shell getprop sys.boot_completed → 1
+```
+
+### ⚠️ `sdkmanager` / `avdmanager` 在这台机器上是坏的 —— 卷名里的空格，第三个受害者
+
+```
+$ sdkmanager --list
+.../sdkmanager: line 173: test: : integer expression expected
+错误: 找不到或无法加载主类 SSD.harness-deps.android-sdk.cmdline-tools.latest
+```
+
+和 AAB 那次（`apkanalyzer`）、和 `privacy-audit --apk` 那次是**同一个根因**：
+这两个都是 shell 脚本，把自己的位置拼进 classpath 时**没加引号**，
+而卷名 `Elliot's SSD` 里的空格把它劈开了。**符号链接绕不过去**（脚本会把真实路径解析回来，
+试过了）。绕法是**直接调 Java 类**，把脚本本该设的属性自己设上：
+
+```bash
+SDK="/Volumes/Elliot's SSD/harness-deps/android-sdk"; CT="$SDK/cmdline-tools/latest"
+# 列表 / 安装
+"$JAVA_HOME/bin/java" -cp "$(ls $CT/lib/*.jar | tr '\n' ':')" \
+  com.android.sdklib.tool.sdkmanager.SdkManagerCli --sdk_root="$SDK" --list
+yes | "$JAVA_HOME/bin/java" -cp "$(ls $CT/lib/*.jar | tr '\n' ':')" \
+  com.android.sdklib.tool.sdkmanager.SdkManagerCli --sdk_root="$SDK" \
+  "emulator" "system-images;android-36;google_apis;arm64-v8a"
+# 建 AVD（注意这个多一个 toolsdir 属性，缺了会报 "tools directory property is not set"）
+"$JAVA_HOME/bin/java" -Dcom.android.sdkmanager.toolsdir="$CT" \
+  -classpath "$CT/lib/avdmanager-classpath.jar" com.android.sdklib.tool.AvdManagerCli \
+  create avd -n lianleme_api36 -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_6
+```
+
+**根因还是那条**：Android 工具链不支持带空格的 SDK 路径，而这块 SSD 的卷名带空格。
+想彻底解决只有三条路（**都需要你定**，见 `docs/release-checklist.md` 的"待处理"）：
+SSD 上再建一个名字没有空格的 APFS 卷 / 把 SDK 放回内置盘 / 继续用这些绕法。
+
 ## 没搬的东西，以及为什么
 
 | 没搬 | 为什么 |

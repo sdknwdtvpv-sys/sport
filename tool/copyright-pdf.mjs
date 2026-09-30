@@ -334,6 +334,44 @@ function a4Check(p) {
 const DOCS = ['docs/copyright-manual.md', 'docs/copyright-application.md'];
 const NUM_RE = /(\d+) 个源文件 \/ ([\d,]+) 行/g;
 
+// 说明书里还有两个数字会跟着代码漂：**软件版本**与**数据库模式版本**。
+// 2026-09-30 就抓过一次：说明书正文写着 V1.17.0 / 模式 v9，而仓库已经是 V1.23.0 / v10 ——
+// 源程序量那条有守卫，这两条没有，于是它们悄悄烂了。
+// 它们是提交材料，写错就是"材料与实际不符"。所以一起钉住，真源分别是
+// app/lib/core/app_info.dart 与 app/lib/data/db.dart。
+const MANUAL = 'docs/copyright-manual.md';
+const VERSION_RE = /\*\*版本\*\*：V?(\d+\.\d+\.\d+)/;
+const SCHEMA_RE = /当前模式版本 \*\*v(\d+)\*\*/;
+
+function checkManualNumbers(appVersion, schemaVersion) {
+  const problems = [];
+  const text = readFileSync(join(ROOT, MANUAL), 'utf8');
+
+  const v = text.match(VERSION_RE);
+  if (!v) {
+    problems.push(`${MANUAL}：找不到「**版本**：Vx.y.z」（措辞变了？检查要跟着改）`);
+  } else if (v[1] !== appVersion) {
+    problems.push(`${MANUAL}：写的是版本 V${v[1]}，实际是 V${appVersion}`);
+  }
+
+  const sc = text.match(SCHEMA_RE);
+  if (!sc) {
+    problems.push(`${MANUAL}：找不到「当前模式版本 **vN**」（措辞变了？检查要跟着改）`);
+  } else if (Number(sc[1]) !== schemaVersion) {
+    problems.push(`${MANUAL}：写的是模式版本 v${sc[1]}，实际是 v${schemaVersion}`);
+  }
+
+  return problems;
+}
+
+/** db.dart 里的 schemaVersion 就是事实（drift 的迁移版本号） */
+function schemaVersionFromDb() {
+  const src = readFileSync(join(ROOT, 'app/lib/data/db.dart'), 'utf8');
+  const m = src.match(/int get schemaVersion => (\d+);/);
+  if (!m) throw new Error('app/lib/data/db.dart 里找不到 schemaVersion');
+  return Number(m[1]);
+}
+
 function checkDocNumbers(fileCount, lineCount) {
   const problems = [];
   for (const rel of DOCS) {
@@ -360,8 +398,12 @@ console.log(`软著鉴别材料 PDF　${APP_NAME} V${APP_VERSION}　著作权人
 const src = sourceHtml();
 
 if (argv.includes('--check-docs')) {
-  const problems = checkDocNumbers(src.fileCount, src.lineCount);
+  const problems = [
+    ...checkDocNumbers(src.fileCount, src.lineCount),
+    ...checkManualNumbers(APP_VERSION, schemaVersionFromDb()),
+  ];
   console.log(`实际：${src.fileCount} 个源文件 / ${src.lineCount} 行`);
+  console.log(`     版本 V${APP_VERSION} · 数据库模式 v${schemaVersionFromDb()}`);
   if (problems.length) { for (const p of problems) console.log(`✗ ${p}`); process.exit(1); }
   console.log('✓ 说明书与申请表里的源程序量与实际一致');
   process.exit(0);
