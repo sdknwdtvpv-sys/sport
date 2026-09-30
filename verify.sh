@@ -215,6 +215,15 @@ else
 fi
 echo
 
+# iOS 可用性：每个直接依赖都得声明支持 iOS。
+# 挡的是"顺手加一个只有 Android 实现的插件" —— 它在本机（只有安卓真机）完全正常，
+# 等装上 Xcode 才发现 iOS 编不过，而那时已经过去很久、也忘了是谁加的。
+if node tool/ios-deps.mjs >"$LOG" 2>&1; then
+  echo "${GREEN}✓${OFF} 直接依赖都支持 iOS（或本来就是纯 Dart）"
+else
+  strip "$LOG"; echo "${RED}✗ 有直接依赖不支持 iOS —— 「双端先上」会被它挡住${OFF}"; fail=1
+fi
+
 # 发行资源自检：图标不能是 Flutter 默认图（那是 Google 的商标，也不能上架）、
 # 启动图不能是模板纯白（App 是深色的）、应用名不能是模板的 "lianleme"。
 # 这类东西没有任何测试会红 —— 只有人记得才会改，所以在这里变成一条命令。
@@ -401,6 +410,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/exercise_picker_test.dart app/test/widget_test.dart \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
+         tool/ios-deps.mjs docs/store-listing-ios.md \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \
          app/test/workout_flow_test.dart app/test/backup_test.dart \
          app/test/time_exercise_test.dart app/test/progression_wiring_test.dart \

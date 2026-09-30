@@ -96,15 +96,98 @@
 | 守卫 | ✅ `tool/asset-check.mjs` 已覆盖 iOS（图标不是模板图、无透明、1024 齐全、显示名、权限键、启动屏不是纯白）——负向验证过：把模板图标放回去会红 |
 
 **还缺的（卡在工具链上）**：这台机器**没有 Xcode**（只有 Command Line Tools），
-所以 iOS 一行都跑不了。需要你：
+所以 iOS 一行都跑不了。`flutter doctor` 的原话：
+
+```
+[!] Xcode - develop for iOS and macOS
+    ✗ Xcode installation is incomplete; a full installation is necessary for iOS and macOS development.
+    ! CocoaPods not installed.
+      Without CocoaPods, plugins will not work on iOS or macOS.
+```
+
+需要你：
 
 1. 从 App Store 装 **Xcode**（约 20G，**只能装在 `/Applications`**，不能放 SSD）
-   —— 装好后我做：模拟器跑通、用 integration_test 出 11 屏 iOS 截图、逐屏差异走查
-2. 注册 **Apple Developer 账号**（个人 ¥688/年）—— **「双端先上」就意味着这笔开销**，
+   —— 装好后我做：模拟器跑通、用 integration_test 出 iOS 截图、逐屏差异走查
+2. 装 **CocoaPods**（⚠️ **这台机器上没有，是本轮新查出来的缺口**）。
+   我们有 `share_plus` / `gal` 两个插件，**没有 CocoaPods 就必然构建失败**。
+   本机也**没有 Homebrew**，所以三条路：
+   * `brew install cocoapods` —— 得先装 Homebrew（装到内置盘，约 1G）；
+   * 系统自带的 Ruby 是 **2.6**（Apple 已不维护）→ `sudo gem install cocoapods`
+     能用，但把依赖装进系统 Ruby；
+   * 装一份自带 Ruby 3.x 到 SSD 再 `gem install`（最守"依赖都在 SSD"这条约定，也最费事）。
+   **这一步需要你定用哪条路**（涉及装 Homebrew 或动系统 Ruby）；定好之后我来装并验证。
+3. 注册 **Apple Developer 账号**（个人 ¥688/年）—— **「双端先上」就意味着这笔开销**，
    而且上架与真机调试都需要它（模拟器不需要）
 
-**iOS 商店材料与国内不同**，另需：App Privacy 隐私标签（我们有英文政策 ✅）、
-6.7"/6.5"/5.5" 等尺寸截图（第 1 步跑通后可以按尺寸出）、出口合规声明（已声明豁免）。
+## 二之四之二、依赖的 iOS 可用性（静态核过，2026-09-30）
+
+**结论：现在每个直接依赖都能在 iOS 上跑。** 判据是各包自己 pubspec 里的
+`flutter: plugin: platforms:` 声明，由 `tool/ios-deps.mjs` 核（已进 `verify.sh`）：
+
+| 依赖 | iOS 支持 | 依据 |
+|---|---|---|
+| `drift` / `drift_flutter` | ✅ | 纯 Dart 包（无 plugin 段） |
+| `cryptography` | ✅ | 纯 Dart 包 —— 端到端加密那一层在 iOS 上不需要任何原生代码 |
+| `share_plus` | ✅ | 声明 `ios`（拉起系统分享面板） |
+| `gal` | ✅ | 声明 `ios`（存相册；iOS 侧用"仅新增"权限） |
+
+**原生 SQLite 从哪来**（这条容易误会）：`sqlite3` 3.6.0 **自带各平台的预编译二进制**，
+其中 iOS 是 `arm64`（真机）+ `arm64` / `x64`（模拟器）——见该包 README 的
+"Supported platforms"。它通过 **hook（native assets）** 在构建时把库放进去，
+所以**不需要单独的 `sqlite3_flutter_libs`**。
+⚠️ 但 `drift_flutter` 至今**仍然传递依赖** `sqlite3_flutter_libs: ^0.6.0+eol`
+（那个包现在只剩一个 Dart 壳、没有原生代码）—— 所以 pubspec 里那句"不要自己加它"
+依然成立：它不是我们加的，也**不要**手动加。
+
+**守卫**：`tool/ios-deps.mjs` 拦的是"顺手加一个只有 Android 实现的插件"这种事
+（pub.dev 上大量 `xxx_android` 只有单平台）。它**负向验证过**
+（把 `gal` 复制一份、删掉 `ios:` 声明 → 判红）。
+⚠️ 它只能证明"根本不可能支持"的依赖进不来，**证明不了真的能编过** —— 那要 Xcode。
+
+## 二之四之三、iOS 与安卓的差异清单
+
+**静态核对**（现在就能确定）：
+
+| 项 | 安卓 | iOS | 备注 |
+|---|---|---|---|
+| 显示名 | 练了么 | 练了么 | 与商店名一致（三处一致是硬要求） |
+| 包标识 | `com.sdknwdtvpv.lianleme` | 同 | 上架后不能改 |
+| 图标 / 启动屏 | 一套配方两端生成 | 同 | `tool/gen-icons.py` 出，`asset-check.mjs` 守着 |
+| 相册权限 | `WRITE_EXTERNAL_STORAGE`（仅 API ≤29）+ 系统隐含的 READ | `NSPhotoLibraryAddUsageDescription`（**仅新增**） | iOS 那边**更窄**：完全不读相册 |
+| 其他权限 | INTERNET | 无（iOS 联网不需要声明） | |
+| 最低系统 | `minSdk 24` | `IPHONEOS_DEPLOYMENT_TARGET = 15.0` | |
+| 数据库 | `libsqlite3.so`（三 ABI，native assets） | sqlite3 预编译 `arm64` | 同一个 `sqlite3` 包，取库的方式不同 |
+| 版本号 | `versionCode` / `versionName` | `CFBundleVersion` / `CFBundleShortVersionString` | 都由 pubspec 的 version 生成 |
+| 出口合规 | 不涉及 | `ITSAppUsesNonExemptEncryption=false` | 已声明，免得每次提审都被问 |
+| 商店表单 | 数据安全表单（Play）/ 各商店自有表单 | **App Privacy 隐私标签** | 见 `docs/store-listing-ios.md` |
+| 设备族 | 手机（未锁方向） | **`TARGETED_DEVICE_FAMILY = "1,2"`（iPhone + iPad）** | ⚠️ 见下方待拍板 |
+
+**只有 Xcode 能给的答案（现在全是"未验证"）**：
+
+1. 真的能编过吗（`pod install` + 链接 + 部署目标 15.0 是否与所有依赖兼容）
+2. 布局在 iOS 上长什么样（安全区、状态栏、返回手势、字体回退到苹方后的换行）
+3. 分享面板与"存到相册"在 iOS 上的真实行为（权限弹窗文案、被拒之后的路径）
+4. 深色主题 + 启动屏在 iPhone 上的实际观感（有没有白闪）
+5. **横屏**：两端都没有锁方向，而**从来没有在横屏下走过任何一屏** ——
+   这是安卓与 iOS **共有**的欠账，不是 iOS 特有的
+
+## 二之四之四、需要你拍板：要不要在 iPad 上跑
+
+`TARGETED_DEVICE_FAMILY = "1,2"` 是 Flutter 模板的默认值，意思是 **iPhone + iPad 都支持**。
+两条路：
+
+* **A（我建议）改成 `"1"`（只支持 iPhone）**：与"单手、在健身房站着用"这个定位一致；
+  iPad 用户仍能在兼容模式（放大显示）下用。**不需要 iPad 截图**，商店材料少一大块。
+  理由很实在：**我们从没在 iPad 上看过任何一屏**，宣布"支持 iPad"等于承诺一件没验证过的事。
+* **B 保持 `"1,2"`**：需要 **iPad 13" 截图**，并且要在 iPad 模拟器上逐屏走查
+  （大屏下 S4 那个 88pt 大按钮的位置、列表宽度、横屏布局都要重新看）。
+
+它动的是**产品承诺**（商店页会写"支持 iPad"），所以**等你定**。
+`docs/store-listing-ios.md` 的截图表已按这条分叉。
+
+**iOS 商店材料**：见 `docs/store-listing-ios.md`（与安卓那份组织方式一致，
+含 App Privacy 标签的两个变体、截图规格、审核备注）。
 
 ## 三、软件著作权登记（软著）
 

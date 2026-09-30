@@ -6,6 +6,78 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## 未切版（v1.23.0 之后的改动，尚未打 tag）
+
+> 只改文档与工具、不切版（版本号策略见本文件开头）。
+
+### 线 1（iOS）：把"不需要 Xcode 就能做完的事"又往前推了一步
+
+iOS 卡在 Xcode 上（这台机器只有 Command Line Tools）。但目标里那份 iOS 欠账，
+有两块**根本不需要 Xcode**，这轮做完了：**依赖的 iOS 可用性**与**商店材料 + 差异清单**。
+
+**① 新查出两个工具链缺口（`flutter doctor` 的原话）**
+
+```
+[!] Xcode - develop for iOS and macOS
+    ✗ Xcode installation is incomplete; a full installation is necessary for iOS and macOS development.
+    ! CocoaPods not installed.
+      Without CocoaPods, plugins will not work on iOS or macOS.
+```
+
+**CocoaPods 这条是本轮新发现的**：我们有 `share_plus` / `gal` 两个插件，
+**没有 CocoaPods 就必然构建失败** —— 也就是说，光装上 Xcode **还不够**。
+更麻烦的是本机**也没有 Homebrew**（系统 Ruby 是 2.6），所以装 CocoaPods 有三条路，
+每条都有代价（装 Homebrew 到内置盘 / 动系统 Ruby / 自带 Ruby 3.x 装到 SSD）。
+**这三条需要你定**，定好之后我来装并验证 —— 我没有擅自装 Homebrew 或动系统 Ruby。
+
+**② 新增守卫：`tool/ios-deps.mjs`（拦"只有 Android 实现的插件"）**
+
+「双端先上」这个目标本身**没有任何东西在守**：pub.dev 上大量插件只实现单平台
+（`xxx_android` 这种），顺手加一个，本机只有安卓真机所以**一切正常**，
+等装上 Xcode 才发现 iOS 编不过 —— 而那时早就忘了是谁加的。
+现在门禁会核每个直接依赖：是插件就必须声明 `ios` 或 `darwin`；纯 Dart 包放行。
+**负向验证过**（把 `gal` 复制一份、删掉 `ios:` 声明 → 判红）。
+⚠️ 它只能挡"根本不可能支持"的依赖，**证明不了真的能编过** —— 那要 Xcode。
+
+**③ 顺手澄清了一处容易误会的事实（原生 SQLite 从哪来）**
+
+`sqlite3` 3.6.0 **自带各平台预编译二进制**，iOS 是 `arm64`（真机）+ `arm64`/`x64`（模拟器），
+通过 hook（native assets）在构建时装进去 —— 所以**不需要**单独的 `sqlite3_flutter_libs`。
+但 `drift_flutter` **至今仍然传递依赖** `sqlite3_flutter_libs: ^0.6.0+eol`（只剩一个 Dart 壳），
+所以 pubspec 里"不要自己加它"那句依然成立：它不是我们加的，也不要手动加。
+
+**④ 新文档 `docs/store-listing-ios.md`（App Store 材料草稿）**
+
+与安卓那份（`docs/store-listing.md`）同一套组织方式，并沿用同一个关键设计：
+**先确认要发布的包配了哪些地址**，再决定隐私标签怎么填 ——
+* **变体 A（当前包，两个地址都没配）→ "Data Not Collected"**。
+  Apple 对 collect 的定义是"传出设备、且你能在实时服务之外访问它"，当前包两条通道都没通，
+  所以这个答案是**可以自证**的（政策附录 B 给了命令）。
+* **变体 B（配了地址）→ 逐条填**：Device ID / Product Interaction / Fitness /
+  Other User Content，全部"不与身份关联、不用于追踪"（因此不需要 ATT 弹窗）。
+  其中**云备份是端到端加密**，服务端拿不到明文 —— 按 Apple 的定义理应按"不收集内容"填，
+  但这一条**建议先跟法务确认**（取决于"无法访问"的严格解释）。
+
+**⑤ `docs/release-admin.md` §二之四 扩成四节**：工具链缺口（含 CocoaPods）、
+依赖可用性表、**iOS 与安卓差异清单**（权限/iOS 更窄、最低系统 15.0、
+数据库取库方式、版本号映射、出口合规）、以及"只有 Xcode 能给的 5 个答案"。
+
+### 需要你拍板：要不要在 iPad 上跑
+
+`app/ios/Runner.xcodeproj` 里 `TARGETED_DEVICE_FAMILY = "1,2"`（Flutter 模板默认），
+意思是 **iPhone + iPad 都支持**。我建议改成 `"1"`（只支持 iPhone），理由很实在：
+**我们从没在 iPad 上看过任何一屏**，而商店页会写"支持 iPad"；
+iPad 用户仍可在兼容模式下使用。代价是要么接受这条没验证过的承诺，
+要么补 **iPad 13" 截图 + 在 iPad 模拟器上逐屏走查**。
+它动的是产品承诺，所以**等你定**。
+
+### 验证
+
+六层门禁全绿（**693 测试** —— 本轮不动 `app/`，测试数不变；变异 24 杀 / 0 存活 = 100%；
+`dart analyze --fatal-infos` 零问题），`tool/ios-deps.mjs` 已进第 2 层且负向验证过。
+软著源程序量随新工具文件同步为 129 个源文件 / 34,104 行，鉴别材料按 V1.23.0 重新生成。
+本轮不切版、不重装真机（机上是 v1.23.0）。
+
 ## v1.23.0 · 云端状态看得见（另一台设备写过必须提示）+ 一次文档真相清扫
 
 这一版切的是 `app/`（云备份屏多了"云端那份现在什么样"），按版本号策略把上一批
