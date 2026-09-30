@@ -17,7 +17,7 @@
 
 | 项 | 怎么复现 |
 |---|---|
-| 六层门禁 | `./verify.sh`（**干净克隆也能直接跑**：会先自动 pub get + 生成 drift 代码）|
+| 六层门禁 | `./verify.sh`（**干净克隆也能直接跑**：会先自动 pub get + 生成 drift 代码；最近一次在 `2f66d40` 的干净克隆上实测：753 项测试全绿、`未发现失败`、零阻塞）|
 | 推送后 CI 状态 | GitHub Actions —— ⚠️ 它只是门禁的**子集**（见 §三 第 6 条）|
 | 云备份端到端（模拟器/真机）| `docs/backend-design.md` §七之七 的命令块（含 `node tool/check-ciphertext.mjs <服务端库>`）|
 | **服务端只有密文** | `node tool/check-ciphertext.mjs <库>`（自检：`--selftest`，故意造含明文的库要求它报错）|
