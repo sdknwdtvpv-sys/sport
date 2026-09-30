@@ -346,6 +346,7 @@ cd .. && node tool/check-aab.mjs
 | 真机 `75caf509` | 装的是 **1.31.0（versionCode 40）**；`force-stop` 后冷启动正常、`E/flutter` **0 条**；屏幕尺寸已复位（1280×2772） |
 | 商店截图两套 | `store-assets/screenshots/` 12 张（1080×2400）· `screenshots-play/` 11 张（1080×1920，Play 要的 9:16） |
 | 全新克隆 | ✅ `git clone` 后直接 `./verify.sh` → 六层全跑、168 个 ✓、`未发现失败`（见 CHANGELOG：为此加了第 0 步引导） |
+| iOS 产物 | ✅ `node tool/check-ios-app.mjs`（新工具，2026-09-30，安卓那边 `check-aab.mjs` 的对应物）：两种构建都逐项核过 —— 身份（显示名/两端 bundle id 一致）、版本 `1.31.0 (40)`、**只有「仅新增」相册权限（无读权限）**、主题 Dark、方向锁定、应用内资产三件齐、`sqlite3.framework` 与 `objective_c.framework` 都在。⚠️ 它同时报出一条产品决定：`UIDeviceFamily = [1,2]` → **这个包在商店里会承诺「支持 iPad」**（`your-todo` 第 10 条那一项）。工具带自检（造几份动过手脚的 .app 要求它抓得住），自检已进门禁第 2 层 |
 | 软著材料 | `dist/copyright/` 里是 **V1.31.0**：源程序全文 737+ 页、提交用前 30 + 后 30 页、说明书 6 页；著作权人仍是占位符（**待你实名提交**） |
 
 **这份核验能证明什么、不能证明什么**：能证明"我们这边该做的都做了、且对得上"；

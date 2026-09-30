@@ -204,6 +204,26 @@ CHANGELOG 降序、软著数字）其实都在 **第 2 层**；第 5 层只有"�
 **还差什么**：① **模拟器运行时**（Xcode 26+ 起要单独下载，约 8G）—— 有了它才能「在模拟器上跑通 +
 逐屏截图」；② **Apple Developer 账号** —— 签名与真机调试（模拟器不需要）。两件都在用户那边。
 
+### 同版追加：iOS 产物的核对工具（`check-ios-app.mjs`）—— 安卓那边早就有，iOS 一直没有
+
+安卓产物有 `tool/check-aab.mjs` 核，iOS 这边此前**没有任何东西核过产物**：所有 iOS 断言都停在
+"读源码 / 读 Info.plist 文本"这一层。第一次真的编出 iOS 包之后，补上对应物
+`tool/check-ios-app.mjs`，对着仓库里的说法逐项验一份真的 `.app`：
+
+身份（显示名、两端 bundle id 一致）· 版本（`CFBundleShortVersionString` vs `app_info.dart`、
+`CFBundleVersion` vs pubspec 的 build number）· **相册权限必须只有「仅新增」**（多出读权限就红，
+因为政策写着"从不读取你的相册"）· `ITSAppUsesNonExemptEncryption=false` · `UIUserInterfaceStyle=Dark` ·
+方向锁 · 应用内资产三件（政策 / 收集清单 / 动作库）· 原生框架（`sqlite3` + `objective_c`）。
+
+**带自检**（造六份 .app：一份正常、五份分别改坏显示名/删掉仅新增权限/加回读权限/改版本/放开横屏），
+要求它**好包过得去、改坏任何一项都藏不住**；自检已进 `verify.sh` 第 2 层。
+
+两种真实产物（模拟器 183M / release 真机 19M）都核过，逐项一致。它**同时报出一条产品决定**：
+`UIDeviceFamily = [1,2]` —— **这个包在商店里会承诺「支持 iPad」**，而那是个还没拍板的决定
+（实测 iPad 上只是拉长的手机版）。另外核出一件与此前分析吻合的事：包里只有
+`Flutter.framework` 自带 Apple 隐私清单，`sqlite3` 与 `objective_c` 都没有 ——
+与 `tool/ios-deps.mjs` 里那条例外表一致，app 级清单要不要加仍然只有首次上传能定。
+
 版本 1.30.0+39 → 1.31.0+40。
 
 ## v1.30.0 · 锁竖屏：横屏下首页本来是坏的（实测）

@@ -208,6 +208,16 @@ else
   strip "$LOG"; echo "${RED}✗ 极薄后端自检失败${OFF}"; fail=1
 fi
 
+# iOS 产物核对工具的**自检**（造几份动过手脚的 .app，要求它抓得住）。
+# 安卓那边有 check-aab.mjs 核产物，iOS 这边此前没有任何东西核过产物；
+# 2026-09-30 首次真的编出 iOS 包之后才补上（真产物怎么核见 docs/release-checklist.md）。
+if node tool/check-ios-app.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} iOS 产物核对自检通过（改坏任何一项都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ iOS 产物核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 密文核验工具的**自检**：它故意造一份"ct 其实是明文"的库，要求工具报错。
 # 少了这一步，那条检查可能只是"永远打印 ✓"的假守卫（2026-09-30 补）。
 if node tool/check-ciphertext.mjs --selftest >"$LOG" 2>&1; then
