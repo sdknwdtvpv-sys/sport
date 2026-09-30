@@ -449,6 +449,9 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
   {
     const defaultOn = facts.analyticsOptIn?.defaultOn === false;
     if (defaultOn) {
+      // ⚠️ **your-todo 与 README 也在名单里**：它们同样对外（一个是你的决策入口，
+      // 一个是仓库首页），2026-09-30 就在 your-todo 的"审计当时的实现"那段里
+      // 读到"匿名使用统计默认是开的（默认 true）"—— 而那段早已被 v1.28.0 改掉。
       const docs = [
         'docs/privacy-policy.md',
         'docs/privacy-policy.en.md',
@@ -456,10 +459,12 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
         'docs/store-listing-ios.md',
         'docs/copyright-manual.md',
         'docs/copyright-application.md',
+        'docs/your-todo.md',
+        'README.md',
       ];
       const switchZh = /(统计|帮助改进产品)/;
-      const wrongZh = /默认(开启|打开|开)/;
-      const rightZh = /默认(关闭|关)/;
+      const wrongZh = /默认\s*(?:是|为)?\s*(?:开启|打开|开着|开)/;
+      const rightZh = /默认\s*(?:关闭|关|false)/;
       const switchEn = /(analytics|statistics|help improve)/i;
       const wrongEn = /(on by default|enabled by default|default on\b)/i;
       const rightEn = /(off by default|default off|disabled by default)/i;
