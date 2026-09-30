@@ -6,6 +6,51 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## 未切版（v1.22.0 之后的改动，尚未打 tag）
+
+> 按版本号策略（本文件开头那条）：只改文档与工具**不切版**，这些改动并进下一次改 `app/` 的发布。
+
+### 商店产物（AAB）其实一直是好的，只是 flutter 会假报失败
+
+准备核一下"商店用的 AAB 到底能不能出"时发现：`flutter build appbundle --release`
+在这台机器上**必然**打印
+
+```
+Release app bundle failed to strip debug symbols from native libraries.
+```
+
+**而 .aab 已经正常产出了。** 真因藏在 `-v` 日志里：
+
+```
+apkanalyzer: line 173: test: : integer expression expected
+错误: 找不到或无法加载主类 SSD.harness-deps.android-sdk.cmdline-tools.latest
+原因: java.lang.ClassNotFoundException: SSD.harness-deps.android-sdk.cmdline-tools.latest
+```
+
+`apkanalyzer` 是个 shell 脚本，它把自己的位置拼进 classpath 时**没加引号**，
+而卷名 `Elliot's SSD` 里有个空格 —— 路径在空格处被劈开，Java 把
+`SSD.harness-deps…` 当成了类名。flutter_tools 拿不到输出，就认定"没剥掉调试符号"。
+
+这条**不是"flake"也不是我们配错了**：Android 工具链本来就不支持带空格的 SDK 路径
+（`flutter doctor` 会为此报一条 `[!]`），而"依赖装在 SSD"这条要求与它**真的冲突** ——
+这块 SSD 的卷名里就有空格，任何放在它上面的 SDK 路径都带空格。
+
+因此这一版加了三样东西：
+
+* `tool/check-aab.mjs` —— **不信 flutter 那句话，直接拆开 .aab 核**：骨架三件套
+  （`BundleConfig.pb` / `base/manifest/AndroidManifest.xml` / `base/dex/classes.dex`）、
+  三个 ABI 各含 `libsqlite3/libflutter/libapp`、版本号与 `app_info.dart` 一致。
+  已跑：117 条目 / 55.9 MB / 三 ABI 齐全 / 1.22.0 ✓；也负向验证过（假 zip、缺文件都报错）。
+* `docs/dev-environment.md` 新增一节，把这个坑和三条出路写清楚
+  （SSD 上再建一个**名字没有空格的 APFS 卷** / SDK 放回内置盘 3.5G / 接受现状用脚本核产物）
+  —— **三条都需要你定**，我没擅自改磁盘布局，也没把 SDK 搬回内置盘。
+* `docs/release-checklist.md` 的构建命令与状态表改对了：加上逃生开关
+  （没有真 keystore 时必须带 `ORG_GRADLE_PROJECT_allowDebugSigning=true`）、
+  补上 `check-aab.mjs` 这一步，并把"AAB 未在本版重跑"换成核过的实况。
+
+顺带把 `dist/copyright/` 的软著鉴别材料按当前版本重新生成（V1.22.0，60 页 / A4 纵向，
+`dist/` 不入库）。
+
 ## v1.22.0 · 「删除全部数据」现在会问云端那一声
 
 上一版结尾留了一句硬话：**「删除全部数据」只清了本机恢复码，云上那份没删**，

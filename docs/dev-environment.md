@@ -79,6 +79,40 @@ flutter config --jdk-dir="$JAVA_HOME" --android-sdk="$ANDROID_SDK_ROOT"
 > （`flutter config`、`local.properties`、`~/.android`、IDE 的 SDK 设置）
 > 都要跟着改。判据很简单：**做一次 release 构建**，别只看门禁绿不绿。
 
+## ⚠️ 卷名里的空格会**假装**弄坏 AAB 构建（其实是误报）
+
+`flutter build appbundle --release` 在这台机器上**必然**打印这句：
+
+```
+Release app bundle failed to strip debug symbols from native libraries.
+```
+
+**而 .aab 其实已经正常产出了。** 真因要在 `-v` 日志里才看得到：
+
+```
+executing: [.../android-sdk/cmdline-tools/latest/bin/apkanalyzer files list ...app-release.aab
+apkanalyzer: line 173: test: : integer expression expected
+错误: 找不到或无法加载主类 SSD.harness-deps.android-sdk.cmdline-tools.latest
+原因: java.lang.ClassNotFoundException: SSD.harness-deps.android-sdk.cmdline-tools.latest
+```
+
+`apkanalyzer` 是个 shell 脚本，它把自己的位置拼进 classpath 时**没加引号**；
+卷名 `Elliot's SSD` 里的空格把它劈成两段，Java 就把 `SSD.harness-deps…` 当成了类名。
+flutter_tools 拿不到输出 → 认定"没剥掉调试符号" → 报失败。**产物本身没问题。**
+
+* `.apk`（旁加载用）**不受影响** —— 它不走 apkanalyzer 那一步。
+* `.aab`（商店用）也用 `node tool/check-aab.mjs` 核，别信 flutter 那句话。
+  它检查骨架三件套、三个 ABI 的原生库、以及版本号是否与 `app_info.dart` 一致。
+* 想让命令真的退出 0：SDK 必须放在**没有空格**的路径上。
+  而这块 SSD 的**卷名**里就有空格 —— 所以任何放在它上面的 SDK 路径都带空格。
+  三条路（**都需要你定**，我不擅自改磁盘布局或搬回内置盘）：
+  1. 在这块 SSD 上再建一个**名字没有空格的 APFS 卷**（同一个容器，空间共享），SDK 放那里；
+  2. 把 Android SDK 放回内置盘（约 3.5G，用掉刚腾出来的一部分空间）；
+  3. 接受现状：APK 照常构建，AAB 用 `check-aab.mjs` 核产物（CI 里也能出 AAB）。
+
+> 这一条和"依赖装在 SSD"是**真的冲突**，不是配置没调好：Android 的工具链对空格路径
+> 本来就不支持（`flutter doctor` 也会为此报一条 `[!]`）。
+
 ## 没搬的东西，以及为什么
 
 | 没搬 | 为什么 |

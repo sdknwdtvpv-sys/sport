@@ -362,7 +362,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/exercise_repository_test.dart app/test/multi_exercise_test.dart \
          app/test/exercise_picker_test.dart app/test/widget_test.dart \
          app/test/local_store_contract_test.dart \
-         app/tool/check_domain.dart tool/mutation.mjs \
+         app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \
          app/test/workout_flow_test.dart app/test/backup_test.dart \
          app/test/time_exercise_test.dart app/test/progression_wiring_test.dart \

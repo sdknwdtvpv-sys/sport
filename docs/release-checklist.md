@@ -197,8 +197,14 @@ cd "/Volumes/Elliot's SSD/HARNESS/lianleme/sport"
 ./verify.sh                                      # 全量自检（六层全过才算过；含变异测试 0 存活）
 
 cd app
-flutter build appbundle --release                # 商店用（AAB）
-flutter build apk --release                      # 旁加载用（APK）
+# ⚠️ 现在没有真 keystore，正式产物必须先加这个逃生开关（否则 Gradle 硬失败）。
+#    它出的是 **debug 签名**的包，能装自己手机，**商店必拒收**。
+ORG_GRADLE_PROJECT_allowDebugSigning=true flutter build appbundle --release   # 商店用（AAB）
+ORG_GRADLE_PROJECT_allowDebugSigning=true flutter build apk --release         # 旁加载用（APK）
+
+# ⚠️ 上面 AAB 那条命令**会报一句假的失败**（"failed to strip debug symbols"），
+#    .aab 其实已经产出。核产物要跑这个：
+cd .. && node tool/check-aab.mjs
 
 # 验收 release 产物
 "$JAVA_HOME/bin/keytool" -printcert -jarfile \
@@ -216,7 +222,7 @@ flutter build apk --release                      # 旁加载用（APK）
 
 | 项 | 状态 |
 |---|---|
-| 构建链 | ✅ 可产出。release APK 58.5M（`flutter-apk/app-release.apk`）；**AAB 未在本版重跑** |
+| 构建链 | ✅ 两种产物都核过：release **APK 59.8M**（`flutter-apk/app-release.apk`）、**AAB 55.9M**（`bundle/release/app-release.aab`）。AAB 用 `node tool/check-aab.mjs` 核过：骨架三件套 + **三 ABI**（arm64-v8a / armeabi-v7a / x86_64，各含 libsqlite3/libflutter/libapp）+ 版本号与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 会**假报失败**（卷名空格坑，见 `docs/dev-environment.md`），产物没问题 |
 | 签名接线 | ✅ 接线与硬失败**已验证**（缺 `key.properties` 时构建直接失败、逃生开关有效） |
 | 正式签名 | ❌ **还没有真 keystore**。所以 `dist/*.apk` 是**debug 签名的旁加载包** —— 能装自己手机，**商店必拒收**。生成：`app/android/tool/gen-upload-keystore.sh`（在你那边） |
 | 权限 | ✅ 源码 manifest **两项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29）。打包后多一条**隐含**的 `READ_EXTERNAL_STORAGE`（≤29，系统因 WRITE 授予，不是谁声明的）—— **已在政策里如实披露** |
