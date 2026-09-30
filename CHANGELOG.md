@@ -68,6 +68,38 @@ cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
 
 ## 未切版（v1.23.1 之后）
 
+> 只改文档与工具、不切版。
+
+### 新增 `docs/your-todo.md`：**"等你做的事"终于只有一个入口了**
+
+"还差什么、哪些必须你来做"以前散在 **7 份文档**里（release-admin / release-checklist /
+backend-design / dev-environment / 两份 store-listing / copyright-manual），
+每次回答"还差什么"都得翻一遍，还容易漏。现在收成一份，按**卡的严重程度**排序：
+
+* **最长的两根杆**（软著提交 30–75 工作日、备案 1–3 周）—— 都不依赖任何设计决策，越早越好；
+* **必须你本人办**（keystore / 隐私政策 URL + 法务 / Apple 账号 / 商店主体 / 积压事件决策 / `tap_count` 校准）；
+* **需要你拍板的技术选择**（CocoaPods 三条装法 / iPad 支持与否 / SDK 空格的三条路）—— 你点头我当天做；
+* **一分钟解锁一大块**（解锁真机、装 Xcode）；
+* 以及**我接下来不等你也会做的**部分。
+
+每条都写了"为什么必须你来 / 卡住什么 / 多久多少钱 / 细节在哪份文档"。
+README 与 release-checklist 都加了指向它的一行。
+
+### 顺手查清一件事：第一次 iOS 构建会**改动几个受版本控制的文件**
+
+不是猜的 —— Flutter 的 `cocoapods.dart` 里 `_addPodsDependencyToFlutterXcconfig`
+会在构建时发现 `ios/Flutter/*.xcconfig` 里没有 Pods 那行就**自己加**（源码行号都记在
+`docs/release-admin.md` §二之四之一）。所以第一次 `flutter build ios` 之后，
+`Debug.xcconfig` / `Release.xcconfig` / 新生成的 `Podfile` / `Podfile.lock` /
+`Runner.xcworkspace/contents.xcworkspacedata` 这 **4 项要提交**，而 `Pods/` 不用（已忽略）。
+不写清楚的话，下一次 `git status` 会让人以为"谁动了工程文件"。
+
+### 验证
+
+门禁六层全绿（693 测试、变异 24 杀 / 0 存活 = 100%）。本轮不动 `app/`，不切版、不重装真机。
+
+
+
 > 只改文档与工具、不切版（版本号策略见本文件开头）。
 
 ### 装了一台安卓模拟器 —— 卡了五轮的"看不见界面"终于破了

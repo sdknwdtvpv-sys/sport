@@ -120,6 +120,31 @@
 3. 注册 **Apple Developer 账号**（个人 ¥688/年）—— **「双端先上」就意味着这笔开销**，
    而且上架与真机调试都需要它（模拟器不需要）
 
+## 二之四之一、第一次 iOS 构建会**改动几个受版本控制的文件**（先知道，别慌）
+
+这一条是查出来的，不是猜的：Flutter 的 `cocoapods.dart` 里有个
+`_addPodsDependencyToFlutterXcconfig`（`build` 时调用），**发现 xcconfig 里没有 Pods 那行就自己加**：
+
+```
+cocoapods.dart:307-310
+  final include = '#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.${mode}.xcconfig"';
+  file.writeAsStringSync('$include\n$content', flush: true);
+```
+
+我们的 `ios/Flutter/{Debug,Release}.xcconfig` **现在只有** `#include "Generated.xcconfig"`，
+所以第一次 `flutter build ios` / `pod install` 之后会变成：
+
+| 文件 | 会发生什么 | 要不要提交 |
+|---|---|---|
+| `ios/Flutter/Debug.xcconfig`、`Release.xcconfig` | 被 Flutter 自动加一行 `#include? "Pods/…"` | **要**（不然下次构建又会被改一遍） |
+| `ios/Podfile` | 由 `pod install` 新建 | **要**（团队/CI 都靠它复现依赖） |
+| `ios/Podfile.lock` | 由 `pod install` 新建 | **要**（锁版本；不提交等于每次解析出不同版本） |
+| `ios/Runner.xcworkspace/contents.xcworkspacedata` | `pod install` 会往工作区里加 `Pods/Pods.xcodeproj` 引用 | **要** |
+| `ios/Pods/`、`Flutter/Generated.xcconfig`、`Flutter/ephemeral/` | 生成物 | **不要**（`ios/.gitignore` 已经忽略了） |
+
+也就是说：**装好 Xcode + CocoaPods 之后的第一次构建，会留下 4 个需要提交的改动**，
+这是正常的、预期的。不写清楚的话，下一次 `git status` 会让人以为"谁动了工程文件"。
+
 ## 二之四之二、依赖的 iOS 可用性（静态核过，2026-09-30）
 
 **结论：现在每个直接依赖都能在 iOS 上跑。** 判据是各包自己 pubspec 里的
