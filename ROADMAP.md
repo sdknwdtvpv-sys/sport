@@ -316,6 +316,14 @@ adb push app/build/app/outputs/flutter-apk/app-debug.apk /sdcard/Download/
 - **26 项测试**，含**用本地环回 HttpServer 验证真实 HTTP 传输**
 
 **剩余**：
+- [ ] ★ **先定"积压事件要不要一起发"**（**这条没定之前不要发布配了 `LIANLEME_ANALYTICS_URL` 的包**）
+      没配地址的包**不会丢**事件，而是无限攒在本地（上限 1 万条，`_NullTransport` 恒失败 +
+      每次冷启动 `resetParked`）。第一份看板本来就觉得"没有历史数据"，
+      而一旦配了地址，那些**上个版本攒下的**事件会在第一次冷启动被一次性发出去 ——
+      用户当时用的可是"不上报"的包。三个选项与代价见 `docs/analytics.md` §10
+      （A 照发 / B 丢掉积压 / C 加 build-time 代次只发本代次）。
+      **我的建议是 C（或退一步 B），但这是产品与合规决策**：它同时决定政策 §3.2
+      怎么写、以及数据安全表的"此前未收集"怎么填。
 - [ ] 接真实上报地址（`main.dart` 的 `_NullTransport` → `HttpAnalyticsTransport`）
 - [ ] **手工抓包验证"训练中零请求"** —— 测试覆盖不到，只能真机抓
 - [ ] `docs/analytics-sdk.md` §12 的 11 项验收清单逐条打勾
