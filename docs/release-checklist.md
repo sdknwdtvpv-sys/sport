@@ -289,7 +289,7 @@ cd .. && node tool/check-aab.mjs
 
 | 项 | 状态 |
 |---|---|
-| 构建链 | ✅ 两种产物都核过：release **APK 60.8M**（`flutter-apk/app-release.apk`，v1.30.0 实测；旧行写的 59.8M 是 v1.22 那会儿的）、**AAB 55.9M**（`bundle/release/app-release.aab`）。AAB 用 `node tool/check-aab.mjs` 核过：骨架三件套 + **三 ABI**（arm64-v8a / armeabi-v7a / x86_64，各含 libsqlite3/libflutter/libapp）+ 版本号与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 会**假报失败**（卷名空格坑，见 `docs/dev-environment.md`），产物没问题 |
+| 构建链 | ✅ 两种产物都核过（**2026-09-30 在 v1.32.0 上重编重核**）：release **APK 60.8M**、**AAB 56.6M**（`bundle/release/app-release.aab`；旧行写的 59.8M/55.9M 是 v1.22–1.30 那会儿的）。AAB 用 `node tool/check-aab.mjs` 核过：骨架三件套 + **三 ABI**（arm64-v8a / armeabi-v7a / x86_64，各含 libsqlite3/libflutter/libapp）+ 版本号与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 会**假报失败**（卷名空格坑，见 `docs/dev-environment.md`），产物没问题 |
 | 签名接线 | ✅ 接线与硬失败**已验证**（缺 `key.properties` 时构建直接失败、逃生开关有效） |
 | 正式签名 | ❌ **还没有真 keystore**。所以 `dist/*.apk` 是**debug 签名的旁加载包** —— 能装自己手机，**商店必拒收**。生成：`app/android/tool/gen-upload-keystore.sh`（在你那边） |
 | 权限 | ✅ 源码 manifest **两项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29）。打包后多一条**隐含**的 `READ_EXTERNAL_STORAGE`（≤29，系统因 WRITE 授予，不是谁声明的）—— **已在政策里如实披露** |
@@ -344,7 +344,7 @@ cd .. && node tool/check-aab.mjs
 | `dist/` 内容 | `练了么-v1.31.0.apk` + `copyright/`（V1.31.0 的源程序与说明书 PDF/HTML + measure.html）+ `README.md` —— **没有上一版的残留** |
 | APK（旁加载包） | `versionCode 40 · versionName 1.31.0`，与 `app_info.dart` / `pubspec.yaml` 一致；manifest 合并后 **2 条声明**（INTERNET、WRITE_EXTERNAL_STORAGE ≤29）+ 1 条注入（DYNAMIC_RECEIVER）+ 1 条隐含（READ ≤29，系统因 WRITE 授予） |
 | `privacy-audit.mjs --apk`（发布前必跑） | ✅ 对得上：18 事件 / 7 公共字段 / 2 声明权限 / **打包后合并 5 条**全部已披露 |
-| AAB（Google Play 通道） | ✅ `tool/check-aab.mjs`：119 条目 · 56.6 MB · **三 ABI** 原生库齐全（arm64-v8a / armeabi-v7a / x86_64）· 版本 1.31.0 与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 仍会**假报** "failed to strip debug symbols"（卷名空格），产物没问题 |
+| AAB（Google Play 通道） | ✅ `tool/check-aab.mjs`（**在 v1.32.0 上重核**）：119 条目 · 56.6 MB · **三 ABI** 原生库齐全（arm64-v8a / armeabi-v7a / x86_64）· 版本 **1.32.0** 与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 仍会**假报** "failed to strip debug symbols"（卷名空格）并**退出码非 0**，产物没问题 —— 所以判据必须是"核产物"（`check-aab` / `check-dist`），不是看退出码。AAB 现在也放进 `dist/`，由 `tool/check-dist.mjs` 每次核版本（旧版本残留、文件名没版本号都判红）|
 | 真机 `75caf509` | 装的是 **1.31.0（versionCode 40）**；`force-stop` 后冷启动正常、`E/flutter` **0 条**；屏幕尺寸已复位（1280×2772） |
 | 商店截图三套 | `store-assets/screenshots/` 14 张（1080×2400，国内/软著）· `screenshots-play/` 11 张（1080×1920，Play 要的 9:16）· `screenshots-ios/` 13 张（1320×2868，8 位 RGB 无 alpha）。齐/尺寸/夹带由 `tool/check-screenshots.mjs` 每次核对 |
 | 全新克隆 | ✅ `git clone` 后直接 `./verify.sh` → 六层全跑、`未发现失败`（首测 168 个 ✓；`2f66d40` 复测 753 项测试全绿、零阻塞）。见 CHANGELOG：为此加了第 0 步引导 |

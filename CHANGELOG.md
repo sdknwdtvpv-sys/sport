@@ -259,6 +259,20 @@ bytes=22567`（与设备报的 22.0 KB 对得上）；`tool/check-ciphertext.mjs
 > **读**相册的 API，与 iOS 那句"仅新增、从不读"的承诺冲突，所以 iOS 传 null。
 > 现在两端各有一张实拍图作为证据，差异清单里也补上了这一行。
 
+### 同版追加：商店用的 **AAB** 也在 v1.32.0 上重编重核了（并且顺手证明了"退出码会骗人"）
+
+`release-checklist` 里 AAB 那一行还停在 **1.31.0**，而 Google Play / 国内商店上传用的是 AAB ——
+版本一变，那条证据就过期了。这一轮重编重核：
+
+* `ORG_GRADLE_PROJECT_allowDebugSigning=true flutter build appbundle --release` →
+  **56.6 MB / 119 条目 / 三 ABI（arm64-v8a、armeabi-v7a、x86_64）**，`tool/check-aab.mjs`
+  判绿、版本号 **1.32.0** 与 `app_info.dart` 一致；
+* ⚠️ **`flutter build appbundle` 这次退出码是 1**（那句 "failed to strip debug symbols" 是**假的**，
+  卷名空格的老坑）—— 产物完全正常。这条正好印证了既有的纪律：**判据是"核产物"，不是看退出码**
+  （上一次栽的是反方向：构建**真失败**却被管道里的 `tail` 把退出码吞成 0）；
+* AAB 现在也放进 `dist/`（`练了么-v1.32.0.aab`），由上一轮新增的 `tool/check-dist.mjs`
+  每次核"只有当前版本 + 包内版本一致"。
+
 版本 1.31.0+40 → 1.32.0+41。
 
 ## v1.31.0 · 体重的**单独同意**：敏感个人信息不能靠"政策总同意"顶替
