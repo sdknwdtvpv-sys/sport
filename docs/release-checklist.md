@@ -172,21 +172,41 @@ flutter build apk --release \
 
 **在这个数字到手之前，按项目自己的规则就不能发布。**
 
-## 6. 版本号
+## 6. 版本号（每次切版照做）
 
-- [x] ✅ 遵守 `CHANGELOG.md` 开头的策略：**版本号只跟随 `app/` 下的代码改动**。
-      `v1.2.0` 相对 `v1.1.0` 改的是 `app/` 代码（渐进建议接线 / `daysAgo` / `tap_count` 口径），据此切版。
-- [x] ✅ **没有**升 major。本次没有破坏性变更（`lastSessionFor` 只是多了一个可选参数，
-      两个实现同步改；`TapKind` 是加值），因此按 fix/feature 升 minor。
-- [x] ✅ `app/pubspec.yaml` 已 bump：`version: 1.2.0+3`（build number `+2` → `+3`）
+> 这一节原来是一份 **v1.2.0 那次的回顾**（带勾选框），混在"当前该怎么做"里 —— 下一个人
+> 切版时会以为那些框是给自己的。2026-09-30 拆成两半：**上面是流程，下面才是历史**。
+
+**流程（照这几条走）**：
+
+- [ ] 遵守 `CHANGELOG.md` 开头的策略：**版本号只跟随 `app/` 下的代码改动**
+      （只改文档/工具不切版；改了 `app/` 才切）
+- [ ] `app/pubspec.yaml` 的 `version:` bump（`+N` build number 一起加一）
+- [ ] `app/lib/core/app_info.dart` 的 `kAppVersion` —— **必须与 pubspec 前缀一致**
+- [ ] `CHANGELOG.md` 加一节，与 commit / tag 一同落地
 - [ ] `app/android/app/build.gradle.kts` 的 `versionCode/versionName` 取自 Flutter，
-      无需手改；但**每个商店上传的 versionCode 必须递增**
-- [x] ✅ `CHANGELOG.md` 已同步为「v1.2.0」，与 commit / tag 一同落地
-- [x] ✅ 顺带补回 CHANGELOG 开头**丢失的版本号策略正文**（本节引用的就是它）
-- [ ] ⚠️ **界面上的版本号也要改**：`app/lib/core/app_info.dart` 的 `kAppVersion`。
-      以前它是写死在 `profile_screen.dart` 里的，v1.1.0 / v1.2.0 两次切版都没带上，
-      界面上错了两个版本。现在由 `app/test/app_version_test.dart` 读 pubspec 核对 ——
-      **忘了改 `flutter test` 会红**，不用靠人记得。
+      **不用手改**；但**每个商店上传的 versionCode 必须递增**
+- [ ] 装到真机（`dist/` 出包 → `adb install -r`），并把三处"真机装的是哪一版"改对：
+      `README.md` / `ROADMAP.md` / 本文件的状态速览 —— **`verify.sh` 会拿它们与
+      `app_info.dart` 对账**，改漏一处就红
+
+**被门禁钉住的地方（所以忘了会被抓住，不用靠记性）**：
+
+| 会漂的东西 | 谁在守 |
+|---|---|
+| `pubspec.version` ↔ `kAppVersion` | `app/test/app_version_test.dart`（读 pubspec 核对，第 5 层跑） |
+| README 顶部 `**vX.Y.Z**` | `verify.sh` **第 2 层** |
+| `docs/your-todo.md` 顶部时间戳 | 同上（第 2 层，一条命令级的守卫） |
+| 三处"真机装的是哪一版" | 同上（第 2 层，三处逐个点名） |
+| CHANGELOG 小节降序 + 不许粘行 | 同上（第 2 层） |
+| 软著材料里的版本 / 模式版本 / 源程序量 | `tool/copyright-pdf.mjs --check-docs`（第 2 层里跑） |
+| 门禁测试条数（本文件状态速览那一行） | `verify.sh` **第 5 层**（拿实测条数跟它比，对不上就红） |
+
+**历史（v1.2.0 那次，留作教训）**：`app/pubspec.yaml` bump 到 `1.2.0+3`、没有升 major
+（`lastSessionFor` 只多了一个可选参数、`TapKind` 是加值，按 fix/feature 升 minor）。
+**那次的教训是界面上那个版本号**：`kAppVersion` 以前写死在 `profile_screen.dart` 里，
+`v1.1.0` / `v1.2.0` 两次切版都没带上 —— 界面上错了两个版本，谁都没发现。
+现在它由上面那张表里的第一行守着。
 
 ## 6.5 用 adb 验真机时的一个坑（2026-09-29 记）
 
