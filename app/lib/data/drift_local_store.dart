@@ -221,7 +221,9 @@ class DriftLocalStore implements LocalStore {
       await _db.delete(_db.workoutItem).go();
       await _db.delete(_db.workout).go();
       // 个人设置一并清掉：用户说"删除全部数据"就包括他的偏好开关。
-      // 之后会回落到默认值（渐进建议开、单位默认、"帮助改进产品"开）。
+      // 之后会回落到默认值（渐进建议开、单位默认 kg、**"帮助改进产品"关**）。
+      // ⚠️ 最后那一条 v1.28.0 起是"关"（审计 A 的后半段把默认值从开改成关）——
+      // 这里曾写着"开"，是句过期的话。现在由 test/delete_all_test.dart 用断言钉着。
       await _db.delete(_db.userProfile).go();
       // 还没发出去的埋点事件也必须清 —— 否则"删了数据"之后还会继续上报，
       // 这在合规上是明确不允许的。
@@ -241,8 +243,10 @@ class DriftLocalStore implements LocalStore {
       // ⚠️ 这只清了**本机**那串凭据。政策里承诺的"云端也删"是另一件事：
       // 客户端必须另外调 `DELETE /v1/account`，否则用户的数据会一直留在服务器上，
       // 而他连打开它的钥匙都没了（恢复码刚被他自己删掉）。
-      // 所以「删除全部数据」必须多问一句"云端备份也删吗"。**这一条还没做**，
-      // 记在 docs/release-checklist.md「待处理」与 docs/backend-design.md §七。
+      // 所以「删除全部数据」必须多问一句"云端备份也删吗"。
+      // **那件事已经做了**（v1.22.0，在 features/profile/profile_screen.dart 的
+      // `_deleteAll()`：先问用户 → 先删云端、失败则整个中止 → 再清本机）。
+      // 数据层这行只负责清**本机**那串凭据，不联网；这里曾写着"这一条还没做"，也是句过期的话。
       await _db.delete(_db.backupAccount).go();
       // exercise（动作库）刻意不删：那是产品资产，不是用户数据，
       // 删了用户就没法再记录任何动作。
