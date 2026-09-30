@@ -107,6 +107,7 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 |---|---|---|---|
 | 9 | ~~**CocoaPods 怎么装**~~ **不需要了（已查证）** | 2026-09-30 查证三条证据：① 我们的两个插件 `share_plus`、`gal` **都自带 `Package.swift`**；② Flutter 已生成 `FlutterGeneratedPluginSwiftPackage`；③ **`app/ios/` 里根本没有 `Podfile`**，`Runner.xcworkspace` 对 Pods 的引用数是 **0** —— 这个工程本来就是 **Swift Package Manager 路线**。`flutter doctor` 那句"没有 CocoaPods 插件就不工作"是通用提示 | 不需要你决定任何事。等许可证接受后我用一次真实构建做最终确认（能编过即闭环） |
 | 10 | **要不要在 iPad 上跑** | `TARGETED_DEVICE_FAMILY = "1,2"` 是模板默认；改它动的是**商店页的产品承诺** | **2026-09-30 实测过了**（把模拟器调到 iPad Pro 12.9 吋的 2048×2732 / 约 4:3，跑完整套 11 步）：**不会崩、0 布局溢出**，但界面就是**被拉伸的手机版** —— 大按钮变成一条通栏、内容靠左、大片空白（证据：`docs/images/ipad-width-home.png`、`docs/images/ipad-width-workout.png`）。**建议仍改成 `"1"`**（只支持 iPhone）：现在承诺 iPad，等于拿一张拉长的截图换一个「支持 iPad」的标签。要真支持，得先做平板布局（两栏之类）再开 |
+| 10b | **备份范围要不要扩到「全都要」** | 设计稿当初写的是「全都要（设置也备份）」，实现里只有**训练记录**（体重/计划/设置都不在）。这是**范围决策**，不是 bug —— 改就牵动备份 format 版本、中英政策、隐私事实表与云备份（同一份实现） | **建议按现状（只备份训练记录）先上**：它是数据主体，另三样丢了不算灾难；等有人真的抱怨「换手机体重没了」再扩，那时改动面也更清楚。边界已用测试钉住 |
 | 11b | **`android:requestLegacyExternalStorage` 要不要删** | 它只在 Android 10 上有意义（让那一版「存相册」走老路径），API 30+ 被忽略；政策已如实披露 | 建议**留着**：手边只有 API 36 设备，删了之后「Android 10 还能不能存相册」我们**验证不了** —— 拿不确定换一点干净，不划算 |
 | 11 | **Android SDK 路径里的空格怎么根治** | 卷名 `Elliot's SSD` 有空格，而 Android 工具链不支持带空格的 SDK 路径 —— 已经咬了三次（AAB 误报、`privacy-audit --apk` 空转、`sdkmanager`/`avdmanager` 直接报错） | 三条路：① 在这块 SSD 上再建一个**名字没有空格的 APFS 卷**（同一个容器，空间共享）；② 把 SDK 放回内置盘（约 3.5G）；③ 继续用我写的绕法（`docs/dev-environment.md` 里四条命令） |
 

@@ -270,12 +270,13 @@
       ]
     },
     "whatLeavesDeviceWhenEnabled": [
-      "端到端加密后的整包备份（密文）—— 服务端看不到动作名、重量、体重",
+      "端到端加密后的整包备份（密文）—— 内容只有**训练记录**（动作 id、重量、次数、组序、热身、RPE、距离、完成时间）与一份动作 id→中文名的映射；服务端连一个字段都读不出来",
       "account_id：恢复码的 SHA-256（服务端反推不出恢复码，因此也解不开密文）",
       "密文字节数与最后更新时间"
     ],
     "_neverLeaves": "恢复码本身、明文训练数据、体重数值 —— 这些只在设备上",
-    "_enabledPhrasesWhy": "启用之后政策必须逐条出现这些说法。最后一条是删除权：政策写了'云端也删'，客户端就必须真的做出来（app/lib/features/profile/profile_screen.dart 的 _deleteAll：先删云端、失败就整个中止，再清本机）。"
+    "_enabledPhrasesWhy": "启用之后政策必须逐条出现这些说法。最后一条是删除权：政策写了'云端也删'，客户端就必须真的做出来（app/lib/features/profile/profile_screen.dart 的 _deleteAll：先删云端、失败就整个中止，再清本机）。",
+    "_scopeNote": "⚠️ 2026-09-30 核对：备份**不含**身体数据（体重）、计划模板与个人设置 —— 设计稿第四节的子决策 3 曾写「全都要（设置也备份）」，但实现里没有，边界由 app/test/backup_scope_test.dart 钉着。要不要扩到「全都要」是范围决策，见 docs/your-todo.md；本文件的措辞按**现状**写，不按计划写。"
   },
   "impliedPermissions": [
     {
