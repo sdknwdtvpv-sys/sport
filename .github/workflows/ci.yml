@@ -47,6 +47,35 @@ jobs:
           set -o pipefail
           ./verify.sh 2>&1 | tee /tmp/lianleme-gate.log
 
+      # 门禁的**账目**：绿了也要能证明"六层真的都跑了，而且没有一层被环境挡下"。
+      #
+      # 为什么需要这一步：`verify.sh` 的约定是"环境导致的无法执行 = 阻塞，不计入失败" ——
+      # 这在开发机上是**对的**（环境坏了和测试失败是两件事），但在 CI 上很危险：
+      # 少了 Dart、pub get 拉不动、路径含撇号……都可能让某一层"没跑"而整条命令照样 exit 0，
+      # 于是**绿得无声无息**（这个仓库最怕的就是这种绿）。所以 CI 上把话反过来讲：
+      # 六层的标记必须都在日志里，且**不许有一个"⊘ 阻塞"**。
+      # 另外：GitHub 的 job 日志要凭据才读得到（匿名 API 403），这步的成绩会打印在
+      # 步骤名旁边 —— 绿不绿之外，至少能看出它过了这道账。
+      - name: 门禁账目（六层都跑了且零阻塞）
+        run: |
+          set -e
+          for layer in '[1/6]' '[2/6]' '[3/6]' '[4/6]' '[5/6]' '[6/6]'; do
+            if ! grep -qF -- "$layer" /tmp/lianleme-gate.log; then
+              echo "::error::门禁日志里没有 $layer —— 那一层没跑（CI 上「没跑」不许算绿）"
+              exit 1
+            fi
+          done
+          if grep -qF -- '⊘ 阻塞' /tmp/lianleme-gate.log; then
+            echo "::error::门禁里有步骤被环境阻塞 —— CI 上这等于「没验到」，不许算绿"
+            grep -F -- '⊘ 阻塞' /tmp/lianleme-gate.log || true
+            exit 1
+          fi
+          if ! grep -qF -- '未发现失败' /tmp/lianleme-gate.log; then
+            echo "::error::门禁日志里没有「未发现失败」"
+            exit 1
+          fi
+          echo "✓ 六层都跑了、零阻塞、未发现失败 —— 这次「CI 绿」就是「门禁绿」"
+
       # 门禁红了要能**一眼看出红在哪一层**。
       # 为什么要单独一步：GitHub 的 job 日志要凭据才读得到（匿名 API 403），
       # 而**注解**（::error::）在公开仓库上匿名可读 —— 所以把红的那几行抬出来，

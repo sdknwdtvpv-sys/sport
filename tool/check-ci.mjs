@@ -18,7 +18,11 @@
  *      （它不做任何检查，只是搬日志，且必须只碰那份日志）；加一条门禁不管的命令就红；
  *   4. **版本必须钉死**：`runs-on: ubuntu-24.04`（不是 `ubuntu-latest`）、
  *      `node-version: '22'`（`node:sqlite` 要 22.5+）、`flutter-version: '3.47.5'`；
- *   5. **头部必须说清现在是等价关系**：要出现「CI 跑的就是门禁本身」这种说法，
+ *   5. **绿必须是真的**：CI 里要有一道"账目"—— `verify.sh` 的约定是"环境导致的无法执行
+ *      算**阻塞**、不计入失败"（开发机上是对的：环境坏了与测试失败是两件事），
+ *      但在 CI 上这条约定会让"某一层根本没跑"也 exit 0 —— 那就是**无声的绿**。
+ *      所以 CI 必须自己查一遍日志：六层的标记都在、**没有「⊘ 阻塞」**、并且写着"未发现失败"。
+ *   6. **头部必须说清现在是等价关系**：要出现「CI 跑的就是门禁本身」这种说法，
  *      并且**不许**再出现过去那句"**子集**"的措辞（否则文档里的承诺又与被核的东西对不上），
  *      还必须在 `push` 与 `pull_request` 上都触发。
  *
@@ -133,7 +137,14 @@ function inspect(root) {
   }
   facts.push('钉版本：ubuntu-24.04 · node 22 · flutter 3.47.5');
 
-  // ── 5. 头部说清等价关系，且不留过去那句"子集"
+  // ── 5. 绿必须是真的：要有一步"账目"挡住"被阻塞却 exit 0"
+  if (!commands.some((c) => /lianleme-gate\.log/.test(c) && /阻塞/.test(c))) {
+    problems.push('CI 里没有"账目"这一步 —— `verify.sh` 把"环境阻塞"当**不失败**'
+      + '（开发机上是对的，CI 上意味着某一层没跑也可能绿）。'
+      + '需要一步查日志：没有「⊘ 阻塞」才允许绿');
+  }
+
+  // ── 6. 头部说清等价关系，且不留过去那句"子集"
   const head = text.slice(0, text.indexOf('\non:'));
   if (!/CI 跑的就是门禁本身/.test(head)) {
     problems.push('workflow 头部没写"CI 跑的就是门禁本身"—— 读者不知道 CI 绿是不是等于门禁绿');
@@ -193,6 +204,14 @@ function selftest() {
       '# 复查时间：2027-01，或收到 GitHub 弃用公告时。',
       '# 这个 workflow 是 **子集**，不是门禁本身。'), false, '还留着「**子集**」'],
     ['pull_request 触发被删', (t) => edit(t, '  pull_request:\n', ''), false, 'push 与 pull_request'],
+    // 这一条是**无声的绿**：verify.sh 把"环境阻塞"当不失败（开发机上对），
+    // CI 上少了这道账，某一层没跑也照样 exit 0 —— 而那正是这个仓库最怕的绿。
+    ['账目那一步被删（被阻塞也可能绿）', (t) => {
+      const i = t.indexOf('      - name: 门禁账目');
+      const j = t.indexOf('      # 门禁红了要能');
+      if (i < 0 || j < 0 || j < i) throw new Error('自检夹具失效：找不到账目那一步');
+      return t.slice(0, i) + t.slice(j);
+    }, false, '账目'],
   ];
 
   let bad = 0;

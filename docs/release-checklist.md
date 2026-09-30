@@ -349,7 +349,7 @@ cd .. && node tool/check-aab.mjs
 | 商店截图三套 | `store-assets/screenshots/` 14 张（1080×2400，国内/软著）· `screenshots-play/` 11 张（1080×1920，Play 要的 9:16）· `screenshots-ios/` 13 张（1320×2868，8 位 RGB 无 alpha）。齐/尺寸/夹带由 `tool/check-screenshots.mjs` 每次核对 |
 | 全新克隆 | ✅ `git clone` 后直接 `./verify.sh` → 六层全跑、`未发现失败`（首测 168 个 ✓；`2f66d40` 复测 753 项测试全绿、零阻塞）。见 CHANGELOG：为此加了第 0 步引导 |
 | iOS 产物 | ✅ `node tool/check-ios-app.mjs`（新工具，2026-09-30，安卓那边 `check-aab.mjs` 的对应物）：两种构建都逐项核过 —— 身份（显示名/两端 bundle id 一致）、版本 `1.31.0 (40)`、**只有「仅新增」相册权限（无读权限）**、主题 Dark、方向锁定、应用内资产三件齐、`sqlite3.framework` 与 `objective_c.framework` 都在。⚠️ 它同时报出一条产品决定：`UIDeviceFamily = [1,2]` → **这个包在商店里会承诺「支持 iPad」**（`your-todo` 第 10 条那一项）。工具带自检（造几份动过手脚的 .app 要求它抓得住），自检已进门禁第 2 层 |
-| 软著材料 | `dist/copyright/` 里是 **V1.33.0**：源程序 **163 个文件 / 43,077 行 / 全文 862 页**、提交用前 30 + 后 30 页（正好 60 页）、说明书 6 页；著作权人仍是占位符（**待你实名提交**，生成命令：`node tool/copyright-pdf.mjs --owner "你的姓名"`） |
+| 软著材料 | `dist/copyright/` 里是 **V1.33.0**：源程序 **163 个文件 / 43,115 行 / 全文 863 页**、提交用前 30 + 后 30 页（正好 60 页）、说明书 6 页；著作权人仍是占位符（**待你实名提交**，生成命令：`node tool/copyright-pdf.mjs --owner "你的姓名"`） |
 
 **这份核验能证明什么、不能证明什么**：能证明"我们这边该做的都做了、且对得上"；
 **不能**证明"商店会收"—— 那还需要真 keystore（现在仍是 debug 签名）、备案、软著证书、

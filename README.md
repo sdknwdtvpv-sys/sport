@@ -74,6 +74,8 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 软删除排除、自重动作重量为 null……）。
 
 以上 6 层**就是 CI 本身**：workflow 只有一条命令 `./verify.sh`（[运行记录](https://github.com/sdknwdtvpv-sys/sport/actions)）。
+而且 CI 里还有一道**账目**：日志里六层的标记必须都在、**不许出现「⊘ 阻塞」**
+（`verify.sh` 在开发机上允许"环境阻塞不算失败"，CI 上这会让"某一层没跑"也变绿 —— 所以那里反过来判红）。
 所以「CI 绿」= 「门禁绿」，没有第二种口径 —— 这层关系由 `tool/check-ci.mjs` 守着
 （CI 不跑门禁、用 `--fast` 偷偷跳过某一层、混进门禁不管的命令、版本没钉住，都会判红）。
 这也意味着整套验证在**从零 clone 的干净 Linux 环境**里同样成立，不依赖任何本机配置 ——
