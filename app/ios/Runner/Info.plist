@@ -7,7 +7,8 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Lianleme</string>
+	<!-- 桌面上的名字。模板留的是 Lianleme，与商店名/安卓名不一致 —— 三处必须同名。 -->
+	<string>练了么</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -66,5 +67,18 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- 存分享卡到相册（gal 插件）。**只声明"仅新增"，不申请读取相册** ——
+	     多要一项权限就等于多要一分信任，而我们并不需要读用户的相册。
+	     安卓那边走 MediaStore 免权限，所以这个键只在 iOS 需要。 -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>把训练总结卡片存进你的相册。我们只写入这一张图，不会读取你相册里的任何内容。</string>
+	<!-- App Store 的加密合规问题：只用了系统标准的 HTTPS，属于豁免范围，声明 false
+	     即可，否则每次提审都要回答出口合规问卷。 -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- 本 App 只有深色主题（与安卓的 NormalTheme 一致）。不锁的话，系统处于浅色模式时
+	     状态栏/系统控件会按浅色渲染，与页面撞色。 -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 </dict>
 </plist>

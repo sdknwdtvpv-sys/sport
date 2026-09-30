@@ -8,6 +8,32 @@
 
 ## 未切版（v1.19.0 之后的改动，尚未打 tag）
 
+### iOS 侧与安卓对齐（「双端先上」的第一步，不需要 Xcode）
+
+决定「双端先上」之后，先把**不依赖 Xcode 就能做**的那部分做完 ——
+查出来的问题与安卓当初是同一类：**图标还是 Flutter 模板默认图、显示名还是模板的
+`Lianleme`、启动屏还是纯白**（会白闪）、少一个存相册的权限声明。
+
+| 项 | 之前 | 现在 |
+|---|---|---|
+| 应用图标 | Flutter 模板默认（15 个尺寸） | volt 底 + 墨色「练」，**满幅不透明**（App Store 拒收带透明）、不切圆角（系统自己裁） |
+| 启动屏 | 模板纯白 | 与 App 同色 `#0B0B0D` + 居中 volt「练」（`LaunchImage` @1x/@2x/@3x） |
+| 显示名 | `Lianleme` | 「练了么」（与商店名、安卓名三处一致） |
+| 存相册权限 | 无（iOS 上存相册会失败） | `NSPhotoLibraryAddUsageDescription`，**只申请"仅新增"**，不读用户相册 |
+| 提审合规 | 无 | `ITSAppUsesNonExemptEncryption=false`（免得每次提审答出口合规）+ `UIUserInterfaceStyle=Dark` |
+| 守卫 | 无 | `tool/asset-check.mjs` 覆盖 iOS 七条 —— **负向验证过** |
+
+图标仍由 `tool/gen-icons.py` **一套配方出两端**（安卓 mipmap/自适应/圆形/剪影 +
+iOS 那 15 个尺寸 + 两端启动屏图），免得两端各画一遍慢慢长歪。
+
+**负向验证戳穿了我自己的一个漏洞**：iOS 那条"不是模板默认图"的检查第一版**永远为真** ——
+因为哈希收集器只收了安卓的 `ic_launcher.png`，iOS 的 `Icon-App-*.png` 没进去。
+把模板图标放回去时它没红，才发现是空转（**空转的守卫比没有守卫更危险**）。已修，现在会红。
+
+**还缺的（卡在工具链）**：这台机器没有 Xcode，iOS 跑不了。需要你从 App Store 装
+（约 20G，只能装 /Applications），以及注册 Apple Developer 账号（个人 ¥688/年）——
+「双端先上」就意味着这两笔。装好之后我做模拟器验证与 iOS 截图。
+
 ### 开发环境：依赖全部搬到 SSD（内置盘腾出 14G）
 
 **约定**：所有第三方依赖放在 `/Volumes/Elliot's SSD/harness-deps/`

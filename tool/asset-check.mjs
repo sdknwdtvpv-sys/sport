@@ -58,9 +58,14 @@ const ADAPTIVE = { mdpi: 108, hdpi: 162, xhdpi: 216, xxhdpi: 324, xxxhdpi: 432 }
 
 function flutterTemplateHashes() {
   // 从 flutter SDK 里找模板图标。找不到就明确说"跳过"，不假装通过。
+  // 依赖 2026-09-30 搬到了 SSD：/Volumes/Elliot's SSD/harness-deps/flutter
+  // （见 docs/dev-environment.md）。旧路径留着，换机器时不至于立刻失效。
   const sdk = process.env.FLUTTER_ROOT
-    ?? [join(process.env.HOME ?? '', 'development/flutter'), '/opt/flutter']
-      .find((p) => existsSync(join(p, 'packages/flutter_tools/templates')));
+    ?? [
+      "/Volumes/Elliot's SSD/harness-deps/flutter",
+      join(process.env.HOME ?? '', 'development/flutter'),
+      '/opt/flutter',
+    ].find((p) => existsSync(join(p, 'packages/flutter_tools/templates')));
   if (!sdk) return null;
   const tpl = join(sdk, 'packages/flutter_tools/templates');
   if (!existsSync(tpl)) return null;
@@ -69,7 +74,10 @@ function flutterTemplateHashes() {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name === 'ic_launcher.png') {
+      // 安卓的 ic_launcher.png 与 iOS 的 Icon-App-*.png 都要收。
+      // ⚠️ 第一版只收了安卓的 —— 于是"iOS 图标不是模板默认图"那条检查**永远为真**，
+      // 负向验证（把模板图标放回去）当场戳穿：它没红。（守卫空转比没有守卫更危险。）
+      else if (e.name === 'ic_launcher.png' || /^Icon-App-.*\.png$/.test(e.name)) {
         const info = pngInfo(p);
         if (info) hashes.set(info.md5, p);
       }
@@ -173,6 +181,77 @@ if (!existsSync(store)) {
   } else {
     ok.push('商店图标：512×512、无透明');
   }
+}
+
+// ── 6. iOS 侧（2026-09-30 补齐；和安卓是同一类问题，所以用同一套守卫）────────
+//
+// 这几条都是**没有任何测试会红**的那类：图标是模板默认、显示名是模板默认、
+// 少一个权限键、启动屏是纯白 —— 全都不会让构建失败，只会让上架被打回或让用户看到白闪。
+const IOS = join(ROOT, 'app/ios/Runner');
+const IOS_ICONS = join(IOS, 'Assets.xcassets/AppIcon.appiconset');
+
+if (!existsSync(IOS_ICONS)) {
+  bad('缺 app/ios/Runner/Assets.xcassets/AppIcon.appiconset —— iOS 没配图标');
+} else {
+  const files = readdirSync(IOS_ICONS).filter((f) => f.endsWith('.png'));
+  if (!files.length) bad('iOS 图标目录里一个 PNG 都没有');
+  let alpha = 0;
+  let isDefault = 0;
+  for (const f of files) {
+    const info = pngInfo(join(IOS_ICONS, f));
+    if (!info) { bad(`iOS 图标 ${f} 不是合法 PNG`); continue; }
+    // iOS 图标**不能有 alpha**（App Store 会拒收）
+    if (info.hasAlpha) alpha++;
+    if (tplHashes?.has(info.md5)) isDefault++;
+  }
+  if (alpha) bad(`iOS 有 ${alpha} 个图标带透明通道 —— App Store 会拒收（必须满幅不透明）`);
+  if (isDefault) bad(`iOS 有 ${isDefault} 个图标还是 **Flutter 模板默认图**`);
+  const marketing = join(IOS_ICONS, 'Icon-App-1024x1024@1x.png');
+  if (!existsSync(marketing)) {
+    bad('缺 iOS 的 1024×1024 图标（App Store 要求）');
+  } else {
+    const m = pngInfo(marketing);
+    if (!m || m.width !== 1024 || m.height !== 1024) {
+      bad(`iOS 1024 图标尺寸不对：${m?.width}×${m?.height}`);
+    }
+  }
+  if (!alpha && !isDefault) ok.push('iOS 图标：满幅不透明、不是模板默认图、1024 齐全');
+}
+
+const iosPlist = join(IOS, 'Info.plist');
+if (!existsSync(iosPlist)) {
+  bad('缺 app/ios/Runner/Info.plist');
+} else {
+  const plist = readFileSync(iosPlist, 'utf8');
+  if (/<string>Lianleme<\/string>/.test(plist)) {
+    bad('iOS 的 CFBundleDisplayName 还是模板默认的 Lianleme（应为「练了么」）');
+  } else if (!plist.includes('练了么')) {
+    bad('iOS 的 CFBundleDisplayName 不是「练了么」—— 三处（商店/安卓/iOS）必须同名');
+  }
+  if (!plist.includes('NSPhotoLibraryAddUsageDescription')) {
+    bad('iOS 缺 NSPhotoLibraryAddUsageDescription —— 存分享卡到相册会失败');
+  }
+  if (!plist.includes('ITSAppUsesNonExemptEncryption')) {
+    bad('iOS 缺 ITSAppUsesNonExemptEncryption —— 提审时会被问出口合规');
+  }
+  if (!plist.includes('练了么')) bad('iOS Info.plist 里没有中文应用名');
+  ok.push('iOS Info.plist：显示名 / 存相册权限 / 加密声明 齐全');
+}
+
+const iosLaunch = join(IOS, 'Base.lproj/LaunchScreen.storyboard');
+if (existsSync(iosLaunch)) {
+  const sb = readFileSync(iosLaunch, 'utf8');
+  if (/red="1" green="1" blue="1"/.test(sb)) {
+    bad('iOS 启动屏还是模板的纯白 —— App 是深色，冷启动会闪一下白');
+  } else {
+    ok.push('iOS 启动屏：与 App 同色（无白闪）');
+  }
+}
+
+// bundle id 不能是模板的 com.example.*
+const pbx = join(ROOT, 'app/ios/Runner.xcodeproj/project.pbxproj');
+if (existsSync(pbx) && /PRODUCT_BUNDLE_IDENTIFIER = com\.example\./.test(readFileSync(pbx, 'utf8'))) {
+  bad('iOS 的 bundle id 还是模板的 com.example.* —— 上架前必须改成自己的');
 }
 
 // ── 报告 ─────────────────────────────────────────────────────────────────

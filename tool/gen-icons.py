@@ -11,6 +11,13 @@
     volt    #D8FF47   强调色（App 里所有主按钮）
     voltInk #12180A   volt 上的字色
 
+**两端一套配方**：Android（mipmap + 自适应 + 圆形 + 主题剪影）与
+iOS（Assets.xcassets 里那 19 个尺寸 + 启动屏的 LaunchImage）都由这里生成，
+免得两端各画一遍、慢慢长歪。
+
+⚠️ iOS 图标**不能有透明通道**（App Store 会因此拒收），而且**不要自己切圆角**
+（系统会自己裁）—— 所以 iOS 那套走的是"满幅不透明"的画法，和 Android 的圆角版不同。
+
 方向 A（本工具默认）：volt 底 + 墨色「练」—— 启动器里最亮、最好认。
 方向 B（`--alt`）：深底 + volt「练」—— 更像 App 内部，但小尺寸下发暗。
 
@@ -118,6 +125,29 @@ def launch_glyph(size, alt):
     return glyph_layer(size, VOLT, 0.86)
 
 
+# iOS 需要的确切尺寸（名字与 Assets.xcassets/AppIcon.appiconset/Contents.json 对齐）
+IOS_ICONS = [
+    ('Icon-App-20x20@1x.png', 20), ('Icon-App-20x20@2x.png', 40),
+    ('Icon-App-20x20@3x.png', 60),
+    ('Icon-App-29x29@1x.png', 29), ('Icon-App-29x29@2x.png', 58),
+    ('Icon-App-29x29@3x.png', 87),
+    ('Icon-App-40x40@1x.png', 40), ('Icon-App-40x40@2x.png', 80),
+    ('Icon-App-40x40@3x.png', 120),
+    ('Icon-App-60x60@2x.png', 120), ('Icon-App-60x60@3x.png', 180),
+    ('Icon-App-76x76@1x.png', 76), ('Icon-App-76x76@2x.png', 152),
+    ('Icon-App-83.5x83.5@2x.png', 167),
+    ('Icon-App-1024x1024@1x.png', 1024),
+]
+
+
+def ios_icon(size, alt):
+    """iOS 图标：**满幅、不透明、不切圆角**（系统自己裁 + App Store 拒收带透明的图）。"""
+    img = Image.new('RGB', (size, size), BG if alt else VOLT)
+    img = img.convert('RGBA')
+    img.alpha_composite(glyph_layer(size, VOLT if alt else VOLT_INK, 0.56))
+    return img.convert('RGB')
+
+
 def store_icon(size, alt):
     """应用商店要求：512×512、**不能有透明**、不能有圆角（商店自己加）。"""
     if alt:
@@ -187,6 +217,25 @@ def main():
                 '<resources>\n'
                 f'    <color name="ic_launcher_background">#{VOLT[0]:02X}{VOLT[1]:02X}{VOLT[2]:02X}</color>\n'
                 '</resources>\n')
+
+    # ── iOS：19 个尺寸 + 启动屏的 LaunchImage ──
+    ios_dir = os.path.join(ROOT, 'app/ios/Runner/Assets.xcassets/AppIcon.appiconset')
+    if os.path.isdir(ios_dir):
+        for name, size in IOS_ICONS:
+            ios_icon(size, args.alt).save(os.path.join(ios_dir, name))
+        print(f'  iOS AppIcon：{len(IOS_ICONS)} 个尺寸（满幅不透明，系统自己裁圆角）')
+
+        # 启动屏：和 Android 一样，深底 + 居中的 volt「练」。
+        # iOS 的 LaunchImage 是三张不同倍率的图，画布留白由 storyboard 的
+        # contentMode=center 负责，所以这里给足四周留白。
+        launch_dir = os.path.join(ROOT, 'app/ios/Runner/Assets.xcassets/LaunchImage.imageset')
+        if os.path.isdir(launch_dir):
+            for name, size in (('LaunchImage.png', 96), ('LaunchImage@2x.png', 192),
+                               ('LaunchImage@3x.png', 288)):
+                canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+                canvas.alpha_composite(glyph_layer(size, VOLT, 0.72))
+                canvas.save(os.path.join(launch_dir, name))
+            print('  iOS 启动图：LaunchImage @1x/@2x/@3x（透明底 + volt「练」）')
 
     nodpi = os.path.join(RES, 'drawable-nodpi')
     os.makedirs(nodpi, exist_ok=True)
