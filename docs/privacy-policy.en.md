@@ -215,6 +215,14 @@ There is also **`android:requestLegacyExternalStorage="true"`** on `application`
 release uses the legacy route), **ignored on API 30+**. We state it because a reviewer can find
 it in the package. Verify it yourself: `aapt2 dump badging <apk> | grep permission`.
 
+**On iOS we request exactly one photo permission, and it is add-only**:
+`NSPhotoLibraryAddUsageDescription`, used to **write** the share card into your photo library.
+We do **not** request read access (`NSPhotoLibraryUsageDescription`) — which is also why iOS
+does not create a "练了么" album; the card lands in **Recents**. One album grouping less, in
+exchange for "we never read your photo library" being literally true. Beyond this we request
+no location, contacts, camera, microphone, notifications, or advertising identifier (IDFA)
+on iOS.
+
 Beyond these, we request **no** location, contacts, camera, microphone, calendar, or
 background permissions.
 

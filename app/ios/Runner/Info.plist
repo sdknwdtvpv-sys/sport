@@ -69,7 +69,17 @@
 	</array>
 	<!-- 存分享卡到相册（gal 插件）。**只声明"仅新增"，不申请读取相册** ——
 	     多要一项权限就等于多要一分信任，而我们并不需要读用户的相册。
-	     安卓那边走 MediaStore 免权限，所以这个键只在 iOS 需要。 -->
+	     安卓那边走 MediaStore 免权限，所以这个键只在 iOS 需要。
+
+	     ⚠️ 这里**故意没有** NSPhotoLibraryUsageDescription（读相册权限），
+	     而这是一个会咬人的决定：gal 建/找相簿要读相册
+	     （PHAssetCollection.fetchAssetCollections + creationRequestForAssetCollection，
+	     需要 .readWrite 授权），所以 **iOS 上不能带相簿名去存**。
+	     对应代码是 app/lib/features/summary/share_card_exporter.dart 的
+	     shareAlbumNameFor(isIOS:) —— iOS 传 null，卡片落进「最近项目」。
+	     代价是少一个相簿分组，换来的是政策里那句"从不读取你的相册"为真。
+	     tool/asset-check.mjs 有一条跨文件检查守着这两者的互斥关系：一旦有人
+	     把 album: kShareAlbumName 写回代码，门禁就红。 -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>把训练总结卡片存进你的相册。我们只写入这一张图，不会读取你相册里的任何内容。</string>
 	<!-- App Store 的加密合规问题：只用了系统标准的 HTTPS，属于豁免范围，声明 false

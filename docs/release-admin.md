@@ -91,9 +91,19 @@
 | 应用图标 | ✅ 15 个 PNG 覆盖 **19 个槽位**（`iphone` 9 + `ipad` 9 + `ios-marketing` 1），满幅不透明、不切圆角（iOS 要求），由 `tool/gen-icons.py` 与安卓同源生成。**同一个 PNG 会被 iphone 和 ipad 两个 idiom 共用**，所以数文件会少算 |
 | 启动屏 | ✅ 与 App 同色 `#0B0B0D` + 居中 volt「练」（原来是模板纯白，会白闪） |
 | 显示名 | ✅ 「练了么」（原来是模板的 `Lianleme`） |
-| 存相册权限 | ✅ `NSPhotoLibraryAddUsageDescription`（**只申请"仅新增"**，不读相册） |
+| 存相册权限 | ✅ `NSPhotoLibraryAddUsageDescription`（**只申请"仅新增"**，不读相册）。**故意不要** `NSPhotoLibraryUsageDescription`（读相册）|
+| 相簿 | ⚠️ **与安卓有意不同**：iOS 上不建「练了么」相簿，分享卡落进「最近项目」。原因见下（`shareAlbumNameFor`）|
 | 提审合规 | ✅ `ITSAppUsesNonExemptEncryption=false`；`UIUserInterfaceStyle=Dark` |
 | 守卫 | ✅ `tool/asset-check.mjs` 已覆盖 iOS：图标不是模板图、无透明、显示名、权限键、启动屏不是纯白、bundle id 不是模板的。**2026-09-30 补上的洞**：旧版守卫只遍历磁盘上的 PNG，**从没打开过 `Contents.json`**，而且只对 1024 那一张做过尺寸校验 —— 现在改成清单与磁盘**双向对账**：① 清单里写了但磁盘没有（对应机型缺图标）② 磁盘上有但清单没引用（那张 PNG 永远不进包）③ 声明尺寸×倍率 ≠ PNG 真实像素（图标发虚）④ 19 个必需槽位缺一。四条都负向验证过（临时改名 / 塞孤儿图 / 29px 顶替 180px / 删 ios-marketing 槽位）—— 各自都能红，还原后逐字节相同 |
+
+**2026-09-30 查出来的 iOS 专属缺陷（已修，v1.27.1）**：`saveToGallery()` 一直带着相簿名去存，
+而 gal 建/找相簿要**读**相册（`.readWrite` 授权 = `NSPhotoLibraryUsageDescription`），
+我们却只有 `.addOnly` —— **iOS 上「存相册」必然失败，而安卓一切正常、所有测试全绿**。
+更糟的是它让政策里那句「只写入，从不读取你的相册」变成假话。
+修法是**去掉 iOS 上做不到的那半件事**，而不是去申请读权限：
+`shareAlbumNameFor(isIOS:)` 在 iOS 返回 `null`（不建相簿）。代价只是一个相簿分组。
+`tool/asset-check.mjs` 里有一条**跨文件**守卫钉着这对互斥关系（没声明读权限就不许直接带相簿名），
+三个分支都负向验证过。
 
 **还缺的（卡在工具链上）**：这台机器**没有 Xcode**（只有 Command Line Tools），
 所以 iOS 一行都跑不了。`flutter doctor` 的原话：

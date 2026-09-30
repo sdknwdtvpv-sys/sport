@@ -231,6 +231,27 @@ void main() {
       expect(exporter.saved, hasLength(1));
     });
   });
+
+  // ── 相簿名按平台分叉 ──────────────────────────────────────────────────
+  //
+  // iOS 上带着相簿名去存**会失败**：gal 建相簿是"读相册"（`.readWrite` 授权），
+  // 而 iOS 那边我们只声明了「仅新增」（addOnly）。更要紧的是，一旦为了建相簿去申请
+  // 读权限，政策里那句「只写入，**从不读取**你的相册」就变成假话了。
+  // 所以这个函数守着的是**一句对外承诺**，不是一个小功能。
+  group('存相册时的相簿名', () {
+    test('iOS 不传相簿名（保住 addOnly，不去读相册）', () {
+      expect(shareAlbumNameFor(isIOS: true), isNull);
+    });
+
+    test('Android 仍然建「练了么」相簿（用户能一眼找到）', () {
+      expect(shareAlbumNameFor(isIOS: false), kShareAlbumName);
+    });
+
+    test('两个平台的分叉不是同一个值（否则等于没分叉）', () {
+      expect(shareAlbumNameFor(isIOS: true),
+          isNot(shareAlbumNameFor(isIOS: false)));
+    });
+  });
 }
 
 class _ThrowingExporter implements ShareCardExporter {

@@ -9,6 +9,7 @@
 ///   * [saveToGallery] —— `gal`，存进系统相册
 library;
 
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 
 import 'package:gal/gal.dart';
@@ -16,6 +17,29 @@ import 'package:share_plus/share_plus.dart';
 
 /// 存相册时建的相簿名。用户在系统相册里能一眼找到。
 const String kShareAlbumName = '练了么';
+
+/// 存相册时**真正**传给 gal 的相簿名（`null` = 不建相簿，直接落在系统相册的「最近项目」）。
+///
+/// **iOS 上必须传 `null` —— 这是隐私取舍，不是漏写。** 2026-09-30 查出来的：
+///
+/// * gal 建/找相簿走的是 `PHAssetCollection.fetchAssetCollections` +
+///   `PHAssetCollectionChangeRequest.creationRequestForAssetCollection`
+///   （`darwin/gal/Sources/gal/GalPlugin.swift` 的 `getAlbum`），也就是**读**相册，
+///   需要 photo library 的 `.readWrite` 授权 —— 对应 Info.plist 里的
+///   `NSPhotoLibraryUsageDescription`（"读取你的相册"）。gal 的 README 原话：
+///   `NSPhotoLibraryUsageDescription` *Required for iOS < 14 or **saving to album***。
+/// * 而 iOS 侧的 `hasAccess()` / `requestAccess()` 默认是 `toAlbum: false`
+///   → 只拿到 `.addOnly` 授权。**拿着 addOnly 去建相簿，`performChanges` 必然失败**
+///   → 用户看到的就是"存相册失败"。
+/// * 我们**只**声明了 `NSPhotoLibraryAddUsageDescription`（仅新增），因为分享卡只需要写进去。
+///   政策里那句「只写入，**从不读取**你的相册」要成立，iOS 上就不能建相簿。
+///
+/// 代价：iOS 上这张卡落在「最近项目」，而不是「练了么」相簿里。
+/// 一个相簿分组换"不申请读相册权限"，这笔账划算 —— 而且**如实写进了政策**。
+///
+/// 抽成纯函数是为了可测：`isIOS` 由调用方给，测试不用去碰 `Platform`。
+String? shareAlbumNameFor({required bool isIOS}) =>
+    isIOS ? null : kShareAlbumName;
 
 abstract class ShareCardExporter {
   /// 拉起系统分享面板（微信、微博等由系统列出）。
@@ -28,6 +52,9 @@ abstract class ShareCardExporter {
   Future<bool> saveToGallery(Uint8List png, {String fileName});
 
   /// 这次存相册**会不会弹系统权限框**（Android 10+ 走 MediaStore 免权限 → false）。
+  ///
+  /// iOS 上问的是 `.addOnly`（gal 的默认），与我们实际做的事一致 ——
+  /// 因为 [shareAlbumNameFor] 在 iOS 上不传相簿名，所以不需要 `.readWrite`。
   ///
   /// 存在的理由是一条硬规矩：**申请权限时要同步告知目的**
   /// （191 号文二.3；OPPO 审核规范同义）。系统弹框只有一句冷冰冰的"允许写入媒体"，
@@ -75,7 +102,11 @@ class PluginShareCardExporter implements ShareCardExporter {
       final bool granted = await Gal.requestAccess();
       if (!granted) return false;
     }
-    await Gal.putImageBytes(png, album: kShareAlbumName, name: fileName);
+    await Gal.putImageBytes(
+      png,
+      album: shareAlbumNameFor(isIOS: Platform.isIOS),
+      name: fileName,
+    );
     return true;
   }
 }

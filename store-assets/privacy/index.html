@@ -166,7 +166,8 @@
 <li>分享卡是<strong>在本机画出来的</strong>：图片由设备上的界面直接渲染成 PNG， <strong>不会上传到我们的服务器</strong>。点「分享」是把这张图交给系统分享面板， 之后你选了哪个应用（微信、相册……）由你决定，那一步的数据处理适用那个应用的隐私政策。</li>
 </ul>
 <p><strong>打包后还会多出一条「读」权限，这一步要说清楚</strong>：在 <strong>API ≤29</strong> 的设备上， 只要声明了 <code>WRITE_EXTERNAL_STORAGE</code>，Android 就会由系统<strong>隐含</strong>并同时授予 <code>READ_EXTERNAL_STORAGE</code>（<code>aapt2 dump badging</code> 会把它标成 <code>uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'</code>）。 我们<strong>从不读取</strong>你的照片或文件 —— 这条权限是平台行为带来的，不是我们要的； API 30+ 上这两条都不存在（走 MediaStore 免权限写入）。 另外 <code>application</code> 上还有一个 <strong><code>android:requestLegacyExternalStorage=&quot;true&quot;</code></strong>： 它是 <strong>Android 10（API 29）专用</strong>的兼容开关（让那一版的&quot;存相册&quot;走老路径）， 在 API 30+ 上<strong>被系统忽略</strong>。如实写在这里，是因为审核时能在包里查到它。</p>
-<p>要自己核对：<code>aapt2 dump badging &lt;apk&gt; | grep permission</code>。</p>
+<p><strong>iOS 侧只申请一项「仅新增」权限</strong>：<code>NSPhotoLibraryAddUsageDescription</code>， 用来把分享卡<strong>写入</strong>你的相册。我们<strong>不申请</strong>读取相册的权限 （<code>NSPhotoLibraryUsageDescription</code>）—— 也因此 iOS 上不会建「练了么」相簿， 这张卡会落在系统相册的「最近项目」里。少一个相簿分组，换&quot;从不读取你的相册&quot;这句话为真。 除此之外 iOS 侧不申请定位、通讯录、相机、麦克风、通知、广告标识（IDFA）等任何权限。</p>
+<p>要自己核对：<code>aapt2 dump badging &lt;apk&gt; | grep permission</code>（安卓）。</p>
 <p>除此之外<strong>不申请</strong>定位、通讯录、相机、麦克风、日历、后台运行等任何权限。</p>
 <blockquote><p>实现说明：Flutter 模板默认只在 debug/profile 变体里加 INTERNET（为了热重载）， release 版原本没有这个权限。本项目把它显式声明到 main，使三个变体行为一致 —— 否则将来接上报地址时，release 版会<strong>静默失败</strong>且不报错。</p>
 </blockquote>

@@ -330,6 +330,31 @@ if (!existsSync(iosPlist)) {
   }
   if (!plist.includes('练了么')) bad('iOS Info.plist 里没有中文应用名');
   ok.push('iOS Info.plist：显示名 / 存相册权限 / 加密声明 齐全');
+
+  // ── iOS「仅新增权限」与「带相簿名去存」是**互斥**的 ──────────────────────
+  //
+  // 这条检查横跨 Info.plist 与 Dart 源码，因为两边单看都没问题：
+  //   * iOS 只声明 `NSPhotoLibraryAddUsageDescription`（仅新增）—— 这是我们的隐私选择；
+  //   * 但 gal 建/找相簿要**读**相册（`PHAssetCollection.fetchAssetCollections` +
+  //     `creationRequestForAssetCollection`，需要 `.readWrite` 授权 = 读相册权限）。
+  // 2026-09-30 实测：`Gal.hasAccess()` / `requestAccess()` 在 iOS 上是 `toAlbum: false`
+  // （只有 addOnly），拿着 addOnly 去建相簿 `performChanges` 必然失败 ——
+  // 用户看到"存相册失败"，而政策里那句「只写入，从不读取你的相册」也变成假话。
+  // 所以：没声明读权限时，代码里就**不许**直接带相簿名；必须走 `shareAlbumNameFor`。
+  const exporterPath = join(ROOT, 'app/lib/features/summary/share_card_exporter.dart');
+  const exporterSrc = existsSync(exporterPath) ? readFileSync(exporterPath, 'utf8') : '';
+  const declaresReadWrite = plist.includes('NSPhotoLibraryUsageDescription');
+  const passesRawAlbum = /album:\s*kShareAlbumName/.test(exporterSrc);
+  if (!declaresReadWrite && passesRawAlbum) {
+    bad('iOS 只声明了「仅新增」相册权限，而 share_card_exporter.dart 直接带了相簿名去存'
+      + '（`album: kShareAlbumName`）—— 建相簿需要读相册权限，iOS 上会存失败，'
+      + '且政策里「从不读取你的相册」会变成假话。请走 `shareAlbumNameFor(isIOS: ...)`');
+  } else if (exporterSrc && !exporterSrc.includes('shareAlbumNameFor')) {
+    bad('share_card_exporter.dart 里找不到 `shareAlbumNameFor` —— 相簿名的平台分叉'
+      + '被删掉了？（措辞变了的话，这条检查要跟着改）');
+  } else {
+    ok.push('iOS 相册：只声明「仅新增」，代码不带相簿名去存（不读相册）');
+  }
 }
 
 const iosLaunch = join(IOS, 'Base.lproj/LaunchScreen.storyboard');

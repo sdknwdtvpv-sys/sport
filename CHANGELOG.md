@@ -6,6 +6,36 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.27.1 · iOS 上「存相册」本来是坏的（而且让政策说了假话）
+
+**iOS 上这条路径此前必然失败，而安卓一切正常、所有测试全绿** —— 典型的
+"只有另一个平台才会暴露"的洞，靠 `flutter test` 永远看不见。查出来的是三件事叠在一起：
+
+* `saveToGallery()` 一直带着相簿名去存（`album: kShareAlbumName`）；
+* gal 建/找相簿走的是 `PHAssetCollection.fetchAssetCollections` +
+  `creationRequestForAssetCollection`（`darwin/.../GalPlugin.swift` 的 `getAlbum`），
+  也就是**读**相册，需要 `.readWrite` 授权；
+* 而 iOS 侧 `hasAccess()` / `requestAccess()` 默认是 `toAlbum: false` → 只拿到 `.addOnly`。
+  拿着 addOnly 去建相簿，`performChanges` 必然失败 → 用户看到「存相册失败」。
+  gal 的 README 也写着 `NSPhotoLibraryUsageDescription` *Required for iOS < 14 or saving to album*。
+
+**更要紧的是它让政策说了假话**：政策里写着 gal「只写入，**从不读取**你的相册」。
+按原样上架，这句话在 iOS 上就是假的（要么建相簿=读相册，要么存失败）。
+
+**修法（选"不申请读权限"这一边）**：新增纯函数
+`shareAlbumNameFor({required bool isIOS})` —— iOS 传 `null`（不建相簿，落进「最近项目」），
+安卓仍是「练了么」相簿。**没有新增任何权限**，只是把 iOS 上做不到的那半件事去掉，
+并把事实写进政策（iOS 段落，此前政策一个字都没提过 iOS）。
+
+**新增一条跨文件守卫**（`tool/asset-check.mjs`）：Info.plist 里没有
+`NSPhotoLibraryUsageDescription` 时，代码里就**不许**直接写 `album: kShareAlbumName`。
+单看两边都没问题，所以必须横着查。三个分支都负向验证过：
+① 把 `album: kShareAlbumName` 写回代码 → 红；② 同一份代码 + 声明读权限 → 放行
+（证明它真的在读 plist，不是恒真）；③ 把 `shareAlbumNameFor` 改名 → 红（防真空）。
+还原后两个文件校验和一致。
+
+版本 1.27.0+34 → 1.27.1+35。
+
 ## v1.27.0 · 「不同意」不再把人请出去（审计 A 的前半段）
 
 对抗性审计认定的**最可能被驳回的一条**：同意门把"非必需"（匿名使用统计，默认开）

@@ -166,7 +166,13 @@ API 30+ 上这两条都不存在（走 MediaStore 免权限写入）。
 它是 Android 10（API 29）专用的兼容开关（让那一版的"存相册"走老路径），
 在 API 30+ 上被系统忽略。如实写在这里，是因为审核时能在包里查到它。
 
-要自己核对：aapt2 dump badging <apk> | grep permission。
+iOS 侧只申请一项「仅新增」权限：NSPhotoLibraryAddUsageDescription，
+  用来把分享卡写入你的相册。我们不申请读取相册的权限
+  （NSPhotoLibraryUsageDescription）—— 也因此 iOS 上不会建「练了么」相簿，
+  这张卡会落在系统相册的「最近项目」里。少一个相簿分组，换"从不读取你的相册"这句话为真。
+  除此之外 iOS 侧不申请定位、通讯录、相机、麦克风、通知、广告标识（IDFA）等任何权限。
+
+要自己核对：aapt2 dump badging <apk> | grep permission（安卓）。
 
 除此之外不申请定位、通讯录、相机、麦克风、日历、后台运行等任何权限。
 
