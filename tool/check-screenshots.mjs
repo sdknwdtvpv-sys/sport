@@ -95,7 +95,8 @@ const SETS = [
     // Apple 的两条硬规矩：8 位、无 alpha。工具 `tool/flatten-png.mjs` 负责把
     // iOS 模拟器给的 16 位 RGBA 转成 8 位 RGB，这里负责**验它真的转过了**。
     flat8: true,
-    files: [...CORE, '11a-body-consent'],
+    // 三套图里只有它没有 `01b` —— 模拟器那一跑本身就是全新安装（空态首页就是 01-home）
+    files: [...CORE, '11a-body-consent', '11b-body-revoke'],
   },
 ];
 
