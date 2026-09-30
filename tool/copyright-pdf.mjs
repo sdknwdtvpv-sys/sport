@@ -354,6 +354,18 @@ function checkManualNumbers(appVersion, schemaVersion) {
     problems.push(`${MANUAL}：写的是版本 V${v[1]}，实际是 V${appVersion}`);
   }
 
+  // ⚠️ **申请表**用的是另一种写法（`| 版本号 | **V1.2.3** |`），而第一版的守卫只认
+  // 说明书那句 `**版本**：Vx.y.z` —— 于是申请表里的版本号从 V1.17.0 一路烂到 V1.25.1
+  // 都没人发现（2026-09-30 才翻出来）。守卫必须把两份材料的**各自措辞**都覆盖。
+  const APP_DOC = 'docs/copyright-application.md';
+  const appText = readFileSync(join(ROOT, APP_DOC), 'utf8');
+  const av = appText.match(/\|\s*版本号\s*\|\s*\*\*V?(\d+\.\d+\.\d+)\*\*/);
+  if (!av) {
+    problems.push(`${APP_DOC}：找不到「| 版本号 | **Vx.y.z** |」（措辞变了？检查要跟着改）`);
+  } else if (av[1] !== appVersion) {
+    problems.push(`${APP_DOC}：写的是版本 V${av[1]}，实际是 V${appVersion}`);
+  }
+
   const sc = text.match(SCHEMA_RE);
   if (!sc) {
     problems.push(`${MANUAL}：找不到「当前模式版本 **vN**」（措辞变了？检查要跟着改）`);
