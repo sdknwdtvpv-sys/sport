@@ -408,7 +408,7 @@ cocoapods.dart:307-310
 
 | 材料 | 谁做 | 说明 |
 |---|---|---|
-| 应用图标 | ✅ 已做（我） | `store-assets/icon-512.png`；Android 全套（传统 5 密度 + 自适应 + 圆形 + 主题剪影）
+| 应用图标 | ✅ 已做（我） | `store-assets/icon-512.png`；Android 全套（传统 5 密度 + 自适应 + 圆形 + 主题剪影） |
 | 应用图标·怎么重做 | 一条命令 | `python3 tool/gen-icons.py`（方向 A）或 `--alt`（深底版）；`tool/asset-check.mjs` 守着"不许是 Flutter 默认图" |
 | 截图 | 你（或设计师） | 主流要求 3–8 张；**注意**：截图必须来自真实 App，不能拿原型图充数 |
 | 应用描述（短/长） | ✅ **已备好** | [`docs/store-listing.md`](store-listing.md) §2/§3，可直接粘贴 |

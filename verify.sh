@@ -255,6 +255,15 @@ else
 fi
 echo
 
+# 文档表格核对工具的**自检**：这些表大半是要照着填的（商店表单/软著申请表/清单），
+# 而 markdown 表格坏起来很安静 —— 被截断、错列，只有眼睛看得出来。
+if node tool/check-doc-tables.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 文档表格核对自检通过（截断/错列藏不住，转义竖线不误报）"
+else
+  strip "$LOG"; echo "${RED}✗ 文档表格核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 文档路径核对工具的**自检**：文档里到处都是 `tool/xxx.mjs` 这种引用，
 # 文件改名/搬家之后它们会**悄悄指空** —— 读者照着敲就是"文件不存在"。
 if node tool/check-doc-paths.mjs --selftest >"$LOG" 2>&1; then
@@ -476,6 +485,14 @@ if node tool/check-ci.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CI 仍是门禁的子集（命令/步骤/版本都对得上）"
 else
   strip "$LOG"; echo "${RED}✗ CI 与门禁的关系不对（"子集"这句话已经不成立）${OFF}"; fail=1
+fi
+echo
+
+# 文档表格：README 与 docs/*.md 里的 markdown 表格必须连着的、每行列数与表头一致
+if node tool/check-doc-tables.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 文档表格都规整（连着、列数对）"
+else
+  strip "$LOG"; echo "${RED}✗ 有表格被截断或错列（这些表是要照着填的）${OFF}"; fail=1
 fi
 echo
 
@@ -702,7 +719,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
          tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
-         tool/check-user-text.mjs tool/check-doc-paths.mjs \
+         tool/check-user-text.mjs tool/check-doc-paths.mjs tool/check-doc-tables.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \

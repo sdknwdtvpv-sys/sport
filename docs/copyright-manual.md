@@ -34,7 +34,7 @@
 | 本地数据库 | SQLite（经 drift 管理），当前模式版本 **v14** |
 | 开发环境 | macOS（Apple Silicon），Android SDK，Gradle |
 | 运行环境 | Android 7.0（API 24）～ Android 16（API 36），arm64 / armeabi-v7a / x86_64 |
-| 源程序量 | **159 个源文件 / 42,196 行**（截至 V1.32.2，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
+| 源程序量 | **160 个源文件 / 42,299 行**（截至 V1.32.2，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
 
 ## 三、主要功能模块
 
@@ -131,11 +131,12 @@
 
 | 界面 | 操作说明 |
 |---|---|
+| 截图 | 说明 |
+|---|---|
 | ![](../store-assets/screenshots/01-home.png) | **首页**：打开即看到「今天练什么」。不想做计划的人直接点「开始今天的训练」。 |
 | ![](../store-assets/screenshots/02-suggestion.png) | **建议卡**：点「看看今天练什么」。每个动作右侧是建议重量与次数，下方一行是**为什么给这个建议**（例：「上次 4 组全部达标，线性加重 +2kg」）。 |
 | ![](../store-assets/screenshots/03-routine.png) | **我的计划**：把常练的动作存成计划，下次直接按计划开始。 |
 | ![](../store-assets/screenshots/04-picker.png) | **选动作**：351 个内置动作，三排筛选（部位 / 器械 / 类别）；每个动作下方是动作说明。 |
-
 | ![](../store-assets/screenshots/05-workout.png) | **训练屏**：大按钮上直接写着建议的重量与次数，点一下记一组；长按打开步进弹层。 |
 | ![](../store-assets/screenshots/07-summary.png) | **训练完成**：容量 / 时长 / 组数，破纪录单独标出，可分享训练卡。 |
 | ![](../store-assets/screenshots/08-progress.png) | **进步**：本周容量、周训练次数、个人纪录墙、逐动作最好成绩。 |
