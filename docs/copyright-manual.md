@@ -14,7 +14,7 @@
 ## 一、软件概述
 
 **名称**：练了么（LianLeMe）
-**版本**：V1.28.0
+**版本**：V1.29.0
 **类型**：移动应用软件（Android）
 **运行环境**：Android 7.0（API 24）及以上；包名 `com.sdknwdtvpv.lianleme`
 
@@ -34,7 +34,7 @@
 | 本地数据库 | SQLite（经 drift 管理），当前模式版本 **v13** |
 | 开发环境 | macOS（Apple Silicon），Android SDK，Gradle |
 | 运行环境 | Android 7.0（API 24）～ Android 16（API 36），arm64 / armeabi-v7a / x86_64 |
-| 源程序量 | **140 个源文件 / 36,846 行**（截至 V1.28.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
+| 源程序量 | **142 个源文件 / 37,304 行**（截至 V1.29.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
 
 ## 三、主要功能模块
 

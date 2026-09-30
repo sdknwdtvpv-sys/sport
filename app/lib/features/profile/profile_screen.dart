@@ -31,6 +31,7 @@ import '../../backup/backup_config.dart';
 import '../../backup/backup_transport.dart';
 import '../../backup/cloud_backup.dart';
 import '../backup/cloud_backup_screen.dart';
+import 'collection_list_screen.dart';
 import 'backup_source.dart';
 import 'privacy_policy_screen.dart';
 import 'backup_exporter.dart';
@@ -216,6 +217,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (BuildContext ctx) => const PrivacyPolicyScreen(),
+      ),
+    );
+  }
+
+  /// 打开「个人信息收集清单 / 与第三方共享清单」（164 号文，二级菜单）。
+  void _openCollectionList() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) => const CollectionListScreen(),
       ),
     );
   }
@@ -728,6 +738,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             subtitle: const Text(
               '我们收集什么、不收集什么，逐条写在里面',
+              style: TextStyle(color: Tokens.text3, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+          ),
+          const Divider(height: 1, color: Tokens.line),
+          // 164 号文要求的「双清单」，以**二级菜单**形式展示（不能只在政策长文里写一段）。
+          // 文本是生成物：收集清单 ← privacy-facts.json，共享清单 ← 政策里的 SDK 表。
+          ListTile(
+            key: const Key('collection-list'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+            onTap: _openCollectionList,
+            title: const Text(
+              '个人信息收集清单',
+              style: TextStyle(color: Tokens.text, fontSize: 15),
+            ),
+            subtitle: const Text(
+              '收集了什么、与谁共享（164 号文要求的两份清单）',
               style: TextStyle(color: Tokens.text3, fontSize: 13),
             ),
             trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),

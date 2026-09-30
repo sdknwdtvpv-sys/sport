@@ -172,9 +172,139 @@ function stripInternal(md) {
 
 // 应用内那份：**同一份 Markdown** 生成的纯文本，随包发布
 const APP_TEXT = join(ROOT, 'app/assets/privacy-policy.txt');
+// 164 号文要求的「个人信息收集清单 / 与第三方共享个人信息清单」——
+// 国内商店要求在应用内以**二级菜单**形式展示。它同样是**生成物**：
+//   * 收集清单 ← docs/privacy-facts.json（事件、公共字段、权限、不收集的东西）
+//   * 共享清单 ← 政策正文 §三之五 那张第三方 SDK 表（政策已由 privacy-audit 与 pubspec 对账）
+// 所以这份清单不可能与政策/事实源不一致 —— 这是"别手写第二份真相"的做法。
+const APP_LIST = join(ROOT, 'app/assets/collection-list.txt');
 const APP_SRC = 'docs/privacy-policy.md';
 
-// ── 跑 ──────────────────────────────────────────────────────────────────
+// ── 收集清单 / 共享清单（164 号文）──────────────────────────────────────
+//
+// 数据来源刻意分成两处，都是为了**不产生第二份真相**：
+//   * 收集清单 ← `docs/privacy-facts.json`（那份文件已经被硬门禁逼着与代码一致）
+//   * 共享清单 ← 政策正文里的第三方 SDK 表（那张表已经被 privacy-audit 逼着与 pubspec 一致）
+// 解析不到就**报错**，绝不写出一个空清单 —— 空清单比没有清单更危险。
+
+/** 政策正文里 §三之五 的 SDK 表：表头是 `| 名称 | 版本 |`，解析到下一个空行为止 */
+function parseThirdPartyTable(md) {
+  const lines = md.split('\n');
+  const head = lines.findIndex((l) => /^\|\s*名称\s*\|\s*版本\s*\|/.test(l));
+  if (head < 0) return [];
+  const rows = [];
+  for (let i = head + 2; i < lines.length; i++) {   // +2 跳过表头与分隔行
+    const line = lines[i].trim();
+    if (!line.startsWith('|')) break;
+    const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+    if (cells.length < 6) continue;
+    const name = cells[0].replace(/`/g, '');
+    const version = cells[1];
+    const purpose = cells[2];
+    const linkCell = cells[5];
+    const link = (linkCell.match(/\]\((https?:[^)]+)\)/) ?? [])[1] ?? linkCell;
+    rows.push({ name, version, purpose, link });
+  }
+  return rows;
+}
+
+function collectionList() {
+  const facts = JSON.parse(readFileSync(join(ROOT, 'docs/privacy-facts.json'), 'utf8'));
+  const policy = readFileSync(join(ROOT, 'docs/privacy-policy.md'), 'utf8');
+  const thirdParty = parseThirdPartyTable(policy);
+
+  if (!facts.events?.length) throw new Error('privacy-facts.json 里没有 events —— 收集清单会变成空的');
+  if (!thirdParty.length) {
+    throw new Error('政策正文里解析不到第三方 SDK 表（表头是不是改成别的了？）—— '
+      + '共享清单会变成空的，宁可报错也不写出一个空清单');
+  }
+
+  const L = [];
+  L.push('练了么 · 个人信息收集清单 与 第三方共享清单');
+  L.push('');
+  L.push('（国内应用商店要求：在应用内以二级菜单方式展示这两份清单。');
+  L.push('  本页由仓库自动生成，与《隐私政策》正文同源 —— 生成物，请勿手改。）');
+  L.push('');
+  L.push('════════════════════════════════════════');
+  L.push('一、个人信息收集清单');
+  L.push('════════════════════════════════════════');
+  L.push('');
+  L.push('【1】本应用的核心功能不收集任何个人信息');
+  L.push('');
+  L.push('  记训练、看进步、算渐进建议 —— 全部在本机完成，离线可用，不需要注册、');
+  L.push('  不需要联网、不需要任何权限。这些数据只存在你手机的私有数据库里，');
+  L.push('  不会离开设备。');
+  L.push('');
+  L.push('【2】唯一可能收集的信息：匿名使用统计（默认关闭）');
+  L.push('');
+  L.push('  开关位置：「我」→「帮助改进产品」。**默认关闭** ——');
+  L.push('  只有你主动打开，下面这些才会产生；打开后随时可以关掉。');
+  L.push('');
+  L.push(`  收集的信息：${facts.events.length} 类事件，字段是有限且固定的，逐条如下：`);
+  L.push('');
+  for (const e of facts.events) {
+    L.push(`    · ${e.name}（${e.when}）`);
+    L.push(`        字段：${(e.fields ?? []).join('、') || '无'}`);
+  }
+  L.push('');
+  L.push('  每个事件都会额外带上这些公共字段：');
+  for (const f of facts.commonFields ?? []) {
+    L.push(`    · ${f.name} —— ${f.why}`);
+  }
+  L.push('');
+  L.push('  收集目的：改进产品（匿名使用统计）。');
+  L.push('  收集方式：HTTPS 发送到我们自建的接收端 —— 且只在这个版本配置了接收地址时才发。');
+  L.push('  收集频率：与你的操作同步；本机队列上限 10000 条，超出按优先级丢弃。');
+  L.push('  保存期限：见《隐私政策》§六（我们只保留聚合后的统计结果）。');
+  L.push('');
+  L.push('【3】我们不收集的东西');
+  L.push('');
+  for (const n of facts.neverCollected ?? []) L.push(`    · 不收集：${n}`);
+  L.push('');
+  L.push('【4】设备权限');
+  L.push('');
+  for (const perm of facts.permissions ?? []) {
+    const scope = perm.maxSdkVersion ? `仅 API ≤ ${perm.maxSdkVersion}` : '全部版本';
+    L.push(`    · ${perm.name}（${scope}）—— ${perm.why}`);
+  }
+  for (const perm of facts.impliedPermissions ?? []) {
+    L.push(`    · ${perm.name}（系统因上一条隐含授予，${perm.maxSdkVersion ? `仅 API ≤ ${perm.maxSdkVersion}` : '全部版本'}）`
+      + `—— ${perm.why}`);
+  }
+  L.push('');
+  L.push('════════════════════════════════════════');
+  L.push('二、与第三方共享个人信息清单');
+  L.push('════════════════════════════════════════');
+  L.push('');
+  L.push('结论先说：**我们不向任何第三方出售、出租或共享你的个人信息。**');
+  L.push('本应用不接入第三方广告、不接入数据分析、不接入崩溃上报 SDK。');
+  L.push('');
+  L.push(`随包分发的第三方组件共 ${thirdParty.length} 个，全部**只在本机运行**，`);
+  L.push('不会把你的数据发往第三方：');
+  L.push('');
+  for (const t of thirdParty) {
+    L.push(`    · ${t.name} ${t.version}`);
+    L.push(`        做什么：${t.purpose}`);
+    L.push(`        它会收到你的个人信息吗：不会`);
+    L.push(`        项目地址：${t.link}`);
+  }
+  L.push('');
+  L.push('唯一的例外是**你自己发起的**对外交付（我们不经手、也无法预知）：');
+  L.push('    · 点「分享」→ 拉起系统分享面板 → 你选中的应用会拿到那张分享卡；');
+  L.push('    · 点「存相册」→ 写入系统相册（Android 10+ 免权限；iOS 只申请「仅新增」）；');
+  L.push('    · 点「导出全部记录 / 导出备份文件」→ 交给系统分享面板，由你决定给谁。');
+  L.push('  这些都由系统面板完成，接收方是谁由你选择 —— 不属于我们与第三方共享。');
+  L.push('');
+  L.push('第三方组件各自的隐私政策：见上表「项目地址」；');
+  L.push('应用内「我 → 开源许可」还列出了随包的**全部**开源组件。');
+  L.push('');
+  L.push('最后更新：与《隐私政策》同一版本。');
+  // 逐行走一遍 inline()：纯文本里不能留 `**`（用户会看到星号），
+  // 而逐行处理也避免了加粗跨行配对、把整段吃掉。
+  return L.map(inline).join('\n') + '\n';
+}
+
+// ---------------------------------------------------------------- 跑
 let stale = 0;
 let written = 0;
 mkdirSync(OUT_DIR, { recursive: true });
@@ -223,4 +353,21 @@ if (existsSync(join(ROOT, APP_SRC))) {
 }
 
 if (check && stale) process.exit(1);
-console.log(check ? '\n✓ 隐私政策页面与正文同源（含应用内那份）' : `\n✓ 生成 ${written} 份`);
+// 164 号文的双清单：和上面那份政策一样，是**生成物**，也跟着 --check 一起防漂
+{
+  const text = collectionList();
+  if (check) {
+    const cur = existsSync(APP_LIST) ? readFileSync(APP_LIST, 'utf8') : null;
+    if (cur !== text) {
+      console.log('✗ app/assets/collection-list.txt 与事实源不一致 —— 事实源/政策改了但清单没重新生成');
+      console.log('  修：node tool/gen-privacy-page.mjs');
+      process.exit(1);
+    }
+    console.log(`  app/assets/collection-list.txt 与事实源一致（${text.length} 字节）`);
+  } else {
+    writeFileSync(APP_LIST, text, 'utf8');
+    console.log(`  写入 app/assets/collection-list.txt（${text.length} 字节）`);
+  }
+}
+
+console.log(check ? '\n✓ 隐私政策页面与正文同源（含应用内那份与 164 号文双清单）' : `\n✓ 生成 ${written} 份`);

@@ -1,7 +1,7 @@
 name: lianleme
 description: 练了么 —— 一次点击记一组的力量训练记录工具
 publish_to: 'none'
-version: 1.28.0+37
+version: 1.29.0+38
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -53,3 +53,7 @@ flutter:
     # "应用内的隐私政策必须是可以正常打开和查看的状态"，且四步之内能到）。
     # ⚠️ 它和公网那份一样有防漂守卫（gen-privacy-page.mjs --check）。
     - assets/privacy-policy.txt
+    # 164 号文要求的「个人信息收集清单 / 与第三方共享个人信息清单」（二级菜单）。
+    # 同样是生成物：收集清单 ← docs/privacy-facts.json，共享清单 ← 政策正文的 SDK 表。
+    # 生成命令与防漂守卫都在 tool/gen-privacy-page.mjs（--check）。
+    - assets/collection-list.txt
