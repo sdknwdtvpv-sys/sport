@@ -227,6 +227,16 @@ else
 fi
 echo
 
+# 商店截图核对工具的**自检**：截图是全仓库唯一没人核过的交付物，
+# 而且真坏过一次 —— `11-body-metric.png` 比 App 旧一个版本（v1.31.0 前多了一道
+# 敏感信息单独同意的门，脚本却假定"点开就是表单"）。
+if node tool/check-screenshots.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 截图核对自检通过（少一张/多一张/尺寸不对都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 截图核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 隐私政策对账：客户端会发的事件/字段、manifest 权限，都必须与政策正文一致。
 # **这是硬门禁** —— 加了一个新埋点字段却不在政策里写清楚，不许合并。
 if node tool/privacy-audit.mjs >"$LOG" 2>&1; then
@@ -384,6 +394,15 @@ if node tool/asset-check.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 发行资源（图标/启动图/应用名）齐全"
 else
   strip "$LOG"; echo "${RED}✗ 发行资源有问题（上架前必须修）${OFF}"; fail=1
+fi
+echo
+
+# 商店截图：两套图（1080×2400 / 1080×1920）是否齐、尺寸是否对、有没有夹带
+# `zz-fail-*.png` 那种"某一步失败的现场图"。截图是交付物，但此前没人核过。
+if node tool/check-screenshots.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -3; echo "${GREEN}✓${OFF} 两套商店截图齐、尺寸对、没夹带"
+else
+  strip "$LOG"; echo "${RED}✗ 商店截图不对（缺图/尺寸变了/夹带失败现场图）${OFF}"; fail=1
 fi
 echo
 
@@ -563,6 +582,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/exercise_picker_test.dart app/test/widget_test.dart \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
+         tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
          tool/ios-deps.mjs docs/store-listing-ios.md docs/your-todo.md \
          tool/gen-feature-graphic.py store-assets/feature-graphic-1024x500.png \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \

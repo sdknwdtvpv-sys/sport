@@ -201,6 +201,21 @@ void main() {
       await settle(800);
       await tester.tap(find.byKey(const Key('open-body-metric')));
       await settle(1500);
+
+      // v1.31.0 起，这一页前面多了一道**敏感信息单独同意**的门。不处理它，
+      // 截到的是对话框 —— 而正确做法不是"绕过"，是按用户真实路径点过去，
+      // 顺手把这道门本身也留一张证（软著说明书要讲清"体重单独同意"这件事）。
+      //
+      // 这条分支是硬找出来的：v1.31.0 之前的图 11-body-metric 里是表单，
+      // 而那之后新装的 App 根本到不了表单 —— 图比 App 旧了一个版本。
+      final bool consentGate =
+          find.byKey(const Key('body-consent-agree')).evaluate().isNotEmpty;
+      debugPrint('LIANLEME-SHOT body-consent-gate=$consentGate');
+      if (consentGate) {
+        await capture('11a-body-consent');
+        await tester.tap(find.byKey(const Key('body-consent-agree')));
+        await settle(1800);
+      }
       await capture('11-body-metric');
     });
 
