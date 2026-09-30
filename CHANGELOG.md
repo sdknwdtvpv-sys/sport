@@ -193,6 +193,22 @@ README 与 20 份 docs 里到处都是 `` `tool/xxx.mjs` ``、`` `app/lib/…/fo
 变的是"等你动手时不会在上架当天才发现某处对不上"）；② **iOS 首次真的跑起来**（差异清单
 5 条里 4 条闭环、1 条标"部分"）；③ **真机手势走查**（5 张证据图 + `E/flutter`/`overflowed` 全 0）。
 
+### 同版追加：把 Xcode 里那条警告记成"已知警告"（免得下一个人再查一遍）
+
+用户在 Xcode 里打开工程时看到 `Runner 1 issue`：挂在 **`FPPSharePlusPlugin`** 节点下
+（不在 `Runner` 自己的源码里），内容是 `'keyWindow' is deprecated: first deprecated in iOS 13.0`。
+
+查证后写成 `docs/tech-decisions.md` 的「已知警告」一节（三条事实 + 三条自查命令）：
+插件**本来就写对了**（`@available(iOS 13, *)` 分支走 `connectedScenes → UIWindowScene.windows
+→ isWindowKey`，被标黄的是 **iOS < 13 的回退路径**）；我们的部署目标是 **iOS 15.0**
+（`project.pbxproj` 三处），**那行执行不到**，Xcode 标黄只是**编译期**的弃用检查；
+而且 `share_plus 13.3.0` **已是最新**（`flutter pub outdated`：direct dependencies all up-to-date），
+没有"升级就能消掉"这条路。`release-checklist` 的 iOS 行加了一句指针（人在 Xcode 里看到
+"1 issue"时，那份文档正是他会翻的地方）。
+
+同时写明**边界**：这条警告与"分享面板本身没有自动化"是两件事 —— `share_plus` 拉起的是**系统 UI**，
+`integration_test` 点不到（差异清单第 3 条已记），自动验过的只有"存相册"那两条权限路。
+
 版本 1.32.1+42 → 1.32.2+43。
 
 ## v1.32.1 · 三处"不该给用户看的东西"漏了出去（真机翻页 + 扫源码各抓到一批）

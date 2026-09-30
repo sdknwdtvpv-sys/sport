@@ -39,6 +39,45 @@
 
 ---
 
+## 已知警告（Xcode 里那个"1 issue"，2026-09-30 记）
+
+在 Xcode 里打开本工程时，issue 列表里会看到 **1 条警告**，挂在 `FPPSharePlusPlugin` 节点下
+（**不在 `Runner` 自己的源码里**）：
+
+```
+'keyWindow' is deprecated: first deprecated in iOS 13.0
+  → share_plus 的 ios/share_plus/Sources/share_plus/FPPSharePlusPlugin.m:25
+```
+
+**它是什么、为什么不用管**（查证过的三条）：
+
+1. **插件本来就写对了**：`RootViewController()` 先 `if (@available(iOS 13, *))` 走
+   `connectedScenes → UIWindowScene.windows → window.isKeyWindow`；被标黄的那行是 **`else` 分支**，
+   也就是 **iOS < 13 的回退路径**。
+2. **它在我们的部署目标上永远执行不到**：`IPHONEOS_DEPLOYMENT_TARGET = 15.0`
+   （`app/ios/Runner.xcodeproj/project.pbxproj` 里三处都是）。Xcode 标黄是**编译期**的弃用检查 ——
+   哪怕写在 `@available` 守卫里也照样标，**不是运行时问题**。
+3. **没有"升级就能消掉"这条路**：我们锁的 `share_plus 13.3.0` 已经是最新
+   （`flutter pub outdated`：direct dependencies all up-to-date）。
+
+**怎么自己确认**（三条，都不需要信我）：
+
+```bash
+grep -rn "keyWindow" ~/.pub-cache/hosted/pub.dev/share_plus-13.3.0/ios/   # 看那段 @available 分支
+grep -n "IPHONEOS_DEPLOYMENT_TARGET" app/ios/Runner.xcodeproj/project.pbxproj
+cd app && flutter pub outdated | grep -i share_plus                        # 是否已有新版
+```
+
+**边界（免得被当成"iOS 侧全都验过了"）**：这条警告与**分享面板本身没有自动化**是两件事 ——
+`share_plus` 拉起的是**系统 UI**，`integration_test` 点不到它（`docs/release-admin.md`
+的差异清单里第 3 条已写明，只有"存相册"那条路是自动验过的，两条权限路各走一遍）。
+
+> 想彻底清掉它只有**上游修**（给那一行加 `#pragma clang diagnostic ignored "-Wdeprecated-declarations"`，
+> 或删掉 iOS < 13 分支）。本地 patch 依赖**不建议**：pub-cache 是共享的，
+> `pub upgrade` 或换机器就没了 —— 而且改依赖的风险远大于这一条警告。
+
+---
+
 ## 合规（容易被忽略的坑）
 
 1. **HealthKit 数据禁止用于广告或出售**（App Store 审核 5.1.3），隐私政策必须显式写明用途
