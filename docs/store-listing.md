@@ -7,7 +7,8 @@
 > | 通道 | 编译期开关 | 决定了什么 |
 > |---|---|---|
 > | 匿名使用统计 | `--dart-define=LIANLEME_ANALYTICS_URL`（`app/lib/main.dart`） | 事件会不会发出去 |
-> | **云备份** | `--dart-define=LIANLEME_BACKUP_URL`（`app/lib/backup/backup_config.dart`） | 训练数据会不会**加密后存到服务器** |
+> | **云备份** | `--dart-define=LIANLEME_BACKUP_URL` ＋ `--dart-define=LIANLEME_BACKUP_DISCLOSED=true`（`app/lib/backup/backup_config.dart`） | 训练数据会不会**加密后存到服务器** |
+> | | ↑ **两个都要**：只给地址不算配好（那样的包会出现「有入口、政策却说没有」） | |
 >
 > ```bash
 > grep -n "fromEnvironment" app/lib/main.dart app/lib/backup/backup_config.dart   # 两个默认值都该是空串

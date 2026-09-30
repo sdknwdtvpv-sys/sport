@@ -320,6 +320,55 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑧ 「怎么开云备份」这件事，教一半比不教更危险
+  //
+  // 云备份现在是**两个**编译期开关：地址 + 「政策已按启用态改写」的声明。
+  // 只写地址的教程会把人引到一个**应用与自己的政策互相矛盾**的包上
+  // （界面有入口、政策说"本版本未提供"）。所以：任何地方提到地址开关，就必须同时
+  // 提到那个声明开关。CHANGELOG 是历史记录，不改也不查。
+  {
+    const SCAN_DIRS = ['app', 'docs', 'tool', 'server'];
+    const URL_KEY = 'LIANLEME_BACKUP_URL';
+    const ACK_KEY = 'LIANLEME_BACKUP_DISCLOSED';
+    const skipFile = (rel) => rel === 'CHANGELOG.md' || rel.includes('CHANGELOG');
+    const walk = (dir, out = []) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.name === 'build' || e.name === '.dart_tool' || e.name === 'node_modules'
+          || e.name === '.pub-cache' || e.name === 'data') continue;
+        const full = join(dir, e.name);
+        if (e.isDirectory()) walk(full, out);
+        else if (/\.(md|dart|mjs|js|sh|ya?ml|txt|html)$/.test(e.name)) out.push(full);
+      }
+      return out;
+    };
+    let scanned = 0;
+    let withUrl = 0;
+    for (const dir of SCAN_DIRS) {
+      const abs = join(ROOT, dir);
+      if (!existsSync(abs)) continue;
+      for (const file of walk(abs)) {
+        const rel = relative(ROOT, file);
+        if (skipFile(rel)) continue;
+        // 别把自己算进去：这个文件里就写着 URL_KEY 这串字面量，
+        // 算进去的话下面的"真空哨兵"永远不会触发（负向验证时抓到过）。
+        if (rel === 'tool/privacy-audit.mjs') continue;
+        scanned++;
+        const text = readFileSync(file, 'utf8');
+        if (!text.includes(URL_KEY)) continue;
+        withUrl++;
+        if (!text.includes(ACK_KEY)) {
+          errors.push(`${rel}：写了云备份的地址开关（${URL_KEY}），却没写还要 `
+            + `${ACK_KEY} —— 照着它打出来的包会出现"界面有云备份入口、政策却说`
+            + `本版本未提供"的自相矛盾。要么补上这个声明开关，要么别在这里给命令`);
+        }
+      }
+    }
+    if (withUrl === 0) {
+      errors.push(`扫了 ${scanned} 个文件，一个都没提到 ${URL_KEY} —— 这条检查`
+        + `大概是失效了（措辞变了？），别让它变成真空哨兵`);
+    }
+  }
+
   return { emitted, common, manifest, errors, warnings, apkPermissions };
 }
 

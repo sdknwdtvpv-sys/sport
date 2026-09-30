@@ -10,6 +10,7 @@
 > grep -n enabledInDistributedBuild docs/privacy-facts.json                      # 云备份那一格
 > # 打包后仍会带这两个 key，可以直接翻包核：
 > unzip -p <你的.ipa或Runner.app>/Runner | strings | grep -c LIANLEME_BACKUP_URL
+> unzip -p <你的.ipa或Runner.app>/Runner | strings | grep -c LIANLEME_BACKUP_DISCLOSED   # 两个都在才算配了
 > ```
 > * **都没配**（当前发布的包就是这种）→ 用 **变体 A：Data Not Collected**
 > * **任一个配了** → 必须用 **变体 B**，并用英文政策（`docs/privacy-policy.en.md`）逐条对上

@@ -630,8 +630,9 @@ void main() {
       expect(find.textContaining('不上传任何人'), findsNothing);
       expect(find.textContaining('端到端加密'), findsOneWidget);
 
-      // 能进去。测试环境没有编译期地址（`LIANLEME_BACKUP_URL` 没定义），
-      // 所以这一屏会**如实**说没配服务器 —— 这恰好也是正式包里的样子。
+      // 能进去。测试环境两个编译期开关都没有（`LIANLEME_BACKUP_URL` 与
+      // `LIANLEME_BACKUP_DISCLOSED` 都没定义），所以这一屏会**如实**说没配服务器
+      // —— 这恰好也是正式包里的样子。
       await tester.tap(entry);
       await tester.pumpAndSettle();
       expect(find.text('云备份'), findsWidgets);

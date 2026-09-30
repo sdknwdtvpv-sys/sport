@@ -110,6 +110,35 @@
       ```
 - [ ] 若某版本决定不做任何上报，删掉 `AndroidManifest.xml` 里的 INTERNET 以收紧权限
 
+## 4.5 ⛔ 云备份开关：一旦配上，政策**必须**同步改写
+
+云备份是**两个**编译期开关，**缺一个就不算配**（只给地址 → 入口根本不出现、一个字节都不发，
+免得出现"界面有入口、政策却说本版本未提供"的自相矛盾）：
+
+```bash
+flutter build apk --release \
+  --dart-define=LIANLEME_BACKUP_URL=https://你的域名 \
+  --dart-define=LIANLEME_BACKUP_DISCLOSED=true
+```
+
+- [ ] 把 `docs/privacy-facts.json` 的 `cloudBackup.enabledInDistributedBuild` 翻成 `true`
+- [ ] 按下面这份**实测**清单补政策正文 —— 2026-09-30 把开关临时翻成 true 跑硬门禁，
+      它报出来的就是这四句（中英各两处）：
+
+      | 缺的那句 | 在哪份文件 |
+      |---|---|
+      | 「服务端只拿到密文」 | `docs/privacy-policy.md` |
+      | 「删除全部数据时，会问你是否一并删除云端备份」 | `docs/privacy-policy.md` |
+      | `end-to-end encrypted` | `docs/privacy-policy.en.md` |
+      | `recovery code` | `docs/privacy-policy.en.md` |
+
+- [ ] `node tool/privacy-audit.mjs` 必须绿（它会逐条核对上面四句）
+- [ ] 商店表单也要从"变体 A：Data Not Collected"改成"变体 B" ——
+      见 `docs/store-listing.md` 与 `docs/store-listing-ios.md`
+
+> 只想先看差多少、不想真发版：把 `enabledInDistributedBuild` 临时改成 `true`、
+> 跑一次 `node tool/privacy-audit.mjs`（它会列出缺哪句）、再改回 `false`。
+
 ## 5. ⛔ 发布门禁（项目自定，且当前过不了）
 
 `README.md` 与 `docs/analytics.md` 规定：
@@ -232,7 +261,7 @@ cd .. && node tool/check-aab.mjs
 | 隐私政策 | 🚧 中英文已成文、占位符已填；**待法务审核 + 公网 URL + 填生效日**。⚠️ 云备份一旦上线，§3.1/§3.2 必须重写（数据**会**离机） |
 | 删除数据入口 | ✅ 已实现并测试。v1.22.0 补上了**条件式的云端删除**：有云备份账号时，弹层多问一句「同时删除云端备份并注销」（默认勾选），先删云端、失败则整个中止 |
 | 真机验证 | ✅ Redmi `flourite`（Android 16 / API 36）上跑的是 **v1.21.0**（逐版覆盖安装；冷启动无异常） |
-| 测试 | ✅ 门禁 **715 项全绿**、变异 24 杀 / 0 存活 = 100%。⚠️ 上面这个数字是**唯一的事实源**：`verify.sh` 第 5 层会拿实测条数跟它对比，对不上就判红（README 里那些"553 条测试"之类的抄写就是这么烂掉的） |
+| 测试 | ✅ 门禁 **721 项全绿**、变异 24 杀 / 0 存活 = 100%。⚠️ 上面这个数字是**唯一的事实源**：`verify.sh` 第 5 层会拿实测条数跟它对比，对不上就判红（README 里那些"553 条测试"之类的抄写就是这么烂掉的） |
 | 上报地址的"积压事件"决策 | ❌ **未定，且它会阻断"配了上报地址的包"**：没配地址的包把事件攒在本地（不丢），所以第一次配上地址时会把**旧版本攒下的事件**一起发出去。三选项见 `docs/analytics.md` §10，建议 C（或 B）。**定下来之前不要发布配了 `LIANLEME_ANALYTICS_URL` 的包** |
 | `tap_count` 门禁 | ❌ 口径已改端到端、目标值**待用真实测试数据重新校准**。按项目规则**不允许上架**（旁边加载到自己的开发机不受此限） |
 

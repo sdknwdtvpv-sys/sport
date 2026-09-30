@@ -263,8 +263,11 @@ adb -s <设备> reverse tcp:8790 tcp:8790          # 必须走回环，见下
 adb -s <设备> shell pm clear com.sdknwdtvpv.lianleme
 cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
     --target=integration_test/cloud_backup_e2e_test.dart -d <设备> \
-    --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790
+    --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790 \
+    --dart-define=LIANLEME_BACKUP_DISCLOSED=true      # 少了这个，入口不出现（失败往关闭倒）
 ```
+
+> 为什么是**两个**开关：地址一旦配上，界面就会出现云备份入口，而政策正文是按「是否启用」写的（没启用时必须写「本版本未提供云备份」）—— 只给地址会做出一个**界面与政策自相矛盾**的包。所以少了声明开关就当作**没配**：入口不出现、一个字节都不发。`tool/privacy-audit.mjs` 会检查「教人开云备份」的地方有没有同时写这两个开关。
 
 > ⚠️ **不能用模拟器那套 `10.0.2.2`**：`dart:io` 会拒绝明文 HTTP 发往非回环地址
 > （"Insecure HTTP is not allowed by platform"），而**回环有豁免** ——

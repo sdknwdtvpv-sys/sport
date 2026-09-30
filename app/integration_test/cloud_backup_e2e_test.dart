@@ -19,7 +19,8 @@
 /// adb -s emulator-5554 shell pm clear com.sdknwdtvpv.lianleme   # 从干净状态开始
 /// cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
 ///     --target=integration_test/cloud_backup_e2e_test.dart -d emulator-5554 \
-///     --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790
+///     --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790 \
+///     --dart-define=LIANLEME_BACKUP_DISCLOSED=true      # 少了这个，入口根本不出现（失败往关闭倒）
 /// ```
 /// ⚠️ 必须用 `127.0.0.1` + `adb reverse`，**不能**用模拟器那套 `10.0.2.2`：
 /// `dart:io` 会拒绝明文的非回环地址（"Insecure HTTP is not allowed by platform"），
