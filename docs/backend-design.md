@@ -208,6 +208,21 @@ node tool/check-ciphertext.mjs <库> --absent 深蹲,102.5      # 追加你要�
 node tool/check-ciphertext.mjs --selftest                  # 自检（verify.sh 第 2 层每次跑）
 ```
 
+**回复之后"数据真的回来了"也是逐字段验的**（2026-09-30 加强）：这条端到端原来只验到
+"统计卡显示 2 组" —— **个数对不等于内容对**（恢复出来的重量/次数/动作错了，那一步照样绿）。
+现在流程改成：记完两组先**读本机真实库抄一份快照**（id / workoutId / 动作 / 组序 / 次数 /
+重量 / 完成时间 / 组类型），恢复之后再读一次，`orderedEquals` 比对。
+最近一次的结果（日志原样）：
+
+```
+snapshot-before=s_w_…_ex_bb_bench_press_1|w_…|ex_bb_bench_press|1|8|40.0|1790761768665|normal ／ …_2|…|2|8|40.0|…|normal
+snapshot-after =（与上面逐字节相同）
+verified-2-sets-restored (field-by-field) · E2E-OK
+```
+
+连**完成时间戳**都原样回来了 —— 这一点值得单独说：如果恢复时把时间重写成"现在"，
+进步曲线与"上周练了几次"就会错，而只数条数的断言看不出来。
+
 它查四件事：`backups` 里**至少有一行**（空库不算"安全"，算"还没跑"）、
 信封结构是 `{v, alg, kdf, nonce, ct, mac}` 且 `alg` 是 AES-256-GCM、
 `ct` 解出来**不像 JSON**且可打印率低、整包搜不到任何明文记号。

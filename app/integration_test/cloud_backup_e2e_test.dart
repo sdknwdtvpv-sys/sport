@@ -31,6 +31,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lianleme/backup/recovery_code.dart';
+import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import 'package:lianleme/data/drift_local_store.dart';
+import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/main.dart' as app;
 
 void main() {
@@ -110,6 +113,25 @@ void main() {
     await tester.tap(find.byKey(const Key('summary-done')));
     await settle(2000);
     mark('logged-2-sets');
+
+    // 把"换手机之前"的本机数据**逐字段**抄一份下来。
+    // 为什么要抄：原来这条端到端只验到"统计卡显示 2 组"——**个数对**不等于**内容对**，
+    // 万一恢复出来重量/次数/动作是错的，那一步照样绿。下面恢复完之后会逐字段比。
+    Future<List<String>> snapshotLocalSets() async {
+      final AppDatabase db = openAppDatabase();
+      final List<SetRecord> sets = await DriftLocalStore(db).allSets();
+      final List<String> rows = <String>[
+        for (final SetRecord r in sets)
+          '${r.id}|${r.workoutId}|${r.exerciseId}|${r.setIndex}|${r.reps}|'
+              '${r.weightKg}|${r.completedAtMs}|${r.setType.name}',
+      ]..sort();
+      await db.close();
+      return rows;
+    }
+
+    final List<String> before = await snapshotLocalSets();
+    expect(before, hasLength(2), reason: '先确认本机真的有两组要备份');
+    mark('snapshot-before=${before.join(' ／ ')}');
 
     // ---------------------------------------------------------------- 2. 开启云备份
     await tester.tap(find.byKey(const Key('tab-我')));
@@ -219,7 +241,16 @@ void main() {
     await scrollToInProfile(find.byKey(const Key('profile-stat-sets')), up: true);
     expect(textAt(const Key('profile-stat-sets')), '2 组',
         reason: '换手机之后本机必须把 2 组拿回来');
-    mark('verified-2-sets-restored');
+
+    // **逐字段**比对：动作、重量、次数、组序、完成时间、组类型，一个都不许变。
+    // 个数对只是"看起来回来了"，字段对才是"真的回来了"。
+    final List<String> after = await snapshotLocalSets();
+    mark('snapshot-after=${after.join(' ／ ')}');
+    expect(after, orderedEquals(before),
+        reason: '恢复出来的每一组必须与换手机之前**逐字段一致**'
+            '（id / workoutId / 动作 / 组序 / 次数 / 重量 / 完成时间 / 组类型）');
+
+    mark('verified-2-sets-restored (field-by-field)');
     mark('E2E-OK');
   });
 }
