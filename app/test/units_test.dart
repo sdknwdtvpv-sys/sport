@@ -282,6 +282,8 @@ void main() {
       addTearDown(db.close);
       final ProfileRepository profile = ProfileRepository(db);
       await profile.setUnit(WeightUnit.lb); // 训练单位先设成磅
+      // 这一页 v1.31.0 起先过敏感个人信息单独同意；这条测的是"两个单位互不抹掉"
+      await profile.setBodyMetricConsent(nowMs: 1);
 
       await tester.pumpWidget(MaterialApp(
         home: BodyMetricScreen(

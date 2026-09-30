@@ -56,10 +56,22 @@ anonymous usage statistics — and that switch is **off by default**: you have t
 |---|---|---|
 | Workout records | Exercise, weight, reps, set index, warm-up flag, completion time | Log your training; compute volume and progress |
 | Workout sessions | Start/end time, total sets, total volume | Workout summary screen |
+| **Body metrics** | **Body weight (kg; displayed in the unit you pick), a note** | So you can see long-term change |
 | Preferences | Progression-suggestion switch, unit preference, "Help improve the product" switch | Remember your choices |
 
 This data lives in the app's private local database (SQLite, managed by drift) and
 **never leaves the device**.
+
+> **Body weight is sensitive personal information, and we ask for your separate consent.**
+> Under Article 29 of China's Personal Information Protection Law, processing sensitive
+> personal information in the health category requires **separate consent** — the general
+> "agree to the privacy policy" on first launch **is not** that consent. So the **first time
+> you open the Body metrics screen** we show a dedicated explanation (stored on this device
+> only, never uploaded, editable and deletable at any time) and only start recording after
+> you agree; choosing "not now" means we do not open that screen and collect nothing.
+> To be explicit about purpose: it is used **only so you can see your own long-term change** —
+> never for advertising or any other purpose (App Store Guideline 5.1.3 likewise forbids
+> using health data for advertising or sale).
 
 ### 2.2 Collected only when "Help improve the product" is ON
 

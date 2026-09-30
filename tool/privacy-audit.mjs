@@ -354,6 +354,41 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑩ 敏感个人信息的**单独同意**：政策说法 + 代码里那条记录，两头都要在。
+  //
+  // 体重是医疗健康类的敏感个人信息（PIPL 第 29 条要求单独同意）。这一条**天生容易烂**：
+  // 代码里加了个新页面、忘了写政策；或政策写了、代码里那道门被删掉。所以横着查。
+  {
+    const sl = facts.sensitiveLocal;
+    if (!sl) {
+      errors.push('privacy-facts.json 少了 sensitiveLocal —— 体重属于敏感个人信息，'
+        + '它的"单独同意"必须显式声明，不能靠默认值含糊过去');
+    } else {
+      const dbSrc = readFileSync(join(ROOT, 'app/lib/data/db.dart'), 'utf8');
+      if (!/IntColumn get bodyMetricConsentAtMs\b/.test(dbSrc)) {
+        errors.push('政策声明了体重要单独同意，但 app/lib/data/db.dart 里找不到那条记录'
+          + '（bodyMetricConsentAtMs）—— 这条跨文件检查已经失效，别当成通过');
+      }
+      const screenPath = join(ROOT, 'app/lib/features/body/body_metric_screen.dart');
+      const screenSrc = existsSync(screenPath) ? readFileSync(screenPath, 'utf8') : '';
+      if (!/Key\('body-consent-agree'\)/.test(screenSrc)) {
+        errors.push('「身体数据」页里找不到单独同意那道门（body-consent-agree）—— '
+          + '政策承诺了"第一次进入时单独征求同意"，代码里就必须有它');
+      }
+      const enText = existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '';
+      for (const phrase of sl.policyPhrases?.zh ?? []) {
+        if (!policy.includes(phrase)) {
+          errors.push(`敏感个人信息单独同意：政策正文里没有「${phrase}」`);
+        }
+      }
+      for (const phrase of sl.policyPhrases?.en ?? []) {
+        if (!enText.includes(phrase)) {
+          errors.push(`敏感个人信息单独同意：英文政策里没有「${phrase}」`);
+        }
+      }
+    }
+  }
+
   // ⑧ 「怎么开云备份」这件事，教一半比不教更危险
   //
   // 云备份现在是**两个**编译期开关：地址 + 「政策已按启用态改写」的声明。

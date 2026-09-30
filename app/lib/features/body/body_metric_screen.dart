@@ -74,6 +74,13 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   List<BodyMetricData> _recent = const <BodyMetricData>[];
   late DateTime _selected;
   bool _loading = true;
+
+  /// 单独同意还没问完时为 true。
+  ///
+  /// 为什么单独一个状态：同意未决时如果照旧走 `_loading` 那条分支，弹层后面会挂一个
+  /// **永远转的圈**（`_load()` 要等同意之后才调）—— 测试里表现为 `pumpAndSettle` 超时，
+  /// 用户那边表现为"提示框后面卡住了"。所以这段时间渲染一块**静态**占位。
+  bool _consentPending = false;
   bool _saving = false;
 
   DateTime get _now => (widget.clock ?? DateTime.now)();
@@ -82,7 +89,67 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   void initState() {
     super.initState();
     _selected = _now;
-    _load();
+    // **敏感个人信息的单独同意**（PIPL 第 29 条）：
+    // 体重属于医疗健康类的敏感个人信息，首次启动那道"政策总同意"**不等于**单独同意。
+    // 所以进这一页先单独问一次；同意过就直接读数据，没同意过就先弹说明。
+    unawaited(_ensureSensitiveConsent());
+  }
+
+  /// 过"单独同意"这道门：没同意过就弹一次；用户点「先不用」就退出这一页（不收集任何东西）。
+  Future<void> _ensureSensitiveConsent() async {
+    final ProfileRepository? profile = widget.profile;
+    // 没有 profile（纯嵌入/测试场景，比如截图脚本）时不做拦截 —— 真实 App 一定传。
+    if (profile == null) {
+      await _load();
+      return;
+    }
+    if (await profile.bodyMetricConsentAtMs() != null) {
+      await _load();
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _consentPending = true); // 静态占位，别再转圈
+    final bool? agree = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('体重是敏感个人信息，要先单独征得你同意',
+            style: TextStyle(color: Tokens.text)),
+        content: const Text(
+          // ⚠️ 这里**不能**写 markdown 的 `**`：`Text` 不渲染 markdown，
+          // 用户会直接看到星号（v1.31.0 真机截图时抓到过一次）。
+          // test/body_consent_test.dart 里有一条断言专门守着这件事。
+          '「身体数据」记的是你的体重 —— 按《个人信息保护法》，这类健康数据属于'
+          '敏感个人信息，需要我们单独征求你的同意（首次启动时那次是政策总同意，'
+          '不等于这一条）。\n\n'
+          '· 它只存在这台手机上，不会上传（云备份里也不含身体数据）；\n'
+          '· 用途只有一个：给你自己看长期变化；\n'
+          '· 你可以随时在「全部数据」里改或删掉它。',
+          key: Key('body-consent'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('body-consent-decline'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('先不用', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('body-consent-agree'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('同意并记录', style: TextStyle(color: Tokens.volt)),
+          ),
+        ],
+      ),
+    );
+    if (agree != true) {
+      // 不同意 → 直接退出这一页：不读、不写、不收集
+      if (mounted) Navigator.of(context).maybePop();
+      return;
+    }
+    await profile.setBodyMetricConsent();
+    if (mounted) setState(() => _consentPending = false);
+    await _load();
   }
 
   @override
@@ -256,7 +323,15 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 ],
               ),
             ),
-            if (_loading)
+            if (_consentPending)
+              const Expanded(
+                child: Center(
+                  child: Text('先确认上面那条说明',
+                      key: Key('body-consent-pending'),
+                      style: TextStyle(color: Tokens.text3)),
+                ),
+              )
+            else if (_loading)
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else
               Expanded(

@@ -286,5 +286,29 @@
       "why": "系统因 WRITE 隐含授予；我们从不读用户文件",
       "howToVerify": "aapt2 dump badging | grep implied"
     }
-  ]
+  ],
+  "sensitiveLocal": {
+    "_why": "体重属于敏感个人信息（医疗健康类），PIPL 第 29 条要求**单独同意** —— 首次启动那道政策总同意不等于它。这个块是机器可核的那一半：tool/privacy-audit.mjs 会要求中英政策正文出现下面的说法，并核对代码里确实有那条单独同意记录（schema v14 的 user_profile.body_metric_consent_at_ms）。",
+    "item": {
+      "zh": "体重（身体数据）",
+      "en": "body weight (body metrics)"
+    },
+    "gate": {
+      "where": "app/lib/features/body/body_metric_screen.dart::_ensureSensitiveConsent",
+      "storedAt": "user_profile.body_metric_consent_at_ms（schema v14）",
+      "test": "app/test/body_consent_test.dart"
+    },
+    "policyPhrases": {
+      "zh": [
+        "敏感个人信息",
+        "单独同意",
+        "不用于广告"
+      ],
+      "en": [
+        "sensitive personal information",
+        "separate consent",
+        "never for advertising"
+      ]
+    }
+  }
 }

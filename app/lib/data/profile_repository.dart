@@ -51,6 +51,7 @@ class ProfileRepository {
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -83,6 +84,7 @@ class ProfileRepository {
             analyticsEnabled: enabled,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -137,6 +139,7 @@ class ProfileRepository {
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -191,6 +194,7 @@ class ProfileRepository {
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -239,6 +243,7 @@ class ProfileRepository {
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -269,6 +274,7 @@ class ProfileRepository {
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -302,6 +308,7 @@ class ProfileRepository {
             analyticsEnabled: existing?.analyticsEnabled ?? false,
             privacyConsentAtMs: existing?.privacyConsentAtMs ?? now,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),
@@ -309,6 +316,44 @@ class ProfileRepository {
   }
 
   /// 用户**明确拒绝过**的时刻（null = 没拒绝过）。
+  /// 身体数据（体重）的**单独同意**时刻；null = 还没单独同意过。
+  ///
+  /// 与"政策总同意"分开存：PIPL 第 29 条要求敏感个人信息**单独同意**，
+  /// 而首次启动那道门征求的是政策总同意 —— 两者不是一回事，不能互相顶替。
+  Future<int?> bodyMetricConsentAtMs() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.bodyMetricConsentAtMs;
+  }
+
+  /// 记下"他单独同意过处理体重这件事"。
+  ///
+  /// 形状照抄 `setPrivacyDeclined`：**每个 setter 都必须把已有字段原样带回去**，
+  /// 否则 `insertOnConflictUpdate` 会把整行覆盖掉、把别的设置抹了。
+  Future<void> setBodyMetricConsent({int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
+            defaultRestSec: existing?.defaultRestSec ?? 90,
+            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs ?? now,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
   Future<int?> privacyDeclinedAtMs() async {
     final row = await (_db.select(_db.userProfile)
           ..where((t) => t.userId.equals(kLocalUserId)))
@@ -337,6 +382,7 @@ class ProfileRepository {
             analyticsEnabled: existing?.analyticsEnabled ?? false,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs ?? now,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now,
           ),

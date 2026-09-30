@@ -137,6 +137,10 @@ void main() {
         {BodyWeightUnit unit = BodyWeightUnit.kg,
         ProfileRepository? profile,
         ValueChanged<BodyWeightUnit>? onUnitChanged}) async {
+      // v1.31.0 起这一页先过**敏感个人信息单独同意**（PIPL 第 29 条）。
+      // 本文件测的是单位切换与展示，不测那道门（那道门由 test/body_consent_test.dart 覆盖），
+      // 所以传了 profile 就先替用户同意掉 —— 免得每个用例都要写一遍。
+      if (profile != null) await profile.setBodyMetricConsent(nowMs: 1);
       await tester.pumpWidget(MaterialApp(
         home: BodyMetricScreen(
           repository: repo,

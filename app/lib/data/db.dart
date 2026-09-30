@@ -216,6 +216,15 @@ class UserProfile extends Table {
   /// 但也不能把"拒绝"写成"同意"（那是撒谎）。两列各自为真，门只看这两个都是 null。
   IntColumn get privacyDeclinedAtMs => integer().nullable()();
 
+  /// **身体数据（体重）的单独同意时刻**。null = 还没单独同意过。
+  ///
+  /// 为什么需要它（2026-09-30，`docs/tech-decisions.md` 的合规第 2 条自己写着这件事）：
+  /// **体重属于敏感个人信息**（医疗健康类），而 PIPL 第 29 条要求处理敏感个人信息
+  /// 取得**单独同意** —— 首次启动那道政策总同意**不算**单独同意。
+  /// 所以在用户第一次进「身体数据」时，单独问一次、单独落库。
+  /// 政策里对应的说法由 `docs/privacy-facts.json` 的 `sensitiveLocal` 与硬门禁对账。
+  IntColumn get bodyMetricConsentAtMs => integer().nullable()();
+
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
 
@@ -359,7 +368,7 @@ class AppDatabase extends _$AppDatabase {
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -462,6 +471,12 @@ class AppDatabase extends _$AppDatabase {
           // （写这一刀时还没有真实用户，所以它没有覆盖掉任何人的选择。）
           if (from < 13) {
             await customStatement('UPDATE user_profile SET analytics_enabled = 0');
+          }
+          // v13 → v14：身体数据（体重）的**单独同意**时刻。老库升上来是 null ——
+          // 也就是老用户下次进「身体数据」时会看到那道单独同意说明（这是对的：
+          // 他们当初同意的是政策，不是"处理敏感个人信息"这件事本身）。
+          if (from < 14) {
+            await m.addColumn(userProfile, userProfile.bodyMetricConsentAtMs);
           }
         },
       );
