@@ -39,6 +39,8 @@ iOS 依赖的 iOS 可用性（含原生资源包与 Apple 隐私清单）/ 密�
 App Store 那套是不是 8 位无 alpha）/ 截图压平工具的 5 种 filter 自检 /
 **部署包自洽**（install.sh ↔ 两个 systemd 单元 ↔ Caddyfile 的端口一致、ExecStart 的入口存在、
 占位符全被替换、与客户端三个 `--dart-define` 逐字对得上、加固没被删、**没开访问日志**）/
+**交付目录**（`dist/` 里只许有当前版本的 APK/AAB，且**包内** versionName/versionCode 与
+`kAppVersion` + pubspec 的 build number 一致 —— 文件名可以改、包里的版本号改不了）/
 **CI 与门禁的关系**（CI 只许跑门禁覆盖得了的命令、核心步骤不许少、`ubuntu-24.04`/node 22/
 flutter 3.47.5 三个版本必须钉死、头部必须点明"没覆盖什么"）/
 **商店表单与事实源三边对账**（Play 数据安全 ←→ App Store 隐私标签 ←→ `privacy-facts.json`：

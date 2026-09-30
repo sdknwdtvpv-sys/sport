@@ -237,6 +237,15 @@ else
 fi
 echo
 
+# 交付目录核对工具的**自检**：dist/ 是交付口（真机装 APK、商店传 AAB、软著交 PDF），
+# 而生成物最容易出的事故就是"留着上一版的"——2026-09-30 真的发生过两次。
+if node tool/check-dist.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 交付目录核对自检通过（旧版本/没版本号/坏包都藏不住）"
+else
+  strip "$LOG"; echo "${RED}✗ 交付目录核对工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # CI 与门禁关系核对工具的**自检**：workflow 头部写着"这是门禁的子集"，
 # 而那是**承诺**：CI 里加一条门禁不管的命令就当场变假，且本地门禁永远复现不了它。
 if node tool/check-ci.mjs --selftest >"$LOG" 2>&1; then
@@ -431,6 +440,15 @@ if node tool/asset-check.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 发行资源（图标/启动图/应用名）齐全"
 else
   strip "$LOG"; echo "${RED}✗ 发行资源有问题（上架前必须修）${OFF}"; fail=1
+fi
+echo
+
+# 交付目录：dist/ 里只许有当前版本的 APK/AAB，且**包内**版本号与真源一致
+# （文件名可以改，包里的版本号改不了 —— 所以那条才是真证据）。dist/ 不在时跳过。
+if node tool/check-dist.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 交付目录干净（只有当前版本，包内版本与真源一致）"
+else
+  strip "$LOG"; echo "${RED}✗ 交付目录不对（旧版本/坏包/包内版本对不上）${OFF}"; fail=1
 fi
 echo
 
@@ -647,7 +665,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
-         tool/check-store-forms.mjs tool/check-ci.mjs \
+         tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/check-deploy.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
