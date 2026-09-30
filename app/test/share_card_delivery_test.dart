@@ -39,7 +39,12 @@ class _FakeExporter implements ShareCardExporter {
     lastName = fileName;
   }
 
+  /// 这次存相册会不会弹系统权限框（默认 false，与 Android 10+ 一致）
+  bool needsPermission = false;
+
   @override
+  Future<bool> galleryNeedsPermission() async => needsPermission;
+ @override
   Future<bool> saveToGallery(Uint8List png,
       {String fileName = 'lianleme'}) async {
     saved.add(png);
@@ -199,6 +204,33 @@ void main() {
       expect(find.textContaining('这次没有记录到任何一组'), findsOneWidget);
     });
   });
+
+  group('相册权限：申请之前必须先说清目的', () {
+    testWidgets('需要权限时先弹说明；点「先不用」就**不去申请**', (WidgetTester tester) async {
+      final _FakeExporter exporter = _FakeExporter()..needsPermission = true;
+      await _pumpPreview(tester, exporter);
+
+      await tester.tap(find.byKey(const Key('share-card-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('gallery-rationale')), findsOneWidget,
+          reason: '系统弹框不会解释我们要干什么，界面必须先说一句（191 号文二.3）');
+      await tester.tap(find.byKey(const Key('gallery-rationale-cancel')));
+      await tester.pumpAndSettle();
+      expect(exporter.saved, isEmpty, reason: '用户说先不用，就不该走到申请权限那一步');
+    });
+
+    testWidgets('不需要权限的平台（Android 10+）不该白问一次', (WidgetTester tester) async {
+      final _FakeExporter exporter = _FakeExporter()..needsPermission = false;
+      await _pumpPreview(tester, exporter);
+
+      await tester.tap(find.byKey(const Key('share-card-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('gallery-rationale')), findsNothing);
+      expect(exporter.saved, hasLength(1));
+    });
+  });
 }
 
 class _ThrowingExporter implements ShareCardExporter {
@@ -208,6 +240,8 @@ class _ThrowingExporter implements ShareCardExporter {
       throw StateError('模拟分享通道失败');
 
   @override
+  Future<bool> galleryNeedsPermission() async => false;
+ @override
   Future<bool> saveToGallery(Uint8List png,
           {String fileName = 'lianleme'}) async =>
       throw StateError('模拟相册写入失败');

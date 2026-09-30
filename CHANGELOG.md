@@ -6,88 +6,68 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
-## v1.23.1 · 云备份的"换手机"端到端跑通了（在模拟器上，打真后端）
+## v1.26.1 · 申请相册权限前先说清目的（审计第 7 条）
 
-设计稿阶段 5 写的是"备份 → 卸载重装 → 恢复 → 数据一致"。**这一条跑通了**，
-而且**全程只用 App 自己的界面**（不是拿 Dart 脚本冒充）：新增
-`app/integration_test/cloud_backup_e2e_test.dart` + 一个 driver，一次 run 里演完"换手机"：
+对抗性审计指出的第 7 条：`saveToGallery()` 直接 `Gal.hasAccess()` → `Gal.requestAccess()`，
+**没有任何前置说明**，而系统的弹框只有一句"允许写入媒体"，不解释我们要干什么 ——
+而"申请可收集个人信息的权限时同步告知目的"是明文规矩（191 号文二.3，OPPO 审核规范同义）。
 
-| 步 | 现场证据（`LIANLEME-E2E` 日志） |
-|---|---|
-| 真实 App 里记两组 | `logged-2-sets` |
-| 我 → 云备份 → 开启（**真后端建号**） | `account-created code=XC5NE-SGYPG-DSA7G-E6CYX-SJ5PB-0M` |
-| 立即备份 | `uploaded: 已备份 1 次训练 / 2 组（22.0 KB 密文）` |
-| 界面显示**服务端**那份的状态 | `server-state: 云端：22.0 KB · 09-30 13:33` |
-| **删除全部数据**（故意**不勾**"同时删除云端备份"）← 等于换了台新手机 | 本机回到空态、云端那份仍在 |
-| 用恢复码"取回已有备份" → 从云端恢复 | `restored: 已从云端恢复：已导入 1 次训练 / 2 组` |
-| 断言数据真的回来了 | `verified-2-sets-restored`（「我」页总组数 = **2 组**） |
+改法：
 
-**宿主侧同时翻了服务端的库**（同一时刻读 `/tmp/e2e-cloud/backend.sqlite`）：
-1 个账号、1 份备份、`bytes=22567`（与设备报的 22.0 KB 一致），
-blob 开头是 `{"v":1,"alg":"AES-256-GCM","kdf":"HKDF-SHA256","nonce":"8t/R…`。
-**阳性对照**（必须先成立，否则下面的"搜不到"是空转）：`AES-256-GCM` / `HKDF-SHA256` /
-`{"v":1` 在库文件字节里都能搜到；**阴性**：`ex_bb_bench_press` / `weight_kg` / `"reps"` /
-`40.0` 在**整个库文件**里都搜不到。于是"服务端看不到训练明细"这句话，现在有成对的证据，
-而且用的是**真机产生的载荷**。
+* 导出接口新增 `galleryNeedsPermission()`：由实现回答"这次到底会不会弹系统权限框"。
+  真身用 `Gal.hasAccess()`；**Android 10+ 走 MediaStore 免权限 → 返回 false**，
+  所以那些设备上不会白问用户一次。
+* 界面在申请之前弹一句自己的说明（"我们只是把这张训练卡写进去 —— 从不读取你的任何照片"），
+  用户点「先不用」就**根本不去申请权限**。
+* 两条新测试：需要权限时先弹说明且取消后不申请；不需要权限的平台不弹说明直接存。
 
-**这一版抓到我自己五个错**（都是"我以为"）：
+顺带把上一批欠的**截图重出**了（两套：20:9 与 9:16）—— 上一批加了「开源许可」那一行，
+而当时那两套图还是加之前跑的。
 
-1. 提示横幅的 key 落在 `Container` 上，我却 `widget<Text>(...)` 取值 →
-   `type 'Container' is not a subtype of type 'Text'`。写了个两种都能吃的帮手。
-2. **懒构建列表里"找到了"不等于"点得到"**：目标卡在视口下沿时 `tap` 会打在视口外，
-   **不报错也点不动** —— 表现却像"没配服务器地址"。加 `ensureVisible` 才真点到。
-3. 删完数据后断言"0 组"，而空态下「我」页**根本不显示统计行**（那是空态，不是 0）。
-4. 空态那句在**视口上方**，而我的滚动帮手只会往下滚。
-5. 我为了"干净"直接 `rm` 了后端的 sqlite 文件，**而服务端还开着旧句柄** →
-   接口 500、建号失败。表现是"恢复码对话框没出来"。改成先杀进程再删。
+版本 1.26.0+32 → 1.26.1+33。
 
-**顺带修了软著材料收集器的一个不一致**：`INCLUDE_DIRS` 收了 `app/test` 却漏了
-`app/integration_test` 与 `app/test_driver` —— 同一个原则（"自己写的源码"）不该一半收一半不收。
-补进去后是 **133 个源文件 / 34,617 行**（后来 driver 加了输出目录参数，变成 34,626），
-鉴别材料按 V1.23.1 重新生成。
 
-### 商店截图：多出一套 **9:16** 的，给 Google Play 用
+## v1.26.0 · 按对抗性审计修政策（含我自己的一个悬空引用）+ 应用内开源许可
 
-核商店规格时发现一个**可能会被拒**的问题：那 11 张截图是 **1080×2400（20:9）**，
-而 Google Play 对手机截图要求宽高比在 **9:16**（一处第三方口径）或 **1:2～2:1**（另一处）之间
-—— [官方页](https://support.google.com/googleplay/android-developer/answer/9866151)
-在我这儿取不到，两处第三方资料**互相矛盾**，但**两种口径都排除 20:9**。
+我让一个独立审计员对着四大商店的合规要求挑毛病（只读代码/材料 + 上网核对法规），
+它找到了几条真的问题。这一版处理掉不需要产品决策的那些。
 
-所以没去争论"到底会不会被拒"，直接把合规的那套做出来：同一份
-`integration_test/screenshots_test.dart`，把设备逻辑分辨率切成 `1080x1920` 再跑一遍
-（driver 现在支持 `SHOT_DIR` 环境变量）：
+### 审计抓到的**我自己的 bug**
 
-```bash
-adb -s <设备> shell wm size 1080x1920
-cd app && SHOT_DIR=../store-assets/screenshots-play flutter drive … && adb -s <设备> shell wm size reset
-```
+政策里「请通过**文末**方式联系」是**悬空引用** —— 联系方式在文档**开头**，文末根本没有。
+已改成"文首表格里的联系方式"，并在括号里注明这是被一次对抗性审计抓出来的。
 
-产物 11 张、**都是 1080×1920（9:16）**（两种口径下都合法），落在
-`store-assets/screenshots-play/`；原来那套 20:9 保留给国内商店与软著说明书。
-`docs/store-listing.md` 补了"哪套给哪个商店"（Play 最少 2 张、**最多 8 张**，我们有 11 张 → 挑 8），
-`docs/store-listing-ios.md` 写明**安卓这两套都不能给 Apple**（它按设备档位要精确像素，
-等模拟器跑通后单独出）。
+### 政策补三处（中英各一份）
 
-**怎么复现**（命令写在 `docs/backend-design.md` §七之七）：
-```bash
-node server/backend.mjs --port 8790 --db /tmp/e2e/backend.sqlite &
-adb -s <设备> reverse tcp:8790 tcp:8790 && adb -s <设备> shell pm clear com.sdknwdtvpv.lianleme
-cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
-    --target=integration_test/cloud_backup_e2e_test.dart -d <设备> \
-    --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790
-```
-⚠️ **必须走 `adb reverse` + `127.0.0.1`**：`dart:io` 拒绝明文 HTTP 发往非回环地址
-（"Insecure HTTP is not allowed by platform"），回环才豁免；生产永远走 https。
+* **§五之二「投诉与举报」**：渠道 + **15 个工作日**答复时限 + **更正权**
+  （191 号文六.5 明确要求公布投诉举报渠道并限时受理）。
+* **§四 权限**：如实披露 `android:requestLegacyExternalStorage="true"` ——
+  它是我们自己 manifest 上的一行，只对 Android 10（API 29）生效、API 30+ 被忽略。
+  **要不要删它另说**：删了可能影响 API 29 上的"存相册"，而手边只有 API 36 设备，验证不了。
+* **§三之五 SDK 表**：加「链接」列（pub.dev）；并把"装进包里的**全部**第三方代码"
+  这个与事实不符的说法改成"**直接依赖**" —— 审计实测 APK 的 NOTICES 里有 **177 个**
+  传递组件，而我们只列了 6 个。
 
-**当时的设备是 Android 模拟器**（Pixel 6 / API 36，无头）。**真机仍锁着** ——
-链路、加密、服务端行为都有证据了，但**真机特有**的（Doze、厂商后台策略、真实网络切换）
-还没验过，这一点在文档里也写明了，不混着说。
+### 配套：新增应用内「我 → 开源许可」
 
-### 验证
+用 Flutter 自带的 `showLicensePage`（**零依赖**）—— 它由构建时的 NOTICES 生成，
+会把随包分发的**全部**组件（含传递依赖：框架、Skia、ICU…）及其许可列出来。
+这样政策里"完整清单在应用内可查"才是**可自证**的，而不是一句无法验证的声明。
 
-六层门禁全绿（**693 测试**、变异 24 杀 / 0 存活 = 100%、`dart analyze --fatal-infos` 零问题）。
-真机 Redmi `flourite` 覆盖安装 1.23.0 → **1.23.1**（冷启动无异常）。
-端到端见上（模拟器 + 真后端）。
+### 一处把话说准
+
+`release-admin` 里那句"`privacy-audit` 拿 pubspec 逐个核，少一个就判红"补上了作用域说明：
+它只核 **`pubspec.yaml` 的直接依赖**，不查"政策里多列"、也不查链接 ——
+审计指出我把它的覆盖面说得比实际大。
+
+### 两条需要用户拍板（已写进 `docs/your-todo.md` §一之三）
+
+* **A**：同意门把"非必需"（匿名统计默认开）与"必需"捆在一起，与 191 号文四.2 冲突 ——
+  建议拆开：统计改**默认关闭 + 独立开关**，拒绝它不影响离线使用；
+* **B**：要不要做工信部 164 号文要求的**「个人信息收集清单 / 与第三方共享清单」二级菜单**。
+
+版本 1.25.2+31 → 1.26.0+32。门禁六层全绿（708 测试、变异 24 杀 / 0 存活 = 100%）。
+
 
 ## v1.25.2 · 政策补「应用信息」+ 一份比原先更准的资质清单 + 软著守卫补了个洞
 
@@ -464,6 +444,89 @@ iPad 用户仍可在兼容模式下使用。代价是要么接受这条没验证
 `dart analyze --fatal-infos` 零问题），`tool/ios-deps.mjs` 已进第 2 层且负向验证过。
 软著源程序量随新工具文件同步为 129 个源文件 / 34,104 行，鉴别材料按 V1.23.0 重新生成。
 本轮不切版、不重装真机（机上是 v1.23.0）。
+
+## v1.23.1 · 云备份的"换手机"端到端跑通了（在模拟器上，打真后端）
+
+设计稿阶段 5 写的是"备份 → 卸载重装 → 恢复 → 数据一致"。**这一条跑通了**，
+而且**全程只用 App 自己的界面**（不是拿 Dart 脚本冒充）：新增
+`app/integration_test/cloud_backup_e2e_test.dart` + 一个 driver，一次 run 里演完"换手机"：
+
+| 步 | 现场证据（`LIANLEME-E2E` 日志） |
+|---|---|
+| 真实 App 里记两组 | `logged-2-sets` |
+| 我 → 云备份 → 开启（**真后端建号**） | `account-created code=XC5NE-SGYPG-DSA7G-E6CYX-SJ5PB-0M` |
+| 立即备份 | `uploaded: 已备份 1 次训练 / 2 组（22.0 KB 密文）` |
+| 界面显示**服务端**那份的状态 | `server-state: 云端：22.0 KB · 09-30 13:33` |
+| **删除全部数据**（故意**不勾**"同时删除云端备份"）← 等于换了台新手机 | 本机回到空态、云端那份仍在 |
+| 用恢复码"取回已有备份" → 从云端恢复 | `restored: 已从云端恢复：已导入 1 次训练 / 2 组` |
+| 断言数据真的回来了 | `verified-2-sets-restored`（「我」页总组数 = **2 组**） |
+
+**宿主侧同时翻了服务端的库**（同一时刻读 `/tmp/e2e-cloud/backend.sqlite`）：
+1 个账号、1 份备份、`bytes=22567`（与设备报的 22.0 KB 一致），
+blob 开头是 `{"v":1,"alg":"AES-256-GCM","kdf":"HKDF-SHA256","nonce":"8t/R…`。
+**阳性对照**（必须先成立，否则下面的"搜不到"是空转）：`AES-256-GCM` / `HKDF-SHA256` /
+`{"v":1` 在库文件字节里都能搜到；**阴性**：`ex_bb_bench_press` / `weight_kg` / `"reps"` /
+`40.0` 在**整个库文件**里都搜不到。于是"服务端看不到训练明细"这句话，现在有成对的证据，
+而且用的是**真机产生的载荷**。
+
+**这一版抓到我自己五个错**（都是"我以为"）：
+
+1. 提示横幅的 key 落在 `Container` 上，我却 `widget<Text>(...)` 取值 →
+   `type 'Container' is not a subtype of type 'Text'`。写了个两种都能吃的帮手。
+2. **懒构建列表里"找到了"不等于"点得到"**：目标卡在视口下沿时 `tap` 会打在视口外，
+   **不报错也点不动** —— 表现却像"没配服务器地址"。加 `ensureVisible` 才真点到。
+3. 删完数据后断言"0 组"，而空态下「我」页**根本不显示统计行**（那是空态，不是 0）。
+4. 空态那句在**视口上方**，而我的滚动帮手只会往下滚。
+5. 我为了"干净"直接 `rm` 了后端的 sqlite 文件，**而服务端还开着旧句柄** →
+   接口 500、建号失败。表现是"恢复码对话框没出来"。改成先杀进程再删。
+
+**顺带修了软著材料收集器的一个不一致**：`INCLUDE_DIRS` 收了 `app/test` 却漏了
+`app/integration_test` 与 `app/test_driver` —— 同一个原则（"自己写的源码"）不该一半收一半不收。
+补进去后是 **133 个源文件 / 34,617 行**（后来 driver 加了输出目录参数，变成 34,626），
+鉴别材料按 V1.23.1 重新生成。
+
+### 商店截图：多出一套 **9:16** 的，给 Google Play 用
+
+核商店规格时发现一个**可能会被拒**的问题：那 11 张截图是 **1080×2400（20:9）**，
+而 Google Play 对手机截图要求宽高比在 **9:16**（一处第三方口径）或 **1:2～2:1**（另一处）之间
+—— [官方页](https://support.google.com/googleplay/android-developer/answer/9866151)
+在我这儿取不到，两处第三方资料**互相矛盾**，但**两种口径都排除 20:9**。
+
+所以没去争论"到底会不会被拒"，直接把合规的那套做出来：同一份
+`integration_test/screenshots_test.dart`，把设备逻辑分辨率切成 `1080x1920` 再跑一遍
+（driver 现在支持 `SHOT_DIR` 环境变量）：
+
+```bash
+adb -s <设备> shell wm size 1080x1920
+cd app && SHOT_DIR=../store-assets/screenshots-play flutter drive … && adb -s <设备> shell wm size reset
+```
+
+产物 11 张、**都是 1080×1920（9:16）**（两种口径下都合法），落在
+`store-assets/screenshots-play/`；原来那套 20:9 保留给国内商店与软著说明书。
+`docs/store-listing.md` 补了"哪套给哪个商店"（Play 最少 2 张、**最多 8 张**，我们有 11 张 → 挑 8），
+`docs/store-listing-ios.md` 写明**安卓这两套都不能给 Apple**（它按设备档位要精确像素，
+等模拟器跑通后单独出）。
+
+**怎么复现**（命令写在 `docs/backend-design.md` §七之七）：
+```bash
+node server/backend.mjs --port 8790 --db /tmp/e2e/backend.sqlite &
+adb -s <设备> reverse tcp:8790 tcp:8790 && adb -s <设备> shell pm clear com.sdknwdtvpv.lianleme
+cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
+    --target=integration_test/cloud_backup_e2e_test.dart -d <设备> \
+    --dart-define=LIANLEME_BACKUP_URL=http://127.0.0.1:8790
+```
+⚠️ **必须走 `adb reverse` + `127.0.0.1`**：`dart:io` 拒绝明文 HTTP 发往非回环地址
+（"Insecure HTTP is not allowed by platform"），回环才豁免；生产永远走 https。
+
+**当时的设备是 Android 模拟器**（Pixel 6 / API 36，无头）。**真机仍锁着** ——
+链路、加密、服务端行为都有证据了，但**真机特有**的（Doze、厂商后台策略、真实网络切换）
+还没验过，这一点在文档里也写明了，不混着说。
+
+### 验证
+
+六层门禁全绿（**693 测试**、变异 24 杀 / 0 存活 = 100%、`dart analyze --fatal-infos` 零问题）。
+真机 Redmi `flourite` 覆盖安装 1.23.0 → **1.23.1**（冷启动无异常）。
+端到端见上（模拟器 + 真后端）。
 
 ## v1.23.0 · 云端状态看得见（另一台设备写过必须提示）+ 一次文档真相清扫
 

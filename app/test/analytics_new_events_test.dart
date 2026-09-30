@@ -49,6 +49,8 @@ class _NullExporter implements ShareCardExporter {
   @override
   Future<void> shareToSystem(Uint8List png, {String? fileName}) async {}
   @override
+  Future<bool> galleryNeedsPermission() async => false;
+ @override
   Future<bool> saveToGallery(Uint8List png, {String? fileName}) async => true;
 }
 

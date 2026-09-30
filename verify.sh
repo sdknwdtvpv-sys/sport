@@ -200,6 +200,27 @@ else
   strip "$LOG"; echo "${RED}✗ 软著材料里的源程序量过期（改文档或重新导出）${OFF}"; fail=1
 fi
 
+# CHANGELOG 的版本小节必须**降序**排列。
+# 2026-09-30 抓到的：前几轮的插入落错了位置（v1.24.0~v1.25.2 被塞到 v1.23.1 之后，
+# 而 v1.26.0 干脆漏写）—— 人翻不出来，机器一眼能查。
+if node -e '
+  const fs = require("fs");
+  const vs = [...fs.readFileSync("CHANGELOG.md", "utf8")
+    .matchAll(/^## v(\d+)\.(\d+)\.(\d+)/gm)]
+    .map((m) => [Number(m[1]), Number(m[2]), Number(m[3])]);
+  for (let i = 1; i < vs.length; i++) {
+    const a = vs[i - 1], b = vs[i];
+    const desc = a[0] !== b[0] ? a[0] > b[0] : (a[1] !== b[1] ? a[1] > b[1] : a[2] >= b[2]);
+    if (!desc) { console.log(`v${a.join(".")} 之后出现了 v${b.join(".")}`); process.exit(1); }
+  }
+  process.exit(0);
+' >"$LOG" 2>&1; then
+  echo "${GREEN}✓${OFF} CHANGELOG 的版本小节是降序的"
+else
+  echo "${RED}✗ CHANGELOG 的版本小节不是降序：$(strip "$LOG" | head -1)${OFF}"
+  fail=1
+fi
+
 # README 顶部那行 `**vX.Y.Z**` 是访客看到的"现在到哪了"。它漂过：写着 v1.2.0
 # 而仓库已经 1.22.x。和软著那两条同一个道理 —— 没人会为了改一个数字去翻 README，
 # 所以钉住它。真源只有一个：`app/lib/core/app_info.dart`。

@@ -95,11 +95,47 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
         await widget.exporter.shareToSystem(png, fileName: _fileName);
       });
 
-  Future<void> _save() => _export((Uint8List png) async {
-        widget.analytics?.track('share_card_created', <String, Object?>{'channel': 'save'});
-        final bool ok = await widget.exporter.saveToGallery(png, fileName: _fileName);
-        _toast(ok ? '已存进相册' : '没有相册权限，没存成');
-      });
+  Future<void> _save() async {
+    // **申请权限之前先说清目的**：系统那个"允许写入媒体"的弹框不会解释我们要干什么，
+    // 而规矩要求"申请可收集个人信息的权限时同步告知目的"（191 号文二.3）。
+    // Android 10+ 走 MediaStore 免权限，`galleryNeedsPermission()` 会返回 false ——
+    // 那种情况下不该白问用户一次。
+    if (await widget.exporter.galleryNeedsPermission()) {
+      if (!mounted) return;
+      final bool? go = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext ctx) => AlertDialog(
+          backgroundColor: Tokens.elevated,
+          title: const Text('存到相册要一次授权', style: TextStyle(color: Tokens.text)),
+          content: const Text(
+            '接下来系统会问你是否允许「写入相册」。\n\n'
+            '我们只是把这张训练卡写进去 —— 从不读取你的任何照片。',
+            key: Key('gallery-rationale'),
+            style: TextStyle(color: Tokens.text2, height: 1.6),
+          ),
+          actions: <Widget>[
+            TextButton(
+              key: const Key('gallery-rationale-cancel'),
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('先不用', style: TextStyle(color: Tokens.text2)),
+            ),
+            TextButton(
+              key: const Key('gallery-rationale-ok'),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('继续', style: TextStyle(color: Tokens.volt)),
+            ),
+          ],
+        ),
+      );
+      if (go != true) return;
+    }
+
+    await _export((Uint8List png) async {
+      widget.analytics?.track('share_card_created', <String, Object?>{'channel': 'save'});
+      final bool ok = await widget.exporter.saveToGallery(png, fileName: _fileName);
+      _toast(ok ? '已存进相册' : '没有相册权限，没存成');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
