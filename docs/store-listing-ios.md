@@ -94,17 +94,27 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 
 | 项 | 规格 | 状态 |
 |---|---|---|
-| iPhone 6.9"/6.7" | 1290×2796 或 1320×2868 | ⬜ 待模拟器（`integration_test/screenshots_test.dart` 出图） |
-| iPhone 6.5" | 1242×2688 | ⬜ 同上 |
-| iPhone 5.5" | 1242×2208 | ⬜ 同上 |
-| iPad 13" | 2064×2752 | ⬜ **取决于是否声明支持 iPad**（见 `docs/release-admin.md` §二之四 的待拍板项） |
+| **iPhone 6.9"** | **1320×2868**（8 位 RGB、无 alpha） | ✅ **12 张已就绪**：`store-assets/screenshots-ios/`（2026-09-30，iPhone 17 Pro Max 模拟器 iOS 27.0，干净安装那一跑；出图后过 `tool/flatten-png.mjs` 压平 —— iOS 模拟器给的是 **16 位 RGBA**） |
+| iPhone 6.5" | 1284×2778 或 1242×2688 | ⬜ 未出。按第三方整理的规格，**6.9" 或 6.5" 二选一即可**，其余档位由 App Store Connect 自动降采样（见下面的口径说明） |
+| iPhone 5.5" | 1242×2208 | ⬜ 未出（同上，规格里是**可选**档） |
+| iPad 13" | 2064×2752 | ⬜ **取决于是否声明支持 iPad**（见 `docs/release-admin.md` §二之四 的待拍板项）—— 若改成"只支持 iPhone"，这一档就不需要 |
 | App 图标 | 1024×1024，**不带透明** | ✅ 已有（`tool/gen-icons.py` 出，`tool/asset-check.mjs` 守着） |
 
-> ⚠️ **安卓那两套都不能直接拿来用**：Apple 按设备档位要**精确像素**（6.9"/6.7"、6.5"、5.5"），
-> 而我们现在只有 1080×2400（20:9，国内商店）与 1080×1920（9:16，Play）两套 ——
-> **两套都不是 Apple 要的尺寸**。等 Xcode + 模拟器跑通后，按档位各出一套
-> （`integration_test/screenshots_test.dart` 是同一份脚本，iPhone 模拟器的逻辑分辨率是多少、
-> 抓出来就是多少）。
+> ⚠️ **安卓那两套都不能直接拿来用**：Apple 按设备档位要**精确像素**，而安卓那两套是
+> 1080×2400（20:9）与 1080×1920（9:16）—— 都不是 Apple 要的尺寸。iOS 那套是同一份脚本
+> （`integration_test/screenshots_test.dart`）在 iPhone 模拟器上跑出来的，**模拟器给多少像素就是多少**。
+>
+> ⚠️ **两条硬规矩**（App Store 截图）：**8 位、没有 alpha 通道**。而 Flutter 在 iOS 模拟器上
+> 截出来的是 **16 位 RGBA**（安卓那边是 8 位 RGBA）—— 所以 iOS 那套出图后必须过
+> `node tool/flatten-png.mjs`（它只做这两件事：16→8 位、去 alpha；有一个像素半透明就拒绝）。
+> `tool/check-screenshots.mjs` 每次进门禁核对这三套图，**包括这两条**。
+>
+> ⚠️ **档位要求的出处**：Apple 的规格页
+> （`developer.apple.com/help/app-store-connect/reference/screenshot-specifications`）
+> 在我这儿**只能取到被截断的正文**，档位细节来自第三方整理（[appshot specs](https://raw.githubusercontent.com/ai-zixun/appshot/refs/heads/main/skills/appshot/references/apple-specs.md)、
+> [Adalo 2026 指南](https://studio.adalo.com/blog/app-store-screenshot-sizes-2026)）：
+> **提交时 iPhone 档必须有 6.9" 或 6.5" 之一，其余档缺失由 App Store Connect 降采样补**。
+> 最终以**上传时 App Store Connect 的校验**为准 —— 我们按最保险的来（6.9" 出全并压平）。
 | 启动屏 | 由 `LaunchScreen.storyboard` 提供，无需单独素材 | ✅ 已有（深色 + volt「练」） |
 
 截图里那句"数据只在你手机上"属于**变体 A** 的措辞 —— 换变体时截图说明也要改

@@ -16,8 +16,11 @@
  *
  * 它核四件事（前三条红，第四条也红 —— 都别想蒙过去）：
  *   1. **齐**：该有的每一张都在（清单写在下面，是显式的，改名单要改这里）；
- *   2. **对**：每张的实际像素 == 这套的尺寸（1080×2400 / 1080×1920）——
- *      挡住"被谁顺手缩过一遍""拿错设备出的图"；
+ *   2. **对**：每张的实际像素 == 这套的尺寸（1080×2400 / 1080×1920 / 1320×2868）——
+ *      挡住"被谁顺手缩过一遍""拿错设备出的图"；**App Store 那套还多两条**：
+ *      必须 **8 位**、必须 **没有 alpha**（Apple 收截图的两条硬规矩，
+ *      而 Flutter 在 iOS 模拟器上截出来的是 **16 位 RGBA** —— 2026-09-30 实测，
+ *      所以那一套必须先过 `tool/flatten-png.mjs`）；
  *   3. **没夹带**：目录里不许有清单外的 PNG。典型的是 `zz-fail-<步骤>.png`：
  *      那是脚本某一步失败时自动拍的现场图，**它在 = 这一套图不全，不能上架**；
  *   4. **那道门必须在**（`11a-body-consent.png`，只在国内/软著那套要求）：
@@ -31,11 +34,11 @@
  * 退出码：有任何一项不符合 → 1。
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { deflateSync } from 'node:zlib';
+import { readHeader, writePng } from './lib/png.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -80,15 +83,20 @@ const SETS = [
     height: 1920,
     files: [...CORE],
   },
+  {
+    dir: 'store-assets/screenshots-ios',
+    label: 'App Store 那套（iPhone 6.9 吋，1320×2868 —— 由 iOS 模拟器出图）',
+    width: 1320,
+    height: 2868,
+    // Apple 的两条硬规矩：8 位、无 alpha。工具 `tool/flatten-png.mjs` 负责把
+    // iOS 模拟器给的 16 位 RGBA 转成 8 位 RGB，这里负责**验它真的转过了**。
+    flat8: true,
+    files: [...CORE, '11a-body-consent'],
+  },
 ];
 
-/** PNG 头解析：IHDR 的宽高在第 16–24 字节（与 `tool/asset-check.mjs` 同一套口径）。 */
-function pngSize(path) {
-  const b = readFileSync(path);
-  const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  if (b.length < 24 || !b.subarray(0, 8).equals(sig)) return null;
-  return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
-}
+/** PNG 头（宽高/位深/颜色类型）：用 `tool/lib/png.mjs` 里那份只读头的实现，别在这儿再写一遍。 */
+const pngSize = (path) => readHeader(path);
 
 function inspect(root) {
   const problems = [];
@@ -134,6 +142,18 @@ function inspect(root) {
         problems.push(`${set.dir}/${want}.png 是 ${size.width}×${size.height}，`
           + `这套图规定 ${set.width}×${set.height}`);
       }
+      if (set.flat8) {
+        if (size.bitDepth !== 8) {
+          problems.push(`${set.dir}/${want}.png 是 ${size.bitDepth} 位 —— App Store 只收 8 位`
+            + '（iOS 模拟器截出来的是 16 位 RGBA，要先过 tool/flatten-png.mjs）');
+        }
+        if (size.colorType !== 2) {
+          const kind = { 0: '灰度', 3: '调色板', 4: '灰度+alpha', 6: 'RGBA' }[size.colorType]
+            || `颜色类型 ${size.colorType}`;
+          problems.push(`${set.dir}/${want}.png 是 ${kind} —— App Store 不收带 alpha 的截图`
+            + '（要先过 tool/flatten-png.mjs）');
+        }
+      }
     }
 
     // 4. 那道门（写进清单就够了，这里只是把"为什么"说在输出里）
@@ -150,50 +170,18 @@ function inspect(root) {
 }
 
 // ─────────────────────────────────────────────────────────── 自检
-/** 造一张**真的**最小 PNG（zlib + CRC32），宽高可指定 —— 自检要能验"尺寸不对就红"。 */
-function crc32(buf) {
-  let c;
-  const table = [];
-  for (let n = 0; n < 256; n += 1) {
-    c = n;
-    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  let crc = 0xffffffff;
-  for (const byte of buf) crc = table[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function chunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length);
-  const t = Buffer.from(type, 'latin1');
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(Buffer.concat([t, data])));
-  return Buffer.concat([len, t, data, crc]);
-}
-
-function writePng(path, width, height) {
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8; // 位深
-  ihdr[9] = 2; // 真彩色（与截图一致，不用调色板）
-  const raw = Buffer.alloc(height * (1 + width * 3)); // 每行一个 filter 字节 + RGB，全 0 = 纯黑
+/** 造一张自检用的 PNG：安卓那两套按真实的来（RGBA），App Store 那套要 8 位 RGB。 */
+function fixturePng(path, set, { channels = set.flat8 ? 3 : 4, bitDepth = 8 } = {}) {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', deflateSync(raw)),
-    chunk('IEND', Buffer.alloc(0)),
-  ]));
+  writePng(path, set.width, set.height, Buffer.alloc(set.width * set.height * channels, 17),
+    channels, bitDepth);
 }
 
 function makeTree(mutate) {
   const root = mkdtempSync(join(tmpdir(), 'lianleme-shots-'));
   for (const set of SETS) {
     for (const name of set.files) {
-      writePng(join(root, set.dir, `${name}.png`), set.width, set.height);
+      fixturePng(join(root, set.dir, `${name}.png`), set);
     }
   }
   if (mutate) mutate(root);
@@ -201,14 +189,19 @@ function makeTree(mutate) {
 }
 
 function selftest() {
+  const MAIN = SETS[0];
+  const PLAY = SETS[1];
+  const IOS_SET = SETS[2];
   const cases = [
     ['好的两套：全绿', null, true],
     ['少一张 11-body-metric', (r) => rmSync(join(r, 'store-assets/screenshots-play/11-body-metric.png')), false],
     ['那道门不见了（旧 bug 的形状）', (r) => rmSync(join(r, 'store-assets/screenshots/11a-body-consent.png')), false],
-    ['夹带一张失败现场图', (r) => writePng(join(r, 'store-assets/screenshots-play/zz-fail-05-workout.png'), 1080, 1920), false],
-    ['某张尺寸不对（被缩过）', (r) => writePng(join(r, 'store-assets/screenshots/04-picker.png'), 1080, 1920), false],
-    ['目录里混进清单外的图', (r) => writePng(join(r, 'store-assets/screenshots/12-whatever.png'), 1080, 2400), false],
+    ['夹带一张失败现场图', (r) => fixturePng(join(r, 'store-assets/screenshots-play/zz-fail-05-workout.png'), PLAY, {}), false],
+    ['某张尺寸不对（被缩过）', (r) => writePng(join(r, 'store-assets/screenshots/04-picker.png'), 1080, 1920, Buffer.alloc(1080 * 1920 * 4, 9), 4), false],
+    ['目录里混进清单外的图', (r) => fixturePng(join(r, 'store-assets/screenshots/12-whatever.png'), MAIN, {}), false],
     ['整套没了', (r) => rmSync(join(r, 'store-assets/screenshots-play'), { recursive: true }), false],
+    ['App Store 那张忘了压平（还是 RGBA）', (r) => fixturePng(join(r, 'store-assets/screenshots-ios/09-all-data.png'), IOS_SET, { channels: 4 }), false],
+    ['App Store 那张还是 16 位（只去了 alpha）', (r) => fixturePng(join(r, 'store-assets/screenshots-ios/05-workout.png'), IOS_SET, { channels: 3, bitDepth: 16 }), false],
   ];
 
   let bad = 0;
@@ -226,7 +219,8 @@ function selftest() {
     console.error(`\n✗ 自检失败 ${bad} 项 —— 这个工具本身不可信，先修它`);
     process.exit(1);
   }
-  console.log('\n✓ 自检通过：好图过得去，少一张、多一张、尺寸不对、夹带现场图都藏不住');
+  console.log('\n✓ 自检通过：好图过得去，少一张、多一张、尺寸不对、夹带现场图、'
+    + 'App Store 那套带 alpha 或 16 位都藏不住');
 }
 
 // ───────────────────────────────────────────────────────────────── 跑
@@ -242,5 +236,5 @@ if (process.argv.includes('--selftest')) {
     console.error(`\n✗ ${problems.length} 处不对 —— 截图是交付物，重拍或改清单，别放着`);
     process.exit(1);
   }
-  console.log('\n✓ 两套截图齐、尺寸对、没夹带失败现场图');
+  console.log('\n✓ 三套截图齐、尺寸对、没夹带失败现场图（App Store 那套还是 8 位无 alpha）');
 }

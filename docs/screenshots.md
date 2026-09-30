@@ -2,12 +2,13 @@
 
 **一句话**：截图不该靠"拿手机一张张手工截"。这里是**一条命令从真实 App 里生成**的。
 
-## 两套图，别拿错
+## 三套图，别拿错
 
 | 目录 | 尺寸 | 给谁用 |
 |---|---|---|
 | `store-assets/screenshots/` | **1080×2400**（20:9，设备真实比例） | 软著说明书、国内安卓商店（对宽高比宽松） |
 | `store-assets/screenshots-play/` | **1080×1920**（**9:16**） | **Google Play** —— 它要求宽高比在 9:16 或（另一种说法）1:2～2:1 之间，**两种口径都排除 20:9** |
+| `store-assets/screenshots-ios/` | **1320×2868**（iPhone 6.9 吋，**8 位 RGB、无 alpha**） | **App Store** —— 由 iOS 模拟器（iPhone 17 Pro Max）出图，再过 `tool/flatten-png.mjs` 压平 |
 
 两套是**同一个测试**跑出来的，只是把设备的逻辑分辨率换了一下：
 
@@ -39,6 +40,36 @@ flutter drive --driver=test_driver/screenshot_driver.dart \
 
 产物写进 `store-assets/screenshots/`（**入库**：它是交付物，不是 `dist/` 那种构建产物）。
 
+## App Store 那套：iOS 模拟器出图 + 一次"压平"
+
+2026-09-30，模拟器运行时（iOS 27.0，8G，`xcodebuild -downloadPlatform iOS`）装好后，
+这个 App **第一次真的在 iOS 上跑起来**（此前只到"编得出包"这一层）：
+
+```bash
+UDID=$(xcrun simctl create lianleme-69 \
+        com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max \
+        com.apple.CoreSimulator.SimRuntime.iOS-27-0)
+xcrun simctl boot "$UDID"
+cd app && SHOT_DIR=/tmp/shots-ios flutter drive \
+  --driver=test_driver/screenshot_driver.dart \
+  --target=integration_test/screenshots_test.dart -d "$UDID"
+# 12 张图 → 过一遍压平（16 位 RGBA → 8 位 RGB）→ 入库
+for f in /tmp/shots-ios/*.png; do
+  node tool/flatten-png.mjs "$f" "store-assets/screenshots-ios/$(basename "$f")"
+done
+```
+
+**为什么必须压平**（两步都是实测出来的，不是抄规格）：Flutter 在 **iOS 模拟器**上截出来的
+PNG 是 **16 位 RGBA**（同一份脚本在安卓上是 8 位 RGBA）；而 App Store 的截图规格要求
+**8 位、扁平、不带 alpha**。`tool/flatten-png.mjs` 干这两件事，并且**只干这两件事**：
+不缩放、不裁剪；只要有一个像素不是完全不透明，它就**拒绝**而不是替你垫个黑底。
+
+> ⚠️ 一条边界：Apple 那张规格表（`developer.apple.com/help/app-store-connect/reference/
+> screenshot-specifications`）在我这儿**只能取到被截断的正文**，档位要求（"6.9 或 6.5 二选一，
+> 其余由 App Store Connect 自动降采样"）来自第三方整理（[appshot 的 specs](https://raw.githubusercontent.com/ai-zixun/appshot/refs/heads/main/skills/appshot/references/apple-specs.md)、
+> [Adalo 的 2026 指南](https://studio.adalo.com/blog/app-store-screenshot-sizes-2026)）——
+> **上传时 App Store Connect 自己会校验**，以那时为准。我们按最保险的做：6.9 吋那套出全、压平。
+
 ## 出的图对不对：`node tool/check-screenshots.mjs`
 
 截图是本仓库**唯一一类此前没有任何东西核过**的交付物（图标有 `asset-check.mjs`、
@@ -46,13 +77,15 @@ AAB 有 `check-aab.mjs`、iOS 包有 `check-ios-app.mjs`，截图全靠人记得
 这个工具每次进门禁第 2 层，核四件事：
 
 1. **齐**：清单写在工具里（显式的，改名要改它）；
-2. **对**：每张的实际像素 == 这套图的规格（国内那套 1080×2400 / Play 那套 1080×1920）——
-   挡住"被谁顺手缩过一遍"和"拿错设备出的图"；
+2. **对**：每张的实际像素 == 这套图的规格（1080×2400 / 1080×1920 / **1320×2868**）——
+   挡住"被谁顺手缩过一遍"和"拿错设备出的图"；**App Store 那套还多两条：必须 8 位、必须没有
+   alpha**（工具报的是"忘了压平"，不是"图不好看"）；
 3. **没夹带**：目录里不许有清单外的 PNG。典型的是 `zz-fail-<步骤>.png` —— 那是脚本某一步
    失败时自动拍的现场图，**它在 = 这套图不全，不能上架**；
 4. **那道同意门必须在**（`11a-body-consent.png`）。
 
-自检 7 例（少一张 / 那道门不见 / 尺寸不对 / 夹带失败现场图 / 混进清单外的图 / 整套没了 / 好的两套）。
+自检 9 例（少一张 / 那道门不见 / 尺寸不对 / 夹带失败现场图 / 混进清单外的图 / 整套没了 /
+App Store 那张仍是 RGBA / App Store 那张仍是 16 位 / 好的三套）。
 
 > ⚠️ **它为什么要有第 4 条 —— 一个真发生过的 bug**：v1.31.0 起「身体数据」前面多了一道
 > **敏感信息单独同意**的门（PIPL 第 29 条），而截图脚本当时假定"点开就是表单"。
@@ -195,6 +228,9 @@ adb shell cmd uimode night no    # 若原来是自动/夜间，按原值改回
   与主体同一分辨率）：真机上装的是已经点过同意的状态，**那道门根本不会再弹** ——
   要看它、要拍它，只能在干净安装上。它也**不是**给商店上传的图（商店那几屏里夹一张对话框
   反而不好看），是留给软著说明书与合规自查的证据。
+- **App Store 那套（`store-assets/screenshots-ios/`）是 12 张**：上面这 11 屏 + 那道同意门，
+  尺寸 1320×2868，来源是 iPhone 17 Pro Max 模拟器（干净安装那一跑），**出完图立刻压平**
+  （16 位 RGBA → 8 位 RGB）。它没有 `01b` —— 模拟器那一跑本身就是全新安装。
 
 商店通常逐张接收、不要求尺寸一致；若要统一，用 11 张那套即可（它自己也齐了）。
 

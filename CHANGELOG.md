@@ -237,6 +237,23 @@ CHANGELOG 降序、软著数字）其实都在 **第 2 层**；第 5 层只有"�
 方向放开 / 启动屏缺失 / 图标缺失），全部按预期红绿。真实产物（release 真机包）重跑：
 `启动屏：已编译进包 · 图标：Assets.car + 2 个 AppIcon PNG`，逐项一致。
 
+### 同版追加：App **第一次真的在 iOS 上跑起来** —— 模拟器运行时到位，App Store 那套截图出齐
+
+Xcode 许可证你接受之后，模拟器运行时（iOS 27.0，8G，`xcodebuild -downloadPlatform iOS`）
+也装好了 —— 于是这个 App **第一次不只是"编得出包"，而是真的在 iOS 上渲染、点击、截图**：
+
+* 同一份 `integration_test/screenshots_test.dart` 在 iPhone 17 Pro Max（iOS 27.0）上跑通：
+  **12 张、0 步失败**，尺寸 **1320×2868**（App Store 的 6.9 吋档），首页 / 建议卡 / 训练屏 /
+  同意门都用**眼睛**看过（汉字、字号、底部标签栏都对，没有安卓特有的白闪与溢出）；
+* 顺势抓到两件只有真跑才会现形的事：**①** iOS 模拟器截出来的是 **16 位 RGBA**（安卓是 8 位
+  RGBA），而 App Store 只收 **8 位、无 alpha** —— 于是新增 `tool/flatten-png.mjs`
+  （只做"16→8 位 + 去 alpha"，有一个像素半透明就拒绝，绝不替你垫黑底；读 PNG 的 5 种 filter
+  逐种自检）与 `tool/lib/png.mjs`（零依赖 PNG 读写）；**②** 第一次跑（全新安装 + 模拟器刚装完
+  运行时）时首页刷新报了一个 `DriftCommunication.request` 的后台 isolate 错，随后两次
+  （一次沿用数据、一次彻底重装）都 12/12 通过 —— **没能复现**，如实记在这里，不当作已解决；
+* `tool/check-screenshots.mjs` 扩到**三套图**（含 App Store 那套的"8 位 + 无 alpha"两条硬规矩），
+  自检 9 例；三套现在都是"齐、尺寸对、没夹带失败现场图"。
+
 ### 同版追加：截图脚本走"同意门"，并给截图补上**第一个**核它的工具
 
 截图是全仓库唯一一类**没有任何东西核过**的交付物（图标有 `asset-check.mjs`、AAB 有

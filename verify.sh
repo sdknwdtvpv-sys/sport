@@ -237,6 +237,16 @@ else
 fi
 echo
 
+# 截图"压平"工具（去掉 alpha + 16 位降 8 位）的自检：App Store 只收 8 位无 alpha，
+# 而 iOS 模拟器截出来的是 **16 位 RGBA**（2026-09-30 实测）。读的那 5 种 filter
+# 也在这里逐种验过 —— 读错了会一路错到商店上传被拒。
+if node tool/flatten-png.mjs --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 截图压平自检通过（16 位降 8 位 / 去 alpha / 5 种 filter）"
+else
+  strip "$LOG"; echo "${RED}✗ 截图压平工具的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 隐私政策对账：客户端会发的事件/字段、manifest 权限，都必须与政策正文一致。
 # **这是硬门禁** —— 加了一个新埋点字段却不在政策里写清楚，不许合并。
 if node tool/privacy-audit.mjs >"$LOG" 2>&1; then
@@ -400,9 +410,9 @@ echo
 # 商店截图：两套图（1080×2400 / 1080×1920）是否齐、尺寸是否对、有没有夹带
 # `zz-fail-*.png` 那种"某一步失败的现场图"。截图是交付物，但此前没人核过。
 if node tool/check-screenshots.mjs >"$LOG" 2>&1; then
-  strip "$LOG" | tail -3; echo "${GREEN}✓${OFF} 两套商店截图齐、尺寸对、没夹带"
+  strip "$LOG" | tail -4; echo "${GREEN}✓${OFF} 三套商店截图齐、尺寸对、没夹带（含 App Store 那套的 8 位无 alpha）"
 else
-  strip "$LOG"; echo "${RED}✗ 商店截图不对（缺图/尺寸变了/夹带失败现场图）${OFF}"; fail=1
+  strip "$LOG"; echo "${RED}✗ 商店截图不对（缺图/尺寸变了/夹带失败现场图/带 alpha）${OFF}"; fail=1
 fi
 echo
 
@@ -583,6 +593,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/local_store_contract_test.dart \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
+         tool/flatten-png.mjs tool/lib/png.mjs \
          tool/ios-deps.mjs docs/store-listing-ios.md docs/your-todo.md \
          tool/gen-feature-graphic.py store-assets/feature-graphic-1024x500.png \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \

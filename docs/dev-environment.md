@@ -126,6 +126,23 @@ flutter_tools 拿不到输出 → 认定"没剥掉调试符号" → 报失败。
 > 这一条和"依赖装在 SSD"是**真的冲突**，不是配置没调好：Android 的工具链对空格路径
 > 本来就不支持（`flutter doctor` 也会为此报一条 `[!]`）。
 
+## iOS 模拟器（2026-09-30 装好）—— App Store 截图就靠它
+
+Xcode 的许可证接受之后，还要单独下**模拟器运行时**（Xcode 26+ 起不再随 Xcode 附带）：
+
+```bash
+xcodebuild -downloadPlatform iOS     # 约 8G，不需要 sudo，进度写在自己的日志里
+xcrun simctl list runtimes           # 装好后能看到 iOS 27.0（24A434）
+```
+
+装机实测（2026-09-30）：**iOS 27.0 runtime + iPhone 17 Pro Max 设备**，
+`flutter drive … -d <模拟器 UDID>` 出图 **12 张 / 0 步失败 / 1320×2868**。
+两个只有真跑才会知道的事：
+
+* iOS 模拟器截出来的 PNG 是 **16 位 RGBA**（同一份脚本在安卓上是 8 位 RGBA），
+  App Store 只收 **8 位无 alpha** → 出图后过 `node tool/flatten-png.mjs`；
+* 磁盘：运行时解包后系统盘会少掉约 10G（下载 8G + 解包），装之前先看一眼 `df -h /`。
+
 ## 安卓模拟器（2026-09-30 装好）—— 以及那个空格坑的第三个受害者
 
 **为什么装它**：真机（Redmi `flourite`）长期锁屏、拿不到解锁凭据，于是
