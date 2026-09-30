@@ -32,7 +32,7 @@
 | 本地数据库 | SQLite（经 drift 管理），当前模式版本 **v9** |
 | 开发环境 | macOS（Apple Silicon），Android SDK，Gradle |
 | 运行环境 | Android 7.0（API 24）～ Android 16（API 36），arm64 / armeabi-v7a / x86_64 |
-| 源程序量 | **114 个源文件 / 29,656 行**（截至 V1.17.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
+| 源程序量 | **117 个源文件 / 30,157 行**（截至 V1.17.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
 
 ## 三、主要功能模块
 

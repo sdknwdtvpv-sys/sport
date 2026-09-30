@@ -8,6 +8,27 @@
 
 ## 未切版（v1.19.0 之后的改动，尚未打 tag）
 
+### 线 2 · 阶段 1：极薄后端实现完成（本地可跑 + 17 条自检）
+
+`server/backend.mjs`（零依赖 HTTP）+ `server/backend-store.mjs`（`node:sqlite`）
++ `server/backend.selftest.mjs`（**已进 verify.sh 第 2 层**）。
+
+接口：`POST /v1/account`（幂等）· `GET /v1/account/me` · `PUT|GET /v1/backup`（原样收发密文）
+· `DELETE /v1/account`（账号+设备+备份一起删）。鉴权用 `Authorization: Bearer <account_id>`
+（不发明 token —— account_id 本身就是客户端密钥的哈希）。
+
+自检盯住的四件事：接口真的通（真 HTTP 往返）、**上传什么字节就下载什么字节**、
+**注销是真删**（库里也不留）、三条隐私承诺（元信息不含备份内容 / 日志不漏 `Authorization`
+/ 不记录 IP）。
+
+**自检抓到我自己两个错**（都留了注释）：
+① 超限时第一版直接 `req.destroy()` —— 客户端拿到的是"socket 被对端关闭"而不是干净的 413
+（掐断连接不是拒绝请求的正确姿势）；② 自检里用猴子补丁抓服务端日志，**把自检自己的
+输出也吞了**（只看得到最后一行）—— 改成给 `createBackend` 注入 `log`。
+
+两处刻意偏离设计稿：存储先用 `node:sqlite` 而非 Postgres（零依赖、本地可跑；接口可替换），
+一期只做快照式备份不做增量同步（留到真有人两台设备时）。
+
 ### 后端设计稿（线 2 的起点）
 
 按「备份要账号」这条决策，出了 `docs/backend-design.md`：极薄后端 = 账号 + 增量同步 +

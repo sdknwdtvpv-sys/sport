@@ -141,6 +141,15 @@ else
 fi
 echo
 
+# 极薄后端自检：账号 / 备份 / 注销 + 三条隐私承诺（只存密文、删除彻底、日志不漏凭据）。
+# 它现在只是**本地可跑的参考实现**（阶段 1），生产部署见 docs/backend-design.md 阶段 4。
+if node server/backend.selftest.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 极薄后端自检通过"
+else
+  strip "$LOG"; echo "${RED}✗ 极薄后端自检失败${OFF}"; fail=1
+fi
+echo
+
 # 隐私政策对账：客户端会发的事件/字段、manifest 权限，都必须与政策正文一致。
 # **这是硬门禁** —— 加了一个新埋点字段却不在政策里写清楚，不许合并。
 if node tool/privacy-audit.mjs >"$LOG" 2>&1; then
