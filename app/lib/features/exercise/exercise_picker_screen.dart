@@ -17,6 +17,7 @@ import '../../data/db.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import 'custom_exercise_screen.dart';
+import 'exercise_detail_screen.dart';
 
 class ExercisePickerScreen extends StatefulWidget {
   const ExercisePickerScreen({
@@ -214,11 +215,11 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                       _muscleGroup = null;
                       _load();
                     }),
-                    for (final MapEntry<String, String> e in kMuscleLabels.entries)
-                      _chip(e.value, _muscleGroup == e.key, () {
-                        _muscleGroup = e.key;
+                    for (final String k in kPrimaryMuscleGroups)
+                      _chip(muscleLabel(k), _muscleGroup == k, () {
+                        _muscleGroup = k;
                         _load();
-                      }),
+                      }, key: 'muscle-$k'),
                   ],
                 ),
               ),
@@ -356,12 +357,25 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
         ),
       );
 
+  void _openDetail(ExerciseData e) {
+    Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (_) => ExerciseDetailScreen(
+        exercise: e,
+        store: widget.store,
+        unit: widget.unit,
+      ),
+    ));
+  }
+
   Widget _tile(ExerciseData e) {
     final bool bodyweight = e.weightIncrement == 0;
     return ListTile(
       key: Key('exercise-${e.id}'),
       contentPadding: EdgeInsets.zero,
       onTap: () => _pick(e),
+      // 长按看详情：这一行的副标题已经带了说明要点，长按才是"我要看全的"
+      // （与「长按已完成的那一组可以撤销」是同一套手势语言）。
+      onLongPress: () => _openDetail(e),
       title: Text(
         e.name,
         style: const TextStyle(

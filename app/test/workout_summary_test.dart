@@ -191,12 +191,36 @@ void main() {
   });
 
   group('界面', () {
-    Future<void> pumpSummary(WidgetTester tester, String workoutId) async {
+    Future<void> pumpSummary(WidgetTester tester, String workoutId,
+        {List<ExerciseData> stretches = const <ExerciseData>[]}) async {
       await tester.pumpWidget(MaterialApp(
-        home: WorkoutSummaryScreen(service: service, workoutId: workoutId),
+        home: WorkoutSummaryScreen(
+          service: service,
+          workoutId: workoutId,
+          stretches: stretches,
+        ),
       ));
       await tester.pumpAndSettle();
     }
+
+    /// 造一个"练完该拉一下"的候选（拉伸动作在库里是 category=stretch）
+    ExerciseData stretch(String id, String name, String how) => ExerciseData(
+          id: id,
+          name: name,
+          aliases: '[]',
+          muscleGroup: 'chest',
+          secondaryMuscles: '[]',
+          equipment: 'bodyweight',
+          category: 'stretch',
+          trackType: 'time',
+          defaultRestSec: 30,
+          instructions: how,
+          weightIncrement: 0,
+          isBuiltin: true,
+          popularity: 20,
+          createdAt: 0,
+          updatedAt: 0,
+        );
 
     testWidgets('显示容量 / 时长 / 组数三个大数', (WidgetTester tester) async {
       await logSets('w1', 'ex_bb_bench_press',
@@ -266,6 +290,27 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('训练完成'), findsNothing);
     });
+
+    testWidgets('练完给拉伸建议：有动作就显示，带做法', (WidgetTester tester) async {
+      await logSets('w1', 'ex_bb_bench_press',
+          <_S>[_S(8, 60), _S(8, 60), _S(8, 60)], startedAt: 0, from: 1000);
+      await pumpSummary(tester, 'w1', stretches: <ExerciseData>[
+        stretch('ex_doorway_chest_stretch', '门框胸部拉伸', '小臂贴在门框上、身体往前送。'),
+      ]);
+      expect(find.byKey(const Key('summary-stretch')), findsOneWidget);
+      expect(find.text('练完拉伸一下'), findsOneWidget);
+      expect(find.text('门框胸部拉伸'), findsOneWidget);
+      expect(find.textContaining('小臂贴在门框上'), findsOneWidget);
+    });
+
+    testWidgets('没有拉伸建议时整块不出现（不占一块空地方）',
+        (WidgetTester tester) async {
+      await logSets('w1', 'ex_bb_bench_press',
+          <_S>[_S(8, 60), _S(8, 60), _S(8, 60)], startedAt: 0, from: 1000);
+      await pumpSummary(tester, 'w1');
+      expect(find.byKey(const Key('summary-stretch')), findsNothing);
+    });
+
   });
 
   group('有氧：里程与配速，且不冒充力量纪录', () {

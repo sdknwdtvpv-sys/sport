@@ -328,7 +328,16 @@ class _HomeShellState extends State<HomeShell> {
     final WorkoutSession session = WorkoutSession(controllers);
 
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => WorkoutScreen(session: session)),
+      MaterialPageRoute<void>(
+        builder: (_) => WorkoutScreen(
+          session: session,
+          // 完整动作库行：控制器只有瘦身过的 ExerciseSpec，而详情页要说明/部位/器械
+          catalog: <ExerciseData>[
+            for (final SessionEntry e in entries) e.exercise,
+          ],
+          store: _store,
+        ),
+      ),
     );
 
     session.dispose();
@@ -502,6 +511,25 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   /// 训练结束总结。一组都没练就直接回空态 —— 没什么可总结的。
+  /// 练完该拉伸哪儿：按这次练得最多的那个部位给 1–2 个拉伸动作。
+  ///
+  /// 练得最多 = 组数最多的部位（不是"第一个动作的部位"）：
+  /// 一次胸+三头里三头只做两组、胸做了九组，该拉的是胸。
+  Future<List<ExerciseData>> _stretchesFor(Workout w) async {
+    final List<({String muscleGroup, String category})> trained =
+        <({String muscleGroup, String category})>[];
+    for (final SetRecord r in w.sets) {
+      if (r.setType != SetType.normal) continue;
+      final ExerciseData? e = await _repo.byId(r.exerciseId);
+      if (e == null) continue;
+      trained.add((muscleGroup: e.muscleGroup, category: e.category));
+    }
+    // 挑选口径（跳过热身/拉伸、取组数最多）在 today_planner 里，是纯函数、有测试
+    final String? top = topMuscleGroupForStretch(trained);
+    if (top == null) return const <ExerciseData>[];
+    return _planner.stretchFor(muscleGroup: top);
+  }
+
   Future<void> _showSummary(String workoutId) async {
     // 训练结束是五个上报时机之一，这时最该送一次
     unawaited(_flusher.flushOnce());
@@ -524,12 +552,16 @@ class _HomeShellState extends State<HomeShell> {
       'exercise_count': exercised.length,
       'ms_since_launch': _clock() - _launchedAtMs,
     });
+    // 拉伸建议在这里先算好：builder 不是 async 函数，await 放不进去
+    final List<ExerciseData> stretches = await _stretchesFor(w);
+    if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => WorkoutSummaryScreen(
           service: _summaryService,
           workoutId: workoutId,
           unit: _unit,
+          stretches: stretches,
         ),
       ),
     );

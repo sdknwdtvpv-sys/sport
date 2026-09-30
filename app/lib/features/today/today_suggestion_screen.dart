@@ -66,6 +66,12 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
   String _group = '';
   bool _loading = true;
 
+  /// 今日热身（练之前先做 1–2 个）。**默认不塞进计划** ——
+  /// 要不要热身是用户的选择，但"选得到"必须是我们的事：
+  /// 库里 11 个热身动作在这条流程里以前一个都见不到。
+  List<ExerciseData> _warmups = const <ExerciseData>[];
+  bool _warmupAdded = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,11 +82,30 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
     final String group = await widget.planner.nextMuscleGroup();
     final List<PlannedExercise> plan =
         await widget.planner.planToday(muscleGroup: group, unit: widget.unit);
+    final List<ExerciseData> warmups =
+        await widget.planner.warmupFor(muscleGroup: group);
     if (!mounted) return;
     setState(() {
       _group = group;
       _plan = plan;
+      _warmups = warmups;
+      _warmupAdded = false;
       _loading = false;
+    });
+  }
+
+  /// 把热身加进今天：插在**最前面**（热身先做），每组 1 组。
+  ///
+  /// 加进去之后它就成了计划的一部分 —— 点「开始训练」时这些动作会一起带进训练屏。
+  void _addWarmups() {
+    if (_warmups.isEmpty || _warmupAdded) return;
+    setState(() {
+      _plan = <PlannedExercise>[
+        for (final ExerciseData w in _warmups)
+          PlannedExercise(exercise: w, plan: defaultPlanFor(w), unit: widget.unit),
+        ..._plan,
+      ];
+      _warmupAdded = true;
     });
   }
 
@@ -210,6 +235,10 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s4),
       children: <Widget>[
+        if (_warmups.isNotEmpty) ...<Widget>[
+          _warmupCard(),
+          const SizedBox(height: Tokens.s3),
+        ],
         Container(
           decoration: BoxDecoration(
             color: Tokens.surface,
@@ -224,6 +253,91 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 「练之前先热身」卡。
+  ///
+  /// 刻意**不自动加进计划**：自动塞两个动作进今天的计划，会让"点一下开始练"
+  /// 这件事变复杂（也多两条不想做的人要删的记录）。做成一张卡，谁想热谁加。
+  Widget _warmupCard() {
+    return Container(
+      key: const Key('warmup-card'),
+      padding: const EdgeInsets.all(Tokens.s5),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Expanded(
+                child: Text(
+                  '练之前先热身',
+                  style: TextStyle(
+                    color: Tokens.text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                _warmupAdded ? '已加进今天' : '1 组 · 30 秒',
+                style: TextStyle(
+                  color: _warmupAdded ? Tokens.volt : Tokens.text3,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s3),
+          for (final ExerciseData w in _warmups)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Tokens.s2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          w.name,
+                          style: const TextStyle(
+                            color: Tokens.text,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (w.instructions != null && w.instructions!.isNotEmpty)
+                          Text(
+                            w.instructions!,
+                            style: const TextStyle(
+                              color: Tokens.text3,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (!_warmupAdded)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                key: const Key('add-warmup'),
+                onPressed: _addWarmups,
+                child: const Text('加进今天'),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

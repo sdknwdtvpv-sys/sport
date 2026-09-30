@@ -14,6 +14,77 @@ import '../../domain/models.dart';
 import '../../domain/progression.dart';
 import 'progress_data.dart';
 
+/// 挑出**最有代表性的那一组**（详情页的"历史最好"用它）。
+///
+/// 为什么要单独挑，而不是拿 `ExerciseStats` 的 `bestWeightKg` + `bestReps`：
+/// 那两个字段是**各自独立取最大**的 —— 重量取最重那组、次数取最多那组，
+/// 拼在一起会写出"40 kg × 10"这种**没有任何一组真正做到过**的组合。
+/// 详情页是用户拿来对照今天该上多少的地方，报一个不存在的成绩比不报更糟。
+///
+/// 排序口径：
+///   * 按时长动作（平板支撑）：比秒数
+///   * 自重动作：比次数
+///   * 负重动作：比估算 1RM（同样 8 次，60kg 强于 50kg；同样 60kg，10 次强于 8 次），
+///     持平再比重量、比次数 —— 保证结果可复现
+SetRecord? bestSetOf(List<SetRecord> sets, {bool isTime = false}) {
+  final List<SetRecord> normal =
+      sets.where((SetRecord s) => s.setType == SetType.normal).toList();
+  if (normal.isEmpty) return null;
+
+  double score(SetRecord s) {
+    if (isTime) return s.reps.toDouble();
+    if (s.weightKg == null) return s.reps.toDouble();
+    // 有重量：用 1RM 估计做分；estimate1RM 在次数为 0 或重量为空时返回 null
+    return estimate1RM(s.weightKg, s.reps) ?? (s.weightKg! * 1000 + s.reps);
+  }
+
+  SetRecord best = normal.first;
+  double bestScore = score(best);
+  for (final SetRecord s in normal.skip(1)) {
+    final double v = score(s);
+    if (v > bestScore) { best = s; bestScore = v; }
+  }
+  return best;
+}
+
+/// 某个动作**某一天**的组（详情页的"最近几次"用它）。
+///
+/// 为什么按天归并、而不是平铺每一组：用户问的是"我上次练成什么样"，
+/// 一组一组地平铺会把"上次 3 组都做了 40kg×8"拆成三行噪音。
+class ExerciseDayEntry {
+  const ExerciseDayEntry({required this.date, required this.sets});
+
+  /// `YYYY-MM-DD`
+  final String date;
+
+  /// 那天的组，按组序排好
+  final List<SetRecord> sets;
+
+  int get setCount => sets.length;
+}
+
+/// 把组记录按天归并，**最近的在前**；软删除的与热身组不算进"练成什么样"。
+///
+/// [limit] 只要最近几天 —— 详情页是随手一查的地方，不是报表。
+List<ExerciseDayEntry> groupSetsByDay(List<SetRecord> sets, {int limit = 3}) {
+  final Map<String, List<SetRecord>> byDay = <String, List<SetRecord>>{};
+  for (final SetRecord s in sets) {
+    if (s.setType != SetType.normal) continue;
+    // 用**本地时间**切天：用户的"上次"是他自己日历上的那天
+    final DateTime d = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+    final String key = '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+    (byDay[key] ??= <SetRecord>[]).add(s);
+  }
+  final List<String> days = byDay.keys.toList()..sort((String a, String b) => b.compareTo(a));
+  return days.take(limit).map((String day) {
+    final List<SetRecord> list = byDay[day]!
+      ..sort((SetRecord a, SetRecord b) => a.setIndex.compareTo(b.setIndex));
+    return ExerciseDayEntry(date: day, sets: list);
+  }).toList();
+}
+
 /// 某个动作的全部统计。
 class ExerciseStats {
   const ExerciseStats({

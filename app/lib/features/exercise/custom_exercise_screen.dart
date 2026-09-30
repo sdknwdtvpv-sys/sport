@@ -150,12 +150,12 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
                     spacing: Tokens.s2,
                     runSpacing: Tokens.s2,
                     children: <Widget>[
-                      for (final MapEntry<String, String> e in kMuscleLabels.entries)
+                      for (final String k in kPrimaryMuscleGroups)
                         _chip(
-                          key: 'custom-muscle-${e.key}',
-                          label: e.value,
-                          active: _muscle == e.key,
-                          onTap: () => setState(() => _muscle = e.key),
+                          key: 'custom-muscle-$k',
+                          label: muscleLabel(k),
+                          active: _muscle == k,
+                          onTap: () => setState(() => _muscle = k),
                         ),
                     ],
                   ),

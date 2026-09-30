@@ -11,18 +11,37 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../data/db.dart' show ExerciseData;
+import '../../data/local_store.dart';
 import '../../domain/models.dart';
+import '../exercise/exercise_detail_screen.dart';
 import 'workout_controller.dart';
 import 'workout_session.dart';
 
 class WorkoutScreen extends StatefulWidget {
-  const WorkoutScreen({super.key, required this.session});
+  const WorkoutScreen({
+    super.key,
+    required this.session,
+    this.catalog = const <ExerciseData>[],
+    this.store,
+  });
 
   /// 一次训练里的全部动作（S6）。单个动作就用 `WorkoutSession.single(c)`。
   ///
   /// **会话与它内部的控制器都由调用方持有并负责 dispose** ——
   /// 这样测试可以在页面销毁后继续断言控制器状态。
   final WorkoutSession session;
+
+  /// 本次训练涉及的动作（**完整动作库行**）。
+  ///
+  /// 控制器手里只有瘦身过的 `ExerciseSpec`（够算渐进建议，但没有动作说明、
+  /// 部位、器械），而动作详情页要的就是那些。所以由调用方把完整行带进来 ——
+  /// 不传也不影响训练，只是详情入口不显示。
+  final List<ExerciseData> catalog;
+
+  /// 详情页要看历史；不传就只显示"怎么做"（测试与无库场景）
+  final LocalStore? store;
+
 
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
@@ -94,6 +113,32 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
+  /// 当前动作的完整行（找不到就返回 null）
+  ExerciseData? _dataFor(String exerciseId) {
+    for (final ExerciseData e in widget.catalog) {
+      if (e.id == exerciseId) return e;
+    }
+    return null;
+  }
+
+  void _openDetail(String exerciseId) {
+    final ExerciseData? e = _dataFor(exerciseId);
+    if (e == null) return;
+    // 单位取自**这个动作自己的控制器**：会话里每个动作都带了当时的单位设置，
+    // 而 WorkoutScreen 本身不持有单位（它只持有会话）。
+    WeightUnit unit = WeightUnit.kg;
+    for (final WorkoutController c in widget.session.controllers) {
+      if (c.exercise.id == exerciseId) { unit = c.unit; break; }
+    }
+    Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (_) => ExerciseDetailScreen(
+        exercise: e,
+        store: widget.store,
+        unit: unit,
+      ),
+    ));
+  }
+
   // ---------- 顶部 ----------
 
   Widget _header() {
@@ -122,6 +167,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ),
             ),
           ),
+          // 动作详情入口。**必须看得见**：练到一半想确认"这个动作怎么做"的人
+          // 不会去猜哪里能点。没有动作库行时（老调用方/测试）不显示。
+          if (_dataFor(c.exercise.id) != null)
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: IconButton(
+                key: const Key('exercise-info'),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.info_outline, color: Tokens.text2, size: 20),
+                onPressed: () => _openDetail(c.exercise.id),
+              ),
+            ),
           if (c.isOffline)
             Container(
               key: const Key('offline-chip'),

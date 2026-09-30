@@ -435,4 +435,106 @@ void main() {
       expect(again, isNotEmpty);
     });
   });
+
+  group('今日热身与练后拉伸', () {
+    test('腿日：给腿的热身，且按人工定序（摆腿在前）', () async {
+      final List<ExerciseData> w = await planner.warmupFor(muscleGroup: 'legs');
+      expect(w.length, 2);
+      expect(w.first.id, 'ex_leg_swings_stretch');
+      expect(w.every((ExerciseData e) => e.category == 'warmup'), isTrue);
+    });
+
+    test('胸日：库里没有胸的热身 → 退到肩（推之前先热肩）', () async {
+      final List<ExerciseData> w = await planner.warmupFor(muscleGroup: 'chest');
+      expect(w, isNotEmpty);
+      expect(w.first.id, 'ex_arm_circles');
+    });
+
+    test('认不出的部位：给通用兜底，而不是空手而归', () async {
+      final List<ExerciseData> w =
+          await planner.warmupFor(muscleGroup: 'not_a_group');
+      expect(w, isNotEmpty);
+      expect(w.first.id, 'ex_jumping_jack');
+    });
+
+    test('不重复：胸日与肩日的第一个都是绕臂，但各自只出现一次', () async {
+      final List<ExerciseData> w = await planner.warmupFor(muscleGroup: 'chest');
+      expect(w.map((ExerciseData e) => e.id).toSet().length, w.length);
+    });
+
+    test('count 说了算，且结果一定都是热身动作', () async {
+      final List<ExerciseData> one =
+          await planner.warmupFor(muscleGroup: 'legs', count: 1);
+      expect(one.length, 1);
+      final List<ExerciseData> many =
+          await planner.warmupFor(muscleGroup: 'legs', count: 99);
+      expect(many.every((ExerciseData e) => e.category == 'warmup'), isTrue);
+    });
+
+    test('练后拉伸：腿日给腘绳肌/股四头，类别必须是 stretch', () async {
+      final List<ExerciseData> st = await planner.stretchFor(muscleGroup: 'legs');
+      expect(st, isNotEmpty);
+      expect(st.every((ExerciseData e) => e.category == 'stretch'), isTrue);
+      expect(st.first.id, 'ex_hamstring_stretch');
+    });
+
+    test('核心没有专属拉伸 → 退到通用（背/腿），不留空', () async {
+      final List<ExerciseData> st = await planner.stretchFor(muscleGroup: 'core');
+      expect(st, isNotEmpty);
+      expect(st.first.id, 'ex_childs_pose');
+    });
+
+    test('热身处方是 1 组（不能把热身当成训练量）', () async {
+      final List<ExerciseData> w = await planner.warmupFor(muscleGroup: 'legs');
+      final PlanTarget plan = defaultPlanFor(w.first);
+      expect(plan.targetSets, 1);
+      expect(plan.targetRepsLow, lessThanOrEqualTo(plan.targetRepsHigh));
+      // 对照：正式动作的默认处方仍是 3 组
+      expect(kDefaultTimePlan.targetSets, 3);
+      expect(kDefaultPlan.targetSets, 3);
+    });
+  });
+
+  group('练后拉伸挑哪个部位', () {
+    test('热身不算数：胸日里练了一组绕臂，该拉的仍是胸', () {
+      final String? top = topMuscleGroupForStretch(<({String muscleGroup, String category})>[
+        (muscleGroup: 'shoulders', category: 'warmup'),
+        (muscleGroup: 'chest', category: 'strength'),
+      ]);
+      expect(top, 'chest', reason: '热身不是这次训练的重点（真机走查发现的）');
+    });
+
+    test('拉伸自己也不算数', () {
+      expect(
+        topMuscleGroupForStretch(<({String muscleGroup, String category})>[
+          (muscleGroup: 'legs', category: 'stretch'),
+        ]),
+        isNull,
+      );
+    });
+
+    test('取组数最多的部位（胸 3 组 vs 三头 1 组 → 胸）', () {
+      final String? top = topMuscleGroupForStretch(<({String muscleGroup, String category})>[
+        (muscleGroup: 'chest', category: 'strength'),
+        (muscleGroup: 'chest', category: 'strength'),
+        (muscleGroup: 'chest', category: 'strength'),
+        (muscleGroup: 'arms', category: 'strength'),
+      ]);
+      expect(top, 'chest');
+    });
+
+    test('只做了热身 → null（调用方据此不显示拉伸块）', () {
+      expect(
+        topMuscleGroupForStretch(<({String muscleGroup, String category})>[
+          (muscleGroup: 'legs', category: 'warmup'),
+        ]),
+        isNull,
+      );
+    });
+
+    test('什么都没练 → null', () {
+      expect(topMuscleGroupForStretch(const <({String muscleGroup, String category})>[]),
+          isNull);
+    });
+  });
 }

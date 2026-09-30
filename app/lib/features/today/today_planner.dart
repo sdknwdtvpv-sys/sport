@@ -51,6 +51,48 @@ const PlanTarget kDefaultTimePlan = PlanTarget(
   targetRepsHigh: 45,
 );
 
+/// 热身处方：**1 组 30–45 秒**。
+///
+/// 热身不是训练量：给 3 组会让人在正式组之前就累了，也把"练之前花两分钟"
+/// 变成一件有负担的事。（`kDefaultTimePlan` 是 3 组，那是给平板支撑这类正式动作的。）
+const PlanTarget kDefaultWarmupPlan = PlanTarget(
+  targetSets: 1,
+  targetRepsLow: 30,
+  targetRepsHigh: 45,
+);
+
+/// 热身与拉伸的**人工定序**。
+///
+/// 为什么要人工写：库里 11 个热身 + 9 个拉伸的 `popularity` **全是 20**
+/// （它们是 2026-09-29 从上游补库进来的长尾），按常用度排等于没排。
+/// 真要自动排，得给它们加上"通用性"这类字段 —— 那是内容侧的事；
+/// 在那之前，把"胸日先热肩"这种常识写在代码里，比随机挑一个诚实。
+const Map<String, List<String>> _warmupByGroup = <String, List<String>>{
+  'legs': <String>['ex_leg_swings_stretch', 'ex_high_knees'],
+  'glutes': <String>['ex_leg_swings_stretch', 'ex_high_knees'],
+  'core': <String>['ex_cat_cow_stretch', 'ex_bear_crawl'],
+  // 推之前先把肩热开：胸/手臂自己没有热身动作，肩是它们最近的邻居
+  'chest': <String>['ex_arm_circles'],
+  'arms': <String>['ex_arm_circles'],
+  'shoulders': <String>['ex_arm_circles'],
+  // 拉之前先热脊椎
+  'back': <String>['ex_cat_cow_stretch'],
+};
+
+/// 兜底（部位没匹配上时用）：全身性的、谁都做得来的两个
+const List<String> _generalWarmup = <String>['ex_jumping_jack', 'ex_arm_circles'];
+
+const Map<String, List<String>> _stretchByGroup = <String, List<String>>{
+  'chest': <String>['ex_doorway_chest_stretch'],
+  'back': <String>['ex_childs_pose'],
+  'shoulders': <String>['ex_cross_body_shoulder_stretch'],
+  'legs': <String>['ex_hamstring_stretch', 'ex_standing_quad_stretch'],
+  'glutes': <String>['ex_butterfly_stretch'],
+};
+
+/// 兜底拉伸：背与腿，覆盖最常见的紧张部位
+const List<String> _generalStretch = <String>['ex_childs_pose', 'ex_hamstring_stretch'];
+
 /// 距离动作的处方：**多少组 × 每组多少米**。
 ///
 /// * 组数：有氧（category=cardio）是 **1 组** —— "3 组 5 公里跑"没有人这么练；
@@ -67,11 +109,38 @@ PlanTarget distancePlanFor(ExerciseData e) => PlanTarget(
     );
 
 /// 按动作类型给默认处方。有计划模板（S11）时以模板里的为准。
-PlanTarget defaultPlanFor(ExerciseData e) => isDistanceTrack(e.trackType)
-    ? distancePlanFor(e)
-    : isTimeTrack(e.trackType)
-        ? kDefaultTimePlan
-        : kDefaultPlan;
+PlanTarget defaultPlanFor(ExerciseData e) =>
+    // 热身单独一档：1 组，别让它变成"训练量"（见 kDefaultWarmupPlan）
+    e.category == 'warmup'
+        ? kDefaultWarmupPlan
+        : isDistanceTrack(e.trackType)
+            ? distancePlanFor(e)
+            : isTimeTrack(e.trackType)
+                ? kDefaultTimePlan
+                : kDefaultPlan;
+
+/// 从"这次练了什么"里挑出该拉伸的部位。
+///
+/// **热身与拉伸本身不参选**：它们是准备/收尾动作，不是这次训练的重点。
+/// 2026-09-30 真机走查时发现反例：一次"胸日"的训练里加了两个热身（绕臂/开合跳），
+/// 用户先记了一组绕臂，拉伸建议就变成了**肩**——而该拉的是胸。
+///
+/// 取组数最多的那个部位：一次胸+三头里三头只做两组、胸做了九组，该拉的是胸。
+/// 没练（或只有热身）时返回 null —— 调用方据此不显示拉伸块。
+String? topMuscleGroupForStretch(
+  Iterable<({String muscleGroup, String category})> trained,
+) {
+  final Map<String, int> byGroup = <String, int>{};
+  for (final ({String muscleGroup, String category}) e in trained) {
+    if (e.category == 'warmup' || e.category == 'stretch') continue;
+    byGroup[e.muscleGroup] = (byGroup[e.muscleGroup] ?? 0) + 1;
+  }
+  if (byGroup.isEmpty) return null;
+  return byGroup.entries
+      .reduce((MapEntry<String, int> a, MapEntry<String, int> b) =>
+          a.value >= b.value ? a : b)
+      .key;
+}
 
 /// 一条推荐：动作 + 处方 + 引擎给的下一组建议。
 class PlannedExercise {
@@ -105,9 +174,24 @@ class PlannedExercise {
   /// 后者会被读成 30 次。
   String get loadLabel {
     final Suggestion? s = suggestion;
-    if (s == null) return '—';
-    final String w = s.isBodyweight ? '自重' : formatWeight(s.weightKg, unit);
-    return '$w × ${s.reps}${isTimeTrack(exercise.trackType) ? ' 秒' : ''}';
+    if (s != null) {
+      final String w = s.isBodyweight ? '自重' : formatWeight(s.weightKg, unit);
+      return '$w × ${s.reps}${isTimeTrack(exercise.trackType) ? ' 秒' : ''}';
+    }
+    // 没有渐进建议时**念处方**，而不是留一个破折号。
+    //
+    // 破折号等于"这一行没有任何信息"，而用户此刻正需要知道做多久、做几组。
+    // 两个真实的场景会走到这里：① 热身（本来就没有渐进建议，见 kDefaultWarmupPlan）；
+    // ② 用户关掉了「渐进建议」开关 —— 那种情况下整页都不该变成一排破折号。
+    // （2026-09-30 真机走查时发现：加进今天的热身显示成「—」。）
+    final bool time = isTimeTrack(exercise.trackType);
+    final String unit2 = time ? ' 秒' : ' 次';
+    final String amount = plan.targetRepsLow == plan.targetRepsHigh
+        ? '${plan.targetRepsLow}$unit2'
+        : '${plan.targetRepsLow}–${plan.targetRepsHigh}$unit2';
+    final double? planW = plan.targetWeightKg;
+    final String load = planW == null ? '' : '${formatWeight(planW, unit)} · ';
+    return '${plan.targetSets} 组 · $load$amount';
   }
 
   /// 「上次」那一行：把引擎据以判断的事实原样摆出来。没历史时返回 null。
@@ -226,6 +310,58 @@ class TodayPlanner {
           lastSession: last,
         ),
       ));
+    }
+    return out;
+  }
+
+  /// 今日热身：练之前该做的那 1–2 个动作。
+  ///
+  /// 为什么要有它：库里 11 个热身动作在主流程里**一个都见不到** ——
+  /// 「今天练什么」按 `category: 'strength'` 过滤，热身只能靠用户自己去
+  /// 选动作页按类别筛。而热身是每次训练都该做的事，属于"写了内容却没人用得上"。
+  ///
+  /// 顺序：先按部位取（人工定序表），不够再补通用的，去重。
+  /// 取不到的动作**直接跳过**（种子改了也不崩），所以返回值可能少于 [count]。
+  Future<List<ExerciseData>> warmupFor({
+    String? muscleGroup,
+    int count = 2,
+  }) async {
+    final List<String> ids = <String>[
+      ...?_warmupByGroup[muscleGroup],
+      ..._generalWarmup,
+    ];
+    return _lookup(ids, 'warmup', count);
+  }
+
+  /// 练完该拉伸的那 1–2 个动作。口径同 [warmupFor]。
+  Future<List<ExerciseData>> stretchFor({
+    String? muscleGroup,
+    int count = 2,
+  }) async {
+    final List<String> ids = <String>[
+      ...?_stretchByGroup[muscleGroup],
+      ..._generalStretch,
+    ];
+    return _lookup(ids, 'stretch', count);
+  }
+
+  /// 按 id 取动作，去重、校验类别、够 [count] 就停。
+  ///
+  /// 校验类别是刻意的：定序表里写错一个 id（或将来它被改成力量动作）时，
+  /// 宁可少一个热身，也不要把一个力量动作塞进"热身"里。
+  Future<List<ExerciseData>> _lookup(
+    List<String> ids,
+    String category,
+    int count,
+  ) async {
+    final List<ExerciseData> out = <ExerciseData>[];
+    final Set<String> seen = <String>{};
+    for (final String id in ids) {
+      if (out.length >= count) break;
+      if (!seen.add(id)) continue;
+      final ExerciseData? e = await _repo.byId(id);
+      if (e == null || e.category != category) continue;
+      out.add(e);
     }
     return out;
   }

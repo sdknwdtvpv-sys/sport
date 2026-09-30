@@ -244,4 +244,109 @@ void main() {
       expect(result!.plan.single.plan.targetRepsHigh, 5);
     });
   });
+
+  group('今日热身卡', () {
+    testWidgets('建议卡上会出现热身（库里 11 个热身以前在这条流程里见不到）',
+        (WidgetTester tester) async {
+      await pumpCard(tester);
+      expect(find.byKey(const Key('warmup-card')), findsOneWidget);
+      expect(find.text('练之前先热身'), findsOneWidget);
+      expect(find.byKey(const Key('add-warmup')), findsOneWidget);
+    });
+
+    testWidgets('热身默认**不进**计划：不点就一条都不多',
+        (WidgetTester tester) async {
+      await pumpCard(tester);
+      final int before = tester
+          .widgetList(find.byWidgetPredicate((Widget w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('suggestion-')))
+          .length;
+      // 热身卡自己带着 add-warmup 按钮，但它没有被自动加进计划列表
+      expect(find.byKey(const Key('add-warmup')), findsOneWidget);
+      expect(before, greaterThan(0));
+    });
+
+    testWidgets('点「加进今天」之后：热身进入计划，而且带 1 组处方',
+        (WidgetTester tester) async {
+      await pumpCard(tester);
+      // 先记下当前计划里的动作数
+      final int before = tester
+          .widgetList(find.byWidgetPredicate((Widget w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('suggestion-')))
+          .length;
+
+      await tester.tap(find.byKey(const Key('add-warmup')));
+      await tester.pumpAndSettle();
+
+      final int after = tester
+          .widgetList(find.byWidgetPredicate((Widget w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('suggestion-')))
+          .length;
+      expect(after, greaterThan(before), reason: '热身必须真的进了计划');
+      expect(find.text('已加进今天'), findsOneWidget);
+      // 加过之后按钮消失（不能重复加）
+      expect(find.byKey(const Key('add-warmup')), findsNothing);
+    });
+
+    testWidgets('加进今天的热身会跟着「开始训练」一起被带进训练会话',
+        (WidgetTester tester) async {
+      TodayResult? result;
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(builder: (BuildContext ctx) {
+          return Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async {
+                  result = await Navigator.of(ctx).push<TodayResult>(
+                    MaterialPageRoute<TodayResult>(
+                      builder: (_) => TodaySuggestionScreen(planner: planner),
+                    ),
+                  );
+                },
+                child: const Text('打开建议卡'),
+              ),
+            ),
+          );
+        }),
+      ));
+      await tester.tap(find.text('打开建议卡'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('add-warmup')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('start-session')));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.plan.length, greaterThan(3),
+          reason: '计划里除了 3 个正式动作，还该多出热身');
+      expect(
+        result!.plan.any((PlannedExercise p) => p.exercise.category == 'warmup'),
+        isTrue,
+        reason: '热身必须真的进了这次会话',
+      );
+      expect(
+        result!.plan
+            .where((PlannedExercise p) => p.exercise.category == 'warmup')
+            .every((PlannedExercise p) => p.plan.targetSets == 1),
+        isTrue,
+        reason: '热身是 1 组，不是 3 组',
+      );
+    });
+  });
+
+    testWidgets('加进今天的热身行念处方，不是破折号', (WidgetTester tester) async {
+      await pumpCard(tester);
+      await tester.tap(find.byKey(const Key('add-warmup')));
+      await tester.pumpAndSettle();
+
+      // 破折号曾经出现在这里（真机走查发现）：热身没有渐进建议，
+      // 而 loadLabel 在没有建议时直接返回 '—'，等于这一行不告诉用户做多久。
+      expect(find.text('—'), findsNothing,
+          reason: '热身行必须念出处方（1 组 · 30–45 秒）');
+      expect(find.textContaining('1 组 · 30–45 秒'), findsWidgets);
+    });
 }

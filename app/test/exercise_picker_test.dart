@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/labels.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
@@ -404,5 +405,20 @@ void main() {
     await tester.enterText(find.byKey(const Key('custom-name')), '有效名字');
     await tester.pumpAndSettle();
     expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
+  });
+
+  testWidgets('部位筛选只有 6 个主部位（辅助肌群不是可选部位）',
+      (WidgetTester tester) async {
+    await pumpPicker(tester);
+    // 这条守着 2026-09-30 的回归：给详情页补中文标签时改了 kMuscleLabels，
+    // 而筛选行当时遍历的是它 —— 于是部位 chips 从 6 个变成 24 个。
+    for (final String k in kPrimaryMuscleGroups) {
+      expect(find.byKey(Key('muscle-$k')), findsOneWidget, reason: '缺 $k');
+    }
+    // 辅助肌群绝不能变成筛选项
+    for (final String fine in <String>['lats', 'triceps', 'front_delts', 'glutes']) {
+      expect(find.byKey(Key('muscle-$fine')), findsNothing,
+          reason: '$fine 是辅助肌群，只用于显示，不该出现在筛选里');
+    }
   });
 }

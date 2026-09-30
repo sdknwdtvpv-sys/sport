@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../data/db.dart' show ExerciseData;
 import 'share_card_exporter.dart';
 import 'share_card_preview_screen.dart';
 import 'workout_summary.dart';
@@ -23,6 +24,7 @@ class WorkoutSummaryScreen extends StatefulWidget {
     required this.workoutId,
     this.unit = WeightUnit.kg,
     this.exporter = const PluginShareCardExporter(),
+    this.stretches = const <ExerciseData>[],
   });
 
   final SummaryService service;
@@ -30,6 +32,11 @@ class WorkoutSummaryScreen extends StatefulWidget {
 
   /// 显示单位。**只影响显示**：服务算出来的量与 PR 判定始终是 kg。
   final WeightUnit unit;
+
+  /// 练完建议拉伸的 1–2 个动作（由调用方按今天练的部位算好传进来）。
+  ///
+  /// 为空就整块不显示 —— 不做"没有数据也占一块地方"的界面。
+  final List<ExerciseData> stretches;
 
   /// 分享卡的交付实现。测试里换成假的（插件调用在 widget 测试里跑不了）。
   final ShareCardExporter exporter;
@@ -110,12 +117,74 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 const SizedBox(height: Tokens.s5),
                 _prBlock(s),
               ],
+              if (widget.stretches.isNotEmpty) ...<Widget>[
+                const SizedBox(height: Tokens.s5),
+                _stretchBlock(),
+              ],
             ],
           ),
         ),
         _shareButton(s),
         _doneButton(),
       ],
+    );
+  }
+
+  /// 「练完拉伸一下」。
+  ///
+  /// 库里 9 个拉伸动作在主流程里同样一个都见不到（只能去选动作页按类别筛）。
+  /// 放在总结屏是有意的：练完这一屏是用户一定会看的地方，
+  /// 而"练完顺手拉一下"是此时最该被提醒的一件事。
+  /// 只给名字与做法，不塞进记录 —— 拉伸要不要单独记是他的选择。
+  Widget _stretchBlock() {
+    return Container(
+      key: const Key('summary-stretch'),
+      padding: const EdgeInsets.all(Tokens.s5),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text(
+            '练完拉伸一下',
+            style: TextStyle(
+              color: Tokens.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: Tokens.s3),
+          for (final ExerciseData e in widget.stretches)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Tokens.s2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    e.name,
+                    style: const TextStyle(
+                      color: Tokens.text,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (e.instructions != null && e.instructions!.isNotEmpty)
+                    Text(
+                      e.instructions!,
+                      style: const TextStyle(
+                        color: Tokens.text3,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
