@@ -14,6 +14,12 @@
  *   * 没有 `plugin:` 段也没有 hook → 纯 Dart 包，两端都能用（例如 `cryptography`）；
  *   * `flutter` / `flutter_test` / SDK 包 → 跳过。
  *
+ * **2026-09-30 补的第三类：Apple 隐私清单（PrivacyInfo.xcprivacy）**。
+ * 苹果要求"用到 required-reason API 就要在清单里声明理由"，而且会对着**二进制**扫
+ * （邮件 ITMS-91053/91054）。安卓侧完全看不到这件事 —— 典型的"另一个平台才会暴露"。
+ * 所以凡是有 Apple 原生源码（.swift/.m/.mm）的**非 dev** 依赖，都必须自带清单；
+ * 自带的例外要在这里**写明理由**（现在只有两个，都是上游确实没有、且已查清原因）。
+ *
  * **2026-09-30 补的第二类（原版漏掉的）**：原版只读 `plugin: platforms:`，
  * 于是"没有 plugin 段"被一路当成"纯 Dart、两端都能用"。可 `package:sqlite3` 3.x
  * 恰恰没有 plugin 段 —— 它把原生库交给 `hook/build.dart` 现编/现下。
@@ -124,6 +130,68 @@ function hookMentionsIos(dir) {
   return /OS\.(iOS|macOS)\b|['"](ios|macos)['"]/.test(src);
 }
 
+/** 包里有没有 Apple 原生源码（.swift/.m/.mm），排除 example/test/tool —— 那些不进包 */
+function appleNativeSources(dir) {
+  const out = [];
+  const skipDirs = new Set(['example', 'test', 'tool', 'build', '.dart_tool', 'Pods']);
+  const walk = (d, depth) => {
+    if (depth > 6) return;
+    let entries;
+    try {
+      entries = readdirSync(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      const full = join(d, e.name);
+      if (e.isDirectory()) {
+        if (!skipDirs.has(e.name)) walk(full, depth + 1);
+      } else if (/\.(swift|m|mm)$/.test(e.name)) {
+        out.push(full);
+      }
+    }
+  };
+  walk(dir, 0);
+  return out;
+}
+
+/** 包里有没有苹果隐私清单（放哪儿都行，只要不带 example/） */
+function privacyManifest(dir) {
+  let found = null;
+  const walk = (d, depth) => {
+    if (depth > 6 || found) return;
+    let entries;
+    try {
+      entries = readdirSync(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (found) return;
+      if (e.isDirectory()) {
+        if (e.name !== 'example' && e.name !== 'build' && e.name !== '.dart_tool') {
+          walk(join(d, e.name), depth + 1);
+        }
+      } else if (e.name === 'PrivacyInfo.xcprivacy') {
+        found = join(d, e.name);
+      }
+    }
+  };
+  walk(dir, 0);
+  return found;
+}
+
+/**
+ * 明知上游不带清单、但我们**查清过原因**的例外。
+ * 每条都必须写清"为什么可以不带"；一旦上游补了清单，这个表会被下面的检查逼着删掉。
+ */
+const MANIFEST_EXCEPTIONS = new Map([
+  ['objective_c',
+    'Apple 侧是 ObjC 运行时桥（src/*.m，经 hook 编进包），上游不带隐私清单 —— '
+    + '它只碰 objc 运行时，不碰 UserDefaults/文件时间戳/磁盘空间/开机时间这些 required-reason API；'
+    + '兜底方案见 docs/release-admin.md §二之四（首次上传若收到 ITMS-91053 就加 app 级清单）'],
+]);
+
 /** 从 .dart_tool/package_config.json 找到某个包在磁盘上的位置 */
 function resolvePackages(names) {
   const cfgPath = join(APP, '.dart_tool/package_config.json');
@@ -215,6 +283,27 @@ if (pkgDirArg >= 0) {
 
 const results = targets.map((t) => ({ ...checkOne(t), dev: Boolean(t.dev), transitive: Boolean(t.transitive) }));
 
+// ── 第三类：Apple 隐私清单 ────────────────────────────────────────────────
+// 只查会打进包里的（跳过 dev）且真的有 Apple 原生源码的包。
+const manifestRows = [];
+const manifestProblems = [];
+for (const t of targets) {
+  if (t.dev || !t.dir) continue;
+  const sources = appleNativeSources(t.dir);
+  if (!sources.length) continue;
+  const manifest = privacyManifest(t.dir);
+  const exception = MANIFEST_EXCEPTIONS.get(t.name);
+  manifestRows.push({
+    name: t.name,
+    sources: sources.length,
+    manifest,
+    exception,
+    ok: Boolean(manifest) || Boolean(exception),
+    // 例外过期：上游补了清单，我们这条例外就该删掉（否则表会烂成谎话）
+    staleException: Boolean(manifest) && Boolean(exception),
+  });
+}
+
 console.log(`iOS 可用性核对　${label}\n`);
 let bad = 0;
 for (const r of results) {
@@ -226,9 +315,34 @@ for (const r of results) {
   if (!okVerdict && (!r.dev || r.verdict === 'native-android-only')) bad++;
 }
 
+// 隐私清单单独一张小表：Android 侧永远看不到这件事
+if (manifestRows.length) {
+  console.log('\nApple 隐私清单（PrivacyInfo.xcprivacy）');
+  for (const r of manifestRows) {
+    if (r.staleException) {
+      manifestProblems.push(`${r.name} 已经自带隐私清单了 —— 请把 tool/ios-deps.mjs`
+        + ' 里那条例外删掉（留着就是一句过期的话）：MANIFEST_EXCEPTIONS');
+    }
+    const mark = r.ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m';
+    const how = r.manifest ? '自带清单' : (r.exception ? '例外（已写明理由）' : '**没有清单**');
+    console.log(`  ${mark} ${r.name.padEnd(18)} ${String(r.sources).padStart(2)} 个 Apple 原生源文件 · ${how}`);
+    if (!r.ok) {
+      manifestProblems.push(`${r.name} 有 ${r.sources} 个 Apple 原生源文件，`
+        + '却不带 Apple 隐私清单 —— 苹果会对着二进制扫 required-reason API'
+        + '（ITMS-91053/91054）。要么换依赖，要么在 tool/ios-deps.mjs 的 '
+        + 'MANIFEST_EXCEPTIONS 里写清为什么可以不带');
+    }
+  }
+}
+
+for (const msg of manifestProblems) {
+  console.error(`  \x1b[31m✗\x1b[0m ${msg}`);
+  bad++;
+}
+
 if (bad) {
   console.error(`\n✗ ${bad} 个依赖不支持 iOS —— 「双端先上」会被它挡住。`
-    + '（含闭包里"只给 Android 造原生库"的原生资源包）');
+    + '（含闭包里"只给 Android 造原生库"的原生资源包，以及 Apple 隐私清单缺失/例外过期）');
   console.error('  要么换一个两端都支持的包，要么在 docs/release-admin.md 里写明 iOS 缺这个功能。');
   process.exit(1);
 }

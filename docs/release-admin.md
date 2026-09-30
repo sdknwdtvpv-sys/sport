@@ -97,6 +97,46 @@
 | 依赖的 iOS 可用性 | ✅ `tool/ios-deps.mjs`。**2026-09-30 补了原版漏掉的一类**：原版只读 pubspec 的 `plugin: platforms:`，于是"没有 plugin 段"被当成"纯 Dart、两端都能用" —— 可 `package:sqlite3` 3.x 恰恰没有 plugin 段，它把原生库交给 `hook/build.dart` **现编/现下**（Dart hooks / code assets）。它就是我们**唯一的数据库引擎**（经 `drift_flutter`），而且它连直接依赖都不是（传递依赖），原版守卫对它完全瞎。现在闭包里所有 hook 包都要有 iOS 证据，`sqlite3` 与 `objective_c` 各有一条 ✓。⚠️ 顺带查清：iOS 上 sqlite3 是**从源码编译**（hook 里带 `-install_name @rpath/libsqlite3.dylib` 与 `-headerpad_max_install_names`），所以要 Xcode 的 clang —— 这也解释了为什么装 Xcode 之前 iOS 一行都跑不了 |
 | 守卫 | ✅ `tool/asset-check.mjs` 已覆盖 iOS：图标不是模板图、无透明、显示名、权限键、启动屏不是纯白、bundle id 不是模板的。**2026-09-30 补上的洞**：旧版守卫只遍历磁盘上的 PNG，**从没打开过 `Contents.json`**，而且只对 1024 那一张做过尺寸校验 —— 现在改成清单与磁盘**双向对账**：① 清单里写了但磁盘没有（对应机型缺图标）② 磁盘上有但清单没引用（那张 PNG 永远不进包）③ 声明尺寸×倍率 ≠ PNG 真实像素（图标发虚）④ 19 个必需槽位缺一。四条都负向验证过（临时改名 / 塞孤儿图 / 29px 顶替 180px / 删 ios-marketing 槽位）—— 各自都能红，还原后逐字节相同 |
 
+**Apple 隐私清单（PrivacyInfo.xcprivacy）—— 2026-09-30 查清**：苹果要求"用到
+required-reason API 就要在清单里声明理由"，并且**对着二进制扫**（邮件 ITMS-91053/91054）。
+安卓侧完全看不到这件事。把依赖闭包扫了一遍，有 Apple 原生源码（`.swift`/`.m`/`.mm`）的
+**非 dev** 包只有三个：
+
+| 包 | Apple 原生源文件 | 自带清单？ |
+|---|---|---|
+| `share_plus`（直接依赖） | 4 | ✅ |
+| `gal`（直接依赖） | 2 | ✅ |
+| `objective_c`（**传递**：`drift_flutter → path_provider → path_provider_foundation → objective_c`） | 6 | ❌ **没有** |
+
+`objective_c` 是 ObjC 运行时桥（`src/*.m`，经 `hook/build.dart` 编进包），上游确实不带清单。
+它只碰 objc 运行时，不碰 UserDefaults / 文件时间戳 / 磁盘空间 / 开机时间这些 required-reason API ——
+所以**大概率不需要声明**，但"大概率"不是证据。这条已经写成 `tool/ios-deps.mjs` 里的
+**显式例外**（带着理由），并且在门禁里守着：一旦上游补了清单，例外会自己报"该删了"。
+
+**还没定的一件事（只有 Xcode + Apple 账号能定）**：app 自己（Runner target）要不要一份
+`PrivacyInfo.xcprivacy`。**判据是首次上传后 Apple 发的那封 ITMS 邮件**：
+
+* 没收到 → 现在这样就够，什么都不用加；
+* 收到 `ITMS-91053: Missing API declaration` → 加 `app/ios/Runner/PrivacyInfo.xcprivacy`，
+  内容从下面这份起手（有几个类别被点名就加哪几个，**不要**把没用到的一起抄进去）：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSPrivacyTracking</key><false/>
+  <key>NSPrivacyCollectedDataTypes</key><array/>
+  <key>NSPrivacyAccessedAPITypes</key><array/>
+</dict>
+</plist>
+```
+
+⚠️ **这一步故意没有在这里代做**：把文件塞进 Runner target 要改 `project.pbxproj`
+（FileReference + BuildFile + group + Copy Bundle Resources 四处），而本机**没有 Xcode，
+改完无法验证** —— 一个写坏的工程文件会让你第一次打开 Xcode 就翻车。宁可等你装好 Xcode，
+用 Xcode 的「Add Files to Runner…」加进去（会自动进 target），我再跑门禁确认。
+
 **2026-09-30 查出来的 iOS 专属缺陷（已修，v1.27.1）**：`saveToGallery()` 一直带着相簿名去存，
 而 gal 建/找相簿要**读**相册（`.readWrite` 授权 = `NSPhotoLibraryUsageDescription`），
 我们却只有 `.addOnly` —— **iOS 上「存相册」必然失败，而安卓一切正常、所有测试全绿**。
