@@ -34,6 +34,16 @@
 （证明它真的在读 plist，不是恒真）；③ 把 `shareAlbumNameFor` 改名 → 红（防真空）。
 还原后两个文件校验和一致。
 
+### 同版追加：iOS 依赖守卫原本对**数据库引擎**是瞎的
+
+`tool/ios-deps.mjs` 只读 pubspec 的 `plugin: platforms:`，判据是「没有 plugin 段 → 纯 Dart 包，两端都能用」。可 `package:sqlite3` 3.x **没有 plugin 段** —— 它把原生库交给 `hook/build.dart`（Dart hooks / code assets）现编或现下。
+
+* 它就是我们**唯一的数据库引擎**（经 `drift_flutter` 进来），一旦它只有 Android 分支，门禁会**全绿**，等装完 Xcode 才发现 iOS 编不出来 —— 而那时已经过去很久。
+* 而且它是**传递依赖**：原版连直接依赖清单都不会看它。
+
+现在改成：直接依赖的插件规则不变，另加「**闭包里所有原生资源包**（有 `hook/build.dart`）必须能在 hook 里找到 iOS 目标」—— 实测闭包里有两这类包：`sqlite3` 与 `objective_c`，各有一条 ✓。
+负向验证四条：① 合成 hook 只有 Android 分支 → 红；② 合成 hook 有 iOS 分支 → 绿；③ 合成插件只声明 android → 红（原有规则）；④ **把真包 sqlite3 的 iOS 分支摘掉** → 红，还原后绿。另外顺手查清一件事并写进文档：iOS 上 sqlite3 是**从源码编译**的（hook 里有 `-install_name @rpath/libsqlite3.dylib`），所以它要 Xcode 的 clang。
+
 版本 1.27.0+34 → 1.27.1+35。
 
 ## v1.27.0 · 「不同意」不再把人请出去（审计 A 的前半段）

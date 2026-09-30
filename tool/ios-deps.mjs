@@ -9,8 +9,18 @@
  *
  * 判据（按 pubspec 声明，不看感觉）：
  *   * 有 `flutter: plugin: platforms:` → 必须同时声明 `ios` 或 `darwin` 之一；
- *   * 没有 `plugin:` 段 → 纯 Dart 包，两端都能用（例如 `cryptography`）；
+ *   * 有 `hook/build.dart` → **原生资源包**（Dart hooks / code assets），
+ *     hook 里必须能找到 iOS 目标（`OS.iOS` / `OS.macOS` / `'ios'` / `'macos'`）；
+ *   * 没有 `plugin:` 段也没有 hook → 纯 Dart 包，两端都能用（例如 `cryptography`）；
  *   * `flutter` / `flutter_test` / SDK 包 → 跳过。
+ *
+ * **2026-09-30 补的第二类（原版漏掉的）**：原版只读 `plugin: platforms:`，
+ * 于是"没有 plugin 段"被一路当成"纯 Dart、两端都能用"。可 `package:sqlite3` 3.x
+ * 恰恰没有 plugin 段 —— 它把原生库交给 `hook/build.dart` 现编/现下。
+ * 它就是我们**唯一的数据库引擎**（经 `drift_flutter`），而且它是**传递依赖**，
+ * 连直接依赖清单都不在。原版守卫对它完全瞎，一旦某个 hook 包只有 Android 分支，
+ * 门禁照样全绿，等装完 Xcode 才发现 iOS 编不出来。
+ * 所以现在：**闭包里所有 hook 包**都要有 iOS 证据（不只是直接依赖）。
  *
  * 用法：
  *   node tool/ios-deps.mjs                    # 核 app/pubspec.yaml 的直接依赖
@@ -85,6 +95,35 @@ function declaredPlatforms(pkgDir) {
   return { platforms, isPlugin: true };
 }
 
+/** 原生资源包：`hook/build.dart`（Dart hooks）—— 它在构建时产出原生库 */
+function isNativeAssetPackage(dir) {
+  return existsSync(join(dir, 'hook', 'build.dart'));
+}
+
+/** hook 目录里所有 Dart 源码拼起来（递归，层数不多） */
+function hookSource(dir) {
+  const hookDir = join(dir, 'hook');
+  if (!existsSync(hookDir)) return '';
+  const parts = [];
+  const walk = (d, depth) => {
+    if (depth > 4) return;
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const full = join(d, e.name);
+      if (e.isDirectory()) walk(full, depth + 1);
+      else if (e.name.endsWith('.dart')) parts.push(readFileSync(full, 'utf8'));
+    }
+  };
+  walk(hookDir, 0);
+  return parts.join('\n');
+}
+
+/** hook 里能不能找到 iOS 目标 —— 找不到就是"这个包只会给 Android 造原生库" */
+function hookMentionsIos(dir) {
+  const src = hookSource(dir);
+  // `OS.iOS` / `OS.macOS`（code_assets 的枚举）或字符串形式的 'ios' / 'macos'
+  return /OS\.(iOS|macOS)\b|['"](ios|macos)['"]/.test(src);
+}
+
 /** 从 .dart_tool/package_config.json 找到某个包在磁盘上的位置 */
 function resolvePackages(names) {
   const cfgPath = join(APP, '.dart_tool/package_config.json');
@@ -107,7 +146,19 @@ function checkOne({ name, dir }) {
   if (!dir) return { name, verdict: 'missing', note: 'package_config 里找不到（先 pub get）' };
   const { platforms, isPlugin } = declaredPlatforms(dir);
   if (platforms === null) return { name, verdict: 'missing', note: '读不到 pubspec.yaml' };
-  if (!isPlugin) return { name, verdict: 'pure', note: '纯 Dart 包（无 plugin 段）' };
+  if (!isPlugin) {
+    if (isNativeAssetPackage(dir)) {
+      const ios = hookMentionsIos(dir);
+      return {
+        name,
+        verdict: ios ? 'native-ios' : 'native-android-only',
+        note: ios
+          ? '原生资源包（hook/build.dart），hook 里有 iOS 目标'
+          : '原生资源包（hook/build.dart），但 hook 里**看不到 iOS 目标**',
+      };
+    }
+    return { name, verdict: 'pure', note: '纯 Dart 包（无 plugin 段、无 hook）' };
+  }
   const ios = platforms.includes('ios') || platforms.includes('darwin');
   return {
     name,
@@ -119,6 +170,22 @@ function checkOne({ name, dir }) {
 // ---------------------------------------------------------------- 跑
 const argv = process.argv.slice(2);
 const pkgDirArg = argv.indexOf('--pkg-dir');
+
+/** 闭包里所有"会产出原生代码"的包（原生资源包优先，因为它们没有联邦插件兜底） */
+function nativeAssetClosure() {
+  const cfgPath = join(APP, '.dart_tool/package_config.json');
+  if (!existsSync(cfgPath)) return [];
+  const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+  const out = [];
+  for (const p of cfg.packages) {
+    if (SKIP.has(p.name)) continue;
+    const dir = p.rootUri.startsWith('file://')
+      ? decodeURIComponent(p.rootUri.slice(7))
+      : resolve(APP, p.rootUri);
+    if (isNativeAssetPackage(dir)) out.push({ name: p.name, dir });
+  }
+  return out;
+}
 
 let targets;
 let label;
@@ -136,29 +203,34 @@ if (pkgDirArg >= 0) {
   const devDeps = packagesIn(text, 'dev_dependencies').filter((n) => !SKIP.has(n));
   // dev 依赖不打进包里，所以只报告不拦（integration_test 就是这种）
   targets = [...resolvePackages(deps), ...resolvePackages(devDeps).map((t) => ({ ...t, dev: true }))];
-  label = `${PUBSPEC.replace(ROOT + '/', '')} 的直接依赖`;
+  // 闭包里的原生资源包**也**要核：它们不在直接依赖清单里（sqlite3 就是这样），
+  // 却是真正会把原生库编进包里的那些。标 transitive 只为在报告里区分来源。
+  const direct = new Set(targets.map((t) => t.name));
+  targets = [
+    ...targets,
+    ...nativeAssetClosure().filter((t) => !direct.has(t.name)).map((t) => ({ ...t, transitive: true })),
+  ];
+  label = `${PUBSPEC.replace(ROOT + '/', '')} 的直接依赖 + 闭包里的原生资源包`;
 }
 
-const results = targets.map((t) => ({ ...checkOne(t), dev: Boolean(t.dev) }));
+const results = targets.map((t) => ({ ...checkOne(t), dev: Boolean(t.dev), transitive: Boolean(t.transitive) }));
 
 console.log(`iOS 可用性核对　${label}\n`);
 let bad = 0;
 for (const r of results) {
-  const mark =
-    r.verdict === 'ios' || r.verdict === 'pure'
-      ? '\x1b[32m✓\x1b[0m'
-      : r.dev
-        ? '\x1b[33m!\x1b[0m'
-        : '\x1b[31m✗\x1b[0m';
-  const devTag = r.dev ? '（dev，不打进包里）' : '';
-  console.log(`  ${mark} ${r.name.padEnd(18)} ${r.note}${devTag}`);
-  if (r.verdict !== 'ios' && r.verdict !== 'pure' && !r.dev) bad++;
+  const okVerdict = r.verdict === 'ios' || r.verdict === 'pure' || r.verdict === 'native-ios';
+  const mark = okVerdict ? '\x1b[32m✓\x1b[0m' : r.dev ? '\x1b[33m!\x1b[0m' : '\x1b[31m✗\x1b[0m';
+  const tags = [r.dev ? '（dev，不打进包里）' : '', r.transitive ? '（传递依赖）' : ''].join('');
+  console.log(`  ${mark} ${r.name.padEnd(18)} ${r.note}${tags}`);
+  // 原生资源包即使来自传递依赖也要拦：它没有联邦插件的兜底实现
+  if (!okVerdict && (!r.dev || r.verdict === 'native-android-only')) bad++;
 }
 
 if (bad) {
-  console.error(`\n✗ ${bad} 个直接依赖不支持 iOS —— 「双端先上」会被它挡住。`);
+  console.error(`\n✗ ${bad} 个依赖不支持 iOS —— 「双端先上」会被它挡住。`
+    + '（含闭包里"只给 Android 造原生库"的原生资源包）');
   console.error('  要么换一个两端都支持的包，要么在 docs/release-admin.md 里写明 iOS 缺这个功能。');
   process.exit(1);
 }
-console.log('\n✓ 每个直接依赖都声明了 iOS 支持（或本来就是纯 Dart）');
+console.log('\n✓ 每个直接依赖都声明了 iOS 支持（或本来就是纯 Dart），闭包里的原生资源包也都有 iOS 目标');
 console.log('  ⚠️ 这只证明"不可能性"被挡住了，不证明真的能编过 —— 那要 Xcode。');
