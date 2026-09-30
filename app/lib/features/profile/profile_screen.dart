@@ -194,6 +194,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// 打开开源许可（Flutter 自带页面）。
+  ///
+  /// 为什么有这个入口：隐私政策的第三方清单只列了**直接依赖**，而"包里到底有什么"
+  /// 的准确答案在 Flutter 的许可页 —— 它由构建时的 `NOTICES` 生成，覆盖**全部**传递依赖。
+  /// 与其在文档里写一句无法自证的"全部第三方代码"，不如让用户（和审核员）能当场翻。
+  void _openLicenses() {
+    showLicensePage(
+      context: context,
+      applicationName: '练了么',
+      applicationVersion: kAppVersion,
+      applicationLegalese: '训练数据只存在这台设备上。',
+    );
+  }
+
   /// 打开隐私政策（应用内必须能读到 —— 见 privacy_policy_screen.dart 的说明）
   Future<void> _openPrivacyPolicy() async {
     await Navigator.of(context).push<void>(
@@ -709,6 +723,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             subtitle: const Text(
               '我们收集什么、不收集什么，逐条写在里面',
+              style: TextStyle(color: Tokens.text3, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+          ),
+          const Divider(height: 1, color: Tokens.line),
+          // 开源许可：政策里说"完整第三方清单在应用内可查"，这里就是那个"应用内"。
+          // 用 Flutter 自带的 `showLicensePage` —— **不引入任何依赖**，它会把
+          // 随包分发的**全部**组件（含传递依赖：框架、Skia、ICU…）及其许可列出来。
+          ListTile(
+            key: const Key('open-source-licenses'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+            onTap: _openLicenses,
+            title: const Text(
+              '开源许可',
+              style: TextStyle(color: Tokens.text, fontSize: 15),
+            ),
+            subtitle: const Text(
+              '这个包里用到的全部第三方组件与许可',
               style: TextStyle(color: Tokens.text3, fontSize: 13),
             ),
             trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),

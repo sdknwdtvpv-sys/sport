@@ -156,18 +156,18 @@ advertising. No data brokers.
 
 ## 3.5 Third-party dependencies (SDK list)
 
-The following is **all third-party code shipped inside the app package** — not services we call,
-but libraries distributed with the app. Chinese app stores require third-party SDKs to be listed
+The following are our **direct dependencies** — not services we call, but libraries distributed
+with the app. Chinese app stores require third-party SDKs to be listed
 centrally with their name, function, and how they handle personal information, so here they are:
 
-| Name | Version | Function | Does it collect or upload anything? | License |
-|---|---|---|---|---|
-| `drift` | 2.35.0 | Local database (a SQLite wrapper): workout records and settings live here | **No.** Pure local reads and writes, no network code | MIT |
-| `drift_flutter` | 0.3.1 | Provides the platform-specific storage path for that database | **No** | MIT |
-| `sqlite3` | 3.6.0 | The actual SQLite engine (prebuilt binary per platform) | **No.** It is the database itself | MIT |
-| `share_plus` | 13.3.0 | Hands a share card or backup file to the **system** share sheet | **No.** It only calls system APIs — you choose the destination in the sheet; we never touch it | BSD-3-Clause |
-| `gal` | 2.3.3 | Saves the share card into the **system photo library** | **No.** Write-only; it **never reads** your photos | BSD-3-Clause |
-| `cryptography` | 2.9.0 | End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM) | **No.** Pure Dart, no network | Apache-2.0 |
+| Name | Version | Function | Does it collect or upload anything? | License | Link |
+|---|---|---|---|---|---|
+| `drift` | 2.35.0 | Local database (a SQLite wrapper): workout records and settings live here | **No.** Pure local reads and writes, no network code | MIT | [pub.dev](https://pub.dev/packages/drift) |
+| `drift_flutter` | 0.3.1 | Provides the platform-specific storage path for that database | **No** | MIT | [pub.dev](https://pub.dev/packages/drift_flutter) |
+| `sqlite3` | 3.6.0 | The actual SQLite engine (prebuilt binary per platform) | **No.** It is the database itself | MIT | [pub.dev](https://pub.dev/packages/sqlite3) |
+| `share_plus` | 13.3.0 | Hands a share card or backup file to the **system** share sheet | **No.** It only calls system APIs — you choose the destination in the sheet; we never touch it | BSD-3-Clause | [pub.dev](https://pub.dev/packages/share_plus) |
+| `gal` | 2.3.3 | Saves the share card into the **system photo library** | **No.** Write-only; it **never reads** your photos | BSD-3-Clause | [pub.dev](https://pub.dev/packages/gal) |
+| `cryptography` | 2.9.0 | End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM) | **No.** Pure Dart, no network | Apache-2.0 | [pub.dev](https://pub.dev/packages/cryptography) |
 
 Three notes:
 
@@ -177,6 +177,11 @@ Three notes:
   is on **and** the build has an endpoint configured — see 3.1 (the current release has none).
 - **Development-only dependencies never ship**: `build_runner` / `drift_dev` (code generation) and
   `integration_test` (our own test harness) exist only in development and CI.
+- **The table above lists direct dependencies only.** They pull in further transitive libraries
+  (the Flutter framework, Skia, ICU, …). The complete list is available **inside the app** at
+  "Me → Open-source licences" (Flutter's licence page enumerates every component shipped in the
+  package). The per-library "does it collect anything" notes are hand-written for the libraries we
+  chose; the authoritative answer for "what is in the package" is that page, not this table.
 
 ## 4. Permissions
 
@@ -203,8 +208,12 @@ On **API ≤29** devices, merely declaring `WRITE_EXTERNAL_STORAGE` makes Androi
 grant `READ_EXTERNAL_STORAGE` as well (`aapt2 dump badging` reports it as
 `uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'`). We **never read** your
 photos or files — that permission comes from platform behaviour, not from a request of ours;
-on API 30+ neither permission exists (MediaStore writes need none). Verify it yourself:
-`aapt2 dump badging <apk> | grep permission`.
+on API 30+ neither permission exists (MediaStore writes need none).
+
+There is also **`android:requestLegacyExternalStorage="true"`** on `application`: an
+**Android 10 (API 29) only** compatibility switch (so the "save to gallery" path on that one
+release uses the legacy route), **ignored on API 30+**. We state it because a reviewer can find
+it in the package. Verify it yourself: `aapt2 dump badging <apk> | grep permission`.
 
 Beyond these, we request **no** location, contacts, camera, microphone, calendar, or
 background permissions.
@@ -243,6 +252,15 @@ What deletion covers, to avoid misunderstanding:
 
 ---
 
+### 5.5 Complaints and reports
+
+- **Channel**: `https://github.com/sdknwdtvpv-sys/sport/issues` (the contact in the table above).
+- **Response time**: we answer within **15 working days**; if it takes longer we say why first.
+- **Right to rectification**: workout records, body metrics and every setting can be edited in the app —
+  the "All data" screen lets you edit records one by one, "Me" holds the settings.
+- **Not satisfied with our answer?** You may complain to your local cyberspace or telecom authority.
+  We will not treat you differently for doing so.
+
 ## 6. Retention
 
 - On-device data: kept until you delete it (which is what a workout log should do).
@@ -255,8 +273,7 @@ What deletion covers, to avoid misunderstanding:
 ## 7. Minors
 
 This product is not directed at children under 14, and we do not knowingly collect their personal
-information. If you are a guardian and believe we hold such information, please contact us via the
-link above.
+information. If you are a guardian and believe we hold such information, please contact us through the contact details in the table at the top of this policy.
 
 ---
 

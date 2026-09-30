@@ -131,16 +131,16 @@
 <p>我们<strong>不向任何第三方出售、出租或共享</strong>你的个人信息。不接入第三方广告、不接入数据经纪。</p>
 <hr>
 <h2 id="三之五-第三方依赖-sdk-清单">三之五、第三方依赖（SDK）清单</h2>
-<p>下面是我们<strong>装进安装包里的全部第三方代码</strong>（不是&quot;用到的服务&quot;，而是随包分发的库）。 国内商店明确要求把第三方 SDK 集中展示、写清&quot;名称、功能、以及它怎么处理个人信息&quot; （小米《隐私政策不合规的问题解析和修改指引》），所以这里逐条列出：</p>
+<p>下面是我们<strong>直接依赖</strong>的第三方库（随包分发，不是&quot;用到的服务&quot;）。 国内商店明确要求把第三方 SDK 集中展示、写清&quot;名称、功能、以及它怎么处理个人信息&quot; （小米《隐私政策不合规的问题解析和修改指引》），所以这里逐条列出：</p>
 <table>
-<thead><tr><th>名称</th><th>版本</th><th>功能</th><th>它会收集或上传任何信息吗</th><th>许可</th></tr></thead>
+<thead><tr><th>名称</th><th>版本</th><th>功能</th><th>它会收集或上传任何信息吗</th><th>许可</th><th>链接</th></tr></thead>
 <tbody>
-<tr><td><code>drift</code></td><td>2.35.0</td><td>本地数据库（SQLite 的封装）：训练记录、设置都存在这里</td><td><strong>不会</strong>。纯本地读写，不含网络代码</td><td>MIT</td></tr>
-<tr><td><code>drift_flutter</code></td><td>0.3.1</td><td>给本地数据库提供各平台的存放路径</td><td><strong>不会</strong></td><td>MIT</td></tr>
-<tr><td><code>sqlite3</code></td><td>3.6.0</td><td>真正的 SQLite 引擎（各平台预编译二进制）</td><td><strong>不会</strong>。它就是数据库本体</td><td>MIT</td></tr>
-<tr><td><code>share_plus</code></td><td>13.3.0</td><td>把分享卡或备份文件交给<strong>系统</strong>分享面板</td><td><strong>不会</strong>。它只调用系统接口 —— 分享给谁由你在面板上选，我们不经手</td><td>BSD-3-Clause</td></tr>
-<tr><td><code>gal</code></td><td>2.3.3</td><td>把分享卡存进<strong>系统相册</strong></td><td><strong>不会</strong>。只写入，<strong>从不读取</strong>你的相册</td><td>BSD-3-Clause</td></tr>
-<tr><td><code>cryptography</code></td><td>2.9.0</td><td>云备份的端到端加密（HKDF-SHA256 + AES-256-GCM）</td><td><strong>不会</strong>。纯 Dart 实现，不联网</td><td>Apache-2.0</td></tr>
+<tr><td><code>drift</code></td><td>2.35.0</td><td>本地数据库（SQLite 的封装）：训练记录、设置都存在这里</td><td><strong>不会</strong>。纯本地读写，不含网络代码</td><td>MIT</td><td><a href="https://pub.dev/packages/drift">pub.dev</a></td></tr>
+<tr><td><code>drift_flutter</code></td><td>0.3.1</td><td>给本地数据库提供各平台的存放路径</td><td><strong>不会</strong></td><td>MIT</td><td><a href="https://pub.dev/packages/drift_flutter">pub.dev</a></td></tr>
+<tr><td><code>sqlite3</code></td><td>3.6.0</td><td>真正的 SQLite 引擎（各平台预编译二进制）</td><td><strong>不会</strong>。它就是数据库本体</td><td>MIT</td><td><a href="https://pub.dev/packages/sqlite3">pub.dev</a></td></tr>
+<tr><td><code>share_plus</code></td><td>13.3.0</td><td>把分享卡或备份文件交给<strong>系统</strong>分享面板</td><td><strong>不会</strong>。它只调用系统接口 —— 分享给谁由你在面板上选，我们不经手</td><td>BSD-3-Clause</td><td><a href="https://pub.dev/packages/share_plus">pub.dev</a></td></tr>
+<tr><td><code>gal</code></td><td>2.3.3</td><td>把分享卡存进<strong>系统相册</strong></td><td><strong>不会</strong>。只写入，<strong>从不读取</strong>你的相册</td><td>BSD-3-Clause</td><td><a href="https://pub.dev/packages/gal">pub.dev</a></td></tr>
+<tr><td><code>cryptography</code></td><td>2.9.0</td><td>云备份的端到端加密（HKDF-SHA256 + AES-256-GCM）</td><td><strong>不会</strong>。纯 Dart 实现，不联网</td><td>Apache-2.0</td><td><a href="https://pub.dev/packages/cryptography">pub.dev</a></td></tr>
 </tbody>
 </table>
 <p>三点补充说明：</p>
@@ -148,6 +148,7 @@
 <li><strong>没有广告 SDK、没有数据分析 SDK、没有崩溃上报 SDK</strong>。上面六个库里没有任何一个会把数据 发往第三方。</li>
 <li>我们的代码本身只在<strong>你开启</strong>云备份、或「帮助改进产品」的开关打开且包内配了地址时才会联网； 这件事的细节写在 §3.1（当前发布的版本<strong>没有配地址</strong>）。</li>
 <li><strong>开发期依赖不会进你的安装包</strong>：<code>build_runner</code> / <code>drift_dev</code>（代码生成）与 <code>integration_test</code>（我们自己跑测试用）只在开发与 CI 里出现，不会出现在正式包中。</li>
+<li><strong>上表只是&quot;直接依赖&quot;</strong>。它们还会带入一堆传递依赖（Flutter 框架、Skia、ICU…）。 完整清单在应用内可查：<strong>「我 → 开源许可」</strong>（Flutter 的许可页会列出随包分发的全部组件 及其许可）。&quot;某个库会不会收集信息&quot;这种说明是逐个人工写的，所以只覆盖我们自己挑的那几个； 传递依赖没有一条会收集信息（整个包不上报），但<strong>&quot;完整清单&quot;的准确答案在那个页面</strong>， 不是这张表 —— 这一点此前写成&quot;全部第三方代码&quot;，与事实不符，2026-09-30 改。</li>
 </ul>
 <h2 id="四-权限">四、权限</h2>
 <p>应用声明<strong>两项</strong>系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项<strong>只在老系统上生效</strong>：</p>
@@ -164,7 +165,8 @@
 <li>它只能写图片，且只在你自己点「存相册」时才会用到。</li>
 <li>分享卡是<strong>在本机画出来的</strong>：图片由设备上的界面直接渲染成 PNG， <strong>不会上传到我们的服务器</strong>。点「分享」是把这张图交给系统分享面板， 之后你选了哪个应用（微信、相册……）由你决定，那一步的数据处理适用那个应用的隐私政策。</li>
 </ul>
-<p><strong>打包后还会多出一条「读」权限，这一步要说清楚</strong>：在 <strong>API ≤29</strong> 的设备上， 只要声明了 <code>WRITE_EXTERNAL_STORAGE</code>，Android 就会由系统<strong>隐含</strong>并同时授予 <code>READ_EXTERNAL_STORAGE</code>（<code>aapt2 dump badging</code> 会把它标成 <code>uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'</code>）。 我们<strong>从不读取</strong>你的照片或文件 —— 这条权限是平台行为带来的，不是我们要的； API 30+ 上这两条都不存在（走 MediaStore 免权限写入）。 要自己核对：<code>aapt2 dump badging &lt;apk&gt; | grep permission</code>。</p>
+<p><strong>打包后还会多出一条「读」权限，这一步要说清楚</strong>：在 <strong>API ≤29</strong> 的设备上， 只要声明了 <code>WRITE_EXTERNAL_STORAGE</code>，Android 就会由系统<strong>隐含</strong>并同时授予 <code>READ_EXTERNAL_STORAGE</code>（<code>aapt2 dump badging</code> 会把它标成 <code>uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'</code>）。 我们<strong>从不读取</strong>你的照片或文件 —— 这条权限是平台行为带来的，不是我们要的； API 30+ 上这两条都不存在（走 MediaStore 免权限写入）。 另外 <code>application</code> 上还有一个 <strong><code>android:requestLegacyExternalStorage=&quot;true&quot;</code></strong>： 它是 <strong>Android 10（API 29）专用</strong>的兼容开关（让那一版的&quot;存相册&quot;走老路径）， 在 API 30+ 上<strong>被系统忽略</strong>。如实写在这里，是因为审核时能在包里查到它。</p>
+<p>要自己核对：<code>aapt2 dump badging &lt;apk&gt; | grep permission</code>。</p>
 <p>除此之外<strong>不申请</strong>定位、通讯录、相机、麦克风、日历、后台运行等任何权限。</p>
 <blockquote><p>实现说明：Flutter 模板默认只在 debug/profile 变体里加 INTERNET（为了热重载）， release 版原本没有这个权限。本项目把它显式声明到 main，使三个变体行为一致 —— 否则将来接上报地址时，release 版会<strong>静默失败</strong>且不报错。</p>
 </blockquote>
@@ -187,6 +189,13 @@
 <li><strong>如果这个版本启用了云备份</strong>（见 §3.1：当前发布的版本没有）， 删除全部数据时，会问你是否<strong>一并删除云端备份并注销</strong>，默认就是一并删。 实现上<strong>先删云端、失败就整个中止</strong>：宁可让你重试，也不会出现&quot;本机删了、云端还留着&quot; 那种状态 —— 那时本机的恢复码已经没了，云端那份就永远打不开了</li>
 </ul>
 <hr>
+<h3 id="五之二-投诉与举报">五之二、投诉与举报</h3>
+<ul>
+<li><strong>渠道</strong>：<code>https://github.com/sdknwdtvpv-sys/sport/issues</code>（就是文首表格里的联系方式）。</li>
+<li><strong>时限</strong>：<strong>15 个工作日</strong>内答复；需要更长时间会先告诉你原因。</li>
+<li><strong>更正权</strong>：训练记录、身体数据与各项设置都能在 App 里直接改 ——「全部数据」页可以逐条改， 「我」页改设置。改不了的地方（例如某条记录的性质）通过上面的渠道说一声即可。</li>
+<li><strong>对答复不满意</strong>：可以向属地网信、电信主管部门投诉举报；我们不会因此区别对待。</li>
+</ul>
 <h2 id="六-数据保留">六、数据保留</h2>
 <ul>
 <li>本机数据：你不删就一直在（这正是训练记录工具该有的行为）。</li>
@@ -195,7 +204,7 @@
 </ul>
 <hr>
 <h2 id="七-未成年人">七、未成年人</h2>
-<p>本产品不面向 14 周岁以下儿童，也不会有意收集其个人信息。 若你是未成年人的监护人并认为我们持有相关信息，请通过文末方式联系。</p>
+<p>本产品不面向 14 周岁以下儿童，也不会有意收集其个人信息。 若你是未成年人的监护人并认为我们持有相关信息，请通过<strong>文首表格里的联系方式</strong>找我们。 （此前这里写的是&quot;文末&quot; —— 那份联系方式在文档<strong>开头</strong>，属于悬空引用，2026-09-30 由一次对抗性审计抓出来。）</p>
 <hr>
 <h2 id="八-政策变更">八、政策变更</h2>
 <p>本政策更新时，我们会在应用内与版本更新说明中提示，并更新文首的生效日期。 涉及重大变更（例如开始真实上报）时，会单独征求你的同意。</p>

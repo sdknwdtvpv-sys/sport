@@ -143,5 +143,38 @@ void main() {
       expect(find.byType(PrivacyPolicyScreen), findsOneWidget,
           reason: '入口的 onTap 应当直接打开政策屏');
     });
+
+    testWidgets('「我」页也有「开源许可」，点开是 Flutter 的许可页', (WidgetTester tester) async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final DriftLocalStore store = DriftLocalStore(db);
+
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: ProfileScreen(
+            store: store,
+            repository: ExerciseRepository(db),
+            profile: ProfileRepository(db),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      final Finder tile = find.byKey(const Key('open-source-licenses'));
+      for (int i = 0; i < 12 && tile.evaluate().isEmpty; i++) {
+        await tester.drag(find.byType(ListView), const Offset(0, -260));
+        await tester.pumpAndSettle();
+      }
+      expect(tile, findsOneWidget,
+          reason: '政策里说"完整第三方清单在应用内可查"，那就得有这个入口');
+
+      // 同一条理由：直接触发 onTap（`tester.tap` 在懒构建列表里不可靠，
+      // 见上面那条测试的注释）
+      tester.widget<ListTile>(tile).onTap!();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(LicensePage), findsOneWidget);
+    });
   });
 }

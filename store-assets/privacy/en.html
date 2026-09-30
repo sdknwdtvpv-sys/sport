@@ -127,16 +127,16 @@
 <p>We <strong>never sell, rent, or share</strong> your personal information with third parties. No third-party advertising. No data brokers.</p>
 <hr>
 <h2 id="3-5-third-party-dependencies-sdk-list">3.5 Third-party dependencies (SDK list)</h2>
-<p>The following is <strong>all third-party code shipped inside the app package</strong> — not services we call, but libraries distributed with the app. Chinese app stores require third-party SDKs to be listed centrally with their name, function, and how they handle personal information, so here they are:</p>
+<p>The following are our <strong>direct dependencies</strong> — not services we call, but libraries distributed with the app. Chinese app stores require third-party SDKs to be listed centrally with their name, function, and how they handle personal information, so here they are:</p>
 <table>
-<thead><tr><th>Name</th><th>Version</th><th>Function</th><th>Does it collect or upload anything?</th><th>License</th></tr></thead>
+<thead><tr><th>Name</th><th>Version</th><th>Function</th><th>Does it collect or upload anything?</th><th>License</th><th>Link</th></tr></thead>
 <tbody>
-<tr><td><code>drift</code></td><td>2.35.0</td><td>Local database (a SQLite wrapper): workout records and settings live here</td><td><strong>No.</strong> Pure local reads and writes, no network code</td><td>MIT</td></tr>
-<tr><td><code>drift_flutter</code></td><td>0.3.1</td><td>Provides the platform-specific storage path for that database</td><td><strong>No</strong></td><td>MIT</td></tr>
-<tr><td><code>sqlite3</code></td><td>3.6.0</td><td>The actual SQLite engine (prebuilt binary per platform)</td><td><strong>No.</strong> It is the database itself</td><td>MIT</td></tr>
-<tr><td><code>share_plus</code></td><td>13.3.0</td><td>Hands a share card or backup file to the <strong>system</strong> share sheet</td><td><strong>No.</strong> It only calls system APIs — you choose the destination in the sheet; we never touch it</td><td>BSD-3-Clause</td></tr>
-<tr><td><code>gal</code></td><td>2.3.3</td><td>Saves the share card into the <strong>system photo library</strong></td><td><strong>No.</strong> Write-only; it <strong>never reads</strong> your photos</td><td>BSD-3-Clause</td></tr>
-<tr><td><code>cryptography</code></td><td>2.9.0</td><td>End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM)</td><td><strong>No.</strong> Pure Dart, no network</td><td>Apache-2.0</td></tr>
+<tr><td><code>drift</code></td><td>2.35.0</td><td>Local database (a SQLite wrapper): workout records and settings live here</td><td><strong>No.</strong> Pure local reads and writes, no network code</td><td>MIT</td><td><a href="https://pub.dev/packages/drift">pub.dev</a></td></tr>
+<tr><td><code>drift_flutter</code></td><td>0.3.1</td><td>Provides the platform-specific storage path for that database</td><td><strong>No</strong></td><td>MIT</td><td><a href="https://pub.dev/packages/drift_flutter">pub.dev</a></td></tr>
+<tr><td><code>sqlite3</code></td><td>3.6.0</td><td>The actual SQLite engine (prebuilt binary per platform)</td><td><strong>No.</strong> It is the database itself</td><td>MIT</td><td><a href="https://pub.dev/packages/sqlite3">pub.dev</a></td></tr>
+<tr><td><code>share_plus</code></td><td>13.3.0</td><td>Hands a share card or backup file to the <strong>system</strong> share sheet</td><td><strong>No.</strong> It only calls system APIs — you choose the destination in the sheet; we never touch it</td><td>BSD-3-Clause</td><td><a href="https://pub.dev/packages/share_plus">pub.dev</a></td></tr>
+<tr><td><code>gal</code></td><td>2.3.3</td><td>Saves the share card into the <strong>system photo library</strong></td><td><strong>No.</strong> Write-only; it <strong>never reads</strong> your photos</td><td>BSD-3-Clause</td><td><a href="https://pub.dev/packages/gal">pub.dev</a></td></tr>
+<tr><td><code>cryptography</code></td><td>2.9.0</td><td>End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM)</td><td><strong>No.</strong> Pure Dart, no network</td><td>Apache-2.0</td><td><a href="https://pub.dev/packages/cryptography">pub.dev</a></td></tr>
 </tbody>
 </table>
 <p>Three notes:</p>
@@ -144,6 +144,7 @@
 <li><strong>No advertising SDK, no analytics SDK, no crash-reporting SDK.</strong> None of the six libraries above sends anything to a third party.</li>
 <li>Our own code goes online only when <strong>you</strong> enable cloud backup, or when &quot;Help improve the product&quot; is on <strong>and</strong> the build has an endpoint configured — see 3.1 (the current release has none).</li>
 <li><strong>Development-only dependencies never ship</strong>: <code>build_runner</code> / <code>drift_dev</code> (code generation) and <code>integration_test</code> (our own test harness) exist only in development and CI.</li>
+<li><strong>The table above lists direct dependencies only.</strong> They pull in further transitive libraries (the Flutter framework, Skia, ICU, …). The complete list is available <strong>inside the app</strong> at &quot;Me → Open-source licences&quot; (Flutter's licence page enumerates every component shipped in the package). The per-library &quot;does it collect anything&quot; notes are hand-written for the libraries we chose; the authoritative answer for &quot;what is in the package&quot; is that page, not this table.</li>
 </ul>
 <h2 id="4-permissions">4. Permissions</h2>
 <p>The app declares two permissions; the second <strong>only takes effect on old systems</strong>:</p>
@@ -160,7 +161,8 @@
 <li>It only grants image writes, and is used only when you tap &quot;Save to gallery&quot;.</li>
 <li>The share card is <strong>rendered on your device</strong>: the image is drawn directly from the UI into a PNG and <strong>is never uploaded to our servers</strong>. Tapping &quot;Share&quot; hands the image to the system share sheet; which app you then pick (WeChat, Photos, …) is your choice, and that step is governed by that app's privacy policy.</li>
 </ul>
-<p><strong>One more &quot;read&quot; permission shows up after packaging, and we want to be explicit about it.</strong> On <strong>API ≤29</strong> devices, merely declaring <code>WRITE_EXTERNAL_STORAGE</code> makes Android <strong>imply</strong> and grant <code>READ_EXTERNAL_STORAGE</code> as well (<code>aapt2 dump badging</code> reports it as <code>uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'</code>). We <strong>never read</strong> your photos or files — that permission comes from platform behaviour, not from a request of ours; on API 30+ neither permission exists (MediaStore writes need none). Verify it yourself: <code>aapt2 dump badging &lt;apk&gt; | grep permission</code>.</p>
+<p><strong>One more &quot;read&quot; permission shows up after packaging, and we want to be explicit about it.</strong> On <strong>API ≤29</strong> devices, merely declaring <code>WRITE_EXTERNAL_STORAGE</code> makes Android <strong>imply</strong> and grant <code>READ_EXTERNAL_STORAGE</code> as well (<code>aapt2 dump badging</code> reports it as <code>uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'</code>). We <strong>never read</strong> your photos or files — that permission comes from platform behaviour, not from a request of ours; on API 30+ neither permission exists (MediaStore writes need none).</p>
+<p>There is also <strong><code>android:requestLegacyExternalStorage=&quot;true&quot;</code></strong> on <code>application</code>: an <strong>Android 10 (API 29) only</strong> compatibility switch (so the &quot;save to gallery&quot; path on that one release uses the legacy route), <strong>ignored on API 30+</strong>. We state it because a reviewer can find it in the package. Verify it yourself: <code>aapt2 dump badging &lt;apk&gt; | grep permission</code>.</p>
 <p>Beyond these, we request <strong>no</strong> location, contacts, camera, microphone, calendar, or background permissions.</p>
 <blockquote><p>Implementation note: the Flutter template only adds INTERNET to the debug/profile variants (for hot reload), so the release build originally had no such permission. We declare it in <code>main</code> so all three variants behave identically — otherwise, once a real endpoint is wired, release builds would <strong>fail silently</strong> with no error.</p>
 </blockquote>
@@ -183,6 +185,13 @@
 <li><strong>If a build has cloud backup enabled</strong> (see 3.1 — the current release does not), deleting all data will ask whether to delete the cloud backup as well and close the account; the default is to delete both. The order is deliberate: the cloud copy is deleted <strong>first</strong>, and if that fails the whole operation stops. We would rather have you retry than leave you with local data gone and a cloud copy you can no longer open.</li>
 </ul>
 <hr>
+<h3 id="5-5-complaints-and-reports">5.5 Complaints and reports</h3>
+<ul>
+<li><strong>Channel</strong>: <code>https://github.com/sdknwdtvpv-sys/sport/issues</code> (the contact in the table above).</li>
+<li><strong>Response time</strong>: we answer within <strong>15 working days</strong>; if it takes longer we say why first.</li>
+<li><strong>Right to rectification</strong>: workout records, body metrics and every setting can be edited in the app — the &quot;All data&quot; screen lets you edit records one by one, &quot;Me&quot; holds the settings.</li>
+<li><strong>Not satisfied with our answer?</strong> You may complain to your local cyberspace or telecom authority. We will not treat you differently for doing so.</li>
+</ul>
 <h2 id="6-retention">6. Retention</h2>
 <ul>
 <li>On-device data: kept until you delete it (which is what a workout log should do).</li>
@@ -191,7 +200,7 @@
 </ul>
 <hr>
 <h2 id="7-minors">7. Minors</h2>
-<p>This product is not directed at children under 14, and we do not knowingly collect their personal information. If you are a guardian and believe we hold such information, please contact us via the link above.</p>
+<p>This product is not directed at children under 14, and we do not knowingly collect their personal information. If you are a guardian and believe we hold such information, please contact us through the contact details in the table at the top of this policy.</p>
 <hr>
 <h2 id="8-changes-to-this-policy">8. Changes to this policy</h2>
 <p>When this policy changes we will announce it in-app and in the release notes, and update the effective date at the top. For material changes (for example, beginning real uploads) we will ask for your consent separately.</p>
