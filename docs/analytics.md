@@ -293,7 +293,28 @@ node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 1
 `schema_version` / `device_id` / `session_id` / `user_id`(null) / `app_version` /
 `platform` / `is_offline`。
 
-### 还没发的（10 个，以及它们卡住哪个指标）
+### 2026-09-30 补发：9 个事件已落地（`v1.19.0`）
+
+| 事件 | 落地位置 | 备注 |
+|---|---|---|
+| `suggestion_shown` / `suggestion_accepted` / `suggestion_modified` | `workout_controller.logSet` | 三条**同源**：只有真正记下一组时才算一次"展示"，于是 shown == accepted + modified，采纳率必然落在 [0,1]（见下方口径说明） |
+| `set_edited` | `workout_controller.onSheetConfirm` | **只记真的改了的那一项**：打开弹层又原样关掉不算编辑 |
+| `exercise_added` | `exercise_picker_screen._pick` | `add_method` 多了 `all`（「全部动作」那一区）；硬归到 `suggest` 会让字段说谎 |
+| `pr_achieved` | `workout_summary_screen._load` | 每次破纪录一条；`pr_type` = weight / reps / time |
+| `share_card_created` | `share_card_preview_screen` | `channel` 只有 `save` / `share`：系统分享面板**不会告诉我们发给了谁**，所以不假装知道微信 |
+| `body_metric_logged` | `body_metric_screen._save` | 只报 `has_weight` / `has_note` |
+| `onboarding_step` | `onboarding_screen` | 三处出口：两个「下一步」与「跳过」 |
+
+**口径说明（采纳率为什么这样记）**：`suggestion_shown` 原本可解释为"建议卡渲染时"，
+但那样会把"看了没练"的人也记进分母。现在改成**在记下这一组的同一刻记一次展示**，
+紧接着按"记下的值 == 建议的值"分流成 accepted / modified —— 三者严格同源，
+比率可解释，且每次展示都对应一次真实动作。
+
+**仍然不发**：`sync_failed` —— 全仓库 `SyncQueue` 只有 `InMemorySyncQueue` 一个实现，
+**根本没有真实同步**（离线优先、没有后端）。没有同步就没有"同步失败"，
+发了只会是假数据。等有了后端再补。
+
+### 当初的清单（10 个，以及它们卡住哪个指标）
 
 | 事件 | 谁在等它 |
 |---|---|

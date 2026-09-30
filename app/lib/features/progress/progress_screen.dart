@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
 import '../../core/sparkline.dart';
+import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
@@ -34,12 +35,16 @@ class ProgressScreen extends StatefulWidget {
     this.bodyMetrics,
     this.profile,
     this.onBodyUnitChanged,
+    this.analytics,
     this.unit = WeightUnit.kg,
     this.bodyUnit = BodyWeightUnit.kg,
     this.now,
   });
 
   final LocalStore store;
+
+  /// 埋点（可选）：身体数据页从这里拿去上报 `body_metric_logged`
+  final Analytics? analytics;
   final ExerciseRepository repository;
 
   /// 体重（S12）。**可选**：不传就没有体重卡片 ——
@@ -216,6 +221,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           },
           // 记完回来要刷新，否则卡片还显示旧体重
           onSaved: _load,
+          analytics: widget.analytics,
         ),
       ),
     );

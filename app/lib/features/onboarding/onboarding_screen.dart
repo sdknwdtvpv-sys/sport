@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
@@ -38,6 +39,7 @@ class OnboardingScreen extends StatefulWidget {
     required this.routines,
     required this.exercises,
     this.unit = WeightUnit.kg,
+    this.analytics,
   });
 
   final TodayPlanner planner;
@@ -45,6 +47,10 @@ class OnboardingScreen extends StatefulWidget {
   final RoutineRepository routines;
   final ExerciseRepository exercises;
   final WeightUnit unit;
+
+  /// 埋点（可选）。上报 `onboarding_step` —— 用来验证"≤3 步且可跳过"这条规格：
+  /// 现在是 3 步，但没人知道用户在第几步走了、跳过了哪一步。
+  final Analytics? analytics;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -78,6 +84,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ];
       _loading = false;
       _step = 2;
+    });
+  }
+
+  /// 离开某一步时上报（[skipped] = 是点「跳过」走的）。
+  ///
+  /// `_step` 在 State 上，所以这个方法也必须在这里 —— 放 widget 类里会拿不到它
+  /// （这轮我已经在 WorkoutScreen 上犯过一次同样的错）。
+  void _leaveStep({required bool skipped}) {
+    widget.analytics?.track('onboarding_step', <String, Object?>{
+      'step_index': _step,
+      'skipped': skipped,
     });
   }
 
@@ -127,8 +144,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   TextButton(
                     key: const Key('onboarding-skip'),
                     style: TextButton.styleFrom(foregroundColor: Tokens.text3),
-                    // 跳过 = 什么都不写，也不留痕。它是可选的，不记"已完成"。
-                    onPressed: () => Navigator.of(context).pop(),
+                    // 跳过 = 什么都不写，也不留痕（不记"已完成"）。
+                    // 但要上报**在哪一步跳的** —— "可跳过"这条规格的验证全靠它。
+                    onPressed: () {
+                      _leaveStep(skipped: true);
+                      Navigator.of(context).pop();
+                    },
                     child: const Text('跳过', style: TextStyle(fontSize: 14)),
                   ),
                 ],
@@ -191,7 +212,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _nextButton(
             key: 'onboarding-next-1',
             enabled: _goal != null,
-            onTap: () => setState(() => _step = 1),
+            onTap: () {
+              _leaveStep(skipped: false);
+              setState(() => _step = 1);
+            },
           ),
         ],
       );
@@ -243,7 +267,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             key: 'onboarding-next-2',
             label: '看看我的计划',
             enabled: _days != null,
-            onTap: _preview,
+            onTap: () {
+              _leaveStep(skipped: false);
+              _preview();
+            },
           ),
         ],
       );

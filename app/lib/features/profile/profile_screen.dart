@@ -329,6 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           profile: widget.profile,
           onUnitChanged: widget.onBodyUnitChanged,
           onSaved: _load,
+          analytics: widget.analytics,
         ),
       ),
     );

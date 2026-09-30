@@ -66,7 +66,7 @@
 </table>
 <p>这些数据存放在应用私有的本地数据库（SQLite，经 drift 管理），<strong>不会离开设备</strong>。</p>
 <h3 id="2-2-帮助改进产品-打开时才会产生的数据">2.2 「帮助改进产品」打开时才会产生的数据</h3>
-<p>这是一个<strong>默认开启、随时可关</strong>的开关（路径：「我」→「帮助改进产品」）。它只产生下面 9 类事件 —— 字段是<strong>有限且固定</strong>的（完整清单在 <code>docs/privacy-facts.json</code>， 由 <code>tool/privacy-audit.mjs</code> 与代码逐条对账）：</p>
+<p>这是一个<strong>默认开启、随时可关</strong>的开关（路径：「我」→「帮助改进产品」）。它只产生下面 18 类事件 —— 字段是<strong>有限且固定</strong>的（完整清单在 <code>docs/privacy-facts.json</code>， 由 <code>tool/privacy-audit.mjs</code> 与代码逐条对账）：</p>
 <table>
 <thead><tr><th>事件</th><th>什么时候发</th><th>携带的字段</th></tr></thead>
 <tbody>
@@ -79,6 +79,15 @@
 <tr><td><code>rest_completed</code></td><td>休息计时走完</td><td><code>exercise_id</code>、<code>planned_sec</code></td></tr>
 <tr><td><code>rest_skipped</code></td><td>手动跳过休息</td><td><code>exercise_id</code>、<code>planned_sec</code></td></tr>
 <tr><td><code>seed_import_failed</code></td><td>动作库刷新失败</td><td><code>error</code>（错误类型，不含内容）</td></tr>
+<tr><td><code>onboarding_step</code></td><td>每步引导（选择即前进 / 点跳过）</td><td><code>step_index</code>、<code>skipped</code></td></tr>
+<tr><td><code>exercise_added</code></td><td>从选动作页选中或新建一个动作</td><td><code>exercise_id</code>、<code>add_method</code></td></tr>
+<tr><td><code>set_edited</code></td><td>步进弹层确认时<strong>真的改了</strong>重量或次数</td><td><code>field</code>、<code>from</code>、<code>to</code>、<code>suggestion_id</code></td></tr>
+<tr><td><code>suggestion_shown</code></td><td>记下一组时，那一下是按建议来的</td><td><code>suggestion_id</code>、<code>exercise_id</code>、<code>reason_code</code>、<code>suggested_weight_kg</code>、<code>suggested_reps</code></td></tr>
+<tr><td><code>suggestion_accepted</code></td><td>记下的值与建议完全一致</td><td><code>suggestion_id</code>、<code>reason_code</code></td></tr>
+<tr><td><code>suggestion_modified</code></td><td>记下的值与建议不同</td><td><code>suggestion_id</code>、<code>reason_code</code>、<code>delta_weight_kg</code>、<code>delta_reps</code>、<code>direction</code></td></tr>
+<tr><td><code>pr_achieved</code></td><td>这次训练破了纪录</td><td><code>exercise_id</code>、<code>pr_type</code>、<code>value</code>、<code>prev_value</code></td></tr>
+<tr><td><code>share_card_created</code></td><td>生成分享卡（存相册 / 系统分享）</td><td><code>channel</code></td></tr>
+<tr><td><code>body_metric_logged</code></td><td>记录身体数据</td><td><code>has_weight</code>、<code>has_note</code> —— <strong>只报&quot;填没填&quot;，体重数值不出设备</strong></td></tr>
 </tbody>
 </table>
 <p><strong>每个事件都会另外带上这 7 个公共字段</strong>（它们回答&quot;这是哪台设备、哪一次使用、哪个版本&quot;）：</p>
@@ -180,7 +189,7 @@
 <table>
 <thead><tr><th>说法</th><th>代码/文件位置</th></tr></thead>
 <tbody>
-<tr><td>9 类埋点事件与字段</td><td><code>app/lib</code> 下所有 <code>track(...)</code> 调用点；<strong>逐条对账见 <code>tool/privacy-audit.mjs</code></strong></td></tr>
+<tr><td>18 类埋点事件与字段</td><td><code>app/lib</code> 下所有 <code>track(...)</code> 调用点；<strong>逐条对账见 <code>tool/privacy-audit.mjs</code></strong></td></tr>
 <tr><td>7 个公共字段（含 <code>device_id</code>）</td><td><code>app/lib/analytics/analytics_context.dart</code>；匿名 ID 存在 <code>analytics_meta</code> 表</td></tr>
 <tr><td>删除数据会清掉匿名标识</td><td><code>app/lib/data/drift_local_store.dart</code>（同一事务内删 <code>analyticsMeta</code>）</td></tr>
 <tr><td>事实源与政策正文的对应</td><td><code>docs/privacy-facts.json</code>（机器可查）</td></tr>

@@ -45,7 +45,7 @@ This data lives in the app's private local database (SQLite, managed by drift) a
 ### 2.2 Collected only when "Help improve the product" is ON
 
 This is a **switch that is on by default and can be turned off at any time**
-(Profile → "Help improve the product"). It produces exactly **9 event types** with a
+(Profile → "Help improve the product"). It produces exactly **18 event types** with a
 **fixed, limited** set of fields (the full list lives in `docs/privacy-facts.json` and is
 checked against the code by `tool/privacy-audit.mjs`):
 
@@ -60,6 +60,15 @@ checked against the code by `tool/privacy-audit.mjs`):
 | `rest_completed` | Rest timer finishes | `exercise_id`, `planned_sec` |
 | `rest_skipped` | Rest skipped manually | `exercise_id`, `planned_sec` |
 | `seed_import_failed` | Exercise-library refresh failed | `error` (error type only, no content) |
+| `onboarding_step` | Each onboarding step (advanced or skipped) | `step_index`, `skipped` |
+| `exercise_added` | An exercise is picked or created | `exercise_id`, `add_method` |
+| `set_edited` | The stepper was confirmed with a **real** change | `field`, `from`, `to`, `suggestion_id` |
+| `suggestion_shown` | A set was logged while a suggestion was on screen | `suggestion_id`, `exercise_id`, `reason_code`, `suggested_weight_kg`, `suggested_reps` |
+| `suggestion_accepted` | The logged value matched the suggestion | `suggestion_id`, `reason_code` |
+| `suggestion_modified` | The logged value differed from the suggestion | `suggestion_id`, `reason_code`, `delta_weight_kg`, `delta_reps`, `direction` |
+| `pr_achieved` | A personal record was broken | `exercise_id`, `pr_type`, `value`, `prev_value` |
+| `share_card_created` | A share card was saved or shared | `channel` |
+| `body_metric_logged` | A body-metric entry was saved | `has_weight`, `has_note` — **only whether a value was entered; the value itself never leaves the device** |
 
 **Every event also carries these 7 common fields:**
 
@@ -203,7 +212,7 @@ for your consent separately.
 
 | Statement | Source |
 |---|---|
-| The 9 analytics events and their fields | `app/lib/features/workout/workout_controller.dart` (`track(...)` call sites) |
+| The 18 analytics events and their fields | `app/lib/features/workout/workout_controller.dart` (`track(...)` call sites) |
 | Switch defaults to ON and is persisted | `app/lib/data/db.dart` (`analyticsEnabled`, default `true`), `app/lib/data/profile_repository.dart` |
 | When off, nothing is recorded | `app/lib/analytics/analytics.dart` (`NoopAnalytics`, and `if (!enabled) return;`) |
 | Nothing is uploaded today | `app/lib/main.dart` (`_NullTransport`), `app/lib/data/sync_queue.dart` (`InMemorySyncQueue`) |

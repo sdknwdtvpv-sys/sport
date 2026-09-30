@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../analytics/analytics.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/db.dart';
 import '../../data/profile_repository.dart';
@@ -28,6 +29,7 @@ class BodyMetricScreen extends StatefulWidget {
     super.key,
     required this.repository,
     this.unit = BodyWeightUnit.kg,
+    this.analytics,
     this.profile,
     this.clock,
     this.onSaved,
@@ -43,6 +45,9 @@ class BodyMetricScreen extends StatefulWidget {
   /// 用户的理由很直接：称体重的时候才想起来"我要按斤看"，
   /// 那时不该退出去到「我」页翻设置。
   final BodyWeightUnit unit;
+
+  /// 埋点（可选）。上报 `body_metric_logged` —— **只报"填没填"，不报数值**（见隐私政策 §6）。
+  final Analytics? analytics;
 
   /// 用户偏好仓库。传了才会把实时切换的单位**落库**（测试可以不传）。
   final ProfileRepository? profile;
@@ -187,6 +192,14 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       weightKg: _parsedWeight,
       note: _note.text.trim().isEmpty ? null : _note.text.trim(),
     );
+
+    // `body_metric_logged`：**保存成功之后**才报 —— 放在 `_load` 里会变成
+    // "一打开页面就报记了一次体重"（第一次就是这么写错的，测试当场抓到）。
+    // 只报"填没填"，数值一律不出设备（隐私政策 §6）。
+    widget.analytics?.track('body_metric_logged', <String, Object?>{
+      'has_weight': _parsedWeight != null,
+      'has_note': _note.text.trim().isNotEmpty,
+    });
 
     final List<BodyMetricData> recent = await widget.repository.recent();
     if (!mounted) return;

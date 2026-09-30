@@ -15,6 +15,7 @@ import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart';
 import '../../data/exercise_repository.dart';
+import '../../analytics/analytics.dart';
 import '../../data/local_store.dart';
 import 'custom_exercise_screen.dart';
 import 'exercise_detail_screen.dart';
@@ -25,9 +26,13 @@ class ExercisePickerScreen extends StatefulWidget {
     required this.repository,
     this.store,
     this.unit = WeightUnit.kg,
+    this.analytics,
   });
 
   final ExerciseRepository repository;
+
+  /// 埋点。**可选**：不传就什么也不上报（测试与"单独打开这个页面"的场景）。
+  final Analytics? analytics;
 
   /// 用来取「最近做过」。可选是为了不破坏只关心搜索的既有测试，
   /// 但**生产环境必须传** —— 不传就没有最近做过分区。
@@ -111,7 +116,22 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     });
   }
 
-  void _pick(ExerciseData e) => Navigator.of(context).pop(e);
+  /// 选中一个动作返回。**同时上报它是从哪条路进来的**（`add_method`）。
+  ///
+  /// 为什么要问"从哪进来的"：选动作页有三个分区（最近做过 / 常用 / 全部动作）
+  /// 外加搜索与新建。用户的入口分布直接说明"推荐有没有用"——
+  /// 如果人人都从「全部动作」里翻，那「常用」就是白排的。
+  ///
+  /// 注：doc 里的枚举原本只有 suggest/search/recent/custom，这里多了 `all`
+  /// （「全部动作」那一区）—— 硬把它归到 suggest 会让这个字段说谎，
+  /// `docs/analytics.md` 已同步。
+  void _pick(ExerciseData e, {String method = 'all'}) {
+    widget.analytics?.track('exercise_added', <String, Object?>{
+      'exercise_id': e.id,
+      'add_method': method,
+    });
+    Navigator.of(context).pop(e);
+  }
 
   /// 新建自定义动作（规格 S3 的「右上角」入口）。
   ///
@@ -295,12 +315,14 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
 
   /// 搜索 / 筛部位时的平铺列表 —— 这时用户已经知道自己在找什么。
   Widget _flatList() {
+    // 平铺列表 = 搜索结果的形态（`_load` 里一旦有关键词就走这条路）
     return ListView.separated(
       key: const Key('picker-list'),
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s6),
       itemCount: _rows.length,
       separatorBuilder: (_, __) => const Divider(color: Tokens.line, height: 1),
-      itemBuilder: (BuildContext context, int i) => _tile(_rows[i]),
+      itemBuilder: (BuildContext context, int i) =>
+          _tile(_rows[i], method: 'search'),
     );
   }
 
@@ -326,15 +348,15 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     final List<Widget> children = <Widget>[];
     if (_recent.isNotEmpty) {
       children.add(_sectionHeader('最近做过'));
-      children.addAll(_recent.map(_tile));
+      children.addAll(_recent.map((ExerciseData e) => _tile(e, method: 'recent')));
     }
     if (popular.isNotEmpty) {
       children.add(_sectionHeader('常用'));
-      children.addAll(popular.map(_tile));
+      children.addAll(popular.map((ExerciseData e) => _tile(e, method: 'suggest')));
     }
     if (rest.isNotEmpty) {
       children.add(_sectionHeader('全部动作'));
-      children.addAll(rest.map(_tile));
+      children.addAll(rest.map((ExerciseData e) => _tile(e, method: 'all')));
     }
 
     return ListView(
@@ -367,12 +389,12 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     ));
   }
 
-  Widget _tile(ExerciseData e) {
+  Widget _tile(ExerciseData e, {String method = 'all'}) {
     final bool bodyweight = e.weightIncrement == 0;
     return ListTile(
       key: Key('exercise-${e.id}'),
       contentPadding: EdgeInsets.zero,
-      onTap: () => _pick(e),
+      onTap: () => _pick(e, method: method),
       // 长按看详情：这一行的副标题已经带了说明要点，长按才是"我要看全的"
       // （与「长按已完成的那一组可以撤销」是同一套手势语言）。
       onLongPress: () => _openDetail(e),

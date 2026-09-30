@@ -371,6 +371,7 @@ class _HomeShellState extends State<HomeShell> {
           routines: _routines,
           exercises: _repo,
           unit: _unit,
+          analytics: _analytics,
         ),
       ),
     );
@@ -498,6 +499,7 @@ class _HomeShellState extends State<HomeShell> {
             repository: _repo,
             store: _store,
             unit: _unit,
+            analytics: _analytics,
           ),
         ),
       );
@@ -562,6 +564,7 @@ class _HomeShellState extends State<HomeShell> {
           workoutId: workoutId,
           unit: _unit,
           stretches: stretches,
+          analytics: _analytics,
         ),
       ),
     );
@@ -602,6 +605,7 @@ class _HomeShellState extends State<HomeShell> {
             repository: _repo,
             bodyMetrics: _bodyMetrics,
             profile: _profile,
+            analytics: _analytics,
             unit: _unit,
             bodyUnit: _bodyUnit,
             // 身体数据页里切了体重单位 → 整棵树按新单位重建

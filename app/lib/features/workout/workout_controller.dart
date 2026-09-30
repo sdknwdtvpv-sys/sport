@@ -91,6 +91,19 @@ class WorkoutController extends ChangeNotifier {
   late final Workout workout;
   Suggestion? _suggestion;
 
+  /// 建议的稳定标识：**采纳率要靠它把"展示"与"采纳/手改"串成一条链**。
+  ///
+  /// 一次训练里同一个动作只算一条建议（引擎在同一次训练内不会改口：
+  /// 加重/减重都发生在**下次**训练，见 `progression.dart`），
+  /// 所以 `workoutId + exerciseId` 足以唯一标识。
+  String? get suggestionId => _suggestion == null
+      ? null
+      : 'sg_${workout.id}_${exercise.id}';
+
+  /// 打开步进弹层时的原值 —— 用来判断用户**到底改没改**（`set_edited`）。
+  double? _sheetFromWeight;
+  int? _sheetFromReps;
+
   double _weightKg = 0;
   int _reps = 0;
 
@@ -229,6 +242,9 @@ class WorkoutController extends ChangeNotifier {
   /// 长按大按钮 500ms：打开修改弹层。**不记录任何一组。**
   void onLongPress() {
     analytics.countTap(TapKind.longPress);
+    // 记下打开弹层前的值：只有真的改了才算一次"编辑"（见 onSheetConfirm）
+    _sheetFromWeight = _weightKg;
+    _sheetFromReps = _reps;
     _sheetOpen = true;
     _hint = '步进调整，不需要键盘';
     _notify();
@@ -260,6 +276,30 @@ class WorkoutController extends ChangeNotifier {
     analytics.countTap(TapKind.sheetConfirm);
     _sheetOpen = false;
     _hint = null;
+
+    // `set_edited`：**只记真的改了的那一项**。
+    // "打开弹层又原样关掉"不是编辑 —— 把它算进去会让"编辑成本"这个指标虚高，
+    // 而那个指标正是用来判断"建议是不是不该被改"的。
+    final double? fromW = _sheetFromWeight;
+    final int? fromR = _sheetFromReps;
+    if (fromW != null && fromW != _weightKg) {
+      analytics.track('set_edited', <String, Object?>{
+        'field': 'weight',
+        'from': fromW,
+        'to': _weightKg,
+        'suggestion_id': suggestionId,
+      });
+    }
+    if (fromR != null && fromR != _reps) {
+      analytics.track('set_edited', <String, Object?>{
+        'field': 'reps',
+        'from': fromR,
+        'to': _reps,
+        'suggestion_id': suggestionId,
+      });
+    }
+    _sheetFromWeight = null;
+    _sheetFromReps = null;
     _notify();
   }
 
@@ -388,6 +428,55 @@ class WorkoutController extends ChangeNotifier {
       'completed_at': record.completedAtMs,
       'rpe': record.rpe,
     });
+
+    // ── 建议采纳链：展示 → 采纳 / 手改 ────────────────────────────────
+    //
+    // 口径（写进 docs/analytics.md §2.2 的注）：**在这条组记录被记下的这一刻
+    // 记一次"展示"**，紧接着按"记的值 == 建议的值"分流成采纳或手改。
+    //
+    // 为什么不在按钮渲染时记"展示"：那会把"用户看了但没记"也算进分母，
+    // 而分母里混进"根本没打算练这一组"的人，采纳率就没法看了。
+    // 这样三者严格同源：shown == accepted + modified，比率必然落在 [0,1]。
+    //
+    // 热身组不算：建议针对的是正式组，热身是"先来两组轻的"，不是对建议的表态。
+    if (_suggestion != null && record.setType == SetType.normal) {
+      final Suggestion sg = _suggestion!;
+      analytics.track('suggestion_shown', <String, Object?>{
+        'suggestion_id': suggestionId,
+        'exercise_id': exercise.id,
+        'reason_code': sg.reasonCode.name,
+        'suggested_weight_kg': sg.weightKg,
+        'suggested_reps': sg.reps,
+      });
+
+      final bool sameWeight = sg.weightKg == record.weightKg ||
+          (sg.weightKg == null && record.weightKg == null);
+      final bool sameReps = sg.reps == record.reps;
+      final bool sameDistance = !isDistance ||
+          (plan.targetDistanceM == null || record.distanceM == plan.targetDistanceM);
+
+      if (sameWeight && sameReps && sameDistance) {
+        analytics.track('suggestion_accepted', <String, Object?>{
+          'suggestion_id': suggestionId,
+          'reason_code': sg.reasonCode.name,
+        });
+      } else {
+        final double? dw = (sg.weightKg == null || record.weightKg == null)
+            ? null
+            : record.weightKg! - sg.weightKg!;
+        analytics.track('suggestion_modified', <String, Object?>{
+          'suggestion_id': suggestionId,
+          'reason_code': sg.reasonCode.name,
+          'delta_weight_kg': dw,
+          'delta_reps': record.reps - sg.reps,
+          // 方向取"重量优先"，没有重量（自重/时长）就看次数 ——
+          // 这是"往难了改还是往轻了改"，正是引擎失效点的定位信息
+          'direction': (dw ?? (record.reps - sg.reps).toDouble()) >= 0
+              ? 'up'
+              : 'down',
+        });
+      }
+    }
 
     analytics.track('set_logged', <String, Object?>{
       'workout_id': workout.id,

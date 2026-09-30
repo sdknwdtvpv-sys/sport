@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' show ExerciseData;
@@ -25,6 +26,7 @@ class WorkoutSummaryScreen extends StatefulWidget {
     this.unit = WeightUnit.kg,
     this.exporter = const PluginShareCardExporter(),
     this.stretches = const <ExerciseData>[],
+    this.analytics,
   });
 
   final SummaryService service;
@@ -37,6 +39,10 @@ class WorkoutSummaryScreen extends StatefulWidget {
   ///
   /// 为空就整块不显示 —— 不做"没有数据也占一块地方"的界面。
   final List<ExerciseData> stretches;
+
+  /// 埋点（可选）。用它上报 `pr_achieved` —— 破纪录是留存钩子，
+  /// 而"这个钩子有没有用"目前没有任何数据能回答。
+  final Analytics? analytics;
 
   /// 分享卡的交付实现。测试里换成假的（插件调用在 widget 测试里跑不了）。
   final ShareCardExporter exporter;
@@ -59,6 +65,19 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
     final WorkoutSummary? s =
         await widget.service.build(widget.workoutId, unit: widget.unit);
     if (!mounted) return;
+    // `pr_achieved`：每破一次纪录上报一条。
+    // 放在这里（而不是界面渲染里）是因为它必须**只报一次** ——
+    // 渲染函数会被调用很多次，把埋点放进去会重复计数。
+    for (final SetPr p in s?.prs ?? const <SetPr>[]) {
+      widget.analytics?.track('pr_achieved', <String, Object?>{
+        'exercise_id': p.exerciseId,
+        // 有重量的比公斤、自重的比次数、按时长的比秒数
+        'pr_type': p.isTime ? 'time' : (p.isBodyweight ? 'reps' : 'weight'),
+        'value': p.value,
+        'prev_value': p.previousBest,
+      });
+    }
+
     setState(() {
       _summary = s;
       _loading = false;
@@ -366,6 +385,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               builder: (_) => ShareCardPreviewScreen(
                 summary: s,
                 exporter: widget.exporter,
+                analytics: widget.analytics,
               ),
             ),
           ),

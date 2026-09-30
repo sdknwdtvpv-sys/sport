@@ -40,7 +40,7 @@
 ### 2.2 「帮助改进产品」打开时才会产生的数据
 
 这是一个**默认开启、随时可关**的开关（路径：「我」→「帮助改进产品」）。它只产生下面
-9 类事件 —— 字段是**有限且固定**的（完整清单在 `docs/privacy-facts.json`，
+18 类事件 —— 字段是**有限且固定**的（完整清单在 `docs/privacy-facts.json`，
 由 `tool/privacy-audit.mjs` 与代码逐条对账）：
 
 | 事件 | 什么时候发 | 携带的字段 |
@@ -54,6 +54,15 @@
 | `rest_completed` | 休息计时走完 | `exercise_id`、`planned_sec` |
 | `rest_skipped` | 手动跳过休息 | `exercise_id`、`planned_sec` |
 | `seed_import_failed` | 动作库刷新失败 | `error`（错误类型，不含内容） |
+| `onboarding_step` | 每步引导（选择即前进 / 点跳过） | `step_index`、`skipped` |
+| `exercise_added` | 从选动作页选中或新建一个动作 | `exercise_id`、`add_method` |
+| `set_edited` | 步进弹层确认时**真的改了**重量或次数 | `field`、`from`、`to`、`suggestion_id` |
+| `suggestion_shown` | 记下一组时，那一下是按建议来的 | `suggestion_id`、`exercise_id`、`reason_code`、`suggested_weight_kg`、`suggested_reps` |
+| `suggestion_accepted` | 记下的值与建议完全一致 | `suggestion_id`、`reason_code` |
+| `suggestion_modified` | 记下的值与建议不同 | `suggestion_id`、`reason_code`、`delta_weight_kg`、`delta_reps`、`direction` |
+| `pr_achieved` | 这次训练破了纪录 | `exercise_id`、`pr_type`、`value`、`prev_value` |
+| `share_card_created` | 生成分享卡（存相册 / 系统分享） | `channel` |
+| `body_metric_logged` | 记录身体数据 | `has_weight`、`has_note` —— **只报"填没填"，体重数值不出设备** |
 
 **每个事件都会另外带上这 7 个公共字段**（它们回答"这是哪台设备、哪一次使用、哪个版本"）：
 
@@ -191,7 +200,7 @@
 
 | 说法 | 代码/文件位置 |
 |---|---|
-| 9 类埋点事件与字段 | `app/lib` 下所有 `track(...)` 调用点；**逐条对账见 `tool/privacy-audit.mjs`** |
+| 18 类埋点事件与字段 | `app/lib` 下所有 `track(...)` 调用点；**逐条对账见 `tool/privacy-audit.mjs`** |
 | 7 个公共字段（含 `device_id`） | `app/lib/analytics/analytics_context.dart`；匿名 ID 存在 `analytics_meta` 表 |
 | 删除数据会清掉匿名标识 | `app/lib/data/drift_local_store.dart`（同一事务内删 `analyticsMeta`） |
 | 事实源与政策正文的对应 | `docs/privacy-facts.json`（机器可查） |

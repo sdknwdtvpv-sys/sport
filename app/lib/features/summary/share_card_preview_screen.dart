@@ -10,6 +10,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../analytics/analytics.dart';
 import 'share_card.dart';
 import 'share_card_exporter.dart';
 import 'workout_summary.dart';
@@ -20,6 +21,7 @@ class ShareCardPreviewScreen extends StatefulWidget {
     required this.summary,
     this.exporter = const PluginShareCardExporter(),
     this.capture = captureCardPng,
+    this.analytics,
   });
 
   final WorkoutSummary summary;
@@ -34,6 +36,10 @@ class ShareCardPreviewScreen extends StatefulWidget {
   /// 挂死了 10 分钟）。抓图本身在那个文件里已经验证过了，这里只需要验证
   /// "抓到之后交给了谁、传了什么"。
   final Future<Uint8List> Function(GlobalKey key) capture;
+
+  /// 埋点（可选）。上报 `share_card_created` —— 一期唯一的社交形态，
+  /// 有没有人真的把卡发出去，只能靠这个事件回答。
+  final Analytics? analytics;
 
   @override
   State<ShareCardPreviewScreen> createState() => _ShareCardPreviewScreenState();
@@ -83,12 +89,15 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
   }
 
   Future<void> _share() => _export((Uint8List png) async {
+        // channel 用 'share'：系统分享面板**不会告诉我们用户发给了谁**，
+        // 所以不假装知道是微信还是别的（doc 里写的 wechat 只能等接了微信 SDK 再说）。
+        widget.analytics?.track('share_card_created', <String, Object?>{'channel': 'share'});
         await widget.exporter.shareToSystem(png, fileName: _fileName);
       });
 
   Future<void> _save() => _export((Uint8List png) async {
-        final bool ok =
-            await widget.exporter.saveToGallery(png, fileName: _fileName);
+        widget.analytics?.track('share_card_created', <String, Object?>{'channel': 'save'});
+        final bool ok = await widget.exporter.saveToGallery(png, fileName: _fileName);
         _toast(ok ? '已存进相册' : '没有相册权限，没存成');
       });
 

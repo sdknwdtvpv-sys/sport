@@ -6,7 +6,57 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
-## 未切版（v1.18.0 之后的改动，尚未打 tag）
+## 未切版（v1.19.0 之后的改动，尚未打 tag）
+
+## v1.19.0 · 补发 9 个埋点事件（建议采纳链终于有数了）
+
+`docs/analytics.md` §9 那张"还没发的"清单里，**9 个现在能做的都做了**。
+它们卡住的不是功能，是**两个反指标**：建议采纳率与编辑成本 ——
+产品的核心卖点是「今天该上多少，它替你算好」，而"算得准不准"此前**没有任何数据能证伪**。
+
+| 事件 | 落地位置 |
+|---|---|
+| `suggestion_shown` / `accepted` / `modified` | `workout_controller.onBigButtonTap` |
+| `set_edited` | `workout_controller.onSheetConfirm` |
+| `exercise_added` | `exercise_picker_screen._pick` |
+| `pr_achieved` | `workout_summary_screen._load` |
+| `share_card_created` | `share_card_preview_screen` |
+| `body_metric_logged` | `body_metric_screen._save`（**保存成功之后**） |
+| `onboarding_step` | `onboarding_screen`（两个"下一步" + 跳过） |
+
+### 三个刻意的口径决定（都写进了 `docs/analytics.md`）
+
+1. **`suggestion_shown` 记在"记下这一组的那一刻"**，而不是建议卡渲染时。
+   后者会把"看了但没练"的人也记进分母。现在三条**同源**：
+   `shown == accepted + modified`，采纳率必然落在 [0,1]，且每次展示都对应一次真实动作。
+2. **`set_edited` 只记真的改了的那一项**：打开步进弹层又原样关掉不是编辑 ——
+   算进去会让"编辑成本"虚高，而那个指标正是用来判断"建议该不该被改"的。
+3. **`share_card_created` 的 channel 只有 `save` / `share`**：系统分享面板
+   **不会告诉我们用户发给了谁**，所以不假装知道是微信（doc 原先写的 `wechat` 得等接了微信 SDK）。
+   同理 `exercise_added` 的 `add_method` 多了 `all`（「全部动作」那一区）——
+   硬归到 `suggest` 会让这个字段说谎。
+
+### 一个**没做**的：`sync_failed`
+
+全仓库 `SyncQueue` 只有 `InMemorySyncQueue` 一个实现 —— **根本没有真实同步**
+（离线优先、没有后端）。没有同步就没有"同步失败"，发了只会是假数据。
+等有了后端再补。这条理由也写进了 `analytics.md`，免得下次有人照着清单直接做。
+
+### 隐私面扩大了一倍（这是代价，如实记）
+
+埋点从 **9 类 → 18 类**。每个新事件都要同步三处：
+`docs/privacy-facts.json` + 中文政策 + 英文政策正文 —— 由 `tool/privacy-audit.mjs`
+硬卡着，少一处不许合并（这轮它一次报了 9 条未披露，然后逐条补齐才放行）。
+
+### 测试
+
+新增 14 条（`analytics_new_events_test.dart`），覆盖 9 个事件。
+其中三条是"**不该发的时候没发**"：热身组不算对建议的表态、
+原样关掉弹层不算编辑、`body_metric_logged` 不带任何数值。
+
+写测试时又抓到自己的两个错：① 把 `body_metric_logged` 插进了 `_load()`
+（一打开页面就报"记了一次体重"，测试当场红）；② 真 IO（读种子、drift 写库）
+写在 `testWidgets` 的假时钟里 —— 那条测试"did not complete"挂了两分钟。
 
 ## v1.18.0 · 产品优化：动作详情页 + 把热身/拉伸接进主流程
 

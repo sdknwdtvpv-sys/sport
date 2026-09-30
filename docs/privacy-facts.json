@@ -89,6 +89,87 @@
       "fields": [
         "error"
       ]
+    },
+    {
+      "name": "onboarding_step",
+      "when": "每步引导（选择即前进 / 点跳过）",
+      "fields": [
+        "step_index",
+        "skipped"
+      ]
+    },
+    {
+      "name": "exercise_added",
+      "when": "从选动作页选中或新建一个动作",
+      "fields": [
+        "exercise_id",
+        "add_method"
+      ]
+    },
+    {
+      "name": "set_edited",
+      "when": "步进弹层确认时**真的改了**重量或次数",
+      "fields": [
+        "field",
+        "from",
+        "to",
+        "suggestion_id"
+      ]
+    },
+    {
+      "name": "suggestion_shown",
+      "when": "记下一组时，那一下是按建议来的（建议就显示在大按钮上）",
+      "fields": [
+        "suggestion_id",
+        "exercise_id",
+        "reason_code",
+        "suggested_weight_kg",
+        "suggested_reps"
+      ]
+    },
+    {
+      "name": "suggestion_accepted",
+      "when": "记下的值与建议完全一致",
+      "fields": [
+        "suggestion_id",
+        "reason_code"
+      ]
+    },
+    {
+      "name": "suggestion_modified",
+      "when": "记下的值与建议不同",
+      "fields": [
+        "suggestion_id",
+        "reason_code",
+        "delta_weight_kg",
+        "delta_reps",
+        "direction"
+      ]
+    },
+    {
+      "name": "pr_achieved",
+      "when": "这次训练破了纪录",
+      "fields": [
+        "exercise_id",
+        "pr_type",
+        "value",
+        "prev_value"
+      ]
+    },
+    {
+      "name": "share_card_created",
+      "when": "生成分享卡（存相册 / 系统分享）",
+      "fields": [
+        "channel"
+      ]
+    },
+    {
+      "name": "body_metric_logged",
+      "when": "记录身体数据（**只报填没填，数值不出设备**）",
+      "fields": [
+        "has_weight",
+        "has_note"
+      ]
     }
   ],
   "commonFields": [

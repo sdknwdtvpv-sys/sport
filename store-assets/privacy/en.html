@@ -67,7 +67,7 @@
 </table>
 <p>This data lives in the app's private local database (SQLite, managed by drift) and <strong>never leaves the device</strong>.</p>
 <h3 id="2-2-collected-only-when-help-improve-the-product-is-on">2.2 Collected only when &quot;Help improve the product&quot; is ON</h3>
-<p>This is a <strong>switch that is on by default and can be turned off at any time</strong> (Profile → &quot;Help improve the product&quot;). It produces exactly <strong>9 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
+<p>This is a <strong>switch that is on by default and can be turned off at any time</strong> (Profile → &quot;Help improve the product&quot;). It produces exactly <strong>18 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
 <table>
 <thead><tr><th>Event</th><th>When</th><th>Fields</th></tr></thead>
 <tbody>
@@ -80,6 +80,15 @@
 <tr><td><code>rest_completed</code></td><td>Rest timer finishes</td><td><code>exercise_id</code>, <code>planned_sec</code></td></tr>
 <tr><td><code>rest_skipped</code></td><td>Rest skipped manually</td><td><code>exercise_id</code>, <code>planned_sec</code></td></tr>
 <tr><td><code>seed_import_failed</code></td><td>Exercise-library refresh failed</td><td><code>error</code> (error type only, no content)</td></tr>
+<tr><td><code>onboarding_step</code></td><td>Each onboarding step (advanced or skipped)</td><td><code>step_index</code>, <code>skipped</code></td></tr>
+<tr><td><code>exercise_added</code></td><td>An exercise is picked or created</td><td><code>exercise_id</code>, <code>add_method</code></td></tr>
+<tr><td><code>set_edited</code></td><td>The stepper was confirmed with a <strong>real</strong> change</td><td><code>field</code>, <code>from</code>, <code>to</code>, <code>suggestion_id</code></td></tr>
+<tr><td><code>suggestion_shown</code></td><td>A set was logged while a suggestion was on screen</td><td><code>suggestion_id</code>, <code>exercise_id</code>, <code>reason_code</code>, <code>suggested_weight_kg</code>, <code>suggested_reps</code></td></tr>
+<tr><td><code>suggestion_accepted</code></td><td>The logged value matched the suggestion</td><td><code>suggestion_id</code>, <code>reason_code</code></td></tr>
+<tr><td><code>suggestion_modified</code></td><td>The logged value differed from the suggestion</td><td><code>suggestion_id</code>, <code>reason_code</code>, <code>delta_weight_kg</code>, <code>delta_reps</code>, <code>direction</code></td></tr>
+<tr><td><code>pr_achieved</code></td><td>A personal record was broken</td><td><code>exercise_id</code>, <code>pr_type</code>, <code>value</code>, <code>prev_value</code></td></tr>
+<tr><td><code>share_card_created</code></td><td>A share card was saved or shared</td><td><code>channel</code></td></tr>
+<tr><td><code>body_metric_logged</code></td><td>A body-metric entry was saved</td><td><code>has_weight</code>, <code>has_note</code> — <strong>only whether a value was entered; the value itself never leaves the device</strong></td></tr>
 </tbody>
 </table>
 <p><strong>Every event also carries these 7 common fields:</strong></p>
@@ -177,7 +186,7 @@
 <table>
 <thead><tr><th>Statement</th><th>Source</th></tr></thead>
 <tbody>
-<tr><td>The 9 analytics events and their fields</td><td><code>app/lib/features/workout/workout_controller.dart</code> (<code>track(...)</code> call sites)</td></tr>
+<tr><td>The 18 analytics events and their fields</td><td><code>app/lib/features/workout/workout_controller.dart</code> (<code>track(...)</code> call sites)</td></tr>
 <tr><td>Switch defaults to ON and is persisted</td><td><code>app/lib/data/db.dart</code> (<code>analyticsEnabled</code>, default <code>true</code>), <code>app/lib/data/profile_repository.dart</code></td></tr>
 <tr><td>When off, nothing is recorded</td><td><code>app/lib/analytics/analytics.dart</code> (<code>NoopAnalytics</code>, and <code>if (!enabled) return;</code>)</td></tr>
 <tr><td>Nothing is uploaded today</td><td><code>app/lib/main.dart</code> (<code>_NullTransport</code>), <code>app/lib/data/sync_queue.dart</code> (<code>InMemorySyncQueue</code>)</td></tr>
