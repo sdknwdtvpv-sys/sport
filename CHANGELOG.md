@@ -60,6 +60,35 @@ v1.33.0 装上去逐屏走了一遍，~25 屏、`E/flutter` 0 条、`overflowed`
 * 真机重新安装 **v1.34.0（versionCode 45）**，走查「我」页新结构；
 * 软著材料同步到 V1.34.0（源程序量与页数以当次导出为准）。
 
+### 同版追加：工具层的清理（把复制粘贴收成一处，把不可测的逻辑变成能测的）
+
+没有动 `app/`，只清**门禁与守卫自己**那一摊 —— 来源是一次代码审计（2026-10-01）：
+
+* **`verify.sh` 里 14 段复制粘贴的"跑某工具自检"** → 抽成一个 `selfcheck` 函数
+  （762 行，比之前少 51 行；原来是 813）。行为**逐字不变**，并且把函数的成功/失败两条路径
+  单独跑过一遍（通过 → ✓ + `fail=0`；失败 → 完整输出 + ✗ + `fail=1`）。
+* **找 `aapt2` 这件事被写了两遍，而且两遍口径不同** → 新增 `tool/lib/android-sdk.mjs`：
+  一处口径（`ANDROID_SDK_ROOT` → `ANDROID_HOME` → `dev-env.sh` 的 DEPS → `~/Library/Android/sdk`），
+  `check-dist.mjs` 与 `privacy-audit.mjs` 都改成用它，并带自检。
+  （这条最值钱：以前"换了台机器，一个工具找得到 aapt2、另一个找不到"，
+  症状是**这条检查安静地没做**。）
+* **三个 `check-doc-*` 各抄了一遍"要核哪些文档"** → 新增 `tool/lib/docs.mjs`
+  （枚举 + "历史说法"的窗口判定），三处共用，并带自检。
+* **`CHANGELOG` 结构检查原先写在 `verify.sh` 的 `node -e '…'` 字符串里**（所以它自己没法被测）
+  → 抽成 `tool/check-changelog.mjs`：降序、不重复、**每个小节都从行首开始**（2026-09-30 那个
+  "粘到上一行"的真缺陷就是从这里溜过去的），带 6 条自检。
+* **新得到的自检**：`tool/lib/android-sdk.mjs`、`tool/lib/docs.mjs`、`tool/check-changelog.mjs`
+  都进了门禁第 2 层（`selfcheck`），共 16 段。
+* 顺带修好一条**被这次重构暴露出来的守卫盲区**：`check-guards-wired.mjs` 只认
+  `node tool/x.mjs`，于是 `selfcheck tool/x.mjs …` 这种写法让它把两个守卫误报成"从不跑" ——
+  判据已扩展并补了自检用例（"用 selfcheck 跑的守卫也算在跑"）。
+
+审计里**没做**的两件（记在这里，别让它们又沉下去）：
+1. **胶囊控件**（`Container` + `Tokens.volt` + `rPill` 那套）在 7 个页面里各写了一遍 ——
+   统一要动 7 个屏的视觉，而当前**没有 golden 测试**兜底，风险不划算；
+2. **`main.dart`（741 行）里那一长串 `_open*` 导航方法**可以抽出、`cloud_backup_screen.dart`（787 行）
+   也能再拆 —— 两处都要动 `app/`（切版 + 真机重装），值一次专门的批次。
+
 ## v1.33.0 · 六件拍板的事：只支持 iPhone、备份范围定死、动作名表用起来、HealthKit 推到后续版本、CI 就是门禁
 
 这一版没有新功能，全部来自**你拍板的六件事**（`docs/your-todo.md` §③ 那一屏）。

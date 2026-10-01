@@ -25,7 +25,8 @@
  * 退出码：任何一处坏表 → 1。
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { docFiles } from './lib/docs.mjs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,8 +41,7 @@ const isSeparator = (line) => /^\|[\s\-:|]+\|$/.test(line.replace(/\\\|/g, 'x'))
 
 function inspect(root) {
   const problems = [];
-  const docs = ['README.md'];
-  for (const f of readdirSync(join(root, 'docs'))) if (f.endsWith('.md')) docs.push(`docs/${f}`);
+  const docs = docFiles(root);
   let tables = 0;
 
   for (const rel of docs) {

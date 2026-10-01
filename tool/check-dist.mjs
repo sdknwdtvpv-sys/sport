@@ -30,6 +30,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import { findAapt2 } from './lib/android-sdk.mjs';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -48,25 +49,6 @@ function expectations() {
 }
 
 /** 找 aapt2（安卓 build-tools 里那个）。找不到返回 null —— 调用方决定这算不算失败。 */
-function findAapt2() {
-  const sdk = process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME
-    || (() => {
-      // 与 verify.sh 同一个口径：DEPS 的真源是 tool/dev-env.sh
-      try {
-        const dev = readFileSync(join(ROOT, 'tool/dev-env.sh'), 'utf8');
-        const m = /^DEPS="([^"]+)"/m.exec(dev);
-        return m ? join(m[1], 'android-sdk') : null;
-      } catch { return null; }
-    })();
-  if (!sdk || !existsSync(join(sdk, 'build-tools'))) return null;
-  const versions = readdirSync(join(sdk, 'build-tools')).sort().reverse();
-  for (const v of versions) {
-    const p = join(sdk, 'build-tools', v, 'aapt2');
-    if (existsSync(p)) return p;
-  }
-  return null;
-}
-
 function inspect(root, { aapt2 = findAapt2() } = {}) {
   const problems = [];
   const facts = [];

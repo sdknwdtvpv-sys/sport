@@ -22,7 +22,8 @@
  * 退出码：任何一处过期 → 1。
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { docFiles, isHistorical } from './lib/docs.mjs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,26 +46,17 @@ const PATTERNS = [
   [/(?:跑的?是|装的?是)\s*\*{0,2}v(\d+\.\d+\.\d+)/, '设备上的版本', 'version'],
   [/在\s*v(\d+\.\d+\.\d+)\s*上(?:重编)?重核/, '重核版本', 'version'],
 ];
-const HISTORY = /历史|曾经|之前|旧|改来|当时|停在|CHANGELOG|复盘/;
-
-/**
- * 一处版本说法要不要跳过，看**它自己周围**有没有"这是过去的事"的标记。
- *
- * ⚠️ 这里踩过一次坑（2026-09-30）：判据原本是**整行**匹配 HISTORY —— 而文档里的表格行很长，
- * 行尾一句"旧行写的 59.8M 是 v1.22 那会儿的"就能把**同一行里当期的版本说法**一起放过。
- * 结果 `release-checklist.md` 的"构建链"行写着"在 v1.32.2 上重编重核"，
- * 而仓库已经 v1.33.0 —— 守卫全绿。现在改成看**这一处说法前后 40 个字**。
- */
-const WINDOW = 40;
-function isHistorical(line, index, len) {
-  return HISTORY.test(line.slice(Math.max(0, index - WINDOW), index + len + WINDOW));
-}
+// "这是过去的事"的判定与**文档枚举**都搬到 `tool/lib/docs.mjs` 了（三处守卫共用一份）：
+//   * 枚举：以前三个 check-doc-* 各抄一遍，加一个文档目录要改三处；
+//   * 历史窗口：⚠️ 这里踩过一次坑（2026-09-30）——判据原本是**整行**匹配，
+//     而文档里的表格行很长，行尾一句"旧行写的 59.8M 是 v1.22 那会儿的"就能把
+//     **同一行里当期的版本说法**一起放过（`release-checklist.md` 的"构建链"行
+//     写着 v1.32.2、而仓库已经 v1.33.0，守卫全绿）。现在看这一处说法前后 40 个字。
 
 function inspect(root) {
   const problems = [];
   const { version, build } = truth(root);
-  const docs = ['README.md'];
-  for (const f of readdirSync(join(root, 'docs'))) if (f.endsWith('.md')) docs.push(`docs/${f}`);
+  const docs = docFiles(root);
   let checked = 0;
   for (const rel of docs) {
     let text;

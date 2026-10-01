@@ -20,6 +20,7 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { findAapt2, sdkRoots as sdkRootsList } from './lib/android-sdk.mjs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -612,23 +613,11 @@ if (process.argv[1] && process.argv[1].endsWith('privacy-audit.mjs')) {
     // 结果就是 `READ_EXTERNAL_STORAGE`（gal 带的）谁都没发现，是我手工 aapt2 才翻出来的。
     // 所以现在：① 按 ANDROID_SDK_ROOT 找；② **既然你明确要了 --apk，找不到就不是跳过而是报错**。
     const { execFileSync } = await import('node:child_process');
-    const sdkRoots = [
-      process.env.ANDROID_SDK_ROOT,
-      process.env.ANDROID_HOME,
-      "/Volumes/Elliot's SSD/harness-deps/android-sdk",
-      join(process.env.HOME ?? '', 'Library/Android/sdk'),
-    ].filter(Boolean);
-    let aapt2 = null;
-    for (const root of sdkRoots) {
-      const bt = join(root, 'build-tools');
-      if (!existsSync(bt)) continue;
-      const versions = readdirSync(bt).sort();
-      for (const v of versions.reverse()) {
-        const cand = join(bt, v, 'aapt2');
-        if (existsSync(cand)) { aapt2 = cand; break; }
-      }
-      if (aapt2) break;
-    }
+    // aapt2 的查找口径只有一处（tool/lib/android-sdk.mjs）——
+    // 以前这里内联了一条写死的 `/Volumes/...` 路径，而 check-dist 走的是另一套，
+    // 于是"换了台机器，一个找得到、另一个找不到"（2026-10-01 合成一处）。
+    const sdkRoots = sdkRootsList();
+    const aapt2 = findAapt2();
     if (!aapt2) {
       console.error('✗ 你要了 --apk，但找不到 aapt2 —— **这不是"跳过"，是这条检查没做**。');
       console.error('  设好 ANDROID_SDK_ROOT（或装上 Android SDK build-tools）再跑。');

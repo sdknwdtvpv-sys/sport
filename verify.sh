@@ -61,6 +61,25 @@ with_timeout() {
   return $rc
 }
 
+# ── 跑某个工具的**自检**（`--selftest`）─────────────────────────────────
+#
+# 为什么抽成一个函数：这段 if/else 在门禁里原本**复制了 14 遍**（每加一个守卫就再抄一份），
+# 想改一次行为（比如"失败时多打几行"）就得改 14 处 —— 2026-10-01 抽出来。
+# 行为**与原来逐字一致**：成功打自检的最后一行摘要 + ✓；失败打完整输出 + ✗，
+# 并把整条门禁判红（`fail=1`）。
+selfcheck() {
+  local tool="$1" ok="$2" bad="$3"
+  if node "$tool" --selftest >"$LOG" 2>&1; then
+    strip "$LOG" | tail -1
+    echo "${GREEN}✓${OFF} $ok"
+  else
+    strip "$LOG"
+    echo "${RED}✗ $bad${OFF}"
+    fail=1
+  fi
+  echo
+}
+
 echo "${BOLD}练了么 · 自检${OFF}"
 echo "${DIM}目录：$REPO${OFF}"
 echo
@@ -212,133 +231,69 @@ fi
 # plist 读写库的**自检**：核 iOS 产物要读 Info.plist，macOS 上靠 /usr/bin/plutil，
 # 而 CI 是 ubuntu（**没有 plutil**）—— 那就得有一个自己的解析器，且它必须被验过
 # （解析/序列化互逆、坏输入会抛、与系统 plutil 结果一致）。
-if node tool/lib/plist.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} plist 读写库自检通过（解析/序列化互逆、坏输入会抛）"
-else
-  strip "$LOG"; echo "${RED}✗ plist 读写库自检失败${OFF}"; fail=1
-fi
-echo
+# 公共零件的自检：Android SDK 的查找口径（aapt2）与文档守卫的公共零件（枚举 + 历史窗口）。
+# 这两份代码以前各在别处复制过一份，抽出来之后**必须有自检**，否则下次又被抄回去。
+selfcheck tool/lib/android-sdk.mjs "Android SDK 查找口径自检通过（DEPS/环境变量优先级、写死路径没长回来）" "Android SDK 查找口径的自检失败"
+
+selfcheck tool/lib/docs.mjs "文档公共零件自检通过（枚举一处、历史判定按窗口）" "文档公共零件的自检失败"
+
+selfcheck tool/lib/plist.mjs "plist 读写库自检通过（解析/序列化互逆、坏输入会抛）" "plist 读写库自检失败"
 
 # iOS 产物核对工具的**自检**（造几份动过手脚的 .app，要求它抓得住）。
 # 安卓那边有 check-aab.mjs 核产物，iOS 这边此前没有任何东西核过产物；
 # 2026-09-30 首次真的编出 iOS 包之后才补上（真产物怎么核见 docs/release-checklist.md）。
-if node tool/check-ios-app.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} iOS 产物核对自检通过（改坏任何一项都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ iOS 产物核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-ios-app.mjs "iOS 产物核对自检通过（改坏任何一项都藏不住）" "iOS 产物核对工具的自检失败"
 
 # 密文核验工具的**自检**：它故意造一份"ct 其实是明文"的库，要求工具报错。
 # 少了这一步，那条检查可能只是"永远打印 ✓"的假守卫（2026-09-30 补）。
-if node tool/check-ciphertext.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 密文核验自检通过（明文藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 密文核验工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-ciphertext.mjs "密文核验自检通过（明文藏不住）" "密文核验工具的自检失败"
 
 # 商店截图核对工具的**自检**：截图是全仓库唯一没人核过的交付物，
 # 而且真坏过一次 —— `11-body-metric.png` 比 App 旧一个版本（v1.31.0 前多了一道
 # 敏感信息单独同意的门，脚本却假定"点开就是表单"）。
-if node tool/check-screenshots.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 截图核对自检通过（少一张/多一张/尺寸不对都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 截图核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-screenshots.mjs "截图核对自检通过（少一张/多一张/尺寸不对都藏不住）" "截图核对工具的自检失败"
 
 # 交付目录核对工具的**自检**：dist/ 是交付口（真机装 APK、商店传 AAB、软著交 PDF），
 # 而生成物最容易出的事故就是"留着上一版的"——2026-09-30 真的发生过两次。
-if node tool/check-dist.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 交付目录核对自检通过（旧版本/没版本号/坏包都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 交付目录核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-dist.mjs "交付目录核对自检通过（旧版本/没版本号/坏包都藏不住）" "交付目录核对工具的自检失败"
 
 # CI 与门禁关系核对工具的**自检**：「CI 绿 = 门禁绿」是写在 README 与政策里的**承诺**
 # （2026-09-30 起 CI 跑的就是这条 `verify.sh`）。用 --fast 偷跳第 5 层、混进门禁不管的
 # 命令、版本没钉死，都会当场变假，而本地门禁按定义复现不了 CI 自己加的东西。
-if node tool/check-ci.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} CI↔门禁核对自检通过（偷跑命令/少步骤/没钉版本都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ CI↔门禁核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-ci.mjs "CI↔门禁核对自检通过（偷跑命令/少步骤/没钉版本都藏不住）" "CI↔门禁核对工具的自检失败"
 
 # "守卫有没有真的在跑"的**自检**：写了一个守卫 ≠ 它在门禁里跑 ——
 # `check-aab.mjs` 就曾经存在很久却从没在门禁里跑过（一个不跑的守卫等于没有）。
-if node tool/check-guards-wired.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 守卫接线自检通过（存在但从不跑、假的代跑关系都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 守卫接线核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-guards-wired.mjs "守卫接线自检通过（存在但从不跑、假的代跑关系都藏不住）" "守卫接线核对工具的自检失败"
 
 # 文档版本核对工具的**自检**：版本号是这仓库最勤劳的一类漂移 ——
 # 第 2 层已守"三处真机版本"，但文档里还有别处**陈述现状**（产物行、终局核验、iOS 那一行）。
-if node tool/check-doc-versions.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 文档版本核对自检通过（过期的 versionCode/设备版本/重核版本都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 文档版本核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-doc-versions.mjs "文档版本核对自检通过（过期的 versionCode/设备版本/重核版本都藏不住）" "文档版本核对工具的自检失败"
 
 # 文档表格核对工具的**自检**：这些表大半是要照着填的（商店表单/软著申请表/清单），
 # 而 markdown 表格坏起来很安静 —— 被截断、错列，只有眼睛看得出来。
-if node tool/check-doc-tables.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 文档表格核对自检通过（截断/错列藏不住，转义竖线不误报）"
-else
-  strip "$LOG"; echo "${RED}✗ 文档表格核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-doc-tables.mjs "文档表格核对自检通过（截断/错列藏不住，转义竖线不误报）" "文档表格核对工具的自检失败"
 
 # 文档路径核对工具的**自检**：文档里到处都是 `tool/xxx.mjs` 这种引用，
 # 文件改名/搬家之后它们会**悄悄指空** —— 读者照着敲就是"文件不存在"。
-if node tool/check-doc-paths.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 文档路径核对自检通过（指空的引用藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 文档路径核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-doc-paths.mjs "文档路径核对自检通过（指空的引用藏不住）" "文档路径核对工具的自检失败"
 
 # 用户可见文案核对工具的**自检**：`Text` 不渲染 markdown —— `**` 是三个星号印在屏幕上。
 # 这个项目为此付过三次学费（同意弹层、政策里的待办、收集清单开头的说明），每次都是眼睛先看见的。
-if node tool/check-user-text.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 用户文案核对自检通过（字符串里的记号藏不住，注释里的不误报）"
-else
-  strip "$LOG"; echo "${RED}✗ 用户文案核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-user-text.mjs "用户文案核对自检通过（字符串里的记号藏不住，注释里的不误报）" "用户文案核对工具的自检失败"
 
 # 商店表单对账工具的**自检**：两张商店表单是提交材料，填错是拒审/下架的理由，
 # 而它们此前只是两份 Markdown（埋点字段改过好几轮，每次都可能让某张表变成假话）。
-if node tool/check-store-forms.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 商店表单对账自检通过（漏字段/漏披露/抄错变体都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 商店表单对账工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-store-forms.mjs "商店表单对账自检通过（漏字段/漏披露/抄错变体都藏不住）" "商店表单对账工具的自检失败"
 
 # 部署包核对工具的**自检**：`server/deploy/` 里全是配置文本，漂了平时看不出来、
 # 只在部署那一刻炸（或者更糟：不炸但违背承诺，比如反代开了访问日志 = 记了客户端 IP）。
-if node tool/check-deploy.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 部署包核对自检通过（端口/日志/加固/占位符都藏不住）"
-else
-  strip "$LOG"; echo "${RED}✗ 部署包核对工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/check-deploy.mjs "部署包核对自检通过（端口/日志/加固/占位符都藏不住）" "部署包核对工具的自检失败"
 
 # 截图"压平"工具（去掉 alpha + 16 位降 8 位）的自检：App Store 只收 8 位无 alpha，
 # 而 iOS 模拟器截出来的是 **16 位 RGBA**（2026-09-30 实测）。读的那 5 种 filter
 # 也在这里逐种验过 —— 读错了会一路错到商店上传被拒。
-if node tool/flatten-png.mjs --selftest >"$LOG" 2>&1; then
-  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 截图压平自检通过（16 位降 8 位 / 去 alpha / 5 种 filter）"
-else
-  strip "$LOG"; echo "${RED}✗ 截图压平工具的自检失败${OFF}"; fail=1
-fi
-echo
+selfcheck tool/flatten-png.mjs "截图压平自检通过（16 位降 8 位 / 去 alpha / 5 种 filter）" "截图压平工具的自检失败"
 
 # 隐私政策对账：客户端会发的事件/字段、manifest 权限，都必须与政策正文一致。
 # **这是硬门禁** —— 加了一个新埋点字段却不在政策里写清楚，不许合并。
@@ -366,33 +321,14 @@ else
   strip "$LOG"; echo "${RED}✗ 软著材料里的源程序量过期（改文档或重新导出）${OFF}"; fail=1
 fi
 
-# CHANGELOG 的版本小节必须**降序**排列。
-# 2026-09-30 抓到的：前几轮的插入落错了位置（v1.24.0~v1.25.2 被塞到 v1.23.1 之后，
-# 而 v1.26.0 干脆漏写）—— 人翻不出来，机器一眼能查。
-if node -e '
-  const fs = require("fs");
-  const text = fs.readFileSync("CHANGELOG.md", "utf8");
-  const vs = [...text.matchAll(/^## v(\d+)\.(\d+)\.(\d+)/gm)]
-    .map((m) => [Number(m[1]), Number(m[2]), Number(m[3])]);
-  // 别只看行首那些：**粘到上一行去的标题**（少一个换行）在 `^## v` 眼里根本不存在，
-  // 于是"降序"照样成立 —— 2026-09-30 就是这么漏掉一个真缺陷的：
-  // `…→ 1.27.2+36。## v1.27.1 · iOS 上「存相册」…` 挤在同一行，守护全程绿灯。
-  const anywhere = [...text.matchAll(/## v(\d+)\.(\d+)\.(\d+)/g)].length;
-  if (anywhere !== vs.length) {
-    console.log(`有 ${anywhere - vs.length} 个版本小节没从行首开始（被粘到上一行？少了个换行）`);
-    process.exit(1);
-  }
-  for (let i = 1; i < vs.length; i++) {
-    const a = vs[i - 1], b = vs[i];
-    const desc = a[0] !== b[0] ? a[0] > b[0] : (a[1] !== b[1] ? a[1] > b[1] : a[2] >= b[2]);
-    if (!desc) { console.log(`v${a.join(".")} 之后出现了 v${b.join(".")}`); process.exit(1); }
-  }
-  process.exit(0);
-' >"$LOG" 2>&1; then
-  echo "${GREEN}✓${OFF} CHANGELOG 的版本小节是降序的"
+# CHANGELOG 的结构：版本小节**降序**、**不重复**、且都从**行首**开始。
+# 2026-09-30 抓到的：粘到上一行去的标题在 `^## v` 眼里根本不存在，于是"降序"照样成立，
+# 守护全程绿灯。当时修了判据，但那段逻辑是写在 bash 里的 `node -e`（**自己没法被测**）——
+# 2026-10-01 抽成 `tool/check-changelog.mjs` 并补了 6 条自检。
+if node tool/check-changelog.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} CHANGELOG 结构（降序 / 不重复 / 都从行首开始）"
 else
-  echo "${RED}✗ CHANGELOG 的版本小节不是降序：$(strip "$LOG" | head -1)${OFF}"
-  fail=1
+  strip "$LOG"; echo "${RED}✗ CHANGELOG 结构不对${OFF}"; fail=1
 fi
 
 # 环境文档必须与**磁盘上的真实布局**一致（2026-09-30 补）。
@@ -787,6 +723,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          tool/check-user-text.mjs tool/check-doc-paths.mjs tool/check-doc-tables.mjs \
          tool/check-doc-versions.mjs tool/check-guards-wired.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/lib/plist.mjs tool/check-deploy.mjs \
+         tool/check-changelog.mjs tool/lib/android-sdk.mjs tool/lib/docs.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
          tool/ios-deps.mjs docs/store-listing-ios.md docs/your-todo.md \

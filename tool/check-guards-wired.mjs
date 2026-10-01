@@ -70,9 +70,17 @@ function inspect(root) {
 
   // 直接跑的判据要分语言：`.mjs` 认 `node <路径>`；`.dart` 认 `<dart 或 $DART_BIN> <路径>`
   // （第一版只认 node，于是把 `app/tool/check_domain.dart` 误报成"从不跑" —— 它其实在第 3 层跑）
-  const runsDirectly = (g) => (g.endsWith('.dart')
-    ? new RegExp(`(?:dart|DART_BIN"?)\\s+${g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(verify)
-    : verify.includes(`node ${g}`));
+  //
+  // ⚠️ 2026-10-01：门禁里那 14 段"跑某工具自检"的 if/else 抽成了一个 `selfcheck` 函数
+  // （见 `verify.sh`），调用形式变成 `selfcheck tool/x.mjs "…" "…"` —— 于是
+  // 这条判据**当场就把两个守卫报成"从不跑"**（它只认 `node <路径>`）。
+  // 判据跟着扩展：`node <路径>` 与 `selfcheck <路径>` 都算"在门禁里直接跑"。
+  const runsDirectly = (g) => {
+    if (g.endsWith('.dart')) {
+      return new RegExp(`(?:dart|DART_BIN"?)\\s+${g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(verify);
+    }
+    return verify.includes(`node ${g}`) || verify.includes(`selfcheck ${g}`);
+  };
 
   for (const g of guards) {
     if (runsDirectly(g)) continue;                               // ① 直接跑
@@ -114,6 +122,8 @@ function selftest() {
   };
   const cases = [
     ['直接跑的守卫 → 绿', 'node tool/check-a.mjs\n', ['tool/check-a.mjs'], true, null],
+    // 门禁把"跑自检"抽成 selfcheck 之后，这条写法也必须算"在跑"（2026-10-01）
+    ['用 selfcheck 跑的守卫 → 也算直接跑', 'selfcheck tool/check-a.mjs "过了" "红了"\n', ['tool/check-a.mjs'], true, null],
     ['存在但从不跑 → 必须报', 'echo hi\n', ['tool/check-a.mjs'], false, '不跑的守卫'],
     ['代跑关系成立 → 绿', 'node tool/delegator.mjs\n', ['tool/check-b.mjs', 'tool/delegator.mjs'],
       true, null],

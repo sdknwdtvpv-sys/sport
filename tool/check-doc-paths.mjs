@@ -23,6 +23,7 @@
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { docFiles } from './lib/docs.mjs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -66,10 +67,7 @@ const TOKEN = /`([A-Za-z0-9_./\-\u4e00-\u9fff]+\.[A-Za-z0-9]{2,12})`/g;
 function inspect(root) {
   const problems = [];
   let checked = 0;
-  const docs = ['README.md'];
-  for (const f of readdirSync(join(root, 'docs'))) {
-    if (f.endsWith('.md')) docs.push(`docs/${f}`);
-  }
+  const docs = docFiles(root);
   const exists = (p) => {
     try { readFileSync(join(root, p)); return true; } catch { return false; }
   };
