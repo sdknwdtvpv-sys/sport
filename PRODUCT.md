@@ -94,7 +94,7 @@
 
 ## 7. MVP 范围
 
-**必须有**：内置动作库（150–200 个，覆盖 80% 场景 —— **已产出 165 个**，见 `seed/exercises.json`）、记录组 / 次 / 重、上次数据对比、休息计时、规则引擎建议、3–5 个计划模板、容量一条线、PR、离线、CSV 导出。（**HealthKit / Health Connect 不在 MVP** —— 2026-09-30 拍板推到后续版本，见 `tech-decisions.md` 客户端选型）
+**必须有**：内置动作库（原定 150–200 个，覆盖 80% 场景 —— **实际已产出 351 个**，见 `seed/exercises.json`；数字由 `tool/check-doc-facts.mjs` 每次对着种子核）、记录组 / 次 / 重、上次数据对比、休息计时、规则引擎建议、3–5 个计划模板、容量一条线、PR、离线、CSV 导出。（**HealthKit / Health Connect 不在 MVP** —— 2026-09-30 拍板推到后续版本，见 `tech-decisions.md` 客户端选型）
 
 **一期不做**：饮食 / 碳循环（只留体重 + 一句备注）、社区、视频课程、Apple Watch 独立 App、RPE / 超级组 / 递减组、多端实时协同。
 
@@ -152,7 +152,7 @@
 - `.github/workflows/ci.yml` —— CI：契约层（Node）+ 应用层（Flutter）双 job
 - `docs/tech-decisions.md` —— 技术选型、合规、以及"什么时候才做大模型"的触发条件
 - `docs/data-model.md` —— 数据库表结构、关键查询、规则引擎伪代码
-- `seed/exercises.json` / `seed/exercises.sql` —— 165 个内置动作种子数据（改 `seed/parts/*.json` 后跑 `node seed/build.mjs` 重建，自动校验）
+- `seed/exercises.json` / `seed/exercises.sql` —— 351 个内置动作种子数据（改 `seed/parts/*.json` 后跑 `node seed/build.mjs` 重建，自动校验）
 - `engine/progression.mjs` —— 规则引擎规范参考实现（唯一权威定义）
 - `engine/vectors.json` —— 28 条规范测试向量 + 3 条跨用例硬红线
 - `engine/run-tests.mjs` —— 测试跑分器

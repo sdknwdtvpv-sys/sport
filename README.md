@@ -265,7 +265,7 @@ flutter test
 |---|---|---|---|
 | 产品定义 | `PRODUCT.md` | 散文 | 创始人 / 合伙人 |
 | 交互 | `prototype/index.html`（**13 屏，零依赖，双击就开**）+ `docs/interaction-spec.md` | **原型可交互 + widget 测试** | 设计 / 客户端 |
-| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：351 条种子可直接导入；drift 落库有契约测试，**每一次 schema 迁移（v1→v10）都有测试** | 客户端 / 后端 |
+| 数据 | `docs/data-model.md` + `seed/exercises.sql` + `app/lib/data/db.dart` | **可执行**：351 条种子可直接导入；drift 落库有契约测试，**每一次 schema 迁移（v1→v15）都有测试** | 客户端 / 后端 |
 | 规则引擎 | `engine/progression.mjs` + `app/lib/domain/progression.dart` | **双实现 + 共用 45 条向量** | 客户端（移植验收标准） |
 | 埋点 | `docs/analytics.md` + `docs/analytics-sdk.md` | 规格 + `tap_count` 有单测 | 客户端 / 数据 |
 | 验证 | `docs/usability-test.md` + `-kit.md` | 流程手册 + **7 个数字可一键算**（`tool/usability-report.mjs`）；现场打印 `usability/记录表.md` | 你本人 |
@@ -304,7 +304,7 @@ engine/vectors.json ──┬──> engine/run-tests.mjs        （Node）
 | 5 | `docs/analytics-sdk.md` | 接真实上报地址 —— 客户端管线已就绪（outbox + 批量 ≤100 + 退避重试 + **训练期间挂起**），现用 `_NullTransport` 兜底 |
 
 **当前进度**：引擎、交互红线、埋点计量这三样"最容易做坏"的东西，已被**六层门禁**（测试 + 变异测试）锁住；
-UI 已实现 **8 屏**（S1 / S2 / S3 / S4 / S5 / S7 / S8 / S10），动作库 **351 个**
+UI 已实现 **13 屏**（S1–S13，见下面「已实现」那节；S14 会员页因缺支付基建明确不做），动作库 **351 个**
 （318 力量 + 11 热身 + 13 有氧 + 9 拉伸，其中有氧支持**记距离**）。
 还没做的见上文「现在还没有的东西（别期待）」，下一步见 [`ROADMAP.md`](ROADMAP.md)。
 

@@ -302,15 +302,26 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
+**当前 `schemaVersion = 15`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+`tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红）。
+
 | 版本 | 改动 | 需要注意的地方 |
 |---|---|---|
-| v2 | 新增 `body_metric` | 只加表 |
-| v3 | 新增 `routine` / `routine_item` | 只加表 |
+| v1 | 初始 schema（动作库 / 训练 / 训练项 / 组记录 / 档案 / 埋点 outbox） | 老库的起点 |
+| v2 | 新增 `body_metric`（身体数据 S12） | 只加表 |
+| v3 | 新增 `routine` / `routine_item`（计划模板 S11） | 只加表 |
 | v4 | `exercise` 新增 `category`（DEFAULT `'strength'`；词表 strength/warmup/cardio/stretch） | **第一次给已有表加列** —— 老库升级后 318 个动作全部落成 `strength`（它们本来就是力量动作，这正是要的结果），不需要数据搬迁 |
-| v9 | `exercise` 新增 `instructions` | 动作说明。老库恒为 null（那时 App 里没有这个字段）—— 覆盖率工具会如实算进去 |
-| v8 | `exercise` 新增 `default_target_distance_m` | 距离处方。老库里它恒为 null —— 老库本来就没有距离动作（v1.4.0 才补进来），null 是准确的历史 |
-| v6 | `user_profile` 新增 `body_weight_unit` | 第三次加列。老档案里缺省 `'kg'` —— 在"体重单位"这个概念出现之前，体重显示的确实是 kg（`unit_pref`），所以缺省值就是当时的真实行为 |
-| v5 | `set_record` 新增 `distance_m` | 第二次加列。老库里的组记录距离恒为 **null**（"没记过距离"），**不是 0**（0 表示"真的没动"）—— 这是加列迁移最容易被搞错的地方，有专门的迁移测试守着 |
+| v5 | `set_record` 新增 `distance_m` | 老库里的组记录距离恒为 **null**（"没记过距离"），**不是 0**（0 表示"真的没动"）—— 加列迁移最容易被搞错的地方，有专门的迁移测试守着 |
+| v6 | `user_profile` 新增 `body_weight_unit`（体重的显示单位） | 老档案缺省 `'kg'` —— 在"体重单位"这个概念出现之前，体重显示的确实是 kg，所以缺省值就是当时的真实行为 |
+| v7 | 新增 `analytics_meta`（埋点的本机记账） | 只加表。老库升上来是空的 —— 首次启动会生成设备 ID 并记下首启时间，**升级用户的"首次 app_open"从这一版算起**（这正是要的） |
+| v8 | `exercise` 新增 `default_target_distance_m`（距离处方） | 老库恒为 null —— 老库本来就没有距离动作（v1.4.0 才补进来），null 是准确的历史 |
+| v9 | `exercise` 新增 `instructions`（动作说明） | 老库恒为 null（那时 App 里没有这个字段）—— 覆盖率工具会如实算进去，不假装有 |
+| v10 | 新增 `backup_account`（云备份账号 / 恢复码） | 只加表。老库升上来是空的 —— 那正是要的：**云备份默认关闭**，没有那行代表"这台机器还没开过" |
+| v11 | `user_profile` 新增 `privacy_consent_at_ms`（政策同意时刻） | 老库为 **null = 还没同意过** —— 于是老用户也会看到一次同意弹窗。**这是有意的**：他们当年装的那版里根本没有应用内政策可读 |
+| v12 | `user_profile` 新增 `privacy_declined_at_ms`（拒绝时刻） | 拒绝 ≠ 同意：老库为 null 表示"没拒绝过"。用户在弹窗里选"不同意"照样能进 App 用离线功能，而我们记得他拒绝过 |
+| v13 | **统计开关的默认值从"开"改成"关"**（`UPDATE user_profile SET analytics_enabled = 0`） | 列默认值只影响以后新插入的行，**老库里那几个 `true` 必须显式翻过来** —— 否则"默认同意"这个毛病会跟着老用户一直活下去。（写这一刀时还没有真实用户，所以没有覆盖任何人的选择） |
+| v14 | `user_profile` 新增 `body_metric_consent_at_ms`（体重的**单独同意**） | PIPL 第 29 条：敏感个人信息要单独征得同意。老库为 null —— 老用户下次进「身体数据」会看到那道说明（对的：他们当初同意的是政策，不是"处理敏感个人信息"这件事本身） |
+| v15 | 新增 `active_session_row`（**未结束的训练会话**） | 2026-10-01：训练中断后能回来接着练（见本文上面那节）。只加表；「删除全部数据」会把它一起清掉（有"表清单守门"测试盯着） |
 
 迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
 ⚠️ **fixture 必须用当年的 DDL 手写**：拿当前 schema 建完再改的话，

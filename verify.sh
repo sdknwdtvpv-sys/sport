@@ -237,6 +237,8 @@ selfcheck tool/lib/android-sdk.mjs "Android SDK 查找口径自检通过（DEPS/
 
 selfcheck tool/lib/docs.mjs "文档公共零件自检通过（枚举一处、历史判定按窗口）" "文档公共零件的自检失败"
 
+selfcheck tool/check-doc-facts.mjs "文档事实核对自检通过（schema/动作数/事件数写旧了都藏不住）" "文档事实核对工具的自检失败"
+
 selfcheck tool/lib/plist.mjs "plist 读写库自检通过（解析/序列化互逆、坏输入会抛）" "plist 读写库自检失败"
 
 # iOS 产物核对工具的**自检**（造几份动过手脚的 .app，要求它抓得住）。
@@ -724,7 +726,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          tool/check-user-text.mjs tool/check-doc-paths.mjs tool/check-doc-tables.mjs \
          tool/check-doc-versions.mjs tool/check-guards-wired.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/lib/plist.mjs tool/check-deploy.mjs \
-         tool/check-changelog.mjs tool/lib/android-sdk.mjs tool/lib/docs.mjs \
+         tool/check-changelog.mjs tool/check-doc-facts.mjs tool/lib/android-sdk.mjs tool/lib/docs.mjs \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
          tool/ios-deps.mjs docs/store-listing-ios.md docs/your-todo.md \

@@ -168,7 +168,7 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 | 决策 | 代码现状 | 证据 / 指针 |
 |---|---|---|
 | Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
-| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v14**） |
+| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v15**） |
 | **只支持 iPhone**（不承诺 iPad） | ✅ 2026-09-30 拍板 | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1"`；`tool/check-ios-app.mjs` 把"产物含 iPad"判红；依据（iPad 上只是拉长的手机版）见 `release-admin.md` §二之四之四 |
 | **「我」页按"多久碰一次"分三个二级页** | ✅ 2026-10-01 拍板并落地 | 统计每天看；偏好与备份设一次就不管；隐私与关于是给别人看的。`app/test/profile_structure_test.dart` 钉住"第一屏不许再长回去"；政策入口 3 次点击（小米"四步之内"） |
 | **体重单位默认跟随训练单位**（可单独选「斤」） | ✅ 2026-10-01 | `ProfileRepository.setUnit` 的联动判据 + `app/test/units_test.dart`；此前全局选了磅、身体页还写 kg，两套口径各说各的 |
@@ -187,4 +187,4 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 | 合规 4：不上传动作视频/照片 | ✅ 一期不采集 | — |
 | 场景级 eval 的 7 条红线 | ✅ **全在**（理由非空 / ≤40 字 / 无占位符 / 双重渐进 / 单步 ≤ 一个步长 / 重量不下降 / 自重恒 null 且永不 linear_progress） | `engine/scenarios.json` 的 `invariants` + `engine/run-scenarios.mjs`（40 字上限在第 96 行） |
 | 变异测试的四条约定 | ✅ | `tool/mutation.mjs`（24 杀 / 0 存活 / 2 等价） |
-| **双端同步上线**（硬约束） | 🟡 **不再是「一次都没构建过」**：2026-09-30 首编通过（模拟器包 + release 真机包，产物逐项核对） | 还差模拟器运行时（约 8G）与 Apple 账号签名；见 `release-checklist.md` 的 iOS 行 |
+| **双端同步上线**（硬约束） | 🟡 **iOS 侧已经不是「能不能跑」的问题**：模拟器运行时已装、release 包 20.8MB 逐项核对过、App Store 那套 14 张截图也出过了；`TARGETED_DEVICE_FAMILY="1"` 等产品承诺都有守卫钉着 | 还差**真机签名与上传**（要 Apple Developer 账号，¥688/年）；真机怎么用免费 Apple ID 先测见 `ios-free-provisioning-guide.md` |

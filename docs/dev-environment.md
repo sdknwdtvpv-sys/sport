@@ -255,18 +255,26 @@ SSD 上再建一个名字没有空格的 APFS 卷 / 把 SDK 放回内置盘 / �
   SSD 没挂载？本项目的依赖都在那块盘上，插上再 source 这个文件。
 ```
 
-## iOS 的规矩（等装 Xcode 时照这个来）
+## iOS 环境（2026-10-01 现状：**都装好了**）
 
-这台机器**现在没有 Xcode**（只有 Command Line Tools），所以 iOS 目前一行都跑不了。
-真要上 iOS 时：
+这台机器上 iOS 这一套**已经可用**：Xcode 27.0（`/Applications/Xcode.app`）、
+`xcode-select` 指过去、**许可证已接受**、模拟器运行时 iOS 27.0 已装。
+能做的事都做过了：`flutter build ios --release --no-codesign`（20.8MB / arm64）、
+模拟器出图（`store-assets/screenshots-ios/` 14 张）、云备份端到端。
+
+**规矩（照这个来，别把 Xcode 搬走）**：
 
 - **Xcode 本体必须装在 `/Applications`**（macOS 的要求，搬不走）
-- 但它的 **DerivedData / Archives / 模拟器**都可以重定向到 SSD：
-  `xcode-select` 之后用 `xcodebuild -derivedDataPath`、模拟器设备放在
-  `~/Library/Developer/CoreSimulator`（可用软链指到 SSD）
-- CocoaPods 的缓存同理（`~/.cocoapods` 可搬，装好后按同一原则处理）
+- 但 **DerivedData / Archives / 模拟器**都可以重定向到 SSD：
+  `xcodebuild -derivedDataPath`、模拟器设备在 `~/Library/Developer/CoreSimulator`
+  （可用软链指到 SSD）
+- CocoaPods 的缓存同理（`~/.cocoapods` 可搬）—— **不过本工程走 SPM，没有 Podfile**，
+  所以这条只是备用
+- **真机测试**（免费 Apple ID / 7 天签名 / 怎么装）见 `docs/ios-free-provisioning-guide.md`
 
-## Xcode 装了但许可证没接受时怎么办（2026-09-30 记）
+## ⚠️ Xcode 许可证被拒时怎么办（**2026-09-30 已解决**，留作排错）
+
+> 现状：许可证**已经接受**了，这一节不是待办，是"万一哪台新机器/重装后又遇到"的排错记录。
 
 装了 Xcode 之后，`xcode-select` 会指向 `/Applications/Xcode.app`。**在许可证被接受之前**，
 `xcrun` 拒绝服务，于是这些东西**一起挂**：
