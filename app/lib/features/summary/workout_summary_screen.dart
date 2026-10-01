@@ -26,6 +26,7 @@ class WorkoutSummaryScreen extends StatefulWidget {
     this.unit = WeightUnit.kg,
     this.exporter = const PluginShareCardExporter(),
     this.stretches = const <ExerciseData>[],
+    this.nextLine,
     this.analytics,
   });
 
@@ -39,6 +40,13 @@ class WorkoutSummaryScreen extends StatefulWidget {
   ///
   /// 为空就整块不显示 —— 不做"没有数据也占一块地方"的界面。
   final List<ExerciseData> stretches;
+
+  /// 「下一次练什么」那一行（2026-10-01 加的）。
+  ///
+  /// 为什么放在总结页：**刚练完的那一刻是唯一一个用户愿意想"下一次"的时刻** ——
+  /// 等他回到首页，注意力已经散了。文案由调用方算好（壳层手里有 planner 与历史），
+  /// 这一屏只负责显示；传 null 就不显示。
+  final String? nextLine;
 
   /// 埋点（可选）。用它上报 `pr_achieved` —— 破纪录是留存钩子，
   /// 而"这个钩子有没有用"目前没有任何数据能回答。
@@ -136,6 +144,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 const SizedBox(height: Tokens.s5),
                 _prBlock(s),
               ],
+              // 「下一次」放在最上面（刚练完最愿意看），拉伸建议跟在后面
+              if (widget.nextLine != null) _nextBlock(),
               if (widget.stretches.isNotEmpty) ...<Widget>[
                 const SizedBox(height: Tokens.s5),
                 _stretchBlock(),
@@ -155,6 +165,43 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   /// 放在总结屏是有意的：练完这一屏是用户一定会看的地方，
   /// 而"练完顺手拉一下"是此时最该被提醒的一件事。
   /// 只给名字与做法，不塞进记录 —— 拉伸要不要单独记是他的选择。
+  /// 「下一次」：刚练完就把下一次摆出来 —— 这是回访钩子最便宜的位置。
+  Widget _nextBlock() {
+    final String line = widget.nextLine!;
+    return Container(
+      key: const Key('summary-next'),
+      margin: const EdgeInsets.only(top: Tokens.s3),
+      padding: const EdgeInsets.symmetric(vertical: Tokens.s4, horizontal: Tokens.s4),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.line),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.event_repeat, size: 18, color: Tokens.volt),
+          const SizedBox(width: Tokens.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text('下一次',
+                    style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text(
+                  line,
+                  key: const Key('summary-next-text'),
+                  style: const TextStyle(
+                      color: Tokens.text, fontSize: 15, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _stretchBlock() {
     return Container(
       key: const Key('summary-stretch'),

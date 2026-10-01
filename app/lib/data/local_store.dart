@@ -24,6 +24,9 @@ int daysSince(int fromMs, {int? nowMs}) {
   return diff <= 0 ? 0 : diff ~/ Duration.millisecondsPerDay;
 }
 
+/// 未结束的训练会话只会有**一行**，固定用这个 id。
+const String kActiveSessionId = 'local';
+
 abstract class LocalStore {
   Future<void> saveSet(SetRecord record);
   Future<void> deleteSet(String id);
@@ -41,6 +44,19 @@ abstract class LocalStore {
     String exerciseId, {
     String? excludeWorkoutId,
   });
+
+  /// 保存"还没结束的训练会话"（2026-10-01）。
+  ///
+  /// 每次记一组、每换一个动作都会重写它 —— 所以实现要**足够便宜**（一行 upsert）。
+  /// 训练正常结束（回到总结页）时由调用方清掉；App 被杀掉时它就留在库里，
+  /// 下次冷启动据此把用户送回训练屏。
+  Future<void> saveActiveSession(ActiveSession session);
+
+  /// 读出未结束的会话（没有就返回 null）。
+  Future<ActiveSession?> activeSession();
+
+  /// 训练结束（或用户明确不练了）时清掉。
+  Future<void> clearActiveSession();
 
   /// 全部正式组，按完成时间升序。用于「我」页的训练统计与数据导出。
   Future<List<SetRecord>> allSets();
@@ -76,6 +92,22 @@ abstract class LocalStore {
 class InMemoryLocalStore implements LocalStore {
   final Map<String, SetRecord> _sets = <String, SetRecord>{};
   final Map<String, Workout> _workouts = <String, Workout>{};
+
+  /// 未结束的会话（契约测试对两个实现跑同一组断言，所以这里必须与 drift 行为一致）
+  ActiveSession? _active;
+
+  @override
+  Future<void> saveActiveSession(ActiveSession session) async {
+    _active = session;
+  }
+
+  @override
+  Future<ActiveSession?> activeSession() async => _active;
+
+  @override
+  Future<void> clearActiveSession() async {
+    _active = null;
+  }
 
   /// 记录被删除的 id，供"撤销误触"的测试断言。
   final List<String> deletedIds = <String>[];
@@ -177,6 +209,7 @@ class InMemoryLocalStore implements LocalStore {
 
   @override
   Future<void> deleteAllUserData() async {
+    _active = null; // 未结束的会话也算用户状态（与 drift 实现保持一致）
     _sets.clear();
     _workouts.clear();
   }

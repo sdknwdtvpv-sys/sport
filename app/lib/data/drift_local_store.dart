@@ -8,6 +8,8 @@
 /// 所以领域模型一律加 `domain.` 前缀，避免歧义。
 library;
 
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../domain/models.dart' as domain;
@@ -115,6 +117,46 @@ class DriftLocalStore implements LocalStore {
     )..sets.addAll(sets);
   }
 
+  // ── 未结束的训练会话（2026-10-01）────────────────────────────────────
+  //
+  // 只存一行。payload 是 JSON：会话里有哪些动作、处方、当前第几个、
+  // 以及休息到什么时候（绝对时间戳）。放在这里而不是 `user_profile`：
+  // 它是运行时状态、写得频繁，混进偏好表会和"改设置"互相覆盖。
+  @override
+  Future<void> saveActiveSession(domain.ActiveSession session) async {
+    await _db.into(_db.activeSessionRow).insertOnConflictUpdate(
+          ActiveSessionRowData(
+            id: kActiveSessionId,
+            workoutId: session.workoutId,
+            payload: jsonEncode(session.toJson()),
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
+  }
+
+  @override
+  Future<domain.ActiveSession?> activeSession() async {
+    final ActiveSessionRowData? row = await (_db.select(_db.activeSessionRow)
+          ..where((t) => t.id.equals(kActiveSessionId)))
+        .getSingleOrNull();
+    if (row == null) return null;
+    Object? decoded;
+    try {
+      decoded = jsonDecode(row.payload);
+    } catch (_) {
+      // 读不出来就当没有 —— 一份坏掉的运行时状态不该让 App 起不来
+      return null;
+    }
+    return domain.ActiveSession.fromJson(decoded);
+  }
+
+  @override
+  Future<void> clearActiveSession() async {
+    await (_db.delete(_db.activeSessionRow)
+          ..where((t) => t.id.equals(kActiveSessionId)))
+        .go();
+  }
+
   @override
   Future<List<domain.SetRecord>> allSets() async {
     final rows = await (_db.select(_db.setRecord)
@@ -217,6 +259,10 @@ class DriftLocalStore implements LocalStore {
     // 删除顺序按"子 → 父"（组 → 训练项 → 训练），虽然这些表没有外键级联，
     // 但顺序符合直觉，将来加上外键也不会突然炸。
     await _db.transaction(() async {
+      // 未结束的训练会话也是用户状态（它写着"刚才在练第几个动作"）。
+      // 用户说"删除全部数据"，这条也必须走 —— 否则下次冷启动还会弹出
+      // 「上次的训练还没结束」，而那次训练的数据已经被删光了（自相矛盾的界面）。
+      await _db.delete(_db.activeSessionRow).go();
       await _db.delete(_db.setRecord).go();
       await _db.delete(_db.workoutItem).go();
       await _db.delete(_db.workout).go();

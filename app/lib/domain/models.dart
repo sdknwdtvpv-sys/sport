@@ -97,6 +97,116 @@ class ExerciseSpec {
 }
 
 /// 计划项。
+/// 一次**还没结束**的训练会话（2026-10-01）。
+///
+/// **它解决的事**：健身房里的中断 —— 接个电话、切到微信、系统把 App 杀掉。
+/// 组记录一直都会落库（那是资产），但"练到第几个动作、休息还剩多久"原先只在内存里，
+/// 回来就没了。用户看到的是：又回到首页，刚才那次像没发生过。
+///
+/// 存的东西**刚好够重建那一屏**：哪个训练、哪几个动作（含处方）、当前第几个、
+/// 以及休息到什么时候（记的是**绝对时间戳**，不是剩余秒数 —— 被杀掉的那几分钟
+/// 也该算进休息里，而不是"回来接着从 90 秒倒数"）。
+///
+/// 只允许一行：本机同时只会有一次未结束的训练（`kActiveSessionId`）。
+class ActiveSession {
+  const ActiveSession({
+    required this.workoutId,
+    required this.entries,
+    required this.startedAtMs,
+    this.index = 0,
+    this.restEndsAtMs,
+    this.source = 'home_button',
+  });
+
+  final String workoutId;
+  final List<ActiveEntry> entries;
+
+  /// 当前在第几个动作（0 起）
+  final int index;
+
+  /// 休息结束的**绝对**毫秒时间戳；不在休息中就是 null
+  final int? restEndsAtMs;
+
+  final int startedAtMs;
+
+  /// 从哪条路开始的（home_button / suggestion / picker / light）——
+  /// 恢复时按原样上报，漏斗口径不变。
+  final String source;
+
+  int get length => entries.length;
+
+  ActiveSession copyWith({int? index, int? restEndsAtMs, bool clearRest = false}) =>
+      ActiveSession(
+        workoutId: workoutId,
+        entries: entries,
+        startedAtMs: startedAtMs,
+        index: index ?? this.index,
+        restEndsAtMs: clearRest ? null : (restEndsAtMs ?? this.restEndsAtMs),
+        source: source,
+      );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+        'workout_id': workoutId,
+        'index': index,
+        'rest_ends_at': restEndsAtMs,
+        'started_at': startedAtMs,
+        'source': source,
+        'entries': <Object?>[for (final ActiveEntry e in entries) e.toJson()],
+      };
+
+  static ActiveSession? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final Object? list = raw['entries'];
+    if (list is! List || list.isEmpty) return null;
+    final List<ActiveEntry> entries = <ActiveEntry>[];
+    for (final Object? item in list) {
+      final ActiveEntry? e = ActiveEntry.fromJson(item);
+      if (e != null) entries.add(e);
+    }
+    if (entries.isEmpty) return null;
+    return ActiveSession(
+      workoutId: (raw['workout_id'] ?? '').toString(),
+      entries: entries,
+      index: (raw['index'] is num) ? (raw['index'] as num).toInt() : 0,
+      restEndsAtMs:
+          (raw['rest_ends_at'] is num) ? (raw['rest_ends_at'] as num).toInt() : null,
+      startedAtMs:
+          (raw['started_at'] is num) ? (raw['started_at'] as num).toInt() : 0,
+      source: (raw['source'] ?? 'home_button').toString(),
+    );
+  }
+}
+
+/// 会话里的一个动作：练哪个 + 什么处方。
+class ActiveEntry {
+  const ActiveEntry({required this.exerciseId, required this.plan});
+
+  final String exerciseId;
+  final PlanTarget plan;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+        'exercise_id': exerciseId,
+        'sets': plan.targetSets,
+        'reps_low': plan.targetRepsLow,
+        'reps_high': plan.targetRepsHigh,
+      };
+
+  static ActiveEntry? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final String id = (raw['exercise_id'] ?? '').toString();
+    if (id.isEmpty) return null;
+    int intOf(Object? v, int fallback) => v is num ? v.toInt() : fallback;
+    return ActiveEntry(
+      exerciseId: id,
+      plan: PlanTarget(
+        targetSets: intOf(raw['sets'], 3),
+        targetRepsLow: intOf(raw['reps_low'], 8),
+        targetRepsHigh: intOf(raw['reps_high'], 12),
+      ),
+    );
+  }
+}
+
 class PlanTarget {
   const PlanTarget({
     required this.targetSets,

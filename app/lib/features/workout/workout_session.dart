@@ -29,9 +29,14 @@ class SessionEntry {
 }
 
 class WorkoutSession extends ChangeNotifier {
-  WorkoutSession(List<WorkoutController> controllers)
+  WorkoutSession(List<WorkoutController> controllers, {int initialIndex = 0})
       : assert(controllers.isNotEmpty, '会话至少要有一个动作'),
         _controllers = List<WorkoutController>.unmodifiable(controllers) {
+    // 从被中断的训练回来时直接落在原来那个动作上（2026-10-01）。
+    // 越界就回到第一个 —— 会话数据与动作库对不上时宁可从头开始，也不要崩。
+    if (initialIndex > 0 && initialIndex < _controllers.length) {
+      _index = initialIndex;
+    }
     for (final WorkoutController c in _controllers) {
       c.addListener(_relay);
     }

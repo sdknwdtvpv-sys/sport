@@ -125,6 +125,9 @@ void main() {
       'routine',
       'routine_item',
       'backup_account',
+      // v15（2026-10-01）：未结束的训练会话。**删** —— 它也是用户状态，
+      // 留着会让"删光之后首页还问你要不要继续上次的训练"。
+      'active_session_row',
     };
     expect(actual, equals(known),
         reason: '库里的表和这份清单对不上 —— 新增/改名一张表就要来改这里，'

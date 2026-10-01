@@ -17,6 +17,7 @@ import 'analytics/outbox.dart';
 import 'analytics/outbox_analytics.dart';
 import 'analytics/transport.dart';
 import 'core/app_tab_bar.dart';
+import 'core/labels.dart';
 import 'core/theme.dart';
 import 'core/units.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，
@@ -181,6 +182,10 @@ class _HomeShellState extends State<HomeShell> {
   /// 之前这个值从没被算过，所以练完回来空态还写着「还没有训练记录」。
   int _weekSessions = 0;
 
+  /// 未结束的训练会话（冷启动时读一次）。非 null 就说明上次没练完 ——
+  /// 首页会显示「继续上次的训练」（2026-10-01）。
+  ActiveSession? _activeSession;
+
   /// 上报地址。还没有后端，所以返回一个「什么都不做但永远失败」的传输实现 ——
   /// 事件会留在本地 outbox 里，等真地址接上再一起送出去（不会丢）。
   /// 上报地址：**编译期可配**，不改代码就能接上真后端。
@@ -317,6 +322,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Future<void> _loadUnit() async {
+    await _loadActiveSession();
     final WeightUnit u = await _profile.unit();
     final BodyWeightUnit b = await _profile.bodyWeightUnit();
     final int? rest = await _profile.restOverrideSec();
@@ -371,6 +377,9 @@ class _HomeShellState extends State<HomeShell> {
     String workoutId,
     List<SessionEntry> entries, {
     required String source,
+    int initialIndex = 0,
+    /// 恢复时"休息到什么时候"（绝对毫秒）。只对 [initialIndex] 那个动作生效。
+    int? restEndsAtMs,
   }) async {
     if (entries.isEmpty) return;
 
@@ -387,7 +396,8 @@ class _HomeShellState extends State<HomeShell> {
     _flusher.suspend();
 
     final List<WorkoutController> controllers = <WorkoutController>[];
-    for (final SessionEntry entry in entries) {
+    for (int i = 0; i < entries.length; i++) {
+      final SessionEntry entry = entries[i];
       controllers.add(WorkoutController(
         workoutId: workoutId,
         exercise: _repo.specOf(entry.exercise),
@@ -411,9 +421,49 @@ class _HomeShellState extends State<HomeShell> {
         ),
         // 控制器靠 profile 决定大按钮上怎么念数字、以及休息多久
         profile: UserProfile(unit: _unit, restOverrideSec: _restOverrideSec),
+        // 从被中断的训练回来时，**只有当前那个动作**接着倒数休息；
+        // 别的动作本来就没在休息，传了反而会凭空起一个倒计时。
+        restEndsAtMs: i == initialIndex ? restEndsAtMs : null,
       ));
     }
-    final WorkoutSession session = WorkoutSession(controllers);
+    final WorkoutSession session =
+        WorkoutSession(controllers, initialIndex: initialIndex);
+
+    // ── 未结束的会话：训练期间一直写，结束（路由回来）就清（2026-10-01）──
+    //
+    // 为什么要有它：组记录本来就是逐条落库的，但"练到第几个动作、休息还剩多久"
+    // 原先只在内存里 —— 接个电话、切到微信、系统把 App 杀掉，回来就回到了首页，
+    // 那次训练像没发生过。现在这一步把这份**运行时状态**也存下来。
+    //
+    // ⚠️ 只在"指纹"变化时才写：休息倒计时每秒都会通知一次，
+    // 每秒写一次库是没必要的（而且是在健身房、可能的低端机上）。
+    String fingerprint = '';
+    Future<void> persistSession() async {
+      final String now = '${session.index}|'
+          '${session.current.workout.sets.length}|'
+          '${session.current.restEndsAtMs ?? 0}';
+      if (now == fingerprint) return;
+      fingerprint = now;
+      await _store.saveActiveSession(ActiveSession(
+        workoutId: workoutId,
+        entries: <ActiveEntry>[
+          for (final SessionEntry e in entries)
+            ActiveEntry(exerciseId: e.exercise.id, plan: e.plan),
+        ],
+        index: session.index,
+        restEndsAtMs: session.current.restEndsAtMs,
+        startedAtMs: _clock(),
+        source: source,
+      ));
+    }
+
+    void onSessionChanged() {
+      // 不 await：这是"顺手记一下状态"，不能拖慢记一组的交互
+      unawaited(persistSession());
+    }
+
+    session.addListener(onSessionChanged);
+    await persistSession(); // 开始训练这件事本身就该被记住
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -428,11 +478,70 @@ class _HomeShellState extends State<HomeShell> {
       ),
     );
 
+    session.removeListener(onSessionChanged);
+    // 训练结束了（正常结束或用户自己退出）—— 未结束的会话到此为止。
+    // 不清的话，下次冷启动会把用户送回一个早就结束的训练。
+    await _store.clearActiveSession();
+
     session.dispose();
     for (final WorkoutController c in controllers) {
       c.dispose();
     }
     _flusher.resume();
+  }
+
+  /// 继续上次没结束的训练（2026-10-01）。
+  ///
+  /// 冷启动时首页会显示入口：有未结束的会话才有（`_activeSession`）。
+  /// 重建的方式与开新训练完全一样（同一批动作、同样的处方），只是**落在原来那个动作上、
+  /// 接着把休息数完** —— 恢复不该是另一条代码路径，否则它迟早与正常流程长歪。
+  Future<void> _resumeSession() async {
+    final ActiveSession? a = await _store.activeSession();
+    if (a == null) return;
+    final List<SessionEntry> entries = <SessionEntry>[];
+    for (final ActiveEntry e in a.entries) {
+      final ExerciseData? row = await _repo.byId(e.exerciseId);
+      if (row != null) entries.add(SessionEntry(exercise: row, plan: e.plan));
+    }
+    if (entries.isEmpty) {
+      // 动作库对不上了（比如种子换过）—— 会话没意义，清掉，别让入口一直挂着
+      await _store.clearActiveSession();
+      if (mounted) setState(() => _activeSession = null);
+      return;
+    }
+    await _trainSession(
+      a.workoutId,
+      entries,
+      source: a.source,
+      initialIndex: a.index.clamp(0, entries.length - 1),
+      restEndsAtMs: a.restEndsAtMs,
+    );
+    if (mounted) await _loadActiveSession();
+  }
+
+  /// 「今天不想练」的 5 分钟活动（2026-10-01）。
+  ///
+  /// 为什么有它：习惯养成的敌人是"全有或全无"——今天没力气做正式训练，
+  /// 不等于该断掉。这条路径给 **4 个按时长的活动**（绕臂 / 猫牛式 / 平板支撑 / 婴儿式），
+  /// 每个 **1 组 30–45 秒**，几分钟走完，**也算一次训练**。
+  ///
+  /// 三个刻意的选择：
+  ///   * 全是 `time` 动作 → 它们没有"重量 × 次数"的容量，**不会污染容量与 PR**；
+  ///   * 用**热身处方**（1 组）而不是正式处方（3 组）——它是活动，不是训练量；
+  ///   * `source: light` 单独上报，将来能回答"这条路径有没有人用"。
+  Future<void> _startLight() async {
+    final List<SessionEntry> entries = <SessionEntry>[];
+    for (final String id in kLightActivityIds) {
+      final ExerciseData? e = await _repo.byId(id);
+      if (e == null) continue; // 种子换过名字也不至于崩
+      entries.add(SessionEntry(exercise: e, plan: kDefaultWarmupPlan));
+    }
+    if (entries.isEmpty) return;
+    await _trainSession(
+      'w_${_clock()}_light',
+      entries,
+      source: 'light',
+    );
   }
 
   /// 只练一个动作。「我自己选」那条流程每次只加一个。
@@ -600,12 +709,20 @@ class _HomeShellState extends State<HomeShell> {
     await _refreshWeekSessions();
   }
 
+  /// 读一次"有没有未结束的训练"（首页那个入口用它）。
+  Future<void> _loadActiveSession() async {
+    final ActiveSession? a = await _store.activeSession();
+    if (!mounted) return;
+    setState(() => _activeSession = a);
+  }
+
   /// 训练结束总结。一组都没练就直接回空态 —— 没什么可总结的。
   /// 练完该拉伸哪儿：按这次练得最多的那个部位给 1–2 个拉伸动作。
   ///
   /// 练得最多 = 组数最多的部位（不是"第一个动作的部位"）：
   /// 一次胸+三头里三头只做两组、胸做了九组，该拉的是胸。
-  Future<List<ExerciseData>> _stretchesFor(Workout w) async {
+  Future<({List<ExerciseData> stretches, String? topMuscle})> _stretchesFor(
+      Workout w) async {
     final List<({String muscleGroup, String category})> trained =
         <({String muscleGroup, String category})>[];
     for (final SetRecord r in w.sets) {
@@ -616,8 +733,12 @@ class _HomeShellState extends State<HomeShell> {
     }
     // 挑选口径（跳过热身/拉伸、取组数最多）在 today_planner 里，是纯函数、有测试
     final String? top = topMuscleGroupForStretch(trained);
-    if (top == null) return const <ExerciseData>[];
-    return _planner.stretchFor(muscleGroup: top);
+    if (top == null) {
+      return (stretches: const <ExerciseData>[], topMuscle: null);
+    }
+    // 顺带把"今天练得最多的是哪个部位"带出去 —— 「下一次」那一行要用它做对比，
+    // 再查一遍库没必要（这个函数本来就把部位算出来了）。
+    return (stretches: await _planner.stretchFor(muscleGroup: top), topMuscle: top);
   }
 
   Future<void> _showSummary(String workoutId) async {
@@ -643,7 +764,22 @@ class _HomeShellState extends State<HomeShell> {
       'ms_since_launch': _clock() - _launchedAtMs,
     });
     // 拉伸建议在这里先算好：builder 不是 async 函数，await 放不进去
-    final List<ExerciseData> stretches = await _stretchesFor(w);
+    final ({List<ExerciseData> stretches, String? topMuscle}) stretchInfo =
+        await _stretchesFor(w);
+    final List<ExerciseData> stretches = stretchInfo.stretches;
+
+    // 「下一次」那一行（2026-10-01）：刚练完是用户唯一愿意想下一次的时刻。
+    // 部位轮转用的是 planner 的同一套规则（它已经算上了今天这次训练），
+    // 所以这里说出来的"下次轮到谁"与首页/建议卡的口径一致 —— 不会两处说两样话。
+    String? nextLine;
+    final String? todayTop = stretchInfo.topMuscle;
+    final String nextGroup = await _planner.nextMuscleGroup();
+    final String nextName = kMuscleLabels[nextGroup] ?? nextGroup;
+    if (nextGroup != todayTop) {
+      nextLine = todayTop == null
+          ? '下次轮到 $nextName'
+          : '下次轮到 $nextName（今天练的是 ${kMuscleLabels[todayTop] ?? todayTop}）';
+    }
     if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -652,6 +788,7 @@ class _HomeShellState extends State<HomeShell> {
           workoutId: workoutId,
           unit: _unit,
           stretches: stretches,
+          nextLine: nextLine,
           analytics: _analytics,
         ),
       ),
@@ -697,6 +834,14 @@ class _HomeShellState extends State<HomeShell> {
             lastWeekSessions: _weekSessions,
             // 还没定过计划才显示入口
             onPlanHelp: _goalWire == null ? _openFirstPlan : null,
+            // 「今天不想练」的轻量出口：4 个按时长的活动，1 组就走完
+            onLightWorkout: _startLight,
+            // 上次没练完 → 先把这条摆在最上面（"接着练"是此刻唯一该做的事）
+            onResume: _activeSession == null ? null : _resumeSession,
+            resumeLabel: _activeSession == null
+                ? null
+                : '上次练到第 ${(_activeSession!.index + 1).clamp(1, _activeSession!.length)}'
+                    '/${_activeSession!.length} 个动作',
           );
       case 1:
         return ProgressScreen(

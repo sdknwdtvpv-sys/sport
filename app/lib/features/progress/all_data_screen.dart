@@ -153,7 +153,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
             if (_loading)
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else ...<Widget>[
-              _modeChips(),
+              _modeBar(),
               Expanded(
                 child: _mode == _Mode.byExercise ? _byExercise() : _byTime(),
               ),
@@ -201,44 +201,46 @@ class _AllDataScreenState extends State<AllDataScreen> {
     );
   }
 
-  Widget _modeChips() {
+  /// 维度切换：**默认「按动作」，另一个收进右上角的「更多」**（2026-10-01）。
+  ///
+  /// 为什么收：老手两个维度都要，而**新手在这里只是被问了一个他答不上来的问题** ——
+  /// "按动作还是按时间"对第一次进来的人不是选择，是障碍。
+  /// 首屏因此只留一行"看的是哪个维度、怎么换"，不再摆两个并列的胶囊。
+  Widget _modeBar() {
+    final bool byExercise = _mode == _Mode.byExercise;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, 0),
+      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s3, 0),
       child: Row(
         children: <Widget>[
-          _chip('all-data-mode-exercise', '按动作', _mode == _Mode.byExercise,
-              () => setState(() => _mode = _Mode.byExercise)),
-          const SizedBox(width: Tokens.s2),
-          _chip('all-data-mode-time', '按时间', _mode == _Mode.byTime,
-              () => setState(() => _mode = _Mode.byTime)),
+          Text(
+            byExercise ? '按动作看' : '按时间看（周报 / 月报）',
+            style: const TextStyle(color: Tokens.text3, fontSize: 13),
+          ),
+          const Spacer(),
+          PopupMenuButton<_Mode>(
+            key: const Key('all-data-more'),
+            tooltip: '换一种看法',
+            color: Tokens.elevated,
+            onSelected: (_Mode m) => setState(() => _mode = m),
+            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<_Mode>>[
+              PopupMenuItem<_Mode>(
+                key: const Key('all-data-mode-exercise'),
+                value: _Mode.byExercise,
+                child: const Text('按动作看', style: TextStyle(color: Tokens.text)),
+              ),
+              PopupMenuItem<_Mode>(
+                key: const Key('all-data-mode-time'),
+                value: _Mode.byTime,
+                child: const Text('按时间看（周报 / 月报）',
+                    style: TextStyle(color: Tokens.text)),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _chip(String key, String label, bool active, VoidCallback onTap) {
-    return GestureDetector(
-      key: Key(key),
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
-        height: 36,
-        decoration: BoxDecoration(
-          color: active ? Tokens.volt : Tokens.surface,
-          borderRadius: BorderRadius.circular(Tokens.rPill),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? Tokens.voltInk : Tokens.text2,
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
 
   // ---------- 按动作 ----------
 

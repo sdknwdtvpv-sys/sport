@@ -254,6 +254,23 @@ class AnalyticsOutbox extends Table {
 /// **一天一条**：用 `date`（YYYY-MM-DD 字符串）做业务上的唯一键。
 /// 刻意**不加数据库唯一索引** —— 软删除之后用户还要能重新录入同一天，
 /// 唯一索引会让那次插入直接炸。唯一性在仓库层判断。
+/// 未结束的训练会话（只会有**一行**，见 `kActiveSessionId`）。
+///
+/// 为什么单独一张表而不是塞进 `user_profile`：这是一份**运行时状态**，
+/// 不是用户偏好 —— 它每次记一组都会重写，混进偏好表会让"改设置"和"记一组"
+/// 互相覆盖（`user_profile` 的每个 setter 都要把整行带回去）。
+class ActiveSessionRow extends Table {
+  /// 固定 id（`kActiveSessionId`）：本机同时只会有一个未结束的训练
+  TextColumn get id => text()();
+  TextColumn get workoutId => text()();
+  /// 会话里有哪些动作、什么处方（JSON，见 domain/models.dart 的 ActiveSession）
+  TextColumn get payload => text()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 class BodyMetric extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text().nullable()();
@@ -349,6 +366,7 @@ class BackupAccount extends Table {
   Routine,
   RoutineItem,
   BackupAccount,
+  ActiveSessionRow,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -368,7 +386,7 @@ class AppDatabase extends _$AppDatabase {
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -398,6 +416,11 @@ class AppDatabase extends _$AppDatabase {
           );
         },
         onUpgrade: (Migrator m, int from, int to) async {
+          // v14 → v15：多一张"未结束的训练会话"表（训练中断后能回来接着练）。
+          // 只加表、不动任何既有列 —— 老库里的数据一行都不用搬。
+          if (from < 15) {
+            await m.createTable(activeSessionRow);
+          }
           // v1 → v2：只多了一张表，没有改动任何既有列，所以不需要数据搬迁。
           if (from < 2) {
             await m.createTable(bodyMetric);

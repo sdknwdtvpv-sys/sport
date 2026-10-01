@@ -282,7 +282,7 @@ node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 1
 | 事件 | 说明 |
 |---|---|
 | `app_open` | 含 `is_first_open` / `ms_since_launch` —— **北极星分母** |
-| `workout_started` | 含 `source`(home_button/suggestion/onboarding/picker) / `exercise_count` |
+| `workout_started` | 含 `source`(home_button/suggestion/onboarding/picker/**light**) / `exercise_count` |
 | `set_logged` | 本来就有的（含 `tap_count` / `tap_kinds` / `distance_m`） |
 | `workout_finished` | 含 `duration_sec` / `total_sets` / `total_volume_kg` / `exercise_count` —— **北极星分子** |
 | `rest_started` / `rest_skipped` / `rest_completed` | 本来就有的 |
@@ -371,3 +371,46 @@ node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 1
 它决定政策 §3.2 怎么写、以及数据安全表的"此前未收集"怎么填。
 **在定下来之前，不要发布配了 `LIANLEME_ANALYTICS_URL` 的包。**
 
+## 11. 每个事件给谁看：一次**对账**（2026-10-01）
+
+> 这一节不是新埋点，是一次**反问**：18 个事件、7 个公共字段，**谁会用它们回答什么问题**？
+> 导火索是那天的产品复盘（`docs/product-review-2026-10-01.md` ➖3）：
+> 埋点是**隐私面**，也是政策与两张商店表单的来源 ——
+> 少一个没人看的字段，就少一处要解释、要披露、要维护的东西。
+
+口径：**每个事件都要写出一句"谁会用它"**；写不出来的，先标记、**先不删**
+（砍埋点要有数据支撑，不能凭感觉）。下表按"用途是否清楚"分三档。
+
+### A 档：北极星与漏斗直接需要（留）
+
+| 事件 | 谁会用它 / 回答什么 |
+|---|---|
+| `app_open` | 北极星的分母（打开过的人）；`is_first_open` 切新老 |
+| `workout_started` | 漏斗第 2 环（点开始训练）；`source` 回答"哪条路真的有人走"（含 2026-10-01 新增的 `light`） |
+| `set_logged` | 漏斗第 3 环 + 北极星的**分子**（完成第一次训练）；`tap_count` 就是它的字段 |
+| `workout_finished` | 漏斗第 4 环；`total_sets/volume/duration` 是"真的在健身房用"的证据 |
+
+### B 档：有明确使用者，但**低频看**（留，标注复查时间）
+
+| 事件 | 谁会用它 / 回答什么 |
+|---|---|
+| `suggestion_shown` / `suggestion_accepted` / `suggestion_modified` | 「建议采纳率 ≥ 60%」这个指标的唯一来源（规则引擎这个楔子成不成立） |
+| `set_edited` | 采纳率的**修正项**：改了才算"没采纳"，不改不算 |
+| `set_undone` / `rest_skipped` | 体验守卫：误触与不耐烦的信号（哪个改动把它们顶上去了，就要回看） |
+| `pr_achieved` | 留存钩子（"破纪录"那条推送/总结文案值不值） |
+| `onboarding_step` | 首启漏斗（哪一步把人劝退）；只在引导改动时看 |
+| `exercise_added` | 动作库缺口（用户自己建的动作 = 我们没有的） |
+| `body_metric_logged` | 身体数据这条线有没有人用（**只报填没填，数值不出设备**） |
+| `share_card_created` | 分享这个增长钩子值不值（现在没人看，但**它是唯一的分享指标**） |
+
+### C 档：**目前没人看**（先标记，等有数据再决定删不删）
+
+| 事件/字段 | 现状 | 处置 |
+|---|---|---|
+| `seed_import_failed` | 只在"动作库刷新失败"时出现；我们**没有崩溃/错误看板**，所以没人会看它 | 标记：**下一次审计若仍无人看 → 删**（删它会同时缩小隐私面） |
+| `rest_completed` | 与 `rest_started` 成对，但**没有任何指标用它**（休息时长是本地偏好，不进北极星） | 标记：同上 |
+| 公共字段 `is_offline` | 想过用它判断"弱网下体验如何"，但**没有任何看板/指标消费它** | 标记：把它从"每个事件都带"降级为"只在需要的事件上带"，能直接减小每一批上报的体积与敏感面 |
+| 公共字段 `user_id` | 目前是本机匿名 id，**与 `device_id` 高度重合** | 标记：想清楚"它回答什么"再留；想不出就删 |
+
+**下一步（写进 `docs/your-todo.md` 的那条）**：等真的接了上报地址、有 2–4 周数据之后，
+拿"最近 30 天有没有人查过这个事件"做一次决定；在那之前**只标记、不删**。

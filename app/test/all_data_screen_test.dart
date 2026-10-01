@@ -117,6 +117,10 @@ void main() {
       '80 kg',
     );
     expect(find.byKey(const Key('all-data-volume-trend')), findsOneWidget);
+    // ⚠️ 2026-10-01：维度切换换成"更多"菜单之后首屏高度变了一点，
+    // 1RM 那张卡就落到了懒构建的视口之外 —— 不是没渲染，是**没被建出来**。
+    // 这条规矩这个文件里早就写着（ListView 懒构建），照它做：先滚到目标再断言。
+    await scrollTo(tester, find.byKey(const Key('all-data-1rm-trend')));
     expect(find.byKey(const Key('all-data-1rm-trend')), findsOneWidget);
     await scrollTo(tester, find.byKey(const Key('all-data-set-count')));
     expect(tester.widget<Text>(find.byKey(const Key('all-data-set-count'))).data, '2 组');
@@ -161,7 +165,11 @@ void main() {
     await saveSet(id: 'a', exerciseId: 'ex_bb_bench_press');
     await pump(tester);
 
+    // 2026-10-01：维度切换收进右上角「更多」——先进菜单再选
+    await tester.tap(find.byKey(const Key('all-data-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('all-data-mode-time')));
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
 
     expect(find.text('本周'), findsOneWidget);

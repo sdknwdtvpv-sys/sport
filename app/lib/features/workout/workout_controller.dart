@@ -37,6 +37,10 @@ class WorkoutController extends ChangeNotifier {
     LastSession? lastSession,
     List<ManualOverride> overrides = const <ManualOverride>[],
     UserProfile profile = const UserProfile(),
+    /// 恢复训练时的"休息到什么时候"（绝对毫秒时间戳，2026-10-01）。
+    /// 传了就按"现在还剩多少"接着倒数 —— **被杀掉的那几分钟也该算进休息**，
+    /// 而不是回来重新从 90 秒开始。
+    int? restEndsAtMs,
     int Function()? clock,
   }) : _clock = clock ?? (() => DateTime.now().millisecondsSinceEpoch) {
     workout = Workout(id: workoutId, startedAtMs: _clock());
@@ -68,6 +72,11 @@ class WorkoutController extends ChangeNotifier {
     unit = profile.unit;
     // 用户设了就用他的；没设就跟随动作自带的值（种子差异很大：核心 45s、深蹲 180s）
     plannedRestSec = profile.restOverrideSec ?? exercise.defaultRestSec;
+    // 从一次被中断的训练回来：把休息接着数完（不做"重新开始"那件更糟的事）
+    if (restEndsAtMs != null && restEndsAtMs > _clock()) {
+      _beginRest(((restEndsAtMs - _clock()) / 1000).ceil(),
+          endsAtMs: restEndsAtMs, announce: false);
+    }
     // **ensure 而不是 begin**：端到端口径要求把"用户点开始训练 → 选动作"
     // 这些点击算进第一组，而它们发生在控制器被构造之前。
     // 用 begin 会在这里清零，第一组又变回"只算大按钮那一下"。
@@ -140,6 +149,10 @@ class WorkoutController extends ChangeNotifier {
   double? _rpe;
   int _restRemaining = 0;
   bool _restRunning = false;
+
+  /// 休息结束的**绝对**时间戳。存绝对值而不是"剩余秒数"，
+  /// 是为了让"App 被杀掉 5 分钟"在这件事上等于"休息已经过去 5 分钟"。
+  int? _restEndsAtMs;
   bool _sheetOpen = false;
   bool _disposed = false;
   String? _hint;
@@ -169,6 +182,10 @@ class WorkoutController extends ChangeNotifier {
   bool get canLog => !isDistance || (_distanceM > 0 && _reps > 0);
   int get restRemainingSec => _restRemaining;
   bool get restRunning => _restRunning;
+
+  /// 正在休息时给出"休息到几点"（绝对毫秒）—— 会话恢复要用它。
+  /// 不在休息中就是 null（下一个版本要拿这个值去写"未结束的会话"）。
+  int? get restEndsAtMs => _restRunning ? _restEndsAtMs : null;
   bool get restDone => !_restRunning && _restRemaining == 0 && _normalSets > 0;
   bool get sheetOpen => _sheetOpen;
   bool get isOffline => syncQueue.offline;
@@ -503,15 +520,25 @@ class WorkoutController extends ChangeNotifier {
     _notify();
   }
 
-  void _startRest() {
+  void _startRest() => _beginRest(plannedRestSec,
+      endsAtMs: _clock() + plannedRestSec * 1000, announce: true);
+
+  /// 开始（或**接着**）倒数。
+  ///
+  /// [announce] 区分两种来源：用户刚记完一组（要上报 `rest_started`），
+  /// 与"从被中断的训练回来"（那是同一次休息的下半段，再报一次就把口径搞脏了）。
+  void _beginRest(int remainingSec, {required int endsAtMs, required bool announce}) {
     _stopRest();
-    _restRemaining = plannedRestSec;
+    _restRemaining = remainingSec;
+    _restEndsAtMs = endsAtMs;
     _restRunning = true;
-    analytics.track('rest_started', <String, Object?>{
-      'exercise_id': exercise.id,
-      'planned_sec': plannedRestSec,
-      'auto': true,
-    });
+    if (announce) {
+      analytics.track('rest_started', <String, Object?>{
+        'exercise_id': exercise.id,
+        'planned_sec': plannedRestSec,
+        'auto': true,
+      });
+    }
     _restTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_disposed) {
         t.cancel();
@@ -520,6 +547,7 @@ class WorkoutController extends ChangeNotifier {
       if (_restRemaining <= 1) {
         _restRemaining = 0;
         _restRunning = false;
+        _restEndsAtMs = null;
         t.cancel();
         analytics.track('rest_completed', <String, Object?>{
           'exercise_id': exercise.id,
@@ -536,6 +564,7 @@ class WorkoutController extends ChangeNotifier {
     _restTimer?.cancel();
     _restTimer = null;
     _restRunning = false;
+    _restEndsAtMs = null;
   }
 
   void _notify() {
