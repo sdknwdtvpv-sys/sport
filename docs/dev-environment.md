@@ -92,6 +92,29 @@ flutter config --jdk-dir="$JAVA_HOME" --android-sdk="$ANDROID_SDK_ROOT"
 > （`flutter config`、`local.properties`、`~/.android`、IDE 的 SDK 设置）
 > 都要跟着改。判据很简单：**做一次 release 构建**，别只看门禁绿不绿。
 
+## ⚠️ 跑完 integration_test 之后，release 构建会残一个坏文件（2026-10-01 记）
+
+**症状**：`flutter build apk --release` 直接红，报
+
+```
+GeneratedPluginRegistrant.java:24: 错误: 程序包dev.flutter.plugins.integration_test不存在
+```
+
+**原因**：`app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java`
+是 Flutter 生成的（**不在 git 里**）。`integration_test` 是 dev 依赖，但它的插件也会被写进
+`.flutter-plugins-dependencies`；一旦上一次跑的是 `flutter drive`（截图 / 云备份端到端那几条），
+生成出来的注册文件里就带着 `IntegrationTestPlugin` —— 而 release 构建里没有这个包。
+
+**修法**（一秒，不用 `flutter clean`）：
+
+```bash
+rm -f app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+# 下一次 build 会重新生成正确的版本
+```
+
+**为什么会忘**：这个文件是生成物、又是"本地痕迹"，出问题的地方（Java 编译）离原因
+（两天前跑过截图脚本）很远。**记在这里的判断是**：先删了重编，不要花时间去查 Gradle。
+
 ## ⚠️ 卷名里的空格会**假装**弄坏 AAB 构建（其实是误报）
 
 `flutter build appbundle --release` 在这台机器上**必然**打印这句：
