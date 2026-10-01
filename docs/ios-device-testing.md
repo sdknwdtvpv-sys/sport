@@ -50,8 +50,8 @@
    查看设备 id：`flutter devices` / `xcrun devicectl list devices`。
 6. **7 天后**：App 会打不开（签名过期）。**重跑第 5 步**即可（数据不会丢 —— 我们的数据在
    App 沙盒里，重装同一个 bundle id 覆盖安装会保留）。
-   * 我这边可以写一条一键脚本（`tool/ios-device.sh`）：编包 → 装 → 拉起 → 抓 30 秒日志，
-     到期重签就是再跑一次。
+   * 我这边可以写一条一键脚本（暂定名 `ios-device.sh`，**还没落地** —— 按本仓库的规矩，
+     没跑通过的脚本不写进文档当成品）：编包 → 装 → 拉起 → 抓 30 秒日志；到期重签就是再跑一次。
 
 **A 路的已知坑（我们会踩到的）**
 
@@ -101,7 +101,8 @@ App Privacy 标签、审核备注、14 张截图、`docs/release-admin.md` 的�
 * ✅ 已经做完：无签名 release 构建、产物逐项核对（`tool/check-ios-app.mjs`）、
   模拟器出图与压平（`tool/flatten-png.mjs`）、云备份端到端（iOS 模拟器上跑过）。
 * 🟡 拿到 Apple ID 之后我可立刻补的（**不需要付费账号**）：
-  1. `tool/ios-device.sh`：一条命令完成 `flutter build ios --release` + 安装 + 拉起 + 日志落盘；
+  1. 一条设备脚本（暂定名 `ios-device.sh`，**未落地**）：一条命令完成
+     `flutter build ios --release` + 安装 + 拉起 + 日志落盘；
   2. `docs/ios-device-testing.md`（本文）里的"7 天重签"写成一键；
   3. 把真机上的**权限弹层、分享面板、启动帧**用 `xcrun devicectl` 抓成证据图。
 * ❌ 我做不了的：**登录 Apple ID、在设备上点"信任"、用手指感受手感** —— 这三件必须你来。
