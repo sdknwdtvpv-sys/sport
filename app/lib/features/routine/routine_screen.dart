@@ -10,6 +10,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../domain/models.dart' show PlanTarget;
+
+import 'plan_templates.dart';
 
 import '../../core/theme.dart';
 import '../../core/units.dart';
@@ -79,6 +82,24 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
       _counts = counts;
       _loading = false;
     });
+  }
+
+  /// 从**内置模板**建一份计划（2026-10-01）。
+  ///
+  /// 建出来的是一份**普通计划**（可改可删），只是 `source` 记着 `builtin` ——
+  /// 这样以后能回答"新手到底用不用模板"，而不是靠猜。
+  Future<void> _createFromTemplate(PlanTemplate t) async {
+    final RoutineData r = await widget.repository.createFromPlan(
+      t.name,
+      <({String exerciseId, PlanTarget plan})>[
+        for (final PlanTemplateItem it in t.items)
+          (exerciseId: it.exerciseId, plan: planTargetOf(it)),
+      ],
+      source: 'builtin',
+    );
+    if (!mounted) return;
+    await _edit(r.id);
+    await _load();
   }
 
   Future<void> _create() async {
@@ -167,26 +188,75 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _routines.isEmpty
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: Tokens.s6),
-                            child: Text(
-                              '还没有计划。\n建一个（比如「推日」），下次打开就直接照着练 —— '
-                              '不用每次重新挑动作。',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.6),
+                      ? ListView(
+                          // ⚠️ 空态**也得看得到模板**：2026-10-01 之前这里只有一句话，
+                          // 而"没有计划"的人恰恰是最需要模板的人（空态被当成死胡同了）。
+                          padding: const EdgeInsets.fromLTRB(
+                              Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s6),
+                          children: <Widget>[
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: Tokens.s4),
+                              child: Text(
+                                '还没有计划。\n先用下面任意一套模板，'
+                                '下次打开就直接照着练 —— 不用每次重新挑动作。',
+                                style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.6),
+                              ),
                             ),
-                          ),
+                            const Text('从模板开始',
+                                style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                            const SizedBox(height: Tokens.s2),
+                            for (final PlanTemplate t in kPlanTemplates)
+                              _templateRow(t),
+                          ],
                         )
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(
                               Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s6),
                           children: <Widget>[
+                            // 「从模板开始」放在最上面：不知道自己该练什么的人，
+                            // 第一眼该看到的是这个，而不是"＋ 新建"。
+                            const Text('从模板开始',
+                                style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                            const SizedBox(height: Tokens.s2),
+                            for (final PlanTemplate t in kPlanTemplates)
+                              _templateRow(t),
+                            const SizedBox(height: Tokens.s5),
+                            const Text('我的计划',
+                                style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                            const SizedBox(height: Tokens.s2),
                             for (final RoutineData r in _routines) _row(r),
                           ],
                         ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 模板那一行：名字 + 一句说明 + 几个动作。
+  Widget _templateRow(PlanTemplate t) {
+    // ⚠️ 背景色必须交给 Material，不能放在中间的 DecoratedBox 上 ——
+    // ListTile 的水波纹画在最近的 Material 祖先上，隔着带背景色的容器会把它盖住，
+    // debug 下直接抛断言（`profile_widgets.dart` 里记过同一条）。
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Tokens.s2),
+      child: Material(
+        color: Tokens.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Tokens.rCard),
+          side: const BorderSide(color: Tokens.line),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+        key: Key('template-${t.id}'),
+        contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+        onTap: () => _createFromTemplate(t),
+        title: Text(t.name,
+            style: const TextStyle(color: Tokens.text, fontSize: 15)),
+        subtitle: Text('${t.note} · ${t.items.length} 个动作',
+            style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4)),
+          trailing: const Icon(Icons.add_circle_outline, color: Tokens.volt, size: 20),
         ),
       ),
     );

@@ -570,9 +570,15 @@ for f in $(grep -rlE "db\.dart'" app/lib app/test 2>/dev/null | grep -v '\.tmpdi
   flat=$(tr '\n' ' ' < "$f")
   echo "$flat" | grep -qE "models\.dart'" || continue
   # hide 与 show 都能消除歧义（show 只放进来指定的名字），两者都算数
-  echo "$flat" | grep -oE "import '[^']*db\.dart'[^;]*;" | head -1 | grep -qE ' (hide|show) ' && continue
-  echo "$flat" | grep -oE "import '[^']*models\.dart'[^;]*;" | head -1 | grep -q ' as ' && continue
-  echo "  ${RED}✗${OFF} ${f#app/}：db.dart 与 models.dart 裸 import，需 hide / show / as"
+  # ⚠️ **两个 import 都要看**（2026-10-01 修）：判据原先只认 db.dart 上的 hide/show、
+  # 或 models 上的 as —— 而 `import 'models.dart' show PlanTarget;` 同样消除了歧义
+  # （models 只放进来一个名字，重叠的 Workout/SetRecord 只能来自 db.dart）。
+  # 那次误报打在 routine_repository.dart 上：文件本身是对的，判据不全。
+  dbimp=$(echo "$flat" | grep -oE "import '[^']*db\.dart'[^;]*;" | head -1)
+  modelimp=$(echo "$flat" | grep -oE "import '[^']*models\.dart'[^;]*;" | head -1)
+  echo "$dbimp" | grep -qE ' (hide|show|as) ' && continue
+  echo "$modelimp" | grep -qE ' (hide|show|as) ' && continue
+  echo "  ${RED}✗${OFF} ${f#app/}：db.dart 与 models.dart 裸 import —— 至少要在一处写 hide / show / as"
   conflict=1
 done
 [ "$conflict" -eq 0 ] && echo "  ${GREEN}✓${OFF} 无 import 命名冲突" || fail=1

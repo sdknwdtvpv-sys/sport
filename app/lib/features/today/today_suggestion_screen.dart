@@ -124,6 +124,42 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
   ///
   /// 复用「按建议练」那条路径 —— 返回的 TodayResult 形状完全一样，
   /// 只是 plan 的来源从"轮转建议"换成了"用户自己的计划"。
+  /// 把**今天的建议**存成一份计划（2026-10-01）。
+  ///
+  /// 为什么值得做：建议卡回答的是"今天练什么"，计划回答的是"以后照着练" ——
+  /// 用户摇出一套顺眼的组合，原先只能今天用一次，明天还得重新摇。
+  /// 存下来之后它出现在「我的计划」里，`source='suggested'` 记住它是从建议来的。
+  Future<void> _saveAsRoutine() async {
+    final RoutineRepository? repo = widget.routines;
+    if (repo == null || _plan.isEmpty) return;
+    final List<({String exerciseId, PlanTarget plan})> items =
+        <({String exerciseId, PlanTarget plan})>[
+      // 热身也一起存：它在界面上已经"加进今天"了，存计划时丢掉会让人困惑
+      if (_warmupAdded)
+        for (final ExerciseData w in _warmups)
+          (
+            exerciseId: w.id,
+            plan: const PlanTarget(targetSets: 1, targetRepsLow: 30, targetRepsHigh: 45),
+          ),
+      for (final PlannedExercise p in _plan)
+        (exerciseId: p.exercise.id, plan: p.plan),
+    ];
+    final RoutineData r = await repo.createFromPlan(
+      '${_group.isEmpty ? '今日建议' : _group} · 建议',
+      items,
+      source: 'suggested',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已存成计划「${r.name}」，下次在「我的计划」里直接用'),
+        backgroundColor: Tokens.elevated,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, 80),
+      ),
+    );
+  }
+
   Future<void> _useRoutine() async {
     final RoutineStart? start = await Navigator.of(context).push<RoutineStart>(
       MaterialPageRoute<RoutineStart>(
@@ -462,6 +498,15 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                 ),
             ],
           ),
+          // 「存成我的计划」单独一行：三个次要入口已经排满，再挤进去就是四个等宽按钮
+          // （每一个都点到让人怀疑自己点错了）。
+          if (widget.routines != null && _plan.isNotEmpty)
+            TextButton(
+              key: const Key('save-as-routine'),
+              onPressed: _loading ? null : _saveAsRoutine,
+              child: const Text('存成我的计划 ›',
+                  style: TextStyle(color: Tokens.text3, fontSize: 13)),
+            ),
         ],
       ),
     );

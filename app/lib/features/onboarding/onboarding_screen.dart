@@ -136,8 +136,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
               child: Row(
                 children: <Widget>[
+                  // 返回：第 2/3 步回上一步；第 1 步就是"算了，回首页"。
+                  // 2026-10-01 真机走查发现：这个全屏页原先**只有「跳过」**，
+                  // 用户想退回去只能点它 —— 而"跳过"意味着放弃整个向导，不是"返回"。
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      key: const Key('onboarding-back'),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.chevron_left, color: Tokens.text2),
+                      onPressed: () {
+                        if (_step == 0) {
+                          _leaveStep(skipped: true);
+                          Navigator.of(context).pop();
+                          return;
+                        }
+                        setState(() => _step -= 1);
+                      },
+                    ),
+                  ),
+                  // 标题**不带人称**：首页那个入口是用户口气（「帮我定个计划」），
+                  // 页面标题再写「帮你定个计划」就变成两种人称打架（2026-10-01 真机走查）。
+                  // 中性的「定个计划」两边都顺，也不用改那句已经定稿的入口文案。
                   const Expanded(
-                    child: Text('帮你定个计划',
+                    child: Text('定个计划',
                         style: TextStyle(
                             color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
                   ),

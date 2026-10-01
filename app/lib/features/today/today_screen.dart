@@ -79,9 +79,14 @@ class TodayScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Tokens.s5),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        // ⚠️ 刻意**不用 MainAxisAlignment.center**（2026-10-01 真机走查后改的）：
+        // 居中会让标题落在屏幕 1/4 处、上下各空一大块，而大按钮落在 48% ——
+        // 上面那块空白白白浪费，按钮又没落到最舒服的拇指区。
+        // 现在是"标题贴上去 + 中间 Spacer + 按钮与链接压在下面"：
+        // 顶部留白从约 1/4 屏收到 24pt，大按钮落到屏幕下方（单手持机更顺）。
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          const SizedBox(height: Tokens.s6),
           // 空态不要求先做计划：点一下就开始记录。
           const Text(
             '今天\n练点什么？',
@@ -98,7 +103,9 @@ class TodayScreen extends StatelessWidget {
             '不需要先做计划。点一下就开始记录。',
             style: TextStyle(color: Tokens.text2, fontSize: 17, height: 1.4),
           ),
-          const SizedBox(height: Tokens.s8),
+          // 中间这块弹性留白就是"呼吸感"：它随屏幕高度伸缩，
+          // 于是标题永远贴在上面、按钮永远压在下面（而不是两头都不靠）。
+          const Spacer(),
           // 上次没练完 → 一条"接着练"（放在主按钮之前：此刻它才是该做的那件事）
           if (onResume != null) ...<Widget>[
             GestureDetector(

@@ -106,6 +106,14 @@ flutter config --jdk-dir="$JAVA_HOME" --android-sdk="$ANDROID_SDK_ROOT"
 > **任何一次在真机上跑 `flutter drive` 之后，都必须重新 `adb install -r` 一份
 > `dist/` 里的正式 APK**，再核对 `versionName` / `versionCode`。
 
+**2026-10-01 又踩了一次（这次是自己造的）**：`flutter test` 也会重新生成那个文件。
+当时的顺序是「删掉 registrant → 后台起 release 构建 → 顺手跑几条 `flutter test` 数测试条数」，
+于是测试**在构建期间**把坏文件写了回去，Gradle 正好编译到它 —— 构建红，
+而错误信息指向的还是两天前那件事。
+
+> **并列规矩**：**构建期间不要跑 `flutter test`**。要数测试条数就先数完，再构建；
+> 或者构建完再数。两条规矩合起来才够 —— 只记"跑过 integration_test 之后要删"是不够的。
+
 **顺带**：`flutter drive` 不会还原 `wm size` —— 截完图记得 `adb shell wm size reset`，
 否则手机会停在 1080×1920 之类的截图分辨率上（截屏、看界面都会觉得"怎么变扭了"）。
 

@@ -204,6 +204,11 @@ void main() {
     await pumpList(tester);
 
     expect(find.text('1 个动作'), findsOneWidget);
+    // ⚠️ 2026-10-01：列表页顶部多了「从模板开始」那一栏（5 行），
+    // 「还没有动作」被挤到视口之外 —— ListView 懒构建，不滚过去就不存在。
+    await tester.dragUntilVisible(find.text('还没有动作'), find.byType(ListView),
+        const Offset(0, -200));
+    await tester.pumpAndSettle();
     expect(find.text('还没有动作'), findsOneWidget, reason: '拉日还是空的');
   });
 }

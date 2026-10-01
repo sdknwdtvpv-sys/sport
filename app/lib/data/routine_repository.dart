@@ -8,6 +8,7 @@
 library;
 
 import 'package:drift/drift.dart';
+import '../domain/models.dart' show PlanTarget;
 
 import '../core/uuid.dart';
 import 'db.dart';
@@ -32,7 +33,15 @@ class RoutineRepository {
       .getSingleOrNull();
 
   /// 新建一个空计划。
-  Future<RoutineData> create(String name, {int? nowMs}) async {
+  /// 建一份计划。
+  ///
+  /// [source] 回答"它从哪来"（2026-10-01 起真的用上了）：
+  ///   * `user` —— 用户自己一条一条建的（默认）；
+  ///   * `builtin` —— 从**内置模板**建的（`plan_templates.dart`）；
+  ///   * `suggested` —— 把**当天的建议**存成了计划。
+  /// 三者在界面上都是普通计划（可改可删）；这个字段只用来回答
+  /// "新手到底用不用模板"这种问题 —— 没有它就只能猜。
+  Future<RoutineData> create(String name, {String source = 'user', int? nowMs}) async {
     final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
     final RoutineData row = RoutineData(
       // ⚠️ 用 UUID 而不是时间戳。最初写的是 'r_$now'，测试里在同一毫秒建两个计划
@@ -40,14 +49,41 @@ class RoutineRepository {
       // 「客户端生成 UUID 主键」要避免的事。
       id: newPrefixedId('r'),
       name: name.trim(),
-      // source 只写 user；builtin / suggested 留给后续
-      source: 'user',
+      source: source,
       isActive: false,
       createdAt: now,
       updatedAt: now,
     );
     await _db.into(_db.routine).insert(row);
     return row;
+  }
+
+  /// 从一份"动作 + 处方"清单**一次性**建出计划（2026-10-01）。
+  ///
+  /// 内置模板与"把今天的建议存成计划"共用这一条路径 —— 两条各写一遍的话，
+  /// 迟早一条会漏掉 `position`、另一条忘了 `_touch`。
+  /// 顺序按传进来的顺序落 `position`；`source` 由调用方给（builtin / suggested）。
+  Future<RoutineData> createFromPlan(
+    String name,
+    List<({String exerciseId, PlanTarget plan})> items, {
+    String source = 'user',
+    int? nowMs,
+  }) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final RoutineData routine = await create(name, source: source, nowMs: now);
+    for (final ({String exerciseId, PlanTarget plan}) it in items) {
+      // addItem 的签名是 (routineId, exerciseId, {...})，position 由它自己按现有项续号 ——
+      // 这里按顺序调用即可（顺序就是落库顺序）。
+      await addItem(
+        routine.id,
+        it.exerciseId,
+        targetSets: it.plan.targetSets,
+        targetRepsLow: it.plan.targetRepsLow,
+        targetRepsHigh: it.plan.targetRepsHigh,
+        nowMs: now,
+      );
+    }
+    return routine;
   }
 
   Future<void> rename(String id, String name, {int? nowMs}) async {
