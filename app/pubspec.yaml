@@ -1,7 +1,7 @@
 name: lianleme
 description: 练了么 —— 一次点击记一组的力量训练记录工具
 publish_to: 'none'
-version: 1.33.0+44
+version: 1.34.0+45
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -26,6 +26,11 @@ environment:
 #   宁可引入两个可验证的依赖，也不写没跑过的原生代码 —— 详见 share_card.dart。
 dependencies:
   flutter:
+    sdk: flutter
+  # Flutter **官方**的本地化组件（随 SDK 分发，不是第三方库）：没有它，
+  # Material 自带的那些页面（「开源许可」页、日期/滚轮选择器）里会是英文 ——
+  # 中文 App 里夹一页 "Licenses / VIEW LICENSE" 很突兀（2026-10-01 真机走查）。
+  flutter_localizations:
     sdk: flutter
   drift: ^2.35.0
   drift_flutter: ^0.3.1

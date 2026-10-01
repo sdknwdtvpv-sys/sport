@@ -183,6 +183,15 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    /// 2026-10-01 重排：休息时长收进「我 → 偏好设置」，所以每次点胶囊前先进去。
+    Future<void> openPreferences(WidgetTester tester) async {
+      final Finder row = find.byKey(const Key('open-preferences'));
+      await tester.dragUntilVisible(row, find.byType(ListView), const Offset(0, -220));
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+    }
+
     Future<void> tapRest(WidgetTester tester, String key) async {
       await tester.dragUntilVisible(
         find.byKey(Key(key)),
@@ -197,6 +206,7 @@ void main() {
     testWidgets('默认高亮「跟随动作」，并解释各动作自带的值不一样',
         (WidgetTester tester) async {
       await pump(tester);
+      await openPreferences(tester);
       await tapRest(tester, 'rest-follow'); // 先滚到这一区
 
       expect(find.text('跟随动作'), findsOneWidget);
@@ -206,6 +216,7 @@ void main() {
     testWidgets('选 60 秒 → 落库 + 通知上层', (WidgetTester tester) async {
       int? notified;
       await pump(tester, onChanged: (int? v) => notified = v);
+      await openPreferences(tester);
 
       await tapRest(tester, 'rest-60');
 
@@ -218,6 +229,7 @@ void main() {
       await profile.setRestOverrideSec(60, nowMs: 1000);
       int? notified;
       await pump(tester, restOverrideSec: 60, onChanged: (int? v) => notified = v);
+      await openPreferences(tester);
 
       await tapRest(tester, 'rest-follow');
 
@@ -228,6 +240,7 @@ void main() {
     testWidgets('已经是同一个值时不再重复写库', (WidgetTester tester) async {
       int calls = 0;
       await pump(tester, onChanged: (int? _) => calls++);
+      await openPreferences(tester);
 
       await tapRest(tester, 'rest-follow'); // 默认就是 follow
       expect(calls, 0, reason: '没变化就不该通知');

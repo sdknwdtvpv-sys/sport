@@ -279,15 +279,27 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
     return Expanded(
       child: Column(
         children: <Widget>[
-          Text(
-            value,
-            key: key,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Tokens.text,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
+          // ⚠️ 大数**必须是一行**，而且要在固定的高度里：
+          // "不到 1 分钟"这类人话会长到换行，一换行就把这一格的标签顶下去，
+          // 三格看起来就歪了（2026-10-01 真机走查拍到的）。所以：
+          //   * `maxLines: 1` + `FittedBox(scaleDown)` —— 太长就整行缩一点，不换行；
+          //   * 外层给一个固定高度 —— 缩放后仍与另外两格**同高**，标签自然对齐。
+          SizedBox(
+            height: 30,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                key: key,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Tokens.text,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 4),

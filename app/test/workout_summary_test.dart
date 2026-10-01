@@ -235,6 +235,35 @@ void main() {
       expect(find.text('训练完成'), findsOneWidget);
     });
 
+    testWidgets('三个大数在同一水平线上：中间那格再长也不许换行把标签顶下去',
+        (WidgetTester tester) async {
+      // 这一条来自 2026-10-01 的真机走查：练了 2 组、时长不到 1 分钟时，
+      // 中格的值是「不到 1 分钟」—— 它换行成两行，把「时长」这个标签
+      // 压到比左右两格低一截，三格看起来就是歪的。
+      await logSets('w1', 'ex_bb_bench_press', <_S>[_S(8, 60)],
+          startedAt: 0, from: 20000);
+      await pumpSummary(tester, 'w1');
+
+      expect(
+        tester.widget<Text>(find.byKey(const Key('summary-duration'))).data,
+        contains('不到'),
+        reason: '前置：这一格的值就是那句会长到换行的人话',
+      );
+
+      // 值必须是单行（长就整体缩，不换行）
+      for (final String key in <String>['summary-volume', 'summary-duration', 'summary-sets']) {
+        final Text t = tester.widget<Text>(find.byKey(Key(key)));
+        expect(t.maxLines, 1, reason: '$key 的大数必须单行');
+      }
+
+      // 三个标签的纵向中心必须一致 —— 这才是"对齐"的可观测判据
+      final double y1 = tester.getCenter(find.text('容量')).dy;
+      final double y2 = tester.getCenter(find.text('时长')).dy;
+      final double y3 = tester.getCenter(find.text('组数')).dy;
+      expect(y2, closeTo(y1, 0.5), reason: '「时长」标签被换行顶下去了');
+      expect(y3, closeTo(y1, 0.5));
+    });
+
     testWidgets('有破纪录时显示纪录区块，且不只靠颜色表达',
         (WidgetTester tester) async {
       await logSets('w_old', 'ex_bb_bench_press', <_S>[_S(8, 60)], from: 1000);

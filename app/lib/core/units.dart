@@ -32,17 +32,21 @@ enum WeightUnit {
   static WeightUnit fromWire(String? w) => w == 'lb' ? WeightUnit.lb : WeightUnit.kg;
 }
 
-/// 体重的显示单位：**千克 / 斤**。
+/// 体重的显示单位：**千克 / 磅 / 斤**。
 ///
-/// 为什么不复用 [WeightUnit]：训练重量用的是"杠铃片网格"那套（kg/lb），
-/// 而中国人称体重说的是**斤**（1 斤 = 500 g = 0.5 kg）—— 两者的取值集合不一样：
-///   * 训练重量：kg / lb（没人说"杠铃 200 斤"）
-///   * 体重：kg / 斤（没人把体重记成磅）
+/// 为什么不直接复用 [WeightUnit]：训练重量用的是"杠铃片网格"那套（kg/lb），
+/// 而中国人称体重还爱说**斤**（1 斤 = 500 g = 0.5 kg）—— 比全局多一个取值。
 /// 混成一个枚举会逼着每个使用点判断"这个单位在体重场景下合不合法"。
+///
+/// ⚠️ **2026-10-01 补上 lb**（真机走查发现的真实不一致）：以前这里只有 kg/斤，
+/// 于是"全局选了磅"的用户打开身体数据页看到的还是 kg —— 两套口径各说各的。
+/// 现在两边取值集合一致，并且**默认联动**：全局换单位时，体重单位只要
+/// 还是"跟着全局"的状态（见 `ProfileRepository.setUnit` 的注释）就一起换。
 ///
 /// 存储仍然是 kg（与全局同一条规矩）—— 这里只管怎么念。
 enum BodyWeightUnit {
   kg('kg', 'kg'),
+  lb('lb', 'lb'),
   jin('jin', '斤');
 
   const BodyWeightUnit(this.wire, this.label);
@@ -53,20 +57,29 @@ enum BodyWeightUnit {
   /// 界面上念的名字
   final String label;
 
-  static BodyWeightUnit fromWire(String? w) =>
-      w == 'jin' ? BodyWeightUnit.jin : BodyWeightUnit.kg;
+  static BodyWeightUnit fromWire(String? w) => switch (w) {
+        'jin' => BodyWeightUnit.jin,
+        'lb' => BodyWeightUnit.lb,
+        _ => BodyWeightUnit.kg,
+      };
 }
 
 /// 1 kg = 2 斤（市斤）。整数，换算是精确的 —— 斤 与 kg 之间来回倒不会掉精度。
 const double kJinPerKg = 2;
 
 /// kg → 体重的显示单位
-double toDisplayBodyWeight(double kg, BodyWeightUnit unit) =>
-    unit == BodyWeightUnit.kg ? kg : kg * kJinPerKg;
+double toDisplayBodyWeight(double kg, BodyWeightUnit unit) => switch (unit) {
+      BodyWeightUnit.kg => kg,
+      BodyWeightUnit.lb => kg * kLbPerKg,
+      BodyWeightUnit.jin => kg * kJinPerKg,
+    };
 
 /// 用户输入的体重 → 存储的 kg
-double bodyWeightToKg(double value, BodyWeightUnit unit) =>
-    unit == BodyWeightUnit.kg ? value : value / kJinPerKg;
+double bodyWeightToKg(double value, BodyWeightUnit unit) => switch (unit) {
+      BodyWeightUnit.kg => value,
+      BodyWeightUnit.lb => value / kLbPerKg,
+      BodyWeightUnit.jin => value / kJinPerKg,
+    };
 
 /// 「85.5 kg」/「171 斤」。
 ///

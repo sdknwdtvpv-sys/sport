@@ -96,6 +96,33 @@ void main() {
       expect(find.byKey(const Key('collection-error')), findsNothing);
     });
 
+    testWidgets('标题有层级、正文不裸露分隔线（2026-10-01 真机走查改的）',
+        (WidgetTester tester) async {
+      // 这一份是纯文本资产，2026-10-01 之前整块丢给一个 Text 渲染 ——
+      // 所有行一样大一样灰，标题找不到；而生成器那时还在标题上下各画一条
+      // `════` 长横线，应用里看起来像连着三条细线 + 大空行。
+      await tester.pumpWidget(MaterialApp(
+        home: CollectionListScreen(
+            loader: () async => '一、个人信息收集清单\n\n【1】本应用的核心功能不收集任何个人信息\n\n  正文一行'),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final Text heading = tester.widget<Text>(find.text('一、个人信息收集清单'));
+      expect(heading.style?.fontWeight, FontWeight.w700,
+          reason: '一级标题要有分量');
+      expect(heading.style?.fontSize, greaterThan(14));
+
+      final Text sub = tester.widget<Text>(find.text('【1】本应用的核心功能不收集任何个人信息'));
+      expect(sub.style?.fontWeight, FontWeight.w600, reason: '二级标题也要有层级');
+
+      // 生成的清单文本里不该再有裸横幅线（那是排版事故的来源）
+      final String asset = File('assets/collection-list.txt').readAsStringSync();
+      expect(asset.contains('═'), isFalse,
+          reason: '生成器不该再画横幅线 —— 层级由界面给');
+      expect(asset.contains('---'), isFalse, reason: 'markdown 分隔线也一样');
+    });
+
     testWidgets('读资产失败时如实说，而不是留一片空白',
         (WidgetTester tester) async {
       await tester.pumpWidget(MaterialApp(
@@ -126,7 +153,7 @@ void main() {
 
     tearDown(() => db.close());
 
-    testWidgets('「我」页有「个人信息收集清单」这一项，且真的跳过去',
+    testWidgets('「我 → 隐私与关于」里有「个人信息收集清单」这一项，且真的跳过去',
         (WidgetTester tester) async {
       // ⚠️ 不能用 `pumpAndSettle`：这一屏上有常驻定时器/动画，永远等不到"静止"
       Future<void> settle([int ms = 600]) async {
@@ -144,14 +171,24 @@ void main() {
       ));
       await settle(1200);
 
+      // 2026-10-01 重排：清单入口进了「我 → 隐私与关于」。
+      // 164 号文的要求是"以**二级菜单**形式集中展示"—— 判定依据是
+      // **能从菜单点进去**（下面这几跳每一下都是一个可点的菜单项），不是"必须挂在第一层"。
       // 「我」页是懒构建的 ListView：没进视口就不存在
       for (int i = 0; i < 12; i++) {
-        if (find.byKey(const Key('collection-list')).evaluate().isNotEmpty) break;
+        if (find.byKey(const Key('open-privacy-about')).evaluate().isNotEmpty) break;
         await tester.drag(find.byType(ListView), const Offset(0, -260));
         await settle(300);
       }
+      final Finder entry = find.byKey(const Key('open-privacy-about'));
+      expect(entry, findsOneWidget, reason: '「我」页必须有「隐私与关于」这一项');
+      await tester.ensureVisible(entry);
+      await settle(300);
+      await tester.tap(entry);
+      await settle(900);
+
       final Finder tile = find.byKey(const Key('collection-list'));
-      expect(tile, findsOneWidget, reason: '164 号文要求以二级菜单形式展示');
+      expect(tile, findsOneWidget, reason: '164 号文要求以菜单形式展示');
       await tester.ensureVisible(tile);
       await settle(300);
 

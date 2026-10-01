@@ -367,10 +367,19 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    /// 2026-10-01 重排：导出/导收入进了「我 → 数据与备份」，每次先点进去。
+    Future<void> openDataTools(WidgetTester tester) async {
+      final Finder entry = find.byKey(const Key('open-data-tools'));
+      await scrollTo(tester, entry);
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('「导出备份文件」交出去的就是能导回的备份', (WidgetTester tester) async {
       await store.saveSet(_set(id: 's1'));
       await pumpProfile(tester);
 
+      await openDataTools(tester);
       await scrollTo(tester, find.byKey(const Key('export-backup')));
       await tester.tap(find.byKey(const Key('export-backup')));
       await tester.pumpAndSettle();
@@ -397,6 +406,7 @@ void main() {
       );
       await pumpProfile(tester);
 
+      await openDataTools(tester);
       await scrollTo(tester, find.byKey(const Key('import-backup')));
       await tester.tap(find.byKey(const Key('import-backup')));
       await tester.pumpAndSettle();
@@ -417,6 +427,7 @@ void main() {
         (WidgetTester tester) async {
       await pumpProfile(tester);
 
+      await openDataTools(tester);
       await scrollTo(tester, find.byKey(const Key('import-backup')));
       await tester.tap(find.byKey(const Key('import-backup')));
       await tester.pumpAndSettle();
@@ -439,6 +450,7 @@ void main() {
       );
       await pumpProfile(tester);
 
+      await openDataTools(tester);
       await scrollTo(tester, find.byKey(const Key('import-backup')));
       await tester.tap(find.byKey(const Key('import-backup')));
       await tester.pumpAndSettle();
@@ -457,6 +469,7 @@ void main() {
       await pumpProfile(tester);
 
       // 报表那条路仍然只往剪贴板写 CSV，不碰分享
+      await openDataTools(tester);
       await scrollTo(tester, find.byKey(const Key('export-csv')));
       await tester.tap(find.byKey(const Key('export-csv')));
       await tester.pumpAndSettle();

@@ -284,35 +284,50 @@ class _AllDataScreenState extends State<AllDataScreen> {
           )
         else ...<Widget>[
           _sectionTitle('历史最佳'),
+          // ⚠️ **按"这个动作到底在比什么"决定显示哪几行**（2026-10-01 真机走查改的）。
+          // 以前不管什么动作都摆这五行，于是自重动作（引体向上）看到的是
+          // 「最大重量 — / 1RM — / 总容量 —」三行废话，下面还叠了两条恒为零的平线。
+          // 现在：有重量的比容量与 1RM；自重/按时长的比次数（或秒数）与总组数。
           _card(<Widget>[
-            _statRow('最大重量',
-                s.isBodyweight ? '—' : formatWeight(s.bestWeightKg, widget.unit),
-                const Key('all-data-best-weight')),
-            _statRow('最佳估算 1RM',
-                s.best1RM == null ? '—' : formatWeight(s.best1RM, widget.unit),
-                const Key('all-data-best-1rm')),
+            if (s.tracksWeight) ...<Widget>[
+              _statRow('最大重量', formatWeight(s.bestWeightKg, widget.unit),
+                  const Key('all-data-best-weight')),
+              _statRow('最佳估算 1RM',
+                  s.best1RM == null ? '—' : formatWeight(s.best1RM, widget.unit),
+                  const Key('all-data-best-1rm')),
+            ],
             // 按时长动作这里念「秒」—— 平板支撑的"最多次数"是个说不通的标签
             _statRow(
               s.isTime ? '最长时长' : '最多次数',
               '${s.bestReps} ${s.isTime ? '秒' : '次'}',
               const Key('all-data-best-reps'),
             ),
-            _statRow('总容量', formatVolume(s.totalVolumeKg, widget.unit, zeroText: '—'),
-                const Key('all-data-total-volume')),
+            if (s.tracksWeight)
+              _statRow('总容量', formatVolume(s.totalVolumeKg, widget.unit, zeroText: '—'),
+                  const Key('all-data-total-volume')),
             _statRow('总组数', '${s.setCount} 组', const Key('all-data-set-count')),
           ]),
-          _sectionTitle('容量趋势（最近 30 天）'),
-          _trendCard(s.volumeTrend, const Key('all-data-volume-trend')),
-          _sectionTitle('1RM 趋势（最近 30 天）'),
-          _trendCard(s.oneRmTrend, const Key('all-data-1rm-trend')),
-          if (s.isBodyweight)
-            const Padding(
-              padding: EdgeInsets.only(top: Tokens.s2),
+          if (s.tracksWeight) ...<Widget>[
+            _sectionTitle('容量趋势（最近 30 天）'),
+            _trendCard(s.volumeTrend, const Key('all-data-volume-trend')),
+            _sectionTitle('1RM 趋势（最近 30 天）'),
+            _trendCard(s.oneRmTrend, const Key('all-data-1rm-trend')),
+          ] else ...<Widget>[
+            // 自重 / 按时长动作：容量与 1RM 恒为 0，画出来只是贴着底的平线。
+            // 它们真正会变的是次数（按时长动作是秒数），所以只画这一条。
+            _sectionTitle(
+                s.isTime ? '时长趋势（最近 30 天）' : '次数趋势（最近 30 天）'),
+            _trendCard(s.repsTrend, const Key('all-data-reps-trend')),
+            Padding(
+              padding: const EdgeInsets.only(top: Tokens.s2),
               child: Text(
-                '自重动作没有 1RM —— 它比的是次数。',
-                style: TextStyle(color: Tokens.text3, fontSize: 12),
+                s.isTime
+                    ? '按时长动作不比容量 —— 它比的是每组坚持了多久。'
+                    : '自重动作不比容量与 1RM —— 它比的是次数。',
+                style: const TextStyle(color: Tokens.text3, fontSize: 12),
               ),
             ),
+          ],
           _sectionTitle('全部记录'),
           _card(<Widget>[
             for (final SetRecord r in _records.take(30)) _recordRow(r),

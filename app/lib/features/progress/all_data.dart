@@ -99,6 +99,7 @@ class ExerciseStats {
     required this.lastTrainedAtMs,
     required this.volumeByDay,
     required this.oneRmByDay,
+    this.repsByDay = const <int>[],
   });
 
   final String exerciseId;
@@ -127,6 +128,13 @@ class ExerciseStats {
   /// 窗口内每天的最大估算 1RM（没值的日子是 0）
   final List<double> oneRmByDay;
 
+  /// 窗口内每天的**最多次数**（没练的天是 0）。
+  ///
+  /// 2026-10-01 加的：自重动作（引体向上）与按时长动作（平板支撑）的
+  /// 「容量趋势 / 1RM 趋势」是**两张恒为零的平线** —— 真机走查看到的原话是
+  /// "白占两屏"。它们真正会变的是次数/秒数，所以给它们一条自己的趋势。
+  final List<int> repsByDay;
+
   bool get isBodyweight => bestWeightKg == null;
   bool get isEmpty => setCount == 0;
 
@@ -139,6 +147,19 @@ class ExerciseStats {
   /// 单独一条是因为**容量与 1RM 会背离**：练得更多（容量涨）不一定更强
   /// （1RM 原地踏步），这正是力量训练者最想看到的区别。
   List<double> get oneRmTrend => normalize(oneRmByDay);
+
+  /// 次数（或秒数）趋势（0..1）。
+  ///
+  /// 自重 / 按时长动作看这条 —— 它们的容量与 1RM 恒为 0，
+  /// 画出来只是两条贴着底的平线（见 [repsByDay] 的注释）。
+  List<double> get repsTrend =>
+      normalize(repsByDay.map((int v) => v.toDouble()).toList());
+
+  /// 这一屏该显示哪一套指标：**有重量的**才谈容量与 1RM。
+  ///
+  /// 判据不是"有没有 count"而是"有没有重量" —— 自重动作的重量是 null，
+  /// 于是「最大重量 / 1RM / 总容量」三行永远是「—」、两张图永远是平线。
+  bool get tracksWeight => bestWeightKg != null;
 }
 
 /// 按动作汇总。[sets] 传该动作的全部记录（跨训练）。
@@ -173,9 +194,11 @@ ExerciseStats buildExerciseStats({
   final List<DateTime> window = _dayWindow(today, days);
   final Map<String, double> volumeMap = <String, double>{};
   final Map<String, double> oneRmMap = <String, double>{};
+  final Map<String, int> repsMap = <String, int>{};
   for (final SetRecord s in normal) {
     final String key = _dayKeyOf(s.completedAtMs);
     volumeMap[key] = (volumeMap[key] ?? 0) + s.volume;
+    if (s.reps > (repsMap[key] ?? 0)) repsMap[key] = s.reps;
     final double? e = estimate1RM(s.weightKg, s.reps);
     if (e != null) {
       final double prev = oneRmMap[key] ?? 0;
@@ -199,6 +222,9 @@ ExerciseStats buildExerciseStats({
     ],
     oneRmByDay: <double>[
       for (final DateTime d in window) oneRmMap[_keyOf(d)] ?? 0,
+    ],
+    repsByDay: <int>[
+      for (final DateTime d in window) repsMap[_keyOf(d)] ?? 0,
     ],
   );
 }

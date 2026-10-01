@@ -55,6 +55,8 @@ const CORE = [
   '08-progress',
   '09-all-data',
   '10-profile',
+  // 「我 → 数据与备份」（2026-10-01 重排后新增的一屏：身体数据 / 导出 / 导入 / 删除）
+  '10b-data-tools',
   '11-body-metric',
 ];
 
@@ -85,7 +87,9 @@ const SETS = [
     label: 'Google Play 那套（9:16，宽高比在两种口径下都合法）',
     width: 1080,
     height: 1920,
-    files: [...CORE],
+    // 2026-10-01 起这一套也带上那道同意门与撤回入口：重拍时是**干净安装**，
+    // 两道门都在，没有理由把它们丢掉（它们是合规证据，商店上传时挑着用就行）。
+    files: [...CORE, '11a-body-consent', '11b-body-revoke'],
   },
   {
     dir: 'store-assets/screenshots-ios',
@@ -300,24 +304,24 @@ function selftest() {
     // ⚠️ 变异必须打在**带目录名的那一行**上：判据认的是"目录名到下一个目录名之间"的张数，
     // 打在别处（比如 screenshots.md 那句"共 14 张"）根本进不了检查范围 —— 第一版就是这么写的，
     // 于是"变异"其实没发生，用例红在一个假的原因上。
-    ['文档把国内那套写成 15 张（实际 14）', (r) => {
+    ['文档把国内那套写成 16 张（实际 15）', (r) => {
       const p = join(r, 'docs/release-checklist.md');
-      const t = readFileSync(p, 'utf8').replace('14 张（1080×2400，国内/软著）', '15 张（1080×2400，国内/软著）');
-      if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：那一行里没有「14 张（1080×2400，国内/软著）」');
+      const t = readFileSync(p, 'utf8').replace('15 张（1080×2400，国内/软著）', '16 张（1080×2400，国内/软著）');
+      if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：那一行里没有「15 张（1080×2400，国内/软著）」');
       writeFileSync(p, t);
-    }, false, '说「15 张」'],
+    }, false, '说「16 张」'],
     ['文档点名了一张不存在的截图', (r) => {
       const p = join(r, 'docs/store-listing.md');
       const t = readFileSync(p, 'utf8').replace('`01-home.png`', '`01-home-v2.png`');
       if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：store-listing.md 里没有 `01-home.png`');
       writeFileSync(p, t);
     }, false, '三套截图里都没有这个文件'],
-    ['文档把 App Store 那套写成 14 张（实际 13）', (r) => {
+    ['文档把 App Store 那套写成 15 张（实际 14）', (r) => {
       const p = join(r, 'docs/store-listing.md');
-      const t = readFileSync(p, 'utf8').replace('1320×2868，13 张', '1320×2868，14 张');
-      if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：store-listing.md 里没有「1320×2868，13 张」');
+      const t = readFileSync(p, 'utf8').replace('1320×2868，14 张', '1320×2868，15 张');
+      if (t === readFileSync(p, 'utf8')) throw new Error('夹具失效：store-listing.md 里没有「1320×2868，14 张」');
       writeFileSync(p, t);
-    }, false, '说「14 张」'],
+    }, false, '说「15 张」'],
   ];
 
   let bad = 0;

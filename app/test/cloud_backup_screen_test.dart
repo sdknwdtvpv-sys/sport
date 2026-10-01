@@ -104,6 +104,15 @@ Future<void> _scrollTo(WidgetTester tester, Finder target) async {
   await tester.pumpAndSettle();
 }
 
+/// 2026-10-01 重排：「删除全部数据」与「云备份」入口都收进了「我 → 数据与备份」。
+/// 这一页的测试都从「我」页出发，所以先点进去。
+Future<void> _openDataTools(WidgetTester tester) async {
+  final Finder entry = find.byKey(const Key('open-data-tools'));
+  await _scrollTo(tester, entry);
+  await tester.tap(entry);
+  await tester.pumpAndSettle();
+}
+
 Widget _wrap(_Harness h, {VoidCallback? onDataChanged}) => MaterialApp(
       theme: buildAppTheme(),
       home: CloudBackupScreen(
@@ -495,6 +504,7 @@ void main() {
     }
 
     Future<void> tapDeleteAll(WidgetTester tester) async {
+      await _openDataTools(tester);
       await _scrollTo(tester, find.byKey(const Key('delete-all')));
       await tester.tap(find.byKey(const Key('delete-all')));
       await tester.pumpAndSettle();
@@ -601,9 +611,13 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await _scrollTo(tester, find.byKey(const Key('delete-all')));
-      expect(find.byKey(const Key('cloud-backup')), findsNothing);
+      // 「我」页那一行"数据只存在这台设备上"仍然在首页底部
+      await _scrollTo(tester, find.textContaining('数据只存在这台设备上'));
       expect(find.textContaining('数据只存在这台设备上'), findsOneWidget);
+
+      // 进「数据与备份」—— 没配地址时那里连「云备份」这一行都不该有
+      await _openDataTools(tester);
+      expect(find.byKey(const Key('cloud-backup')), findsNothing);
     });
 
     testWidgets('配了地址 → 入口出现，且「关于」那句改成如实的说法',
@@ -622,13 +636,16 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      final Finder entry = find.byKey(const Key('cloud-backup'));
-      await _scrollTo(tester, entry);
-      expect(entry, findsOneWidget);
-      // 配了云备份还说"不上传任何人"就是撒谎
+      // 配了云备份还说"不上传任何人"就是撒谎 —— 这句话在「我」页底部
       await _scrollTo(tester, find.textContaining('端到端加密'));
       expect(find.textContaining('不上传任何人'), findsNothing);
       expect(find.textContaining('端到端加密'), findsOneWidget);
+
+      // 入口本身在「数据与备份」里
+      await _openDataTools(tester);
+      final Finder entry = find.byKey(const Key('cloud-backup'));
+      await _scrollTo(tester, entry);
+      expect(entry, findsOneWidget);
 
       // 能进去。测试环境两个编译期开关都没有（`LIANLEME_BACKUP_URL` 与
       // `LIANLEME_BACKUP_DISCLOSED` 都没定义），所以这一屏会**如实**说没配服务器

@@ -283,9 +283,10 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     final double? v = double.tryParse(t);
     if (v == null) return null;
     // 明显不合理的值当作没填，避免把 720kg 存进去。
-    // 范围按**显示单位**判断：400 kg / 800 斤（两者等价），再换成 kg 存库。
-    final double maxInDisplay =
-        _unit == BodyWeightUnit.kg ? 400 : 400 * kJinPerKg;
+    // 范围按**显示单位**判断：400 kg（= 882 lb = 800 斤），再换成 kg 存库。
+    // ⚠️ 三个单位都要算 —— 以前只有 kg/斤，加了 lb 之后
+    // 用 `_unit == kg ? 400 : 400 * 2` 会把 400 lb（≈181 kg）也判成超标。
+    final double maxInDisplay = toDisplayBodyWeight(400, _unit);
     if (v <= 0 || v > maxInDisplay) return null;
     return round1(bodyWeightToKg(v, _unit));
   }

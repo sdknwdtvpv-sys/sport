@@ -170,6 +170,9 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 | Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
 | 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v14**） |
 | **只支持 iPhone**（不承诺 iPad） | ✅ 2026-09-30 拍板 | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1"`；`tool/check-ios-app.mjs` 把"产物含 iPad"判红；依据（iPad 上只是拉长的手机版）见 `release-admin.md` §二之四之四 |
+| **「我」页按"多久碰一次"分三个二级页** | ✅ 2026-10-01 拍板并落地 | 统计每天看；偏好与备份设一次就不管；隐私与关于是给别人看的。`app/test/profile_structure_test.dart` 钉住"第一屏不许再长回去"；政策入口 3 次点击（小米"四步之内"） |
+| **体重单位默认跟随训练单位**（可单独选「斤」） | ✅ 2026-10-01 | `ProfileRepository.setUnit` 的联动判据 + `app/test/units_test.dart`；此前全局选了磅、身体页还写 kg，两套口径各说各的 |
+| **加 `flutter_localizations` 中文化系统页面** | ✅ 2026-10-01 | 它不是第三方 SDK（Flutter 官方、随 SDK 分发），政策中英两版的依赖清单里都如实写明；`locale: zh_CN` 写死（这一版只有中文文案） |
 | **CI 跑的就是门禁本身** | ✅ 2026-09-30 拍板 | `.github/workflows/ci.yml` 只有一条 `./verify.sh`；守卫 `tool/check-ci.mjs`（此前 CI 只是子集，"CI 绿 ≠ 门禁绿"） |
 | **备份只备份训练记录** | ✅ 2026-09-30 拍板（范围就此定死） | 边界由 `app/test/backup_scope_test.dart` 钉住；要做"全都要"就得同时动 format 版本 + 政策 + 隐私事实表 + 云备份 |
 | Apple Watch 原生 Swift 扩展 | ⏸ MVP 就不做 | — |

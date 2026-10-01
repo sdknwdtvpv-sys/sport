@@ -190,9 +190,23 @@ void main() {
       await capture('10-profile');
     });
 
+    await step('10b-data-tools', () async {
+      // 2026-10-01 重排：身体数据 / 导出 / 导入 / 删除都收进了「我 → 数据与备份」。
+      // 顺手把这一页也留一张 —— 它是"我"那一族里第二个二级页。
+      await tester.dragUntilVisible(
+        find.byKey(const Key('open-data-tools')),
+        find.byType(ListView),
+        const Offset(0, -220),
+      );
+      await settle(600);
+      await tester.tap(find.byKey(const Key('open-data-tools')));
+      await settle(1200);
+      await capture('10b-data-tools');
+    });
+
     await step('11-body-metric', () async {
-      // 「我」页是懒构建的 ListView：没滚到的 widget 根本不存在，find 会落空
-      // （前两次跑就是栽在这 —— 报"找不到 open-body-metric"）。先滚过去再点。
+      // 已经在「数据与备份」页里了：身体数据是这一页的第一行
+      // （ListView 懒构建这条规律仍然成立，所以还是先滚过去再点）
       await tester.dragUntilVisible(
         find.byKey(const Key('open-body-metric')),
         find.byType(ListView),

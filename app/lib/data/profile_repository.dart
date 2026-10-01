@@ -256,19 +256,29 @@ class ProfileRepository {
   ///
   /// **必须把其它设置原样带回去** —— 这正是 `setProgressionMode` 注释里
   /// 记着的那个坑：只写自己那一列、其余传默认值，会把用户别的设置悄悄抹掉。
+  /// 改**训练重量**的显示单位。
+  ///
+  /// **体重单位默认跟着它走**（2026-10-01 统一口径，真机走查发现的真实不一致：
+  /// 以前全局选了 lb，身体数据页还写着 kg）。
+  /// 联动的判据是"用户有没有单独选过"：体重单位**本来就等于旧全局值**（或还没写过）
+  /// 就一起换；已经不一样了（比如用户单独选了「斤」）→ 那是他的选择，不动。
   Future<void> setUnit(WeightUnit unit, {int? nowMs}) async {
     final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
     final existing = await (_db.select(_db.userProfile)
           ..where((t) => t.userId.equals(kLocalUserId)))
         .getSingleOrNull();
 
+    final String? oldBody = existing?.bodyWeightUnit;
+    final bool bodyFollowsGlobal = oldBody == null || oldBody == existing?.unitPref;
+
     await _db.into(_db.userProfile).insertOnConflictUpdate(
           UserProfileData(
             userId: kLocalUserId,
             progressionMode: existing?.progressionMode ?? 'double',
             unitPref: unit.wire,
-            // ⚠️ 这里也必须带上体重单位 —— 它和训练重量是**两个**设置
-            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
+            // ⚠️ 这里也必须带上体重单位 —— 它和训练重量是**两个**设置。
+            // 默认跟随：跟随状态下换全局单位，体重单位一起换（见上面那段注释）。
+            bodyWeightUnit: bodyFollowsGlobal ? unit.wire : oldBody,
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? false,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`

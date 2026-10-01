@@ -227,7 +227,19 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    /// 进二级页（2026-10-01 重排：开关、导出、删除都收进去了）。
+    ///
+    /// 「我」页现在只剩统计 + 三个入口，所以这一步是**所有**二级页测试的公共前缀；
+    /// 进去之后页面自己的内容还得用 [scrollTo] 滚过去（ListView 懒构建，老规矩）。
+    Future<void> openPage(WidgetTester tester, String entryKey) async {
+      final Finder row = find.byKey(Key(entryKey));
+      await scrollTo(tester, row);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+    }
+
     Future<void> tapDeleteAll(WidgetTester tester) async {
+      await openPage(tester, 'open-data-tools');
       final Finder tile = find.byKey(const Key('delete-all'));
       await scrollTo(tester, tile);
       await tester.tap(tile);
@@ -268,6 +280,7 @@ void main() {
     testWidgets('开关默认开着，关掉之后写进库', (WidgetTester tester) async {
       await pumpProfile(tester);
 
+      await openPage(tester, 'open-preferences');
       await scrollTo(tester, find.byKey(const Key('progression-switch')));
       expect(tester.widget<SwitchListTile>(find.byKey(const Key('progression-switch'))).value,
           isTrue);
@@ -296,8 +309,8 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // 「我」页现在有 6 个分区，隐私开关在首屏之下 —— ListView 懒构建，
-      // 不滚过去它根本不存在，find 会直接落空
+      // 2026-10-01 重排：隐私开关在「我 → 隐私与关于」里
+      await openPage(tester, 'open-privacy-about');
       await scrollTo(tester, find.byKey(const Key('analytics-switch')));
       expect(
         tester.widget<SwitchListTile>(find.byKey(const Key('analytics-switch'))).value,
@@ -332,6 +345,7 @@ void main() {
       await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
       await pumpProfile(tester);
 
+      await openPage(tester, 'open-data-tools');
       await scrollTo(tester, find.byKey(const Key('export-csv')));
       await tester.tap(find.byKey(const Key('export-csv')));
       await tester.pumpAndSettle();
@@ -372,10 +386,13 @@ void main() {
 
       expect(await store.allSets(), isEmpty, reason: '库里必须真删掉（硬删除）');
 
+      // 2026-10-01 重排之后，统计卡在上一级「我」页 —— 删完得退回那一页再看。
+      // （退回这一步本身就是设计的一部分：二级页不自己复制一份统计。）
+      await tester.tap(find.byKey(const Key('subpage-back')));
+      await tester.pumpAndSettle();
+
       // ⚠️ 断言统计卡之前要先滚回顶部：`ListView` 是**懒构建**的 ——
-      // 「数据」区在下面，滚下去之后上面那几张卡会被回收，
-      // `find` 会直接落空（不是界面没刷新）。
-      // （加「导出备份/导入备份」两个 tile 之后视口变化，这条就露出来了。）
+      // 统计卡在首屏，退回来时就在视口里；下面这句仍保留"滚到目标"的语义。
       await tester.dragUntilVisible(
         find.textContaining('还没有训练记录'),
         find.byType(ListView),

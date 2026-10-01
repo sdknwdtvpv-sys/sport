@@ -132,24 +132,29 @@ void main() {
     );
   });
 
-  testWidgets('自重动作不显示 1RM（算不出来就不编）', (WidgetTester tester) async {
+  testWidgets('自重动作比次数：重量/1RM/容量三行与两张零线图都不出现',
+      (WidgetTester tester) async {
     await saveSet(id: 'a', exerciseId: 'ex_pull_up', reps: 12, weightKg: null);
     await pump(tester);
 
-    expect(
-      tester.widget<Text>(find.byKey(const Key('all-data-best-weight'))).data,
-      '—',
-    );
-    expect(
-      tester.widget<Text>(find.byKey(const Key('all-data-best-1rm'))).data,
-      '—',
-    );
+    // 2026-10-01 真机走查改的：以前这三行都在，只是值全是「—」，
+    // 下面还叠着"容量趋势 / 1RM 趋势"两条恒为零的平线 —— 白占两屏。
+    expect(find.byKey(const Key('all-data-best-weight')), findsNothing,
+        reason: '自重动作没有"最大重量"这回事');
+    expect(find.byKey(const Key('all-data-best-1rm')), findsNothing);
+    expect(find.byKey(const Key('all-data-total-volume')), findsNothing,
+        reason: '容量 = 重量 × 次数，自重动作算不出来');
+    expect(find.byKey(const Key('all-data-volume-trend')), findsNothing);
+    expect(find.byKey(const Key('all-data-1rm-trend')), findsNothing);
+
+    // 该显示的是次数：最佳 + 一条次数趋势
     expect(
       tester.widget<Text>(find.byKey(const Key('all-data-best-reps'))).data,
       '12 次',
     );
-    await scrollTo(tester, find.textContaining('自重动作没有 1RM'));
-    expect(find.textContaining('自重动作没有 1RM'), findsOneWidget);
+    await scrollTo(tester, find.byKey(const Key('all-data-reps-trend')));
+    expect(find.byKey(const Key('all-data-reps-trend')), findsOneWidget);
+    expect(find.textContaining('自重动作不比容量与 1RM'), findsOneWidget);
   });
 
   testWidgets('切到「按时间」显示本周 / 本月与月趋势', (WidgetTester tester) async {

@@ -63,7 +63,7 @@
 <p><strong>You can withdraw that consent at any time</strong> (PIPL Article 15). The entry sits at the bottom of the Body metrics screen — &quot;Withdraw my consent&quot;. After withdrawal we stop collecting new weight readings immediately and that screen asks for your consent again the next time you open it; <strong>records you already saved are not deleted automatically</strong> (withdrawing consent and deleting data are two different things — delete data yourself under &quot;All data&quot;).</p>
 </blockquote>
 <h3 id="2-2-collected-only-when-help-improve-the-product-is-on">2.2 Collected only when &quot;Help improve the product&quot; is ON</h3>
-<p>This is a <strong>switch that is off by default</strong>: nothing below is produced unless you <strong>turn it on yourself</strong> (Profile → &quot;Help improve the product&quot;); once on, you can turn it off again at any time, effective immediately. It produces exactly <strong>18 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
+<p>This is a <strong>switch that is off by default</strong>: nothing below is produced unless you <strong>turn it on yourself</strong> (Profile → Privacy &amp; About → &quot;Help improve the product&quot;); once on, you can turn it off again at any time, effective immediately. It produces exactly <strong>18 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
 <table>
 <thead><tr><th>Event</th><th>When</th><th>Fields</th></tr></thead>
 <tbody>
@@ -143,9 +143,13 @@
 <tr><td><code>cryptography</code></td><td>2.9.0</td><td>End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM)</td><td><strong>No.</strong> Pure Dart, no network</td><td>Apache-2.0</td><td><a href="https://pub.dev/packages/cryptography">pub.dev</a></td></tr>
 </tbody>
 </table>
+<p>One dependency is <strong>not</strong> third-party, and we state it here too:</p>
+<ul>
+<li><code>flutter_localizations</code>: Flutter's own (SDK-bundled) localization component. It makes built-in screens such as the open-source license page and date pickers render in Chinese. <strong>It is not a third-party SDK, it collects nothing, and it makes no network calls.</strong></li>
+</ul>
 <p>Three notes:</p>
 <ul>
-<li><strong>No advertising SDK, no analytics SDK, no crash-reporting SDK.</strong> None of the six libraries above sends anything to a third party.</li>
+<li><strong>No advertising SDK, no analytics SDK, no crash-reporting SDK.</strong> None of the libraries above sends anything to a third party.</li>
 <li>Our own code goes online only when <strong>you</strong> enable cloud backup, or when &quot;Help improve the product&quot; is on <strong>and</strong> the build has an endpoint configured — see 3.1 (the current release has none).</li>
 <li><strong>Development-only dependencies never ship</strong>: <code>build_runner</code> / <code>drift_dev</code> (code generation) and <code>integration_test</code> (our own test harness) exist only in development and CI.</li>
 <li><strong>The table above lists direct dependencies only.</strong> They pull in further transitive libraries (the Flutter framework, Skia, ICU, …). The complete list is available <strong>inside the app</strong> at &quot;Me → Open-source licences&quot; (Flutter's licence page enumerates every component shipped in the package). The per-library &quot;does it collect anything&quot; notes are hand-written for the libraries we chose; the authoritative answer for &quot;what is in the package&quot; is that page, not this table.</li>
@@ -176,9 +180,9 @@
 <table>
 <thead><tr><th>Right</th><th>How</th></tr></thead>
 <tbody>
-<tr><td><strong>Turn usage statistics on or off</strong></td><td><strong>It is off by default</strong> (nobody is counted). To take part, <strong>turn it on yourself</strong> in Profile → &quot;Help improve the product&quot;. Both directions take effect immediately; no feature is affected</td></tr>
-<tr><td><strong>Export all your data</strong></td><td>Profile → &quot;Export all records&quot; — generates a CSV copied to your clipboard</td></tr>
-<tr><td><strong>Delete all data</strong></td><td>Profile → &quot;Delete all data&quot;. After a confirmation prompt, local records and settings are wiped immediately</td></tr>
+<tr><td><strong>Turn usage statistics on or off</strong></td><td><strong>It is off by default</strong> (nobody is counted). To take part, <strong>turn it on yourself</strong> in Profile → Privacy &amp; About → &quot;Help improve the product&quot;. Both directions take effect immediately; no feature is affected</td></tr>
+<tr><td><strong>Export all your data</strong></td><td>Profile → Data &amp; Backup → &quot;Export all records&quot; — generates a CSV copied to your clipboard</td></tr>
+<tr><td><strong>Delete all data</strong></td><td>Profile → Data &amp; Backup → &quot;Delete all data&quot;. After a confirmation prompt, local records and settings are wiped immediately</td></tr>
 <tr><td><strong>Uninstall to delete</strong></td><td>Uninstalling the app removes the local database</td></tr>
 </tbody>
 </table>

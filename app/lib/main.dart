@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'analytics/analytics_context.dart';
 import 'analytics/flusher.dart';
@@ -73,6 +74,17 @@ class LianLeMeApp extends StatelessWidget {
       title: '练了么',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      // 界面语言**写死中文**：这一版只有中文文案（政策、清单、软著都是中文），
+      // 跟着系统语言走只会让"英文系统 + 中文界面"这种组合里，Material 自带的
+      // 页面（许可页、选择器）变成半中半英。
+      // 这些 delegate 只提供**系统组件的文案与格式**，不改变我们自己的任何字符串。
+      locale: const Locale('zh', 'CN'),
+      supportedLocales: const <Locale>[Locale('zh', 'CN'), Locale('en')],
+      localizationsDelegates: const <LocalizationsDelegate<Object>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: HomeShell(database: database, seedLoader: seedLoader),
     );
   }

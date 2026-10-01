@@ -141,7 +141,18 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // 「关于」在页面最底下，懒构建的 ListView 得先滚过去
+      // 2026-10-01 重排：先进「我 → 隐私与关于」，再找政策入口。
+      // 三跳（我 → 隐私与关于 → 隐私政策）仍在小米指引的"四步之内"。
+      final Finder entry = find.byKey(const Key('open-privacy-about'));
+      for (int i = 0; i < 12 && entry.evaluate().isEmpty; i++) {
+        await tester.drag(find.byType(ListView), const Offset(0, -260));
+        await tester.pumpAndSettle();
+      }
+      expect(entry, findsOneWidget, reason: '「我」页必须有「隐私与关于」这一项');
+      tester.widget<ListTile>(entry).onTap!();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
       final Finder tile = find.byKey(const Key('privacy-policy'));
       for (int i = 0; i < 12 && tile.evaluate().isEmpty; i++) {
         await tester.drag(find.byType(ListView), const Offset(0, -260));
@@ -186,6 +197,15 @@ void main() {
         ),
       ));
       await tester.pumpAndSettle();
+
+      final Finder entry = find.byKey(const Key('open-privacy-about'));
+      for (int i = 0; i < 12 && entry.evaluate().isEmpty; i++) {
+        await tester.drag(find.byType(ListView), const Offset(0, -260));
+        await tester.pumpAndSettle();
+      }
+      tester.widget<ListTile>(entry).onTap!();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       final Finder tile = find.byKey(const Key('open-source-licenses'));
       for (int i = 0; i < 12 && tile.evaluate().isEmpty; i++) {

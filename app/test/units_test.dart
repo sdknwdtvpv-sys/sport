@@ -200,6 +200,13 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // 2026-10-01 重排：单位收进「我 → 偏好设置」
+      final Finder entry = find.byKey(const Key('open-preferences'));
+      await tester.dragUntilVisible(entry, find.byType(ListView), const Offset(0, -220));
+      await tester.pumpAndSettle();
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+
       await tester.dragUntilVisible(
         find.byKey(const Key('unit-lb')),
         find.byType(ListView),
@@ -229,6 +236,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final Finder entry = find.byKey(const Key('open-preferences'));
+      await tester.dragUntilVisible(entry, find.byType(ListView), const Offset(0, -220));
+      await tester.pumpAndSettle();
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+
       await tester.dragUntilVisible(
         find.byKey(const Key('unit-lb')),
         find.byType(ListView),
@@ -250,6 +263,11 @@ void main() {
       expect(bodyWeightToKg(85.5, BodyWeightUnit.kg), 85.5);
       // 半斤 = 0.25 kg，用说明"斤"的粒度是 0.5 斤而不是 1 斤
       expect(toDisplayBodyWeight(85.25, BodyWeightUnit.jin), 170.5);
+      // 2026-10-01 补的磅：与训练重量共用同一个换算常数
+      expect(round1(toDisplayBodyWeight(85.5, BodyWeightUnit.lb)),
+          round1(85.5 * kLbPerKg));
+      expect(round1(bodyWeightToKg(toDisplayBodyWeight(80, BodyWeightUnit.lb),
+          BodyWeightUnit.lb)), 80);
     });
 
     test('念法：斤 不带多余小数，kg 保留一位', () {
@@ -262,16 +280,36 @@ void main() {
 
     test('wire 与 DB 默认值一致，未知值回落 kg', () {
       expect(BodyWeightUnit.jin.wire, 'jin');
+      expect(BodyWeightUnit.lb.wire, 'lb');
       expect(BodyWeightUnit.fromWire('jin'), BodyWeightUnit.jin);
+      expect(BodyWeightUnit.fromWire('lb'), BodyWeightUnit.lb,
+          reason: '2026-10-01 起体重也有磅 —— 全局选了磅的人不该在身体页看到 kg');
       expect(BodyWeightUnit.fromWire(null), BodyWeightUnit.kg);
-      expect(BodyWeightUnit.fromWire('lb'), BodyWeightUnit.kg,
-          reason: '体重没有磅这个选项 —— 单位集合是 kg/斤');
+      expect(BodyWeightUnit.fromWire('stone'), BodyWeightUnit.kg,
+          reason: '没见过的值回落 kg，不许猜');
     });
 
-    test('体重单位与训练重量单位是两件事，互不影响', () {
-      // 训练切到磅，不代表体重也变磅
+    test('念法照旧用各自的单位（格式化不联动）', () {
       expect(formatWeight(60, WeightUnit.lb), '132.3 lb');
       expect(formatBodyWeight(85.5, BodyWeightUnit.kg), '85.5 kg');
+      expect(formatBodyWeight(85.5, BodyWeightUnit.lb), '188.5 lb');
+    });
+
+    test('体重单位**默认跟随训练单位**（2026-10-01 统一口径）', () async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final ProfileRepository profile = ProfileRepository(db);
+
+      // 什么都没选过：两个都是默认 kg → 换训练单位时体重跟着换
+      await profile.setUnit(WeightUnit.lb, nowMs: 1000);
+      expect(await profile.bodyWeightUnit(), BodyWeightUnit.lb,
+          reason: '没单独选过就该跟随 —— 否则"全局选了磅、体重还是 kg"');
+
+      // 用户单独选了「斤」：以后换训练单位不再动它
+      await profile.setBodyWeightUnit(BodyWeightUnit.jin, nowMs: 2000);
+      await profile.setUnit(WeightUnit.kg, nowMs: 3000);
+      expect(await profile.bodyWeightUnit(), BodyWeightUnit.jin,
+          reason: '单独选过的是用户的选择，不许被联动抹掉');
     });
   });
 
@@ -301,7 +339,7 @@ void main() {
           reason: '改体重单位不能把训练单位抹成默认值');
     });
 
-    testWidgets('改训练单位 → 体重单位不动（反向也要守）',
+    testWidgets('单独选过「斤」之后，改训练单位不会把它抹掉',
         (WidgetTester tester) async {
       final AppDatabase db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
@@ -322,7 +360,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // 「我」页把训练重量单位下沉到了页面最下面 —— 先滚过去
+      // 2026-10-01 重排：先进「偏好设置」，再滚到单位那一行
+      final Finder entry = find.byKey(const Key('open-preferences'));
+      await tester.dragUntilVisible(entry, find.byType(ListView), const Offset(0, -220));
+      await tester.pumpAndSettle();
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
       final Finder lb = find.byKey(const Key('unit-lb'));
       await tester.dragUntilVisible(lb, find.byType(ListView), const Offset(0, -220));
       await tester.pumpAndSettle();

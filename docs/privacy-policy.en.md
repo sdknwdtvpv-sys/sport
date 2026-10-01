@@ -83,7 +83,7 @@ This data lives in the app's private local database (SQLite, managed by drift) a
 ### 2.2 Collected only when "Help improve the product" is ON
 
 This is a **switch that is off by default**: nothing below is produced unless you
-**turn it on yourself** (Profile → "Help improve the product");
+**turn it on yourself** (Profile → Privacy & About → "Help improve the product");
 once on, you can turn it off again at any time, effective immediately. It produces exactly **18 event types** with a
 **fixed, limited** set of fields (the full list lives in `docs/privacy-facts.json` and is
 checked against the code by `tool/privacy-audit.mjs`):
@@ -189,9 +189,15 @@ centrally with their name, function, and how they handle personal information, s
 | `gal` | 2.3.3 | Saves the share card into the **system photo library** | **No.** Write-only; it **never reads** your photos | BSD-3-Clause | [pub.dev](https://pub.dev/packages/gal) |
 | `cryptography` | 2.9.0 | End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM) | **No.** Pure Dart, no network | Apache-2.0 | [pub.dev](https://pub.dev/packages/cryptography) |
 
+One dependency is **not** third-party, and we state it here too:
+
+- `flutter_localizations`: Flutter's own (SDK-bundled) localization component. It makes built-in
+  screens such as the open-source license page and date pickers render in Chinese.
+  **It is not a third-party SDK, it collects nothing, and it makes no network calls.**
+
 Three notes:
 
-- **No advertising SDK, no analytics SDK, no crash-reporting SDK.** None of the six libraries above
+- **No advertising SDK, no analytics SDK, no crash-reporting SDK.** None of the libraries above
   sends anything to a third party.
 - Our own code goes online only when **you** enable cloud backup, or when "Help improve the product"
   is on **and** the build has an endpoint configured — see 3.1 (the current release has none).
@@ -257,9 +263,9 @@ background permissions.
 
 | Right | How |
 |---|---|
-| **Turn usage statistics on or off** | **It is off by default** (nobody is counted). To take part, **turn it on yourself** in Profile → "Help improve the product". Both directions take effect immediately; no feature is affected |
-| **Export all your data** | Profile → "Export all records" — generates a CSV copied to your clipboard |
-| **Delete all data** | Profile → "Delete all data". After a confirmation prompt, local records and settings are wiped immediately |
+| **Turn usage statistics on or off** | **It is off by default** (nobody is counted). To take part, **turn it on yourself** in Profile → Privacy & About → "Help improve the product". Both directions take effect immediately; no feature is affected |
+| **Export all your data** | Profile → Data & Backup → "Export all records" — generates a CSV copied to your clipboard |
+| **Delete all data** | Profile → Data & Backup → "Delete all data". After a confirmation prompt, local records and settings are wiped immediately |
 | **Uninstall to delete** | Uninstalling the app removes the local database |
 
 What deletion covers, to avoid misunderstanding:
