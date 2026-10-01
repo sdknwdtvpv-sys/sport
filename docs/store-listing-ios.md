@@ -58,6 +58,10 @@
 **关键词（≤100 字符，逗号分隔，不要重复应用名）**：
 `力量训练,健身记录,举铁,深蹲,卧推,硬拉,训练计划,增肌,健身日志,一组,渐进超负荷,离线`
 
+> 📄 **应用级隐私清单**（`PrivacyInfo.xcprivacy`，2026-10-01 加）：包里那一份声明的是**变体 A**
+> （`NSPrivacyCollectedDataTypes = []`，即当前没配上报地址的版本），并声明了三类 required-reason API。
+> 发**变体 B**（配了上报地址）时，这份清单与下面这张标签必须**同时**改 —— 见 `docs/release-admin.md` §二之四。
+
 ## 三、App Privacy 隐私标签
 
 ### 变体 A：当前发布的包（两个地址都没配）→ **Data Not Collected**

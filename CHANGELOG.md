@@ -6,6 +6,30 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.35.2 · 补上**应用级**隐私清单（把"上传才知道"的那件事提前做掉）
+
+来源是你看到待办第 13 条问"这里怎么做" —— 那行**本身就是过期的**（许可证 2026-09-30 就接受了，
+之后我们编了包、跑了模拟器、出了 14 张截图），所以先把那行结清；
+它里面唯一还**真实**的半件是「Apple 隐私清单」：那一件以前只能"等上传后看邮件"。
+
+现在它做完了：
+
+* 新增 `app/ios/Runner/PrivacyInfo.xcprivacy`：`NSPrivacyTracking=false`、
+  `NSPrivacyCollectedDataTypes=[]`（**变体 A**：当前发布版本不外发数据）＋
+  三类 required-reason API（`UserDefaults/CA92.1`、`FileTimestamp/C617.1`、`SystemBootTime/35F9.1`，
+  每条"为什么用得上"写在文件顶部注释里）；
+* 挂进 `project.pbxproj` 四处 —— ⚠️ 第一次我挂到了 **RunnerTests** 的 Copy Bundle Resources，
+  包**编得出来**但清单**根本没进包**；挪到 Runner target 之后才在产物里看到它
+  （这条坑写进了 `docs/release-admin.md`）；
+* `tool/check-ios-app.mjs` 新增**第 ⑩ 条**：包里没有这份清单 / `NSPrivacyTracking != false` /
+  一个原因码都没声明 → 判红（两条负向用例），自检从"10 项产物"变成"12 项"；
+* 文档同步：`docs/your-todo.md` 第 13 条结清、`docs/release-admin.md` 把"还没定的一件事"
+  改成"已做完 + 剩下什么"、`docs/store-listing-ios.md` 标注这份清单对应哪个变体。
+
+**剩下的只有一件**：上传后若 Apple 那封 ITMS 邮件点名了别的 API，**照报告增删条目**
+（判据从"猜"变成"照报告改"）。另有一条联动写进了文档：发**变体 B**（配了上报地址）时，
+这份清单里的 `NSPrivacyCollectedDataTypes` 与 App Privacy 标签必须同时改。
+
 ## v1.35.1 · 修：真机走查抓到的「恢复条位置与说法不一致」
 
 v1.35.0 装上真机验证那三条新路径时，**截图和文档对不上**：

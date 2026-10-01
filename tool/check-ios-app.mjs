@@ -23,6 +23,11 @@
  *      所以含 2（iPad）现在是**红**，不再是提示：商店页会承诺支持 iPad，
  *      而 iPad 上只是拉长的手机版，没人给它做过适配。
  *
+ *  10. **应用级隐私清单**（`PrivacyInfo.xcprivacy`）真的在包里、且 `NSPrivacyTracking = false`。
+ *      为什么单列一条：漏了它会在**上传时**收到 `ITMS-91053: Missing API declaration` ——
+ *      一条只有上传才看得见的错误（详见 `docs/release-admin.md` §二之四）。
+ *      Flutter 引擎与插件各自带清单，但**应用级那一份要我们自己放**（2026-10-01 补的）。
+ *
  *   9. **出口合规的"决定"有没有留痕**：包里确实有加密代码（`cryptography` 做的
  *      AES-256-GCM + HKDF-SHA256，给云备份用），而 `Info.plist` 断言
  *      `ITSAppUsesNonExemptEncryption=false` —— 这是个**法律声明**，所以文档里必须
@@ -233,6 +238,31 @@ function inspect(appPath, root = ROOT) {
   }
   facts.push(`设备族：${JSON.stringify(family)}${family.includes(2) ? '（含 iPad）' : ''}`);
 
+  // ⑩ 应用级隐私清单：必须在包里、必须声明不做追踪、必须写明用到哪些 required-reason API
+  const appManifest = join(appPath, 'PrivacyInfo.xcprivacy');
+  if (!existsSync(appManifest)) {
+    problems.push('包里没有**应用级** PrivacyInfo.xcprivacy —— 上传时会收到 '
+      + 'ITMS-91053（Missing API declaration），而那条错误只有上传才看得见。'
+      + '引擎与插件的清单不算：那份要我们自己放在 app/ios/Runner/ 下');
+  } else {
+    const tracking = plistRaw(appManifest, 'NSPrivacyTracking');
+    if (tracking !== 'false') {
+      problems.push(`应用级隐私清单里 NSPrivacyTracking = ${tracking}（应为 false）—— `
+        + '我们不做跨 App 追踪，写了 true 等于在隐私标签之外又声明了一件不成立的事');
+    }
+    const apiTypes = plistJson(appManifest, 'NSPrivacyAccessedAPITypes') ?? [];
+    if (!Array.isArray(apiTypes) || apiTypes.length === 0) {
+      problems.push('应用级隐私清单里没有声明任何 NSPrivacyAccessedAPITypes —— '
+        + '那这份清单就只是占位，上传时该报的还是会报');
+    } else {
+      const cats = apiTypes
+        .map((x) => String(x?.NSPrivacyAccessedAPIType ?? ''))
+        .map((x) => x.replace('NSPrivacyAccessedAPICategory', ''))
+        .filter(Boolean);
+      facts.push(`应用级隐私清单：追踪 ${tracking} · required-reason ${cats.length} 类（${cats.join('、')}）`);
+    }
+  }
+
   // 出口合规的"决定"有没有留痕（与 plist 那个值是一对：值 + 理由）
   problems.push(...exportComplianceProblems(root));
 
@@ -261,6 +291,18 @@ function selftest() {
     mkdirSync(join(app, 'Base.lproj/LaunchScreen.storyboardc'), { recursive: true });
     writeFileSync(join(app, 'Base.lproj/LaunchScreen.storyboardc/Info.plist'), '<plist/>');
     writeFileSync(join(app, 'Assets.car'), 'x');
+    // 应用级隐私清单：真实产物里就该有这一份（2026-10-01 起）
+    writeFileSync(join(app, 'PrivacyInfo.xcprivacy'), toPlistXml({
+      NSPrivacyTracking: false,
+      NSPrivacyTrackingDomains: [],
+      NSPrivacyCollectedDataTypes: [],
+      NSPrivacyAccessedAPITypes: [
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+          NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+        },
+      ],
+    }));
     writeFileSync(join(app, 'AppIcon60x60@2x.png'), 'x');
     const entries = {
       CFBundleDisplayName: exp.displayName,
@@ -286,6 +328,24 @@ function selftest() {
     ['缺"仅新增"相册权限 → 必须红', mk('bad-noadd', (e) => { delete e.NSPhotoLibraryAddUsageDescription; }), true],
     ['多了"读相册"权限 → 必须红', mk('bad-read', (e) => { e.NSPhotoLibraryUsageDescription = '读相册'; }), true],
     ['版本对不上 → 必须红', mk('bad-ver', (e) => { e.CFBundleVersion = '999'; }), true],
+    ['应用级隐私清单被删 → 必须红', (() => {
+      const a = mk('bad-privacy');
+      rmSync(join(a, 'PrivacyInfo.xcprivacy'), { force: true });
+      return a;
+    })(), true],
+    ['隐私清单把追踪写成 true → 必须红', (() => {
+      const a = mk('bad-tracking');
+      writeFileSync(join(a, 'PrivacyInfo.xcprivacy'), toPlistXml({
+        NSPrivacyTracking: true,
+        NSPrivacyAccessedAPITypes: [
+          {
+            NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+            NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+          },
+        ],
+      }));
+      return a;
+    })(), true],
     ['设备族里带上了 iPad → 必须红', mk('bad-ipad', (e) => { e.UIDeviceFamily = [1, 2]; }), true],
     ['设备族里没有 iPhone → 必须红', mk('bad-nophone', (e) => { e.UIDeviceFamily = [2]; }), true],
     ['方向放开横屏 → 必须红', mk('bad-orient', (e) => {

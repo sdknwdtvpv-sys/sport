@@ -692,6 +692,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          usability/记录表.md usability/participants.example.json \
          tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
+         app/ios/Runner/PrivacyInfo.xcprivacy \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
          app/lib/features/workout/workout_controller.dart \
          app/lib/data/db.dart app/lib/data/drift_local_store.dart \

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  练了么 · **应用级**隐私清单（2026-10-01 加）
+
+  为什么需要它：Apple 从 2024 年起要求「用到 required-reason API 的 App」在**应用级**
+  声明用途（`NSPrivacyAccessedAPITypes`），漏了会在上传时收到
+  `ITMS-91053: Missing API declaration` —— 那是一条**只有上传才能看见**的错误。
+
+  包里原本已经有清单，但都是**别人带的**：
+    * `Frameworks/Flutter.framework/PrivacyInfo.xcprivacy`（Flutter 引擎）
+    * `gal_gal.bundle/`、`share_plus_share_plus.bundle/`（两个插件）
+  应用级这一份**原先没有** —— 也就是说：上传那天可能会被这四个字挡下来
+  （`docs/release-admin.md` §二之四 记着这件事，此前只能"等上传后再说"）。
+
+  这一份声明了什么、为什么：
+
+    * `NSPrivacyTracking = false` —— 我们不做跨 App 追踪，没有广告标识符。
+    * `NSPrivacyTrackingDomains = []` —— 同上。
+    * `NSPrivacyCollectedDataTypes = []` —— **当前发布版本**不向任何地方发送数据
+      （「帮助改进产品」默认关，且没配上报地址的包里连发送通道都没有）。
+      ⚠️ **改这条之前先读** `docs/store-listing-ios.md` 的隐私标签两个变体：
+      一旦发布"配了上报地址"的包（变体 B），这里与 App Privacy 标签必须同时回来改。
+    * `NSPrivacyAccessedAPITypes` —— 三个"常见原因码"，逐条写明我们为什么用得上：
+        - `UserDefaults` / `CA92.1`：只读写**本 App 自己**的偏好（设置、开关）。
+        - `FileTimestamp` / `C617.1`：只读**App 容器内**文件的时间戳
+          （本地 SQLite 的写入/备份文件的属性）。
+        - `SystemBootTime` / `35F9.1`：用开机时长算**同一次使用内**的时间差
+          （休息倒计时那类"经过了多少秒"，不跨设备、不外传）。
+
+  ⚠️ **这份清单是"最小可用集"**：三个原因码来自 Flutter 应用的通行做法。
+  上传后若 Apple 的隐私报告指出还有别的 API（或多报了），**照报告改这里**，
+  并同步 `tool/check-ios-app.mjs` 的判据（它核的就是这份文件在不在、追踪位是不是 false）。
+
+  核实方式（编完包之后）：
+    plutil -p build/ios/iphoneos/Runner.app/PrivacyInfo.xcprivacy
+    /usr/libexec/PlistBuddy -c "Print :NSPrivacyTracking" …
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

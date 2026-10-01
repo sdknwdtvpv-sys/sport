@@ -113,29 +113,21 @@ required-reason API 就要在清单里声明理由"，并且**对着二进制扫
 所以**大概率不需要声明**，但"大概率"不是证据。这条已经写成 `tool/ios-deps.mjs` 里的
 **显式例外**（带着理由），并且在门禁里守着：一旦上游补了清单，例外会自己报"该删了"。
 
-**还没定的一件事（只有 Xcode + Apple 账号能定）**：app 自己（Runner target）要不要一份
-`PrivacyInfo.xcprivacy`。**判据是首次上传后 Apple 发的那封 ITMS 邮件**：
+**✅ 2026-10-01 已定并做完**：app 自己那份清单**已经加上**，而且**在产物里验过**。
 
-* 没收到 → 现在这样就够，什么都不用加；
-* 收到 `ITMS-91053: Missing API declaration` → 加 `app/ios/Runner/PrivacyInfo.xcprivacy`，
-  内容从下面这份起手（有几个类别被点名就加哪几个，**不要**把没用到的一起抄进去）：
+| 项 | 内容 |
+|---|---|
+| 文件 | `app/ios/Runner/PrivacyInfo.xcprivacy` |
+| 怎么进包的 | 挂进 `project.pbxproj` 四处（FileReference + BuildFile + group + **Runner target 的 Copy Bundle Resources**）—— ⚠️ 第一次我挂到了 **RunnerTests** 的 Resources 阶段，包编得出来、但**清单根本没进去**；改到 Runner target 之后才在产物的 Runner.app 根目录里看到它 |
+| 声明了什么 | `NSPrivacyTracking=false`、`NSPrivacyTrackingDomains=[]`、`NSPrivacyCollectedDataTypes=[]`（**当前发布版本**不外发数据）＋ 三类 required-reason API：`UserDefaults/CA92.1`、`FileTimestamp/C617.1`、`SystemBootTime/35F9.1`（每条的"为什么用得上"写在文件顶部的注释里） |
+| 谁在守 | `tool/check-ios-app.mjs` 第 ⑩ 条：包里没有这份文件、或 `NSPrivacyTracking != false`、或一个原因码都没声明 → **判红**（两条负向用例：删掉文件、把追踪写成 true） |
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>NSPrivacyTracking</key><false/>
-  <key>NSPrivacyCollectedDataTypes</key><array/>
-  <key>NSPrivacyAccessedAPITypes</key><array/>
-</dict>
-</plist>
-```
+**"上传后才需要决定"的那一件事，现在只剩这个**：如果 Apple 那封 ITMS 邮件
+**点名了别的 API**（或多报了），**照报告增删这份清单里的条目** —— 判据从"猜测"变成了"照报告改"。
 
-⚠️ **这一步故意没有在这里代做**：把文件塞进 Runner target 要改 `project.pbxproj`
-（FileReference + BuildFile + group + Copy Bundle Resources 四处），而本机**没有 Xcode，
-改完无法验证** —— 一个写坏的工程文件会让你第一次打开 Xcode 就翻车。宁可等你装好 Xcode，
-用 Xcode 的「Add Files to Runner…」加进去（会自动进 target），我再跑门禁确认。
+⚠️ **改这份清单时别忘了一处联动**：`NSPrivacyCollectedDataTypes = []` 对应的是
+**变体 A（没配上报地址）**。一旦发布"配了上报地址"的包（变体 B），
+这里与 App Privacy 标签（`docs/store-listing-ios.md` 的两个变体）必须**同时**改。
 
 **2026-09-30 查出来的 iOS 专属缺陷（已修，v1.27.1）**：`saveToGallery()` 一直带着相簿名去存，
 而 gal 建/找相簿要**读**相册（`.readWrite` 授权 = `NSPhotoLibraryUsageDescription`），
