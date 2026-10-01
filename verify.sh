@@ -730,6 +730,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          server/deploy/install.sh server/deploy/Caddyfile \
          server/deploy/lianleme-backend.service server/deploy/lianleme-collector.service \
          tool/ios-deps.mjs docs/store-listing-ios.md docs/your-todo.md \
+         docs/feature-backlog.md \
          tool/gen-feature-graphic.py store-assets/feature-graphic-1024x500.png \
          app/test/progression_vectors_test.dart app/test/tap_meter_test.dart \
          app/test/workout_flow_test.dart app/test/backup_test.dart \
