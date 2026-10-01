@@ -50,6 +50,7 @@
 | 产物核对 | `docs/release-checklist.md` 的「终局核验」一节（APK/AAB/真机/软著逐项）；**2026-10-01 在 v1.34.0 上重编重核过**：APK 61.9M（包内 `1.34.0 (45)`）、AAB 57.5M / 119 条目 / 三 ABI，由 `tool/check-dist.mjs` 每次核 |
 | iOS 产物的**出口合规留痕** | `node tool/check-ios-app.mjs`（第 9 条）：包里有 `cryptography` 就必须在 `docs/store-listing-ios.md` 里看到那节决定记录；负向测试验过 |
 | **iOS 首次真的跑起来** | `docs/release-admin.md`「iOS 与安卓的差异清单」：5 条"只有 Xcode 能回答的问题"里 **4 条闭环**（编得过 / 13 张截图逐屏看过 / 存相册两条权限路 / 启动屏实拍），1 条（毫秒级白闪）标"部分" |
+| **真机全流程走查（v1.34.0 前那一次）** | `docs/ux-review-2026-10-01.md` + `docs/images/ux-review-2026-10-01/`（**20 张**）：~25 屏、`E/flutter` 0 条、`overflowed` 0 条；走查列出的"不顺眼"里 5 条 + 「我」页重排已在 v1.34.0 修掉，剩两条（计划向导没有返回箭头、首页顶部留白）留给你定 |
 | **真机手势走查** | `docs/images/walkthrough-0*.png`（5 张）：冷启动 → 一次点击记一组（休息计时起跳）→ 总结 320 kg → 进步 → 我 → 杀进程重开数据还在；全程 `E/flutter` 与 `overflowed` 都是 0 |
 | 「存相册」两个平台的行为 | `app/integration_test/share_card_gallery_test.dart`：iOS 两条权限路（先说明目的 → 被拒如实告知 / 已授权不白问）+ 安卓免权限那条；两端各有一张实拍图作证 |
 
