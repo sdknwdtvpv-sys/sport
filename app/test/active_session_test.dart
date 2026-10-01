@@ -167,6 +167,14 @@ void main() {
       expect(find.byKey(const Key('resume-session')), findsOneWidget);
       expect(find.textContaining('上次的训练还没结束'), findsOneWidget);
       expect(find.text('上次练到第 2/3 个动作'), findsOneWidget);
+
+      // ⚠️ **位置也是行为**：2026-10-01 真机走查抓到过一次不一致 ——
+      // 文档与注释写着"摆在主按钮之前"，而实际渲染在主按钮**下面**。
+      // 现在把它钉住：接着练是此刻该做的那件事，所以它排在主按钮上面。
+      final double resume = tester.getCenter(find.byKey(const Key('resume-session'))).dy;
+      final double primary = tester.getCenter(find.text('开始今天的训练')).dy;
+      expect(resume, lessThan(primary),
+          reason: '「继续上次的训练」必须在主按钮**之前**（不能在下面）');
     });
 
     testWidgets('没有未结束的训练 → 不显示（不做"永远挂着的空入口"）',

@@ -99,25 +99,6 @@ class TodayScreen extends StatelessWidget {
             style: TextStyle(color: Tokens.text2, fontSize: 17, height: 1.4),
           ),
           const SizedBox(height: Tokens.s8),
-          SizedBox(
-            height: Tokens.hPrimary,
-            width: double.infinity,
-            child: FilledButton(
-              key: const Key('start-workout'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Tokens.volt,
-                foregroundColor: Tokens.voltInk,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Tokens.rPill),
-                ),
-              ),
-              onPressed: onStart,
-              child: const Text(
-                '开始今天的训练',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
           // 上次没练完 → 一条"接着练"（放在主按钮之前：此刻它才是该做的那件事）
           if (onResume != null) ...<Widget>[
             GestureDetector(
@@ -160,6 +141,25 @@ class TodayScreen extends StatelessWidget {
               ),
             ),
           ],
+          SizedBox(
+            height: Tokens.hPrimary,
+            width: double.infinity,
+            child: FilledButton(
+              key: const Key('start-workout'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Tokens.volt,
+                foregroundColor: Tokens.voltInk,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Tokens.rPill),
+                ),
+              ),
+              onPressed: onStart,
+              child: const Text(
+                '开始今天的训练',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
           // 建议卡入口：**可选**。主按钮已经能直接开练，这一行只是给想先看看的人。
           if (onSeePlan != null) ...<Widget>[
             const SizedBox(height: Tokens.s2),

@@ -1,6 +1,6 @@
 # 练了么
 
-**v1.35.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+**v1.35.1** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
 
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
@@ -390,7 +390,7 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | 真机上装的是 **v1.35.0 release**（逐版覆盖安装，`versionCode 46`）。**自动化那半已经做完了**（2026-09-30 手机解锁当天跑的）：`adb shell input` 注入走了一遍 冷启动 → 一次点击记一组（→ 休息计时起跳）→ 总结（320 kg）→ 进步 → 我 → **杀进程重开数据还在**，`E/flutter` 与 `overflowed` 都是 0，证据图在 `docs/images/walkthrough-0*.png`。**剩下的是"真的用手指走一遍"** —— 手感、误触、单手可达性、出汗时按大按钮 | 六层门禁全绿；**这一条只剩人类判断**（自动化走的是输入层，不是手感）—— **这是最大的一条** |
+| 🚧 **真机交互验收** | 真机上装的是 **v1.35.1 release**（逐版覆盖安装，`versionCode 47`）。**自动化那半已经做完了**（2026-09-30 手机解锁当天跑的）：`adb shell input` 注入走了一遍 冷启动 → 一次点击记一组（→ 休息计时起跳）→ 总结（320 kg）→ 进步 → 我 → **杀进程重开数据还在**，`E/flutter` 与 `overflowed` 都是 0，证据图在 `docs/images/walkthrough-0*.png`。**剩下的是"真的用手指走一遍"** —— 手感、误触、单手可达性、出汗时按大按钮 | 六层门禁全绿；**这一条只剩人类判断**（自动化走的是输入层，不是手感）—— **这是最大的一条** |
 | ✅ ~~v1 → v2 迁移的真机验证~~（已在真机过） | 真机里原本是 `v1.0.0` 留下的**老库**，直接覆盖安装 `v1.2.0`（`schemaVersion` 1 → 3）后，`onUpgrade` 跑完、**数据一条没丢**（冷启动读回 12 组） | 这是"老库升级必须真机过一次"的实测通过 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |
