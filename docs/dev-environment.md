@@ -92,6 +92,23 @@ flutter config --jdk-dir="$JAVA_HOME" --android-sdk="$ANDROID_SDK_ROOT"
 > （`flutter config`、`local.properties`、`~/.android`、IDE 的 SDK 设置）
 > 都要跟着改。判据很简单：**做一次 release 构建**，别只看门禁绿不绿。
 
+## ⚠️ `flutter drive` 跑完会把 App **卸载掉**（2026-10-01 栽的跟头）
+
+**症状**：截图脚本（或任何 `flutter drive` / `integration_test`）跑完，
+**手机上的 App 就没了** —— 桌面图标消失、`pm list packages` 里查不到。
+下一次有人拿起手机想看，会以为"根本没装过"。
+
+**原因**：`flutter drive` 结束时会把测试安装的 App **卸载**（它自己装、自己清）。
+所以"装真机 → 跑截图脚本 → 交付"这个顺序是错的：脚本会把刚装好的正式包一起带走。
+
+**规矩**（写进 `docs/release-checklist.md` 的真机那一行）：
+
+> **任何一次在真机上跑 `flutter drive` 之后，都必须重新 `adb install -r` 一份
+> `dist/` 里的正式 APK**，再核对 `versionName` / `versionCode`。
+
+**顺带**：`flutter drive` 不会还原 `wm size` —— 截完图记得 `adb shell wm size reset`，
+否则手机会停在 1080×1920 之类的截图分辨率上（截屏、看界面都会觉得"怎么变扭了"）。
+
 ## ⚠️ 跑完 integration_test 之后，release 构建会残一个坏文件（2026-10-01 记）
 
 **症状**：`flutter build apk --release` 直接红，报
