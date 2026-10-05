@@ -238,9 +238,9 @@ third is **off by default** — it is only ever requested if you turn it on your
 |---|---|---|
 | `android.permission.INTERNET` | Solely for the anonymous usage statistics in 2.2 (when the switch is ON) | All versions |
 | `android.permission.WRITE_EXTERNAL_STORAGE` | Saving the "share card" image to the system gallery | **Android 9 and below only** (declared with `maxSdkVersion="29"`) |
-| `android.permission.POST_NOTIFICATIONS` | "Training reminder": one local notification if you haven't trained by your chosen time | **Android 13 and above**; the switch is **off by default** |
+| `android.permission.POST_NOTIFICATIONS` | Two **local** notifications: (1) the "training reminder" if you have not trained by your chosen time; (2) "rest finished", a cue when the rest between sets ends (since v1.53) | **Android 13 and above**; (1) is **off by default**, (2) only appears if you have already granted the permission |
 
-Four notes on the third one (the training reminder):
+Five notes on the third one (the notification permission):
 
 - It is a **local notification**: the system fires it on this device (using an inexact alarm,
   so the exact-alarm special permission is not needed), and the text is computed on the device
@@ -250,7 +250,14 @@ Four notes on the third one (the training reminder):
   turn it on yourself (Me → Preferences → Training reminder); if you decline, we never ask again;
 - **No nagging after you train**: it reminds you only if you have not trained by that time
   that day; if you trained, it moves to the same time tomorrow;
-- You can turn it off at any time, which also cancels the reminder already scheduled in the system.
+- You can turn it off at any time, which also cancels the reminder already scheduled in the system;
+- **The same permission also covers the "rest finished" cue** (since v1.53): Android shows no
+  countdown on the lock screen, so when the rest between sets reaches zero we post a **local**
+  notification (title "rest finished", body = what the next set is). It is **never uploaded,
+  needs no new permission, and we never prompt for the permission because of it** — if you have
+  not granted notifications, it simply does not appear (a permission dialog in the middle of a
+  workout would be worse than a missing cue). In system settings these are **two separate
+  channels** ("training reminder" / "rest finished") and can be turned off independently.
 
 Three notes on the second one:
 

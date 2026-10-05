@@ -167,15 +167,16 @@
 <tbody>
 <tr><td><code>android.permission.INTERNET</code></td><td>仅用于 2.2 的匿名使用统计（开关打开时）</td><td>全部</td></tr>
 <tr><td><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td><td>把「分享训练卡」的图片存进系统相册</td><td><strong>仅 Android 9 及以下</strong>（带 <code>maxSdkVersion=&quot;29&quot;</code>）</td></tr>
-<tr><td><code>android.permission.POST_NOTIFICATIONS</code></td><td>「训练提醒」：到点还没练时提醒你一次</td><td><strong>Android 13 及以上</strong>；开关<strong>默认关闭</strong></td></tr>
+<tr><td><code>android.permission.POST_NOTIFICATIONS</code></td><td>两条<strong>本地</strong>通知：①「训练提醒」到点还没练时提醒一次；② 组间休息结束时提示一下（v1.53 起）</td><td><strong>Android 13 及以上</strong>；①的开关<strong>默认关闭</strong>，②只在已经给过权限时才会出现</td></tr>
 </tbody>
 </table>
-<p><strong>关于第三项（训练提醒）</strong>，说明四点：</p>
+<p><strong>关于第三项（通知权限）</strong>，说明五点：</p>
 <ul>
 <li>它是<strong>本地通知</strong>：提醒由系统在本机到点触发（用非精确闹钟，所以不需要精确闹钟那个特殊权限）， 提醒文字也在排程时就在设备上算好 —— <strong>不联网</strong>，我们不知道你几点该练、也不知道你有没有练；</li>
 <li>这个开关<strong>默认关闭</strong>。只有你自己到「我 → 偏好设置 → 训练提醒」把它打开时， 才会弹出系统那一次授权询问；拒绝之后我们不会再问；</li>
 <li><strong>练过就不打扰</strong>：到点了当天还没练才提醒；练过就顺延到第二天同一时间；</li>
-<li>你可以随时关掉它，关掉的同时会撤销系统里已经排好的那条提醒。</li>
+<li>你可以随时关掉它，关掉的同时会撤销系统里已经排好的那条提醒；</li>
+<li><strong>同一项权限也用于「组间休息结束」那条提示</strong>（v1.53 起）：Android 的锁屏上没有倒计时， 所以休息走到 0 时发一条<strong>本地</strong>通知（标题「休息结束」、正文是下一组要练什么）。 它<strong>不联网、不上传任何东西</strong>，也不新增任何权限；而且<strong>我们不会为了它弹权限框</strong> —— 你没给过通知权限时，它就安静地不出现（训练中途弹框比少一条提示更糟）。 这两条通知在系统设置里是<strong>两个独立渠道</strong>（「训练提醒」/「组间休息」），可以单独关掉。</li>
 </ul>
 <p>关于第二项，说明三点：</p>
 <ul>

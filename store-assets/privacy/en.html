@@ -166,15 +166,16 @@
 <tbody>
 <tr><td><code>android.permission.INTERNET</code></td><td>Solely for the anonymous usage statistics in 2.2 (when the switch is ON)</td><td>All versions</td></tr>
 <tr><td><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td><td>Saving the &quot;share card&quot; image to the system gallery</td><td><strong>Android 9 and below only</strong> (declared with <code>maxSdkVersion=&quot;29&quot;</code>)</td></tr>
-<tr><td><code>android.permission.POST_NOTIFICATIONS</code></td><td>&quot;Training reminder&quot;: one local notification if you haven't trained by your chosen time</td><td><strong>Android 13 and above</strong>; the switch is <strong>off by default</strong></td></tr>
+<tr><td><code>android.permission.POST_NOTIFICATIONS</code></td><td>Two <strong>local</strong> notifications: (1) the &quot;training reminder&quot; if you have not trained by your chosen time; (2) &quot;rest finished&quot;, a cue when the rest between sets ends (since v1.53)</td><td><strong>Android 13 and above</strong>; (1) is <strong>off by default</strong>, (2) only appears if you have already granted the permission</td></tr>
 </tbody>
 </table>
-<p>Four notes on the third one (the training reminder):</p>
+<p>Five notes on the third one (the notification permission):</p>
 <ul>
 <li>It is a <strong>local notification</strong>: the system fires it on this device (using an inexact alarm, so the exact-alarm special permission is not needed), and the text is computed on the device when the reminder is scheduled — <strong>no network</strong>, we neither know your training time nor whether you trained;</li>
 <li>The switch is <strong>off by default</strong>. The system permission prompt appears only when you turn it on yourself (Me → Preferences → Training reminder); if you decline, we never ask again;</li>
 <li><strong>No nagging after you train</strong>: it reminds you only if you have not trained by that time that day; if you trained, it moves to the same time tomorrow;</li>
-<li>You can turn it off at any time, which also cancels the reminder already scheduled in the system.</li>
+<li>You can turn it off at any time, which also cancels the reminder already scheduled in the system;</li>
+<li><strong>The same permission also covers the &quot;rest finished&quot; cue</strong> (since v1.53): Android shows no countdown on the lock screen, so when the rest between sets reaches zero we post a <strong>local</strong> notification (title &quot;rest finished&quot;, body = what the next set is). It is <strong>never uploaded, needs no new permission, and we never prompt for the permission because of it</strong> — if you have not granted notifications, it simply does not appear (a permission dialog in the middle of a workout would be worse than a missing cue). In system settings these are <strong>two separate channels</strong> (&quot;training reminder&quot; / &quot;rest finished&quot;) and can be turned off independently.</li>
 </ul>
 <p>Three notes on the second one:</p>
 <ul>

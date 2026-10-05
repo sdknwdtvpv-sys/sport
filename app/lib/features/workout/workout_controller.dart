@@ -16,8 +16,11 @@ import 'package:flutter/foundation.dart';
 import '../../analytics/analytics.dart';
 import '../../data/local_store.dart';
 import '../../data/sync_queue.dart';
+import '../../core/last_time.dart';
 import '../../core/units.dart';
+import 'haptics.dart';
 import 'rest_activity.dart';
+import 'rest_cue.dart';
 import '../../domain/models.dart';
 import '../../domain/progression.dart';
 import '../../domain/tap_meter.dart';
@@ -33,6 +36,11 @@ class WorkoutController extends ChangeNotifier {
     required this.store,
     required this.syncQueue,
     this.restActivity = const NoopRestActivity(),
+    /// 触觉反馈（记一组 / 休息结束）。默认无操作 —— 只有生产那条路接真的那个。
+    this.haptics = const NoopHaptics(),
+    /// 休息结束的**体外提示**（Android 本地通知）。iOS 侧实现成空操作
+    /// （那边有 Live Activity），所以默认 noop 不会让任何平台少东西。
+    this.restCue = const NoopRestCue(),
     /// 同一次训练里的多个动作**共享同一个 workoutId**，
     /// 这样记录会挂在一条 workout 下，而不是被拆成多次训练。
     String workoutId = kLocalWorkoutId,
@@ -58,7 +66,8 @@ class WorkoutController extends ChangeNotifier {
     /// "恢复的那一刻"（`saveWorkout` 每次记组都会写一遍），总结页的时长就只剩后半段。
     int? startedAtMs,
     int Function()? clock,
-  }) : _clock = clock ?? (() => DateTime.now().millisecondsSinceEpoch) {
+  })  : _lastSession = lastSession,
+        _clock = clock ?? (() => DateTime.now().millisecondsSinceEpoch) {
     workout = Workout(id: workoutId, startedAtMs: startedAtMs ?? _clock());
     // 把已记的组读回来：**界面、组序、计划进度三处一起对上**，缺一处就会重演那个 P0。
     if (alreadyLogged.isNotEmpty) {
@@ -117,6 +126,12 @@ class WorkoutController extends ChangeNotifier {
   /// 组间休息的 Live Activity（iOS 锁屏/灵动岛）。**生产环境必须传真的那个**
   /// （见 `main.dart`）—— 默认是 noop，因为另外 20 多个构造点都在测试里。
   final RestActivityBridge restActivity;
+
+  /// 触觉反馈。与 [restActivity] 一样**失败是静默的**：震动没响不该影响记录训练。
+  final Haptics haptics;
+
+  /// 休息结束的体外提示（Android 通知）。同样静默失败。
+  final RestCue restCue;
   final int Function() _clock;
 
   /// 显示单位。存储与引擎始终是 kg，这个字段只用于格式化。
@@ -127,6 +142,14 @@ class WorkoutController extends ChangeNotifier {
   late final int plannedRestSec;
 
   late final Workout workout;
+
+  /// 上一次这个动作练成什么样。**留着给界面念那一行**（v1.53）——
+  /// 构造时它只是引擎的输入，用完就丢的话训练屏就没法告诉用户"上次练了多少"。
+  final LastSession? _lastSession;
+
+  /// 「上次 3 组 · 45 kg × 10 次」这一行（没有历史就是 null，界面不出现这一行）。
+  String? get lastTimeLabelText =>
+      lastTimeLabel(_lastSession, unit: unit, trackType: exercise.trackType);
   Suggestion? _suggestion;
 
   /// 建议的稳定标识：**采纳率要靠它把"展示"与"采纳/手改"串成一条链**。
@@ -186,6 +209,14 @@ class WorkoutController extends ChangeNotifier {
   bool _disposed = false;
   String? _hint;
   Timer? _restTimer;
+
+  /// 计时动作的**做组计时器**（v1.53）：开始时刻（绝对毫秒）+ 每跳一次的刷新计时器。
+  ///
+  /// 为什么用绝对时刻而不是"每秒加一"：与组间休息同一条理由 ——
+  /// App 被系统挂起时 Dart 定时器不走，靠累加会把被挂起的那段白送掉。
+  int? _holdStartedAtMs;
+  bool _holdAnnounced = false;
+  Timer? _holdTimer;
 
   Suggestion? get suggestion => _suggestion;
   double get weightKg => _weightKg;
@@ -261,6 +292,14 @@ class WorkoutController extends ChangeNotifier {
   /// 大按钮上显示的文案 —— 就是即将写入的值。
   /// 这是全产品唯一不可妥协的指标：点击即写入，1 次点击 = 1 组。
   String get primaryButtonLabel {
+    // 计时中：大按钮上就是那个在走的数字 —— 用户抬眼要能读到"我撑了多久"。
+    // 记下来的值就是它（见 onBigButtonTap）。
+    if (holding) {
+      final int sec = holdElapsedSec;
+      final String mm = (sec ~/ 60).toString();
+      final String ss = (sec % 60).toString().padLeft(2, '0');
+      return '$mm:$ss';
+    }
     // 距离动作：念「5.00 公里 · 30:00」——重量与次数都说不通（跑步机没有重量，
     // "1800 次"更是胡说）。距离 + 时长才是这个动作实际做了什么。
     if (isDistance) {
@@ -280,14 +319,28 @@ class WorkoutController extends ChangeNotifier {
   // ---------- 手势入口（UI 只调用这四个） ----------
 
   /// 点按大按钮：记一组。
+  ///
+  /// 计时中（计时动作）时这一下同时**收下计时的结果**：把已计秒数当成这一组的次数，
+  /// 然后走完全一样的记组路径 —— 所以"一次点击 = 一组"这条不变。
   void onBigButtonTap() {
     analytics.countTap(TapKind.bigButton);
+    if (holding) {
+      final int elapsed = holdElapsedSec;
+      _holdTimer?.cancel();
+      _holdTimer = null;
+      _holdStartedAtMs = null;
+      _holdAnnounced = false;
+      // 最少 1 秒：一条"0 秒"的记录是假数据（与距离动作"0 公里不记"同一条纪律）
+      _reps = elapsed < 1 ? 1 : elapsed;
+    }
     _logSet();
   }
 
   /// 长按大按钮 500ms：打开修改弹层。**不记录任何一组。**
   void onLongPress() {
     analytics.countTap(TapKind.longPress);
+    // 计时中被长按 = 我按错了，先收起计时器（否则弹层关掉之后它还在悄悄倒数）
+    if (holding) cancelHold();
     // 记下打开弹层前的值：只有真的改了才算一次"编辑"（见 onSheetConfirm）
     _sheetFromWeight = _weightKg;
     _sheetFromReps = _reps;
@@ -405,6 +458,7 @@ class WorkoutController extends ChangeNotifier {
     _stopRest();
     _restRemaining = 0;
     restActivity.end(); // 用户跳过了休息 → 锁屏上那条不该还挂着倒计时
+    unawaited(restCue.cancel()); // 体外那条提示同理：人已经在看屏幕了
     analytics.track('rest_skipped', <String, Object?>{
       'exercise_id': exercise.id,
       'planned_sec': plannedRestSec,
@@ -412,10 +466,91 @@ class WorkoutController extends ChangeNotifier {
     _notify();
   }
 
-  void setOffline(bool value) {
-    syncQueue.offline = value;
+  /// 休息条上的 −15 / +15 秒（2026-10-05，v1.53）。
+  ///
+  /// 为什么要有它：健身房现场「今天想多歇半分钟」几乎必然发生，而原先只有「跳过」——
+  /// 想多歇的人只能自己数秒，等于没有这个功能。
+  ///
+  /// 三条口径：
+  ///   * 改的是**结束时刻**（`_restEndsAtMs`），不是"剩余秒数"。全项目只有这一份真相，
+  ///     锁屏/灵动岛那串倒计时也按它走 —— 所以紧接着要**重播一次** Live Activity，
+  ///     否则会出现"手机上 +15 了、锁屏上还是原来那个点"。
+  ///   * **不在休息中时什么也不做**（按钮本来也不出现）；减到已经过去时，
+  ///     由计时器那一跳去收尾，这里**不另写一条结束分支** ——
+  ///     否则「休息完成」那条埋点在两条路径上会各报一次或漏报一次。
+  ///   * **不计入 `tap_count`**：那条护栏量的是"为得到下一组多付出了几次操作"，
+  ///     而调整休息不产生任何记录；计进去只会把这条指标算脏。
+  void adjustRest(int deltaSec) {
+    final int? endsAt = _restEndsAtMs;
+    if (!_restRunning || endsAt == null) return;
+    _restEndsAtMs = endsAt + deltaSec * 1000;
+    final int left = ((_restEndsAtMs! - _clock()) / 1000).ceil();
+    _restRemaining = left < 0 ? 0 : left;
+    _startRestActivity();
     _notify();
   }
+
+  /// 这个动作能不能"计时做组"（v1.53）。
+  ///
+  /// 只有**按时长记的动作**（平板支撑、农夫行走的时长那部分不算、`time` 轨迹）才有意义：
+  /// 力量动作的"一组"是一串重复，秒数说不上；距离动作有自己的距离+时长口径。
+  bool get canTimeSet => exercise.isTime && !isDistance;
+
+  /// 计时中（大按钮那一下会**记下已计的秒数**）。
+  bool get holding => _holdStartedAtMs != null;
+
+  /// 已经计了多少秒（不在计时中就 0）。
+  int get holdElapsedSec {
+    final int? from = _holdStartedAtMs;
+    if (from == null) return 0;
+    final int ms = _clock() - from;
+    return ms <= 0 ? 0 : (ms / 1000).round();
+  }
+
+  /// 开始计时。**不记组** —— 记组仍然是用户在合适的时候点一下大按钮。
+  ///
+  /// 为什么不做成"再点一下大按钮就停"之外的东西：`1 次点击 = 1 组` 是这条产品线
+  /// 最不能动的一条，所以计时只是**给出这一组的值**，不改变"点一下 = 记一组"。
+  void startHold() {
+    if (!canTimeSet || holding) return;
+    // 计一次 `stepper`（**诚实地算进 tap_count**）：它和"手动调次数"是同一件事 ——
+    // 给出这一组的值。计时动作因此是"两次点击一组"（开始计时 + 点一下记下），
+    // 这是这个动作真实的操作代价，藏起来只会让那条护栏看起来比实际好。
+    analytics.countTap(TapKind.stepper);
+    // 开计时前先把弹层收掉：否则用户会对着一个盖住屏幕的弹层数秒
+    _sheetOpen = false;
+    _holdStartedAtMs = _clock();
+    _holdAnnounced = false;
+    // 与休息同一条口径：**从开始时刻重算**，不累加
+    _holdTimer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      if (_disposed) {
+        t.cancel();
+        return;
+      }
+      final int elapsed = holdElapsedSec;
+      // 撑到今天的秒数就震两下（用户常常闭着眼数，这是唯一能"到点"的提示）。
+      // 只震一次：之后继续撑是他自己的选择，不该每秒震一下。
+      if (!_holdAnnounced && elapsed >= _reps) {
+        _holdAnnounced = true;
+        unawaited(haptics.targetReached());
+      }
+      _notify();
+    });
+    _notify();
+  }
+
+  /// 取消计时（不记组）。长按大按钮会走这条路 —— 长按在训练屏上的语义始终是"改"。
+  void cancelHold() {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+    _holdStartedAtMs = null;
+    _holdAnnounced = false;
+    _notify();
+  }
+
+  void setOffline(bool value) {
+    syncQueue.offline = value;
+    _notify();  }
 
   Future<SyncOutcome> flushSync() => syncQueue.flush();
 
@@ -542,6 +677,10 @@ class WorkoutController extends ChangeNotifier {
       'is_offline': syncQueue.offline,
     });
 
+    // 这一组**真的写进去了**才震一下。上面那条 `if (!canLog) return;` 的分支
+    // 刻意不震：一次没记上的震动比不震更糟（用户以为记上了）。
+    unawaited(haptics.setLogged());
+
     // 组数达标后不禁用，只提示。计划是建议不是牢笼。
     if (_normalSets >= plan.targetSets) {
       _hint = '已达到计划组数，再点会继续记录（不加限制）';
@@ -609,6 +748,11 @@ class WorkoutController extends ChangeNotifier {
           'planned_sec': plannedRestSec,
         });
         restActivity.end(); // 锁屏上那条也要撤下
+        // 这一下通常不看屏幕（手机扣在器械上/在包里）—— 靠震动把人叫回来
+        unawaited(haptics.restFinished());
+        // Android：锁屏上没有任何东西（iOS 有 Live Activity），发一条本地通知 ——
+        // 这是"手机在包里也知道该下一组了"的唯一办法。
+        unawaited(restCue.show(title: '休息结束', body: '下一组：$primaryButtonLabel'));
       } else {
         _restRemaining = left;
       }
@@ -632,9 +776,12 @@ class WorkoutController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _stopRest();
+    _holdTimer?.cancel();
+    _holdTimer = null;
     // 退出训练屏 = 这次休息不再有意义：锁屏上那条必须撤掉，
     // 否则用户放下手机之后会看到一条永远数不完的"组间休息"。
     restActivity.end();
+    unawaited(restCue.cancel());
     super.dispose();
   }
 }

@@ -15,6 +15,7 @@ import 'package:lianleme/data/local_store.dart';
 import 'package:lianleme/data/sync_queue.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/domain/tap_meter.dart';
+import 'package:lianleme/features/workout/haptics.dart';
 import 'package:lianleme/features/workout/workout_controller.dart';
 import 'package:lianleme/features/workout/workout_screen.dart';
 import 'package:lianleme/features/workout/workout_session.dart';
@@ -28,20 +29,53 @@ const ExerciseSpec _bench = ExerciseSpec(
   defaultRestSec: 120,
 );
 
+/// 与 seed 里的 ex_treadmill_incline_walk 一致：按距离记（用来测"没设距离时那一下不算"）。
+const ExerciseSpec _treadmill = ExerciseSpec(
+  id: 'ex_treadmill_incline_walk',
+  name: '跑步机爬坡走',
+  weightIncrement: 0,
+  defaultWeightKg: null,
+  defaultRestSec: 60,
+  trackType: 'distance_time',
+);
+
 const PlanTarget _plan3x8to10 = PlanTarget(
   targetSets: 3,
   targetRepsLow: 8,
   targetRepsHigh: 10,
 );
 
+/// 记下"该震的时候震了没有"的替身（v1.53）。真机上的震动测不了，
+/// 但"什么时候该调它"是逻辑，必须钉住 —— 尤其是**没记上那一组不许震**。
+class _FakeHaptics implements Haptics {
+  int sets = 0;
+  int rests = 0;
+  int targets = 0;
+
+  @override
+  Future<void> setLogged() async => sets += 1;
+
+  @override
+  Future<void> restFinished() async => rests += 1;
+
+  @override
+  Future<void> targetReached() async => targets += 1;
+}
+
 class _Harness {
-  _Harness({LastSession? lastSession}) {
+  _Harness({LastSession? lastSession}) : this._(exercise: _bench, lastSession: lastSession);
+
+  /// 距离动作那条路（没设距离时 `canLog=false`）。
+  _Harness.distance() : this._(exercise: _treadmill);
+
+  _Harness._({required ExerciseSpec exercise, LastSession? lastSession}) {
     controller = WorkoutController(
-      exercise: _bench,
+      exercise: exercise,
       plan: _plan3x8to10,
       analytics: analytics,
       store: store,
       syncQueue: syncQueue,
+      haptics: haptics,
       lastSession: lastSession,
       // 钟是**单调递增的毫秒**（每次取值 +1，保证时间戳各不相同），
       // 而测试可以用 [advance] 把它一次推过去 —— 因为休息倒计时现在
@@ -54,6 +88,7 @@ class _Harness {
 
 
   final RecordingAnalytics analytics = RecordingAnalytics();
+  final _FakeHaptics haptics = _FakeHaptics();
   final InMemoryLocalStore store = InMemoryLocalStore();
   final InMemorySyncQueue syncQueue = InMemorySyncQueue();
   late final WorkoutController controller;
@@ -518,6 +553,106 @@ void main() {
     expect(sets[0].id, isNot(sets[1].id));
     expect(<int>[sets[0].setIndex, sets[1].setIndex], <int>[1, 2]);
     expect(h.controller.workout.totalSets, 0, reason: '两组热身都不算正式组');
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('记一组震一下；撤销入口在屏幕上是看得见的（不是只写在代码里）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(find.byKey(const Key('done-list-hint')), findsNothing,
+        reason: '一组都没记时不该摆"长按可撤销"——那是废话');
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    expect(h.haptics.sets, 1, reason: '记上了就该震一下（健身房里不看屏幕也知道）');
+    expect(find.byKey(const Key('done-list-hint')), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('done-list-hint'))).data,
+      contains('长按'),
+      reason: '撤销入口要写在屏幕上——误触的人第一反应是"这下完了"',
+    );
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('**没记上的那一下不许震**（假装记上了比不震更糟）',
+      (WidgetTester tester) async {
+    // 距离动作还没设距离 → canLog=false → 那一下什么都不写
+    final _Harness h = _Harness.distance();
+    await _pump(tester, h);
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    expect(h.controller.loggedSets, isEmpty);
+    expect(h.haptics.sets, 0, reason: '没写进库就不该震——用户会以为记上了');
+    await _teardown(tester, h);
+  });
+
+  testWidgets('休息走到 0 震一下（那一下通常不看屏幕）', (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    h.advance(121 * 1000); // 休息 120 秒，推过去
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(h.controller.restRunning, isFalse);
+    expect(h.haptics.rests, 1);
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('大按钮上方有「上次练了多少」那一行（站在器械前最想知道的数字）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness(
+      lastSession: const LastSession(weightKg: 45, reps: <int>[10, 10, 10]),
+    );
+    await _pump(tester, h);
+
+    expect(
+      tester.widget<Text>(find.byKey(const Key('last-time'))).data,
+      '上次 3 组 · 45 kg × 10 次',
+      reason: '与建议页那条证据链是同一句话（同一份实现）',
+    );
+    await _teardown(tester, h);
+  });
+
+  testWidgets('没有历史时那一行**整个不出现**（不编一个"上次"出来）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(find.byKey(const Key('last-time')), findsNothing);
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 系统大字号 1.5× 也不溢出（训练屏是站着、出汗时看的那一屏）',
+      (WidgetTester tester) async {
+    // 常见安卓机的逻辑尺寸 411×914 + 1.5 倍字体
+    tester.view.physicalSize = const Size(1233, 2742);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    final _Harness h = _Harness(
+      lastSession: const LastSession(weightKg: 45, reps: <int>[10, 10, 10]),
+    );
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    // 溢出会让测试直接失败；这里再钉住"该在的都在"
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('big-log-button')), findsOneWidget);
+    expect(find.byKey(const Key('rest-bar')), findsOneWidget);
+    expect(find.byKey(const Key('last-time')), findsOneWidget);
 
     await _teardown(tester, h);
   });

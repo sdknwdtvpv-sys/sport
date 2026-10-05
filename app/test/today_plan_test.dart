@@ -248,5 +248,31 @@ void main() {
 
       await teardown(tester);
     });
+
+    testWidgets('★ 系统大字号 1.5× 也不溢出（40+ 用户会把字号调大）',
+        (WidgetTester tester) async {
+      // 为什么单独一条：全项目原先**没有任何一处**处理 textScaler，
+      // 而首页是卡片叠卡片、最容易挤爆的一屏。
+      // 设备按 411×914 逻辑像素（常见安卓机）+ 1.5 倍字体。
+      tester.view.physicalSize = const Size(1233, 2742);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      // 1.3× 与 1.5× 都跑一遍：1.3 是"调大一点"的常见档，1.5 是系统里最大的一档
+      for (final double scale in <double>[1.3, 1.5]) {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        await pumpApp(tester);
+
+        // Flutter 在 RenderFlex 溢出时会直接让测试失败，能跑完就是没溢出
+        expect(tester.takeException(), isNull, reason: '${scale}× 时首页溢出了');
+        expect(find.byKey(const Key('start-workout')), findsOneWidget,
+            reason: '${scale}× 时也要看得见主按钮');
+        expect(find.byKey(const Key('open-notifications')), findsOneWidget,
+            reason: '${scale}× 时铃铛不能被挤掉 —— 那是通知中心唯一的入口');
+      }
+
+      await teardown(tester);
+    });
   });
 }

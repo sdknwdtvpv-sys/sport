@@ -212,14 +212,22 @@ class TodayScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: Tokens.s3),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Text(
-            '${now.month} 月 ${now.day} 日 · 周${weekdays[now.weekday - 1]}',
-            style: const TextStyle(color: Tokens.text3, fontSize: 13),
+        // ⚠️ `Flexible` + 省略号（v1.53）：系统字号调大时（1.5×），
+        // "今天"(34pt) 与这行日期会一起变宽，把右上角的铃铛挤出屏幕 ——
+        // 而铃铛是通知中心的唯一入口，挤没了等于那个功能消失。
+        // 宁可日期结尾省略，也不能挤掉入口（测试在 `today_plan_test` 的大字号那条）。
+        Flexible(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              '${now.month} 月 ${now.day} 日 · 周${weekdays[now.weekday - 1]}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Tokens.text3, fontSize: 13),
+            ),
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: Tokens.s2),
         // 铃铛（2026-10-05，新 VI 的首页右上角）。有未读才带那个点 ——
         // 永远亮着的红点等于没有点。
         if (onOpenNotifications != null)

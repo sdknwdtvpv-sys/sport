@@ -222,6 +222,27 @@ void main() {
           updatedAt: 0,
         );
 
+    testWidgets('★ 系统大字号 1.5× 也不溢出（总结页是练完第一眼看到的那屏）',
+        (WidgetTester tester) async {
+      // 三个大数（容量/时长/组数）横排 + 分享卡按钮，是这一屏最容易挤爆的地方。
+      tester.view.physicalSize = const Size(1233, 2742);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await logSets('w_big_text', 'ex_bb_bench_press',
+          <_S>[_S(8, 60), _S(8, 60), _S(8, 60)],
+          startedAt: 0, from: 1000);
+      await pumpSummary(tester, 'w_big_text');
+
+      // 溢出会让测试直接失败；这里再钉住三个大数与主按钮都还在
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('summary-volume')), findsOneWidget);
+      expect(find.byKey(const Key('summary-duration')), findsOneWidget);
+      expect(find.byKey(const Key('summary-sets')), findsOneWidget);
+    });
+
     testWidgets('显示容量 / 时长 / 组数三个大数', (WidgetTester tester) async {
       await logSets('w1', 'ex_bb_bench_press',
           <_S>[_S(8, 60), _S(8, 60), _S(8, 60)],

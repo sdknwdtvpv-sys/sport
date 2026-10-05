@@ -7,6 +7,8 @@
 /// 自绘层可以在同一棵 widget 树里直接断言，不需要处理路由与动画时序。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
@@ -16,6 +18,7 @@ import '../../data/local_store.dart';
 import '../../domain/models.dart';
 import '../exercise/exercise_detail_screen.dart';
 import 'workout_controller.dart';
+import 'screen_awake.dart';
 import 'workout_session.dart';
 
 class WorkoutScreen extends StatefulWidget {
@@ -24,6 +27,8 @@ class WorkoutScreen extends StatefulWidget {
     required this.session,
     this.catalog = const <ExerciseData>[],
     this.store,
+    this.screenAwake = const MethodChannelScreenAwake(),
+    this.onSwapExercise,
   });
 
   /// 一次训练里的全部动作（S6）。单个动作就用 `WorkoutSession.single(c)`。
@@ -31,6 +36,17 @@ class WorkoutScreen extends StatefulWidget {
   /// **会话与它内部的控制器都由调用方持有并负责 dispose** ——
   /// 这样测试可以在页面销毁后继续断言控制器状态。
   final WorkoutSession session;
+
+  /// 训练屏期间**别让屏幕熄掉**（v1.53）。默认走平台通道；
+  /// 测试传一个记账的替身 —— "进训练屏开、走的时候关"是逻辑，必须能断言。
+  final ScreenAwake screenAwake;
+
+  /// **器械被占了 → 换一个动作**（v1.53）。
+  ///
+  /// 为什么由调用方实现：换动作要"按当前部位预筛的选择器 + 新动作的上次记录 + 落库"，
+  /// 那三样东西都在外壳（`main.dart`）手里，训练屏只有一份瘦身的控制器。
+  /// 不传就没有这个入口（测试与"单独打开这一屏"的场景）。
+  final Future<void> Function()? onSwapExercise;
 
   /// 本次训练涉及的动作（**完整动作库行**）。
   ///
@@ -57,11 +73,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     super.initState();
     // 只听会话：它会转发内部每个控制器的通知，切动作也是它通知
     widget.session.addListener(_onChange);
+    // 训练期间**别让屏幕熄掉**（v1.53）：手机架在器械上时，
+    // 屏幕一黑就意味着"每记一组先解一次锁"。离开这一屏就还回去（不全局常亮）。
+    // 失败是静默的 —— 少一个常亮绝不能让训练屏记不了组。
+    unawaited(widget.screenAwake.keepOn());
   }
 
   @override
   void dispose() {
     widget.session.removeListener(_onChange);
+    unawaited(widget.screenAwake.release());
     super.dispose();
   }
 
@@ -167,6 +188,20 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ),
             ),
           ),
+          // 换动作（v1.53）：健身房最高频的意外就是"器械被占"。
+          // 放在标题右边、与详情入口并排 —— 只在一个不显眼的角落藏一个入口，
+          // 等于没有（这一屏上每一个入口都必须是"一眼看到"）。
+          if (widget.onSwapExercise != null)
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: IconButton(
+                key: const Key('swap-exercise'),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.swap_horiz, color: Tokens.text2, size: 20),
+                onPressed: () => unawaited(widget.onSwapExercise!()),
+              ),
+            ),
           // 动作详情入口。**必须看得见**：练到一半想确认"这个动作怎么做"的人
           // 不会去猜哪里能点。没有动作库行时（老调用方/测试）不显示。
           if (_dataFor(c.exercise.id) != null)
@@ -229,12 +264,28 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Tokens.text3, fontSize: 15, height: 1.4),
             ),
+          // 「上次练了多少」（v1.53）：站在器械前最想知道的数字，而原先它只藏在
+          // 建议页那条证据链里 —— 训练屏上根本没有。有历史才出现，没有就不编。
+          if (c.lastTimeLabelText != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Tokens.s2),
+              child: Text(
+                c.lastTimeLabelText!,
+                key: const Key('last-time'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.3),
+              ),
+            ),
           const SizedBox(height: Tokens.s4),
           Text(
             // 热身状态是"粘住"的（见 WorkoutController._warmup），
             // 所以标题必须换掉 —— 否则用户看到"第 1 组"却记进去一条热身，
             // 完全不知道发生了什么。
-            c.warmup ? '热身组' : '第 ${c.setNumber} 组',
+            c.warmup
+                ? '热身组'
+                : c.holding
+                    ? '第 ${c.setNumber} 组 · 计时中'
+                    : '第 ${c.setNumber} 组',
             key: const Key('set-number'),
             style: TextStyle(
               color: c.warmup ? Tokens.accent : Tokens.text,
@@ -260,14 +311,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 color: c.canLog ? Tokens.accent : Tokens.elevated,
                 borderRadius: BorderRadius.circular(Tokens.rPill),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: <Widget>[
-                  Text(
-                    c.primaryButtonLabel,
-                    key: const Key('button-label'),
+              // ⚠️ `FittedBox`（v1.53）：系统字号调到 1.5× 时，"45 kg × 10" 在
+              // 30pt 字号下会把这一行撑爆（实测溢出 163px）。缩放兜底而不是换行 ——
+              // 大按钮上的字必须**一眼读完**，两行反而是灾难。
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: <Widget>[
+                    Text(
+                      c.primaryButtonLabel,
+                      key: const Key('button-label'),
                     style: TextStyle(
                       color: c.canLog ? Tokens.accentInk : Tokens.text3,
                       fontSize: 30,
@@ -275,13 +331,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(width: Tokens.s2),
-                  Text('✓',
-                      style: TextStyle(
-                          color: c.canLog ? Tokens.accentInk : Tokens.text3,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700)),
-                ],
+                    const SizedBox(width: Tokens.s2),
+                    Text('✓',
+                        style: TextStyle(
+                            color: c.canLog ? Tokens.accentInk : Tokens.text3,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -300,6 +357,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         key: const Key('done-list'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          // 撤销的**入口要看得见**（v1.53）。原先"长按任意一行撤销"只写在代码里，
+          // 屏幕上没有任何地方提过 —— 误触的人根本不知道有后悔药
+          // （真机上问过一次：记错一组之后第一反应是"这下完了"）。
+          // 只在真的记过组时出现，空列表上摆一句"长按可撤销"是废话。
+          if (sets.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Tokens.s2),
+              child: Text(
+                '已完成 ${sets.length} 组 · 长按某一行可撤销',
+                key: const Key('done-list-hint'),
+                style: const TextStyle(color: Tokens.text3, fontSize: 11, height: 1.2),
+              ),
+            ),
           for (final r in sets)
             // 长按任意一行撤销这一组（误触的后悔药）。
             // **刻意不用右滑**：整屏已经在响应横向拖拽切动作，而
@@ -385,28 +455,67 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       ),
       child: Row(
         children: <Widget>[
-          const Text('休息', style: TextStyle(color: Tokens.text3, fontSize: 13)),
-          const SizedBox(width: Tokens.s3),
-          Text(
-            _restText(),
-            key: const Key('rest-time'),
-            style: TextStyle(
-              color: c.restDone ? Tokens.accent : Tokens.text,
-              fontSize: c.restDone ? 17 : 20,
-              fontWeight: FontWeight.w700,
-              fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+          // ⚠️ 左边这组在**大字号**下会被挤（实测 1.5× 溢出 101px）：
+          // 它整体 `FittedBox` 缩到放得下，右边三个控件保持原尺寸 ——
+          // 那些是手指要点的地方，不许跟着缩（缩了就点不中）。
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: <Widget>[
+                  const Text('休息',
+                      style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                  const SizedBox(width: Tokens.s3),
+                  Text(
+                    _restText(),
+                    key: const Key('rest-time'),
+                    style: TextStyle(
+                      color: c.restDone ? Tokens.accent : Tokens.text,
+                      fontSize: c.restDone ? 17 : 20,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const Spacer(),
-          TextButton(
-            key: const Key('skip-rest'),
-            onPressed: c.skipRest,
-            child: const Text('跳过', style: TextStyle(color: Tokens.text2, fontSize: 13)),
-          ),
+          // −15 / +15（2026-10-05，v1.53）：健身房现场"今天想多歇半分钟"几乎必然发生。
+          // 只在**真的在休息**时出现 —— 休息已经结束时这两个按钮按了没有任何作用，
+          // 摆着就是骗人（`adjustRest` 里也挡了一道）。
+          if (c.restRunning) ...<Widget>[
+            _restAdjust(key: 'rest-minus', label: '−15', onTap: () => c.adjustRest(-15)),
+            _restAdjust(key: 'rest-plus', label: '+15', onTap: () => c.adjustRest(15)),
+            const SizedBox(width: Tokens.s1),
+          ],
+          _restAdjust(key: 'skip-rest', label: '跳过', onTap: c.skipRest),
         ],
       ),
     );
   }
+
+  /// 休息条上的一个小按钮。做成**方形热区**（44×36 起）——
+  /// 训练中手指是汗的、手机可能架在器械上，太小的目标点不中。
+  Widget _restAdjust({
+    required String key,
+    required String label,
+    required VoidCallback onTap,
+  }) =>
+      GestureDetector(
+        key: Key(key),
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 44,
+          constraints: const BoxConstraints(minWidth: 44),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: Tokens.s2),
+          child: Text(label,
+              style: const TextStyle(
+                  color: Tokens.text2, fontSize: 14, fontWeight: FontWeight.w600)),
+        ),
+      );
 
   String _restText() {
     if (c.restDone) return '休息结束';
@@ -489,7 +598,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       padding: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, Tokens.s4),
       child: Text(
         c.hint ??
-            (c.isDistance
+            (c.holding
+                // 计时中：告诉用户"现在这一下会记下多少"，以及"什么时候会震"
+                ? '计时中 · 点大按钮记下这一组（到 ${c.reps} 秒震一下）'
+                : c.isDistance
                 // 距离动作先说"怎么设距离" —— 首次进来它是 0，按钮是灰的
                 ? '长按按钮设距离与时长 · 设好之后点一下记一组'
                 : '点大按钮记录一组 · 长按可以改重量'),
@@ -591,6 +703,29 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     onMinus: () => c.onStepper(deltaReps: -c.repsStep),
                     onPlus: () => c.onStepper(deltaReps: c.repsStep),
                   ),
+                  // 计时动作给一个"开始计时"（v1.53）：平板支撑这类动作，
+                  // 手动选一个秒数等于让用户在垫子上自己看表 —— 那正是这个 App 该替他做的事。
+                  // 它只**给出这一组的值**，记组仍然是点一下大按钮（红线：1 次点击 = 1 组）。
+                  if (c.canTimeSet) ...<Widget>[
+                    const SizedBox(height: Tokens.s4),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        key: const Key('sheet-timer-start'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Tokens.text,
+                          side: const BorderSide(color: Tokens.lineStrong),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(Tokens.rPill),
+                          ),
+                        ),
+                        onPressed: c.startHold,
+                        child: const Text('开始计时',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: Tokens.s5),
                   // 热身组：规格要求「弱化样式存在、不主动教」，所以做成一个
                   // 普通文字按钮而不是显眼开关 —— 主按钮才是这一屏唯一的主角。

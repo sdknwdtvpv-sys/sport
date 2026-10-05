@@ -28,6 +28,7 @@ class ExercisePickerScreen extends StatefulWidget {
     this.unit = WeightUnit.kg,
     this.analytics,
     this.onBrowse,
+    this.initialMuscle,
   });
 
   final ExerciseRepository repository;
@@ -49,6 +50,13 @@ class ExercisePickerScreen extends StatefulWidget {
   /// 不传，行为与以前一模一样（训练里选动作那条路一点没变）。
   final ValueChanged<ExerciseData>? onBrowse;
 
+  /// **训练中换动作**（2026-10-05，v1.53）：进来就先把部位筛好。
+  ///
+  /// 为什么：器械被占时用户要的是"换一个**同部位**的动作"，
+  /// 而不是从 351 个动作里重新找一遍 —— 那 20 秒正是训练被打断的时候。
+  /// 传 null（默认）则与以前一模一样（不预筛）。
+  final String? initialMuscle;
+
   @override
   State<ExercisePickerScreen> createState() => _ExercisePickerScreenState();
 }
@@ -64,7 +72,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   /// 而"我就是要练这几个"只有用户自己知道。这是唯一一处用户能直接表态的地方。
   List<ExerciseData> _pinned = const <ExerciseData>[];
   bool _loading = true;
-  String? _muscleGroup;
+  late String? _muscleGroup = widget.initialMuscle;
 
   /// 器械筛选。**居家 / 女性人群进来的第一道门** ——
   /// 只有一对哑铃的人不该被推荐杠铃卧推。

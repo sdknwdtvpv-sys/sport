@@ -14,6 +14,7 @@ library;
 
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import '../../core/last_time.dart';
 import '../../core/units.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
@@ -253,17 +254,10 @@ class PlannedExercise {
   ///
   /// 次数在组间不一致时只报**最少**的那一组 —— 那正是引擎做判断用的口径，
   /// 报最大值会让用户觉得"我明明做到了 10 次，为什么还提示我保持重量"。
-  String? get historyLabel {
-    final LastSession? last = lastSession;
-    if (last == null || last.completedSets == 0) return null;
-    final String w =
-        last.weightKg == null ? '自重' : formatWeight(last.weightKg, unit);
-    final String u = isTimeTrack(exercise.trackType) ? '秒' : '次';
-    final String reps = last.reps.toSet().length == 1
-        ? '${last.minReps} $u'
-        : '最少 ${last.minReps} $u';
-    return '上次 ${last.completedSets} 组 · $w × $reps';
-  }
+  /// 证据链那一行。**实现搬到 `core/last_time.dart` 了**（v1.53）：
+  /// 训练屏也要念同一句话，两处各写一遍迟早会念得不一样。
+  String? get historyLabel =>
+      lastTimeLabel(lastSession, unit: unit, trackType: exercise.trackType);
 }
 
 /// 计划模板里的一项：哪个动作 + 什么处方。

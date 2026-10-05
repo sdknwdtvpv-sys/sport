@@ -22,5 +22,12 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ReminderBridge") {
       ReminderBridge.register(messenger: registrar.messenger())
     }
+    // 训练中别让屏幕熄掉（v1.53）：Dart → MethodChannel → isIdleTimerDisabled。
+    // 顺带把 `lianleme/rest_cue` 也在这里注册成**空操作** ——
+    // 那边有 Live Activity 就够了，但通道得有实现，否则 Dart 侧收到
+    // MissingPluginException，看起来像"忘了做"。
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ScreenAwakeBridge") {
+      ScreenAwakeBridge.register(messenger: registrar.messenger())
+    }
   }
 }

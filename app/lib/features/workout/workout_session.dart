@@ -31,7 +31,7 @@ class SessionEntry {
 class WorkoutSession extends ChangeNotifier {
   WorkoutSession(List<WorkoutController> controllers, {int initialIndex = 0})
       : assert(controllers.isNotEmpty, '会话至少要有一个动作'),
-        _controllers = List<WorkoutController>.unmodifiable(controllers) {
+        _controllers = List<WorkoutController>.of(controllers) {
     // 从被中断的训练回来时直接落在原来那个动作上（2026-10-01）。
     // 越界就回到第一个 —— 会话数据与动作库对不上时宁可从头开始，也不要崩。
     if (initialIndex > 0 && initialIndex < _controllers.length) {
@@ -46,6 +46,7 @@ class WorkoutSession extends ChangeNotifier {
   factory WorkoutSession.single(WorkoutController c) =>
       WorkoutSession(<WorkoutController>[c]);
 
+  /// ⚠️ 从 `List.unmodifiable` 改成可变列表：**训练中换动作**（v1.53）要替换掉当前这个。
   final List<WorkoutController> _controllers;
   int _index = 0;
 
@@ -80,6 +81,25 @@ class WorkoutSession extends ChangeNotifier {
     current.analytics.countTap(TapKind.exerciseSwitch);
     notifyListeners();
   }
+
+  /// 把当前这个动作**换成另一个**（v1.53：器械被占了）。
+  ///
+  /// 为什么放在会话里而不是页面里：会话是"这次训练有哪几个动作"的唯一持有者，
+  /// 页面只是它的一面镜子；换动作之后底部条的 `1 / 3`、上一个/下一个的名字
+  /// 都要跟着变，所以必须由会话统一改并通知。
+  ///
+  /// ⚠️ 旧控制器由**调用方**负责 dispose（它可能还在休息倒计时）——
+  /// 这里只负责换掉引用，不替调用方做生命周期决定。
+  void replaceCurrent(WorkoutController next) {
+    if (_index < 0 || _index >= _controllers.length) return;
+    _controllers[_index] = next;
+    next.addListener(_relay);
+    notifyListeners();
+  }
+
+  /// 会话里所有控制器（含被换进来的）—— 训练结束时要逐个 dispose。
+  List<WorkoutController> get allControllers =>
+      List<WorkoutController>.unmodifiable(_controllers);
 
   /// 前一个 / 后一个动作的名字，给底部条显示（规格的示意图就是这两个名字）。
   /// 没有时返回 null，由界面决定显示什么。

@@ -60,7 +60,9 @@ import 'features/profile/reminder.dart';
 import 'features/profile/reminder_bridge.dart';
 import 'features/profile/reminder_service.dart';
 import 'features/summary/workout_summary_screen.dart';
+import 'features/workout/haptics.dart';
 import 'features/workout/rest_activity.dart';
+import 'features/workout/rest_cue.dart';
 import 'features/workout/workout_controller.dart';
 import 'features/workout/workout_screen.dart';
 import 'features/workout/workout_session.dart';
@@ -628,6 +630,12 @@ class _HomeShellState extends State<HomeShell> {
         // 组间休息的 Live Activity（iOS 锁屏/灵动岛）。**生产在这里接上真的那个** ——
         // 默认值是 noop，所以漏传不会报错，只会"锁屏上什么都没有"。
         restActivity: const MethodChannelRestActivity(),
+        // 记一组 / 休息结束的触觉反馈（v1.53）。**生产在这里接上真的那个** ——
+        // 默认是 NoopHaptics，漏传不会报错，只会"记了组没震"。
+        haptics: const SystemHaptics(),
+        // 休息结束的体外提示（Android 通知；iOS 侧是空操作，那边有 Live Activity）。
+        // 同样"漏传不报错、只是锁屏上没有东西"。
+        restCue: const MethodChannelRestCue(),
         // **上一次这个动作练成什么样 —— 渐进建议的输入，必须传。**
         //
         // 不传的后果（曾经就是这样）：引擎永远命中 progression.dart 的
@@ -694,6 +702,67 @@ class _HomeShellState extends State<HomeShell> {
     session.addListener(onSessionChanged);
     await persistSession(); // 开始训练这件事本身就该被记住
 
+    /// **器械被占了 → 换一个动作**（2026-10-05，v1.53）。
+    ///
+    /// 健身房最高频的意外就是深蹲架被占：原来的做法是退出训练、重新选动作、
+    /// 重量次数还得重填 —— 它直接伤「单次 ≥ 12 组」这条护栏。
+    ///
+    /// 换的时候要守住四件事：
+    ///   1. **同部位预筛**（器械被占时要的是"换个练同一块的"，不是重新逛 351 个动作）；
+    ///   2. **新动作的默认值来自它自己的历史/处方**（不是沿用上一个动作的重量 ——
+    ///      腿举 100 kg 挪到箭步蹲上会直接把人练伤）；
+    ///   3. **已经记过的组一条不动**（组本来就逐条落库了；换动作只换"接下来练什么"）；
+    ///   4. **崩溃恢复后换过的动作也在** —— 所以 `entries` 要就地改，
+    ///      `ActiveSession` 存的就是它（不改的话，杀进程回来会看到早就换掉的那个动作）。
+    Future<void> swapCurrentExercise() async {
+      final WorkoutController old = session.current;
+      final ExerciseData? picked = await Navigator.of(context).push<ExerciseData>(
+        MaterialPageRoute<ExerciseData>(
+          builder: (BuildContext ctx) => ExercisePickerScreen(
+            repository: _repo,
+            store: _store,
+            unit: _unit,
+            analytics: _analytics,
+            // 同部位预筛：只在动作库行里有部位时才传
+            initialMuscle: entries[session.index].exercise.muscleGroup,
+          ),
+        ),
+      );
+      if (picked == null || !mounted) return;
+      if (picked.id == old.exercise.id) return; // 选了同一个 = 什么都没发生
+
+      // 新动作的"上次"要**排除本次训练**：否则会把这次刚记的组当成上次
+      final WorkoutController next = WorkoutController(
+        workoutId: workoutId,
+        exercise: _repo.specOf(picked),
+        // 处方形状沿用这一格原来的（同样的组数/次数）——
+        // 用户要的是"换个动作继续练"，不是"重新定计划"
+        plan: entries[session.index].plan,
+        analytics: _analytics,
+        store: _store,
+        syncQueue: _syncQueue,
+        restActivity: const MethodChannelRestActivity(),
+        haptics: const SystemHaptics(),
+        restCue: const MethodChannelRestCue(),
+        lastSession: await _store.lastSessionFor(picked.id, excludeWorkoutId: workoutId),
+        profile: UserProfile(unit: _unit, restOverrideSec: _restOverrideSec),
+        // 这个动作在这次训练里**已经记过的组**（换了再换回来时不丢）
+        alreadyLogged: <SetRecord>[
+          for (final SetRecord r in await _store.setsFor(workoutId))
+            if (r.exerciseId == picked.id) r,
+        ],
+      );
+
+      // ① 会话换掉当前那一格；② entries 就地改（崩溃恢复要用）；
+      // ③ 旧控制器收掉（它可能还在休息倒计时 —— 那条倒计时跟着它一起结束）
+      session.replaceCurrent(next);
+      entries[session.index] = SessionEntry(exercise: picked, plan: entries[session.index].plan);
+      old.dispose();
+      // 换动作对用户是一次额外操作 —— 与"点底部条切动作"同一个意图，计一次
+      next.analytics.countTap(TapKind.exerciseSwitch);
+      unawaited(persistSession());
+    }
+
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => WorkoutScreen(
@@ -703,6 +772,7 @@ class _HomeShellState extends State<HomeShell> {
             for (final SessionEntry e in entries) e.exercise,
           ],
           store: _store,
+          onSwapExercise: swapCurrentExercise,
         ),
       ),
     );
@@ -713,7 +783,11 @@ class _HomeShellState extends State<HomeShell> {
     await _store.clearActiveSession();
 
     session.dispose();
-    for (final WorkoutController c in controllers) {
+    // ⚠️ 用 `session.allControllers` 而不是上面那个局部 `controllers` 列表：
+    // 训练中"换动作"（v1.53）会把当前那一格换成**新造**的控制器，
+    // 局部列表里还留着旧的 —— 照它 dispose 会漏掉换进来的那个（计时器/监听泄漏），
+    // 而那个旧的已经由换动作那条路自己收掉了（重复 dispose 在 debug 下会断言失败）。
+    for (final WorkoutController c in session.allControllers) {
       c.dispose();
     }
     _flusher.resume();
