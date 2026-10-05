@@ -43,7 +43,9 @@ import 'features/onboarding/privacy_consent_screen.dart';
 import 'features/today/today_screen.dart';
 import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
+import 'features/routine/routine_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/progress/all_data_screen.dart';
 import 'features/progress/progress_data.dart';
 import 'features/progress/progress_screen.dart';
 import 'features/profile/reminder.dart';
@@ -184,7 +186,7 @@ class _HomeShellState extends State<HomeShell> {
       SummaryService(store: _store, repository: _repo);
   late final ProfileRepository _profile = ProfileRepository(_db);
 
-  /// 当前 Tab。三个封顶（见 docs/screens.md）。
+  /// 当前 Tab。五个（训练 / 进步 / 数据 / 计划 / 我的，见 docs/screens.md）。
   int _tab = 0;
 
   /// 有没有同意过隐私政策。**null = 还没从库里读出来**（读出来之前什么都不做）。
@@ -1059,6 +1061,23 @@ class _HomeShellState extends State<HomeShell> {
               setState(() => _bodyUnit = u);
             },
           );
+      case 2:
+        // 「数据」= 原来的「全部数据」二级页（v1.45.0 起提到一级）。
+        // VI 里这一页还要重做（四张统计卡 + 容量趋势面积图），那属于 v1.46.0 的组件层。
+        return AllDataScreen(
+          store: _store,
+          repository: _repo,
+          unit: _unit,
+        );
+      case 3:
+        // 「计划」= 原来的计划模板列表（v1.45.0 起提到一级）。
+        // VI 里它还要加周历与历史两个视图，同样属于 v1.46.0。
+        return RoutineListScreen(
+          repository: _routines,
+          exercises: _repo,
+          unit: _unit,
+          store: _store,
+        );
       default:
         return ProfileScreen(
           store: _store,

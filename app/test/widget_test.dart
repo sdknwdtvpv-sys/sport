@@ -15,7 +15,7 @@ import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/main.dart';
 
 void main() {
-  testWidgets('App 能启动，显示「练」空态', (WidgetTester tester) async {
+  testWidgets('App 能启动，显示训练空态（含 5 个 Tab）', (WidgetTester tester) async {
     // 注入内存库：widget 测试里没有 path_provider 的平台通道，
     // 让 App 自己去 openAppDatabase() 会直接抛错。
     final AppDatabase db = AppDatabase(NativeDatabase.memory());
@@ -31,10 +31,12 @@ void main() {
     expect(find.text('开始今天的训练'), findsOneWidget);
     expect(find.byKey(const Key('start-workout')), findsOneWidget);
 
-    // 三个 Tab，封顶就是三个
-    expect(find.text('练'), findsOneWidget);
+    // 五个 Tab（2026-10-05 按新 VI 从"三个封顶"改成五个，见 docs/screens.md）
+    expect(find.text('训练'), findsOneWidget);
     expect(find.text('进步'), findsOneWidget);
-    expect(find.text('我'), findsOneWidget);
+    expect(find.text('数据'), findsOneWidget);
+    expect(find.text('计划'), findsOneWidget);
+    expect(find.text('我的'), findsOneWidget);
 
     // 必须销毁页面：外壳里有两个埋点上报定时器（冷启动 5 秒 + 前台每 60 秒），
     // 不销毁的话 testWidgets 会因 pending timer 直接判失败。

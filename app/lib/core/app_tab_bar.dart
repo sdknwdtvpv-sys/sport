@@ -1,7 +1,12 @@
 /// 练了么 · 底部 Tab 栏
 ///
-/// **三个封顶**（见 `docs/screens.md`）。之前它只是个装饰性的静态组件，
-/// 现在由外壳持有状态、真的能切换 —— 假的可点按元件比没有更糟。
+/// **五个**（训练 / 进步 / 数据 / 计划 / 我的）—— 2026-10-05 按新 VI 从"三个封顶"改过来，
+/// 见 `docs/screens.md` 与 `docs/plan-vi-migration.md`。
+///
+/// 图标用的是 Material 的线框图标（VI 那套自绘的 Tab 图标体系还没做）——
+/// **这是个已知的过渡状态**，写在这里免得下一个人以为"已经对上了"。
+/// 之前这个组件只是个装饰性的静态元件，现在由外壳持有状态、真的能切换 ——
+/// 假的可点按元件比没有更糟。
 library;
 
 import 'package:flutter/material.dart';
@@ -16,9 +21,11 @@ class AppTabBar extends StatelessWidget {
 
   static const List<({IconData icon, String label})> tabs =
       <({IconData icon, String label})>[
-    (icon: Icons.fitness_center, label: '练'),
+    (icon: Icons.fitness_center, label: '训练'),
     (icon: Icons.show_chart, label: '进步'),
-    (icon: Icons.person_outline, label: '我'),
+    (icon: Icons.bar_chart, label: '数据'),
+    (icon: Icons.event_note, label: '计划'),
+    (icon: Icons.person_outline, label: '我的'),
   ];
 
   @override
