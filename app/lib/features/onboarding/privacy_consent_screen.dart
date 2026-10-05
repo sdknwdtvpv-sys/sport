@@ -84,7 +84,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
               const Text(
                 '练了么',
                 style: TextStyle(
-                  color: Tokens.volt,
+                  color: Tokens.accent,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                 ),
@@ -120,7 +120,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
                 onPressed: _openPolicy,
                 child: const Text(
                   '阅读《隐私政策》',
-                  style: TextStyle(color: Tokens.volt, fontSize: 15),
+                  style: TextStyle(color: Tokens.accent, fontSize: 15),
                 ),
               ),
               const SizedBox(height: Tokens.s3),
@@ -132,8 +132,8 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
                   key: const Key('consent-agree'),
                   onPressed: _busy ? null : () => _run(widget.onAgree),
                   style: TextButton.styleFrom(
-                    backgroundColor: Tokens.volt,
-                    foregroundColor: Tokens.voltInk,
+                    backgroundColor: Tokens.accent,
+                    foregroundColor: Tokens.accentInk,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(Tokens.rPill),
                     ),

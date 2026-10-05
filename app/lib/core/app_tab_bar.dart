@@ -41,13 +41,13 @@ class AppTabBar extends StatelessWidget {
                     Icon(
                       tabs[i].icon,
                       size: 22,
-                      color: i == current ? Tokens.volt : Tokens.text3,
+                      color: i == current ? Tokens.accent : Tokens.text3,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       tabs[i].label,
                       style: TextStyle(
-                        color: i == current ? Tokens.volt : Tokens.text3,
+                        color: i == current ? Tokens.accent : Tokens.text3,
                         fontSize: 11,
                         height: 1.2,
                       ),

@@ -237,7 +237,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             c.warmup ? '热身组' : '第 ${c.setNumber} 组',
             key: const Key('set-number'),
             style: TextStyle(
-              color: c.warmup ? Tokens.volt : Tokens.text,
+              color: c.warmup ? Tokens.accent : Tokens.text,
               fontSize: 28,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
@@ -257,7 +257,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 // 距离动作还没设距离时**视觉上也不给点**（控制器里同样挡了一道）：
                 // 一次误触会写进"0 公里"的假记录。按钮变灰 + 下面那行提示，
                 // 是这块屏幕上唯一"按钮不是主角"的例外。
-                color: c.canLog ? Tokens.volt : Tokens.elevated,
+                color: c.canLog ? Tokens.accent : Tokens.elevated,
                 borderRadius: BorderRadius.circular(Tokens.rPill),
               ),
               child: Row(
@@ -269,7 +269,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     c.primaryButtonLabel,
                     key: const Key('button-label'),
                     style: TextStyle(
-                      color: c.canLog ? Tokens.voltInk : Tokens.text3,
+                      color: c.canLog ? Tokens.accentInk : Tokens.text3,
                       fontSize: 30,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
@@ -278,7 +278,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   const SizedBox(width: Tokens.s2),
                   Text('✓',
                       style: TextStyle(
-                          color: c.canLog ? Tokens.voltInk : Tokens.text3,
+                          color: c.canLog ? Tokens.accentInk : Tokens.text3,
                           fontSize: 24,
                           fontWeight: FontWeight.w700)),
                 ],
@@ -358,7 +358,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     const SizedBox(width: Tokens.s2),
                     const Text('✓',
                         style: TextStyle(
-                            color: Tokens.volt,
+                            color: Tokens.accent,
                             fontSize: 15,
                             fontWeight: FontWeight.w700)),
                   ],
@@ -391,7 +391,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             _restText(),
             key: const Key('rest-time'),
             style: TextStyle(
-              color: c.restDone ? Tokens.volt : Tokens.text,
+              color: c.restDone ? Tokens.accent : Tokens.text,
               fontSize: c.restDone ? 17 : 20,
               fontWeight: FontWeight.w700,
               fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
@@ -600,7 +600,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       key: const Key('sheet-warmup'),
                       onPressed: c.toggleWarmup,
                       style: TextButton.styleFrom(
-                        foregroundColor: c.warmup ? Tokens.volt : Tokens.text3,
+                        foregroundColor: c.warmup ? Tokens.accent : Tokens.text3,
                         padding: const EdgeInsets.symmetric(
                           horizontal: Tokens.s3,
                           vertical: Tokens.s2,
@@ -633,8 +633,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     child: FilledButton(
                       key: const Key('sheet-confirm'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: Tokens.volt,
-                        foregroundColor: Tokens.voltInk,
+                        backgroundColor: Tokens.accent,
+                        foregroundColor: Tokens.accentInk,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(Tokens.rPill),
                         ),
@@ -669,14 +669,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           padding: const EdgeInsets.symmetric(
               horizontal: Tokens.s3, vertical: Tokens.s2),
           decoration: BoxDecoration(
-            color: active ? Tokens.volt : Colors.transparent,
-            border: Border.all(color: active ? Tokens.volt : Tokens.lineStrong),
+            color: active ? Tokens.accent : Colors.transparent,
+            border: Border.all(color: active ? Tokens.accent : Tokens.lineStrong),
             borderRadius: BorderRadius.circular(Tokens.rPill),
           ),
           child: Text(
             '${value.toInt()}',
             style: TextStyle(
-              color: active ? Tokens.voltInk : Tokens.text3,
+              color: active ? Tokens.accentInk : Tokens.text3,
               fontSize: 13,
               fontWeight: active ? FontWeight.w700 : FontWeight.w500,
             ),

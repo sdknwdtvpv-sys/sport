@@ -109,7 +109,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                   }
                   if (!snap.hasData) {
                     return const Center(
-                      child: CircularProgressIndicator(color: Tokens.volt),
+                      child: CircularProgressIndicator(color: Tokens.accent),
                     );
                   }
                   return ListView(

@@ -211,8 +211,8 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
                 child: FilledButton(
                   key: const Key('custom-save'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: _canSave ? Tokens.volt : Tokens.line,
-                    foregroundColor: _canSave ? Tokens.voltInk : Tokens.text3,
+                    backgroundColor: _canSave ? Tokens.accent : Tokens.line,
+                    foregroundColor: _canSave ? Tokens.accentInk : Tokens.text3,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(Tokens.rPill),
                     ),

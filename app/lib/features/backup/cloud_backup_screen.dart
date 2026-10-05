@@ -181,7 +181,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           TextButton(
             key: const Key('cloud-agree'),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('继续', style: TextStyle(color: Tokens.volt)),
+            child: const Text('继续', style: TextStyle(color: Tokens.accent)),
           ),
         ],
       ),
@@ -383,7 +383,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           TextButton(
             key: const Key('cloud-adopt-ok'),
             onPressed: () => Navigator.of(ctx).pop(input.text),
-            child: const Text('取回', style: TextStyle(color: Tokens.volt)),
+            child: const Text('取回', style: TextStyle(color: Tokens.accent)),
           ),
         ],
       ),
@@ -475,7 +475,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
                     const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Tokens.volt),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Tokens.accent),
                     ),
                 ],
               ),
@@ -516,7 +516,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     final BackupAccountData? account = _account;
     return <Widget>[
       if (_error != null) _banner(_error!, Tokens.danger, const Key('cloud-error')),
-      if (_notice != null) _banner(_notice!, Tokens.volt, const Key('cloud-notice')),
+      if (_notice != null) _banner(_notice!, Tokens.accent, const Key('cloud-notice')),
       if (account == null) ..._setup() else ..._enabled(account),
       const SizedBox(height: Tokens.s5),
       const Divider(height: 1, color: Tokens.line),
@@ -553,7 +553,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: Tokens.volt, shape: BoxShape.circle),
+                decoration: const BoxDecoration(color: Tokens.accent, shape: BoxShape.circle),
               ),
               const SizedBox(width: Tokens.s2),
               const Text('已开启',
@@ -623,7 +623,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
             formatRecoveryCode(account.recoveryCode),
             key: const Key('cloud-code'),
             style: const TextStyle(
-              color: Tokens.volt,
+              color: Tokens.accent,
               fontSize: 15,
               height: 1.6,
               fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
@@ -682,8 +682,8 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           key: key,
           onPressed: _busy ? null : onTap,
           style: TextButton.styleFrom(
-            backgroundColor: Tokens.volt,
-            foregroundColor: Tokens.voltInk,
+            backgroundColor: Tokens.accent,
+            foregroundColor: Tokens.accentInk,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Tokens.rPill)),
           ),
           child: Text(label,
@@ -743,7 +743,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
             widget.account.displayCode,
             key: const Key('cloud-new-code'),
             style: const TextStyle(
-              color: Tokens.volt,
+              color: Tokens.accent,
               fontSize: 16,
               height: 1.6,
               fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
@@ -782,7 +782,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
         TextButton(
           key: const Key('cloud-new-ok'),
           onPressed: _wrote ? () => Navigator.of(context).pop(true) : null,
-          child: const Text('开启', style: TextStyle(color: Tokens.volt)),
+          child: const Text('开启', style: TextStyle(color: Tokens.accent)),
         ),
       ],
     );

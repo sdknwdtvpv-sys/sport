@@ -246,7 +246,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(Icons.event_repeat, size: 18, color: Tokens.volt),
+          const Icon(Icons.event_repeat, size: 18, color: Tokens.accent),
           const SizedBox(width: Tokens.s3),
           Expanded(
             child: Column(
@@ -529,8 +529,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
         child: FilledButton(
           key: const Key('summary-done'),
           style: FilledButton.styleFrom(
-            backgroundColor: Tokens.volt,
-            foregroundColor: Tokens.voltInk,
+            backgroundColor: Tokens.accent,
+            foregroundColor: Tokens.accentInk,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(Tokens.rPill),
             ),

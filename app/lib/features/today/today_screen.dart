@@ -177,12 +177,12 @@ class TodayScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Tokens.surface,
                   borderRadius: BorderRadius.circular(Tokens.rCard),
-                  border: Border.all(color: Tokens.volt),
+                  border: Border.all(color: Tokens.accent),
                 ),
                 child: Row(
                   children: <Widget>[
                     const Icon(Icons.play_circle_outline,
-                        color: Tokens.volt, size: 20),
+                        color: Tokens.accent, size: 20),
                     const SizedBox(width: Tokens.s3),
                     Expanded(
                       child: Column(
@@ -212,8 +212,8 @@ class TodayScreen extends StatelessWidget {
             child: FilledButton(
               key: const Key('start-workout'),
               style: FilledButton.styleFrom(
-                backgroundColor: Tokens.volt,
-                foregroundColor: Tokens.voltInk,
+                backgroundColor: Tokens.accent,
+                foregroundColor: Tokens.accentInk,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(Tokens.rPill),
                 ),

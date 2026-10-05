@@ -192,7 +192,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
           ),
           TextButton(
             key: const Key('all-data-export'),
-            style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+            style: TextButton.styleFrom(foregroundColor: Tokens.accent),
             onPressed: _export,
             child: const Text('导出 CSV', style: TextStyle(fontSize: 14)),
           ),

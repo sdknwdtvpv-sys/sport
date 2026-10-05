@@ -21,12 +21,12 @@ class Sparkline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-        painter: SparklinePainter(values, color: color ?? Tokens.volt),
+        painter: SparklinePainter(values, color: color ?? Tokens.accent),
       );
 }
 
 class SparklinePainter extends CustomPainter {
-  SparklinePainter(this.values, {this.color = Tokens.volt});
+  SparklinePainter(this.values, {this.color = Tokens.accent});
 
   final List<double> values;
   final Color color;

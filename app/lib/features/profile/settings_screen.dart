@@ -176,9 +176,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         onTap: () => Navigator.of(ctx).pop(_RestPick(sec)),
         title: Text(label,
             style: TextStyle(
-                color: _rest == sec ? Tokens.volt : Tokens.text, fontSize: 15)),
+                color: _rest == sec ? Tokens.accent : Tokens.text, fontSize: 15)),
         trailing: _rest == sec
-            ? const Icon(Icons.check, size: 18, color: Tokens.volt)
+            ? const Icon(Icons.check, size: 18, color: Tokens.accent)
             : null,
       );
 
@@ -247,7 +247,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               _restLabel,
               key: const Key('rest-current'),
               style: const TextStyle(
-                  color: Tokens.volt, fontSize: 15, fontWeight: FontWeight.w600),
+                  color: Tokens.accent, fontSize: 15, fontWeight: FontWeight.w600),
             ),
             // 副标题只在**真的需要解释**的时候出现（2026-10-04 文案审计）：
             //   选「跟随动作」时，「跟随动作」这四个字本身看不出是什么 → 留一句解释；
@@ -299,8 +299,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             key: const Key('progression-switch'),
             value: _mode != ProgressionMode.off,
             onChanged: _toggleProgression,
-            activeThumbColor: Tokens.voltInk,
-            activeTrackColor: Tokens.volt,
+            activeThumbColor: Tokens.accentInk,
+            activeTrackColor: Tokens.accent,
             contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: const Text(
               '根据历史提示重量',
@@ -319,8 +319,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             key: const Key('reminder-switch'),
             value: _reminder.enabled,
             onChanged: _toggleReminder,
-            activeThumbColor: Tokens.voltInk,
-            activeTrackColor: Tokens.volt,
+            activeThumbColor: Tokens.accentInk,
+            activeTrackColor: Tokens.accent,
             contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: const Text(
               '到点还没练就提醒我',
@@ -355,7 +355,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     _reminder.label,
                     key: const Key('reminder-time-label'),
                     style: const TextStyle(
-                        color: Tokens.volt,
+                        color: Tokens.accent,
                         fontSize: 15,
                         fontWeight: FontWeight.w600),
                   ),
@@ -437,7 +437,7 @@ Future<TimeOfDay?> _showTimeWheel(
                     )),
                     child: const Text('完成',
                         style: TextStyle(
-                            color: Tokens.volt, fontWeight: FontWeight.w700)),
+                            color: Tokens.accent, fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),

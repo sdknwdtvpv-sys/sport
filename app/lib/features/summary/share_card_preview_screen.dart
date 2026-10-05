@@ -124,7 +124,7 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
             TextButton(
               key: const Key('gallery-rationale-ok'),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('继续', style: TextStyle(color: Tokens.volt)),
+              child: const Text('继续', style: TextStyle(color: Tokens.accent)),
             ),
           ],
         ),
@@ -217,8 +217,8 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
                         key: const Key('share-card-share'),
                         onPressed: _busy ? null : _share,
                         style: FilledButton.styleFrom(
-                          backgroundColor: Tokens.volt,
-                          foregroundColor: Tokens.voltInk,
+                          backgroundColor: Tokens.accent,
+                          foregroundColor: Tokens.accentInk,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(Tokens.rPill),
                           ),

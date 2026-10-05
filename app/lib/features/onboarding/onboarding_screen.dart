@@ -195,7 +195,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Container(
                   height: 3,
                   decoration: BoxDecoration(
-                    color: i <= _step ? Tokens.volt : Tokens.line,
+                    color: i <= _step ? Tokens.accent : Tokens.line,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -267,12 +267,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     width: 64,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: _days == d ? Tokens.volt : Tokens.surface,
+                      color: _days == d ? Tokens.accent : Tokens.surface,
                       borderRadius: BorderRadius.circular(Tokens.rCard),
                     ),
                     child: Text('$d 天',
                         style: TextStyle(
-                          color: _days == d ? Tokens.voltInk : Tokens.text2,
+                          color: _days == d ? Tokens.accentInk : Tokens.text2,
                           fontSize: 16,
                           fontWeight: _days == d ? FontWeight.w700 : FontWeight.w400,
                         )),
@@ -358,8 +358,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: FilledButton(
                     key: const Key('onboarding-start-now'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: Tokens.volt,
-                      foregroundColor: Tokens.voltInk,
+                      backgroundColor: Tokens.accent,
+                      foregroundColor: Tokens.accentInk,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(Tokens.rPill),
                       ),
@@ -422,7 +422,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Container(
             padding: const EdgeInsets.all(Tokens.s4),
             decoration: BoxDecoration(
-              color: active ? Tokens.volt : Tokens.surface,
+              color: active ? Tokens.accent : Tokens.surface,
               borderRadius: BorderRadius.circular(Tokens.rCard),
             ),
             child: Row(
@@ -430,14 +430,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Expanded(
                   child: Text(label,
                       style: TextStyle(
-                        color: active ? Tokens.voltInk : Tokens.text,
+                        color: active ? Tokens.accentInk : Tokens.text,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       )),
                 ),
                 Text(detail,
                     style: TextStyle(
-                      color: active ? Tokens.voltInk : Tokens.text3,
+                      color: active ? Tokens.accentInk : Tokens.text3,
                       fontSize: 13,
                     )),
               ],
@@ -458,8 +458,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: FilledButton(
           key: Key(key),
           style: FilledButton.styleFrom(
-            backgroundColor: enabled ? Tokens.volt : Tokens.line,
-            foregroundColor: enabled ? Tokens.voltInk : Tokens.text3,
+            backgroundColor: enabled ? Tokens.accent : Tokens.line,
+            foregroundColor: enabled ? Tokens.accentInk : Tokens.text3,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(Tokens.rPill),
             ),

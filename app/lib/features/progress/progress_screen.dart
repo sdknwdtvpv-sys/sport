@@ -188,7 +188,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
           TextButton(
             key: const Key('progress-weight-edit'),
-            style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+            style: TextButton.styleFrom(foregroundColor: Tokens.accent),
             onPressed: _openBodyMetric,
             child: Text(w == null ? '记录' : '更新'),
           ),
@@ -261,7 +261,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             // 那一屏回答"某个动作/某段时间到底怎么样"。
             TextButton(
               key: const Key('open-all-data'),
-              style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+              style: TextButton.styleFrom(foregroundColor: Tokens.accent),
               onPressed: _openAllData,
               child: const Text('全部数据 ›', style: TextStyle(fontSize: 14)),
             ),
@@ -306,7 +306,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   /// 区间是「每块肌肉每周 12–20 组」（Baz-Valle 2022），所以
   ///   * 0 组 → 灰字（这周没练）
   ///   * 1–11 组 → 常规色（还没到区间）
-  ///   * 12–20 组 → **volt 高亮**（在区间里）
+  ///   * 12–20 组 → **accent 高亮**（在区间里）
   ///   * > 20 组 → 也高亮（超过 20 组研究上没更多收益，但不该说人家错了）
   ///
   /// ⚠️ 只按主肌群算（卧推只记进"胸"）—— 所以显示的数字**低估**协同肌群的量，
@@ -358,7 +358,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             style: TextStyle(
               color: sets == 0
                   ? Tokens.text3
-                  : (inRange ? Tokens.volt : Tokens.text),
+                  : (inRange ? Tokens.accent : Tokens.text),
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),

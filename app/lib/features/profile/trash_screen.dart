@@ -138,7 +138,7 @@ class _TrashScreenState extends State<TrashScreen> {
                 ),
                 trailing: TextButton(
                   key: Key('restore-${_rows[i].set.id}'),
-                  style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+                  style: TextButton.styleFrom(foregroundColor: Tokens.accent),
                   onPressed: () => _restore(_rows[i]),
                   child: const Text('恢复'),
                 ),

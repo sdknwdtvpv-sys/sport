@@ -184,7 +184,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                   ),
                   TextButton(
                     key: const Key('routine-create'),
-                    style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+                    style: TextButton.styleFrom(foregroundColor: Tokens.accent),
                     onPressed: _create,
                     child: const Text('＋ 新建', style: TextStyle(fontSize: 14)),
                   ),
@@ -276,20 +276,20 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                   key: Key('template-tag-${t.id}-$i'),
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Tokens.volt.withValues(alpha: 0.14),
+                    color: Tokens.accent.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(Tokens.rPill),
                   ),
                   child: Text(
                     t.tags[i],
                     style: const TextStyle(
-                        color: Tokens.volt, fontSize: 11, fontWeight: FontWeight.w600),
+                        color: Tokens.accent, fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                 ),
           ],
         ),
         subtitle: Text('${t.note} · ${t.items.length} 个动作',
             style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4)),
-          trailing: const Icon(Icons.add_circle_outline, color: Tokens.volt, size: 20),
+          trailing: const Icon(Icons.add_circle_outline, color: Tokens.accent, size: 20),
         ),
       ),
     );
@@ -329,7 +329,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
           ),
           TextButton(
             key: Key('routine-start-${r.id}'),
-            style: TextButton.styleFrom(foregroundColor: Tokens.volt),
+            style: TextButton.styleFrom(foregroundColor: Tokens.accent),
             onPressed: () => _start(r),
             child: const Text('开始'),
           ),
@@ -559,8 +559,8 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                   child: FilledButton(
                     key: const Key('routine-start'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: Tokens.volt,
-                      foregroundColor: Tokens.voltInk,
+                      backgroundColor: Tokens.accent,
+                      foregroundColor: Tokens.accentInk,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(Tokens.rPill),
                       ),
@@ -676,8 +676,8 @@ class _ItemEditorState extends State<_ItemEditor> {
             child: FilledButton(
               key: const Key('routine-item-save'),
               style: FilledButton.styleFrom(
-                backgroundColor: Tokens.volt,
-                foregroundColor: Tokens.voltInk,
+                backgroundColor: Tokens.accent,
+                foregroundColor: Tokens.accentInk,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(Tokens.rPill),
                 ),

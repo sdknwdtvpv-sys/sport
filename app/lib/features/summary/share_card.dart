@@ -54,7 +54,7 @@ class ShareCard extends StatelessWidget {
                 const Text(
                   '练了么',
                   style: TextStyle(
-                    color: Tokens.volt,
+                    color: Tokens.accent,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1,

@@ -231,7 +231,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                     key: const Key('picker-new-custom'),
                     onPressed: _newCustom,
                     style: TextButton.styleFrom(
-                      foregroundColor: Tokens.volt,
+                      foregroundColor: Tokens.accent,
                       padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
                       minimumSize: const Size(0, 36),
                     ),
@@ -490,7 +490,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               icon: Icon(
                 pinned ? Icons.push_pin : Icons.push_pin_outlined,
                 size: 18,
-                color: pinned ? Tokens.volt : Tokens.text3,
+                color: pinned ? Tokens.accent : Tokens.text3,
               ),
               onPressed: () => _togglePin(e),
             ),
@@ -517,13 +517,13 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
           decoration: BoxDecoration(
-            color: active ? Tokens.volt : Tokens.surface,
+            color: active ? Tokens.accent : Tokens.surface,
             borderRadius: BorderRadius.circular(Tokens.rPill),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: active ? Tokens.voltInk : Tokens.text2,
+              color: active ? Tokens.accentInk : Tokens.text2,
               fontSize: 13,
               fontWeight: active ? FontWeight.w700 : FontWeight.w400,
             ),

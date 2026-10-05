@@ -30,7 +30,7 @@ Widget choicePill({
         padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
         height: 36,
         decoration: BoxDecoration(
-          color: active ? Tokens.volt : Tokens.surface,
+          color: active ? Tokens.accent : Tokens.surface,
           borderRadius: BorderRadius.circular(Tokens.rPill),
         ),
         child: Center(
@@ -38,7 +38,7 @@ Widget choicePill({
           child: Text(
             label,
             style: TextStyle(
-              color: active ? Tokens.voltInk : Tokens.text2,
+              color: active ? Tokens.accentInk : Tokens.text2,
               fontSize: 13,
               fontWeight: active ? FontWeight.w700 : FontWeight.w400,
             ),

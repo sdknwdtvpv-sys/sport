@@ -179,8 +179,8 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
             key: const Key('analytics-switch'),
             value: _analyticsEnabled,
             onChanged: _toggleAnalytics,
-            activeThumbColor: Tokens.voltInk,
-            activeTrackColor: Tokens.volt,
+            activeThumbColor: Tokens.accentInk,
+            activeTrackColor: Tokens.accent,
             contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: const Text(
               '帮助改进产品',

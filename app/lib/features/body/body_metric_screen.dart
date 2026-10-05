@@ -137,7 +137,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           TextButton(
             key: const Key('body-consent-agree'),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('同意并记录', style: TextStyle(color: Tokens.volt)),
+            child: const Text('同意并记录', style: TextStyle(color: Tokens.accent)),
           ),
         ],
       ),
@@ -179,7 +179,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           TextButton(
             key: const Key('body-revoke-yes'),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('撤回', style: TextStyle(color: Tokens.volt)),
+            child: const Text('撤回', style: TextStyle(color: Tokens.accent)),
           ),
         ],
       ),
@@ -496,8 +496,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 child: FilledButton(
                   key: const Key('body-save'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: _canSave ? Tokens.volt : Tokens.line,
-                    foregroundColor: _canSave ? Tokens.voltInk : Tokens.text3,
+                    backgroundColor: _canSave ? Tokens.accent : Tokens.line,
+                    foregroundColor: _canSave ? Tokens.accentInk : Tokens.text3,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(Tokens.rPill),
                     ),
@@ -531,13 +531,13 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
           decoration: BoxDecoration(
-            color: active ? Tokens.volt : Tokens.surface,
+            color: active ? Tokens.accent : Tokens.surface,
             borderRadius: BorderRadius.circular(Tokens.rPill),
           ),
           child: Text(
             isToday ? '今天' : '${d.month}/${d.day}',
             style: TextStyle(
-              color: active ? Tokens.voltInk : Tokens.text2,
+              color: active ? Tokens.accentInk : Tokens.text2,
               fontSize: 13,
               fontWeight: active ? FontWeight.w700 : FontWeight.w400,
             ),
@@ -598,13 +598,13 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
                 height: 28,
                 decoration: BoxDecoration(
-                  color: _unit == u ? Tokens.volt : Tokens.surface,
+                  color: _unit == u ? Tokens.accent : Tokens.surface,
                   borderRadius: BorderRadius.circular(Tokens.rPill),
                 ),
                 child: Text(
                   u.label,
                   style: TextStyle(
-                    color: _unit == u ? Tokens.voltInk : Tokens.text2,
+                    color: _unit == u ? Tokens.accentInk : Tokens.text2,
                     fontSize: 12,
                     fontWeight: _unit == u ? FontWeight.w700 : FontWeight.w400,
                   ),

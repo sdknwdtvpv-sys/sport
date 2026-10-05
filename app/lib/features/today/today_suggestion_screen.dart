@@ -335,7 +335,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               Text(
                 _warmupAdded ? '已加进今天' : '1 组 · 30 秒',
                 style: TextStyle(
-                  color: _warmupAdded ? Tokens.volt : Tokens.text3,
+                  color: _warmupAdded ? Tokens.accent : Tokens.text3,
                   fontSize: 13,
                 ),
               ),
@@ -430,7 +430,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               // 红线：解释不了的建议不许出现
               p.suggestion!.reasonText,
               style: const TextStyle(
-                color: Tokens.volt,
+                color: Tokens.accent,
                 fontSize: 13,
                 height: 1.4,
               ),
@@ -467,8 +467,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
             child: FilledButton(
               key: const Key('start-session'),
               style: FilledButton.styleFrom(
-                backgroundColor: Tokens.volt,
-                foregroundColor: Tokens.voltInk,
+                backgroundColor: Tokens.accent,
+                foregroundColor: Tokens.accentInk,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(Tokens.rPill),
                 ),
