@@ -30,6 +30,20 @@ source ~/HARNESS/lianleme/flutter-env.sh   # 跑道上的副本（内容相同�
 环境脚本导出的变量：`FLUTTER_ROOT` / `JAVA_HOME` / `ANDROID_SDK_ROOT`（= `ANDROID_HOME`）
 / `GRADLE_USER_HOME` / `PUB_CACHE` / `PATH`。
 
+> ⚠️ **跑构建/测试前必须先 source 它**（`source ~/HARNESS/lianleme/flutter-env.sh`，
+> 正本是 `tool/dev-env.sh`）—— 少这一步的后果不是报错，而是**悄悄把几 G 写到内置盘**：
+> 2026-10-05 实测，一次 `flutter build apk` 会让 Gradle 在 `~/.gradle` 里重建/膨胀 **4.0G**
+> （依赖 + wrapper 发行包），而 `harness-deps/gradle` 那份 4.8G 一直空着没人用。
+> 那天之后：
+>   * `~/HARNESS/lianleme/sync-and-verify.sh` 自己会 source 这份 env（修在脚本头上）；
+>   * 内置盘里那份 `~/.gradle` 已迁到 `harness-deps/gradle-from-internal/`（**可回退的暂存**，
+>     确认几次构建都正常之后可以删掉）；
+>   * 验证判据很简单：跑完一次构建，**`~/.gradle` 不该被重新建出来**
+>     （`ls -d ~/.gradle` → No such file or directory 才对）。
+> 同一个 env 还负责 `JAVA_HOME` / `ANDROID_SDK_ROOT`，以及**对齐 flutter 的持久配置** ——
+> 那两项（`~/.config/flutter/settings` 里的 `jdk-dir` / `android-sdk`）**优先级高于环境变量**，
+> 曾经导致 release 构建报 "JAVA_HOME is an invalid directory" 而六层门禁全绿。
+
 ## Node 的版本要求（两个门槛，别混）
 
 | 用途 | 最低版本 | 为什么 |
