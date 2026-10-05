@@ -304,6 +304,30 @@ void runContractTests(StoreHarness harness) {
       expect(await store.recentExerciseIds(), isEmpty);
     });
 
+    test('动作置顶：默认空，写入后按**给定顺序**读回（不是按插入时间）', () async {
+      expect(await store.pinnedExerciseIds(), isEmpty);
+
+      // 有意按"看起来不自然"的顺序写：这样"按 position 排"与"按插入时间排"
+      // 会给出不同答案，测试才真的在守顺序这件事。
+      await store.setPinnedExerciseIds(<String>['bench', 'squat', 'row']);
+
+      expect(await store.pinnedExerciseIds(), <String>['bench', 'squat', 'row']);
+    });
+
+    test('动作置顶：再写一次是**整体替换**（不是追加）', () async {
+      await store.setPinnedExerciseIds(<String>['bench', 'squat']);
+      await store.setPinnedExerciseIds(<String>['row']);
+
+      expect(await store.pinnedExerciseIds(), <String>['row']);
+    });
+
+    test('动作置顶：可以清空', () async {
+      await store.setPinnedExerciseIds(<String>['bench']);
+      await store.setPinnedExerciseIds(const <String>[]);
+
+      expect(await store.pinnedExerciseIds(), isEmpty);
+    });
+
     test('自重动作的重量为 null 也能往返', () async {
       await store.saveSet(_set(id: 's1', workoutId: 'w1', exerciseId: 'pullup', setIndex: 1, reps: 8, atMs: 1000, weightKg: null));
 
@@ -327,6 +351,7 @@ void runContractTests(StoreHarness harness) {
     test('删除全部数据：训练、组记录、各类历史查询全部清空', () async {
       await store.saveSet(_set(id: 's1', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
       await store.saveWorkout(Workout(id: 'w1', startedAtMs: 1000));
+      await store.setPinnedExerciseIds(<String>['bench']);
       expect(await store.setsFor('w1'), hasLength(1), reason: '前置：确实有数据');
 
       await store.deleteAllUserData();
@@ -336,6 +361,49 @@ void runContractTests(StoreHarness harness) {
       expect(await store.loadWorkout('w1'), isNull);
       expect(await store.lastSessionFor('bench'), isNull, reason: '不能让"上次 xx kg"还活在库里');
       expect(await store.recentExerciseIds(), isEmpty);
+      // 置顶也是用户数据 —— 「删除全部数据」之后他的收藏必须真的没了
+      expect(await store.pinnedExerciseIds(), isEmpty);
+    });
+
+    // ─── 回收站（2026-10-04）────────────────────────────────────────────
+    // 软删除从第一天起就存在，但**从来没有任何地方读它** —— 长按撤销之后那组永远没了。
+    // 这一组两个实现都要过（契约测试的意义就在这儿）。
+    test('★ 回收站：撤销掉的组进回收站，恢复之后回到训练里', () async {
+      await store.saveSet(_set(id: 's1', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(id: 's2', workoutId: 'w1', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 2000));
+
+      await store.deleteSet('s1');
+      expect(await store.setsFor('w1'), hasLength(1), reason: '删除后不在这条训练里');
+      expect(await store.allSets(), hasLength(1), reason: '统计里也不该有它');
+
+      final List<DeletedSet> bin = await store.deletedSets();
+      expect(bin, hasLength(1), reason: '它应当躺在回收站里 —— 这正是以前缺的那一环');
+      expect(bin.single.set.id, 's1');
+      expect(bin.single.set.exerciseId, 'bench', reason: '回收站要能说清"哪一组"');
+      expect(bin.single.deletedAtMs, greaterThan(0));
+
+      await store.restoreSet('s1');
+      expect(await store.deletedSets(), isEmpty, reason: '恢复之后就不该还在回收站');
+      expect((await store.setsFor('w1')).map((SetRecord s) => s.id).toSet(),
+          <String>{'s1', 's2'});
+      expect(await store.allSets(), hasLength(2), reason: '容量/PR 会重新把它算上');
+    });
+
+    test('回收站按"最近删的在前"，且恢复不存在的 id 不炸', () async {
+      await store.saveSet(_set(id: 'a', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(id: 'b', workoutId: 'w1', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 2000));
+      await store.deleteSet('a');
+      await store.deleteSet('b');
+
+      final List<DeletedSet> bin = await store.deletedSets();
+      // ⚠️ **不断言顺序**：两次删除落在同一毫秒里时，谁先谁后是未定义的
+      // （两个实现都用 `now()` 当删除时刻，而毫秒级并列在真实使用里也不是事 ——
+      // 人手删两次至少隔几秒）。第一版写了 `['b','a']`，两个实现一起红。
+      // 真正要守的是"两条都在回收站里"。
+      expect(bin.map((DeletedSet d) => d.set.id).toSet(), <String>{'a', 'b'});
+
+      await store.restoreSet('根本没这个 id'); // 不该抛
+      expect(await store.deletedSets(), hasLength(2));
     });
 
     test('删除全部数据之后仍能继续正常记录（不是把库弄坏了）', () async {

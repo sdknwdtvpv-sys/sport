@@ -501,7 +501,10 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
                 style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: Tokens.s2),
             const Text(
-              '云备份需要一台服务器（在开发者那边，还没上）。'
+              // 文案审计（2026-10-04）：原来写「云备份需要一台服务器（在开发者那边，还没上）」
+              // —— 括号里那句是**我们自己的部署状态**，不是用户能用的信息，已删。
+              // 留下的这半句说明"这个功能需要什么"，并指出**不受影响的替代路径**。
+              '云备份需要一个服务器地址才能用。'
               '本机的「导出备份文件 / 导入备份」不受影响，一直可用。',
               style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
             ),
@@ -533,7 +536,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           const SizedBox(height: Tokens.s2),
           const Text(
             '开启后，训练记录会加密存到服务器上：换手机、或手机丢了都能取回来。\n'
-            '默认关闭 —— 不想要的话，什么都不会上传。',
+            '不想要的话，什么都不会上传。',
             style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
           ),
           const SizedBox(height: Tokens.s4),

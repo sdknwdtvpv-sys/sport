@@ -12,12 +12,12 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../core/labels.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
 import '../../domain/models.dart';
 import '../../data/exercise_repository.dart';
+import '../../data/local_store.dart';
 import '../../data/routine_repository.dart';
 import '../routine/routine_screen.dart';
 import 'today_planner.dart';
@@ -45,9 +45,15 @@ class TodaySuggestionScreen extends StatefulWidget {
     this.unit = WeightUnit.kg,
     this.routines,
     this.exercises,
+    this.store,
   });
 
   final TodayPlanner planner;
+
+  /// 本地库。**传下去只为一件事**：计划编辑器里的「加动作」也会开选择器，
+  /// 而选择器的「置顶 / 最近做过」两个分区要靠它 —— 不传的话同一个页面
+  /// 从训练流程进来有、从计划进来没有（2026-10-04 顺手补的一处不一致）。
+  final LocalStore? store;
 
   /// 计划模板（S11）。**两者都给才显示「我的计划」入口** ——
   /// 缺一个就宁可不显示，也不放一个点不动的按钮。
@@ -63,7 +69,7 @@ class TodaySuggestionScreen extends StatefulWidget {
 
 class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
   List<PlannedExercise> _plan = const <PlannedExercise>[];
-  String _group = '';
+  TrainingDay? _day;
   bool _loading = true;
 
   /// 今日热身（练之前先做 1–2 个）。**默认不塞进计划** ——
@@ -79,14 +85,19 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
   }
 
   Future<void> _load() async {
-    final String group = await widget.planner.nextMuscleGroup();
+    // 2026-10-04：轮转从"6 部位"改成"上下肢交替"，所以这里先取**训练日**，
+    // 再按这一天的构图（上肢 胸3+背2+肩1 / 下肢 腿4+核心2）生成计划。
+    final TrainingDay day = await widget.planner.nextTrainingDay();
     final List<PlannedExercise> plan =
-        await widget.planner.planToday(muscleGroup: group, unit: widget.unit);
+        await widget.planner.planToday(day: day, unit: widget.unit);
+    // 热身按**这一天第一个部位**选（上肢→胸、下肢→腿），与计划的开头一致
+    final String head =
+        plan.isEmpty ? (kDayComposition[day]!.first.group) : plan.first.exercise.muscleGroup;
     final List<ExerciseData> warmups =
-        await widget.planner.warmupFor(muscleGroup: group);
+        await widget.planner.warmupFor(muscleGroup: head);
     if (!mounted) return;
     setState(() {
-      _group = group;
+      _day = day;
       _plan = plan;
       _warmups = warmups;
       _warmupAdded = false;
@@ -145,7 +156,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
         (exerciseId: p.exercise.id, plan: p.plan),
     ];
     final RoutineData r = await repo.createFromPlan(
-      '${_group.isEmpty ? '今日建议' : _group} · 建议',
+      '${_day == null ? '今日建议' : _day!.label} · 建议',
       items,
       source: 'suggested',
     );
@@ -167,6 +178,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
           repository: widget.routines!,
           exercises: widget.exercises!,
           unit: widget.unit,
+          store: widget.store,
         ),
       ),
     );
@@ -236,7 +248,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
           const SizedBox(width: Tokens.s3),
           Expanded(
             child: Text(
-              _group.isEmpty ? '今天练什么' : '今天练 ${muscleLabel(_group)}',
+              _day == null ? '今天练什么' : '今天练 ${_day!.label}',
               key: const Key('today-title'),
               style: const TextStyle(
                 color: Tokens.text,

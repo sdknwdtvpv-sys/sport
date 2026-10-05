@@ -50,6 +50,9 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Live Activity（组间休息）：没有这一位，Activity.request 会直接抛错 -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

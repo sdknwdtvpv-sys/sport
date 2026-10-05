@@ -117,6 +117,39 @@ flutter config --jdk-dir="$JAVA_HOME" --android-sdk="$ANDROID_SDK_ROOT"
 **顺带**：`flutter drive` 不会还原 `wm size` —— 截完图记得 `adb shell wm size reset`，
 否则手机会停在 1080×1920 之类的截图分辨率上（截屏、看界面都会觉得"怎么变扭了"）。
 
+## ⚠️ 在 MIUI 上跑 `flutter drive`：**安装被拦** + **锁屏就跑不了**（2026-10-04 栽的跟头）
+
+**症状**：`flutter drive` 在"Installing app-debug.apk"这一步失败三次然后退出：
+
+```
+adb: failed to install .../app-debug.apk:
+  Failure [INSTALL_FAILED_USER_RESTRICTED: Install canceled by user]
+Application failed to start on attempt: 3
+```
+
+**原因**：MIUI 对**每一次 adb 安装**都弹一个「USB 安装提示 — 是否继续？」对话框，
+9 秒没人点就自动拒绝。`flutter install -r`（覆盖安装）通常不弹，但
+**卸载之后的全新安装**、以及 `flutter drive` 自己那次安装**会弹** ——
+于是"手动跑得通、脚本跑不通"。
+
+**绕法**（本次用的）：装之前在后台起一个"盯框就点"的循环 —— 轮询
+`uiautomator dump`，看到「继续安装」就按 dump 里的 `bounds` 点它的中心。
+脚本 `/tmp/tap-install.sh`（一次性工具，没入库；逻辑见下）与安装命令**并行**跑：
+
+```bash
+(adb -s <设备> install -r dist/练了么-vX.Y.Z.apk >/tmp/inst.log 2>&1 &)
+# 另一个终端：轮询 uiautomator dump，点「继续安装」
+```
+
+⚠️ **两个更隐蔽的前提**（这次各栽了一次）：
+
+1. **屏幕不能锁**。锁屏时既点不到对话框，`uiautomator dump` 还会因为动画报错 ——
+   而 `flutter drive` 失败信息里只会说"安装被用户拒绝"，**看不出是锁屏造成的**。
+   跑之前先 `adb shell dumpsys power | grep mWakefulness=`（要 `Awake`）
+   并确认 `dumpsys window | grep mCurrentFocus` 不是 `NotificationShade`（锁屏/下拉栏）。
+2. **别用手写坐标点对话框**。它的 y 位置随屏幕高度变（本次见过 1673 / 2082 / 2525 三个值），
+   硬编码必然点空 —— 而"点空了"的表现与"没点"一模一样。按 `bounds` 算中心点。
+
 ## ⚠️ 跑完 integration_test 之后，release 构建会残一个坏文件（2026-10-01 记）
 
 **症状**：`flutter build apk --release` 直接红，报

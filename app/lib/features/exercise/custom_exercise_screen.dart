@@ -13,6 +13,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/labels.dart';
+import '../../core/pills.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart';
@@ -249,26 +250,8 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
     required bool active,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      key: Key(key),
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
-        height: 36,
-        decoration: BoxDecoration(
-          color: active ? Tokens.volt : Tokens.surface,
-          borderRadius: BorderRadius.circular(Tokens.rPill),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? Tokens.voltInk : Tokens.text2,
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
+    // ⚠️ 别再手写一遍 `Container(alignment: ...)`：它会被 `Wrap` 的有界宽度撑成通栏
+    // （部位/器械/类别各占一整行）。共用件见 `core/pills.dart`。
+    return choicePill(label: label, active: active, onTap: onTap, key: Key(key));
   }
 }

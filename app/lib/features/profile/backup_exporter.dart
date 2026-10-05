@@ -20,7 +20,14 @@ abstract class BackupExporter {
 
 /// 真身：走 share_plus。
 class PluginBackupExporter implements BackupExporter {
-  const PluginBackupExporter();
+  const PluginBackupExporter({this.subject = '练了么 · 训练记录备份'});
+
+  /// 分享时的主题（邮件/微信里显示的那一行）。
+  ///
+  /// 加这个字段是为了**同一个通道也能送埋点导出**（`analytics_export.dart`）：
+  /// 那份文件不该顶着"训练记录备份"发出去。默认值不变，
+  /// 所以既有的调用点与测试替身都不用改。
+  final String subject;
 
   @override
   Future<void> shareBackup(String json, {required String fileName}) async {
@@ -35,7 +42,7 @@ class PluginBackupExporter implements BackupExporter {
         ],
         // 不加这句，接收方拿到的文件名会是一串临时路径名
         fileNameOverrides: <String>[fileName],
-        subject: '练了么 · 训练记录备份',
+        subject: subject,
       ),
     );
   }

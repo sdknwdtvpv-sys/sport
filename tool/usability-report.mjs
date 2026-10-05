@@ -39,7 +39,12 @@ export const TARGETS = {
   // Q3「明天带哪个 App」选本品 ≥ 3/5 —— 用**比例**表达（0.6）：
   // 阶段测试可能只跑了 3 个人，绝对数 3 在那时是不可达的，而口径本身没变。
   q3Rate: 0.6,
-  susLite: 80,            // SUS-lite ≥ 80（可选字段，没填就不判）
+  // ⚠️ 这里**刻意没有** SUS-lite。
+  //
+  // 2026-10-01 拍板删掉：曾经写着 `susLite: 80`，但全仓**既没有题项、也没有计分公式**
+  // （kit §7 只留了一格时间），而且它的判据是"没填就不判" —— 等于一个永远不生效的闸门。
+  // 4 题简版的信度也撑不起"≥ 80"这条线。**删掉比补一套题更诚实**：
+  // 留着它只会让人以为有这么一道门。
 };
 
 export const TASKS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
@@ -107,7 +112,7 @@ export function validate(doc) {
   return { errors, warnings };
 }
 
-/** 算那 7 个数字（外加 SUS-lite 与逐任务失败模式） */
+/** 算那 7 个数字（外加逐任务失败模式） */
 export function compute(doc) {
   const ps = (doc?.participants ?? []).filter(Boolean);
   const n = ps.length;
@@ -123,7 +128,6 @@ export function compute(doc) {
 
   const adopted = ps.filter((p) => p?.t6?.adopted === true).length;
   const t6Done = ps.filter((p) => p?.tasks?.T6?.done === true).length;
-  const sus = ps.map((p) => Number(p?.susLite)).filter((v) => Number.isFinite(v));
 
   const taskFailures = {};
   for (const t of TASKS) {
@@ -147,7 +151,6 @@ export function compute(doc) {
     q3Count: ps.filter((p) => p?.q3 === 'lianleme').length,
     q3Xunji: ps.filter((p) => p?.q3 === 'xunji').length,
     q3Unsure: ps.filter((p) => p?.q3 === 'unsure').length,
-    susLite: sus.length ? sus.reduce((a, b) => a + b, 0) / sus.length : null,
     taskFailures,
   };
 }
@@ -168,10 +171,26 @@ export function verdict(r) {
       target: `≥ ${Math.round(TARGETS.q3Rate * 100)}%（5 人时即 3/5）`,
     },
   ];
-  if (r.susLite !== null) {
-    checks.push({ name: 'SUS-lite', value: r.susLite.toFixed(1), ok: r.susLite >= TARGETS.susLite, target: `≥ ${TARGETS.susLite}` });
-  }
+  // 这里**刻意没有** SUS-lite —— 见 TARGETS 上方那段注释（2026-10-01 拍板删掉）。
   return { pass: checks.every((c) => c.ok), checks };
+}
+
+/**
+ * 任务卡（**唯一事实源**在 `usability/tasks.json`，由 `tool/check-usability-tasks.mjs` 守着）。
+ *
+ * 报告里要把任务原文打出来：以前报告只有 `T1`–`T6` 这几个 id，
+ * 读报告的人得回头翻文档才知道"T5 到底是什么" —— 而 2026-10-01 发现
+ * kit §4 与记录表里的 T5 **内容不一致**，那种时候光看 id 是看不出来的。
+ *
+ * 读不到就返回空数组：报告本身不该因为少了这个文件而崩（它只是附注信息）。
+ */
+export function taskCards() {
+  try {
+    const doc = JSON.parse(readFileSync(join(ROOT, 'usability/tasks.json'), 'utf8'));
+    return Array.isArray(doc.tasks) ? doc.tasks : [];
+  } catch {
+    return [];
+  }
 }
 
 function markdown(r, v) {
@@ -186,6 +205,17 @@ function markdown(r, v) {
   }
   L.push('');
   L.push(`**结论：${v.pass ? '通过（可冻结设计）' : '不通过'}**`);
+  const cards = taskCards();
+  if (cards.length) {
+    L.push('');
+    L.push('这次跑的 6 个任务（原文来自 `usability/tasks.json`，**不是**回头翻文档猜的）：');
+    L.push('');
+    L.push('| # | 递给被试的原话 | 判定标准 |');
+    L.push('|---|---|---|');
+    for (const t of cards) {
+      L.push(`| ${t.id}${t.deliberateFailure ? '（刻意必败）' : ''} | ${t.card} | ${t.success} |`);
+    }
+  }
   if (!v.pass) {
     L.push('');
     L.push('按 `docs/usability-test.md` §通过/不通过判据逐条对：');
@@ -224,7 +254,6 @@ const template = {
       scrolls: 0,
       t6: { adopted: false },
       q3: 'unsure',
-      susLite: 0,
     },
   ],
 };

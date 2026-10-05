@@ -17,14 +17,22 @@ import 'backup.dart';
 
 /// 一份攒好的备份：JSON 本身 + 两个用来跟用户交代的数字
 class BackupBundle {
-  const BackupBundle({required this.json, required this.workouts, required this.sets});
+  const BackupBundle({
+    required this.json,
+    required this.workouts,
+    required this.sets,
+    this.pinned = 0,
+  });
 
   /// 可直接导出 / 上传（加密前）的备份正文
   final String json;
 
-  /// 里面有几次训练、多少组 —— 用来显示"已导出 3 次训练 / 21 组"
+  /// 里面有几次训练、多少组 —— 用来显示"已导出 3 次训练 / 21 组 / 2 个置顶动作"
   final int workouts;
   final int sets;
+
+  /// 里面带了几个**动作置顶**（2026-10-04 起）。0 时界面上不提这一句。
+  final int pinned;
 }
 
 /// 从库里攒出一份可导回的备份。
@@ -68,12 +76,15 @@ Future<BackupBundle> collectBackup({
   final String json = encodeBackup(
     workouts: workouts,
     exerciseNames: names,
+    // 动作置顶（2026-10-04 起的范围扩张，只加了这一项 —— 体重/计划/其它设置仍然不进）
+    pinnedExerciseIds: await store.pinnedExerciseIds(),
     nowMs: nowMs ?? DateTime.now().millisecondsSinceEpoch,
   );
   return BackupBundle(
     json: json,
     workouts: workouts.length,
     sets: workouts.fold<int>(0, (int a, Workout w) => a + w.sets.length),
+    pinned: (await store.pinnedExerciseIds()).length,
   );
 }
 
@@ -84,6 +95,7 @@ class BackupApplyResult {
     required this.sets,
     required this.skippedSets,
     this.restoredExercises = 0,
+    this.pinned,
   });
 
   /// 写进库的训练次数
@@ -99,13 +111,18 @@ class BackupApplyResult {
   /// 0 表示不需要补（动作本来都在），界面就不提这一句。
   final int restoredExercises;
 
+  /// 备份里带了几个**动作置顶**。**null = 这份备份没提置顶**（v1/v2），
+  /// 那种情况下本机的置顶原样不动，摘要里也不提 —— 免得读成"置顶被清了"。
+  final int? pinned;
+
   /// 给人看的一句话
   String get summary {
     final String skipped =
         skippedSets > 0 ? '，跳过 $skippedSets 条没认出来的' : '';
     final String created =
         restoredExercises > 0 ? '，补建 $restoredExercises 个本机没有的动作' : '';
-    return '已导入 $workouts 次训练 / $sets 组$created$skipped';
+    final String pin = pinned == null ? '' : '，置顶 $pinned 个动作';
+    return '已导入 $workouts 次训练 / $sets 组$created$pin$skipped';
   }
 }
 
@@ -142,10 +159,19 @@ Future<BackupApplyResult> applyBackup(
     }
   }
 
+  // 动作置顶：**只有备份明确说了才动**（v1/v2 备份没有这个键 → 保持本机原样）。
+  // 这一句是整个范围扩张里最容易被写错的地方：把"老备份不提"当成"备份说是空的"，
+  // 就会在恢复时静默抹掉用户钉的那些动作。
+  final List<String>? pinned = parsed.pinnedExerciseIds;
+  if (pinned != null) {
+    await store.setPinnedExerciseIds(pinned);
+  }
+
   return BackupApplyResult(
     workouts: parsed.workoutCount,
     sets: parsed.setCount,
     skippedSets: parsed.skippedSets,
     restoredExercises: created,
+    pinned: pinned?.length,
   );
 }

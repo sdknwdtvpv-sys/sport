@@ -57,10 +57,12 @@ anonymous usage statistics — and that switch is **off by default**: you have t
 | Workout records | Exercise, weight, reps, set index, warm-up flag, completion time | Log your training; compute volume and progress |
 | Workout sessions | Start/end time, total sets, total volume | Workout summary screen |
 | **Body metrics** | **Body weight (kg; displayed in the unit you pick), a note** | So you can see long-term change |
-| Preferences | Progression-suggestion switch, unit preference, "Help improve the product" switch | Remember your choices |
+| Preferences | Progression-suggestion switch, unit preference, "Help improve the product" switch, **pinned exercises** | Remember your choices |
 
 This data lives in the app's private local database (SQLite, managed by drift) and
-**never leaves the device**.
+**never leaves the device** — the one possible exception is **cloud backup that you enable
+yourself**: that copy is encrypted on your phone before it leaves, and only ciphertext leaves
+(see 3.1).
 
 > **Body weight is sensitive personal information, and we ask for your separate consent.**
 > Under Article 29 of China's Personal Information Protection Law, processing sensitive
@@ -145,32 +147,43 @@ A few clarifications:
 
 ## 3. Where the data lives and who receives it
 
-### 3.1 Current state — the app does not upload anything
+### 3.1 Two things can reach the network — both off by default
 
-**The current version does not send any of your data to any server.** This is not a promise;
-it is a fact of the code:
+**Nothing is uploaded unless you turn a switch on yourself** — there are exactly two such
+switches, and both are **off by default**:
 
-- The upload endpoint is configured **at build time**: with no endpoint the analytics channel is
-  `_NullTransport`, which **always fails** — events only accumulate
-  in the on-device outbox.
-- The workout sync channel is `InMemorySyncQueue`: memory only, no network, gone when the app closes.
-- **This version does not include cloud backup.** The cloud-backup code exists (end-to-end
-  encrypted, off by default), but it needs a server address to switch on — and that address is
-  configured **at build time** as well: in a build without one, the "Cloud backup" entry does not
-  even appear in the app.
+- **Anonymous usage statistics** (off by default). When you turn it on, the events in 2.2 are sent
+  over HTTPS to a receiver we operate. **When the switch is off, not a single event is sent** —
+  and you can verify that yourself: install the app, watch it with any packet capture tool for a
+  full day, and with the switch off you should see **zero** requests to us (this is exactly how we
+  verify it during development).
+  ⚠️ **The first release that reports anything does not send events accumulated by earlier
+  versions**: that backlog is cleared the first time a reporting build starts ("whoever recorded
+  it, sends it"). Events you recorded in an older version are **not** uploaded retroactively.
+- **Cloud backup** (**off by default**; you turn it on in Profile → Data & backup → Cloud backup).
+  Once on, your workout records are **end-to-end encrypted** and stored on a server — so you can
+  get them back on a new phone, or if your phone is lost. **The server only ever receives
+  ciphertext**: encryption happens on your phone, and we cannot read a single field;
+  the **recovery code** is the only key and the server does not hold it — so **if you lose the
+  recovery code, it is gone**. The exact contents of a backup are listed in 3.3.
+- **Deleting all data will ask whether to delete the cloud backup as well** (the default is to
+  delete both). The order is deliberate: the cloud copy is deleted **first**, and if that fails the
+  whole operation stops. We would rather have you retry than leave you with local data gone, a
+  cloud copy still there, and no recovery code left to open it.
+- Your workout records **themselves** still live only on this device; apart from the cloud-backup
+  ciphertext you chose to enable, they go nowhere.
 
-In other words, **even we cannot access your data right now.** We state this plainly because
-describing a future feature as already shipped would be dishonest — and so would pretending
-"nothing happens" is a feature.
+### 3.2 Where the two switches draw the line
 
-### 3.2 After a real endpoint is connected
-
-In a future version, when the switch above is ON, the events in 2.2 will be sent over HTTPS to a
-receiver we operate. This policy will be updated with a new version and effective date, and the
-app will notify you. **Whenever the switch is off, not a single event is sent.**
-
-We **never sell, rent, or share** your personal information with third parties. No third-party
-advertising. No data brokers.
+- **Statistics switch**: off — not a single event is sent; on — what leaves is the 18 event types
+  in 2.2 plus the 7 common fields in 2.3, with no free text and no body-weight values.
+- **Cloud-backup switch**: off — **no data leaves the device at all**; on — what leaves is
+  **ciphertext** of the contents listed in 3.3.
+- Both switches can be turned off **at any time**: turning statistics off stops the queue from
+  sending; cloud backup can be closed in Data & backup (the cloud copy stays) or closed with
+  account deletion (the cloud copy is deleted).
+- We **never sell, rent, or share** your personal information with third parties. No third-party
+  advertising. No data brokers.
 
 ---
 
@@ -211,12 +224,26 @@ Three notes:
 
 ## 4. Permissions
 
-The app declares two permissions; the second **only takes effect on old systems**:
+The app declares three permissions; the second **only takes effect on old systems**, and the
+third is **off by default** — it is only ever requested if you turn it on yourself:
 
 | Permission | Why | Applies to |
 |---|---|---|
 | `android.permission.INTERNET` | Solely for the anonymous usage statistics in 2.2 (when the switch is ON) | All versions |
 | `android.permission.WRITE_EXTERNAL_STORAGE` | Saving the "share card" image to the system gallery | **Android 9 and below only** (declared with `maxSdkVersion="29"`) |
+| `android.permission.POST_NOTIFICATIONS` | "Training reminder": one local notification if you haven't trained by your chosen time | **Android 13 and above**; the switch is **off by default** |
+
+Four notes on the third one (the training reminder):
+
+- It is a **local notification**: the system fires it on this device (using an inexact alarm,
+  so the exact-alarm special permission is not needed), and the text is computed on the device
+  when the reminder is scheduled — **no network**, we neither know your training time nor
+  whether you trained;
+- The switch is **off by default**. The system permission prompt appears only when you
+  turn it on yourself (Me → Preferences → Training reminder); if you decline, we never ask again;
+- **No nagging after you train**: it reminds you only if you have not trained by that time
+  that day; if you trained, it moves to the same time tomorrow;
+- You can turn it off at any time, which also cancels the reminder already scheduled in the system.
 
 Three notes on the second one:
 
@@ -264,9 +291,16 @@ background permissions.
 | Right | How |
 |---|---|
 | **Turn usage statistics on or off** | **It is off by default** (nobody is counted). To take part, **turn it on yourself** in Profile → Privacy & About → "Help improve the product". Both directions take effect immediately; no feature is affected |
+| **Export the usage events** | Once that switch is on, Profile → Privacy & About also shows "Export statistics events": it exports the anonymous events stored on this device into a file (one JSON object per line) that you can keep or send to us. **While the switch is off, this entry does not appear** — nothing is being collected then |
 | **Export all your data** | Profile → Data & Backup → "Export all records" — generates a CSV copied to your clipboard |
 | **Delete all data** | Profile → Data & Backup → "Delete all data". After a confirmation prompt, local records and settings are wiped immediately |
 | **Uninstall to delete** | Uninstalling the app removes the local database |
+
+About "Export statistics events", three things up front:
+
+- It is **read-only**: no network request, no queue clearing, no switch change — you can export again at any time;
+- The exported file **contains the anonymous device identifier** (`device_id`). It is generated randomly on this device and is not linked to any account, but since the file is handed to you, we say so plainly;
+- The export action **itself produces no event** (otherwise "logging a tap so you can get your data" would need yet another disclosure).
 
 What deletion covers, to avoid misunderstanding:
 
@@ -278,8 +312,8 @@ What deletion covers, to avoid misunderstanding:
   contains nothing about you
 - It is a **hard delete**, not a flag. Deletion cannot be undone, and we hold no backup that
   could restore it.
-- **If a build has cloud backup enabled** (see 3.1 — the current release does not), deleting all
-  data will ask whether to delete the cloud backup as well and close the account; the default is
+- **This release has cloud backup enabled** (see 3.1). Deleting all
+data will ask whether to delete the cloud backup as well and close the account; the default is
   to delete both. The order is deliberate: the cloud copy is deleted **first**, and if that fails
   the whole operation stops. We would rather have you retry than leave you with local data gone
   and a cloud copy you can no longer open.

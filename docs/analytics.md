@@ -62,7 +62,7 @@ app_open ──▶ workout_started ──▶ first_set_logged ──▶ workout_
 | `app_open` | 冷启动完成 | `is_first_open`, `ms_since_launch` | 北极星分母、漏斗起点 |
 | `onboarding_step` | 每步引导 | `step_index`, `skipped` | 验证"≤3 步且可跳过" |
 | `workout_started` | 进入 S4 | `routine_id`, `source`, `ms_since_launch` | 漏斗第 2 环 |
-| `exercise_added` | 添加动作 | `exercise_id`, `add_method`(suggest/search/recent/custom) | 建议采纳的另一种度量 |
+| `exercise_added` | 添加动作 | `exercise_id`, `add_method`(suggest/search/recent/custom/all/**pinned**) | 建议采纳的另一种度量 |
 | **`set_logged`** | 记录一组成功 | `workout_id`, `exercise_id`, `set_index`, `weight_kg`, `reps`, `distance_m`(可选，有氧/农夫行走), `set_type`, `rpe`(可选), **`tap_count`**, **`tap_kinds`**, `entry`(bigbutton/stepper), `is_offline` | **最重要的事件**，见 §3 |
 | `set_edited` | 弹层确定修改 | `field`(weight/reps), `from`, `to`, `suggestion_id` | 建议质量、编辑成本 |
 | `set_undone` | 撤销一组 | `set_index`, `method`(longpress), `seconds_after_log` | 误触率 |
@@ -299,7 +299,7 @@ node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 1
 |---|---|---|
 | `suggestion_shown` / `suggestion_accepted` / `suggestion_modified` | `workout_controller.logSet` | 三条**同源**：只有真正记下一组时才算一次"展示"，于是 shown == accepted + modified，采纳率必然落在 [0,1]（见下方口径说明） |
 | `set_edited` | `workout_controller.onSheetConfirm` | **只记真的改了的那一项**：打开弹层又原样关掉不算编辑 |
-| `exercise_added` | `exercise_picker_screen._pick` | `add_method` 多了 `all`（「全部动作」那一区）；硬归到 `suggest` 会让字段说谎 |
+| `exercise_added` | `exercise_picker_screen._pick` | `add_method` 多了 `all`（「全部动作」那一区）；硬归到 `suggest` 会让字段说谎。**2026-10-04** 又多了 `pinned`（「置顶」那一区）：用户自己钉的那几个动作是他**直接表态**的结果，混进别的取值等于把这个信号扔掉 |
 | `pr_achieved` | `workout_summary_screen._load` | 每次破纪录一条；`pr_type` = weight / reps / time |
 | `share_card_created` | `share_card_preview_screen` | `channel` 只有 `save` / `share`：系统分享面板**不会告诉我们发给了谁**，所以不假装知道微信 |
 | `body_metric_logged` | `body_metric_screen._save` | 只报 `has_weight` / `has_note` |
@@ -366,6 +366,19 @@ node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 1
 | A. 照现状发出去 | 北极星的历史分母一次补齐，第一份看板就有数 | 用户当时用的是"不上报"的包，**事后被补传**；政策 §3.2 现在没有覆盖这一条 |
 | B. 接入上报的首个版本丢掉积压，只发它自己记的 | 边界干净：谁记的谁发，政策不用打补丁 | 第一份看板上线时没有历史数据 |
 | C. 加一个 build-time 的"代次"标记，只发本代次记的事件 | 兼得（B 的干净 + 以后升级不断档） | 多一个要维护的概念与一次迁移 |
+
+**✅ 2026-10-04 拍板：选 B —— 丢积压，只发这个版本自己记的。**
+
+理由（你拍的，我记下来免得下次重新讨论）：边界干净 —— **谁记的谁发**。
+那些积压是用户在"不上报的包"里产生的，那时候我们**没有**告诉过他数据会被发出去；
+接上地址的那一天把它们补传，等于事后改主意 —— 政策 §3.2 现在也没覆盖这一条。
+代价是"第一份看板上线时没有历史数据"，这个代价我们认（第一份看板本来就要等真实用户）。
+
+**实现还没做，故意的**：它只对"配了上报地址的包"有意义，而那正是**同一次改动**
+（客户端指向服务器）。所以它跟"把地址编进正式包"**一起做、一起切 v1.43.0** ——
+分两次切版会让中间那一版处于"能发但没丢积压"的状态，那是最不该存在的一版。
+实现要点（留给那时的我）：`AnalyticsMetaRepository` 加一个"已做过首次接入清理"的持久标记，
+冷启动时若标记未置位就**先清空本地 outbox 再置位**；测试要覆盖"只清一次"与"清完只发新事件"。
 
 **我的建议是 C 或 B，倾向 C**，但这是产品与合规决策，不是我能替定的：
 它决定政策 §3.2 怎么写、以及数据安全表的"此前未收集"怎么填。

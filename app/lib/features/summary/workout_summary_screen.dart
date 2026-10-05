@@ -63,10 +63,31 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   WorkoutSummary? _summary;
   bool _loading = true;
 
+  /// 一句话笔记（2026-10-04）。列早就存在，但在此之前**没有任何写入路径**
+  /// （`progress_screen` 一直在显示它，所以它是个"只读的死字段"）。
+  late final TextEditingController _note = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  /// 保存笔记。**幂等**，调用点有三个：点「完成」、按回车、离开这一屏。
+  ///
+  /// 为什么不 debounce 逐字写库：这一屏是**低频**屏（一次训练走一次），
+  /// 一句话也就几十个字；而漏保存的代价是用户白写 —— 宁可多写几次。
+  Future<void> _saveNote() async {
+    final WorkoutSummary? s = _summary;
+    if (s == null) return;
+    if ((s.note ?? '') == _note.text.trim()) return; // 没改就不写
+    await widget.service.setNote(s.workoutId, _note.text);
   }
 
   Future<void> _load() async {
@@ -86,6 +107,9 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       });
     }
 
+    if (s != null && _note.text.isEmpty && (s.note ?? '').isNotEmpty) {
+      _note.text = s.note!;
+    }
     setState(() {
       _summary = s;
       _loading = false;
@@ -144,6 +168,10 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 const SizedBox(height: Tokens.s5),
                 _prBlock(s),
               ],
+              const SizedBox(height: Tokens.s5),
+              // 一句话笔记（2026-10-04）：列早就有、界面也一直在显示，但没有写入路径。
+              // 放这里是因为**刚练完是唯一还记得"今天为什么这样"的时刻**。
+              _noteField(s),
               // 「下一次」放在最上面（刚练完最愿意看），拉伸建议跟在后面
               if (widget.nextLine != null) _nextBlock(),
               if (widget.stretches.isNotEmpty) ...<Widget>[
@@ -165,6 +193,45 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   /// 放在总结屏是有意的：练完这一屏是用户一定会看的地方，
   /// 而"练完顺手拉一下"是此时最该被提醒的一件事。
   /// 只给名字与做法，不塞进记录 —— 拉伸要不要单独记是他的选择。
+  /// 一句话笔记：**不是"备忘"，是解释**。
+  ///
+  /// 引擎只看数字，数字解释不了"昨天没睡好 / 肩膀有点疼 / 今天状态好" ——
+  /// 而那句话恰恰是几周后回看"为什么那次没加重"时唯一的线索。
+  Widget _noteField(WorkoutSummary s) {
+    return Container(
+      key: const Key('summary-note'),
+      padding: const EdgeInsets.symmetric(horizontal: Tokens.s4, vertical: Tokens.s3),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.line),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.edit_note, size: 20, color: Tokens.text3),
+          const SizedBox(width: Tokens.s3),
+          Expanded(
+            child: TextField(
+              key: const Key('summary-note-input'),
+              controller: _note,
+              // 一句话：不换行、不展开
+              maxLines: 1,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _saveNote(),
+              style: const TextStyle(color: Tokens.text, fontSize: 14),
+              decoration: const InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: '今天的一句话（状态 / 感觉 / 为什么没加重）',
+                hintStyle: TextStyle(color: Tokens.text3, fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 「下一次」：刚练完就把下一次摆出来 —— 这是回访钩子最便宜的位置。
   Widget _nextBlock() {
     final String line = widget.nextLine!;
@@ -468,7 +535,13 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               borderRadius: BorderRadius.circular(Tokens.rPill),
             ),
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          // 先落库再退：总结页是"训练结束"这条路上的最后一屏，
+          // 用户在这里写的那句话不该因为退出的方式不同而丢掉。
+          onPressed: () async {
+            await _saveNote();
+            if (!context.mounted) return;
+            Navigator.of(context).pop();
+          },
           child: const Text(
             '完成',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),

@@ -13,7 +13,9 @@ JPEG 或 24 位 PNG（**不带透明**）。我们一直只有图标与截图，
 
 画什么、不画什么（Play 有明确规矩）：
   * **不画界面**、不堆文字、不带号召语（"立即下载"这类会被判违规）；
-  * 只放**品牌标记 + 一句话**：左边 volt 圆角方块里的「练」，右边产品名与一句话卖点；
+  * 只放**品牌标记 + 一句话**：左边就是**启动图标那个标记**（深底 + 白「练」+ volt 哑铃），
+    右边产品名与一句话卖点 —— ⚠️ 标记**由 `tool/gen-icons.py` 现渲**，不在这里重画一份：
+    2026-10-05 换图标时发现旧版是照抄的，换完图标这张横幅就成了全仓库唯一一处"旧标记"；
   * 内容留足边距 —— Play 在推荐位会**裁切**这张图，靠边的字会被切掉。
 
 产物入库：`store-assets/feature-graphic-1024x500.png`
@@ -24,6 +26,7 @@ JPEG 或 24 位 PNG（**不带透明**）。我们一直只有图标与截图，
 """
 
 import argparse
+import importlib.util
 import os
 
 from PIL import Image, ImageDraw, ImageFont
@@ -50,6 +53,18 @@ def font(px):
     return ImageFont.truetype(FONT, px, index=0)
 
 
+def load_icon_module():
+    """按路径加载 `tool/gen-icons.py`（文件名带连字符，`import` 语句进不来）。
+
+    它模块级只有常量与函数定义，`main()` 在 `if __name__ == '__main__'` 里，所以加载是安全的。
+    """
+    path = os.path.join(ROOT, 'tool/gen-icons.py')
+    spec = importlib.util.spec_from_file_location('lianleme_icons', path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def centered(draw, xy, text, f, fill):
     """按**墨迹包围盒**居中：汉字的字身框与墨迹不重合，按字身框居中是偏的。"""
     x, y = xy
@@ -65,15 +80,15 @@ def main():
     img = Image.new('RGB', (W * SS, H * SS), BG)
     d = ImageDraw.Draw(img)
 
-    # 左边：volt 圆角方块 + 墨色「练」（与启动图标同一个标记，用户能对上）
+    # 左边：**启动图标那个标记**，由 gen-icons.py 现渲（同一个配方，换图标时自动跟着换）
     box, bx, by = 260, 92, (H - 260) // 2
-    d.rounded_rectangle(
-        [bx * SS, by * SS, (bx + box) * SS, (by + box) * SS],
-        radius=int(box * 0.22) * SS,
-        fill=VOLT,
-    )
-    centered(d, ((bx + box / 2) * SS, (by + box / 2) * SS), GLYPH,
-             font(int(box * 0.62) * SS), VOLT_INK)
+    icons = load_icon_module()
+    icons.set_scheme('volt')          # 线上那套：深底 + 白「练」+ volt 哑铃
+    mark = icons.db_logo(box * SS, rounded=True)
+    img.paste(mark, (bx * SS, by * SS), mark)
+
+    # 一句话卖点下面的小横杠仍用 volt —— 与 App 里主按钮同一个颜色
+    _ = (VOLT_INK, GLYPH)             # 这两个常量现在不再直接用（标记由图标模块负责）
 
     # 右边：产品名 + 一句话（不写号召语，Play 会判违规）
     f_name, f_tag = font(104 * SS), font(44 * SS)

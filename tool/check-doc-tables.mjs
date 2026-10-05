@@ -26,7 +26,7 @@
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { docFiles } from './lib/docs.mjs';
+import { allDocFiles } from './lib/docs.mjs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,7 +41,7 @@ const isSeparator = (line) => /^\|[\s\-:|]+\|$/.test(line.replace(/\\\|/g, 'x'))
 
 function inspect(root) {
   const problems = [];
-  const docs = docFiles(root);
+  const docs = allDocFiles(root);
   let tables = 0;
 
   for (const rel of docs) {
@@ -78,11 +78,12 @@ function inspect(root) {
 
 // ───────────────────────────────────────────────────────────── 自检
 function selftest() {
-  const makeTree = (doc) => {
+  const makeTree = (doc, rootDoc) => {
     const root = mkdtempSync(join(tmpdir(), 'lianleme-tables-'));
     mkdirSync(join(root, 'docs'), { recursive: true });
     writeFileSync(join(root, 'README.md'), '# x\n');
     writeFileSync(join(root, 'docs/a.md'), doc);
+    if (rootDoc) writeFileSync(join(root, 'ROADMAP.md'), rootDoc);
     return root;
   };
   const good = '| A | B |\n|---|---|\n| 1 | 2 |\n';
@@ -93,10 +94,14 @@ function selftest() {
     ['转义竖线算一个单元格（不能误报）', '| A | B |\n|---|---|\n| `string \\| null` | 2 |\n', true, null],
     ['围栏代码块里的竖线不是表格（不能误报）', '```\ngrep x | head\ncat a | wc -l\n```\n', true, null],
     ['两张表连着但各自有表头 → 绿', good + '\n' + good, true, null],
+    // ★ 真实事故的回归：`ROADMAP.md` 的「一眼看懂」阶段表被一行 `>` 引用**从中间截断**，
+    //   第 6/7/8 行渲染成乱竖线 —— 而当时没有守卫扫这个文件，所以它是绿的。
+    ['根目录 ROADMAP.md 里被截断的表 → 必须报', good, false, '不是分隔行',
+      '| 阶段 | 状态 |\n|---|---|\n\n| 6 | 🟡 |\n| 7 | 🟡 |\n'],
   ];
   let bad = 0;
-  for (const [label, doc, wantGreen, expect] of cases) {
-    const root = makeTree(doc);
+  for (const [label, doc, wantGreen, expect, rootDoc] of cases) {
+    const root = makeTree(doc, rootDoc);
     const { problems } = inspect(root);
     const green = problems.length === 0;
     let ok = green === wantGreen;

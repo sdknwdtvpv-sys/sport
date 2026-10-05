@@ -41,6 +41,7 @@ const ARTIFACTS = [
   'lianleme-backend.service',
   'lianleme-collector.service',
   'Caddyfile',
+  'nginx-lianleme.conf',
   'README.md',
 ];
 
@@ -97,6 +98,7 @@ function inspect(root) {
   const backendUnit = read('lianleme-backend.service');
   const collectorUnit = read('lianleme-collector.service');
   const caddy = read('Caddyfile');
+  const nginx = read('nginx-lianleme.conf');
   const readme = read('README.md');
   if (problems.length) return { problems, facts };
 
@@ -174,10 +176,124 @@ function inspect(root) {
     else if (u[1] === 'root') problems.push(`${name} 单元以 root 跑 —— 不该如此`);
   }
 
+  // ── 4a. 两个服务必须**只监听 127.0.0.1**
+  //
+  // 2026-10-04 第一次真部署时 `ss -ltnp` 显示的是 `*:8790` / `*:8787` —— **所有网卡**，
+  // 而 `.service` 注释与文档都写着「只监听本机、对外只有反代一个入口」。
+  // 当时从外面扫这两个端口是关的，所以**功能上没人发现** —— 安全边界只剩云安全组一道。
+  // 声明与实现不一致就是 bug：这里钉住绑死环回。
+  for (const f of ['backend.mjs', 'collector.mjs']) {
+    let src = '';
+    try { src = readFileSync(join(root, 'server', f), 'utf8'); }
+    catch { problems.push(`server/${f} 读不到`); continue; }
+    if (!/server\.listen\(\s*port\s*,\s*'127\.0\.0\.1'/.test(src)) {
+      problems.push(`server/${f} 没有显式绑 127.0.0.1 —— 只写 listen(port) 会绑所有网卡，`
+        + '安全边界只剩云安全组（实测 ss 里是 *:PORT）');
+    }
+  }
+
+  // ── 4b. 不许开 MemoryDenyWriteExecute（实测：Node 会 SIGTRAP 崩溃）
+  //
+  // 2026-10-04 第一次真部署时抓到：单元里写了 `MemoryDenyWriteExecute=true`，
+  // Node **一启动就 core dump**（V8 JIT 要可写可执行的内存页），systemd 无限重启。
+  // 这一条**任何静态检查都抓不到**，只有真的在 systemd 上跑一次才看得见 ——
+  // 现在把它钉住，免得下一个人"为了更安全"再加回去（它就是那种看起来更安全的写法）。
+  for (const [name, unit] of [['backend', bUnit], ['collector', cUnit]]) {
+    if (/^\s*MemoryDenyWriteExecute\s*=\s*(true|yes|1)\s*$/m.test(unit)) {
+      problems.push(`${name} 单元开了 MemoryDenyWriteExecute —— V8 需要可写可执行内存，`
+        + 'Node 会 SIGTRAP 崩溃、systemd 无限重启（2026-10-04 真机实测）');
+    }
+  }
+
   // ── 5. 不许开访问日志（政策写着"不做 IP 记录"）
   if (/^\s*log(\s|$)/m.test(caddy)) {
     problems.push('Caddyfile 里出现了 `log` 指令 —— 它会把客户端 IP 写进磁盘，'
       + '而政策承诺"不做 IP 记录"（要加日志先改政策与 privacy-facts）');
+  }
+
+  // ── 5b. Nginx 片段（给"这台机器上已经有别的站"的情况）也要守同一套承诺
+  //
+  // 2026-10-04 加：部署包原先只有"Caddy 接管 80/443"一条路。而**大多数人的服务器上
+  // 已经跑着别的东西** —— 硬套那条路会覆盖别人的 Caddyfile、跟 Nginx 抢端口。
+  // 新增的 `PROXY_MODE=existing` 只打印片段、由你自己加，于是这个片段必须被同样地核：
+  {
+    const nginxR = render(nginx, renderVars);
+    // ① 与 Caddy 同一条承诺：不许有访问日志（Nginx 那边叫 access_log，默认是开的）
+    // ⚠️ 判据是"**必须显式关掉**"，不是"不许出现这个词" —— 2026-10-04 在真服务器上
+    // 核出来的坑：nginx.conf 在 **http 上下文**里开着 access_log，**任何新建的 server
+    // 块都会继承它**。所以"不写 access_log"等于照记不误，必须写 `access_log off;`。
+    for (const m of nginxR.matchAll(/^\s*access_log\s+([^;]+);/gm)) {
+      if (m[1].trim() !== 'off') {
+        problems.push(`nginx-lianleme.conf 里 access_log 不是 off（是 ${m[1].trim()}）—— `
+          + '这台机器上 http 块可能已经开着访问日志，不显式关掉就会记客户端 IP，'
+          + '而政策承诺"不做 IP 记录"');
+      }
+    }
+    if (!/^\s*access_log off;/m.test(nginxR)) {
+      problems.push('nginx-lianleme.conf 里没有 `access_log off;` —— '
+        + '若宿主机的 http 块开着 access_log，我们这几条路径会把客户端 IP 记下来');
+    }
+    // ② 只许转发到本机（两个服务只监听 127.0.0.1；转发到 0.0.0.0/外网 = 把它们暴露出去）
+    for (const m of nginxR.matchAll(/proxy_pass\s+https?:\/\/([^;\s]+)/g)) {
+      if (!m[1].startsWith('127.0.0.1:')) {
+        problems.push(`nginx-lianleme.conf 把请求转发到 ${m[1]} —— 只允许 127.0.0.1`);
+      }
+    }
+    // ③ 三条路由一条都不能少，且端口与真源一致
+    const want = [
+      ['/v1/events', `127.0.0.1:${d.COLLECTOR_PORT}`, '埋点会打到备份服务上'],
+      ['/v1/', `127.0.0.1:${d.BACKEND_PORT}`, '备份接口没人转发'],
+      ['/healthz', `127.0.0.1:${d.BACKEND_PORT}`, '健康检查没人转发'],
+    ];
+    for (const [loc, target, why] of want) {
+      const re = new RegExp(`location\\s+(?:=\\s+)?${loc.replace(/[/.]/g, '\\$&')}\\s*\\{[^}]*proxy_pass\\s+https?:\\/\\/([^;\\s]+)`);
+      const m = nginxR.match(re);
+      if (!m) problems.push(`nginx-lianleme.conf 里找不到 location ${loc} —— ${why}`);
+      else if (!m[1].startsWith(target)) {
+        problems.push(`nginx-lianleme.conf 的 ${loc} 指向 ${m[1]}，应当是 ${target}`);
+      }
+    }
+  }
+
+  // ── 5c. 共存护栏：绝不碰别人的东西（这台机器上可能已经有别的站在跑）
+  //
+  // 三条护栏各对应一次真实事故形态：
+  //   ① 覆盖别人的 Caddyfile → 别人的站当场挂掉；
+  //   ② 抢已占用的端口 → systemd 无限重启，日志里只有 EADDRINUSE；
+  //   ③ 在已经有 Nginx 的机器上装 Caddy → 两个反代抢 80/443。
+  if (!install.includes('--probe')) {
+    problems.push('install.sh 没有 --probe（只体检不改文件的模式）—— '
+      + '在"机器上已经有别的东西"的机器上，没有它就只能靠猜');
+  }
+  if (!/PROXY_MODE/.test(install)) {
+    problems.push('install.sh 没有 PROXY_MODE —— 无法选择"用已有的反代 / 不用反代"');
+  }
+  if (!install.includes('managed-by: lianleme-install')) {
+    problems.push('install.sh 没有"这份 Caddyfile 是不是我们写的"的标记判断 —— '
+      + '它会无条件覆盖别人的配置');
+  }
+  if (!install.includes('lianleme.caddy')) {
+    problems.push('install.sh 在遇到别人的 Caddyfile 时没有退路（应当写 lianleme.caddy 让人手工 import）');
+  }
+  if (!/port_busy/.test(install)) {
+    problems.push('install.sh 没有端口预检 —— 端口被占时只会在 systemd 日志里看到 EADDRINUSE');
+  }
+  // ── 5d. install.sh 自己的一个坑：双引号里的反引号会被 shell 当**命令替换**执行
+  //
+  // 2026-10-04 踩了**两次**（`say "…没有 `ss`…"` → 真的去执行 ss；`say "…`access_log off;`…"` →
+  // 报 "access_log: command not found"，而输出里那一段直接变成空白，**看着像没写**）。
+  // 这类错在 dry-run 时最像"只是少打印了一句"，很容易漏过去 —— 所以机械判。
+  for (const line of install.split('\n')) {
+    if (!/^\s*(say|echo)\s+".*`/.test(line)) continue;
+    problems.push(`install.sh 的双引号字符串里有反引号：${line.trim().slice(0, 60)} —— `
+      + 'shell 会把它当命令替换执行（输出会缺一块、还报 command not found）');
+  }
+
+  if (!/OTHER_PROXY/.test(install)) {
+    problems.push('install.sh 没有"机器上已装别的反代就不装 Caddy"的判断 —— 两个反代抢 80/443');
+  }
+  if (!caddy.includes('managed-by: lianleme-install')) {
+    problems.push('Caddyfile 里没有 managed-by 标记 —— install.sh 就无法区分"我们的"与"别人的"');
   }
 
   // ── 7. 占位符覆盖：模板里用到的每一个 __X__，install.sh 的 sed 都得替换它
@@ -308,6 +424,13 @@ function selftest() {
       '\tencode zstd gzip', '\tencode zstd gzip\n\tlog'), false, '出现了 `log` 指令'],
     ['后端单元少了 ProtectSystem=strict', (r) => edit(r, 'lianleme-backend.service',
       'ProtectSystem=strict', 'ProtectSystem=full'), false, '少了加固项 ProtectSystem=strict'],
+    ['后端没绑 127.0.0.1（会监听所有网卡）', (r) => {
+      const p2 = join(r, 'server/backend.mjs');
+      writeFileSync(p2, readFileSync(p2, 'utf8').replace("server.listen(port, '127.0.0.1'", 'server.listen(port'));
+    }, false, '没有显式绑 127.0.0.1'],
+    ['"为了更安全"加回 MemoryDenyWriteExecute（会让 Node 崩溃）',
+      (r) => edit(r, 'lianleme-backend.service', 'LockPersonality=true',
+        'LockPersonality=true\nMemoryDenyWriteExecute=true'), false, '开了 MemoryDenyWriteExecute'],
     // ⚠️ 只改 ExecStart 那一处：单元里 Documentation= 那行也含同样的路径，
     // 改中注释行等于没变异（第一版就是这么写的，于是"变异红了"变成"其实没红"）
     ['单元里的入口文件名写错', (r) => edit(r, 'lianleme-backend.service',
@@ -335,6 +458,28 @@ function selftest() {
       false, '以 root 跑'],
     ['模板加了新占位符但 sed 没跟上', (r) => edit(r, 'lianleme-collector.service',
       '--out __DATA_DIR__', '--out __EVENTS_DIR__'), false, '__EVENTS_DIR__'],
+    // ── 共存护栏的四条（2026-10-04 加）──────────────────────────────────
+    ['Nginx 片段把 access_log 指向文件（同样是记 IP）', (r) => edit(r, 'nginx-lianleme.conf',
+      '    access_log off;', '    access_log /var/log/nginx/lianleme.log;'),
+      false, 'access_log 不是 off'],
+    ['Nginx 片段干脆没有 access_log off（宿主机的 http 块会继承下来）',
+      (r) => editAll(r, 'nginx-lianleme.conf', 'access_log off;', ''), false, '没有 `access_log off;`'],
+    ['Nginx 片段把后端暴露成 0.0.0.0（不是 127.0.0.1）', (r) => edit(r, 'nginx-lianleme.conf',
+      'proxy_pass http://127.0.0.1:__BACKEND_PORT__;', 'proxy_pass http://0.0.0.0:__BACKEND_PORT__;'),
+      false, '只允许 127.0.0.1'],
+    ['Nginx 片段的埋点路由指到备份服务', (r) => edit(r, 'nginx-lianleme.conf',
+      'proxy_pass http://127.0.0.1:__COLLECTOR_PORT__;', 'proxy_pass http://127.0.0.1:__BACKEND_PORT__;'),
+      false, '应当是 127.0.0.1:'],
+    ['install.sh 丢掉 --probe（机器上有别的东西时只能靠猜）', (r) => editAll(r, 'install.sh',
+      '--probe', '--inspect'), false, '没有 --probe'],
+    ['install.sh 的双引号里混进反引号（会被当命令执行，输出缺一块）',
+      (r) => edit(r, 'install.sh', 'say "端口 $BACKEND_PORT / $COLLECTOR_PORT 都空着 ✓"',
+        'say "端口 `ss` 里 $BACKEND_PORT / $COLLECTOR_PORT 都空着 ✓"'),
+      false, '双引号字符串里有反引号'],
+    ['install.sh 丢掉"这份 Caddyfile 是不是我们写的"判断（会覆盖别人的配置）',
+      (r) => editAll(r, 'install.sh', 'managed-by: lianleme-install', 'our-caddy'), false, '它会无条件覆盖别人的配置'],
+    ['Caddyfile 少了 managed-by 标记（install.sh 就分不清谁的）', (r) => editAll(r, 'Caddyfile',
+      'managed-by: lianleme-install', 'x'), false, 'Caddyfile 里没有 managed-by 标记'],
   ];
 
   let bad = 0;
@@ -377,5 +522,6 @@ if (process.argv.includes('--selftest')) {
     process.exit(1);
   }
   console.log('\n✓ 端口一致、入口存在、与客户端的 dart-define 逐字对得上、'
-    + '加固没被删、没开访问日志');
+    + '加固没被删、没开访问日志；\n'
+    + '  反代片段与共存护栏那几条也各有一条负向用例（覆盖别人的配置 / 抢端口 / 暴露到 0.0.0.0 / access_log）');
 }

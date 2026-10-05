@@ -4,6 +4,10 @@
 # Caddy 会**自动**为这个域名申请并续期 HTTPS 证书（前提：域名已解析到本机，
 # 且大陆机房的域名已备案 —— 否则 80/443 会被拦，证书申请会失败）。
 #
+# ⚠️ 这行标记别删：`install.sh` 靠它判断"这份 Caddyfile 是不是我们写的"。**没有它就不会覆盖**，
+# 而是把配置写到 `/etc/caddy/lianleme.caddy`、让你手工 `import`（这台机器上可能有别人的站）。
+# managed-by: lianleme-install
+#
 # ⚠️ **这里故意没有 `log` 指令**：我们在隐私政策里写着"不做 IP 记录"，
 # 而 Caddy 的 access log 会把客户端 IP 写进磁盘。想加日志之前先改政策，
 # `tool/check-deploy.mjs` 会盯着这条（加了就判红）。

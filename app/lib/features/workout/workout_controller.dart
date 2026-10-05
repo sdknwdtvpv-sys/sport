@@ -17,6 +17,7 @@ import '../../analytics/analytics.dart';
 import '../../data/local_store.dart';
 import '../../data/sync_queue.dart';
 import '../../core/units.dart';
+import 'rest_activity.dart';
 import '../../domain/models.dart';
 import '../../domain/progression.dart';
 import '../../domain/tap_meter.dart';
@@ -31,6 +32,7 @@ class WorkoutController extends ChangeNotifier {
     required this.analytics,
     required this.store,
     required this.syncQueue,
+    this.restActivity = const NoopRestActivity(),
     /// 同一次训练里的多个动作**共享同一个 workoutId**，
     /// 这样记录会挂在一条 workout 下，而不是被拆成多次训练。
     String workoutId = kLocalWorkoutId,
@@ -41,9 +43,32 @@ class WorkoutController extends ChangeNotifier {
     /// 传了就按"现在还剩多少"接着倒数 —— **被杀掉的那几分钟也该算进休息**，
     /// 而不是回来重新从 90 秒开始。
     int? restEndsAtMs,
+    /// 恢复训练时：**这个动作在这次训练里已经记过的组**（2026-10-04）。
+    ///
+    /// 为什么必须传（这是一条真机上抓到的 P0，静默丢数据）：
+    /// 恢复时控制器是**新建**的，`_setSeq` 从 0 开始 —— 于是界面显示「第 1 组」、
+    /// 已完成列表是空的；用户再记一组就会按 `s_<workoutId>_<exerciseId>_1` 写库，
+    /// **把杀进程前那一组覆盖掉**（总数不变，所以从界面上看不出来）。
+    ///
+    /// 为什么不把"已经记到第几组"存进 `ActiveSession` 的 JSON：
+    /// 组本来就逐条落库了，**数据库才是真源** —— 存一个计数器等于把同一件事
+    /// 写两遍，迟早会漂。调用方拿 `store.setsFor(workoutId)` 过滤一下传进来即可。
+    List<SetRecord> alreadyLogged = const <SetRecord>[],
+    /// 恢复时沿用**原来那次训练的开始时刻**。不传的话这次训练的行会被改成
+    /// "恢复的那一刻"（`saveWorkout` 每次记组都会写一遍），总结页的时长就只剩后半段。
+    int? startedAtMs,
     int Function()? clock,
   }) : _clock = clock ?? (() => DateTime.now().millisecondsSinceEpoch) {
-    workout = Workout(id: workoutId, startedAtMs: _clock());
+    workout = Workout(id: workoutId, startedAtMs: startedAtMs ?? _clock());
+    // 把已记的组读回来：**界面、组序、计划进度三处一起对上**，缺一处就会重演那个 P0。
+    if (alreadyLogged.isNotEmpty) {
+      workout.sets.addAll(alreadyLogged);
+      _setSeq = alreadyLogged
+          .map((SetRecord s) => s.setIndex)
+          .reduce((int a, int b) => a > b ? a : b);
+      _normalSets =
+          alreadyLogged.where((SetRecord s) => s.setType == SetType.normal).length;
+    }
     _suggestion = suggestNext(
       exercise: exercise,
       plan: plan,
@@ -88,6 +113,10 @@ class WorkoutController extends ChangeNotifier {
   final Analytics analytics;
   final LocalStore store;
   final SyncQueue syncQueue;
+
+  /// 组间休息的 Live Activity（iOS 锁屏/灵动岛）。**生产环境必须传真的那个**
+  /// （见 `main.dart`）—— 默认是 noop，因为另外 20 多个构造点都在测试里。
+  final RestActivityBridge restActivity;
   final int Function() _clock;
 
   /// 显示单位。存储与引擎始终是 kg，这个字段只用于格式化。
@@ -263,7 +292,9 @@ class WorkoutController extends ChangeNotifier {
     _sheetFromWeight = _weightKg;
     _sheetFromReps = _reps;
     _sheetOpen = true;
-    _hint = '步进调整，不需要键盘';
+    // 文案审计（2026-10-04）：这里原本会弹一句「步进调整，不需要键盘」——
+    // 那是**解释我们的交互设计**，而步进按钮就摆在弹层里，用户一眼就懂了。删。
+    _hint = null;
     _notify();
   }
 
@@ -373,6 +404,7 @@ class WorkoutController extends ChangeNotifier {
   void skipRest() {
     _stopRest();
     _restRemaining = 0;
+    restActivity.end(); // 用户跳过了休息 → 锁屏上那条不该还挂着倒计时
     analytics.track('rest_skipped', <String, Object?>{
       'exercise_id': exercise.id,
       'planned_sec': plannedRestSec,
@@ -527,6 +559,20 @@ class WorkoutController extends ChangeNotifier {
   ///
   /// [announce] 区分两种来源：用户刚记完一组（要上报 `rest_started`），
   /// 与"从被中断的训练回来"（那是同一次休息的下半段，再报一次就把口径搞脏了）。
+  /// 把这次休息广播出去（Live Activity）。**失败是静默的** —— 见 `rest_activity.dart`。
+  void _startRestActivity() {
+    final int? endsAt = _restEndsAtMs;
+    if (endsAt == null) return;
+    restActivity.start(RestActivityInfo(
+      exerciseName: exercise.name,
+      // 与大按钮同一行字：锁屏上写的"下一组练什么"必须与点下去要写的值一致
+      nextLabel: primaryButtonLabel,
+      setIndex: setNumber,
+      totalSets: plannedSets,
+      endAtMs: endsAt,
+    ));
+  }
+
   void _beginRest(int remainingSec, {required int endsAtMs, required bool announce}) {
     _stopRest();
     _restRemaining = remainingSec;
@@ -539,12 +585,21 @@ class WorkoutController extends ChangeNotifier {
         'auto': true,
       });
     }
+    // Live Activity：把"休息到几点结束"广播给系统，锁屏上那串数字由它自己走。
+    _startRestActivity();
     _restTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_disposed) {
         t.cancel();
         return;
       }
-      if (_restRemaining <= 1) {
+      // ⚠️ **不靠每秒减一**（2026-10-04 修）：App 被系统挂起时（锁屏、切后台、
+      // 系统省电）Dart 的定时器**不会走**，回到前台后再从旧数字接着减，
+      // 就把"被挂起的那段"白送了 —— 而锁屏上系统走的倒计时是准的，
+      // 两个界面会当场对不上（"手机上还剩 40 秒，锁屏上已经 0:10"）。
+      // 所以每一跳都**从结束时刻重算**：真源仍然是 `_restEndsAtMs`。
+      final int? endsAt = _restEndsAtMs;
+      final int left = endsAt == null ? 0 : ((endsAt - _clock()) / 1000).ceil();
+      if (left <= 0) {
         _restRemaining = 0;
         _restRunning = false;
         _restEndsAtMs = null;
@@ -553,8 +608,9 @@ class WorkoutController extends ChangeNotifier {
           'exercise_id': exercise.id,
           'planned_sec': plannedRestSec,
         });
+        restActivity.end(); // 锁屏上那条也要撤下
       } else {
-        _restRemaining--;
+        _restRemaining = left;
       }
       _notify();
     });
@@ -576,6 +632,9 @@ class WorkoutController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _stopRest();
+    // 退出训练屏 = 这次休息不再有意义：锁屏上那条必须撤掉，
+    // 否则用户放下手机之后会看到一条永远数不完的"组间休息"。
+    restActivity.end();
     super.dispose();
   }
 }

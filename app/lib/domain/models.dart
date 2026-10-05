@@ -401,6 +401,20 @@ class SetRecord {
   bool get hasDistance => distanceM != null;
 }
 
+/// 回收站里的一条：被软删除的组 + 删除时间（2026-10-04）。
+///
+/// 为什么单独包一层、而不给 [SetRecord] 加个 `deletedAt`：领域模型是"活着的记录"，
+/// 而回收站要的是"活着的记录 + 它什么时候被删的"——后者只有库里有。
+/// 混进 [SetRecord] 会让每个构造点都要多想一次"这个字段该填什么"。
+class DeletedSet {
+  const DeletedSet({required this.set, required this.deletedAtMs});
+
+  final SetRecord set;
+
+  /// 删除时刻（毫秒）。回收站按它倒序，界面按它显示"什么时候删的"。
+  final int deletedAtMs;
+}
+
 enum SetType {
   normal('normal'),
   warmup('warmup');
@@ -411,10 +425,23 @@ enum SetType {
 
 /// 一次训练。
 class Workout {
-  Workout({required this.id, required this.startedAtMs, this.endedAtMs});
+  Workout({
+    required this.id,
+    required this.startedAtMs,
+    this.endedAtMs,
+    this.note,
+  });
 
   final String id;
   final int startedAtMs;
+
+  /// 这次训练的一句话（2026-10-04 接上）。
+  ///
+  /// 列从第一天起就在（`workout.note`），`progress_screen` 也一直在显示它 ——
+  /// 但**没有任何写入路径**，是个死字段。训记的「训记备忘录 / 过往心得」就是它，
+  /// 而它的价值比"备忘"大：它是"为什么这次没加重"的原始解释（引擎只看数字，
+  /// 数字解释不了"昨天没睡好"）。
+  String? note;
 
   /// 结束时间。null = 还在进行中（S7 训练结束总结会把它填上）。
   int? endedAtMs;

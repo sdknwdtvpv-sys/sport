@@ -14,7 +14,7 @@ library;
 
 import 'dart:math';
 
-import 'package:drift/drift.dart' show InsertMode;
+import 'package:drift/drift.dart' show InsertMode, Value;
 
 import '../analytics/analytics_context.dart';
 import 'db.dart';
@@ -29,6 +29,17 @@ class AnalyticsMetaRepository {
   final int Function() _clock;
 
   static const String _localId = 'local';
+
+  /// 已经清过历史积压了吗（`docs/analytics.md` §10 的 B 方案）。
+  /// 没有这一行、或这一位是 null → 还没清过。
+  Future<int?> legacyPurgedAt() async => (await _row())?.legacyPurgedAt;
+
+  /// 记下"清过了"。**只写这一位**，不碰别的字段 —— 与 [markFirstOpen] 同样的规矩。
+  Future<void> markLegacyPurged(int nowMs) async {
+    await ensure(); // 没有这一行就先建出来（首启即上报的机器会走到这里）
+    await (_db.update(_db.analyticsMeta)..where((t) => t.id.equals(_localId)))
+        .write(AnalyticsMetaCompanion(legacyPurgedAt: Value(nowMs)));
+  }
 
   /// 读这一行；没有就建（首次启动）。**会话过期的判断也在这里** ——
   /// 会话只该在"取公共字段"这一条路上推进，别处推容易漏。

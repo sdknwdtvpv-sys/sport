@@ -109,7 +109,7 @@ void main() {
     });
 
     await step('02-suggestion', () async {
-      await tester.tap(find.byKey(const Key('see-plan')));
+      await tester.tap(find.byKey(const Key('open-plan')));
       await settle(1800);
       await capture('02-suggestion');
     });

@@ -221,6 +221,37 @@
       ]
     }
   },
+  "localAnalyticsExport": {
+    "_why": "「导出统计事件」把本机攒下的埋点事件**原样交给用户**。它是唯一能把 tap_count 从设备上取回来的路径 —— 没配上报地址的包里 _NullTransport 恒失败，事件只会一直攒在本地（见 app/lib/analytics/analytics_export.dart 的文件头）。既然要把它交到用户手上，就必须写明：里面有匿名设备标识、它是只读的、而且这个动作本身不上报。这个块是机器可核的那一半：tool/privacy-audit.mjs 会要求中英政策正文出现下面的说法，并核对代码里真的有那个入口与那个只读出口。",
+    "gatedBy": "同一个「帮助改进产品」开关（analyticsOptIn）：关着时入口**不出现** —— 那时本来就没有在收集，一个点进去必然是空的按钮比没有更糟",
+    "entry": {
+      "where": "app/lib/features/profile/privacy_about_screen.dart（Key('analytics-export')）",
+      "test": "app/test/analytics_export_test.dart"
+    },
+    "reader": "app/lib/analytics/outbox.dart::AnalyticsOutboxStore.peekAll —— 只读、不删队列、**包含 parked 的**（连续失败 ≥ 3 次那批正是发不出去的）",
+    "format": "JSONL（一行一条），字段与上报时那一份**完全相同**；所以可以直接喂给 tool/analytics-report.mjs 算中位数",
+    "contains": [
+      "事件名、时间戳、优先级",
+      "公共字段：device_id（匿名设备标识）、session_id、app_version、schema_version 等",
+      "事件自己的字段：tap_count / tap_kinds / weight_kg / reps / distance_m …"
+    ],
+    "doesNotEmitEvent": true,
+    "_doesNotEmitEventWhy": "导出既不是「发送」也不是「收集」。若为它记一条事件，就等于要让用户再读一条披露 —— 那是自己给自己造隐私债。",
+    "policyPhrases": {
+      "zh": [
+        "导出统计事件",
+        "开关关着时这个入口不出现",
+        "包含匿名设备标识",
+        "只读"
+      ],
+      "en": [
+        "Export the usage events",
+        "While the switch is off, this entry does not appear",
+        "contains the anonymous device identifier",
+        "read-only"
+      ]
+    }
+  },
   "permissions": [
     {
       "name": "android.permission.INTERNET",
@@ -231,6 +262,11 @@
       "name": "android.permission.WRITE_EXTERNAL_STORAGE",
       "maxSdkVersion": 29,
       "why": "把训练分享卡存进相册。API 30+ 走 MediaStore **不需要权限**，所以这条只对 API ≤ 29 的老设备生效"
+    },
+    {
+      "name": "android.permission.POST_NOTIFICATIONS",
+      "maxSdkVersion": null,
+      "why": "训练提醒（本地通知）。API 33+ 是**运行时**权限：只在用户主动打开「训练提醒」开关时向他请求，**不在启动时要**。提醒由系统在本机到点触发（用非精确闹钟，因此不需要 SCHEDULE_EXACT_ALARM 那个特殊权限），内容在排程时就算好存在设备上 —— **不联网**"
     }
   ],
   "injectedPermissions": [
@@ -247,8 +283,8 @@
     "训练备注、自定义动作名称等自由文本"
   ],
   "cloudBackup": {
-    "enabledInDistributedBuild": false,
-    "_why": "云备份是第一个会让数据离开设备的功能。它的开关是**编译期**的（--dart-define=LIANLEME_BACKUP_URL，默认空串）——代码里那条通道始终存在，但没配地址的包里；界面上连入口都不出现，任何数据都不会发出去。tool/privacy-audit.mjs 会按这个布尔值双向核对政策正文：false 时要求政策写明「本版本未提供云备份」，true 时要求逐条披露离开设备的东西。改这一位之前先改政策。",
+    "enabledInDistributedBuild": true,
+    "_why": "云备份是第一个会让数据离开设备的功能。2026-10-04 起**正式包也配了地址**（`https://api.elliotli.work`），所以这一个正式发布的版本里，用户一旦在「数据与备份」里开启云备份，训练记录就会以**密文**形式离开设备。开关仍然是\"默认关 + 用户手动开\"，且地址仍是编译期配置（--dart-define=LIANLEME_BACKUP_URL）。tool/privacy-audit.mjs 会按这个布尔值双向核对政策正文：false 时要求政策写明「本版本未提供云备份」，true 时要求逐条披露离开设备的东西。改这一位之前先改政策。",
     "_endpoint": "--dart-define=LIANLEME_BACKUP_URL（默认空；正式包必须 https）。见 app/lib/backup/backup_config.dart",
     "disabledStatement": {
       "zh": "本版本未提供云备份",
@@ -270,13 +306,13 @@
       ]
     },
     "whatLeavesDeviceWhenEnabled": [
-      "端到端加密后的整包备份（密文）—— 内容只有**训练记录**（动作 id、重量、次数、组序、热身、RPE、距离、完成时间）与一份动作 id→中文名的映射；服务端连一个字段都读不出来",
+      "端到端加密后的整包备份（密文）—— 内容是**训练记录**（动作 id、重量、次数、组序、热身、RPE、距离、完成时间）、一份动作 id→中文名的映射，以及**动作置顶清单**（用户自己钉住的那几个动作，2026-10-04 起；体重 / 计划模板 / 其它设置**仍然不在**）；服务端连一个字段都读不出来",
       "account_id：恢复码的 SHA-256（服务端反推不出恢复码，因此也解不开密文）",
       "密文字节数与最后更新时间"
     ],
     "_neverLeaves": "恢复码本身、明文训练数据、体重数值 —— 这些只在设备上",
     "_enabledPhrasesWhy": "启用之后政策必须逐条出现这些说法。最后一条是删除权：政策写了'云端也删'，客户端就必须真的做出来（app/lib/features/profile/profile_screen.dart 的 _deleteAll：先删云端、失败就整个中止，再清本机）。",
-    "_scopeNote": "⚠️ 2026-09-30 核对：备份**不含**身体数据（体重）、计划模板与个人设置 —— 设计稿第四节的子决策 3 曾写「全都要（设置也备份）」，但实现里没有，边界由 app/test/backup_scope_test.dart 钉着。要不要扩到「全都要」是范围决策，见 docs/your-todo.md；本文件的措辞按**现状**写，不按计划写。"
+    "_scopeNote": "⚠️ 2026-10-04 更新：备份**只扩了一项 —— 动作置顶**（用户拍板；理由：换手机时收藏没了，用户会认为「数据没全回来」）。**体重 / 计划模板 / 其它设置仍然不含**，设计稿第四节的子决策 3 那句「全都要（设置也备份）」至今没做。边界由 app/test/backup_scope_test.dart 钉着 —— 它同时钉住一个坑：**老备份（v1/v2）没有置顶那一项时，不许拿它清空本机已有的置顶**（null ≠ 空列表）。本文件的措辞按**现状**写，不按计划写。"
   },
   "impliedPermissions": [
     {

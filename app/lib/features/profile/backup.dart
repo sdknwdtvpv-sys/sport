@@ -23,7 +23,14 @@ import '../../domain/models.dart';
 ///   v1 的组没有距离 → distanceM = null（"没记过距离"），不是 0。
 ///   写出去的一律是 v2（新格式带全字段，老 App 读不了新备份也没关系 ——
 ///   备份是给未来的自己用的，不是给旧版本用的）。
-const int kBackupFormat = 2;
+/// * **3** —— 2026-10-04 加 `pinned_exercises`（**动作置顶**）。
+///   ⚠️ 这是本项目第一次**扩大备份范围**：原先只有训练记录（用户 2026-09-30 拍板
+///   "范围就此定死"），2026-10-04 用户点头把"置顶"这一项也带上 ——
+///   理由很直接：换手机时如果收藏没了，用户会觉得"我的数据没全回来"。
+///   **只加这一项**：体重、计划模板、其它设置**仍然不进备份**（要动它们得再拍一次板）。
+///   读的时候三版都认：v1/v2 里没有这个键 → `pinnedExerciseIds == null`，
+///   表示"这份备份对置顶没有意见"，导入时**不许拿它去清掉本机已有的置顶**。
+const int kBackupFormat = 3;
 
 /// 备份里的应用标识。粘错东西时要能一眼认出来，所以不只看 JSON 能不能解析。
 const String kBackupApp = 'lianleme';
@@ -47,6 +54,7 @@ String backupFileName(int nowMs) {
 String encodeBackup({
   required List<Workout> workouts,
   required Map<String, String> exerciseNames,
+  List<String> pinnedExerciseIds = const <String>[],
   int? nowMs,
 }) {
   final Map<String, Object?> root = <String, Object?>{
@@ -55,6 +63,8 @@ String encodeBackup({
     'exported_at': nowMs ?? DateTime.now().millisecondsSinceEpoch,
     'unit': 'kg', // 数值一律 kg；写出来是为了让人看懂，不是给程序读的
     'exercise_names': exerciseNames,
+    // **动作置顶**（v3 起）。按用户排的顺序写 —— 导回来时顺序要一样。
+    'pinned_exercises': pinnedExerciseIds,
     'workouts': <Object?>[
       for (final Workout w in workouts)
         <String, Object?>{
@@ -87,6 +97,7 @@ class BackupParse {
   const BackupParse({
     this.workouts = const <Workout>[],
     this.exerciseNames = const <String, String>{},
+    this.pinnedExerciseIds,
     this.skippedSets = 0,
     this.error,
   });
@@ -96,6 +107,12 @@ class BackupParse {
   /// 备份里的 `exercise_names`（id → 名字）。**导入时用它补建本机缺的动作**：
   /// 只用名字建新行，绝不覆盖已有动作（名字可能过期）。
   final Map<String, String> exerciseNames;
+
+  /// 备份里的**动作置顶**（v3 起）。**null 与空列表是两件事**：
+  ///   * `null` —— 这份备份（v1/v2）根本没提置顶 → 导入时**不动**本机的置顶；
+  ///   * `[]` —— v3 备份明确说"我一个都没置顶" → 导入时本机也不该有。
+  /// 把这两件事混成一件的后果：拿一份老备份去恢复，会把用户的收藏静默清空。
+  final List<String>? pinnedExerciseIds;
 
   /// 因为缺字段/类型不对被跳过的组数。> 0 时界面必须如实说出来。
   final int skippedSets;
@@ -166,6 +183,16 @@ BackupParse parseBackup(String text) {
     }
   }
 
+  // 置顶列表也是**可选**的，且"没有这个键"≠"空列表"（见 pinnedExerciseIds 的注释）。
+  List<String>? pinned;
+  final Object? pinnedRaw = decoded['pinned_exercises'];
+  if (pinnedRaw is List) {
+    pinned = <String>[
+      for (final Object? v in pinnedRaw)
+        if (v is String && v.trim().isNotEmpty) v,
+    ];
+  }
+
   final List<Workout> out = <Workout>[];
   int skipped = 0;
 
@@ -228,5 +255,10 @@ BackupParse parseBackup(String text) {
     if (w.sets.isNotEmpty) out.add(w);
   }
 
-  return BackupParse(workouts: out, exerciseNames: names, skippedSets: skipped);
+  return BackupParse(
+    workouts: out,
+    exerciseNames: names,
+    pinnedExerciseIds: pinned,
+    skippedSets: skipped,
+  );
 }

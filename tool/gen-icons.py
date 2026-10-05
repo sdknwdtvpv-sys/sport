@@ -18,16 +18,18 @@ iOS（Assets.xcassets 里那 19 个尺寸 + 启动屏的 LaunchImage）都由这
 ⚠️ iOS 图标**不能有透明通道**（App Store 会因此拒收），而且**不要自己切圆角**
 （系统会自己裁）—— 所以 iOS 那套走的是"满幅不透明"的画法，和 Android 的圆角版不同。
 
-方向 A（本工具默认）：volt 底 + 墨色「练」—— 启动器里最亮、最好认。
-方向 B（`--alt`）：深底 + volt「练」—— 更像 App 内部，但小尺寸下发暗。
+方向 C（**本工具默认**，2026-10-05 起）：深底 #1A1A1A + 白色斜「练」+ 两侧 volt 哑铃头。
+方向 A（`--logo classic`）：volt 底 + 墨色「练」—— 换图标前的旧版，留着对照。
+方向 B（`--logo classic --alt`）：深底 + volt「练」—— 更像 App 内部，但小尺寸下发暗。
 
 ⚠️ **这是仓库里唯一需要第三方库的工具**（Pillow）。其余 tool/*.mjs 都是零依赖。
 不用 Node 写是因为要渲染汉字：手写 PNG 编码器能做，字体光栅化不值得手写。
 产物是入库的二进制资源，所以这个脚本**不进 verify.sh**，只在换图标时手动跑一次：
 
-    python3 tool/gen-icons.py            # 方向 A
-    python3 tool/gen-icons.py --alt      # 方向 B
-    python3 tool/gen-icons.py --preview  # 只出预览图到 /tmp，不碰仓库
+    python3 tool/gen-icons.py                  # 方向 C（当前线上配方）
+    python3 tool/gen-icons.py --scheme ember   # 方向 C 的橙色备选（设计稿原样）
+    python3 tool/gen-icons.py --logo classic   # 方向 A（换图标前那一版）
+    python3 tool/gen-icons.py --preview        # 只出预览图到 /tmp，不碰仓库
 """
 
 import argparse
@@ -159,98 +161,266 @@ def store_icon(size, alt):
     return img.convert('RGB')
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 方向 C：**哑铃**（2026-10-05 用户给的设计稿）—— 现在这是默认方向
+#
+# 深底 + 白色粗斜「练」+ 两侧哑铃头。**几何不是肉眼估的**：哑铃两段的
+# x/高比例是从设计稿逐像素量出来的（见下面 DB_GLYPH 那一节的注释）。
+# 颜色有三条决定，都写在这儿：
+#   * **底色用 #1A1A1A，不是 Tokens.bg 的 #0B0B0D** —— 设计稿就是 #1A1A1A，
+#     而且在纯黑壁纸上，纯黑图标会"消失"，略亮一档才看得出边界；
+#     ⚠️ 这是**图标专用色**：App 内部没有对应 token，别为了它去 theme.dart 加一个
+#     没人用的 token（`asset-check` 只守尺寸/格式，颜色靠这段注释和配色表）；
+#   * **哑铃用 volt（#D8FF47）而不是设计稿的橙** —— 用户 2026-10-05 定的：
+#     图标和 App 内部主色是同一个绿，就不必再引第二个品牌色。
+#     （橙色方案保留在 `--scheme ember` 里，想换回去是一条命令的事。）
+#   * **字形用纯白 #FFFFFF**，不是 Tokens.text 的 #F5F5F7 —— 小尺寸下白得干脆一点。
+#   * **字体用 Hiragino Sans GB W6 + 描边加粗**：本机没有 PingFang Heavy，
+#     W6 是这里能拿到的最重黑体；再叠一点描边才接近设计稿那种"方块感"。
+# ─────────────────────────────────────────────────────────────────────────────
+DB_TILE = (26, 26, 26)       # #1A1A1A（图标专用）
+DB_INK = (255, 255, 255)     # #FFFFFF（图标专用）
+DB_EMBER = (255, 105, 46)    # #FF692E（未采用的备选配色）
+
+# ── 配色方案（`--scheme`，默认 volt）─────────────────────────────────────────
+# 设计稿给的是橙色（ember）。橙色好看，但**和 App 内部的 volt 不是一套**，
+# 所以把"底色 / 字色 / 哑铃色"三件事都做成参数，四种方案能一次出图并排看：
+#   volt    深底 + 白字 + volt 哑铃 ← **采用**
+#   ember   深底 + 白字 + 橙哑铃   设计稿原样，辨识度最高，但引入第二个品牌色
+#   allvolt 深底 + volt 字 + volt 哑铃 全绿，最"品牌"，但两色对比没了、小尺寸更糊
+#   inverse volt 底 + 墨字 + 墨哑铃  方向 A 的延伸（绿底黑物），商店列表里最跳
+DB_SCHEMES = {
+    'ember':   {'tile': (26, 26, 26), 'ink': (255, 255, 255), 'accent': (255, 105, 46)},
+    'volt':    {'tile': (26, 26, 26), 'ink': (255, 255, 255), 'accent': VOLT},
+    'allvolt': {'tile': (26, 26, 26), 'ink': VOLT,             'accent': VOLT},
+    'inverse': {'tile': VOLT,        'ink': VOLT_INK,         'accent': VOLT_INK},
+}
+
+
+def set_scheme(name):
+    """切换配色：只改这三个全局量，画法一行都不用动。"""
+    global DB_TILE, DB_INK, DB_EMBER
+    s = DB_SCHEMES[name]
+    DB_TILE, DB_INK, DB_EMBER = s['tile'], s['ink'], s['accent']
+DB_FONT = '/System/Library/Fonts/Hiragino Sans GB.ttc'
+DB_FONT_INDEX = 2            # W6（W3 太细、又比 Heiti Medium 重一档）
+DB_SKEW = -0.16              # 负值 = 顶边右移（斜体感）
+DB_STROKE = 0.013            # 额外描边宽度（占字高），把 W6 再喂粗一点
+DB_GLYPH = 0.66              # 字形占比（设计稿量出来是 0.63，取 0.66 让启动器里更实一点）
+#   ⚠️ 这个数不能大：字形一宽就把两侧的哑铃头压住了（第一版 0.80，预览一眼就发现
+#   哑铃只剩两个角露在外面）—— 设计稿里两侧是**看得见**的，中间还留着一条缝。
+#   ⚠️ 下面三组数字**不是估的**，是从设计稿逐像素量出来的（占画布宽度/高度的比例）：
+#       内侧高杆  x 10.9%–15.9%（宽 5.0%）· 高 24.2%
+#       外侧矮片  x  3.4%–10.6%（宽 7.2%）· 高 13.8%
+#       字形      x 18.5%–81.5%（宽 63%）→ 与高杆之间留 2.6% 的缝
+#   量出来的原因：第一版我按"看着差不多"调，两侧被字形压住、比例也不对；
+#   量一遍之后一次就对了（而且换尺寸不会走形）。
+DB_GLYPH_LAUNCH = 0.72       # 启动页中央
+DB_SAFE = 0.72               # 自适应前景整体缩到画布的 72%（安全区 66% 之外再留余量）
+
+
+def db_glyph(size, ratio):
+    """透明底 + 居中「练」，**右倾**（设计稿里是斜体）。"""
+    big = size * SS
+    img = Image.new('RGBA', (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    px = int(big * ratio)
+    font = ImageFont.truetype(DB_FONT, px, index=DB_FONT_INDEX)
+    sw = max(1, int(px * DB_STROKE))
+    bb = d.textbbox((0, 0), GLYPH, font=font, stroke_width=sw)
+    x = (big - (bb[0] + bb[2])) / 2
+    y = (big - (bb[1] + bb[3])) / 2
+    d.text((x, y), GLYPH, font=font, fill=DB_INK, stroke_width=sw, stroke_fill=DB_INK)
+    # 剪切：k<0 时顶边右移。c 取 -k*big/2 保证剪切后仍居中。
+    img = img.transform((big, big), Image.AFFINE,
+                        (1, DB_SKEW, -DB_SKEW * big / 2, 0, 1, 0), resample=Image.BICUBIC)
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def db_ends(size):
+    """两侧哑铃头：**两个竖向胶囊**（内高外矮），中间那根杆被字形挡住，不必画。
+
+    几何取自设计稿的实测值（见上面那三行注释）——不是"看着差不多"调的。
+    """
+    big = size * SS
+    img = Image.new('RGBA', (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    cy = big / 2
+    # (x0, x1, 高) 占画布的比例
+    shapes = ((0.034, 0.106, 0.138),    # 外侧矮片
+              (0.109, 0.159, 0.242))    # 内侧高杆
+    for x0r, x1r, hr in shapes:
+        w = (x1r - x0r) * big
+        h = hr * big
+        for side in (-1, 1):
+            x0 = x0r * big if side < 0 else (1 - x1r) * big
+            d.rounded_rectangle([x0, cy - h / 2, x0 + w, cy + h / 2],
+                                radius=w / 2, fill=DB_EMBER)
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def db_logo(size, ratio=DB_GLYPH, rounded=False, tile=True, radius_ratio=0.22):
+    """底色（可圆角、可透明）+ 哑铃头 + 白色斜「练」。字形画在最上面，压住横档。"""
+    if tile:
+        base = rounded_square(size, DB_TILE, radius_ratio) if rounded \
+            else Image.new('RGBA', (size, size), DB_TILE + (255,))
+    else:
+        base = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    base.alpha_composite(db_ends(size))
+    base.alpha_composite(db_glyph(size, ratio))
+    return base
+
+
+def db_silhouette(img):
+    """主题剪影（Android 13+）：系统自己上色，所以只留**纯白形状**。"""
+    out = Image.new('RGBA', img.size, (255, 255, 255, 255))
+    out.putalpha(img.getchannel('A'))
+    return out
+
+
+def render(variant, size, alt, logo):
+    """两个方向（classic / dumbbell）× 七种用途，只有一个入口 —— 免得两套配方各长各的。"""
+    if logo == 'dumbbell':
+        if variant == 'legacy':
+            return db_logo(size, rounded=True)
+        if variant == 'round':
+            big = size * SS
+            circ = Image.new('RGBA', (big, big), (0, 0, 0, 0))
+            ImageDraw.Draw(circ).ellipse([0, 0, big - 1, big - 1], fill=DB_TILE)
+            base = circ.resize((size, size), Image.LANCZOS)
+            base.alpha_composite(db_ends(size))
+            base.alpha_composite(db_glyph(size, 0.60))
+            return base
+        if variant == 'adaptive':
+            inner = db_logo(int(size * DB_SAFE), ratio=DB_GLYPH, tile=False)
+            canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+            off = (size - inner.size[0]) // 2
+            canvas.alpha_composite(inner, (off, off))
+            return canvas
+        if variant == 'mono':
+            inner = db_logo(int(size * DB_SAFE), ratio=DB_GLYPH, tile=False)
+            canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+            off = (size - inner.size[0]) // 2
+            canvas.alpha_composite(db_silhouette(inner), (off, off))
+            return canvas
+        if variant == 'launch':
+            return db_logo(size, ratio=DB_GLYPH_LAUNCH, tile=False)
+        if variant in ('ios', 'store'):
+            return db_logo(size, ratio=DB_GLYPH).convert('RGB')
+        raise SystemExit(f'不认识的 variant: {variant}')
+    # ── classic（volt 方向）—— 原样保留 ──
+    if variant == 'legacy':
+        return legacy_icon(size, alt)
+    if variant == 'round':
+        return round_icon(size, alt)
+    if variant == 'adaptive':
+        return adaptive_foreground(size, alt)
+    if variant == 'mono':
+        return monochrome(size)
+    if variant == 'launch':
+        return launch_glyph(size, alt)
+    if variant == 'ios':
+        return ios_icon(size, alt)
+    if variant == 'store':
+        return store_icon(size, alt)
+    raise SystemExit(f'不认识的 variant: {variant}')
+
+
+def bg_color(logo):
+    """自适应图标的背景层颜色（写进 ic_launcher_colors.xml）。"""
+    return DB_TILE if logo == 'dumbbell' else VOLT
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--alt', action='store_true', help='方向 B：深底 + volt 字')
+    ap.add_argument('--logo', choices=('classic', 'dumbbell'), default='dumbbell',
+                    help='图标方向：dumbbell（默认：深底 + 「练」 + 哑铃）｜classic（volt 底）')
+    ap.add_argument('--scheme', choices=tuple(DB_SCHEMES), default='volt',
+                    help='dumbbell 的配色：volt（默认，品牌绿哑铃）｜ember（橙，设计稿）｜'
+                         'allvolt（全绿）｜inverse（绿底墨物）')
+    ap.add_argument('--alt', action='store_true', help='仅 classic：方向 B（深底 + volt 字）')
     ap.add_argument('--preview', action='store_true', help='只出预览到 /tmp，不写仓库')
     args = ap.parse_args()
 
     if args.preview:
         out = '/tmp/icon-preview'
         os.makedirs(out, exist_ok=True)
-        for tag, alt in (('A-volt', False), ('B-dark', True)):
-            legacy_icon(192, alt).save(f'{out}/{tag}-192.png')
-            legacy_icon(48, alt).save(f'{out}/{tag}-48.png')
-            store_icon(512, alt).save(f'{out}/{tag}-512.png')
-        print(f'预览写到 {out}/')
+        # 参考项：A（现状）· B（classic 深底）
+        for tag, logo, alt in (('A-volt', 'classic', False), ('B-dark', 'classic', True)):
+            for size in (48, 192, 512):
+                render('legacy', size, alt, logo).save(f'{out}/{tag}-{size}.png')
+            render('store', 1024, alt, logo).save(f'{out}/{tag}-1024.png')
+        # 哑铃方向的四种配色，同一套几何只换颜色
+        for name in DB_SCHEMES:
+            set_scheme(name)
+            for size in (48, 192, 512):
+                render('legacy', size, False, 'dumbbell').save(f'{out}/C-{name}-{size}.png')
+            render('store', 1024, False, 'dumbbell').save(f'{out}/C-{name}-1024.png')
+        set_scheme(args.scheme)
+        print(f'预览写到 {out}/（classic 参考 2 版 + 哑铃 4 配色 × 48/192/512/1024）')
         return
+
+    logo, alt = args.logo, args.alt
+    if logo == 'dumbbell':
+        set_scheme(args.scheme)
 
     for d, size in LEGACY.items():
         p = os.path.join(RES, f'mipmap-{d}')
         os.makedirs(p, exist_ok=True)
-        legacy_icon(size, args.alt).save(os.path.join(p, 'ic_launcher.png'))
-        round_icon(size, args.alt).save(os.path.join(p, 'ic_launcher_round.png'))
-        # ⚠️ 自适应图层**必须**用 ADAPTIVE 尺寸，不是传统图标的尺寸。
-        # 系统把前景位图当作 108dp × 108dp 来缩放的：如果这里塞 48dp 的图，
-        # 系统会放大 2.25 倍 —— 版式没错，但高密度屏上明显发虚。
-        # （第一版就是这么写错的：定义了 ADAPTIVE 却没用上，自查时才发现。）
+        render('legacy', size, alt, logo).save(os.path.join(p, 'ic_launcher.png'))
+        render('round', size, alt, logo).save(os.path.join(p, 'ic_launcher_round.png'))
         a_size = ADAPTIVE[d]
-        adaptive_foreground(a_size, args.alt).save(os.path.join(p, 'ic_launcher_foreground.png'))
-        monochrome(a_size).save(os.path.join(p, 'ic_launcher_monochrome.png'))
+        render('adaptive', a_size, alt, logo).save(os.path.join(p, 'ic_launcher_foreground.png'))
+        render('mono', a_size, alt, logo).save(os.path.join(p, 'ic_launcher_monochrome.png'))
         print(f'  mipmap-{d}: 传统 {size}px + 圆形 · 自适应前景 {a_size}px · 主题剪影 {a_size}px')
 
-    # 自适应图标的描述文件（Android 8+ 走这条）
     anydpi = os.path.join(RES, 'mipmap-anydpi-v26')
     os.makedirs(anydpi, exist_ok=True)
-    with open(os.path.join(anydpi, 'ic_launcher.xml'), 'w', encoding='utf-8') as f:
-        f.write('<?xml version="1.0" encoding="utf-8"?>\n'
-                '<!-- 由 tool/gen-icons.py 生成，别手改 -->\n'
-                '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
-                '    <background android:drawable="@color/ic_launcher_background" />\n'
-                '    <foreground android:drawable="@mipmap/ic_launcher_foreground" />\n'
-                '    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />\n'
-                '</adaptive-icon>\n')
-    # 圆形图标：API 26+ 走这份自适应描述，API 24/25 走上面那些 ic_launcher_round.png
-    with open(os.path.join(anydpi, 'ic_launcher_round.xml'), 'w', encoding='utf-8') as f:
-        f.write('<?xml version="1.0" encoding="utf-8"?>\n'
-                '<!-- 由 tool/gen-icons.py 生成，别手改 -->\n'
-                '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
-                '    <background android:drawable="@color/ic_launcher_background" />\n'
-                '    <foreground android:drawable="@mipmap/ic_launcher_foreground" />\n'
-                '    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />\n'
-                '</adaptive-icon>\n')
+    for name in ('ic_launcher.xml', 'ic_launcher_round.xml'):
+        with open(os.path.join(anydpi, name), 'w', encoding='utf-8') as f:
+            f.write('<?xml version="1.0" encoding="utf-8"?>\n'
+                    '<!-- 由 tool/gen-icons.py 生成，别手改 -->\n'
+                    '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+                    '    <background android:drawable="@color/ic_launcher_background" />\n'
+                    '    <foreground android:drawable="@mipmap/ic_launcher_foreground" />\n'
+                    '    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />\n'
+                    '</adaptive-icon>\n')
 
     colors = os.path.join(RES, 'values/ic_launcher_colors.xml')
+    c = bg_color(logo)
     with open(colors, 'w', encoding='utf-8') as f:
         f.write('<?xml version="1.0" encoding="utf-8"?>\n'
                 '<!-- 由 tool/gen-icons.py 生成：自适应图标的背景层用纯色，不占体积 -->\n'
                 '<resources>\n'
-                f'    <color name="ic_launcher_background">#{VOLT[0]:02X}{VOLT[1]:02X}{VOLT[2]:02X}</color>\n'
+                f'    <color name="ic_launcher_background">#{c[0]:02X}{c[1]:02X}{c[2]:02X}</color>\n'
                 '</resources>\n')
 
-    # ── iOS：19 个尺寸 + 启动屏的 LaunchImage ──
     ios_dir = os.path.join(ROOT, 'app/ios/Runner/Assets.xcassets/AppIcon.appiconset')
     if os.path.isdir(ios_dir):
         for name, size in IOS_ICONS:
-            ios_icon(size, args.alt).save(os.path.join(ios_dir, name))
+            render('ios', size, alt, logo).save(os.path.join(ios_dir, name))
         print(f'  iOS AppIcon：{len(IOS_ICONS)} 个尺寸（满幅不透明，系统自己裁圆角）')
 
-        # 启动屏：和 Android 一样，深底 + 居中的 volt「练」。
-        # iOS 的 LaunchImage 是三张不同倍率的图，画布留白由 storyboard 的
-        # contentMode=center 负责，所以这里给足四周留白。
         launch_dir = os.path.join(ROOT, 'app/ios/Runner/Assets.xcassets/LaunchImage.imageset')
         if os.path.isdir(launch_dir):
             for name, size in (('LaunchImage.png', 96), ('LaunchImage@2x.png', 192),
                                ('LaunchImage@3x.png', 288)):
                 canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-                canvas.alpha_composite(glyph_layer(size, VOLT, 0.72))
+                canvas.alpha_composite(render('launch', size, alt, logo))
                 canvas.save(os.path.join(launch_dir, name))
-            print('  iOS 启动图：LaunchImage @1x/@2x/@3x（透明底 + volt「练」）')
+            print('  iOS 启动图：LaunchImage @1x/@2x/@3x（透明底）')
 
     nodpi = os.path.join(RES, 'drawable-nodpi')
     os.makedirs(nodpi, exist_ok=True)
-    launch_glyph(288, args.alt).save(os.path.join(nodpi, 'launch_glyph.png'))
-    print('  drawable-nodpi/launch_glyph.png（启动页中央的字）')
+    render('launch', 288, alt, logo).save(os.path.join(nodpi, 'launch_glyph.png'))
+    print('  drawable-nodpi/launch_glyph.png（启动页中央的图案）')
 
-    # ⚠️ 写这里、**不是 dist/**：dist/ 是构建产物（gitignore），
-    # 而商店图标是**要交给商店的交付物**，必须入库 —— 第一版写进 dist/，
-    # clean 跑道上 asset-check 立刻红，才发现这个错。
     store = os.path.join(ROOT, 'store-assets')
     os.makedirs(store, exist_ok=True)
-    store_icon(512, args.alt).save(os.path.join(store, 'icon-512.png'))
-    store_icon(1024, args.alt).save(os.path.join(store, 'icon-1024.png'))
+    render('store', 512, alt, logo).save(os.path.join(store, 'icon-512.png'))
+    render('store', 1024, alt, logo).save(os.path.join(store, 'icon-1024.png'))
     print('  商店图标：store-assets/icon-512.png（512×512，无透明）+ icon-1024.png')
-    print(f'方向：{"B（深底 + volt 字）" if args.alt else "A（volt 底 + 墨色字）"}')
+    print(f'方向：{"C（哑铃 · " + args.scheme + "）" if logo == "dumbbell" else ("B（深底 + volt 字）" if alt else "A（volt 底 + 墨色字）")}')
 
 
 if __name__ == '__main__':

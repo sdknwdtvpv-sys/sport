@@ -88,17 +88,24 @@ class DriftLocalStore implements LocalStore {
     // 领域模型 `Workout` 目前只有 id / startedAtMs / sets，没有 status。
     // 先把容量与组数物化进去，status 固定 in_progress；
     // 等 S7「训练结束总结」落地时领域模型会补上 status 与 endedAt。
+    // ⚠️ **必须用 Companion + `Value(...)`，不能用 DataClass**（2026-10-04 踩到）：
+    // drift 对 DataClass 是 **nullToAbsent** —— 传 `note: null` 是"这一列不改"，
+    // 于是"把笔记清空"这个动作**静默失效**（写进去能读出来，清掉却还是旧值）。
+    // 这条教训 `ROADMAP.md` 的清单里本来就有（`SetRecordData.isPr` /
+    // `UserProfileData.unitPref` 各踩过一次），这次是第三次 —— 所以这里的坑要写全。
     await _db.into(_db.workout).insertOnConflictUpdate(
-          WorkoutData(
-            id: w.id,
+          WorkoutCompanion(
+            id: Value<String>(w.id),
             // 结束时间与状态都要回写，否则 S7 之后再来一组就会把结束时间抹掉
-            status: w.isFinished ? 'finished' : 'in_progress',
-            startedAt: w.startedAtMs,
-            endedAt: w.endedAtMs,
-            totalVolume: w.totalVolume,
-            totalSets: w.totalSets,
-            createdAt: w.startedAtMs,
-            updatedAt: w.endedAtMs ?? w.startedAtMs,
+            status: Value<String>(w.isFinished ? 'finished' : 'in_progress'),
+            startedAt: Value<int>(w.startedAtMs),
+            endedAt: Value<int?>(w.endedAtMs),
+            totalVolume: Value<double>(w.totalVolume),
+            totalSets: Value<int>(w.totalSets),
+            // note 要用 Value 包起来：`Value<String?>(null)` = **显式清空**（这才是"清笔记"）
+            note: Value<String?>(w.note),
+            createdAt: Value<int>(w.startedAtMs),
+            updatedAt: Value<int>(w.endedAtMs ?? w.startedAtMs),
           ),
         );
   }
@@ -114,6 +121,7 @@ class DriftLocalStore implements LocalStore {
       id: row.id,
       startedAtMs: row.startedAt,
       endedAtMs: row.endedAt,
+      note: row.note,
     )..sets.addAll(sets);
   }
 
@@ -206,6 +214,34 @@ class DriftLocalStore implements LocalStore {
   }
 
   @override
+  Future<List<String>> pinnedExerciseIds() async {
+    // 按 position 取（不是按插入时间）—— 这个顺序是**用户看得见的顺序**
+    final rows = await (_db.select(_db.pinnedExercise)
+          ..orderBy([(t) => OrderingTerm.asc(t.position)]))
+        .get();
+    return rows.map((PinnedExerciseData r) => r.exerciseId).toList();
+  }
+
+  @override
+  Future<void> setPinnedExerciseIds(List<String> ids) async {
+    // 整体替换放进一个事务：中途失败不会留下"置顶了一半"的清单
+    // （用户看得见的顺序出错，比操作失败更难解释）。
+    await _db.transaction(() async {
+      await _db.delete(_db.pinnedExercise).go();
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      for (int i = 0; i < ids.length; i++) {
+        await _db.into(_db.pinnedExercise).insert(
+              PinnedExerciseCompanion.insert(
+                exerciseId: ids[i],
+                position: i,
+                createdAt: now,
+              ),
+            );
+      }
+    });
+  }
+
+  @override
   Future<domain.LastSession?> lastSessionFor(
     String exerciseId, {
     String? excludeWorkoutId,
@@ -251,6 +287,41 @@ class DriftLocalStore implements LocalStore {
         rpe: row.rpe,
       );
 
+  /// **回收站**：软删除过的组，最近删的在前。
+  ///
+  /// 2026-10-04 补的出口 —— 在此之前 `deleteSet` 只写 `deletedAt`，
+  /// 而**全仓没有任何地方读它**：长按撤销之后那组就永远取不回来了。
+  @override
+  Future<List<domain.DeletedSet>> deletedSets({int limit = 200}) async {
+    final List<SetRecordData> rows = await (_db.select(_db.setRecord)
+          ..where((t) => t.deletedAt.isNotNull())
+          ..orderBy(<OrderingTerm Function($SetRecordTable)>[
+            (t) => OrderingTerm.desc(t.deletedAt),
+          ])
+          ..limit(limit))
+        .get();
+    return rows
+        .map((SetRecordData r) => domain.DeletedSet(
+              set: _toDomain(r),
+              deletedAtMs: r.deletedAt ?? 0,
+            ))
+        .toList();
+  }
+
+  /// 从回收站恢复一组。
+  ///
+  /// ⚠️ **必须用 Companion + `Value(null)`**：drift 对 DataClass 是 `nullToAbsent`，
+  /// 直接把 `null` 塞进 `write()` 是"这一列不改"，而不是"清空"。
+  /// （这个坑本项目踩过两次，`ROADMAP.md` 的教训清单里记着。）
+  @override
+  Future<void> restoreSet(String id) async {
+    await (_db.update(_db.setRecord)..where((t) => t.id.equals(id)))
+        .write(SetRecordCompanion(
+      deletedAt: const Value<int?>(null),
+      updatedAt: Value<int>(DateTime.now().millisecondsSinceEpoch),
+    ));
+  }
+
   @override
   Future<void> deleteAllUserData() async {
     // 整个清空放进一个事务：中途失败就整体回滚，不会留下"训练没了但组还在"的
@@ -263,6 +334,11 @@ class DriftLocalStore implements LocalStore {
       // 用户说"删除全部数据"，这条也必须走 —— 否则下次冷启动还会弹出
       // 「上次的训练还没结束」，而那次训练的数据已经被删光了（自相矛盾的界面）。
       await _db.delete(_db.activeSessionRow).go();
+      // 动作置顶也是用户数据（他钉住的那几个动作）。新加表最容易漏掉这一步，
+      // 所以 test/delete_all_test.dart 有一份**表清单守门**：出现新表就要去改那里。
+      await _db.delete(_db.pinnedExercise).go();
+      // 训练提醒也是用户设置（他自己选的开关与时间）
+      await _db.delete(_db.reminderSetting).go();
       await _db.delete(_db.setRecord).go();
       await _db.delete(_db.workoutItem).go();
       await _db.delete(_db.workout).go();

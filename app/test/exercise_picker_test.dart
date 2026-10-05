@@ -298,6 +298,79 @@ void main() {
         reason: '只应出现一次：在「最近做过」里');
   });
 
+  // ---------- 置顶（2026-10-04，用户自己钉住"我就是要练这几个"）----------
+
+  testWidgets('★ 置顶区排在最前，且那个动作不会在别的区里再出现一次',
+      (WidgetTester tester) async {
+    // ex_bb_squat 的 popularity 也是 100 —— 不去重的话它会同时出现在置顶与常用里
+    final LocalStore store = DriftLocalStore(db);
+    await store.setPinnedExerciseIds(<String>['ex_bb_squat']);
+    await pumpPicker(tester, store: store);
+
+    expect(find.text('置顶'), findsOneWidget);
+    expect(find.byKey(const Key('exercise-ex_bb_squat')), findsOneWidget,
+        reason: '只应出现一次：在「置顶」里');
+  });
+
+  testWidgets('★ 置顶的动作**又刚练过**时，整屏只出现一次（真机抓到的漏网）',
+      (WidgetTester tester) async {
+    // 2026-10-04 真机上发现的：只过滤了「常用 / 全部」，漏了「最近做过」——
+    // 而真机上"刚练过的"与"被置顶的"恰好是同一个动作，于是同一屏出现两次。
+    // 这条测试的夹具必须是**同一个动作既最近做过、又被置顶**，否则盖不住这个 bug。
+    final LocalStore store = await storeWithRecent('ex_bb_squat');
+    await store.setPinnedExerciseIds(<String>['ex_bb_squat']);
+    await pumpPicker(tester, store: store);
+
+    expect(find.text('置顶'), findsOneWidget);
+    expect(find.byKey(const Key('exercise-ex_bb_squat')), findsOneWidget,
+        reason: '置顶 + 最近做过 = 同一个动作，整屏只该出现一次');
+  });
+
+  testWidgets('★ 点星标真的置顶（写进库里，不是只改界面）', (WidgetTester tester) async {
+    final LocalStore store = DriftLocalStore(db);
+    await pumpPicker(tester, store: store);
+    expect(await store.pinnedExerciseIds(), isEmpty);
+
+    await tester.tap(find.byKey(const Key('pin-ex_bb_squat')));
+    await tester.pumpAndSettle();
+
+    expect(await store.pinnedExerciseIds(), <String>['ex_bb_squat'],
+        reason: '落库才算数 —— 冷启动之后它还得在');
+    expect(find.text('置顶'), findsOneWidget);
+  });
+
+  testWidgets('★ 再点一次取消置顶（置顶不是单向的）', (WidgetTester tester) async {
+    final LocalStore store = DriftLocalStore(db);
+    await store.setPinnedExerciseIds(<String>['ex_bb_squat']);
+    await pumpPicker(tester, store: store);
+
+    await tester.tap(find.byKey(const Key('pin-ex_bb_squat')));
+    await tester.pumpAndSettle();
+
+    expect(await store.pinnedExerciseIds(), isEmpty);
+    expect(find.text('置顶'), findsNothing);
+  });
+
+  testWidgets('置顶的动作被删掉后，静默跳过（不显示点不动的行）',
+      (WidgetTester tester) async {
+    final LocalStore store = DriftLocalStore(db);
+    // 一个**不在库里**的 id：自定义动作被删之后就会留下这种脏数据
+    await store.setPinnedExerciseIds(<String>['ex_已经不存在了']);
+    await pumpPicker(tester, store: store);
+
+    expect(find.text('置顶'), findsNothing,
+        reason: '一个都不剩就别显示空的分区标题');
+    expect(find.byKey(const Key('picker-list')), findsOneWidget,
+        reason: '页面本身要照常能用');
+  });
+
+  testWidgets('不传 store 时没有星标（点了没地方存，就别给这个按钮）',
+      (WidgetTester tester) async {
+    await pumpPicker(tester);
+
+    expect(find.byKey(const Key('pin-ex_bb_squat')), findsNothing);
+  });
+
   testWidgets('没有历史时不显示「最近做过」区，但「常用」照常', (WidgetTester tester) async {
     final LocalStore store = DriftLocalStore(db); // 空库，没有任何训练记录
     await pumpPicker(tester, store: store);

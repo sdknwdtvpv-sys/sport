@@ -284,7 +284,7 @@ void main() {
       final ExerciseData e = await pick('ex_goblet_squat');
       await pump(tester, e);
       expect(find.byKey(const Key('detail-no-history')), findsOneWidget);
-      expect(find.textContaining('今天可以是第一次'), findsOneWidget);
+      expect(find.textContaining('这个动作你还没练过'), findsOneWidget);
     });
 
     testWidgets('练过之后：显示历史最好、总组数与"最近几次"', (WidgetTester tester) async {

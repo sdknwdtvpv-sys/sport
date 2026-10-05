@@ -8,8 +8,10 @@
 /// 属于另一块工作，不该塞进这一屏顺手做。
 library;
 
+import '../../core/labels.dart';
 import '../../core/units.dart';
 import '../../domain/models.dart';
+import '../../domain/progression.dart';
 
 class DailyVolume {
   const DailyVolume({required this.day, required this.volumeKg});
@@ -29,6 +31,7 @@ class ExercisePr {
     this.weightKg,
     this.unit = WeightUnit.kg,
     this.isTime = false,
+    this.oneRm,
   });
 
   /// 按时长动作（平板支撑）：这个数字是**秒**不是次数。
@@ -44,6 +47,13 @@ class ExercisePr {
   final int reps;
 
   bool get isBodyweight => weightKg == null;
+
+  /// **预估 1RM**（2026-10-04 加进 PR 墙）。
+  ///
+  /// 全榜取**所有组里估算值最大**的那一条 —— 它常常不是"最重那一组"
+  /// （80 kg × 3 估出来比 82.5 kg × 1 高）。null = 这条动作算不出 1RM：
+  /// 自重 / 按时长 / 或者次数超过 12（`estimate1RM` 在高次数下不可信，会误导）。
+  final double? oneRm;
 
   /// 排序与展示用的单一数值：有重量比重量，自重比次数
   double get value => isBodyweight ? reps.toDouble() : (weightKg ?? 0);
@@ -62,6 +72,7 @@ class ProgressData {
     required this.prs,
     required this.weekWorkouts,
     this.unit = WeightUnit.kg,
+    this.weekSetsByMuscle = const <({String muscleGroup, int sets})>[],
   });
 
   /// 最近 7 天（含今天），没练的那天是 0
@@ -74,6 +85,12 @@ class ProgressData {
   final int weekWorkouts;
 
   final WeightUnit unit;
+
+  /// 本周**每个部位**练了几组（2026-10-04 加，进步页那一行）。
+  ///
+  /// 顺序固定（胸背腿肩臂核心），**没练的部位也在里面**（sets = 0）——
+  /// "这周腿 0 组"恰恰是最该被看见的一句话。
+  final List<({String muscleGroup, int sets})> weekSetsByMuscle;
 
   bool get isEmpty => prs.isEmpty;
 
@@ -169,8 +186,13 @@ List<ExercisePr> personalBests({
       ));
     } else {
       SetRecord best = list.first;
+      double? best1Rm;
       for (final SetRecord s in list) {
         if ((s.weightKg ?? 0) > (best.weightKg ?? 0)) best = s;
+        // 1RM 要**逐组估**再取最大：它常常不是"最重那一组"
+        // （80 kg × 3 估出来比 82.5 kg × 1 高）。与 all_data.dart 同一口径。
+        final double? e = estimate1RM(s.weightKg, s.reps);
+        if (e != null && (best1Rm == null || e > best1Rm)) best1Rm = e;
       }
       out.add(ExercisePr(
         exerciseId: id,
@@ -178,6 +200,7 @@ List<ExercisePr> personalBests({
         reps: best.reps,
         weightKg: best.weightKg,
         unit: unit,
+        oneRm: best1Rm,
       ));
     }
   });
@@ -190,6 +213,40 @@ List<ExercisePr> personalBests({
   return out;
 }
 
+/// **本周每个部位练了几组**（2026-10-04 加，进步页那一行）。
+///
+/// **为什么要有它**：循证区间是「每块肌肉每周 **12–20 组**」——
+/// Baz-Valle 2022 系统综述+元分析的结论（中等 12–20 与高容量 >20 在股四头肌 p=0.19、
+/// 肱二头肌 p=0.59 上**没有差异**）；下限门槛「> 9 组/周」见 Schoenfeld 2017 元分析。
+/// 而这个数用户**看不见** —— 目标看不见就等于不存在。
+///
+/// 顺序固定用 `kPrimaryMuscleGroups`（胸背腿肩臂核心），**没练的部位也在表里**（0 组）。
+///
+/// ⚠️ **只按主肌群算**：卧推的组只记进"胸"，尽管它同时喂了三头与前束。
+/// 复合动作的间接量我们没有折算 —— 已知的简化，写在 `docs/feature-backlog.md`。
+List<({String muscleGroup, int sets})> weeklySetsByMuscle({
+  required List<SetRecord> sets,
+  required Map<String, String> muscleOf,
+  required DateTime today,
+}) {
+  final DateTime first = startOfDay(today).subtract(const Duration(days: 6));
+  final DateTime end = startOfDay(today).add(const Duration(days: 1));
+  final Map<String, int> count = <String, int>{
+    for (final String g in kPrimaryMuscleGroups) g: 0,
+  };
+  for (final SetRecord s in sets) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+    // 上界与 lastSevenDays/weekWorkoutCount 同一个口径：未来时间的记录不算
+    if (t.isBefore(first) || !t.isBefore(end)) continue;
+    final String? g = muscleOf[s.exerciseId];
+    if (g == null || !count.containsKey(g)) continue;
+    count[g] = count[g]! + 1;
+  }
+  return <({String muscleGroup, int sets})>[
+    for (final String g in kPrimaryMuscleGroups) (muscleGroup: g, sets: count[g]!),
+  ];
+}
+
 /// 一次算好界面要用的全部数据
 ProgressData buildProgress({
   required List<SetRecord> sets,
@@ -200,6 +257,8 @@ ProgressData buildProgress({
   Set<String> timeExerciseIds = const <String>{},
   /// 记距离的动作 id 集合（有氧、农夫行走）—— 不进力量最佳榜。
   Set<String> distanceExerciseIds = const <String>{},
+  /// 动作 id → 主肌群。传了就一并算出"本周每部位组数"；缺省空表（老调用行为不变）。
+  Map<String, String> muscleOf = const <String, String>{},
 }) =>
     ProgressData(
       week: lastSevenDays(sets, today),
@@ -212,4 +271,8 @@ ProgressData buildProgress({
       ),
       weekWorkouts: weekWorkoutCount(sets, today),
       unit: unit,
+      weekSetsByMuscle: muscleOf.isEmpty
+          ? const <({String muscleGroup, int sets})>[]
+          : weeklySetsByMuscle(
+              sets: sets, muscleOf: muscleOf, today: today),
     );

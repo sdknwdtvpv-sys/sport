@@ -433,4 +433,40 @@ void main() {
       expect(s.distanceM, 4000);
     });
   });
+
+  // ─── 一句话笔记（2026-10-04）────────────────────────────────────────────
+  // 列 `workout.note` 从第一天起就在、`progress_screen` 也一直在显示它，
+  // 但**没有任何写入路径** —— 是个只读的死字段。训记的「训记备忘录」就是它。
+  group('一句话笔记', () {
+    test('写进去、读得出来、空字符串等于清掉', () async {
+      await logSets('w1', 'ex_bb_bench_press', <_S>[_S(60, 8)]);
+      expect((await service.build('w1'))!.note, isNull, reason: '本来没写');
+
+      await service.setNote('w1', '状态一般，肩膀有点紧');
+      expect((await service.build('w1'))!.note, '状态一般，肩膀有点紧');
+
+      await service.setNote('w1', '   ');
+      expect((await service.build('w1'))!.note, isNull,
+          reason: '清空之后不该留一个空白字符串（界面会显示一行空的）');
+    });
+
+    test('★ 笔记不会被后续的 saveWorkout 抹掉（整行 upsert 的陷阱）', () async {
+      // saveWorkout 是**整行 upsert**：以前它压根不带 note 这一列，
+      // 于是任何一次保存都会把用户写的那句话覆盖成 NULL。
+      // 这条就是钉那个陷阱 —— 写笔记之后再存一次 workout，笔记必须还在。
+      await logSets('w1', 'ex_bb_bench_press', <_S>[_S(60, 8)]);
+      await service.setNote('w1', '今天加了 2.5kg');
+
+      final Workout? w = await store.loadWorkout('w1');
+      await store.saveWorkout(w!); // 再存一遍（真实场景：又记了一组）
+
+      expect((await store.loadWorkout('w1'))!.note, '今天加了 2.5kg');
+      expect((await service.build('w1'))!.note, '今天加了 2.5kg');
+    });
+
+    test('写不存在的训练不炸', () async {
+      await service.setNote('没这个 id', '随便写点');
+      expect(await store.loadWorkout('没这个 id'), isNull);
+    });
+  });
 }

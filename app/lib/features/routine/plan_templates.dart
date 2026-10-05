@@ -16,12 +16,13 @@ library;
 
 import '../../domain/models.dart';
 
-/// 一套内置模板：名字 + 一句人话说明 + 动作清单。
+/// 一套内置模板：名字 + 一句人话说明 + 一眼标签 + 动作清单。
 class PlanTemplate {
   const PlanTemplate({
     required this.id,
     required this.name,
     required this.note,
+    required this.tags,
     required this.items,
   });
 
@@ -33,8 +34,38 @@ class PlanTemplate {
   /// 一句话说明（界面上副标题那一行，也是"它适合谁"的答案）
   final String note;
 
+  /// **一眼选中的标签**（2026-10-04 加）。1–2 个，必须短到能在名字旁边一行放下。
+  ///
+  /// 为什么加：5 套模板的名字只说得清"练什么"，说不清**要不要器械**——
+  /// 而"我家里只有一对哑铃"正是选模板时最容易踩空的那一步。
+  /// 所以器械类标签是这一维的答案，且**它是一句可以被核对的话**：
+  /// 词表与核对规则见 [kTemplateTagEquipment]，由 `plan_templates_test.dart`
+  /// 逐套对着每个动作的真实 `equipment` 核（写错就当红）。
+  final List<String> tags;
+
   final List<PlanTemplateItem> items;
 }
+
+/// 标签词表 —— **器械类**：标签 → "这套模板里所有动作都能用这些器械做"。
+///
+/// 判据是**包含**：模板里每个动作的 `equipment` 必须落在标签允许的集合里。
+/// 为什么较真到这一步：本文件的 `quick_30` 原先写着"一对哑铃 + 俯卧撑"，
+/// 而它第 3 个动作是**高位下拉（cable）** —— 在家只有一对哑铃的人会卡在那儿。
+/// 标签与那句说明是同一类承诺，所以它必须是被测试钉住的话，不是随手填的词。
+const Map<String, Set<String>> kTemplateTagEquipment = <String, Set<String>>{
+  '杠铃': <String>{'barbell', 'bodyweight'},
+  '杠铃+哑铃': <String>{'barbell', 'dumbbell', 'bodyweight'},
+  '杠铃+哑铃+器械': <String>{'barbell', 'dumbbell', 'bodyweight', 'cable', 'machine'},
+  '哑铃+器械': <String>{'dumbbell', 'bodyweight', 'cable', 'machine'},
+};
+
+/// **场景类**标签：不带器械承诺（写了"新手"不等于"新手一定有杠铃"）。
+const Set<String> kTemplateTagScenes = <String>{
+  '第一次去',
+  '一周 2 次',
+  '分化日',
+  '20 分钟',
+};
 
 /// 模板里的一个动作：练哪个 + 什么处方。
 class PlanTemplateItem {
@@ -59,6 +90,7 @@ const List<PlanTemplate> kPlanTemplates = <PlanTemplate>[
     id: 'full_body_starter',
     name: '全身入门',
     note: '第一次进健身房就用这套：三个大动作，每个 3 组',
+    tags: <String>['第一次去', '杠铃'],
     items: <PlanTemplateItem>[
       PlanTemplateItem(exerciseId: 'ex_bb_squat', sets: 3, repsLow: 5, repsHigh: 8),
       PlanTemplateItem(exerciseId: 'ex_bb_bench_press', sets: 3, repsLow: 8, repsHigh: 12),
@@ -69,6 +101,7 @@ const List<PlanTemplate> kPlanTemplates = <PlanTemplate>[
     id: 'upper_lower_lower',
     name: '上下肢 A · 下肢',
     note: '能一周练两次以上时用：腿 + 核心，深蹲打头',
+    tags: <String>['一周 2 次', '杠铃'],
     items: <PlanTemplateItem>[
       PlanTemplateItem(exerciseId: 'ex_bb_squat', sets: 4, repsLow: 5, repsHigh: 8),
       PlanTemplateItem(exerciseId: 'ex_rdl', sets: 3, repsLow: 8, repsHigh: 12),
@@ -80,6 +113,7 @@ const List<PlanTemplate> kPlanTemplates = <PlanTemplate>[
     id: 'push_day',
     name: '推日',
     note: '分化训练的第一天：胸 / 肩 / 三头',
+    tags: <String>['分化日', '杠铃+哑铃'],
     items: <PlanTemplateItem>[
       PlanTemplateItem(exerciseId: 'ex_bb_bench_press', sets: 4, repsLow: 5, repsHigh: 8),
       PlanTemplateItem(exerciseId: 'ex_bb_incline_bench_press', sets: 3, repsLow: 8, repsHigh: 12),
@@ -91,6 +125,7 @@ const List<PlanTemplate> kPlanTemplates = <PlanTemplate>[
     id: 'pull_day',
     name: '拉日',
     note: '分化训练的第二天：背 / 二头',
+    tags: <String>['分化日', '杠铃+哑铃+器械'],
     items: <PlanTemplateItem>[
       PlanTemplateItem(exerciseId: 'ex_deadlift', sets: 3, repsLow: 5, repsHigh: 5),
       PlanTemplateItem(exerciseId: 'ex_pull_up', sets: 3, repsLow: 5, repsHigh: 10),
@@ -101,7 +136,11 @@ const List<PlanTemplate> kPlanTemplates = <PlanTemplate>[
   PlanTemplate(
     id: 'quick_30',
     name: '30 分钟全身',
-    note: '时间紧的时候用：一对哑铃 + 俯卧撑，20 分钟能走完',
+    // ⚠️ 原话是"一对哑铃 + 俯卧撑"，而这套里第 3 个动作是**高位下拉（cable）**——
+    // 在家只有哑铃的人会卡住。装备要求改由 tags（'哑铃+器械'）如实说，
+    // 这句只讲"什么时候用"。（2026-10-04 核每个动作的 equipment 时发现。）
+    note: '时间紧的时候用：动作少、不折腾，20 分钟能走完',
+    tags: <String>['20 分钟', '哑铃+器械'],
     items: <PlanTemplateItem>[
       PlanTemplateItem(exerciseId: 'ex_goblet_squat', sets: 3, repsLow: 10, repsHigh: 15),
       PlanTemplateItem(exerciseId: 'ex_db_bench_press', sets: 3, repsLow: 8, repsHigh: 12),

@@ -71,14 +71,14 @@ void main() {
     return result;
   }
 
-  testWidgets('显示"今天练 胸"和 3 条建议', (WidgetTester tester) async {
+  testWidgets('显示"今天练 上肢"和第一次的 4 条建议', (WidgetTester tester) async {
     await pumpCard(tester);
 
     expect(find.byKey(const Key('today-title')), findsOneWidget);
     expect(
       tester.widget<Text>(find.byKey(const Key('today-title'))).data,
-      '今天练 胸',
-      reason: '没练过任何动作时，轮转从胸开始',
+      '今天练 上肢',
+      reason: '2026-10-04 起不再是"6 部位轮转"，而是上下肢交替；没练过 → 上肢',
     );
 
     // 三条建议，每条都有动作名和加载值
@@ -116,9 +116,16 @@ void main() {
 
     expect(result, isNotNull);
     expect(result!.choice, TodayChoice.startPlanned);
-    expect(result.plan.length, 3);
-    expect(result.plan.every((PlannedExercise p) => p.exercise.muscleGroup == 'chest'),
-        isTrue);
+    // 第一次训练收成 4 个动作（12 组）—— 见 kFirstSessionExercises
+    expect(result.plan.length, kFirstSessionExercises);
+    expect(
+        result.plan
+            .map((PlannedExercise p) => p.exercise.muscleGroup)
+            .toSet()
+            .difference(<String>{'chest', 'back'})
+            .isEmpty,
+        isTrue,
+        reason: '上肢日只该出现上肢部位（第一次是 胸 3 + 背 1）');
   });
 
   testWidgets('点「我自己选」返回 pickMyself，不带计划', (WidgetTester tester) async {

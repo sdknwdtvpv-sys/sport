@@ -13,6 +13,7 @@ library;
 import 'package:flutter/material.dart';
 
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
+import '../../core/labels.dart';
 import '../../core/sparkline.dart';
 import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
@@ -130,6 +131,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
         unit: widget.unit,
         timeExerciseIds: timeIds,
         distanceExerciseIds: distanceIds,
+        // 本周每部位组数（2026-10-04）：顺手把 id → 主肌群也建好
+        muscleOf: <String, String>{
+          for (final ExerciseData r in rows) r.id: r.muscleGroup,
+        },
       );
       _latestWeight = weight;
       _loading = false;
@@ -276,6 +281,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
         else ...<Widget>[
           _weekCard(d),
           const SizedBox(height: Tokens.s5),
+          // 本周每部位组数（2026-10-04）：**并进 S8、不新开屏**。
+          // 它回答的是"我这周练均衡了吗"—— 这一屏原来只有容量/PR/体重三块，
+          // 而容量是"总量"，看不出哪块肌肉被漏掉了。
+          if (d.weekSetsByMuscle.isNotEmpty) _muscleCard(d),
+          const SizedBox(height: Tokens.s5),
           _sectionTitle('PR 墙'),
           _prCard(d),
         ],
@@ -287,6 +297,74 @@ class _ProgressScreenState extends State<ProgressScreen> {
           _weightCard(),
         ],
       ],
+    );
+  }
+
+  /// 本周每部位组数（2026-10-04）。
+  ///
+  /// **一行一个部位，横向铺开**，并标出与循证区间的关系：
+  /// 区间是「每块肌肉每周 12–20 组」（Baz-Valle 2022），所以
+  ///   * 0 组 → 灰字（这周没练）
+  ///   * 1–11 组 → 常规色（还没到区间）
+  ///   * 12–20 组 → **volt 高亮**（在区间里）
+  ///   * > 20 组 → 也高亮（超过 20 组研究上没更多收益，但不该说人家错了）
+  ///
+  /// ⚠️ 只按主肌群算（卧推只记进"胸"）—— 所以显示的数字**低估**协同肌群的量，
+  /// 这是已知简化，不在这里假装精确。
+  Widget _muscleCard(ProgressData d) {
+    return Container(
+      key: const Key('progress-muscles'),
+      padding: const EdgeInsets.all(Tokens.s5),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text('本周各部位组数',
+              style: TextStyle(color: Tokens.text3, fontSize: 13)),
+          const SizedBox(height: Tokens.s3),
+          Wrap(
+            spacing: Tokens.s3,
+            runSpacing: Tokens.s3,
+            children: <Widget>[
+              for (final ({String muscleGroup, int sets}) m in d.weekSetsByMuscle)
+                _muscleChip(m.muscleGroup, m.sets),
+            ],
+          ),
+          const SizedBox(height: Tokens.s3),
+          const Text('循证区间：每块肌肉每周 12–20 组',
+              style: TextStyle(color: Tokens.text3, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  Widget _muscleChip(String group, int sets) {
+    final bool inRange = sets >= 12;
+    return SizedBox(
+      width: 72,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(muscleLabel(group),
+              style: const TextStyle(color: Tokens.text2, fontSize: 13)),
+          const SizedBox(height: 2),
+          Text(
+            '$sets 组',
+            key: Key('muscle-$group'),
+            style: TextStyle(
+              color: sets == 0
+                  ? Tokens.text3
+                  : (inRange ? Tokens.volt : Tokens.text),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -362,9 +440,27 @@ class _ProgressScreenState extends State<ProgressScreen> {
               child: Row(
                 children: <Widget>[
                   Expanded(
-                    child: Text(
-                      d.prs[i].name,
-                      style: const TextStyle(color: Tokens.text, fontSize: 15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          d.prs[i].name,
+                          style: const TextStyle(color: Tokens.text, fontSize: 15),
+                        ),
+                        // 预估 1RM（2026-10-04）。**只在算得出来时显示** ——
+                        // 自重 / 按时长 / 次数超过 12 的动作没有可信的 1RM
+                        // （`estimate1RM` 在这些情况下返回 null，界面不留空行）。
+                        if (d.prs[i].oneRm != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              '预估 1RM ${formatWeight(d.prs[i].oneRm!, d.unit)}',
+                              key: Key('pr-1rm-${d.prs[i].exerciseId}'),
+                              style: const TextStyle(
+                                  color: Tokens.text3, fontSize: 12),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   Text(

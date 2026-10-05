@@ -23,7 +23,7 @@
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { docFiles } from './lib/docs.mjs';
+import { allDocFiles } from './lib/docs.mjs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,7 +67,7 @@ const TOKEN = /`([A-Za-z0-9_./\-\u4e00-\u9fff]+\.[A-Za-z0-9]{2,12})`/g;
 function inspect(root) {
   const problems = [];
   let checked = 0;
-  const docs = docFiles(root);
+  const docs = allDocFiles(root);
   const exists = (p) => {
     try { readFileSync(join(root, p)); return true; } catch { return false; }
   };
@@ -105,7 +105,7 @@ function inspect(root) {
 
 // ───────────────────────────────────────────────────────────── 自检
 function selftest() {
-  const makeTree = (docs) => {
+  const makeTree = (docs, rootDoc) => {
     const root = mkdtempSync(join(tmpdir(), 'lianleme-docpaths-'));
     mkdirSync(join(root, 'docs'), { recursive: true });
     mkdirSync(join(root, 'tool'), { recursive: true });
@@ -115,6 +115,7 @@ function selftest() {
     writeFileSync(join(root, 'app/lib/main.dart'), '// x');
     writeFileSync(join(root, 'README.md'), '# x\n');
     for (const [rel, text] of Object.entries(docs)) writeFileSync(join(root, rel), text);
+    if (rootDoc) writeFileSync(join(root, 'ROADMAP.md'), rootDoc);
     return root;
   };
   const cases = [
@@ -128,10 +129,15 @@ function selftest() {
     ['名单里的"不在仓库"引用不算（依赖内部/模拟器内部）', { 'docs/a.md': '见 `hook/build.dart` 与 `data/Media/x.png`\n' }, true, null],
     ['名单没有正当理由就跳过 —— 名单本身是公开的（不是任意路径都能侥幸通过）',
       { 'docs/a.md': '见 `some/random/gone.dart`\n' }, false, '找不到'],
+    // ★ 真实事故的回归：`ROADMAP.md` 里 `drift/native.dart` 指着依赖内部的文件
+    //   （正确写法是 `package:drift/native.dart`）。根目录文档当时不在扫描范围内，
+    //   所以这一处既没被发现、也没机会被纠正成更准确的写法。
+    ['根目录 ROADMAP.md 里的指空路径 → 必须报', { 'docs/a.md': '# a\n' }, false, '找不到',
+      '见 `tool/gone-in-roadmap.mjs`\n'],
   ];
   let bad = 0;
-  for (const [label, docs, wantGreen, expect] of cases) {
-    const root = makeTree(docs);
+  for (const [label, docs, wantGreen, expect, rootDoc] of cases) {
+    const root = makeTree(docs, rootDoc);
     const { problems } = inspect(root);
     const green = problems.length === 0;
     let ok = green === wantGreen;

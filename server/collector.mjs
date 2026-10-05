@@ -139,7 +139,11 @@ if (process.argv[1] && process.argv[1].endsWith('collector.mjs')) {
   const port = Number(argOf('--port', '8787'));
   const outDir = argOf('--out', join(ROOT, 'server/data'));
   const { server } = createCollector({ outDir });
-  server.listen(port, () => {
+  // ⚠️ **必须显式绑 127.0.0.1**（2026-10-04 真机上量到的）：只写 server.listen(port)
+  // 会绑到**所有网卡**（`ss` 里显示 `*:8790`）。那样安全边界就只剩云厂商安全组一道 ——
+  // 安全组一改、或同 VPC 里另一台机器，就能直连这两个服务；而文档与单元注释里
+  // 写的是「只监听本机、对外只有反代一个入口」。**声明与实现不一致就是 bug**，绑死环回。
+  server.listen(port, '127.0.0.1', () => {
     console.log(`✓ 埋点收集端在 http://127.0.0.1:${port}`);
     console.log(`  收：POST /v1/events   看：GET /healthz /stats`);
     console.log(`  落盘：${outDir}/events-YYYY-MM-DD.jsonl`);

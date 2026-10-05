@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/labels.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/body_metric_repository.dart';
@@ -195,6 +196,90 @@ void main() {
     });
   });
 
+  group('PR 墙的 1RM（2026-10-04）', () {
+    const Map<String, String> names = <String, String>{
+      'ex_bb_bench_press': '杠铃卧推',
+      'ex_pull_up': '引体向上',
+    };
+
+    test('★ 逐组估再取最大 —— 1RM 常常不是"最重那一组"', () {
+      final List<ExercisePr> prs = personalBests(
+        sets: <SetRecord>[
+          // 80 × 3 → Epley 88.0；82.5 × 1 → 85.25。最重的是后者，1RM 是前者。
+          _set(id: 'a', reps: 3, weightKg: 80, when: DateTime(2026, 9, 27, 10)),
+          _set(id: 'b', setIndex: 2, reps: 1, weightKg: 82.5, when: DateTime(2026, 9, 27, 10)),
+        ],
+        exerciseNames: names,
+      );
+
+      expect(prs.single.weightKg, 82.5, reason: '最大重量是 82.5');
+      expect(prs.single.oneRm, 88.0,
+          reason: '预估 1RM 要逐组估再取最大 —— 只看最重那组会低估成 85.25');
+    });
+
+    test('自重 / 次数超过 12 → 没有 1RM（界面据此不留空行）', () {
+      final List<ExercisePr> bw = personalBests(
+        sets: <SetRecord>[
+          _set(id: 'p', exerciseId: 'ex_pull_up', reps: 10, weightKg: null, when: DateTime(2026, 9, 27, 10)),
+        ],
+        exerciseNames: names,
+      );
+      expect(bw.single.oneRm, isNull, reason: '自重动作按次数比，没有公斤数的 1RM');
+
+      final List<ExercisePr> high = personalBests(
+        sets: <SetRecord>[
+          _set(id: 'h', reps: 20, weightKg: 40, when: DateTime(2026, 9, 27, 10)),
+        ],
+        exerciseNames: names,
+      );
+      expect(high.single.oneRm, isNull,
+          reason: '次数 > 12 时 Epley 不可信（原实现直接返回 null），界面不该编一个数');
+    });
+
+  });
+
+  group('本周各部位组数（2026-10-04）', () {
+    const Map<String, String> muscleOf = <String, String>{
+      'ex_bb_bench_press': 'chest',
+      'ex_bb_squat': 'legs',
+    };
+
+    test('只算最近 7 天；六个部位都在（没练的 0）', () {
+      final List<({String muscleGroup, int sets})> out = weeklySetsByMuscle(
+        sets: <SetRecord>[
+          _set(id: 'a', when: DateTime(2026, 9, 27, 10)),
+          // ⚠️ 窗口是 |today-6天| 起算，而 today = 9/27 → 9/21 是**边界那天（算）**。
+          // 第一版把它当成"窗口外"，于是胸算出了 2 组。窗口外要用 9/20。
+          _set(id: 'b', when: DateTime(2026, 9, 20, 10)),
+          _set(
+              id: 'c',
+              exerciseId: 'ex_bb_squat',
+              when: DateTime(2026, 9, 22, 10)), // 边界那天（含今天 7 天）→ 算
+        ],
+        muscleOf: muscleOf,
+        today: kToday,
+      );
+
+      expect(out.map((({String muscleGroup, int sets}) m) => m.muscleGroup).toList(),
+          kPrimaryMuscleGroups,
+          reason: '顺序固定，且六个部位一个不少');
+      expect(out.firstWhere((({String muscleGroup, int sets}) m) => m.muscleGroup == 'chest').sets, 1);
+      expect(out.firstWhere((({String muscleGroup, int sets}) m) => m.muscleGroup == 'legs').sets, 1);
+      expect(out.firstWhere((({String muscleGroup, int sets}) m) => m.muscleGroup == 'back').sets, 0);
+    });
+
+    test('动作不在映射里就不算（自定义动作不会凭空进某个部位）', () {
+      final List<({String muscleGroup, int sets})> out = weeklySetsByMuscle(
+        sets: <SetRecord>[
+          _set(id: 'x', exerciseId: 'ex_custom_thing', when: DateTime(2026, 9, 27, 10)),
+        ],
+        muscleOf: muscleOf,
+        today: kToday,
+      );
+      expect(out.fold<int>(0, (int a, ({String muscleGroup, int sets}) m) => a + m.sets), 0);
+    });
+  });
+
   group('界面', () {
     late AppDatabase db;
     late DriftLocalStore store;
@@ -251,6 +336,30 @@ void main() {
       expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsOneWidget);
       expect(find.text('杠铃卧推'), findsOneWidget);
       expect(find.text('60 kg'), findsOneWidget);
+      // 1RM（2026-10-04）：60 kg × 8 → Epley 76.0，摆在动作名下面
+      expect(find.byKey(const Key('pr-1rm-ex_bb_bench_press')), findsOneWidget);
+      expect(find.text('预估 1RM 76 kg'), findsOneWidget);
+    });
+
+    testWidgets('★ 本周各部位组数：摆出这一行，六个部位都在（2026-10-04）',
+        (WidgetTester tester) async {
+      // 胸 2 组 + 腿 1 组；背/肩/臂/核心没练 → 0
+      await store.saveSet(_set(id: 'a', when: DateTime(2026, 9, 27, 10)));
+      await store.saveSet(_set(id: 'b', setIndex: 2, when: DateTime(2026, 9, 27, 10)));
+      await store.saveSet(_set(
+          id: 'c',
+          exerciseId: 'ex_bb_squat',
+          when: DateTime(2026, 9, 26, 10)));
+      await pumpProgress(tester);
+
+      expect(find.byKey(const Key('progress-muscles')), findsOneWidget,
+          reason: '并进 S8、不新开屏 —— 这一块就在「进步」页上');
+      expect(tester.widget<Text>(find.byKey(const Key('muscle-chest'))).data, '2 组');
+      expect(tester.widget<Text>(find.byKey(const Key('muscle-legs'))).data, '1 组');
+      expect(tester.widget<Text>(find.byKey(const Key('muscle-back'))).data, '0 组',
+          reason: '没练的部位也要摆出来 —— "这周背 0 组"正是最该被看见的一句');
+      expect(find.textContaining('12–20 组'), findsOneWidget,
+          reason: '要写清循证区间，否则这些数字没有参照');
     });
 
     testWidgets('窗口外的记录不显示（本周为空但历史有记录）',

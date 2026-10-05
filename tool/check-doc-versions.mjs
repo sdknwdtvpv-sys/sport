@@ -23,7 +23,7 @@
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { docFiles, isHistorical } from './lib/docs.mjs';
+import { allDocFiles, isHistorical } from './lib/docs.mjs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,7 +56,7 @@ const PATTERNS = [
 function inspect(root) {
   const problems = [];
   const { version, build } = truth(root);
-  const docs = docFiles(root);
+  const docs = allDocFiles(root);
   let checked = 0;
   for (const rel of docs) {
     let text;
@@ -84,7 +84,7 @@ function inspect(root) {
 
 // ───────────────────────────────────────────────────────────── 自检
 function selftest() {
-  const makeTree = (doc) => {
+  const makeTree = (doc, rootDoc) => {
     const root = mkdtempSync(join(tmpdir(), 'lianleme-docver-'));
     mkdirSync(join(root, 'app/lib/core'), { recursive: true });
     mkdirSync(join(root, 'docs'), { recursive: true });
@@ -92,6 +92,7 @@ function selftest() {
     writeFileSync(join(root, 'app/pubspec.yaml'), 'version: 9.9.9+77\n');
     writeFileSync(join(root, 'README.md'), '# x\n');
     writeFileSync(join(root, 'docs/a.md'), doc);
+    if (rootDoc) writeFileSync(join(root, 'ROADMAP.md'), rootDoc);
     return root;
   };
   const cases = [
@@ -107,10 +108,14 @@ function selftest() {
     ['长行里别处的"旧"不能放过当期版本 → 必须报',
       '旧行写的 59.8M/55.9M 是 v1.22 那会儿的；**2026-09-30 在 v9.9.8 上重编重核**\n', false, '重核版本'],
     ['历史标记紧挨着这处说法 → 也算历史', '历史上装的是 v1.0.0 / versionCode 1（当时）\n', true, null],
+    // ★ 真实事故的回归：`ROADMAP.md` 抬头那句 versionCode 与同一页表里的互相矛盾，
+    //   而当时没有任何守卫扫这个文件（清单只在 README + docs/*.md 里找）。
+    ['根目录 ROADMAP.md 里的过期版本 → 必须报', '# a\n', false, 'versionCode = 76',
+      '## 一眼看懂\n\n> 已切版并装在真机上（`versionCode 76`）。\n'],
   ];
   let bad = 0;
-  for (const [label, doc, wantGreen, expect] of cases) {
-    const root = makeTree(doc);
+  for (const [label, doc, wantGreen, expect, rootDoc] of cases) {
+    const root = makeTree(doc, rootDoc);
     const { problems } = inspect(root);
     const green = problems.length === 0;
     let ok = green === wantGreen;

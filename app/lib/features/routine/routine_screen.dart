@@ -14,10 +14,12 @@ import '../../domain/models.dart' show PlanTarget;
 
 import 'plan_templates.dart';
 
+import '../../core/pills.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
 import '../../data/exercise_repository.dart';
+import '../../data/local_store.dart';
 import '../../data/routine_repository.dart';
 import '../exercise/exercise_picker_screen.dart';
 
@@ -49,11 +51,15 @@ class RoutineListScreen extends StatefulWidget {
     required this.repository,
     required this.exercises,
     this.unit = WeightUnit.kg,
+    this.store,
   });
 
   final RoutineRepository repository;
   final ExerciseRepository exercises;
   final WeightUnit unit;
+
+  /// 本地库：只用来把它传给选择器（置顶 / 最近做过两个分区）。可选。
+  final LocalStore? store;
 
   @override
   State<RoutineListScreen> createState() => _RoutineListScreenState();
@@ -122,6 +128,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
           repository: widget.repository,
           exercises: widget.exercises,
           unit: widget.unit,
+          store: widget.store,
         ),
       ),
     );
@@ -252,8 +259,34 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
         key: Key('template-${t.id}'),
         contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
         onTap: () => _createFromTemplate(t),
-        title: Text(t.name,
-            style: const TextStyle(color: Tokens.text, fontSize: 15)),
+        // 名字 + **一眼标签**（2026-10-04）：标签是"要不要器械 / 什么时候用"的
+        // 一行答案，坐在名字旁边才叫"一眼选中"（放到副标题里就得读第二行）。
+        // 用 `Wrap` 而不是 `Row`：名字是一块**不可拆**的内容，标签放不下就整排换行。
+        // 第一版用的 Row + Flexible，结果是名字被挤到折行（"上下肢 A · 下 / 肢"）——
+        // 在真机截图里一眼就看出来了。
+        title: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: Tokens.s2,
+          runSpacing: 2,
+          children: <Widget>[
+            Text(t.name,
+                style: const TextStyle(color: Tokens.text, fontSize: 15)),
+            for (int i = 0; i < t.tags.length; i++)
+              Container(
+                  key: Key('template-tag-${t.id}-$i'),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Tokens.volt.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(Tokens.rPill),
+                  ),
+                  child: Text(
+                    t.tags[i],
+                    style: const TextStyle(
+                        color: Tokens.volt, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ),
+          ],
+        ),
         subtitle: Text('${t.note} · ${t.items.length} 个动作',
             style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4)),
           trailing: const Icon(Icons.add_circle_outline, color: Tokens.volt, size: 20),
@@ -315,12 +348,16 @@ class RoutineEditScreen extends StatefulWidget {
     required this.repository,
     required this.exercises,
     this.unit = WeightUnit.kg,
+    this.store,
   });
 
   final String routineId;
   final RoutineRepository repository;
   final ExerciseRepository exercises;
   final WeightUnit unit;
+
+  /// 本地库：传给选择器（置顶 / 最近做过）。可选。
+  final LocalStore? store;
 
   @override
   State<RoutineEditScreen> createState() => _RoutineEditScreenState();
@@ -376,6 +413,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
         builder: (_) => ExercisePickerScreen(
           repository: widget.exercises,
           unit: widget.unit,
+          store: widget.store,
         ),
       ),
     );
@@ -657,26 +695,8 @@ class _ItemEditorState extends State<_ItemEditor> {
   }
 
   Widget _chip(String key, String label, bool active, VoidCallback onTap) {
-    return GestureDetector(
-      key: Key(key),
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
-        height: 36,
-        decoration: BoxDecoration(
-          color: active ? Tokens.volt : Tokens.surface,
-          borderRadius: BorderRadius.circular(Tokens.rPill),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? Tokens.voltInk : Tokens.text2,
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
+    // ⚠️ 别再手写一遍 `Container(alignment: ...)`：它会被 `Wrap` 的有界宽度撑成通栏
+    // （组数/次数各占一整行）。共用件见 `core/pills.dart`。
+    return choicePill(label: label, active: active, onTap: onTap, key: Key(key));
   }
 }

@@ -289,7 +289,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           border: Border.all(color: Tokens.line),
         ),
         child: const Text(
-          '这个动作你还没练过 —— 今天可以是第一次。',
+          '这个动作你还没练过。',
           key: Key('detail-no-history'),
           style: TextStyle(color: Tokens.text2, fontSize: 15),
         ),

@@ -28,6 +28,14 @@
 2. 一根 **数据线**（或同一 Wi-Fi 下的无线调试，但第一次建议有线）；
 3. 一个 **Apple ID**（免费的即可，**不需要**加入 Apple Developer Program）。
 
+⚠️ **这条路上有三处"只有你能做"的图形操作**（都不能自动化，卡住时不会有报错，只会"没反应"）：
+
+| # | 在哪里 | 做什么 | 不做的后果 |
+|---|---|---|---|
+| 1 | iPhone | 设置 → 隐私与安全性 → **开发者模式** → 打开 → 重启 → 输密码 | 装上去点开就闪退 |
+| 2 | iPhone | 设置 → 通用 → VPN 与设备管理 → 开发者 App → **信任你的 Apple ID** | 拉起报 `profile has not been explicitly trusted by the user` |
+| 3 | **Mac** | `codesign` 第一次签名时的**钥匙串授权**弹窗 → 输密码 → **始终允许** | 构建**静默卡住**（进程在、CPU 0%），像编译很慢 |
+
 ## 二、完整步骤
 
 ### 第 1 步：Xcode 里登录 Apple ID
@@ -71,6 +79,18 @@ iPhone → 设置 → 隐私与安全性 → 开发者模式 → 打开 → 重�
 ```
 ✅ 官方说明开发者模式的目的是"防止用户无意安装有害软件"；
 **关掉它，本地安装的 App 会启动不了**。重启后如果"开发者模式"菜单消失，说明还没装上任何开发版 App —— 先做第 5 步再回来开。
+
+### 第 4.5 步：**第一次签名会弹钥匙串授权**（Mac 上，只有你能点）
+
+`codesign` 第一次用那把新证书时，Mac 会弹一个**图形对话框**：
+
+> "codesign" 想要使用钥匙串中「Apple Development: …」的密钥。
+
+**输入 Mac 登录密码 → 点「始终允许」**。不点的话构建会**静默卡住**（进程还在、CPU 0%），
+看起来像编译很慢 —— 2026-10-04 就这么卡了 31 分钟才发现。
+选「始终允许」之后就不会再问了；系统锁屏/重启后的会话里可能再问一次。
+
+> 这条路（`tool/ios-device-run.sh`）也走同一个授权：第一次跑时留意 Mac 屏幕。
 
 ### 第 5 步：装上去
 
@@ -137,3 +157,33 @@ iPhone → 设置 → 通用 → VPN 与设备管理 → 开发者 App → 你�
 * 🟡 **社区口径（官方无明文）**：7 天有效期、同时 3 个 App、免费档的 100 台设备上限、
   重装是否保留沙盒数据。
 * 第一次真机跑通之后，我会把 🟡 那四条改成**实测结论**再回来更新本文件。
+
+---
+
+## 六、2026-10-04 实测记（iPhone 17 Pro · iOS 27.2 · Xcode 27.0）
+
+这一节只写**真跑过、看到过**的东西 —— 上面那些 🟡 里还没验到的，继续留在 🟡。
+
+| 结论 | 证据 |
+|---|---|
+| ✅ **免费档能签 widget 扩展**（`.appex`） | `xcodebuild` 两个 target 一起 `BUILD SUCCEEDED`；`devicectl device install` 成功；设备上那款 App 的 `PlugIns` 目录里 `RestWidget.appex` 在、它自己的进程也在（`devicectl device info processes`） |
+| ✅ **命令行也能把设备注册到 Apple 那边** | 第一次只传 `-allowProvisioningUpdates`（Flutter 默认只传这个）报 `Your team has no devices from which to generate a provisioning profile`；加上 **`-allowProvisioningDeviceRegistration`** 之后自动注册设备、建 App ID、建描述文件，一次过 |
+| ✅ **装完必须信任证书，且这一步只能人工** | 未信任时拉起报 `invalid code signature, inadequate entitlements or its profile has not been explicitly trusted`；在 `设置 → 通用 → VPN 与设备管理 → 开发者 App → 信任` 之后正常启动 |
+| ✅ **Live Activity 在真机锁屏上正常显示** | `docs/images/v142-live-activity-lockscreen.png`（记一组后锁屏：`组间休息 1:32 · 杠铃卧推 · 下一组 40 kg × 8 · 第 2/3 组`，倒计时自己在走） |
+| ⏳ 7 天到期行为 | **还没到期**（2026-10-04 装的），继续 🟡 |
+| ⏳ 同时 3 个免费签名 App / 设备台数上限 | 没验，继续 🟡 |
+| ⏳ 覆盖安装是否保留沙盒数据 | 没验，继续 🟡 |
+
+**同一趟踩到的第三个坑（只影响"跑道副本"，但会让人以为工程坏了）**：
+`app/ios/Flutter/Generated.xcconfig` 里缓存着 `FLUTTER_ROOT`，而它**会跟着 rsync 被覆盖**成
+主仓库里的旧值（这台机器上旧值指向早就搬走的 `~/development/flutter`）。
+症状是构建中途报 `<旧路径>/xcode_backend.sh: No such file or directory`。
+脚本现在先跑一句 `flutter build ios --config-only --release` 重写它 —— 一行代价，省一次误判。
+
+**一条命令的落地**：`tool/ios-device-run.sh`（2026-10-04 跑通）—— 自动从 Xcode 读出 Team、
+临时换 dev bundle id、`xcodebuild` 编签装拉起、**跑完把工程改回去**（`trap`）。
+它的注释里记着上面那个 `-allowProvisioningDeviceRegistration` 的坑，别删。
+
+⚠️ **一个仍未验的点**：widget 扩展是否**真的被系统当扩展加载**这件事，我们是靠
+"设备上确实起了 `RestWidget` 进程 + 锁屏上确实出现了 Live Activity"推出来的 ——
+两条都指向"它是活的"，但没有更底层的证据（比如 ActivityKit 的日志）。

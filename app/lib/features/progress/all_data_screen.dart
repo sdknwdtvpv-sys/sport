@@ -280,7 +280,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
           const Padding(
             padding: EdgeInsets.only(top: Tokens.s5),
             child: Text(
-              '这个动作还没有记录。练过一次再来，这里就会长出曲线。',
+              '这个动作还没有记录。练过一次再来。',
               style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.5),
             ),
           )

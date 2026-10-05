@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 由 tool/gen-icons.py 生成：自适应图标的背景层用纯色，不占体积 -->
 <resources>
-    <color name="ic_launcher_background">#D8FF47</color>
+    <color name="ic_launcher_background">#1A1A1A</color>
 </resources>

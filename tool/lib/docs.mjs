@@ -9,7 +9,7 @@
  * 自检：`node tool/lib/docs.mjs --selftest`
  */
 
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -30,6 +30,39 @@ export function docFiles(root) {
     // docs/ 不在（自检夹具只造了 README）—— 那就是只有 README 可核
   }
   return docs;
+}
+
+/**
+ * **仓库根上另外几份"陈述项目现状"的文档。**
+ *
+ * 它们与 `docs/` 下那些是同一类东西，却因为不在 `docs/` 里而**长期没有任何守卫扫过**
+ * —— 2026-10-01 才发现，而且代价已经真实发生过：
+ * `ROADMAP.md` 抬头写着「v1.7.0 已切版并装在真机上（versionCode 8）」，
+ * 而**同一页的表格里**写着「已装 v1.36.0（versionCode 49）」——
+ * 一份文档自己跟自己矛盾，六个守卫全绿。
+ *
+ * 为什么以前没被发现：`check-doc-facts.mjs` 自己另写了一份清单（含这两份），
+ * 而 `check-doc-versions` / `check-doc-paths` 只用 `docFiles()`。
+ * **两份清单并存 = 有一半文档从来没人核**，所以现在合成一处。
+ *
+ * `CHANGELOG.md` **刻意不进**：它的版本号全是历史叙述，扫它只会全是误报
+ * （它由 `tool/check-changelog.mjs` 单独守）。
+ */
+export const EXTRA_DOCS = ['ROADMAP.md', 'PRODUCT.md'];
+
+/** 全套要核的文档：README + `docs/*.md` + `EXTRA_DOCS`（去重、顺序稳定、不存在就跳过）。 */
+export function allDocFiles(root) {
+  const out = docFiles(root);
+  for (const f of EXTRA_DOCS) {
+    if (out.includes(f)) continue;
+    try {
+      readFileSync(join(root, f));
+      out.push(f);
+    } catch {
+      // 不在就算了（自检夹具不会造它们）
+    }
+  }
+  return out;
 }
 
 /**
@@ -95,6 +128,25 @@ function selftest() {
   const hist = '历史上装的是 v1.0.0（当时）';
   check(isHistorical(hist, hist.indexOf('v1.0.0'), 6),
     '紧挨着说法的"历史/当时"要算历史');
+
+  // 4. ★ 根目录那两份也要进清单（2026-10-01 的真事故的回归用例）
+  //    真事：`ROADMAP.md` 抬头写着 versionCode 8、同一页表里写着 49（自己跟自己矛盾），
+  //    还有一张表被引用行从中间截断 —— **一个守卫都没扫过这个文件**，所以全都绿着。
+  writeFileSync(join(root, 'ROADMAP.md'), '# r\n');
+  writeFileSync(join(root, 'PRODUCT.md'), '# p\n');
+  const all = allDocFiles(root);
+  check(all.includes('ROADMAP.md') && all.includes('PRODUCT.md'),
+    '根目录的 ROADMAP.md / PRODUCT.md 也进清单（以前它们没人核）');
+  check(all.filter((f) => f === 'README.md').length === 1,
+    'README 不重复（旧的 check-doc-facts 那份清单会把它算两遍）');
+  check(all.length === files.length + 2,
+    'allDocFiles = docFiles + 两份根文档', `（${all.length} vs ${files.length}+2）`);
+  rmSync(join(root, 'PRODUCT.md'));
+  let noThrow = true;
+  let after = [];
+  try { after = allDocFiles(root); } catch { noThrow = false; }
+  check(noThrow && !after.includes('PRODUCT.md'),
+    '根文档不存在时不进清单、也不抛（自检夹具常常只造 README）');
 
   rmSync(root, { recursive: true, force: true });
   rmSync(bare, { recursive: true, force: true });

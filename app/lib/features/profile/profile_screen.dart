@@ -27,6 +27,7 @@ import '../../data/body_metric_repository.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../analytics/analytics.dart';
+import '../../analytics/outbox.dart';
 import '../../backup/backup_config.dart';
 import '../../backup/cloud_backup.dart';
 import '../../data/profile_repository.dart';
@@ -35,6 +36,7 @@ import 'backup_exporter.dart';
 import 'data_tools_screen.dart';
 import 'privacy_about_screen.dart';
 import 'profile_widgets.dart';
+import 'reminder.dart';
 import 'settings_screen.dart';
 import 'training_stats.dart';
 
@@ -53,14 +55,27 @@ class ProfileScreen extends StatefulWidget {
     this.restOverrideSec,
     this.onRestOverrideChanged,
     this.backupExporter = const PluginBackupExporter(),
+    this.loadEvents,
     this.onDataChanged,
     this.cloudBackupAvailable,
     this.cloud,
+    this.reminder = ReminderSettings.off,
+    this.reminderHint,
+    this.onReminderChanged,
   });
 
   final LocalStore store;
   final ExerciseRepository repository;
   final ProfileRepository profile;
+
+  /// 训练提醒（S10 的「训练提醒」一节）。默认关。
+  final ReminderSettings reminder;
+
+  /// 「下次提醒：…」那一行（由 main.dart 算好）
+  final String? reminderHint;
+
+  /// 用户改了提醒设置；返回"是否真的生效"（false = 系统没给通知权限）。
+  final Future<bool> Function(ReminderSettings settings)? onReminderChanged;
 
   /// 隐私开关要能立刻生效，所以直接持有埋点实例（测试可不传）。
   /// 这一页只负责**启动时同步一次**（界面读到什么，就按什么记），开关本身在二级页。
@@ -90,6 +105,10 @@ class ProfileScreen extends StatefulWidget {
   /// 把备份交给系统。默认走 share_plus（不需要新依赖，也不需要权限）；
   /// 测试里换成假的就能断言"到底交出去了什么"。
   final BackupExporter backupExporter;
+
+  /// 读出本机攒下的埋点事件（「隐私与关于」里的导出用）。
+  /// **null = 不显示那个入口**（测试与不接埋点的调用点保持干净）。
+  final Future<List<AnalyticsEventPayload>> Function()? loadEvents;
 
   /// 数据被改动过（删光 / 导入 / 从云端恢复）—— 外壳要跟着刷新首页那个"我上周练了 N 次"。
   final VoidCallback? onDataChanged;
@@ -147,6 +166,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onUnitChanged: widget.onUnitChanged,
         restOverrideSec: widget.restOverrideSec,
         onRestOverrideChanged: widget.onRestOverrideChanged,
+        reminder: widget.reminder,
+        reminderHint: widget.reminderHint,
+        onReminderChanged: widget.onReminderChanged,
       ));
 
   Future<void> _openDataTools() => _open(DataToolsScreen(
@@ -167,6 +189,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _openPrivacyAbout() => _open(PrivacyAboutScreen(
         profile: widget.profile,
         analytics: widget.analytics,
+        loadEvents: widget.loadEvents,
+        backupExporter: widget.backupExporter,
       ));
 
   /// 底下一行：入口的"当前值"直接写在副标题里（少进一次页面就能看到现状）。

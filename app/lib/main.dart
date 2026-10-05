@@ -29,6 +29,7 @@ import 'data/drift_local_store.dart';
 import 'data/exercise_repository.dart';
 import 'data/local_store.dart';
 import 'data/profile_repository.dart';
+import 'data/reminder_repository.dart';
 import 'data/routine_repository.dart';
 import 'data/sync_queue.dart';
 import 'domain/models.dart';
@@ -43,7 +44,11 @@ import 'features/summary/workout_summary.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/progress/progress_data.dart';
 import 'features/progress/progress_screen.dart';
+import 'features/profile/reminder.dart';
+import 'features/profile/reminder_bridge.dart';
+import 'features/profile/reminder_service.dart';
 import 'features/summary/workout_summary_screen.dart';
+import 'features/workout/rest_activity.dart';
 import 'features/workout/workout_controller.dart';
 import 'features/workout/workout_screen.dart';
 import 'features/workout/workout_session.dart';
@@ -138,6 +143,21 @@ class _HomeShellState extends State<HomeShell> {
   Timer? _flushTimer;
   Timer? _coldStartTimer;
   late final LocalStore _store = DriftLocalStore(_db);
+
+  /// 训练提醒（本地通知）。三件东西：设置、平台桥、以及"把两者捏在一起"的服务。
+  late final ReminderRepository _reminderRepo = ReminderRepository(_db);
+  static const ReminderBridge _reminderBridge = MethodChannelReminder();
+  late final ReminderService _reminderService = ReminderService(
+    repository: _reminderRepo,
+    bridge: _reminderBridge,
+    store: _store,
+  );
+  ReminderSettings _reminder = ReminderSettings.off;
+
+  /// 「下次提醒：…」那一行。**它是这一版真机反馈的直接产物**：
+  /// 用户设了 17:58、当时就是 17:58，而规则把它顺延到明天 ——
+  /// 界面上没有任何反馈，于是看起来就是"设了闹钟不响"。
+  String? _reminderHint;
   late final ExerciseRepository _repo = ExerciseRepository(_db);
   late final BodyMetricRepository _bodyMetrics = BodyMetricRepository(_db);
   late final RoutineRepository _routines = RoutineRepository(_db);
@@ -182,6 +202,13 @@ class _HomeShellState extends State<HomeShell> {
   /// 之前这个值从没被算过，所以练完回来空态还写着「还没有训练记录」。
   int _weekSessions = 0;
 
+  /// **今天的安排**（首页中间那一块，2026-10-04 加）。
+  ///
+  /// 它与大按钮开练的**是同一份**（[_startNow] 直接用 `_todayPlan`）——
+  /// 首页显示了计划却不按它开练，比不显示更糟。
+  List<PlannedExercise> _todayPlan = const <PlannedExercise>[];
+  TrainingDay? _todayDay;
+
   /// 未结束的训练会话（冷启动时读一次）。非 null 就说明上次没练完 ——
   /// 首页会显示「继续上次的训练」（2026-10-01）。
   ActiveSession? _activeSession;
@@ -214,7 +241,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
-    _refreshWeekSessions();
+    _refreshHome();
     unawaited(_loadUnit());
     unawaited(_loadConsentThenStart());
   }
@@ -309,6 +336,9 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _importSeedQuietly() async {
     try {
       await _repo.importSeed(loadJson: widget.seedLoader);
+      // 库刷完之后才算得出"今天的安排"（它是从动作库里挑的）——
+      // 首页中间那一块就靠这一步拿到内容。
+      await _loadTodayPlan();
     } catch (e) {
       // 刷新失败不该挡住启动：库里已有上一份，用户照常能练。
       // 但要留痕 —— 否则"新动作没出现"会变成一个查不下去的问题。
@@ -327,12 +357,17 @@ class _HomeShellState extends State<HomeShell> {
     final BodyWeightUnit b = await _profile.bodyWeightUnit();
     final int? rest = await _profile.restOverrideSec();
     final String? goal = await _profile.goalWire();
+    // 训练提醒的设置也在这里读一次（设置页要显示它）。
+    // 注意**不在这里请求权限** —— 那是用户主动打开开关时才做的事。
+    final ReminderSettings reminder = await _reminderRepo.load();
     if (!mounted) return;
     setState(() {
       _unit = u;
       _bodyUnit = b;
       _restOverrideSec = rest;
       _goalWire = goal;
+      _reminder = reminder;
+      _reminderHint = _hintFor(const <SetRecord>[]);
     });
   }
 
@@ -342,6 +377,7 @@ class _HomeShellState extends State<HomeShell> {
     // 而"开关显示关着、实际上还在收集"是所有失败方式里最坏的一种。
     // 所以这一步在 `_trackAppOpen()` 与任何 flush 之前，顺序就是它的意义。
     _analytics.setEnabled(await _profile.analyticsEnabled());
+    await _purgeLegacyOutboxOnce(); // ★ B 方案：配了地址的包，第一次冷启动先丢掉历史积压
     await _flusher.onColdStart(); // 放行上次 parked 的事件
     await _trackAppOpen();
     // 冷启动 5 秒后试一次（analytics-sdk.md §5 的五个触发时机之一）
@@ -354,10 +390,119 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  Future<void> _refreshWeekSessions() async {
+  /// **接入上报的第一次冷启动：丢掉历史积压**（`docs/analytics.md` §10 的 B 方案，2026-10-04 拍板）。
+  ///
+  /// 为什么：没配地址的包**不丢事件、只一直攒**（上限 10000 条）。那些事件产生时，
+  /// 用户用的是"不对外发送"的包 —— 我们从没告诉过他会被发出去。接上地址的那天补传，
+  /// 等于事后改主意，而政策 §3.2 也没覆盖这条。所以**谁记的谁发**：
+  /// 第一次在"真的有地址"的包里冷启动时，先清空队列、再记下"清过了"。
+  ///
+  /// 三条边界（都由测试钉着）：
+  ///   * **没配地址就什么都不做** —— 那些包继续攒（行为与以前完全一样）；
+  ///   * **只清一次**（`legacyPurgedAt` 落库）；第二次冷启动不会再删任何东西；
+  ///   * 清空发生在 `onColdStart()` **之前** —— 否则 parked 的事件会先被放行发出去。
+  Future<void> _purgeLegacyOutboxOnce() async {
+    if (_buildTransport() is _NullTransport) return;
+    if (await _analyticsMeta.legacyPurgedAt() != null) return;
+    final int dropped = await _outbox.clearAll();
+    await _analyticsMeta.markLegacyPurged(DateTime.now().millisecondsSinceEpoch);
+    debugPrint('埋点：已按"谁记的谁发"丢掉接入前的历史积压 $dropped 条（只做一次）');
+  }
+
+  /// 首页那两样随"库里的记录"变的东西：**上周练了几次** + **今天的安排**。
+  ///
+  /// 2026-10-04 合并（原来只刷前一个）：每个"练完回来"的地方都调它，
+  /// 而练完回来**今天的安排也变了**（上下肢交替）—— 两件事必须一起刷，
+  /// 否则首页会显示着上一次的分化、大按钮却开练另一次。
+  Future<void> _refreshHome() async {
     final List<SetRecord> sets = await _store.allSets();
     if (!mounted) return;
-    setState(() => _weekSessions = weekWorkoutCount(sets, DateTime.now()));
+    setState(() {
+      _weekSessions = weekWorkoutCount(sets, DateTime.now());
+      _reminderHint = _hintFor(sets);
+    });
+    await _loadTodayPlan();
+    // 训练提醒也在这里同步：这个函数是"开 App / 练完回来"的公共出口，
+    // 而提醒的正确状态正好取决于**刚刚是不是练过了**（练过就顺延到明天）。
+    await _syncReminder();
+  }
+
+  /// 「下次提醒：…」。传 sets 是为了知道**今天练过没有** ——
+  /// 练过就会顺延到明天，而那正是用户最需要被告知的一件事。
+  String? _hintFor(List<SetRecord> sets) {
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    return reminderHint(
+      settings: _reminder,
+      trainedToday: hasTrainedOn(
+        sets: sets,
+        day: DateTime.fromMillisecondsSinceEpoch(now),
+      ),
+      nowMs: now,
+    );
+  }
+
+  /// 把系统里排着的提醒同步成"当前设置 + 今天的事实"该有的样子。
+  /// 失败静默（`ReminderService` 里每一层都不抛）—— 排不上提醒不该影响记录训练。
+  Future<void> _syncReminder() async {
+    await _reminderService.sync();
+  }
+
+  /// 用户改了提醒设置（S10）。**打开时才向系统要通知权限**（不在启动时要）。
+  Future<bool> _setReminder(ReminderSettings next) async {
+    if (next.enabled) {
+      final bool allowed =
+          await _reminderBridge.isAllowed() || await _reminderBridge.requestPermission();
+      if (!allowed) return false;
+    }
+    await _reminderRepo.save(next);
+    // setState 是同步闭包，取数据必须在它外面（await 不能写在里面）
+    final List<SetRecord> sets = await _store.allSets();
+    if (mounted) {
+      setState(() {
+        _reminder = next;
+        _reminderHint = _hintFor(sets);
+      });
+    }
+    await _syncReminder();
+    return true;
+  }
+
+  /// 今天的安排（首页中间那一块）。
+  ///
+  /// ⚠️ **它与大按钮开练的是同一份计划**（`_todayPlan` 被 [_startNow] 直接用）——
+  /// 首页显示了计划却不按它开练，比不显示更糟（"我看到的和我要练的不是一回事"）。
+  Future<void> _loadTodayPlan() async {
+    try {
+      final TrainingDay day = await _planner.nextTrainingDay();
+      final List<PlannedExercise> plan =
+          await _planner.planToday(day: day, unit: _unit);
+      if (!mounted) return;
+      setState(() {
+        _todayDay = day;
+        _todayPlan = plan;
+      });
+    } catch (_) {
+      // 首页那块只是**预览**，主路径是大按钮 —— 它出问题不该让首屏崩掉。
+      // 开练时 [_startNow] 还会自己再算一次，所以"预览空了"不等于"练不了"。
+    }
+  }
+
+  /// 「换一批」：在同一天的分化里换动作（换完仍然是首页显示的那一份）。
+  Future<void> _rerollTodayPlan() async {
+    if (_todayPlan.isEmpty) {
+      await _loadTodayPlan();
+      return;
+    }
+    try {
+      final List<PlannedExercise> next = await _planner.reroll(
+        current: _todayPlan,
+        unit: _unit,
+      );
+      if (!mounted) return;
+      setState(() => _todayPlan = next);
+    } catch (_) {
+      // 同上：换不动就保持原来那份，不弹错
+    }
   }
 
   @override
@@ -380,6 +525,14 @@ class _HomeShellState extends State<HomeShell> {
     int initialIndex = 0,
     /// 恢复时"休息到什么时候"（绝对毫秒）。只对 [initialIndex] 那个动作生效。
     int? restEndsAtMs,
+    /// 恢复时：**这次训练里已经记过的组**（整条训练，含热身）。
+    ///
+    /// 不传的后果（2026-10-04 真机走查抓到的 P0）：恢复后界面显示「第 1 组」、
+    /// 已完成列表是空的，用户再记一组就按 `set_seq = 1` 写库、**覆盖掉原来那一组**
+    /// （总数不变，所以看不出来）。调用方用 `store.setsFor(workoutId)` 取。
+    List<SetRecord> alreadyLogged = const <SetRecord>[],
+    /// 恢复时沿用原训练的开始时刻（否则总结页的时长只剩后半段）。
+    int? startedAtMs,
   }) async {
     if (entries.isEmpty) return;
 
@@ -406,6 +559,9 @@ class _HomeShellState extends State<HomeShell> {
         analytics: _analytics,
         store: _store,
         syncQueue: _syncQueue,
+        // 组间休息的 Live Activity（iOS 锁屏/灵动岛）。**生产在这里接上真的那个** ——
+        // 默认值是 noop，所以漏传不会报错，只会"锁屏上什么都没有"。
+        restActivity: const MethodChannelRestActivity(),
         // **上一次这个动作练成什么样 —— 渐进建议的输入，必须传。**
         //
         // 不传的后果（曾经就是这样）：引擎永远命中 progression.dart 的
@@ -424,6 +580,13 @@ class _HomeShellState extends State<HomeShell> {
         // 从被中断的训练回来时，**只有当前那个动作**接着倒数休息；
         // 别的动作本来就没在休息，传了反而会凭空起一个倒计时。
         restEndsAtMs: i == initialIndex ? restEndsAtMs : null,
+        // 恢复时把**这个动作已经记过的组**还给它（2026-10-04 修 P0）：
+        // 少了这一步，恢复后记一组会覆盖掉杀进程前那一组。
+        alreadyLogged: <SetRecord>[
+          for (final SetRecord s in alreadyLogged)
+            if (s.exerciseId == entry.exercise.id) s,
+        ],
+        startedAtMs: startedAtMs,
       ));
     }
     final WorkoutSession session =
@@ -515,6 +678,13 @@ class _HomeShellState extends State<HomeShell> {
       source: a.source,
       initialIndex: a.index.clamp(0, entries.length - 1),
       restEndsAtMs: a.restEndsAtMs,
+      // ★ 这次训练已经记过的组（含热身）—— **从库里读，不从 JSON 里的计数器读**：
+      //   组本来就逐条落库了，数据库是真源。少了这一步就是 2026-10-04 那个 P0：
+      //   恢复后界面从"第 1 组"重新数，再记一组会覆盖掉原来那一组。
+      alreadyLogged: await _store.setsFor(a.workoutId),
+      // 开始时刻也要沿用：否则这次训练的行会被写成"恢复的那一刻"，
+      // 总结页的时长只剩后半段。
+      startedAtMs: a.startedAtMs,
     );
     if (mounted) await _loadActiveSession();
   }
@@ -579,7 +749,7 @@ class _HomeShellState extends State<HomeShell> {
     if (mounted) setState(() => _goalWire = goal);
 
     if (!r.startNow) {
-      await _refreshWeekSessions();
+      await _refreshHome();
       return;
     }
     final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
@@ -596,7 +766,7 @@ class _HomeShellState extends State<HomeShell> {
       source: 'onboarding',
     );
     await _showSummary(workoutId);
-    await _refreshWeekSessions();
+    await _refreshHome();
   }
 
   /// S1 的大按钮：**一跳直接开练**。
@@ -606,7 +776,7 @@ class _HomeShellState extends State<HomeShell> {
   /// 竞品 Everlift 的公开数字是"3 组从约 21 次降到 8 次"（≈2.7 次/组）。
   /// 现在：首页这一下直接进训练屏 → 第一组 **2 次**，同一动作的第 2 组起 **1 次**。
   ///
-  /// 建议卡没有被砍掉，只是移到「看看今天练什么 ›」后面（见 [_openSuggestion]）。
+  /// 建议卡没有被砍掉，只是挪到「今天的安排」卡后面 —— **点那张卡进建议卡**（见 [_openSuggestion]）。
   Future<void> _startNow() async {
     // 端到端口径：这一下就是这条记录的第一步（周期必须在这里开）
     _analytics.beginSetInteraction();
@@ -615,10 +785,15 @@ class _HomeShellState extends State<HomeShell> {
     await _repo.importSeed(loadJson: widget.seedLoader);
     if (!mounted) return;
 
-    final String group = await _planner.nextMuscleGroup();
-    final List<PlannedExercise> plan =
-        await _planner.planToday(muscleGroup: group, unit: _unit);
-    if (!mounted) return;
+    // **用首页显示的那一份**（2026-10-04）：首页中间现在摆着"今天的安排"，
+    // 大按钮必须按它开练 —— 否则用户看到的是清单 A、练的是清单 B。
+    // 预览为空（还没算出来 / 算的时候出过错）才现算一次。
+    List<PlannedExercise> plan = _todayPlan;
+    if (plan.isEmpty) {
+      _todayDay = await _planner.nextTrainingDay();
+      plan = await _planner.planToday(day: _todayDay, unit: _unit);
+      if (!mounted) return;
+    }
 
     // 动作库没准备好（或这个部位一个动作都没有）→ 退回建议卡：
     // 它会给出"动作库还没准备好，可以点我自己选"的说明，
@@ -639,10 +814,13 @@ class _HomeShellState extends State<HomeShell> {
       source: 'home_button',
     );
     await _showSummary(workoutId);
-    await _refreshWeekSessions(); // 练完回来，次数要变
+    await _refreshHome(); // 练完回来，次数要变
   }
 
-  /// 「看看今天练什么 ›」：原来的建议卡路径（换一批 / 我的计划 / 我自己选）。
+  /// 建议卡路径（换一批 / 我的计划 / 我自己选）—— 由首页「今天的安排」**卡本身**进入。
+  ///
+  /// 2026-10-04：原先这里还有一行「看看今天练什么 ›」，删掉了（卡已经把"今天练什么"
+  /// 回答了，同一件事不留两个入口），见 `today_screen.dart` 里 `onSeePlan` 的说明。
   Future<void> _openSuggestion() async {
     // 端到端 tap_count：用户按「开始训练」这一下就是这条记录的第一步。
     // 周期必须**在这里**开 —— 控制器要等建议卡/选动作走完才被构造，
@@ -664,6 +842,7 @@ class _HomeShellState extends State<HomeShell> {
             unit: _unit,
             routines: _routines,
             exercises: _repo,
+            store: _store,
           ),
       ),
     );
@@ -682,7 +861,7 @@ class _HomeShellState extends State<HomeShell> {
         source: 'suggestion',
       );
       await _showSummary(workoutId);
-      await _refreshWeekSessions(); // 练完回来，次数要变
+      await _refreshHome(); // 练完回来，次数要变
       return;
     }
 
@@ -706,7 +885,7 @@ class _HomeShellState extends State<HomeShell> {
       await _trainOne(workoutId, picked);
     }
     await _showSummary(workoutId);
-    await _refreshWeekSessions();
+    await _refreshHome();
   }
 
   /// 读一次"有没有未结束的训练"（首页那个入口用它）。
@@ -769,16 +948,18 @@ class _HomeShellState extends State<HomeShell> {
     final List<ExerciseData> stretches = stretchInfo.stretches;
 
     // 「下一次」那一行（2026-10-01）：刚练完是用户唯一愿意想下一次的时刻。
-    // 部位轮转用的是 planner 的同一套规则（它已经算上了今天这次训练），
+    // 轮转用的是 planner 的同一套规则（它已经算上了今天这次训练），
     // 所以这里说出来的"下次轮到谁"与首页/建议卡的口径一致 —— 不会两处说两样话。
+    //
+    // 2026-10-04：轮转从"6 部位"改成"上下肢交替"，所以这里说的是**训练日**
+    // （"下次轮到 下肢"），不再是单个部位。
     String? nextLine;
     final String? todayTop = stretchInfo.topMuscle;
-    final String nextGroup = await _planner.nextMuscleGroup();
-    final String nextName = kMuscleLabels[nextGroup] ?? nextGroup;
-    if (nextGroup != todayTop) {
+    final TrainingDay nextDay = await _planner.nextTrainingDay();
+    if (_todayDay == null || nextDay != _todayDay) {
       nextLine = todayTop == null
-          ? '下次轮到 $nextName'
-          : '下次轮到 $nextName（今天练的是 ${kMuscleLabels[todayTop] ?? todayTop}）';
+          ? '下次轮到 ${nextDay.label}'
+          : '下次轮到 ${nextDay.label}（今天练的是 ${kMuscleLabels[todayTop] ?? todayTop}）';
     }
     if (!mounted) return;
     await Navigator.of(context).push<void>(
@@ -842,6 +1023,10 @@ class _HomeShellState extends State<HomeShell> {
                 ? null
                 : '上次练到第 ${(_activeSession!.index + 1).clamp(1, _activeSession!.length)}'
                     '/${_activeSession!.length} 个动作',
+            // 首页中间那一块：今天的安排（2026-10-04 替掉原来那个 Spacer）
+            todayPlan: _todayPlan,
+            todayLabel: _todayDay?.label,
+            onReroll: _todayPlan.isEmpty ? null : _rerollTodayPlan,
           );
       case 1:
         return ProgressScreen(
@@ -863,6 +1048,10 @@ class _HomeShellState extends State<HomeShell> {
           repository: _repo,
           profile: _profile,
           analytics: _analytics,
+          // 「隐私与关于 → 导出统计事件」用：本机攒下的事件（含发不出去的那些）。
+          // 这是**唯一**能把 tap_count 从设备上取回来的路径 —— 见
+          // `analytics_export.dart` 的文件头与 `docs/analytics.md` §3。
+          loadEvents: _outbox.peekAll,
           bodyMetrics: _bodyMetrics,
           unit: _unit,
           // 用户改了单位：存库 + 整棵树重建，别的地方立刻也跟着变
@@ -877,8 +1066,11 @@ class _HomeShellState extends State<HomeShell> {
           onRestOverrideChanged: (int? sec) {
             setState(() => _restOverrideSec = sec);
           },
+          reminder: _reminder,
+          reminderHint: _reminderHint,
+          onReminderChanged: _setReminder,
           // 删光 / 导入之后，首页那行"我上周练了 N 次"要跟着变
-          onDataChanged: () => unawaited(_refreshWeekSessions()),
+          onDataChanged: () => unawaited(_refreshHome()),
         );
     }
   }

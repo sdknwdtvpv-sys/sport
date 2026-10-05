@@ -17,6 +17,8 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/analytics_meta_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
+import 'package:lianleme/data/reminder_repository.dart';
+import 'package:lianleme/features/profile/reminder.dart';
 import 'package:lianleme/domain/models.dart';
 
 import 'legacy_db.dart';
@@ -345,6 +347,104 @@ void main() {
     expect(cols.first.read<String>('progression_mode'), 'double');
 
     await legacy.close();
+  });
+
+  test('v14 的库升到 v16：多出「未结束的会话」与「动作置顶」两张表，而且**是空的**',
+      () async {
+    // 这两次迁移（v15 / v16）都是"只加表、不动既有列"，所以一条测试一起盖掉：
+    // fixture 停在 v14，打开时 onUpgrade 连着跑两步。
+    late List<String> tablesBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 14);
+        raw.execute(legacySeedExerciseSql);
+        tablesBefore = raw
+            .select("SELECT name FROM sqlite_master WHERE type='table'")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+    // `setup` 是第一次真正查库时才跑的（drift 是懒的）
+    await legacy.customSelect('SELECT 1').get();
+
+    for (final String t in <String>['active_session_row', 'pinned_exercise']) {
+      expect(tablesBefore, isNot(contains(t)),
+          reason: 'fixture 里不该有 $t，否则这条测试是空转（最隐蔽的失败方式）');
+    }
+
+    // 两张表都要**真的能用**，不只是"存在"
+    final DriftLocalStore store = DriftLocalStore(legacy);
+    expect(await store.activeSession(), isNull, reason: '老库升上来不该有"未结束的训练"');
+    expect(await store.pinnedExerciseIds(), isEmpty,
+        reason: '老库升上来是"一个都没置顶"—— 这个功能出现之前没人置顶过');
+
+    await store.setPinnedExerciseIds(<String>['ex_legacy_bench', 'ex_bb_squat']);
+    expect(await store.pinnedExerciseIds(), <String>['ex_legacy_bench', 'ex_bb_squat'],
+        reason: '顺序要按 position 存回来（用户看得见的顺序不该由毫秒决定）');
+
+    await legacy.close();
+  });
+
+  test('v16 的库升到 v17：多出「训练提醒」那张表，而且是空的（默认关）',
+      () async {
+    // v17 同样是"只加表、不动既有列"。
+    late List<String> tablesBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 16);
+        raw.execute(legacySeedExerciseSql);
+        tablesBefore = raw
+            .select("SELECT name FROM sqlite_master WHERE type='table'")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+    await legacy.customSelect('SELECT 1').get();
+    expect(tablesBefore, isNot(contains('reminder_setting')),
+        reason: 'fixture 里不该有这张表，否则这条测试是空转');
+
+    final ReminderRepository repo = ReminderRepository(legacy);
+    // 老库升上来 = "从没设置过" = 默认值（关、20:00）
+    final ReminderSettings settings = await repo.load();
+    expect(settings.enabled, isFalse, reason: '提醒必须默认关（不主动要通知权限）');
+    expect(settings.label, '20:00');
+
+    // 而且这张表要真的能用
+    await repo.save(const ReminderSettings(enabled: true, minutesOfDay: 7 * 60 + 30),
+        nowMs: 1000);
+    final ReminderSettings again = await repo.load();
+    expect(again.enabled, isTrue);
+    expect(again.label, '07:30');
+
+    await legacy.close();
+  });
+
+  test('v17 的库升到 v18：埋点那一行多出「已清过积压」这一位，而且老库是 null', () async {
+    // v18 是第一个**动既有表**的迁移（前几版都是加表）。它踩过两个坑，这条测试守第二个：
+    // fixture 里 v17 的 `analytics_meta` 必须是**当时的形状**（没有 legacy_purged_at），
+    // 否则 addColumn 会因为"列已存在"而红，或者因为"表不存在"而红 —— 两种都是 fixture 假了。
+    late List<String> colsBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 17);
+        colsBefore = raw
+            .select("PRAGMA table_info('analytics_meta')")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+    await legacy.customSelect('SELECT 1').get();
+    expect(colsBefore, contains('device_id'), reason: 'v17 的库当然有这张表');
+    expect(colsBefore, isNot(contains('legacy_purged_at')),
+        reason: 'fixture 里不该有新列，否则这条测试是空转');
+
+    final AnalyticsMetaRepository meta = AnalyticsMetaRepository(legacy);
+    // 老库升上来 = "从没清过" → null（**不是 0**：0 会被读成"1970 年清过"）
+    expect(await meta.legacyPurgedAt(), isNull,
+        reason: '升级后这一位必须是 null —— 意味着"还没清过"');
+    // 而且新代码能用它：记下之后读得回来
+    await meta.markLegacyPurged(4242);
+    expect(await meta.legacyPurgedAt(), 4242);
   });
 
   test('老库里**没有** category 列 —— fixture 本身也要守着', () async {

@@ -26,11 +26,24 @@
 6. 在两个端口上各打一次 `/healthz`，**自己验一遍**再报成功。
 
 ```bash
-# 在服务器上（root）：
+# 0) **这台机器上已经跑着别的东西？先体检**（只读、不改文件、不需要 root、不需要域名）：
+bash server/deploy/install.sh --probe
+
+# 1) 干净机器（root）：
 DOMAIN=api.example.com bash server/deploy/install.sh
-# 只想看它打算做什么（不改任何东西，也不需要 root）：
+#    只想看它打算做什么（不改任何东西，也不需要 root）：
 DOMAIN=api.example.com bash server/deploy/install.sh --dry-run
+
+# 2) 机器上已经有 Nginx / Caddy 在服务别的站 —— 我不碰你的配置，只打印该贴的片段：
+PROXY_MODE=existing DOMAIN=api.example.com bash server/deploy/install.sh
+
+# 3) 端口被别的服务占了 —— 换一组（反代片段会跟着换）：
+BACKEND_PORT=18790 COLLECTOR_PORT=18787 DOMAIN=api.example.com bash server/deploy/install.sh
 ```
+
+**四条"绝不碰别人的东西"**（2026-10-04 加，`tool/check-deploy.mjs` 盯着，各有一条负向自检）：
+不覆盖别人的 Caddyfile（靠 `managed-by: lianleme-install` 标记区分；覆盖需显式 `--force-config` 且先备份）·
+不抢已占用的端口 · 不在已有 Nginx/Apache 的机器上装第二个反代 · Nginx 片段同样不许开 `access_log`。
 
 ## 装完之后（我接手的部分）
 

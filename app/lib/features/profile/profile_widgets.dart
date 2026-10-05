@@ -12,6 +12,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 
+// 胶囊选项已经搬到 `core/pills.dart` —— 它被三处共用（偏好设置 / 计划编辑 / 新建动作），
+// 而 2026-10-04 之前它是**三份拷贝**，于是同一个「被撑满」的 bug 也复制了三份。
+// 这里转出去，是为了让既有调用方（settings_screen 等）的 import 不用改。
+export '../../core/pills.dart' show choicePill;
+
 /// 区块标题（「休息时长」「训练统计」这种小灰字）。
 Widget profileSectionTitle(String t) => Padding(
       padding: const EdgeInsets.only(left: Tokens.s1, bottom: Tokens.s2),
@@ -38,43 +43,15 @@ Widget settingsCard(List<Widget> children) => Material(
       child: Column(children: children),
     );
 
-/// 胶囊选项（休息时长、重量单位都用它）。
-///
-/// 选中态用 volt 底 + 深色字：这是全 App 唯一的"选中"语言，
-/// 不用再引入第二套（勾选框 / 单选圆圈）。
-Widget choicePill({
-  required String label,
-  required bool active,
-  required VoidCallback onTap,
-  Key? key,
-}) =>
-    GestureDetector(
-      key: key,
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
-        height: 36,
-        decoration: BoxDecoration(
-          color: active ? Tokens.volt : Tokens.surface,
-          borderRadius: BorderRadius.circular(Tokens.rPill),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? Tokens.voltInk : Tokens.text2,
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-
 /// 一行「标题 + 说明 + 右箭头」的导航行（二级页入口）。
+///
+/// `subtitle` 是**可空**的（2026-10-04 文案审计改的）：以前它是必填，于是每个入口都被
+/// 逼着写一句说明 —— 结果是「隐私政策 / 我们收集什么、不收集什么，逐条写在里面」
+/// 这种**把标题换个说法再说一遍**的句子。可空之后，"想不出该说什么"就能什么都不说。
 Widget navTile({
   required Key key,
   required String title,
-  required String subtitle,
+  String? subtitle,
   required VoidCallback onTap,
   IconData trailing = Icons.chevron_right,
   Color? trailingColor,
@@ -88,10 +65,12 @@ Widget navTile({
         title,
         style: TextStyle(color: titleColor ?? Tokens.text, fontSize: 15),
       ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
-      ),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
+            ),
       trailing: Icon(trailing, color: trailingColor ?? Tokens.text3, size: 20),
     );
 

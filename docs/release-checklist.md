@@ -16,7 +16,7 @@
 ## 1. ⛔ 真机验证（安装已完成，交互验收待做）
 
 - [x] ✅ 手机开启「USB 安装」权限（小米/HyperOS 必须单独开，否则 `INSTALL_FAILED_USER_RESTRICTED`）
-- [x] ✅ **App 已装进真机**：**历史**上第一次装上真机时是 `com.sdknwdtvpv.lianleme` v1.0.0 / versionCode 1（那是当时，早已过时）；**现在装的是 v1.33.0 / versionCode 44** —— 见下面"终局核验"，
+- [x] ✅ **App 已装进真机**：**历史**上第一次装上真机时是 `com.sdknwdtvpv.lianleme` v1.0.0 / versionCode 1（那是当时，早已过时）；**现在装的是 v1.44.0 / versionCode 63** —— 见下面"终局核验"，
       设备 Redmi `flourite`（Android 16 / API 36）—— 阶段 2 的关键一步达成
 - [ ] 在真机上**实际用一遍**，完成 `ROADMAP.md` 阶段 2 的 5 条完成标准，其中两条最关键：
   - [ ] **练两个动作**（卧推 → 返回 → 深蹲），两组都在
@@ -25,11 +25,27 @@
 
 ## 2. ⛔ 发布签名
 
-**接线已验证（2026-09-29，用临时密钥在真机上走通了三种情况；临时密钥已删）**：
+**✅ 2026-10-05：正式密钥已生成**（你本人在终端里跑的 `app/android/tool/gen-upload-keystore.sh`，
+密码只在你手里）。现状：
+
+| 项 | 值 |
+|---|---|
+| 签名者 DN | **`CN=李松, C=CN`**（不再是 `CN=Android Debug`） |
+| 别名 | `upload` |
+| keystore | `app/android/upload-keystore.p12`（PKCS12 / RSA 2048 / 10000 天，权限 600） |
+| 签名 MD5 | `2227a0109f73e388ce4986033b39fd85` |
+| SHA-1 / SHA-256 | `400f130031a68ef99995a68fba9f25d320955a0c` / `d27a03f3f07276bd0bb4ca3bbcdca6d159e754a717cbe98975987f70e9bdc1c3` |
+
+⚠️ **`dist/` 里的包已经是"可上架的签名"**（此前是 debug 签名，商店必拒收）——
+`node tool/check-dist.mjs` 每次仍会核版本，但**签名口径从 2026-10-05 起变了**：
+想复核，跑 `apksigner verify --print-certs dist/练了么-v1.43.0.apk`，应当看到 `CN=李松`。
+⚠️ 这三个指纹是**公开信息**（它们在包里、备案页上都会出现），**密码不是** —— 密码只在你的密码管理器里。
+
+**接线验证（2026-09-29 用临时密钥走通三种情况；本节其余内容仍然有效）**：
 
 | 情况 | 实测行为 |
 |---|---|
-| 有 `key.properties` | release 包由**正式密钥**签名：`CN=LianLeMe Verify…`（临时密钥的 DN） |
+| 有 `key.properties` | release 包由**正式密钥**签名（当时是临时密钥 `CN=LianLeMe Verify…`，现在是上面的真密钥） |
 | 没有 `key.properties`、没有逃生开关 | **硬失败**，退出码 1，并打印"商店一定会拒收"的说明 |
 | 没有 `key.properties`、显式 `ORG_GRADLE_PROJECT_allowDebugSigning=true` | 落到 debug 签名（`CN=Android Debug`），供性能测试这类场合 |
 
@@ -201,7 +217,7 @@ flutter build apk --release \
 | `docs/your-todo.md` 顶部时间戳 | 同上（第 2 层，一条命令级的守卫） |
 | 三处"真机装的是哪一版" | 同上（第 2 层，三处逐个点名） |
 | CHANGELOG 小节降序 + 不许粘行 | 同上（第 2 层） |
-| 软著材料里的版本 / 模式版本 / 源程序量 | `tool/copyright-pdf.mjs --check-docs`（第 2 层里跑） |
+| 软著材料里的版本 / 模式版本 / 源程序**文件数·行数·全文页数** | `tool/copyright-pdf.mjs --check-docs`（第 2 层里跑；页数真源 = 行数 ÷ 每页 50 行，**不是** `dist/` 里那份 60 页鉴别材料）。这个工具自己有 5 条自检（第 2 层） |
 | 门禁测试条数（本文件状态速览那一行） | `verify.sh` **第 5 层**（拿实测条数跟它比，对不上就红） |
 
 **历史（v1.2.0 那次，留作教训）**：`app/pubspec.yaml` bump 到 `1.2.0+3`、没有升 major
@@ -261,18 +277,28 @@ cd "/Volumes/Elliot's SSD/HARNESS/lianleme/sport"
 ./verify.sh                                      # 全量自检（六层全过才算过；含变异测试 0 存活）
 
 cd app
-# ⚠️ 现在没有真 keystore，正式产物必须先加这个逃生开关（否则 Gradle 硬失败）。
-#    它出的是 **debug 签名**的包，能装自己手机，**商店必拒收**。
-ORG_GRADLE_PROJECT_allowDebugSigning=true flutter build appbundle --release   # 商店用（AAB）
-ORG_GRADLE_PROJECT_allowDebugSigning=true flutter build apk --release         # 旁加载用（APK）
+# ⚠️ 三处编译期常量，少一处就不是"正式包"：
+#    * 前两个是云备份（缺一个入口根本不出现，一个字节都不发）；
+#    * 第三个是匿名统计 —— **地址要带 `/v1/events` 路径**，因为
+#      `HttpAnalyticsTransport` 是拿这个 URI 原样 `postUrl()` 的（不像云备份会自己拼路径）。
+flutter build apk --release \
+  --dart-define=LIANLEME_BACKUP_URL=https://api.elliotli.work \
+  --dart-define=LIANLEME_BACKUP_DISCLOSED=true \
+  --dart-define=LIANLEME_ANALYTICS_URL=https://api.elliotli.work/v1/events   # 旁加载用（APK）
+# 同一组 define 再跑一遍 appbundle，商店用（AAB）
 
-# ⚠️ 上面 AAB 那条命令**会报一句假的失败**（"failed to strip debug symbols"），
-#    .aab 其实已经产出。核产物要跑这个：
+# ⚠️ 上面 appbundle 那条命令**会报一句假的失败**（"failed to strip debug symbols"，卷名空格坑），
+#    .aab 其实已经产出。核产物必须跑这个，别看退出码：
 cd .. && node tool/check-aab.mjs
+
+# 签名：2026-10-05 起走**真 keystore**（`app/android/key.properties` +
+#   `app/android/upload-keystore.p12`，两个都不入库，口令在密码管理器 + 离线介质里）。
+#   没有它 Gradle 会硬失败；逃生开关 ORG_GRADLE_PROJECT_allowDebugSigning=true 只用于
+#   "临时装自己手机"，出的是 **debug 签名**包，商店必拒收。
 
 # 验收 release 产物
 "$JAVA_HOME/bin/keytool" -printcert -jarfile \
-  build/app/outputs/bundle/release/app-release.aab | grep 所有者   # 不应是 Android Debug
+  build/app/outputs/bundle/release/app-release.aab | grep 所有者   # 应当看到 CN=李松
 "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt2" dump badging \
   build/app/outputs/apk/release/app-release.apk | grep -E "^package|sdkVersion"
 ```
@@ -289,22 +315,22 @@ cd .. && node tool/check-aab.mjs
 
 | 项 | 状态 |
 |---|---|
-| 构建链 | ✅ 两种产物都核过（**2026-10-01 在 v1.36.0 上重编重核**）：release **APK 62.3M**、**AAB 57.8M**（`bundle/release/app-release.aab`；旧行写的 59.8M/55.9M 是 v1.22–1.30 那会儿的）。AAB 用 `node tool/check-aab.mjs` 核过：骨架三件套 + **三 ABI**（arm64-v8a / armeabi-v7a / x86_64，各含 libsqlite3/libflutter/libapp）+ 版本号与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 会**假报失败**（卷名空格坑，见 `docs/dev-environment.md`），产物没问题 |
+| 构建链 | ✅ 两种产物都核过（**2026-10-05 在 v1.44.0 上重编重核**）：release **APK 62.9 MB**（62,859,661 字节）、**AAB 58.2 MB**（61,054,192 字节）（`bundle/release/app-release.aab`；旧行写的 59.8M/55.9M 是 v1.22–1.30 那会儿的）。AAB 用 `node tool/check-aab.mjs` 核过：骨架三件套 + **三 ABI**（arm64-v8a / armeabi-v7a / x86_64，各含 libsqlite3/libflutter/libapp）+ 版本号与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 会**假报失败**（卷名空格坑，见 `docs/dev-environment.md`），产物没问题 |
 | 签名接线 | ✅ 接线与硬失败**已验证**（缺 `key.properties` 时构建直接失败、逃生开关有效） |
-| 正式签名 | ❌ **还没有真 keystore**。所以 `dist/*.apk` 是**debug 签名的旁加载包** —— 能装自己手机，**商店必拒收**。生成：`app/android/tool/gen-upload-keystore.sh`（在你那边） |
-| 权限 | ✅ 源码 manifest **两项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29）。打包后多一条**隐含**的 `READ_EXTERNAL_STORAGE`（≤29，系统因 WRITE 授予，不是谁声明的）—— **已在政策里如实披露** |
+| 正式签名 | ✅ **真 keystore 已生成并接上**（2026-10-05）。DN `CN=李松, C=CN`、alias `upload`，三个指纹与备案要填的值见 `docs/release-admin.md` §二（⚠️ 安卓备案填 **MD5**、苹果填 **SHA-1**，别填反）。已用真 key 重签并当场核过：`apksigner verify --print-certs dist/练了么-v1.44.0.apk` → `CN=李松`（不再是 `Android Debug`，商店可收）。`dist/*.apk` 从此不再是"能装不能交"的那一类 |
+| 权限 | ✅ 源码 manifest **三项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29 + `POST_NOTIFICATIONS` —— 最后这条是 v1.42 的训练提醒带来的，API 33+ 走**运行时**请求、只在用户主动打开开关时问）。打包后多一条**隐含**的 `READ_EXTERNAL_STORAGE`（≤29，系统因 WRITE 授予，不是谁声明的）—— **已在政策与 `privacy-facts.json` 里逐条披露**（`privacy-audit --apk` 每次对账）。⚠️ 这三条这个数字以前一直写着「两项/2 条」—— 加 `POST_NOTIFICATIONS` 那次**没同步改这里**，而 `privacy-audit` 只核「有没有披露」、不核「文档里数的是几条」，所以红不了。2026-10-05 对产物数出来才改 |
 | 隐私政策 | 🚧 中英文已成文、占位符已填；**待法务审核 + 公网 URL + 填生效日**。⚠️ 云备份一旦上线，§3.1/§3.2 必须重写（数据**会**离机） |
 | 删除数据入口 | ✅ 已实现并测试。v1.22.0 补上了**条件式的云端删除**：有云备份账号时，弹层多问一句「同时删除云端备份并注销」（默认勾选），先删云端、失败则整个中止。**v1.30.0 起另有逐表核对 + 表清单守门**（`app/test/delete_all_test.dart`）：删除后除动作库外**每张表都必须是 0 行**（负向验证：把 `body_metric` 的删除拆掉 → 立刻红，报 `body_metric=1`）；库里新增/改名一张表而没更新那份清单 → 也红。这条正是删除权的失败方式：**新表忘了接，界面上看不出任何异常** |
-| 真机验证 | ✅ Redmi `flourite`（Android 16 / API 36）上跑的是 **v1.36.0**（`versionCode 49`，逐版覆盖安装；冷启动无异常）。**2026-09-30 手机解锁后跑了一遍"手势走查"**（`adb shell input` 注入 —— 与手指走的是同一条输入链路）：冷启动 → 训练屏（建议 **40 kg × 8**，第 1 组/共 3 组）→ **一次点击记一组**（头变「第 2 组」、组列表出现 `40 kg × 8 ✓`、休息计时 **01:27** 起跳）→ 总结页（容量 **320 kg** / 不到 1 分钟 / 1 组 + 拉伸建议）→ 进步页（本周容量 320 kg、PR 墙「杠铃卧推 40 kg」）→ 我页（统计 1 次/1 组/320 kg；**「帮助改进产品」默认关**；**云备份入口不出现** —— 与"没配地址就没有入口"一致）→ **杀进程重开**：首页显示「我上周练了 1 次」（数据还在）。全程 `E/flutter` **0 条**、`overflowed` **0 条**；证据图 `docs/images/walkthrough-0*.png`。⚠️ **这仍然不等于"用手指走一遍"**：注入走的是输入层，**手感、误触、单手可达性、出汗时的触控**它测不到（README 与 `your-todo` 那一条仍然挂着）。⚠️ **手机已解锁**（2026-09-30 起），所以这一栏能做的事多了：真机云备份端到端已跑通（`E2E-OK`），安卓那两套商店截图已在真机上整套重跑、App Store 那套已在 iOS 模拟器出图。**但「用手指走一遍」仍然只有你能做** —— 我验的是装上、启动、`E/flutter` 零异常、以及自动化点 key 的流程；手感、误触、单手可达性测不到。细节见 `docs/your-todo.md` §四 |
+| 真机验证 | ✅ Redmi `flourite`（Android 16 / API 36）上跑的是 **v1.44.0**（`versionCode 63`；⚠️ 这一版**卸载重装**过一次：真 keystore 与旧包的 debug 签名不同，`install -r` 被系统直接拒（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`）；冷启动无异常，`E/flutter` 0 条 / `overflowed` 0 条）。**2026-10-05 在真机上验了这一批**：① **新图标**（深底 + 白「练」+ volt 哑铃）在启动器里就是它、名字「练了么」（`docs/images/launcher-icon-verified-redmi-v1440.png`）；② **卸载清空 → 用恢复码从云端取回**（这条路径此前只在模拟器上做过）：云备份页「已绑定这个恢复码」→「从云端恢复（合并，不覆盖本机）」→ **「已从云端恢复：已导入 2 次训练 / 2 组，置顶 0 个动作」**，「我」页训练统计回到 **2 次 / 2 组**（`docs/images/v144-cloud-restore-banner.png` · `docs/images/v144-cloud-restore-stats.png`）。**2026-10-04 在真机上验了这两批**：① 选择器**置顶**（钉一个 → 顶部「置顶」区 + 星标变实心 + 不再重复出现）；② **训练提醒**：打开开关 → 系统通知权限授予（`USER_SET`）→ `dumpsys alarm` 里出现 `RTC_WAKEUP …/.ReminderReceiver`（改时间时旧的那条被记为 `alarm_cancelled`）→ 到点后系统里真的出现了那条通知（`NotificationRecord … id=4702 channel=lianleme_training_reminder`，`vis=PUBLIC`）。⚠️ 两次实测记下来：第一次晚 **2 分 26 秒**；第二次在**深度休眠**里被系统压住，直到**唤醒手机那一刻**才补发（非精确闹钟 + Doze 的真实行为）。⚠️ **锁屏上那张图没拍到**：这台 MIUI 不渲染第三方通知（系统设置都允许，见 `docs/plan-scene-and-return.md` 的验证表）。⚠️ 这一趟还**改了一处代码**：通知默认是 `VISIBILITY_PRIVATE`，安全锁屏下**整条不显示**（真机上"锁屏只有系统那条"就是这么来的）—— 提醒的价值就是"不打开 App 也看得见"，所以显式声明 `VISIBILITY_PUBLIC` 并重新出包重装。证据图 `docs/images/v142-01-reminder-permission.png` |
 | **体检数据的单独同意** | ✅ v1.31.0：体重属**敏感个人信息**（医疗健康类），按 PIPL 第 29 条**单独**征求同意 —— 第一次进「身体数据」页时单独弹一次说明（只存本机/不上传/可改可删），点了才记录，点「先不用」就不进那一页；同意时刻单独落库（当时是 schema **v14**，那一列就是那一版加的）。中英政策与 `privacy-facts.json` 的 `sensitiveLocal` 同步，硬门禁**两处横查**（政策说法 ↔ 代码里那道门）|
 | 匿名统计的默认值 | ✅ **默认关闭**（v1.28.0，审计 A 的后半段）。只有用户主动到「我 → 帮助改进产品」打开才会有数据发出去；off 时连队列里没发出去的也停发；硬门禁三处对账（`privacy-facts.json` ↔ 代码默认值 ↔ 中英政策正文）。**并在设备上验过两跑**：默认（关）跑完整轮训练，应用真实库里 `pending=0`；同一流程预置成开则 `pending=11` —— 证明测量本身没坏（`integration_test/analytics_outbox_e2e_test.dart`）。**iOS 上同样两跑一致**（2026-09-30，模拟器 iOS 27.0）。⚠️ 这条与下面「积压事件」那条一起，决定"配了上报地址的包"能不能发 |
 | 个人信息收集清单（164 号文） | ✅ 应用内二级菜单「我 → 关于 → 个人信息收集清单」（v1.29.0）。两份清单都是**生成物**：收集清单 ← `privacy-facts.json`，共享清单 ← 政策里的第三方 SDK 表；与应用内隐私政策共用一套生成与防漂守卫（`gen-privacy-page.mjs --check`） |
 | 屏幕方向 | ✅ **锁竖屏**（v1.30.0）。实测横屏下首页 `RenderFlex overflowed by 80px`，入口文字与底部导航重叠 —— 我们没有横屏设计，所以两端都锁（安卓 `screenOrientation="portrait"`、iOS 手机方向数组只留 Portrait），各有一条守卫钉着 |
 | 显示配置 | ✅ 六种配置实测过（常规竖屏 / 横屏 / iPad 宽度 / 浅色模式 / 大字号 1.3× / 小屏 720×1280），矩阵与复现命令在 `docs/screenshots.md`。⚠️ 它能证明"不会坏"，**不能**替代用手指走一遍 |
-| **iOS 侧** | 🟡 代码侧就绪，且**已能构建**（⚠️ 在 Xcode 里会看到 **1 条警告** —— `share_plus` 插件里 `keyWindow` 的弃用提示，有 `@available` 守卫、我们的部署目标 iOS 15 走不到那行，**不用管**：见 `docs/tech-decisions.md`「已知警告」）：**2026-09-30 已构建**（许可证接受之后的第一次）：`flutter build ios --simulator --no-codesign` → 183M 的 Runner.app；`flutter build ios --release --no-codesign` → **19M / arm64 / 最低 iOS 15.0**。产物逐项核对过：显示名「练了么」、bundle id `com.sdknwdtvpv.lianleme`、版本 `1.31.0 / 40` —— 那是首编那一次的产物）、**只有 `NSPhotoLibraryAddUsageDescription`**（没有读相册那条）、`ITSAppUsesNonExemptEncryption=false`、`UIUserInterfaceStyle=Dark`、方向数组**只有竖屏**；`Frameworks/` 里有 `sqlite3.framework` 与 `objective_c.framework`（正是守卫盯着的两个原生资源包），且**没有 Pods** —— SPM 路线由真实构建确认。 ✅ **2026-10-01 在 v1.36.0 上重编重核**：`flutter build ios --release --no-codesign` → **20.9MB / arm64**，`node tool/check-ios-app.mjs` 逐项一致（身份「练了么」· `com.sdknwdtvpv.lianleme`、版本 **1.36.0 (49)**、只有仅新增相册权限、Dark、竖屏锁、应用内资产三件、`sqlite3.framework` + `objective_c.framework`、启动屏已编译进包、`Assets.car` + 2 个 AppIcon、**设备族 `[1]` = 只支持 iPhone** —— 2026-09-30 拍板，产物里含 iPad 现在会判红）。**新增第 10 条核对：应用级隐私清单**（`PrivacyInfo.xcprivacy`）必须在包里、`NSPrivacyTracking=false`、至少声明一类 required-reason API —— 2026-10-01 补的文件 + 守卫（两条负向用例）。**第 9 条核对：出口合规的"决定"必须留痕** —— 包里确实有标准算法的加密代码（AES-256-GCM + HKDF-SHA256，云备份用），所以 `docs/store-listing-ios.md` 里必须写明算法、两种口径与"谁来决定"（见该文件「出口合规」一节，负向测试：把算法名从文档里拿掉 → 真产物核对当场红）。 ✅ **2026-09-30 又进一步**：模拟器运行时（iOS 27.0，约 8G）装好后，App **第一次在 iOS 上真的跑起来** —— 同一份 `integration_test/screenshots_test.dart` 在 iPhone 17 Pro Max 上出图 **12 张 / 0 步失败 / 1320×2868**，逐屏用眼睛看过；因为 iOS 模拟器给的是 **16 位 RGBA**、而 App Store 只收 **8 位无 alpha**，新增 `tool/flatten-png.mjs` 压平（三套截图现在都由 `tool/check-screenshots.mjs` 核，含这两条硬规矩）。⚠️ 还差**签名与上传**（要 Apple Developer 账号）。⚠️ 另有一条**未定性**的观察：在那台模拟器上第一次跑这套脚本时（运行时刚装完、App 首次启动），首页刷新报过一次 drift 后台 isolate 的错（0 张图）；此后**连跑 5 次全新安装，5 次全绿 13/13** —— 像一次性环境问题，但**没定位到根因**，也没在真机上验过（那要 Apple 账号）。商店表单字段见 `docs/store-listing-ios.md` |
+| **iOS 侧** | 🟡 代码侧就绪，且**已能构建**（⚠️ 在 Xcode 里会看到 **1 条警告** —— `share_plus` 插件里 `keyWindow` 的弃用提示，有 `@available` 守卫、我们的部署目标 iOS 15 走不到那行，**不用管**：见 `docs/tech-decisions.md`「已知警告」）：**2026-09-30 已构建**（许可证接受之后的第一次）：`flutter build ios --simulator --no-codesign` → 183M 的 Runner.app；`flutter build ios --release --no-codesign` → **19M / arm64 / 最低 iOS 15.0**。产物逐项核对过：显示名「练了么」、bundle id `com.sdknwdtvpv.lianleme`、版本 `1.31.0 / 40` —— 那是首编那一次的产物）、**只有 `NSPhotoLibraryAddUsageDescription`**（没有读相册那条）、`ITSAppUsesNonExemptEncryption=false`、`UIUserInterfaceStyle=Dark`、方向数组**只有竖屏**；`Frameworks/` 里有 `sqlite3.framework` 与 `objective_c.framework`（正是守卫盯着的两个原生资源包），且**没有 Pods** —— SPM 路线由真实构建确认。 ✅ **当时（2026-10-01）在 v1.36.0 上重编重核**：`flutter build ios --release --no-codesign` → **20.9MB / arm64**，`node tool/check-ios-app.mjs` 逐项一致（身份「练了么」· `com.sdknwdtvpv.lianleme`、版本 **1.36.0 (49)**、只有仅新增相册权限、Dark、竖屏锁、应用内资产三件、`sqlite3.framework` + `objective_c.framework`、启动屏已编译进包、`Assets.car` + 2 个 AppIcon、**设备族 `[1]` = 只支持 iPhone** —— 2026-09-30 拍板，产物里含 iPad 现在会判红）。**新增第 10 条核对：应用级隐私清单**（`PrivacyInfo.xcprivacy`）必须在包里、`NSPrivacyTracking=false`、至少声明一类 required-reason API —— 2026-10-01 补的文件 + 守卫（两条负向用例）。**第 9 条核对：出口合规的"决定"必须留痕** —— 包里确实有标准算法的加密代码（AES-256-GCM + HKDF-SHA256，云备份用），所以 `docs/store-listing-ios.md` 里必须写明算法、两种口径与"谁来决定"（见该文件「出口合规」一节，负向测试：把算法名从文档里拿掉 → 真产物核对当场红）。 ✅ **2026-09-30 又进一步**：模拟器运行时（iOS 27.0，约 8G）装好后，App **第一次在 iOS 上真的跑起来** —— 同一份 `integration_test/screenshots_test.dart` 在 iPhone 17 Pro Max 上出图 **12 张 / 0 步失败 / 1320×2868**，逐屏用眼睛看过；因为 iOS 模拟器给的是 **16 位 RGBA**、而 App Store 只收 **8 位无 alpha**，新增 `tool/flatten-png.mjs` 压平（三套截图现在都由 `tool/check-screenshots.mjs` 核，含这两条硬规矩）。⚠️ 还差**签名与上传**（要 Apple Developer 账号）。⚠️ 另有一条**未定性**的观察：在那台模拟器上第一次跑这套脚本时（运行时刚装完、App 首次启动），首页刷新报过一次 drift 后台 isolate 的错（0 张图）；此后**连跑 5 次全新安装，5 次全绿 13/13** —— 像一次性环境问题，但**没定位到根因**，也没在真机上验过（那要 Apple 账号）。商店表单字段见 `docs/store-listing-ios.md`。 ✅ **2026-10-04：iOS 真机也跑通了**（**免费 Apple ID / Personal Team**，不需要付费账号）：`tool/ios-device-run.sh` 一条命令完成"读 Team → 换 dev bundle id → 编签 → 装 → 拉起 → 工程改回"，在 iPhone 17 Pro（iOS 27.2）上验到 **Live Activity 在锁屏正常显示**（证据 `docs/images/v142-live-activity-lockscreen.png`）与 widget 扩展一起签进包；坑与实测结论记在 `docs/ios-free-provisioning-guide.md` 第六节。⚠️ **仍未变的**：免费档签出来的包**只能装自己那台、7 天失效、不能 TestFlight / Ad Hoc 分发** —— "签名与上传"那一关仍然要付费账号。 |
 | **CI（GitHub Actions）** | ✅ **CI 跑的就是门禁本身**（2026-09-30）：`.github/workflows/ci.yml` 只有一条 `./verify.sh`，在 `ubuntu-24.04` / node 22 / flutter 3.47.5 上跑。三次实测：`7f0ed36` → 235 秒、`997070a` → 249 秒、**`6be4a66`（v1.34.0）→ 262 秒**，都是 `success`。**关键是它绿得可证**：多了一步「门禁账目」——日志里 `[1/6]`…`[6/6]` 必须都在、**不许出现「⊘ 阻塞」**、且写着"未发现失败"，否则判红（`verify.sh` 在开发机上把"环境阻塞"当不失败，CI 上必须反过来）。失败时那几行会被抬成 `::error::` **注解**（job 日志要凭据才读得到，注解公开可读）|
 | 全新克隆 | ✅ **`git clone` 之后直接 `./verify.sh` 就能跑完六层**（2026-09-30 首次实测：一份干净克隆里跑出 168 个 ✓、`未发现失败`；**2026-09-30 晚在 `2f66d40` 上又跑了一遍**：753 项测试全绿、**`未发现失败`、零阻塞**、新增的那几个守卫（CI/商店表单/交付目录/部署包/截图）自检也都在克隆里跑过 —— `dist/` 不在时的跳过路径同样验到了）。此前不是这样：第 2 层会假报「有直接依赖不支持 iOS」、第 4 层判阻塞、第 5 层自己 pub get 后因缺 `db.g.dart` 失败 —— 三层对「还没引导过」的反应互相矛盾。现在 `verify.sh` 开头有第 0 步引导（按需 pub get + 生成 drift 代码）|
-| 测试 | ✅ 门禁 **786 项全绿**、变异 24 杀 / 0 存活 = 100%。⚠️ 上面这个数字是**唯一的事实源**：`verify.sh` 第 5 层会拿实测条数跟它对比，对不上就判红（README 里那些"553 条测试"之类的抄写就是这么烂掉的） |
+| 测试 | ✅ 门禁 **887 项全绿**、变异 24 杀 / 0 存活 = 100%。⚠️ 上面这个数字是**唯一的事实源**：`verify.sh` 第 5 层会拿实测条数跟它对比，对不上就判红（README 里那些"553 条测试"之类的抄写就是这么烂掉的） |
 | 上报地址的"积压事件"决策 | ❌ **未定，且它会阻断"配了上报地址的包"**：没配地址的包把事件攒在本地（不丢），所以第一次配上地址时会把**旧版本攒下的事件**一起发出去。三选项见 `docs/analytics.md` §10，建议 C（或 B）。**定下来之前不要发布配了 `LIANLEME_ANALYTICS_URL` 的包** |
 | `tap_count` 门禁 | ❌ 口径已改端到端、目标值**待用真实测试数据重新校准**。按项目规则**不允许上架**（旁边加载到自己的开发机不受此限） |
 
@@ -336,21 +362,23 @@ cd .. && node tool/check-aab.mjs
 
 ---
 
-## 终局核验（2026-09-30，逐项实测）
+## 终局核验（2026-09-30 首核；**2026-10-05 在 v1.44.0 上逐项重核**）
 
-出门之前把"产物 / 真机 / 对外数字"对齐了一遍。**每一项都是当场跑出来的**，不是抄上面的表：
+出门之前把"产物 / 真机 / 对外数字"对齐了一遍。**每一项都是当场跑出来的**，不是抄上面的表。
+⚠️ 这张表里的版本号/数字**逐版重核后就地改**（旧值不要留），所以它与上面那张表**允许重复、不允许打架**：
 
 | 项 | 实测结果 |
 |---|---|
-| `dist/` 内容 | `练了么-v1.31.0.apk` + `copyright/`（V1.31.0 的源程序与说明书 PDF/HTML + measure.html）+ `README.md` —— **没有上一版的残留** |
-| APK（旁加载包） | `versionCode 49 · versionName 1.36.0`，与 `app_info.dart` / `pubspec.yaml` 一致；manifest 合并后 **2 条声明**（INTERNET、WRITE_EXTERNAL_STORAGE ≤29）+ 1 条注入（DYNAMIC_RECEIVER）+ 1 条隐含（READ ≤29，系统因 WRITE 授予） |
+| `dist/` 内容 | `练了么-v1.44.0.apk` + `练了么-v1.44.0.aab` + `copyright/`（V1.44.0 的源程序与说明书 PDF/HTML + measure.html）+ `README.md` —— **没有上一版的残留**（`node tool/check-dist.mjs` 当场核过：包内 `1.44.0 (63)` 与真源一致） |
+| APK（旁加载包） | `versionCode 63 · versionName 1.44.0`，与 `app_info.dart` / `pubspec.yaml` 一致；签名者 **`CN=李松`**（真 keystore，`apksigner verify --print-certs` 当场核过）；manifest 合并后 **3 条声明**（INTERNET、WRITE_EXTERNAL_STORAGE ≤29、POST_NOTIFICATIONS）+ 1 条注入（DYNAMIC_RECEIVER）+ 1 条隐含（READ ≤29，系统因 WRITE 授予） |
 | `privacy-audit.mjs --apk`（发布前必跑） | ✅ 对得上：18 事件 / 7 公共字段 / 2 声明权限 / **打包后合并 5 条**全部已披露 |
-| AAB（Google Play 通道） | ✅ `tool/check-aab.mjs`（**在 v1.36.0 上重核**）：119 条目 · 57.8 MB · **三 ABI** 原生库齐全（arm64-v8a / armeabi-v7a / x86_64）· 版本 **1.36.0** 与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 仍会**假报** "failed to strip debug symbols"（卷名空格）并**退出码非 0**，产物没问题 —— 所以判据必须是"核产物"（`check-aab` / `check-dist`），不是看退出码。AAB 现在也放进 `dist/`，由 `tool/check-dist.mjs` 每次核版本（旧版本残留、文件名没版本号都判红）|
-| 真机 `75caf509` | 装的是 **1.36.0（versionCode 49）**（⚠️ **跑过 `flutter drive` 之后必须重装一次**：截图脚本结束时会卸载 App，也会把 `wm size` 留在截图分辨率上 —— 见 `docs/dev-environment.md`）；`force-stop` 后冷启动正常、`E/flutter` **0 条**；屏幕尺寸已复位（1280×2772） |
-| 商店截图三套 | `store-assets/screenshots/` 15 张（1080×2400，国内/软著）· `screenshots-play/` 14 张（1080×1920，Play 要的 9:16）· `screenshots-ios/` 14 张（1320×2868，8 位 RGB 无 alpha）。三套都是 **2026-10-01 在 v1.34.0 上重出**、v1.35.1 沿用（界面未再改版式）的（多一张 `10b-data-tools`：「我」页重排后身体数据/导出的入口在那一页）。齐/尺寸/夹带由 `tool/check-screenshots.mjs` 每次核对 |
+| AAB（Google Play 通道） | ✅ `tool/check-aab.mjs "dist/练了么-v1.44.0.aab"`（**2026-10-05 在 v1.44.0 上重核**）：119 条目 · 58.2 MB（61,054,192 字节）· **三 ABI** 原生库齐全（arm64-v8a / armeabi-v7a / x86_64）· 版本 **1.44.0** 与 `app_info.dart` 一致。⚠️ `flutter build appbundle` 仍会**假报** "failed to strip debug symbols"（卷名空格）并**退出码非 0**，产物没问题 —— 所以判据必须是"核产物"（`check-aab` / `check-dist`），不是看退出码。AAB 现在也放进 `dist/`，由 `tool/check-dist.mjs` 每次核版本（旧版本残留、文件名没版本号都判红）|
+| 真机 `75caf509` | 装的是 **1.44.0（versionCode 63）**（2026-10-05 **卸载后重装** —— 真 keystore 与旧包 debug 签名不同，`install -r` 被拒；本机数据用恢复码从云端取回，2 次训练 / 2 组回来了）（⚠️ **跑过 `flutter drive` 之后必须重装一次**：截图脚本结束时会卸载 App，也会把 `wm size` 留在截图分辨率上 —— 见 `docs/dev-environment.md`）；`force-stop` 后冷启动正常、`E/flutter` **0 条**；屏幕尺寸已复位（1280×2772） |
+| 商店截图三套 | `store-assets/screenshots/` 15 张（1080×2400，国内/软著）· `screenshots-play/` 14 张（1080×1920，Play 要的 9:16）· `screenshots-ios/` 14 张（1320×2868，8 位 RGB 无 alpha）。**三套都是 2026-10-04 在 v1.42.2 上重出**（此前那批是 v1.34.0 拍的）：真机两套走 `flutter drive` + `wm size`，App Store 那套走 iOS 模拟器 + `flatten-png.mjs` 压平。⚠️ 触发这次重出的是**四张过期的图**（首页 / 选择器 / 计划 + 首页入口那行）—— v1.38.0 起界面改了三次而图没跟上。**这次重出跑了两轮**（第一轮白跑了）：拍完又把模板标题从 `Row` 改成 `Wrap`（第一版会把名字挤到折行），于是三套都得再拍一遍。⚠️ 中间还真丢过一次：安卓那轮的新图落在无撇号的「跑道」副本里、**没及时拷回主仓库**，随后一次 `rsync --delete` 把它覆盖回旧版（iOS 那套因为是从 `/tmp` 拷的反而留下了）—— **教训：跨仓库搬产物时，`rsync` 的方向要当场确认**。齐/尺寸/夹带由 `tool/check-screenshots.mjs` 每次核对（⚠️ 它只核**齐不齐、尺寸、夹带**，**核不出"内容过不过期"**） |
 | 全新克隆 | ✅ `git clone` 后直接 `./verify.sh` → 六层全跑、`未发现失败`（首测 168 个 ✓；`2f66d40` 复测 753 项测试全绿、零阻塞）。见 CHANGELOG：为此加了第 0 步引导 |
-| iOS 产物 | ✅ `node tool/check-ios-app.mjs`（新工具，2026-09-30，安卓那边 `check-aab.mjs` 的对应物）：两种构建都逐项核过 —— 身份（显示名/两端 bundle id 一致）、版本 `1.31.0 (40)`、**只有「仅新增」相册权限（无读权限）**、主题 Dark、方向锁定、应用内资产三件齐、`sqlite3.framework` 与 `objective_c.framework` 都在。⚠️ 它同时报出一条产品决定：`UIDeviceFamily = [1,2]` → **这个包在商店里会承诺「支持 iPad」**（`your-todo` 第 10 条那一项）。工具带自检（造几份动过手脚的 .app 要求它抓得住），自检已进门禁第 2 层 |
-| 软著材料 | `dist/copyright/` 里是 **V1.36.0**：源程序 **175 个文件 / 45,986 行 / 全文 920 页**、提交用前 30 + 后 30 页（正好 60 页）、说明书 6 页；著作权人仍是占位符（**待你实名提交**，生成命令：`node tool/copyright-pdf.mjs --owner "你的姓名"`） |
+| iOS 产物 | ✅ **2026-10-05 在 v1.44.0 上重核**（`node tool/check-ios-app.mjs`，安卓那边 `check-aab.mjs` 的对应物）：版本 **`1.44.0 (63)`**、显示名「练了么」、**只有「仅新增」相册权限（无读权限）**、主题 Dark、方向锁竖屏、应用内资产三件齐、`sqlite3.framework` 与 `objective_c.framework` 都在、**设备族 `[1]`（只承诺 iPhone，2026-09-30 那条「会承诺支持 iPad」的隐患已消除）**、应用级隐私清单（追踪 false + 3 类 required-reason）、**Live Activity 扩展 `RestWidget.appex` + `NSSupportsLiveActivities=true` 确实在包里**。⚠️ 唯一一条红是 `bundle id 是 com.sdknwdtvpv.lianleme.dev` —— 那是**免费 Apple ID 真机装包故意改的**（见 `docs/ios-free-provisioning-guide.md`），**不要为了让守卫变绿去改守卫**。⚠️ **这次顺带核出守卫自己的一个坑**：它的"自动找最新产物"原先只认 `build/ios/**`，而真机装包走的是另一个 derivedData 目录 `build/ios-dd`（`tool/ios-device-run.sh`）—— 于是它挑中了 8 小时前那份 **1.41.0 模拟器包**、报出两条假的"版本不符"，而真正最新的 1.42.3 真机包就在隔壁目录里没被看到。已把 `build/ios-dd` 加进候选（仍按修改时间取最新），现在它挑的是真产物，并且会**把磁盘上更旧的那两份点名报出来**（1.41.0 模拟器包 / 1.36.0 真机包）——"留着一份旧的"正是最容易拿去上传的那一份。工具自检（16 项产物 + 3 项出口合规，造动过手脚的 .app 要求它抓得住）在门禁第 2 层 |
+| 软著材料 | `dist/copyright/` 里是 **V1.44.0**：源程序 **199 个文件 / 55,074 行 / 全文 1102 页**、提交用前 30 + 后 30 页（正好 60 页）、说明书 6 页；著作权人已按 `--owner "李松"` 生成（与 **ICP 备案主体**、**keystore 的 `CN=李松`** 同一个名字）。⚠️ **提交前请确认这个名字与身份证一致** —— 不一致就重跑一次 `node tool/copyright-pdf.mjs --owner "你的姓名"`（改名只影响页脚，一分钟的事）。⚠️ **这三个数字由 `node tool/copyright-pdf.mjs --check-docs` 每次对账**（源文件/行数/页数任意一处漂了就红 —— 它已经抓过两次：加完守卫源码变多、改动后页数变多） |
+| 界面文案 | ✅ **2026-10-04 全量审计**（判据与逐条清单见 `docs/copy.md`）：删/收 **20 处**"解释性语言"，分布 7 个文件；两类可机械判的漏字（`开发者`、`号文`）已进 `tool/check-user-text.mjs`（13 条自检）。⚠️ **半可执行**：另外三类（复述标题 / 科普 / 替人操心）**没有机械判据**，只能照判据人读 —— 这一点写在 `docs/copy.md` 第四节，不要当成"有守卫就万事大吉"。真机三张图：`docs/images/v144-prefs-copy-trimmed.png`（偏好设置）、`docs/images/v145-data-tools-no-subtitle.png`（数据与备份）、`docs/images/v144-privacy-copy.png`（隐私与关于）。⚠️ 这三张图的名字里写着 `v144-` / `v145-`，那是**当时打算切的版本号**，后来这批文案改动并进了 v1.42.5 / v1.43.0 的同版追加 —— **v1.44.0 真正对应的是「换图标」那一版**。文件名不改（改了就成孤儿图），但别拿它当版本指路 |
 
 **这份核验能证明什么、不能证明什么**：能证明"我们这边该做的都做了、且对得上"；
 **不能**证明"商店会收"—— 那还需要真 keystore（现在仍是 debug 签名）、备案、软著证书、

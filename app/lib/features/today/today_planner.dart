@@ -20,15 +20,70 @@ import '../../data/local_store.dart';
 import '../../domain/models.dart';
 import '../../domain/progression.dart';
 
-/// 部位轮转顺序。练过没练过都按这个顺序找"下一个没练的"。
-const List<String> kMuscleRotation = <String>[
-  'chest',
-  'back',
-  'legs',
-  'shoulders',
-  'arms',
-  'core',
-];
+/// 上肢日练的部位。
+///
+/// ⚠️ `arms` 也在里面：分化的构图里上肢日不单列手臂（推/拉的复合动作已经把它喂了），
+/// 但用户**自己选**一个弯举来练时，最近一次训练就会被算成上肢 ——
+/// 少了这一项，"上次练了手臂"会被误判成下肢，今天又给你排一次上肢。
+const List<String> kUpperGroups = <String>['chest', 'back', 'shoulders', 'arms'];
+
+/// 下肢日练的部位
+const List<String> kLowerGroups = <String>['legs', 'core'];
+
+/// **训练日的分化**（2026-10-04 从"6 部位轮转"改成上下肢 ×2）。
+///
+/// ## 为什么改（有证据，不是口味）
+///
+/// 循证区间是「**每块肌肉每周 12–20 组**」—— Baz-Valle 2022 系统综述+元分析的结论
+/// （中等 12–20 组与高容量 >20 组在股四头肌 p=0.19、肱二头肌 p=0.59 上**没有差异**，
+/// 也就是说超过 20 组只是白练加疲劳）；下限门槛「> 9 组/周」见 Schoenfeld 2017 元分析。
+///
+/// 而旧设计的实际产出是：1 个部位 × 3 个动作 × 3 组 = **9 组/次**，
+/// 而轮转有 **6 个部位** —— 每周练 3–4 次的用户，同一块肌肉 **两周才轮到一次**，
+/// 折合每肌群每周只有 **4.5–6 组**，不到门槛的一半。
+///
+/// 还有一条算术事实：6 块肌肉 × 12 组 = 72 组/周，3 练/周就是 24 组/次（≈8 个动作）。
+/// 所以每周 3 练的人**不可能**把所有肌群都练进区间 —— 必须按复合动作聚集、
+/// 让协同肌群靠间接量搭便车。这正是上下肢分化存在的原因。
+enum TrainingDay {
+  upper('上肢', 'upper'),
+  lower('下肢', 'lower');
+
+  const TrainingDay(this.label, this.wire);
+
+  /// 中文名（界面直接显示"今天练 上肢"）
+  final String label;
+
+  /// 落库/埋点用的稳定标识
+  final String wire;
+}
+
+/// **每个训练日的构图**：练哪些部位、各几个动作。
+///
+/// 组数按 3 组/动作算 —— 上肢 6 个 = 18 组、下肢 6 个 = 18 组，
+/// 都过项目自己的「单次 ≥ 12 组」护栏。
+///
+/// 上肢不单列手臂：推与拉的复合动作已经把三头/二头喂了（复合动作的组数要算进协同肌群，
+/// 这是 Baz-Valle 采用的计法）。下肢把核心放在后面收尾。
+const Map<TrainingDay, List<({String group, int count})>> kDayComposition =
+    <TrainingDay, List<({String group, int count})>>{
+  TrainingDay.upper: <({String group, int count})>[
+    (group: 'chest', count: 3),
+    (group: 'back', count: 2),
+    (group: 'shoulders', count: 1),
+  ],
+  TrainingDay.lower: <({String group, int count})>[
+    (group: 'legs', count: 4),
+    (group: 'core', count: 2),
+  ],
+};
+
+/// **第一次训练只给 4 个动作（12 组）**。
+///
+/// 为什么不一上来就给 6 个：北极星是「首次打开 → 完成第一次训练」，
+/// 而一屏 6 个动作的清单比 4 个更容易劝退。第 2 次起按完整分化给。
+/// 12 组正好压在「单次 ≥ 12 组」那条护栏上 —— 不因为照顾新手就掉出去。
+const int kFirstSessionExercises = 4;
 
 /// 从动作库选中的动作默认用这个处方：3 组 8–10 次。
 ///
@@ -229,24 +284,25 @@ class TodayPlanner {
   final ExerciseRepository _repo;
   final LocalStore _store;
 
-  /// 今天该练哪个部位。
+  /// **今天轮到哪个训练日**（上下肢交替）。
   ///
-  /// 规则：取最近一次训练练过的所有部位，然后在轮转顺序里找**第一个没练过的**。
-  /// 全练过了（或从没练过）就回到轮转的第一个。
-  Future<String> nextMuscleGroup() async {
+  /// 规则：看**最近一次训练**练了哪些部位（`recentExerciseIds()` 只看最近那一次）——
+  /// 只要碰到了上肢的部位，今天就是下肢；否则今天上肢。从没练过 → 上肢。
+  ///
+  /// 旧版在这里做的是"6 部位轮转里找第一个没练过的"，那不是交替而是**两周一轮**
+  /// （见 [TrainingDay] 的注释里那笔组数账）。
+  Future<TrainingDay> nextTrainingDay() async {
     final List<String> recentIds = await _store.recentExerciseIds();
-    if (recentIds.isEmpty) return kMuscleRotation.first;
+    if (recentIds.isEmpty) return TrainingDay.upper;
 
     final Set<String> trained = <String>{};
     for (final String id in recentIds) {
       final ExerciseData? row = await _repo.byId(id);
       if (row != null) trained.add(row.muscleGroup);
     }
-
-    for (final String g in kMuscleRotation) {
-      if (!trained.contains(g)) return g;
-    }
-    return kMuscleRotation.first;
+    if (trained.isEmpty) return TrainingDay.upper;
+    final bool lastWasUpper = trained.any(kUpperGroups.contains);
+    return lastWasUpper ? TrainingDay.lower : TrainingDay.upper;
   }
 
   /// 生成今天的建议。
@@ -281,22 +337,68 @@ class TodayPlanner {
     return out;
   }
 
+  /// 生成**今天**的计划（按上下肢分化）。
+  ///
+  /// [day] 不传就自动轮转（[nextTrainingDay]）。
+  /// [count] 不传就按 [kDayComposition] 给（上肢 6 个 / 下肢 6 个）；
+  ///   **第一次训练自动收成 [kFirstSessionExercises] 个**（引导页与轻量路径会显式传）。
+  /// [firstTime] 只给测试用 —— 生产路径由"库里有没有正常组"推断。
   Future<List<PlannedExercise>> planToday({
-    int count = 3,
-    String? muscleGroup,
+    TrainingDay? day,
+    int? count,
     WeightUnit unit = WeightUnit.kg,
+    bool? firstTime,
   }) async {
-    final String group = muscleGroup ?? await nextMuscleGroup();
-    final List<ExerciseData> candidates =
-        // category: 'strength' —— **只从力量动作里挑**。
-        // 库里现在有热身（12 个）与拉伸（9 个），它们也会按部位归属（拉伸多半是腿），
-        // 不挡的话「今天练什么」会推荐「站姿股四头肌拉伸 × 3 组」。
-        // 距离类动作现在**可以**被推荐了：处方能表达"3 组 × 20 米"（见 distancePlanFor）。
-        // 有氧仍然不会出现 —— 它靠 category 挡着（推荐只挑 strength）。
-        await _repo.search(muscleGroup: group, category: 'strength', limit: count);
+    final TrainingDay d = day ?? await nextTrainingDay();
+    final bool first = firstTime ?? (await _store.allSets()).isEmpty;
+    final int full = kDayComposition[d]!
+        .fold<int>(0, (int a, ({String group, int count}) s) => a + s.count);
+    final int budget = count ?? (first ? kFirstSessionExercises : full);
 
     final List<PlannedExercise> out = <PlannedExercise>[];
-    for (final ExerciseData e in candidates) {
+    int left = budget;
+    for (final ({String group, int count}) slot in kDayComposition[d]!) {
+      if (left <= 0) break;
+      final int take = slot.count < left ? slot.count : left;
+      final List<PlannedExercise> picked =
+          await planForGroup(muscleGroup: slot.group, count: take, unit: unit);
+      out.addAll(picked);
+      // 取不到就少一点（种子换过也不崩），但不把余量让给下一个部位 ——
+      // 那会让"胸 3 个"变成"胸 5 个"，构图就没了。
+      left -= take;
+    }
+    return out;
+  }
+
+  /// **一个部位的计划**。今天的分化按格调用它；测试也直接用它核"每个部位各自的不变量"
+  /// （比如核心部位只该推按时长的动作）。
+  ///
+  /// 只从 `category: 'strength'` 里挑 —— 库里现在有热身（11 个）与拉伸（9 个），
+  /// 它们也按部位归属（拉伸多半是腿），不挡的话「今天练什么」会推荐
+  /// 「站姿股四头肌拉伸 × 3 组」。
+  Future<List<PlannedExercise>> planForGroup({
+    required String muscleGroup,
+    int count = 3,
+    WeightUnit unit = WeightUnit.kg,
+    Set<String> exclude = const <String>{},
+  }) async {
+    final List<ExerciseData> rows = await _repo.search(
+      muscleGroup: muscleGroup,
+      category: 'strength',
+      limit: count + exclude.length,
+    );
+    final List<ExerciseData> picked = rows
+        .where((ExerciseData e) => !exclude.contains(e.id))
+        .take(count)
+        .toList();
+    return _build(picked, unit: unit);
+  }
+
+  /// 把一批动作包成 `PlannedExercise`（逐动作查历史 + 交给引擎算建议）。
+  Future<List<PlannedExercise>> _build(List<ExerciseData> rows,
+      {required WeightUnit unit}) async {
+    final List<PlannedExercise> out = <PlannedExercise>[];
+    for (final ExerciseData e in rows) {
       final LastSession? last = await _store.lastSessionFor(e.id);
       final PlanTarget plan = defaultPlanFor(e);
       out.add(PlannedExercise(
@@ -368,46 +470,53 @@ class TodayPlanner {
 
   /// 「换一批」：同一个部位换一组动作。
   ///
-  /// 简化：一期直接沿用部位、只换动作（靠 limit 放大后跳过已推荐过的）。
-  /// 真正的"换一批"应当换部位或换组合，那是后续迭代。
+  /// 「换一批」：**按原来的形状换** —— 同部位、同个数。
+  ///
+  /// 为什么按形状而不是按"今天的训练日"：这个方法的输入有两种 ——
+  /// 主页那一份（上下肢构图）与 `planForGroup` 的结果（某一部位的 3 个）。
+  /// 早期版本写死了"按今天的分化换"，于是换一份"核心 3 个"时会返回上肢的动作
+  /// （`today_planner_test` 那条"换一批也不放热身/拉伸进来"当场红了）。
+  ///
+  /// 某个部位已经没有别的动作了就**保留原来那些**（不缩水），并尽量把个数补齐。
   Future<List<PlannedExercise>> reroll({
     required List<PlannedExercise> current,
-    int count = 3,
     WeightUnit unit = WeightUnit.kg,
   }) async {
-    if (current.isEmpty) return planToday(count: count, unit: unit);
-    final String group = current.first.exercise.muscleGroup;
-    final List<ExerciseData> all =
-        // 「换一批」也必须是 strength：这是最容易被漏掉的一处 ——
-        // 它取回的是**整组**（limit 60）再跳过已推荐的，
-        // 热身/拉伸不挡的话，常用度排完一定会轮到它们。
-        await _repo.search(
-            muscleGroup: group, category: 'strength', limit: 60);
-    final Set<String> already = current
-        .map((PlannedExercise p) => p.exercise.id)
-        .toSet();
-    final List<ExerciseData> next = all
-        .where((ExerciseData e) => !already.contains(e.id))
-        .take(count)
-        .toList();
-    if (next.isEmpty) return current; // 没有再多的了，保持原样
+    if (current.isEmpty) return current;
+    final Set<String> already =
+        current.map((PlannedExercise p) => p.exercise.id).toSet();
+
+    // 先按原来的顺序记住"每个部位几个"
+    final List<String> order = <String>[];
+    final Map<String, int> want = <String, int>{};
+    final Map<String, List<PlannedExercise>> original =
+        <String, List<PlannedExercise>>{};
+    for (final PlannedExercise p in current) {
+      final String g = p.exercise.muscleGroup;
+      if (!want.containsKey(g)) {
+        order.add(g);
+        want[g] = 0;
+        original[g] = <PlannedExercise>[];
+      }
+      want[g] = want[g]! + 1;
+      original[g]!.add(p);
+    }
 
     final List<PlannedExercise> out = <PlannedExercise>[];
-    for (final ExerciseData e in next) {
-      final LastSession? last = await _store.lastSessionFor(e.id);
-      final PlanTarget plan = defaultPlanFor(e);
-      out.add(PlannedExercise(
-        exercise: e,
-        plan: plan,
-        // unit 以前在这里漏了：用户选了 lb，「换一批」之后又变回 kg —— 同一屏两种单位。
+    for (final String g in order) {
+      final int n = want[g]!;
+      final List<PlannedExercise> picked = await planForGroup(
+        muscleGroup: g,
+        count: n,
         unit: unit,
-        lastSession: last,
-        suggestion: suggestNext(
-          exercise: _repo.specOf(e),
-          plan: plan,
-          lastSession: last,
-        ),
-      ));
+        exclude: already,
+      );
+      out.addAll(picked);
+      already.addAll(picked.map((PlannedExercise p) => p.exercise.id));
+      // 不够就用原来那些补齐 —— 换一批不该让计划缩水
+      if (picked.length < n) {
+        out.addAll(original[g]!.take(n - picked.length));
+      }
     }
     return out;
   }

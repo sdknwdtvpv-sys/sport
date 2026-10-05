@@ -90,6 +90,15 @@ class AnalyticsMeta extends Table {
   /// **北极星的分母完全靠它**（"首次 app_open 起 24 小时内"），所以必须落库。
   IntColumn get firstOpenAt => integer().nullable()();
 
+  /// **接入上报之后是否已经清过历史积压**（2026-10-04，`docs/analytics.md` §10 的 B 方案）。
+  ///
+  /// null = 还没清过。非 null = 清理发生的时刻。
+  /// 为什么要有这一位：没配上报地址的包**不会丢事件，只会一直攒**（上限 10000 条）。
+  /// 那些积压是用户在"不上报的包"里产生的 —— 那时候我们**没有**告诉过他数据会被发出去，
+  /// 接上地址的那天把它们补传，等于事后改主意。所以：**谁记的谁发**，
+  /// 第一次在"配了地址的包"里冷启动时，先把积压清掉、把这一位写上，之后再正常发。
+  IntColumn get legacyPurgedAt => integer().nullable()();
+
   IntColumn get updatedAt => integer()();
 
   @override
@@ -271,6 +280,42 @@ class ActiveSessionRow extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// **动作置顶**（收藏）。2026-10-04，v16。
+///
+/// 为什么**单独一张表**、而不是 `user_profile` 的一列：它是一份**有顺序的集合**
+/// （用户钉住 3–5 个动作，顺序就是他心里的顺序），而 `user_profile` 全是标量偏好。
+/// `docs/data-model.md` 给 `active_session_row` 写过同样的理由（那张表是因为"运行时状态"）。
+///
+/// 为什么顺序显式存 `position` 而不按插入时间排：这个顺序**用户看得见**
+/// （选择器的「置顶」分区），不该由两次点击相差几毫秒来决定。
+class PinnedExercise extends Table {
+  TextColumn get exerciseId => text()();
+  IntColumn get position => integer()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{exerciseId};
+}
+
+/// **训练提醒的设置**（单行）。2026-10-04，v17。
+///
+/// 为什么自己一张单行表、而不是塞进 `user_profile`：那张表的**每个 setter 都要把整行带回来**
+/// （drift 的 `insertOnConflictUpdate` 写整行，漏一列就抹成默认值 —— 这个坑项目里踩过三次，
+/// 注释写在 `profile_repository.dart` 里）。提醒是独立的一件事，单独一张表就不会被
+/// "改显示单位"这种操作顺手抹掉。
+class ReminderSetting extends Table {
+  /// 固定 id（`kReminderId`）：本机只有一份提醒设置
+  TextColumn get id => text()();
+  BoolColumn get enabled => boolean().withDefault(const Constant(false))();
+
+  /// 一天中的第几分钟（0–1439）。默认 20:00 = 1200。
+  IntColumn get minutesOfDay => integer().withDefault(const Constant(1200))();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 class BodyMetric extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text().nullable()();
@@ -367,6 +412,8 @@ class BackupAccount extends Table {
   RoutineItem,
   BackupAccount,
   ActiveSessionRow,
+  PinnedExercise,
+  ReminderSetting,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -382,11 +429,13 @@ class AppDatabase extends _$AppDatabase {
   /// v10：新增 `backup_account`（云备份账号：恢复码 + 上次备份时间）。
   /// v11：`user_profile` 新增 `privacy_consent_at_ms`（首次启动的隐私政策同意时刻）。
   /// v12：`user_profile` 新增 `privacy_declined_at_ms`（**拒绝过**的时刻）。
+  /// v16：新增 `pinned_exercise`（动作置顶 —— 选择器的「置顶」分区）。
+  /// v17：新增 `reminder_setting`（训练提醒：开关 + 一天中的第几分钟）。
   ///
   /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -416,6 +465,16 @@ class AppDatabase extends _$AppDatabase {
           );
         },
         onUpgrade: (Migrator m, int from, int to) async {
+          // v16 → v17：多一张"训练提醒"表。老库升上来时它是空的 ——
+          // **准确的历史**：这个功能出现之前，谁也没开过提醒（也就是默认关）。
+          if (from < 17) {
+            await m.createTable(reminderSetting);
+          }
+          // v15 → v16：多一张"动作置顶"表。老库升上来时它是空的 ——
+          // **准确的历史**：这个功能出现之前，用户一个动作都没置顶过。
+          if (from < 16) {
+            await m.createTable(pinnedExercise);
+          }
           // v14 → v15：多一张"未结束的训练会话"表（训练中断后能回来接着练）。
           // 只加表、不动任何既有列 —— 老库里的数据一行都不用搬。
           if (from < 15) {
@@ -500,6 +559,36 @@ class AppDatabase extends _$AppDatabase {
           // 他们当初同意的是政策，不是"处理敏感个人信息"这件事本身）。
           if (from < 14) {
             await m.addColumn(userProfile, userProfile.bodyMetricConsentAtMs);
+          }
+
+          // v17 → v18：埋点那一行多一位"已清过历史积压"（`docs/analytics.md` §10 的 B 方案）。
+          // 只加列、不动任何既有数据 —— 老库升上来时它是 null，意思正是"还没清过"。
+          //
+          // ⚠️ 这一块被迁移测试**连抓两轮**，两条教训都写在这儿（都不显然）：
+          //   ① **顺序**：它 `ALTER TABLE analytics_meta`，而那张表是 `from < 7` 才建的。
+          //      前几版习惯了"新迁移往链首塞"——v15/16/17 都是 `createTable`，与顺序无关，
+          //      所以一直没出事；一旦某个迁移**动既有表**，老库（比如 v1）升上来时表还不存在，
+          //      直接 `no such table`。所以它必须排在**链尾**。
+          //   ② **判据不是版本号，是"这一列现在有没有"**：
+          //      * `m.createTable` 用的是**当前**表定义 —— 老库从 v1 升上来时，
+          //        这张表在 `from < 7` 那块就**带着新列**建出来了，再 `addColumn` 就
+          //        `duplicate column name`；
+          //      * 反过来，迁移测试里 v7+ 的 fixture **没有**这张表（那份 fixture 只写"旧形状"，
+          //        是个近似），无条件 `addColumn` 又变成 `no such table`。
+          // 一句话留给下一个人：**给既有表加列，先看库里真实的形状。**
+          if (from < 18) {
+            final List<QueryRow> tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_meta'",
+            ).get();
+            if (tables.isNotEmpty) {
+              final List<QueryRow> cols =
+                  await customSelect("PRAGMA table_info('analytics_meta')").get();
+              final bool hasCol =
+                  cols.any((QueryRow r) => r.read<String>('name') == 'legacy_purged_at');
+              if (!hasCol) {
+                await m.addColumn(analyticsMeta, analyticsMeta.legacyPurgedAt);
+              }
+            }
           }
         },
       );

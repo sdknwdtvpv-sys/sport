@@ -26,6 +26,117 @@
 
 ## 二、App 备案（**最硬的一条，先起**）
 
+### 备案「苹果平台」包信息要填的三个值（2026-10-05）
+
+腾讯云 APP 备案的「APP 特征信息 → **苹果平台** → 包信息」要 **Bundle ID / 公钥 / 签名MD5值**：
+
+| 字段 | 值 |
+|---|---|
+| Bundle ID | `com.sdknwdtvpv.lianleme` |
+| 签名MD5值 | **`9E04AFB3B662A8F6C6C518A066513328AC386DA9`** |
+| 公钥（16 进制） | 见下面那个代码块（可直接复制） |
+
+
+**公钥**（16 进制，直接复制；来源：钥匙串里的 `Apple Development` 证书）：
+
+```text
+30820122300d06092a864886f70d01010105000382010f003082010a0282010100e78308d0b02e67274f1f1e60b370724d4b58fbf60d85875409e0bdaf0931a304d8672b504bc9c2cf65a0db05f9ca61d9244a45ab7e3586b26fa674c87b71c1a294242d3aef539a79d1797c767ea633ce9d4ab2f7dd7e46f87ea1aec26cd1b153cf688ad2c32c97c30dd9d4f476a4bc7e4b550a17c6bde489c8ff4f49605e0dd4487953f15700560ef27a8e0b66bbef105c855898176428bc22bc47133c34574758cbd62820732483f1d44ff8307b28face0f5afc2456d29f40a8c8b4e4d1dd48d0d63af3ef78b4a998d02864bf74061b97f98cfbc515f24dbfdbc0042c8ce75a3f530940cd9c07ca542f62045512abf4cfc009c303cb58d2446eded40f0ed35b0203010001
+```
+
+> ⚠️ **这一栏最容易填错的地方**：名字叫「签名MD5值」，但按腾讯云
+> [243/97789](https://cloud.tencent.cn/document/product/243/97789) 与阿里云
+> [填写App特征信息](https://help.aliyun.com/zh/icp-filing/basic-icp-service/user-guide/fill-in-app-feature-information)
+> 两份官方规范：**安卓填证书的 MD5，苹果填证书的 SHA-1**（都以 16 进制）。
+> **iOS 填成 MD5 会被驳回。**
+
+⚠️ **一个需要知道的边界**：上面那两个值取自**现有的苹果开发者证书**（免费 Personal Team 的
+`Apple Development: 919500973@qq.com (FA5LCQQVX8)`，有效期到 2027-10-04）——
+因为免费档拿不到 `Apple Distribution` 证书。备案规范说的是"登录开发者账号 → 证书 → 下载对应 App 证书"，
+严格讲正式上架用的会是**分发证书**。两条路：
+① **先用开发证书提交**（备案是长杆，先起跑；接入商一般只收集信息不校验证书类型），
+   等拿到付费账号、生成分发证书后，若被要求再走**备案变更**；
+② 先付费买账号、生成分发证书再填（一次到位，但备案往后推）。
+
+**怎么复算**（macOS，证书在钥匙串里）：
+
+```bash
+security find-certificate -c "Apple Development" -p > /tmp/dev.pem
+openssl x509 -in /tmp/dev.pem -noout -fingerprint -sha1      # → 签名MD5值那一栏（iOS 填 SHA-1）
+openssl x509 -in /tmp/dev.pem -pubkey -noout | openssl pkey -pubin -outform DER | xxd -p   # → 公钥
+```
+
+### 密钥怎么备份（2026-10-05 实际跑过一遍）
+
+**要备份的只有两样，但它们是"丢了就永久锁死"的那种**：
+`app/android/upload-keystore.p12`（签名本身）+ **keystore 密码**（脚本把 key 密码设成与它相同）。
+`key.properties` 里是**明文密码**，它只是给 gradle 读的便利文件 —— 丢了可以用密码重建，不必单独备份。
+
+**① 做成加密磁盘映像**（已实测：产物是 AES-256 加密的，`hdiutil imageinfo` 里能看到 `CEncryptedEncoding`）：
+
+```bash
+cd app/android
+STAGE="$(mktemp -d)/练了么-签名备份-$(date +%Y%m%d)"; mkdir -p "$STAGE"
+cp upload-keystore.p12 key.properties "$STAGE/"
+hdiutil create -encryption AES-256 -fs HFS+ -volname "lianleme-signing-backup" \
+  -srcfolder "$STAGE" "$HOME/Desktop/lianleme-signing-backup-$(date +%Y%m%d).dmg"
+rm -rf "$(dirname "$STAGE")"     # 清掉未加密的中间目录
+```
+
+⚠️ **仍用 `hdiutil`，不要换苹果推荐的 `diskutil image create from --encrypt`**（2026-10-05 实测）：
+新写法确实也会加密（不给口令挂不上），但**我用同一个口令挂不回去**（`认证错误`）——
+没验通之前不要把它当成替代品写进流程。`hdiutil` 那句 `is deprecated` 只是提醒，不影响结果。
+
+> 中间目录放 `$(mktemp -d)` 而不是桌面：桌面可能被 iCloud 同步走**未加密**的那一份。
+
+**② 校验备份可用**（这一步最容易省，也最容易自欺 —— "备份了但文件坏了/密码记错"）：
+
+```bash
+MP=$(hdiutil attach -nobrowse "$HOME/Desktop/lianleme-signing-backup-XXXX.dmg" | tail -1 | sed 's/.*\/Volumes/\/Volumes/')
+keytool -list -v -keystore "$MP/upload-keystore.p12" | grep -E "别名|所有者"   # 会交互式问密码
+diskutil eject "$MP"
+```
+
+**看到 `所有者: CN=李松, C=CN` 才算这份备份可用。**（故意不写 `-storepass`，让它交互式问 —— 密码不进 shell 历史。）
+
+**③ 存三个地方**：密码管理器（密码 + 备注别名/包名）· **两块离线介质**（U 盘/移动硬盘，放不同地方）·
+**一张手写的纸**（密码，放抽屉/保险柜 —— 密码管理器忘了主密码、介质坏了时，纸是最后一道）。
+
+> ⚠️ 红线：不进 git（`.gitignore` 已挡）· **不发微信/网盘/云相册**（那是主动泄露，不是备份）·
+> 不把密码写进任何仓库文件与对话。
+
+### 备案「包信息」要填的三个值（2026-10-05 定稿，可直接照抄）
+
+腾讯云 APP 备案的「APP 特征信息 → 安卓平台 → 包信息」要 **App 包名 / 公钥 / 签名MD5值**：
+
+| 字段 | 值 |
+|---|---|
+| App 包名 | `com.sdknwdtvpv.lianleme` |
+| 签名 MD5 | `2227a0109f73e388ce4986033b39fd85` |
+| 公钥 | 见 `app/android/upload-keystore.p12` 导出（下面有命令） |
+
+**为什么必须是这把密钥的**：备案里的签名要与**上架包**一致。2026-10-05 之前仓库里的包是
+`CN=Android Debug` 的调试签名（MD5 `066e15f7…`），**用那个值去备案，等换成正式密钥出包就会对不上**。
+
+**怎么复算**（三条命令，都不需要把密码写进 shell 历史）：
+
+```bash
+# 签名 MD5 / SHA-1 / SHA-256（从已签名产物，与备案口径一致）
+apksigner verify --print-certs dist/练了么-v1.44.0.apk
+
+# 公钥（base64 单行）
+keytool -exportcert -rfc -alias upload -keystore app/android/upload-keystore.p12 \
+  | openssl x509 -pubkey -noout | sed '1d;$d' | tr -d '\n'
+
+# 证书指纹（独立复算，应为 MD5 2227a010…）
+keytool -exportcert -rfc -alias upload -keystore app/android/upload-keystore.p12 \
+  | openssl x509 -noout -fingerprint -md5
+```
+
+> ⚠️ **这三个值是公开信息**（它们在包里、也在备案页上），可以进仓库；
+> **keystore 密码不是** —— 它只在你的密码管理器里，仓库里任何文件都不该出现它。
+
+
+
 **依据**：《工业和信息化部关于开展移动互联网应用程序备案工作的通知》。
 小米应用商店的标准修订于 2024-10-09 公示、**2024-11-01 正式生效**：
 > 应用发布上架时，需按相关规定履行 APP 备案手续，且同一 APP，其 **APP 主办单位、APP 名称、
@@ -406,7 +517,7 @@ cocoapods.dart:307-310
 | 材料 | 谁做 | 说明 |
 |---|---|---|
 | 应用图标 | ✅ 已做（我） | `store-assets/icon-512.png`；Android 全套（传统 5 密度 + 自适应 + 圆形 + 主题剪影） |
-| 应用图标·怎么重做 | 一条命令 | `python3 tool/gen-icons.py`（方向 A）或 `--alt`（深底版）；`tool/asset-check.mjs` 守着"不许是 Flutter 默认图" |
+| 应用图标·怎么重做 | 一条命令 | `python3 tool/gen-icons.py`（默认：深底 + 白「练」 + volt 哑铃）；`tool/asset-check.mjs` 守着"不许是 Flutter 默认图" |
 | 截图 | 你（或设计师） | 主流要求 3–8 张；**注意**：截图必须来自真实 App，不能拿原型图充数 |
 | 应用描述（短/长） | ✅ **已备好** | [`docs/store-listing.md`](store-listing.md) §2/§3，可直接粘贴 |
 | 分类 / 内容分级 | ✅ **已备好答案** | [`docs/store-listing.md`](store-listing.md) §4（逐题答案，你确认即可） |

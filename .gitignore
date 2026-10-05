@@ -15,9 +15,15 @@
 
 # 埋点收集端落盘的数据（本地联调用，不进仓库）
 server/data/
+# 本地端到端联调时收集端落的盘（server/collector.mjs --out server/data-live）
+server/data-live/
 
 # 可用性测试的原始记录（含被试原话，不进仓库）；汇总后的结论才写进 docs/
 usability/sessions/
 
 # 软著源码导出等交付物（源码的副本，不进仓库）
 dist/
+
+# 工作台生成的 HTML：里面有本机信息（设备序列号、本地绝对路径），不进仓库
+练了么-工作台*.html
+练了么-图标对比*.png

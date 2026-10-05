@@ -69,10 +69,14 @@ class WorkoutSummary {
     this.distanceSets = 0,
     this.cardiovascularLabels = const <String>[],
     this.unit = WeightUnit.kg,
+    this.note,
   });
 
   final String workoutId;
   final int totalSets;
+
+  /// 这次训练的一句话（2026-10-04）。null / 空 = 没写。
+  final String? note;
   final double totalVolumeKg;
   final Duration? duration;
   final int exerciseCount;
@@ -195,7 +199,21 @@ class SummaryService {
       distanceSets: distanceSets,
       cardiovascularLabels: cardioNames,
       unit: unit,
+      note: w.note,
     );
+  }
+
+  /// 写下（或改掉）这次训练的一句话（2026-10-04）。
+  ///
+  /// 为什么放在服务里而不是界面里：界面不该认识数据库的形状，
+  /// 而且"写 note"必须**连整行一起 upsert**（`saveWorkout` 是整行覆盖，
+  /// 少了这一句就会把 endedAt / 容量抹掉）。
+  Future<void> setNote(String workoutId, String note) async {
+    final Workout? w = await _store.loadWorkout(workoutId);
+    if (w == null) return;
+    final String trimmed = note.trim();
+    w.note = trimmed.isEmpty ? null : trimmed;
+    await _store.saveWorkout(w);
   }
 
   int _lastCompletedAt(Workout w) {

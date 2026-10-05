@@ -155,11 +155,14 @@ void main() {
     expect(cardio, isNotEmpty, reason: '有氧这一类是 v1.4.0 才有的');
   });
 
-  testWidgets('首页给两个入口：大按钮直开练 + 「看看今天练什么」', (WidgetTester tester) async {
+  testWidgets('首页给两个入口：大按钮直开练 + 「今天的安排」卡（整块可点）',
+      (WidgetTester tester) async {
     await pumpApp(tester);
 
     expect(find.byKey(const Key('start-workout')), findsOneWidget);
-    expect(find.byKey(const Key('see-plan')), findsOneWidget);
+    // 2026-10-04：入口从"一行文字"换成"整张卡" —— 同一件事不留两个入口
+    expect(find.byKey(const Key('open-plan')), findsOneWidget);
+    expect(find.byKey(const Key('see-plan')), findsNothing);
 
     await teardown(tester);
   });
@@ -174,16 +177,16 @@ void main() {
     expect(find.byKey(const Key('big-log-button')), findsOneWidget,
         reason: '首页那一下应当直接落到训练屏');
     expect(find.byKey(const Key('today-title')), findsNothing,
-        reason: '建议卡不该再挡在开练前面（它挪到「看看今天练什么」后面了）');
+        reason: '建议卡不该再挡在开练前面（它挪到「今天的安排」卡后面了）');
 
     await teardown(tester);
   });
 
-  testWidgets('「看看今天练什么」仍然进建议卡（换一批 / 我自己选还在那儿）',
+  testWidgets('「今天的安排」卡仍然进建议卡（换一批 / 我自己选还在那儿）',
       (WidgetTester tester) async {
     await pumpApp(tester);
 
-    await tester.tap(find.byKey(const Key('see-plan')));
+    await tester.tap(find.byKey(const Key('open-plan')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('today-title')), findsOneWidget);

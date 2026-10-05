@@ -39,14 +39,15 @@
  *
  * 用法：
  *   node tool/check-ios-app.mjs <Runner.app 路径>
- *   node tool/check-ios-app.mjs                 # 自动找 build/ios 下最新的 Runner.app
+ *   node tool/check-ios-app.mjs                 # 自动找最新的一份（build/ios 的真机/模拟器包、
+ *                                              #   以及免费签名脚本用的 build/ios-dd）
  *   node tool/check-ios-app.mjs --selftest      # 自检（9 项产物 + 3 项出口合规）
  *
  * 退出码：有任何一项不符合 → 1。
  */
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -263,6 +264,55 @@ function inspect(appPath, root = ROOT) {
     }
   }
 
+  // ⑪ 组间休息的 Live Activity：**扩展必须真的躺在 PlugIns 里**
+  //
+  // 为什么单独一条：这个功能的失败方式特别安静 —— 扩展没被嵌进去时，
+  // App 照常跑、Dart 侧的测试照常全绿，**只有锁屏上什么都没有**。
+  // 配套的端到端测试是 `app/integration_test/rest_activity_e2e_test.dart`
+  // （它断言"系统里真的开出了 1 条"），这里管的是**产物**那一半。
+  {
+    const pluginsDir = join(appPath, 'PlugIns');
+    const appexes = existsSync(pluginsDir)
+      ? readdirSync(pluginsDir).filter((f) => f.endsWith('.appex'))
+      : [];
+    if (appexes.length === 0) {
+      problems.push('包里没有 PlugIns/*.appex —— 「组间休息」的 Live Activity 扩展'
+        + '（app/ios/RestWidget）没被嵌进产物，锁屏上会什么都没有，而 App 照常跑');
+    } else {
+      const seen = [];
+      for (const name of appexes) {
+        const appexPlist = join(pluginsDir, name, 'Info.plist');
+        if (!existsSync(appexPlist)) {
+          problems.push(`PlugIns/${name} 里没有 Info.plist —— 这不是一个可用的扩展`);
+          continue;
+        }
+        // ⚠️ `plistRaw` 是**平铺**取值（不支持点路径），嵌套的那份要用 plistJson 取回来
+        const extSection = plistJson(appexPlist, 'NSExtension');
+        const point = extSection?.NSExtensionPointIdentifier ?? null;
+        const extId = plistRaw(appexPlist, 'CFBundleIdentifier');
+        if (point !== 'com.apple.widgetkit-extension') {
+          problems.push(`PlugIns/${name} 的扩展点是 ${point}（应为 `
+            + 'com.apple.widgetkit-extension）—— Live Activity 只可能由 widget 扩展提供');
+        }
+        if (typeof extId !== 'string' || !extId.startsWith(`${exp.iosId}.`)) {
+          problems.push(`PlugIns/${name} 的 bundle id 是 ${extId}，`
+            + `它必须是主 App（${exp.iosId}）的子标识 —— 否则安装时报签名/标识不匹配`);
+        }
+        seen.push(name.replace(/\.appex$/, ''));
+      }
+      if (seen.length) {
+        // App 侧还得声明"我用 Live Activity"，少了这一位 Activity.request 直接抛错
+        if (plistRaw(plist, 'NSSupportsLiveActivities') !== 'true') {
+          problems.push('App 的 Info.plist 里 NSSupportsLiveActivities 不是 true —— '
+            + '少了这一位，Activity.request 会直接抛错（扩展在包里也没用）');
+        } else {
+          facts.push(`Live Activity 扩展：${seen.join('、')}.appex · `
+            + 'NSSupportsLiveActivities=true');
+        }
+      }
+    }
+  }
+
   // 出口合规的"决定"有没有留痕（与 plist 那个值是一对：值 + 理由）
   problems.push(...exportComplianceProblems(root));
 
@@ -304,6 +354,12 @@ function selftest() {
       ],
     }));
     writeFileSync(join(app, 'AppIcon60x60@2x.png'), 'x');
+    // Live Activity 扩展（真实产物里就有：PlugIns/RestWidget.appex）
+    mkdirSync(join(app, 'PlugIns/RestWidget.appex'), { recursive: true });
+    writeFileSync(join(app, 'PlugIns/RestWidget.appex/Info.plist'), toPlistXml({
+      CFBundleIdentifier: `${exp.iosId}.RestWidget`,
+      NSExtension: { NSExtensionPointIdentifier: 'com.apple.widgetkit-extension' },
+    }));
     const entries = {
       CFBundleDisplayName: exp.displayName,
       CFBundleIdentifier: exp.iosId,
@@ -314,6 +370,7 @@ function selftest() {
       UIUserInterfaceStyle: 'Dark',
       UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
       UIDeviceFamily: [1],
+      NSSupportsLiveActivities: true,
     };
     mutate(entries);
     // 用仓库自己的序列化写一份合法的 plist（**不再依赖 plutil**：
@@ -324,6 +381,29 @@ function selftest() {
 
   const cases = [
     ['正常包 → 必须过', mk('good'), false],
+    ['Live Activity 扩展没进包 → 必须红', (() => {
+      const a = mk('bad-no-appex');
+      rmSync(join(a, 'PlugIns'), { recursive: true, force: true });
+      return a;
+    })(), true],
+    ['扩展点写错（不是 widgetkit）→ 必须红', (() => {
+      const a = mk('bad-appex-point');
+      writeFileSync(join(a, 'PlugIns/RestWidget.appex/Info.plist'), toPlistXml({
+        CFBundleIdentifier: `${exp.iosId}.RestWidget`,
+        NSExtension: { NSExtensionPointIdentifier: 'com.apple.share-services' },
+      }));
+      return a;
+    })(), true],
+    ['扩展的 bundle id 不在主 App 之下 → 必须红', (() => {
+      const a = mk('bad-appex-id');
+      writeFileSync(join(a, 'PlugIns/RestWidget.appex/Info.plist'), toPlistXml({
+        CFBundleIdentifier: 'com.example.someone-else.RestWidget',
+        NSExtension: { NSExtensionPointIdentifier: 'com.apple.widgetkit-extension' },
+      }));
+      return a;
+    })(), true],
+    ['App 没声明 NSSupportsLiveActivities → 必须红', mk('bad-no-la-flag',
+      (e) => { delete e.NSSupportsLiveActivities; }), true],
     ['显示名被改 → 必须红', mk('bad-name', (e) => { e.CFBundleDisplayName = 'Lianleme'; }), true],
     ['缺"仅新增"相册权限 → 必须红', mk('bad-noadd', (e) => { delete e.NSPhotoLibraryAddUsageDescription; }), true],
     ['多了"读相册"权限 → 必须红', mk('bad-read', (e) => { e.NSPhotoLibraryUsageDescription = '读相册'; }), true],
@@ -435,9 +515,15 @@ if (args.includes('--selftest')) {
     // 2026-09-30 踩到过 —— 磁盘上留着 21:04 编的模拟器包（v1.32.0/41），而当天 23:05 编的是
     // 真机包（v1.32.2/43）；旧代码固定挑模拟器包，于是**拿一份过期产物当"当前产物"核**，
     // 报出来的两条"版本不符"其实是它自己挑错了对象。
+    // ⚠️ 2026-10-04 又踩了一次同类：`tool/ios-device-run.sh`（免费 Apple ID 真机装包）
+    // 用的是**另一个 derivedData 目录** `build/ios-dd`，旧名单里没有它 ——
+    // 于是自动发现只在 `build/ios` 里挑，挑中了 8 小时前那份 **1.41.0 模拟器包**，
+    // 报出两条"版本不符"，而当时真正最新的产物（1.42.3 真机包）就在隔壁目录里躺着。
+    // 教训：**产物路径变多了，发现逻辑要跟着变**，否则守卫会拿过期对象核当前状态。
     const candidates = [
       join(APP_DIR, 'build/ios/iphonesimulator/Runner.app'),
       join(APP_DIR, 'build/ios/iphoneos/Runner.app'),
+      join(APP_DIR, 'build/ios-dd/Build/Products/Release-iphoneos/Runner.app'),
     ].filter(existsSync)
       .map((p) => {
         let mtime = 0;

@@ -192,7 +192,11 @@ if (isMain) {
   const { server } = createBackend({ store });
   // `--port 0` 让内核挑一个空闲端口；**必须把真实端口打出来**，
   // 否则自动化测试拿到 "0" 就没法连上（app/test/cloud_backup_test.dart 正靠这一行）。
-  server.listen(port, () => {
+  // ⚠️ **必须显式绑 127.0.0.1**（2026-10-04 真机上量到的）：只写 server.listen(port)
+  // 会绑到**所有网卡**（`ss` 里显示 `*:8790`）。那样安全边界就只剩云厂商安全组一道 ——
+  // 安全组一改、或同 VPC 里另一台机器，就能直连这两个服务；而文档与单元注释里
+  // 写的是「只监听本机、对外只有反代一个入口」。**声明与实现不一致就是 bug**，绑死环回。
+  server.listen(port, '127.0.0.1', () => {
     const actual = server.address().port;
     console.log(`✓ 极薄后端在 http://127.0.0.1:${actual}`);
     console.log(`  库：${dbPath}`);

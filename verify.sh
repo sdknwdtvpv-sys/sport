@@ -190,17 +190,28 @@ else
 fi
 echo
 
+# 可用性测试的「预置 6 周历史」：用文件自己记录的基准日复现它，逐字节比对，
+# 并用**真引擎**核对任务卡 T6 那句"App 建议你这次推 62.5 公斤"真的成立
+# （今天轮到胸 + 卧推上次 3 组 × 10 次 @ 60kg ⇒ 加重 2.5 ⇒ 62.5）。
+# 2026-10-01 之前这份 JSON **全仓不存在也没有生成器**，现场只能手搓。
+if node tool/preset-history.mjs --check >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 预置 6 周历史与生成器一致（含真引擎算出的 62.5kg）"
+else
+  strip "$LOG"; echo "${RED}✗ 预置 6 周历史过期或与生成器不一致${OFF}"; fail=1
+fi
+echo
+
 # ── 2. JS 引擎：向量 + 场景 eval ───────────────────────────────────────
 echo "${BOLD}[2/6] JS 规则引擎：测试向量 + 场景 eval${OFF}"
 node engine/run-tests.mjs >"$LOG" 2>&1; rc=$?
 strip "$LOG" | tail -6
-[ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 向量通过（单步正确性）" || { echo "${RED}✗ 向量失败（退出码 $rc）${OFF}"; fail=1; }
+[ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 向量通过（单步正确性）" || { echo "${RED}✗ 向量失败（退出码 ${rc}）${OFF}"; fail=1; }
 
 # 场景 eval：模拟跨周训练史，对整条轨迹断言产品红线。
 # 向量测不出序列问题 —— 每一步都正确的函数，串起来照样可能走成荒谬的轨迹。
 node engine/run-scenarios.mjs >"$LOG" 2>&1; rc=$?
 strip "$LOG" | tail -12
-[ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 场景 eval 通过（序列级产品红线）" || { echo "${RED}✗ 场景 eval 违反红线（退出码 $rc）${OFF}"; fail=1; }
+[ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 场景 eval 通过（序列级产品红线）" || { echo "${RED}✗ 场景 eval 违反红线（退出码 ${rc}）${OFF}"; fail=1; }
 echo
 
 # 埋点那半边的 JS：收集端收/拒/落盘 + 口径计算（北极星边界、漏斗、tap_count）
@@ -217,6 +228,16 @@ if node tool/usability-selftest.mjs >"$LOG" 2>&1; then
   strip "$LOG" | head -3; echo "${GREEN}✓${OFF} 可用性测试口径自检通过"
 else
   strip "$LOG"; echo "${RED}✗ 可用性测试口径自检失败${OFF}"; fail=1
+fi
+echo
+
+# 任务卡三处一致：`usability/tasks.json` 是唯一事实源，递卡文档 / 测试脚本 / 记录表
+# 必须都跟上。2026-10-01 发现 kit §4 与记录表的 T3/T4/T5 内容不一致（含刻意必败的 T5），
+# 而报告工具只认 id、抓不到 —— 那是"同一批事实写两遍"的第三次复发。
+if node tool/check-usability-tasks.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 任务卡三处与事实源一致"
+else
+  strip "$LOG"; echo "${RED}✗ 任务卡在三份文档之间漂了${OFF}"; fail=1
 fi
 echo
 
@@ -240,6 +261,16 @@ selfcheck tool/lib/docs.mjs "文档公共零件自检通过（枚举一处、历
 selfcheck tool/check-doc-facts.mjs "文档事实核对自检通过（schema/动作数/事件数写旧了都藏不住）" "文档事实核对工具的自检失败"
 
 selfcheck tool/lib/plist.mjs "plist 读写库自检通过（解析/序列化互逆、坏输入会抛）" "plist 读写库自检失败"
+
+# 工作台数据层的**公共零件**（2026-10-04 抽出来，原来 800 行全塞在 tool/workbench.mjs 里）。
+# 为什么这三份必须有自检：一个"永远返回空数组"的解析器不会报错，
+# 它只会安静地把看板变成一片"这一节里没有条目"——**一个会撒谎的看板比没有看板更坏**。
+# 三份都拿真仓库跑一遍（不是只喂夹具），所以"路径拼错了导致全空"当场就露。
+selfcheck tool/lib/markdown-table.mjs "Markdown 表格切分自检通过（转义竖线/围栏代码块/退化行都算得对）" "Markdown 表格切分的自检失败"
+
+selfcheck tool/lib/collect-docs.mjs "文档采集自检通过（5 份文档的进度/待办/拍板都读得出，读不出就如实说读不出）" "文档采集的自检失败"
+
+selfcheck tool/lib/collect-repo.mjs "仓库采集自检通过（版本/CHANGELOG/产物残留/git/证据/合规都算得对）" "仓库采集的自检失败"
 
 # iOS 产物核对工具的**自检**（造几份动过手脚的 .app，要求它抓得住）。
 # 安卓那边有 check-aab.mjs 核产物，iOS 这边此前没有任何东西核过产物；
@@ -280,6 +311,15 @@ selfcheck tool/check-doc-tables.mjs "文档表格核对自检通过（截断/错
 # 文件改名/搬家之后它们会**悄悄指空** —— 读者照着敲就是"文件不存在"。
 selfcheck tool/check-doc-paths.mjs "文档路径核对自检通过（指空的引用藏不住）" "文档路径核对工具的自检失败"
 
+# 任务卡一致性工具的**自检**：回归用例照着真事故做 ——
+# `usability/记录表.md` 里的 T5 被换成别的内容（kit 的 T5 是刻意必败任务），
+# 而报告工具只认 id，当时没有任何东西会发现。
+selfcheck tool/check-usability-tasks.mjs "任务卡一致性自检通过（三份文档漂了会被抓到）" "任务卡一致性工具的自检失败"
+
+# 预置历史生成器的**自检**：确定性（--check 的地基）+ 三条把任务卡钉住的不变量 ——
+# 今天必须轮到胸、真引擎对卧推必须算出 62.5kg、T4 的"上周卧推总容量"必须是 1800kg。
+selfcheck tool/preset-history.mjs "预置历史自检通过（确定性 + 真引擎算出 62.5kg + T4 答案 1800kg）" "预置历史生成器的自检失败"
+
 # 用户可见文案核对工具的**自检**：`Text` 不渲染 markdown —— `**` 是三个星号印在屏幕上。
 # 这个项目为此付过三次学费（同意弹层、政策里的待办、收集清单开头的说明），每次都是眼睛先看见的。
 selfcheck tool/check-user-text.mjs "用户文案核对自检通过（字符串里的记号藏不住，注释里的不误报）" "用户文案核对工具的自检失败"
@@ -290,7 +330,19 @@ selfcheck tool/check-store-forms.mjs "商店表单对账自检通过（漏字段
 
 # 部署包核对工具的**自检**：`server/deploy/` 里全是配置文本，漂了平时看不出来、
 # 只在部署那一刻炸（或者更糟：不炸但违背承诺，比如反代开了访问日志 = 记了客户端 IP）。
+# shell 脚本的「变量后紧跟中文」：macOS 自带 bash 3.2 在 UTF-8 locale 下会把那个字符的字节
+# 吞进变量名 → `set -u` 当场 unbound variable。2026-10-05 真踩：你在终端里跑生成 keystore
+# 的脚本，走到问完密码之后报 `KEYSTORE?: unbound variable`，而我这边复现不出来 ——
+# **因为触发条件是 locale**（我的是 LC_CTYPE=C，Terminal 是 UTF-8）。
+selfcheck tool/check-shell-locale.mjs "shell 变量后紧跟中文的自检通过（bash 3.2 的地雷藏不住）" "shell locale 核对工具的自检失败"
+
 selfcheck tool/check-deploy.mjs "部署包核对自检通过（端口/日志/加固/占位符都藏不住）" "部署包核对工具的自检失败"
+
+# 工作台（`tool/workbench.mjs`）的自检：它自己不"守卫"任何东西，但它**是你看现状的那一页** ——
+# 一页会说谎的现状比没有现状更坏，所以它的解析/渲染/自报家门（"这是样例数据不是真实用户"）
+# 都由自检钉着。⚠️ 里面有一条会**在真仓库上跑一次真守卫**：第一版把守卫路径拼错了
+# （漏了 `tool/`），13 个守卫全部报红、报的还是一句没头没脑的 `Node.js v22.22.2`。
+selfcheck tool/workbench.mjs "工作台自检通过（版本/产物残留/待办/埋点自报家门/业务占位不撒谎/只读/真机解析/真守卫都算得对）" "工作台自检失败"
 
 # 截图"压平"工具（去掉 alpha + 16 位降 8 位）的自检：App Store 只收 8 位无 alpha，
 # 而 iOS 模拟器截出来的是 **16 位 RGBA**（2026-09-30 实测）。读的那 5 种 filter
@@ -315,13 +367,14 @@ else
 fi
 echo
 
-# 软著材料里的数字不能漂：说明书与申请表都写着「N 个源文件 / M 行」，
-# 而那是要填进申请表、与鉴别材料一起交的。加一个文件就会变。
+# 软著材料里的数字不能漂：说明书与申请表写着「N 个源文件 / M 行」，release-checklist
+# 的「终局核验」表里还抄了一份带**页数**的。这些都是要填进申请表、与鉴别材料一起交的。
 if node tool/copyright-pdf.mjs --check-docs >"$LOG" 2>&1; then
-  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 软著材料里的源程序量与实际一致"
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 软著材料里的源程序量与实际一致（文件数 / 行数 / 页数）"
 else
   strip "$LOG"; echo "${RED}✗ 软著材料里的源程序量过期（改文档或重新导出）${OFF}"; fail=1
 fi
+selfcheck tool/copyright-pdf.mjs "软著文档数字守卫自检（四种漂法都抓得住）" "软著文档数字守卫自检不过"
 
 # CHANGELOG 的结构：版本小节**降序**、**不重复**、且都从**行首**开始。
 # 2026-09-30 抓到的：粘到上一行去的标题在 `^## v` 眼里根本不存在，于是"降序"照样成立，
@@ -351,11 +404,11 @@ if [ -z "$DEPS_ROOT" ]; then
   echo "${RED}✗ 读不到 tool/dev-env.sh 里的 DEPS${OFF}"
   fail=1
 elif [ ! -d "$DEPS_PARENT" ]; then
-  echo "${DIM}⊘ 不适用${OFF} —— 这台机器上没有 $DEPS_PARENT（不是那台开发机，例如 CI）。"
+  echo "${DIM}⊘ 不适用${OFF} —— 这台机器上没有 ${DEPS_PARENT}（不是那台开发机，例如 CI）。"
   echo "${DIM}    这条核的是开发机的依赖布局与 docs/dev-environment.md 是否一致，与 CI 无关。${OFF}"
   skipped=$((skipped + 1))
 elif [ ! -d "$DEPS_ROOT" ]; then
-  echo "${RED}✗ tool/dev-env.sh 的 DEPS 指向不存在的目录（$DEPS_ROOT）—— 依赖搬过家就要同时改文档与它${OFF}"
+  echo "${RED}✗ tool/dev-env.sh 的 DEPS 指向不存在的目录（${DEPS_ROOT}）—— 依赖搬过家就要同时改文档与它${OFF}"
   fail=1
 else
   MISSING_DEPS=""
@@ -368,7 +421,7 @@ else
     echo "    （依赖搬过家就要同时改文档与 tool/dev-env.sh 的 DEPS）"
     fail=1
   else
-    echo "${GREEN}✓${OFF} 环境文档列的依赖目录都真实存在（$DEPS_ROOT）"
+    echo "${GREEN}✓${OFF} 环境文档列的依赖目录都真实存在（${DEPS_ROOT}）"
   fi
 fi
 
@@ -380,10 +433,10 @@ APP_VER="$(grep -oE "kAppVersion = '[^']+'" app/lib/core/app_info.dart | head -1
 if [ -z "$README_VER" ]; then
   echo "${YELLOW}!${OFF} README.md 里找不到 `**vX.Y.Z**`（措辞变了？检查要跟着改）"
 elif [ "$README_VER" != "$APP_VER" ]; then
-  echo "${RED}✗ README.md 顶部写的是 v$README_VER，实际版本是 $APP_VER${OFF}"
+  echo "${RED}✗ README.md 顶部写的是 v${README_VER}，实际版本是 $APP_VER${OFF}"
   fail=1
 else
-  echo "${GREEN}✓${OFF} README 顶部的版本号（v$README_VER）与 app_info.dart 一致"
+  echo "${GREEN}✓${OFF} README 顶部的版本号（v${README_VER}）与 app_info.dart 一致"
 fi
 echo
 
@@ -399,10 +452,10 @@ if [ -z "$TODO_VER" ]; then
   echo "${RED}✗ docs/your-todo.md 里找不到「更新于 YYYY-MM-DD（vX.Y.Z）」（全角括号）—— 这条守卫已经失效，别当成通过${OFF}"
   fail=1
 elif [ "$TODO_VER" != "$APP_VER" ]; then
-  echo "${RED}✗ docs/your-todo.md 顶部写的是 v$TODO_VER，实际版本是 $APP_VER${OFF}"
+  echo "${RED}✗ docs/your-todo.md 顶部写的是 v${TODO_VER}，实际版本是 $APP_VER${OFF}"
   fail=1
 else
-  echo "${GREEN}✓${OFF} docs/your-todo.md 的时间戳（v$TODO_VER）与 app_info.dart 一致"
+  echo "${GREEN}✓${OFF} docs/your-todo.md 的时间戳（v${TODO_VER}）与 app_info.dart 一致"
 fi
 
 # 「真机上装的是哪一版」这三行**每切一版都该改**，而没人会为了改一个数字去翻它们。
@@ -414,13 +467,13 @@ check_installed_ver() {
   local got
   got="$(grep -oE "$pattern" "$file" 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
   if [ -z "$got" ]; then
-    echo "${RED}✗ $file 里找不到「$label」（措辞变了？这条守卫已经失效，别当成通过）${OFF}"
+    echo "${RED}✗ $file 里找不到「${label}」（措辞变了？这条守卫已经失效，别当成通过）${OFF}"
     fail=1
   elif [ "$got" != "$APP_VER" ]; then
-    echo "${RED}✗ $file 写的是真机装 v$got，实际版本是 $APP_VER${OFF}"
+    echo "${RED}✗ $file 写的是真机装 v${got}，实际版本是 $APP_VER${OFF}"
     fail=1
   else
-    echo "${GREEN}✓${OFF} $file 的真机版本（v$got）与 app_info.dart 一致"
+    echo "${GREEN}✓${OFF} $file 的真机版本（v${got}）与 app_info.dart 一致"
   fi
 }
 # ⚠️ README 那行是 `**v1.27.2 release**` —— 粗体**跨过了版本号**，
@@ -551,7 +604,7 @@ if [ -z "$DART_BIN" ]; then
 else
   "$DART_BIN" app/tool/check_domain.dart >"$LOG" 2>&1; rc=$?
   strip "$LOG" | tail -18
-  [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} Dart 领域层通过" || { echo "${RED}✗ Dart 领域层失败（退出码 $rc）${OFF}"; fail=1; }
+  [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} Dart 领域层通过" || { echo "${RED}✗ Dart 领域层失败（退出码 ${rc}）${OFF}"; fail=1; }
 fi
 echo
 
@@ -598,7 +651,7 @@ else
   fi
   (cd app && "$DART_BIN" analyze --fatal-infos >"$LOG" 2>&1); rc=$?
   strip "$LOG" | tail -30
-  [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 静态分析零问题" || { echo "${RED}✗ 静态分析有问题（退出码 $rc）${OFF}"; fail=1; }
+  [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 静态分析零问题" || { echo "${RED}✗ 静态分析有问题（退出码 ${rc}）${OFF}"; fail=1; }
 fi
 echo
 
@@ -627,7 +680,7 @@ else
     with_timeout 420 env VERIFY_APP="$REPO/app" VERIFY_CACHE="$REPO/.pub-cache" VERIFY_FLUTTER="$FLUTTER_BIN" \
       bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" test --reporter compact' >"$LOG" 2>&1; rc=$?
     strip "$LOG" | tail -25
-    [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 应用层通过" || { echo "${RED}✗ 应用层测试失败（退出码 $rc）${OFF}"; fail=1; }
+    [ "$rc" -eq 0 ] && echo "${GREEN}✓${OFF} 应用层通过" || { echo "${RED}✗ 应用层测试失败（退出码 ${rc}）${OFF}"; fail=1; }
 
     # ── 文档里那句"门禁 N 项全绿"必须是真的 ──────────────────────────────
     # 这个数字每加一个测试都会变，而它偏偏是读文档的人唯一的进度指标。
@@ -695,10 +748,13 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          server/collector.mjs server/collector.selftest.mjs tool/analytics-report.mjs \
          app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
          tool/usability-report.mjs tool/usability-selftest.mjs tool/content-report.mjs \
+         tool/check-usability-tasks.mjs usability/tasks.json \
+         tool/preset-history.mjs usability/preset-6-weeks.json \
          tool/privacy-audit.mjs docs/privacy-facts.json docs/release-admin.md \
          tool/copyright-export.mjs docs/store-listing.md \
          usability/记录表.md usability/participants.example.json \
-         tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
+         usability/真机自测表.md \
+         tool/check-shell-locale.mjs tool/map-upstream.mjs tool/add-upstream-exercises.mjs docs/exercise-mapping.md \
          app/pubspec.yaml app/lib/main.dart \
          app/ios/Runner/PrivacyInfo.xcprivacy \
          app/lib/domain/progression.dart app/lib/domain/tap_meter.dart \
@@ -743,6 +799,8 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/time_exercise_test.dart app/test/progression_wiring_test.dart \
          app/integration_test/share_card_gallery_test.dart \
          app/test/home_entry_test.dart app/test/app_version_test.dart \
+         app/test/today_plan_test.dart \
+         app/test/analytics_export_test.dart \
          .github/workflows/ci.yml; do
   [ -f "$f" ] && printf '  %s✓%s %s\n' "$GREEN" "$OFF" "$f" || { printf '  %s✗ 缺失%s %s\n' "$RED" "$OFF" "$f"; missing=1; }
 done

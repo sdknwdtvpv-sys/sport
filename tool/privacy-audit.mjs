@@ -405,6 +405,50 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑪ 「导出统计事件」：政策说法 ↔ 代码里真的有那个出口，两头都要在。
+  //
+  // 为什么单列一条：这个入口把**埋点事件原样交给用户**，是唯一能把 `tap_count`
+  // 从设备上取回来的路径（没配上报地址的包里事件根本没出口）。它有两个"看起来正常
+  // 但其实是假话"的失败方式：① 政策写了、代码里没有那个入口；② 代码里有入口，
+  // 但它拿到的是"要发出去的那批"而不是"全部"（parked 的那些恰恰是最该看的）。
+  {
+    const ex = facts.localAnalyticsExport;
+    if (!ex) {
+      errors.push('privacy-facts.json 少了 localAnalyticsExport —— '
+        + '「导出统计事件」会把埋点事件原样交给用户（含匿名设备标识），必须显式声明');
+    } else {
+      const screenPath = join(ROOT, 'app/lib/features/profile/privacy_about_screen.dart');
+      const screenSrc = existsSync(screenPath) ? readFileSync(screenPath, 'utf8') : '';
+      if (!/Key\('analytics-export'\)/.test(screenSrc)) {
+        errors.push('政策承诺了「导出统计事件」，但 app/lib/features/profile/privacy_about_screen.dart '
+          + "里找不到那个入口（Key('analytics-export')）—— 这条跨文件检查已经失效，别当成通过");
+      }
+      // "开关关着时入口不出现"是政策里明写的一句，所以代码里那道门必须在
+      if (!/_analyticsEnabled\s*&&\s*widget\.loadEvents\s*!=\s*null/.test(screenSrc)) {
+        errors.push('政策写了「开关关着时这个入口不出现」，但代码里找不到那道门'
+          + '（`_analyticsEnabled && widget.loadEvents != null`）—— '
+          + '关着时还可能露出来的入口，就是"点进去必然是空的"那种按钮');
+      }
+      const outboxPath = join(ROOT, 'app/lib/analytics/outbox.dart');
+      const outboxSrc = existsSync(outboxPath) ? readFileSync(outboxPath, 'utf8') : '';
+      if (!/Future<List<AnalyticsEventPayload>> peekAll\(/.test(outboxSrc)) {
+        errors.push('找不到 AnalyticsOutboxStore.peekAll() —— 导出的只读出口必须存在'
+          + '（而且要包含 parked 的事件：那批正是发不出去的）');
+      }
+      const enText = existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '';
+      for (const phrase of ex.policyPhrases?.zh ?? []) {
+        if (!policy.includes(phrase)) {
+          errors.push(`导出统计事件：政策正文里没有「${phrase}」`);
+        }
+      }
+      for (const phrase of ex.policyPhrases?.en ?? []) {
+        if (!enText.includes(phrase)) {
+          errors.push(`导出统计事件：英文政策里没有「${phrase}」`);
+        }
+      }
+    }
+  }
+
   // ⑩之三 交给用户看的文本里**不许留"给我们自己看的说明"**
   //
   // 为什么单列一条：政策正文里那些"（上架时替换为实际日期）"是我们写给自己的待办，

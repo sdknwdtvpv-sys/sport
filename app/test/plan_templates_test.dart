@@ -76,6 +76,44 @@ void main() {
         }
       }
     });
+
+    test('标签：词表里都有、器械承诺与模板里的真实动作相容', () async {
+      // 这条守卫的由来（2026-10-04）：`quick_30` 原话写着"一对哑铃 + 俯卧撑"，
+      // 而它的第 3 个动作是**高位下拉（cable）**—— 在家只有一对哑铃的人会卡在那儿。
+      // 标签是同一类承诺（"要什么器械"），所以它必须被核，而不是随手填。
+      for (final PlanTemplate t in kPlanTemplates) {
+        expect(t.tags, isNotEmpty, reason: '${t.name} 至少要有一个一眼标签');
+        for (final String tag in t.tags) {
+          expect(
+            kTemplateTagEquipment.containsKey(tag) || kTemplateTagScenes.contains(tag),
+            isTrue,
+            reason: '${t.name} 的标签「$tag」不在词表里 —— 新词要先在 plan_templates.dart 里'
+                '表态（它承诺什么器械），否则没人核得了它',
+          );
+        }
+
+        // 器械类标签最多一个：同时挂「杠铃」和「哑铃」就是自相矛盾
+        final List<String> eqTags =
+            t.tags.where(kTemplateTagEquipment.containsKey).toList();
+        expect(eqTags.length, lessThanOrEqualTo(1),
+            reason: '${t.name} 挂了多个器械标签：$eqTags');
+
+        if (eqTags.isEmpty) continue;
+
+        // 判据是**包含**：这套模板里每个动作都得能用标签允许的器械做
+        final Set<String> allowed = kTemplateTagEquipment[eqTags.first]!;
+        for (final PlanTemplateItem it in t.items) {
+          final ExerciseData? e = await exercises.byId(it.exerciseId);
+          expect(e, isNotNull);
+          expect(
+            allowed.contains(e!.equipment),
+            isTrue,
+            reason: '${t.name} 的标签「${eqTags.first}」允许 $allowed，'
+                '但「${e.name}」需要 ${e.equipment} —— 标签在骗人（改词表或改动作）',
+          );
+        }
+      }
+    });
   });
 
   group('从模板/建议建计划', () {

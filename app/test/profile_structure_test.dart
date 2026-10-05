@@ -164,7 +164,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('休息时长'), findsOneWidget);
-    expect(find.byKey(const Key('rest-follow')), findsOneWidget);
+    // 2026-10-04 起：休息时长在页面上只占一行（当前值），选项收进底部弹层
+    expect(find.byKey(const Key('rest-row')), findsOneWidget);
     expect(find.byKey(const Key('unit-kg')), findsOneWidget);
   });
 

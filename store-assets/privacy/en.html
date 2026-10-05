@@ -55,10 +55,10 @@
 <tr><td>Workout records</td><td>Exercise, weight, reps, set index, warm-up flag, completion time</td><td>Log your training; compute volume and progress</td></tr>
 <tr><td>Workout sessions</td><td>Start/end time, total sets, total volume</td><td>Workout summary screen</td></tr>
 <tr><td><strong>Body metrics</strong></td><td><strong>Body weight (kg; displayed in the unit you pick), a note</strong></td><td>So you can see long-term change</td></tr>
-<tr><td>Preferences</td><td>Progression-suggestion switch, unit preference, &quot;Help improve the product&quot; switch</td><td>Remember your choices</td></tr>
+<tr><td>Preferences</td><td>Progression-suggestion switch, unit preference, &quot;Help improve the product&quot; switch, <strong>pinned exercises</strong></td><td>Remember your choices</td></tr>
 </tbody>
 </table>
-<p>This data lives in the app's private local database (SQLite, managed by drift) and <strong>never leaves the device</strong>.</p>
+<p>This data lives in the app's private local database (SQLite, managed by drift) and <strong>never leaves the device</strong> — the one possible exception is <strong>cloud backup that you enable yourself</strong>: that copy is encrypted on your phone before it leaves, and only ciphertext leaves (see 3.1).</p>
 <blockquote><p><strong>Body weight is sensitive personal information, and we ask for your separate consent.</strong> Under Article 29 of China's Personal Information Protection Law, processing sensitive personal information in the health category requires <strong>separate consent</strong> — the general &quot;agree to the privacy policy&quot; on first launch <strong>is not</strong> that consent. So the <strong>first time you open the Body metrics screen</strong> we show a dedicated explanation (stored on this device only, never uploaded, editable and deletable at any time) and only start recording after you agree; choosing &quot;not now&quot; means we do not open that screen and collect nothing. To be explicit about purpose: it is used <strong>only so you can see your own long-term change</strong> — never for advertising or any other purpose (App Store Guideline 5.1.3 likewise forbids using health data for advertising or sale).</p>
 <p><strong>You can withdraw that consent at any time</strong> (PIPL Article 15). The entry sits at the bottom of the Body metrics screen — &quot;Withdraw my consent&quot;. After withdrawal we stop collecting new weight readings immediately and that screen asks for your consent again the next time you open it; <strong>records you already saved are not deleted automatically</strong> (withdrawing consent and deleting data are two different things — delete data yourself under &quot;All data&quot;).</p>
 </blockquote>
@@ -118,17 +118,21 @@
 </ul>
 <hr>
 <h2 id="3-where-the-data-lives-and-who-receives-it">3. Where the data lives and who receives it</h2>
-<h3 id="3-1-current-state-the-app-does-not-upload-anything">3.1 Current state — the app does not upload anything</h3>
-<p><strong>The current version does not send any of your data to any server.</strong> This is not a promise; it is a fact of the code:</p>
+<h3 id="3-1-two-things-can-reach-the-network-both-off-by-default">3.1 Two things can reach the network — both off by default</h3>
+<p><strong>Nothing is uploaded unless you turn a switch on yourself</strong> — there are exactly two such switches, and both are <strong>off by default</strong>:</p>
 <ul>
-<li>The upload endpoint is configured <strong>at build time</strong>: with no endpoint the analytics channel is <code>_NullTransport</code>, which <strong>always fails</strong> — events only accumulate in the on-device outbox.</li>
-<li>The workout sync channel is <code>InMemorySyncQueue</code>: memory only, no network, gone when the app closes.</li>
-<li><strong>This version does not include cloud backup.</strong> The cloud-backup code exists (end-to-end encrypted, off by default), but it needs a server address to switch on — and that address is configured <strong>at build time</strong> as well: in a build without one, the &quot;Cloud backup&quot; entry does not even appear in the app.</li>
+<li><strong>Anonymous usage statistics</strong> (off by default). When you turn it on, the events in 2.2 are sent over HTTPS to a receiver we operate. <strong>When the switch is off, not a single event is sent</strong> — and you can verify that yourself: install the app, watch it with any packet capture tool for a full day, and with the switch off you should see <strong>zero</strong> requests to us (this is exactly how we verify it during development). ⚠️ <strong>The first release that reports anything does not send events accumulated by earlier versions</strong>: that backlog is cleared the first time a reporting build starts (&quot;whoever recorded it, sends it&quot;). Events you recorded in an older version are <strong>not</strong> uploaded retroactively.</li>
+<li><strong>Cloud backup</strong> (<strong>off by default</strong>; you turn it on in Profile → Data &amp; backup → Cloud backup). Once on, your workout records are <strong>end-to-end encrypted</strong> and stored on a server — so you can get them back on a new phone, or if your phone is lost. <strong>The server only ever receives ciphertext</strong>: encryption happens on your phone, and we cannot read a single field; the <strong>recovery code</strong> is the only key and the server does not hold it — so <strong>if you lose the recovery code, it is gone</strong>. The exact contents of a backup are listed in 3.3.</li>
+<li><strong>Deleting all data will ask whether to delete the cloud backup as well</strong> (the default is to delete both). The order is deliberate: the cloud copy is deleted <strong>first</strong>, and if that fails the whole operation stops. We would rather have you retry than leave you with local data gone, a cloud copy still there, and no recovery code left to open it.</li>
+<li>Your workout records <strong>themselves</strong> still live only on this device; apart from the cloud-backup ciphertext you chose to enable, they go nowhere.</li>
 </ul>
-<p>In other words, <strong>even we cannot access your data right now.</strong> We state this plainly because describing a future feature as already shipped would be dishonest — and so would pretending &quot;nothing happens&quot; is a feature.</p>
-<h3 id="3-2-after-a-real-endpoint-is-connected">3.2 After a real endpoint is connected</h3>
-<p>In a future version, when the switch above is ON, the events in 2.2 will be sent over HTTPS to a receiver we operate. This policy will be updated with a new version and effective date, and the app will notify you. <strong>Whenever the switch is off, not a single event is sent.</strong></p>
-<p>We <strong>never sell, rent, or share</strong> your personal information with third parties. No third-party advertising. No data brokers.</p>
+<h3 id="3-2-where-the-two-switches-draw-the-line">3.2 Where the two switches draw the line</h3>
+<ul>
+<li><strong>Statistics switch</strong>: off — not a single event is sent; on — what leaves is the 18 event types in 2.2 plus the 7 common fields in 2.3, with no free text and no body-weight values.</li>
+<li><strong>Cloud-backup switch</strong>: off — <strong>no data leaves the device at all</strong>; on — what leaves is <strong>ciphertext</strong> of the contents listed in 3.3.</li>
+<li>Both switches can be turned off <strong>at any time</strong>: turning statistics off stops the queue from sending; cloud backup can be closed in Data &amp; backup (the cloud copy stays) or closed with account deletion (the cloud copy is deleted).</li>
+<li>We <strong>never sell, rent, or share</strong> your personal information with third parties. No third-party advertising. No data brokers.</li>
+</ul>
 <hr>
 <h2 id="3-5-third-party-dependencies-sdk-list">3.5 Third-party dependencies (SDK list)</h2>
 <p>The following are our <strong>direct dependencies</strong> — not services we call, but libraries distributed with the app. Chinese app stores require third-party SDKs to be listed centrally with their name, function, and how they handle personal information, so here they are:</p>
@@ -155,14 +159,22 @@
 <li><strong>The table above lists direct dependencies only.</strong> They pull in further transitive libraries (the Flutter framework, Skia, ICU, …). The complete list is available <strong>inside the app</strong> at &quot;Me → Open-source licences&quot; (Flutter's licence page enumerates every component shipped in the package). The per-library &quot;does it collect anything&quot; notes are hand-written for the libraries we chose; the authoritative answer for &quot;what is in the package&quot; is that page, not this table.</li>
 </ul>
 <h2 id="4-permissions">4. Permissions</h2>
-<p>The app declares two permissions; the second <strong>only takes effect on old systems</strong>:</p>
+<p>The app declares three permissions; the second <strong>only takes effect on old systems</strong>, and the third is <strong>off by default</strong> — it is only ever requested if you turn it on yourself:</p>
 <table>
 <thead><tr><th>Permission</th><th>Why</th><th>Applies to</th></tr></thead>
 <tbody>
 <tr><td><code>android.permission.INTERNET</code></td><td>Solely for the anonymous usage statistics in 2.2 (when the switch is ON)</td><td>All versions</td></tr>
 <tr><td><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td><td>Saving the &quot;share card&quot; image to the system gallery</td><td><strong>Android 9 and below only</strong> (declared with <code>maxSdkVersion=&quot;29&quot;</code>)</td></tr>
+<tr><td><code>android.permission.POST_NOTIFICATIONS</code></td><td>&quot;Training reminder&quot;: one local notification if you haven't trained by your chosen time</td><td><strong>Android 13 and above</strong>; the switch is <strong>off by default</strong></td></tr>
 </tbody>
 </table>
+<p>Four notes on the third one (the training reminder):</p>
+<ul>
+<li>It is a <strong>local notification</strong>: the system fires it on this device (using an inexact alarm, so the exact-alarm special permission is not needed), and the text is computed on the device when the reminder is scheduled — <strong>no network</strong>, we neither know your training time nor whether you trained;</li>
+<li>The switch is <strong>off by default</strong>. The system permission prompt appears only when you turn it on yourself (Me → Preferences → Training reminder); if you decline, we never ask again;</li>
+<li><strong>No nagging after you train</strong>: it reminds you only if you have not trained by that time that day; if you trained, it moves to the same time tomorrow;</li>
+<li>You can turn it off at any time, which also cancels the reminder already scheduled in the system.</li>
+</ul>
 <p>Three notes on the second one:</p>
 <ul>
 <li><strong>Android 10+ does not need it at all</strong> — modern Android writes to the gallery via MediaStore with no permission. Because we declare it with <code>android:maxSdkVersion=&quot;29&quot;</code>, <strong>users on newer systems never see it in the permission list.</strong></li>
@@ -181,18 +193,26 @@
 <thead><tr><th>Right</th><th>How</th></tr></thead>
 <tbody>
 <tr><td><strong>Turn usage statistics on or off</strong></td><td><strong>It is off by default</strong> (nobody is counted). To take part, <strong>turn it on yourself</strong> in Profile → Privacy &amp; About → &quot;Help improve the product&quot;. Both directions take effect immediately; no feature is affected</td></tr>
+<tr><td><strong>Export the usage events</strong></td><td>Once that switch is on, Profile → Privacy &amp; About also shows &quot;Export statistics events&quot;: it exports the anonymous events stored on this device into a file (one JSON object per line) that you can keep or send to us. <strong>While the switch is off, this entry does not appear</strong> — nothing is being collected then</td></tr>
 <tr><td><strong>Export all your data</strong></td><td>Profile → Data &amp; Backup → &quot;Export all records&quot; — generates a CSV copied to your clipboard</td></tr>
 <tr><td><strong>Delete all data</strong></td><td>Profile → Data &amp; Backup → &quot;Delete all data&quot;. After a confirmation prompt, local records and settings are wiped immediately</td></tr>
 <tr><td><strong>Uninstall to delete</strong></td><td>Uninstalling the app removes the local database</td></tr>
 </tbody>
 </table>
+<p>About &quot;Export statistics events&quot;, three things up front:</p>
+<ul>
+<li>It is <strong>read-only</strong>: no network request, no queue clearing, no switch change — you can export again at any time;</li>
+<li>The exported file <strong>contains the anonymous device identifier</strong> (<code>device_id</code>). It is generated randomly on this device and is not linked to any account, but since the file is handed to you, we say so plainly;</li>
+<li>The export action <strong>itself produces no event</strong> (otherwise &quot;logging a tap so you can get your data&quot; would need yet another disclosure).</li>
+</ul>
 <p>What deletion covers, to avoid misunderstanding:</p>
 <ul>
 <li><strong>Deleted</strong>: all workout and set records, preferences (including all switches), <strong>and any analytics events not yet uploaded</strong>, and the anonymous analytics identifiers (<code>device_id</code> / session id / first-open timestamp) — with the honest consequence that this device then counts as a new device in aggregate statistics</li>
 <li><strong>Not deleted</strong>: the built-in exercise catalog (351 exercises) — that is product content and contains nothing about you</li>
 <li>It is a <strong>hard delete</strong>, not a flag. Deletion cannot be undone, and we hold no backup that could restore it.</li>
-<li><strong>If a build has cloud backup enabled</strong> (see 3.1 — the current release does not), deleting all data will ask whether to delete the cloud backup as well and close the account; the default is to delete both. The order is deliberate: the cloud copy is deleted <strong>first</strong>, and if that fails the whole operation stops. We would rather have you retry than leave you with local data gone and a cloud copy you can no longer open.</li>
+<li><strong>This release has cloud backup enabled</strong> (see 3.1). Deleting all</li>
 </ul>
+<p>data will ask whether to delete the cloud backup as well and close the account; the default is to delete both. The order is deliberate: the cloud copy is deleted <strong>first</strong>, and if that fails the whole operation stops. We would rather have you retry than leave you with local data gone and a cloud copy you can no longer open.</p>
 <hr>
 <h3 id="5-2-complaints-and-reports">5.2 Complaints and reports</h3>
 <ul>

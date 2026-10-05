@@ -150,6 +150,8 @@ void legacySetup(dynamic raw, {required int version}) {
   raw.execute(legacySetRecordDdl);
   raw.execute(legacyUserProfileDdl(version));
   if (version >= 2) raw.execute(legacyBodyMetricDdl);
+  // v7 起埋点那一行就存在了（见上面 legacyAnalyticsMetaDdl 的说明）
+  if (version >= 7) raw.execute(legacyAnalyticsMetaDdl());
   raw.execute('PRAGMA user_version = $version');
 }
 
@@ -167,7 +169,21 @@ VALUES
 ''';
 
 /// **v1–v6 都没有 `analytics_meta`** —— v7 才建的（埋点的本机身份）。
-/// 不用写 DDL：fixture 里不该有它，迁移负责创建。migration_test 里有一条守这个。
+/// 所以 v1–v6 的 fixture 里不建它，由迁移负责创建。
+///
+/// ⚠️ **v7 及以后必须建它**（2026-10-04 修）：真实世界里 v7 的库就有这张表，
+/// 而这份 fixture 之前一直没写 —— 那是"fixture 假了"的另一种形式：
+/// v18 给这张表加列时，测试里报的是 `no such table`（真机不会，真机有表）。
+/// 形状按**当时**的样子写：v7–v17 没有 `legacy_purged_at`（v18 才加）。
+String legacyAnalyticsMetaDdl() => '''
+CREATE TABLE IF NOT EXISTS analytics_meta (
+  id TEXT NOT NULL PRIMARY KEY,
+  device_id TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  session_last_at INTEGER NOT NULL,
+  first_open_at INTEGER NULL,
+  updated_at INTEGER NOT NULL
+)''';
 ///
 /// 往老库里塞一行用户档案 —— 用来验 v6 给 user_profile 加列时不动已有设置。
 const String legacySeedProfileSql = '''

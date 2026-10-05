@@ -1,0 +1,63 @@
+{
+  "_note": "可用性测试任务卡的**单一事实源**。三个消费方各取其中一部分，不许再各写一份：① `docs/usability-test-kit.md` §4 取 `card`（**递给被试看的原话**）② `docs/usability-test.md` §任务清单 取 `summary` / `success` / `measures`（**给主持人与复盘看的**）③ `usability/记录表.md` §1 取 `label`（现场手抄的短名）。一致性由 `tool/check-usability-tasks.mjs` 核（已进 verify.sh）。",
+  "_why": "2026-10-01 发现：`docs/usability-test-kit.md` §4 与 `usability/记录表.md` 的 **T3 / T4 / T5 内容不一致** —— kit 的 T5 是「超级组」刻意必败任务，记录表换成了「看这周练了几次」；而 `tool/usability-report.mjs` 只认 T1–T6 的 **id**、不认内容，所以这条漂移**没有任何东西会发现**。代价不是美观：kit §10 的复盘模板直接依赖「T5 的失败方式」（被试说「这软件没有」还是「这软件不需要」），按记录表跑完 5 场，那一格没有输入。",
+  "_normalize": "核对时两边都做归一化：去掉空白与 markdown 强调符（* 与 `），再判子串。所以同一句话在文档里换行、加粗、写进表格都不影响。",
+  "_dontChange": "改任务内容 = 改这一份。改完跑 `node tool/check-usability-tasks.mjs`；它对不上会报错，并且会指出是哪个文档、哪一项。",
+  "tasks": [
+    {
+      "id": "T1",
+      "label": "第一次记录一组",
+      "card": "你刚走进健身房，准备开始今天的训练。请把第一组记录下来。",
+      "summary": "你现在到健身房了，开始今天的训练，把第一组记下来",
+      "success": "5/5 完成，≤ 90 秒，零提示",
+      "measures": "北极星：入口是否真的低",
+      "deliberateFailure": false
+    },
+    {
+      "id": "T2",
+      "label": "找到并改重量",
+      "card": "刚才那一组其实是 65 公斤，请你改过来。",
+      "summary": "刚才那组其实是 65 公斤，改一下",
+      "success": "4/5 在 15 秒内完成",
+      "measures": "编辑路径是否可发现",
+      "deliberateFailure": false
+    },
+    {
+      "id": "T3",
+      "label": "撤掉误记的一组",
+      "card": "你不小心多点了一组，请把它去掉。",
+      "summary": "不小心多点了一组，撤掉",
+      "success": "4/5 完成，且不是靠重装",
+      "measures": "误触后悔药",
+      "deliberateFailure": false
+    },
+    {
+      "id": "T4",
+      "label": "查上周卧推总容量",
+      "card": "你想知道自己上周卧推一共推了多少公斤，请查一下。",
+      "summary": "看看你上周卧推一共推了多少公斤",
+      "success": "4/5 在 20 秒内完成",
+      "measures": "信息架构是否可找",
+      "deliberateFailure": false
+    },
+    {
+      "id": "T5",
+      "label": "设置超级组",
+      "card": "你想把卧推和划船连着做，当成一个超级组，请设置好。",
+      "summary": "把卧推和划船设成超级组",
+      "success": "预期多数找不到",
+      "measures": "可发现性：验证\"渐进式暴露\"的边界",
+      "deliberateFailure": true,
+      "deliberateFailureWhy": "**刻意设计的必败任务**。目的不是让人找到，而是观察：被试找不到时的反应是「这软件没有」还是「这软件不需要」。前者说明藏得过头，后者说明克制成功 —— 这是验证渐进式暴露尺度的唯一方法。"
+    },
+    {
+      "id": "T6",
+      "label": "改掉不合意的建议",
+      "card": "App 建议你这次推 62.5 公斤，但你想推 60。请改成 60，然后完成这一组。",
+      "summary": "把建议的 62.5 改成 60，然后看看下次它还建议什么",
+      "success": "3/5 能理解系统记住了",
+      "measures": "规则引擎的信任度",
+      "deliberateFailure": false
+    }
+  ]
+}

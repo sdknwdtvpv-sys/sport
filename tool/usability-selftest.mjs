@@ -12,7 +12,12 @@
  * 退出码：0 全过 / 1 有失败。
  */
 
-import { build, median, compute, verdict } from './usability-report.mjs';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { build, median, compute, verdict, TARGETS, TASKS } from './usability-report.mjs';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const person = (id, over = {}) => ({
   id,
@@ -28,9 +33,57 @@ const person = (id, over = {}) => ({
   scrolls: 0,
   t6: { adopted: true },
   q3: 'lianleme',
-  susLite: 85,
   ...over,
 });
+
+/**
+ * 判据表 ↔ 脚本的 TARGETS 对账。
+ *
+ * **为什么要有**：`docs/usability-test.md` 的「定量指标」表写着几行目标，脚本只判其中几项 ——
+ * 两边各写一份就会漂，而漂了**没有任何症状**（报告照出、结论照样"通过"）。
+ * SUS-lite 就是这么挂着的：文档写了一行、脚本里也有目标值 `susLite: 80`，
+ * 但**题项与计分公式全仓不存在**，而且判据是"没填就不判" —— 等于一道永远不生效的门。
+ * 2026-10-01 拍板删掉它，同时加上这条对账。
+ *
+ * 判据用的是**行数**（文档表里的数据行 == 脚本判的项数）而不是逐字匹配：
+ * 措辞可以改，但"文档承诺几项、脚本就判几项"这条不能少。
+ * 另外两边都不许再出现 `SUS` —— 它已经不在判据里了。
+ */
+export function docConsistency() {
+  const failures = [];
+  const docPath = join(ROOT, 'docs/usability-test.md');
+  let doc = '';
+  try {
+    doc = readFileSync(docPath, 'utf8');
+  } catch {
+    return ['读不到 docs/usability-test.md —— 判据表与脚本的对账没法做'];
+  }
+
+  // 取「## 定量指标」这一节里的第一张表
+  const section = doc.split(/^## /m).find((s) => s.startsWith('定量指标')) ?? '';
+  const rows = section
+    .split('\n')
+    .filter((l) => l.trim().startsWith('|'))
+    .map((l) => l.trim());
+  const body = rows.slice(2); // 去掉表头与分隔行
+  const rowsCount = body.filter((l) => l.length > 2).length;
+
+  // 脚本实际会判几项（拿一份样例跑一遍 verdict，数 checks）
+  const sample = build({ participants: [person('P1')] }).verdict.checks;
+  if (rowsCount !== sample.length) {
+    failures.push(`docs/usability-test.md 的「定量指标」表有 ${rowsCount} 行，`
+      + `而脚本只判 ${sample.length} 项 —— 文档承诺了脚本不判的东西`
+      + `（或反过来）：脚本判的是 [${sample.map((c) => c.name).join('、')}]`);
+  }
+  if (body.some((r) => /SUS/i.test(r))) {
+    failures.push('docs/usability-test.md 的「定量指标」表里还有 SUS 这一行 —— '
+      + '它已不在判据里（2026-10-01 删掉：题项与公式全仓不存在）');
+  }
+  if (/SUS/i.test(JSON.stringify(TARGETS))) failures.push('TARGETS 里还有 SUS —— 已拍板删掉');
+  if (TARGETS.susLite !== undefined) failures.push('TARGETS.susLite 还在');
+  if (!TASKS.length) failures.push('TASKS 是空的');
+  return failures;
+}
 
 export async function selftest() {
   const failures = [];
@@ -142,12 +195,16 @@ export async function selftest() {
     JSON.stringify(verdict(compute({ participants: [person('P1')] })))
     === JSON.stringify(verdict(compute({ participants: [person('P1')] }))));
 
+  // ---- 9. 判据表 ↔ 脚本对账（跨文件，见 docConsistency 的注释） ----
+  for (const f of docConsistency()) failures.push(f);
+
   if (failures.length) {
     console.error(`✗ 可用性测试口径自检失败 ${failures.length} 项：`);
     for (const f of failures) console.error(`  · ${f}`);
     return 1;
   }
-  console.log('✓ 可用性测试口径自检通过（中位数 · 硬错误拦截 · 判定与目标一致 · 失败模式聚合）');
+  console.log('✓ 可用性测试口径自检通过（中位数 · 硬错误拦截 · 判定与目标一致 · 失败模式聚合 '
+    + '· 判据表与脚本项数对得上且都没有 SUS）');
   return 0;
 }
 

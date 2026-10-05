@@ -11,7 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
+import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+import 'package:lianleme/data/local_store.dart';
 import 'package:lianleme/data/routine_repository.dart';
 import 'package:lianleme/features/routine/routine_screen.dart';
 
@@ -31,7 +33,8 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> pumpList(WidgetTester tester, {List<RoutineStart>? popped}) async {
+  Future<void> pumpList(WidgetTester tester,
+      {List<RoutineStart>? popped, LocalStore? store}) async {
     await tester.pumpWidget(MaterialApp(
       theme: buildAppTheme(),
       home: Builder(
@@ -45,6 +48,7 @@ void main() {
                     builder: (_) => RoutineListScreen(
                       repository: routines,
                       exercises: exercises,
+                      store: store,
                     ),
                   ),
                 );
@@ -97,6 +101,26 @@ void main() {
       tester.widget<Text>(find.byKey(Key('routine-item-label-${item.id}'))).data,
       '3 组 · 8–10 次',
     );
+  });
+
+  testWidgets('★ 从计划编辑页进选择器时，置顶/最近做过分区也在（顺手补的一处不一致）',
+      (WidgetTester tester) async {
+    // 由来：选择器有三条入口，而「计划 → 加动作」那条**没传 store** ——
+    // 于是同一个页面从训练流程进来有"置顶/最近做过"、从计划进来没有。
+    final LocalStore store = DriftLocalStore(db);
+    await store.setPinnedExerciseIds(<String>['ex_bb_squat']);
+    final RoutineData r = await routines.create('推日', nowMs: 1000);
+
+    await pumpList(tester, store: store);
+    await tester.tap(find.byKey(Key('routine-open-${r.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('routine-add-exercise')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('置顶'), findsOneWidget,
+        reason: '这条路径也必须看得到置顶区（同一个页面不该因入口不同而两样）');
+    expect(find.byKey(const Key('pin-ex_bb_squat')), findsOneWidget,
+        reason: '星标要在 —— 否则这条路上用户根本订不了动作');
   });
 
   testWidgets('点一项可以改组数与次数区间（简化版能改的就这两样）',

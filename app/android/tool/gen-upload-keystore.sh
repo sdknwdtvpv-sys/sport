@@ -19,19 +19,45 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."   # → app/android
 
-# keytool 来自 JDK。不假设它在 PATH 里（本项目 JDK 装在 ~/development/jdk-17）。
-KEYTOOL="$(command -v keytool 2>/dev/null || true)"
-if [ -z "$KEYTOOL" ] && [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/keytool" ]; then
-  KEYTOOL="$JAVA_HOME/bin/keytool"
+# ── keytool 从哪来（2026-10-05 真踩，改了取法）──────────────────────────────
+#
+# ⚠️ **macOS 自带一个 `/usr/bin/keytool` 占位程序**：它不在 PATH 里找不到真 JDK 时，
+# 只会打印一句 `The operation couldn't be completed. Unable to locate a Java Runtime.`
+# 并且**退出码 1**。而上一版脚本的取法是 `command -v keytool` 优先 —— 于是它挑中了这个
+# 占位程序，症状是"问完密码、打印完那行中文之后突然说找不到 Java"。
+#
+# 现在的取法：**先问仓库自己的环境脚本**（JDK/SDK 位置的真源，env 搬过家：jdk-17 从
+# `~/development` 搬到了 SSD 的 `harness-deps`，任何硬编码路径都会过期），
+# 然后逐个候选**试跑 `-help` 验真**，挑第一个真能跑的。
+REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+if [ -f "$REPO_ROOT/tool/dev-env.sh" ]; then
+  # shellcheck disable=SC1090
+  . "$REPO_ROOT/tool/dev-env.sh" >/dev/null 2>&1 || true
 fi
-if [ -z "$KEYTOOL" ] && [ -x "$HOME/development/jdk-17/bin/keytool" ]; then
-  KEYTOOL="$HOME/development/jdk-17/bin/keytool"
-fi
-[ -n "$KEYTOOL" ] || {
-  echo "✗ 找不到 keytool。先执行：source ~/HARNESS/lianleme/flutter-env.sh"
-  echo "  （它会把 ~/development/jdk-17/bin 加到 PATH）"
+
+KT_CANDIDATES=()
+[ -n "${JAVA_HOME:-}" ] && KT_CANDIDATES+=("$JAVA_HOME/bin/keytool")
+KT_CANDIDATES+=("/Volumes/Elliot's SSD/harness-deps/jdk-17/Contents/Home/bin/keytool")
+KT_CANDIDATES+=("$HOME/development/jdk-17/bin/keytool")
+KT_CANDIDATES+=("$(command -v keytool 2>/dev/null || true)")
+
+KEYTOOL=""
+for c in "${KT_CANDIDATES[@]}"; do
+  [ -n "$c" ] || continue
+  [ -x "$c" ] || continue
+  # ★ 验真：占位程序 `-help` 退出码是 1，真 JDK 是 0
+  if "$c" -help >/dev/null 2>&1; then KEYTOOL="$c"; break; fi
+done
+
+if [ -z "$KEYTOOL" ]; then
+  echo "✗ 找不到**能用的** keytool（不是找不到文件，是找到的都是 macOS 的占位程序）。" >&2
+  echo "  这台机器上的 JDK 在 SSD 的 harness-deps 里。先跑这一句再重试：" >&2
+  echo "      source \"$REPO_ROOT/tool/dev-env.sh\"" >&2
+  echo "  或者手动指过去：" >&2
+  echo "      export JAVA_HOME=\"/Volumes/Elliot's SSD/harness-deps/jdk-17/Contents/Home\"" >&2
   exit 1
-}
+fi
+echo "keytool：$KEYTOOL"
 
 KEYSTORE="upload-keystore.p12"
 PROPS="key.properties"
@@ -68,7 +94,7 @@ read -r -s -p "  再输一次: " STORE_PASS2; echo
 KEY_PASS="$STORE_PASS"
 
 echo
-echo "→ 生成 $KEYSTORE（RSA 2048，有效期 10000 天，PKCS12 格式）"
+echo "→ 生成 ${KEYSTORE}（RSA 2048，有效期 10000 天，PKCS12 格式）"
 "$KEYTOOL" -genkeypair \
   -keystore "$KEYSTORE" \
   -alias "$ALIAS" \

@@ -49,6 +49,12 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   final TextEditingController _query = TextEditingController();
   List<ExerciseData> _rows = const <ExerciseData>[];
   List<ExerciseData> _recent = const <ExerciseData>[];
+
+  /// 用户置顶的动作（**按他自己排的顺序**）。2026-10-04。
+  ///
+  /// 为什么要有它：分区（最近做过 / 常用 / 全部）都是**系统猜的**——
+  /// 而"我就是要练这几个"只有用户自己知道。这是唯一一处用户能直接表态的地方。
+  List<ExerciseData> _pinned = const <ExerciseData>[];
   bool _loading = true;
   String? _muscleGroup;
 
@@ -108,10 +114,25 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       recent = loaded;
     }
 
+    // 置顶**只在浏览态取**，与「最近做过」同一个理由：搜索/筛选是"我已经知道要找什么"，
+    // 那时顶部分区只是噪音。而 _togglePin 之后也要能立刻反映出来，所以读的是一份状态。
+    List<ExerciseData> pinned = const <ExerciseData>[];
+    if (browsing && store != null) {
+      final List<String> ids = await store.pinnedExerciseIds();
+      final List<ExerciseData> loaded = <ExerciseData>[];
+      for (final String id in ids) {
+        final ExerciseData? e = await widget.repository.byId(id);
+        // 置顶的动作被删了（自定义动作可以删）→ 静默跳过，不显示一个点不动的行
+        if (e != null) loaded.add(e);
+      }
+      pinned = loaded;
+    }
+
     if (!mounted) return;
     setState(() {
       _rows = rows;
       _recent = recent;
+      _pinned = pinned;
       _loading = false;
     });
   }
@@ -125,6 +146,24 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   /// 注：doc 里的枚举原本只有 suggest/search/recent/custom，这里多了 `all`
   /// （「全部动作」那一区）—— 硬把它归到 suggest 会让这个字段说谎，
   /// `docs/analytics.md` 已同步。
+  /// 置顶 / 取消置顶。**刻意不发埋点**：这是一次罕见的偏好动作（不是漏斗里的一步），
+  /// 而且"要发就得多一个新事件 → 同步中英政策 + 隐私事实表 + 两张商店表单"。
+  /// 与回收站那次同一个判断（见 `trash_screen.dart` 的注释）。
+  Future<void> _togglePin(ExerciseData e) async {
+    final LocalStore? store = widget.store;
+    if (store == null) return;
+    final List<String> ids = <String>[
+      for (final ExerciseData p in _pinned) p.id,
+    ];
+    if (ids.contains(e.id)) {
+      ids.remove(e.id);
+    } else {
+      ids.add(e.id); // 新钉的放最后：先钉的先看见，不会因为再钉一个就跳位
+    }
+    await store.setPinnedExerciseIds(ids);
+    await _load();
+  }
+
   void _pick(ExerciseData e, {String method = 'all'}) {
     widget.analytics?.track('exercise_added', <String, Object?>{
       'exercise_id': e.id,
@@ -333,22 +372,39 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   Widget _browseList() {
     final Set<String> recentIds =
         _recent.map((ExerciseData e) => e.id).toSet();
+    // 置顶排在最前，且**从其它区里去掉** —— 同一个动作在首屏出现两次
+    // 只会让人多滚一次（这条规矩在「常用」那儿已经写过一次了）。
+    final Set<String> pinnedIds = _pinned.map((ExerciseData e) => e.id).toSet();
+    // ⚠️ 「最近做过」也要去掉置顶的 —— 2026-10-04 在**真机上**才发现漏了这一处：
+    // 只过滤了「常用 / 全部」，于是刚练过、又被置顶的那个动作**在同一屏出现两次**
+    // （置顶区一次、最近做过一次）。测试当时没盖住，因为夹具里"最近做过"是空的、
+    // 置顶的是另一个动作 —— 真机上两者恰好是同一个。
+    final List<ExerciseData> recentShown = _recent
+        .where((ExerciseData e) => !pinnedIds.contains(e.id))
+        .toList();
     // 「常用」按 popularity 排序（repository.search 已保证），去掉已在「最近做过」
     // 里出现过的 —— 同一个动作在首屏出现两次只会让人多滚一次。
     final List<ExerciseData> popular = _rows
-        .where((ExerciseData e) => !recentIds.contains(e.id))
+        .where((ExerciseData e) =>
+            !recentIds.contains(e.id) && !pinnedIds.contains(e.id))
         .take(8)
         .toList();
     final Set<String> popularIds = popular.map((ExerciseData e) => e.id).toSet();
     final List<ExerciseData> rest = _rows
         .where((ExerciseData e) =>
-            !recentIds.contains(e.id) && !popularIds.contains(e.id))
+            !pinnedIds.contains(e.id) &&
+            !recentIds.contains(e.id) &&
+            !popularIds.contains(e.id))
         .toList();
 
     final List<Widget> children = <Widget>[];
-    if (_recent.isNotEmpty) {
+    if (_pinned.isNotEmpty) {
+      children.add(_sectionHeader('置顶'));
+      children.addAll(_pinned.map((ExerciseData e) => _tile(e, method: 'pinned')));
+    }
+    if (recentShown.isNotEmpty) {
       children.add(_sectionHeader('最近做过'));
-      children.addAll(_recent.map((ExerciseData e) => _tile(e, method: 'recent')));
+      children.addAll(recentShown.map((ExerciseData e) => _tile(e, method: 'recent')));
     }
     if (popular.isNotEmpty) {
       children.add(_sectionHeader('常用'));
@@ -391,6 +447,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
 
   Widget _tile(ExerciseData e, {String method = 'all'}) {
     final bool bodyweight = e.weightIncrement == 0;
+    final bool pinned = _pinned.any((ExerciseData p) => p.id == e.id);
     return ListTile(
       key: Key('exercise-${e.id}'),
       contentPadding: EdgeInsets.zero,
@@ -419,13 +476,33 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
         ].join(' · '),
         style: const TextStyle(color: Tokens.text3, fontSize: 13),
       ),
-      trailing: Text(
-        bodyweight ? '自重' : formatWeight(e.defaultWeightKg, widget.unit),
-        style: const TextStyle(
-          color: Tokens.text2,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-        ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          // 置顶开关：**看得见的图标**，不是一个藏在长按里的动作
+          // （长按已经是"看详情"了，而这一行要能被一眼看懂）。
+          if (widget.store != null)
+            IconButton(
+              key: Key('pin-${e.id}'),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              tooltip: pinned ? '取消置顶' : '置顶',
+              icon: Icon(
+                pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                size: 18,
+                color: pinned ? Tokens.volt : Tokens.text3,
+              ),
+              onPressed: () => _togglePin(e),
+            ),
+          Text(
+            bodyweight ? '自重' : formatWeight(e.defaultWeightKg, widget.unit),
+            style: const TextStyle(
+              color: Tokens.text2,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

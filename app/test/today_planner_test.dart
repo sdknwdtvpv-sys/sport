@@ -13,6 +13,7 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/domain/models.dart';
+import 'package:lianleme/core/labels.dart';
 import 'package:lianleme/features/today/today_planner.dart';
 
 void main() {
@@ -65,50 +66,55 @@ void main() {
     }
   }
 
-  group('部位轮转', () {
-    test('从没练过 → 从轮转的第一个部位（胸）开始', () async {
-      expect(await planner.nextMuscleGroup(), 'chest');
+  // ─────────────────────────────────────────────────────────────────────────
+  // 2026-10-04：轮转从"6 部位"改成"上下肢交替"。
+  //
+  // 旧断言（胸→背→腿→肩→臂→核心）是为旧设计写的，而**旧设计的组数账是错的**：
+  // 1 个部位 × 3 个动作 × 3 组 = 9 组/次，6 个部位轮流 → 每周 3–4 练的人
+  // 同一块肌肉两周才轮到一次（≈4.5–6 组/周），而循证区间是每肌群每周 12–20 组
+  // （Baz-Valle 2022；下限门槛 >9 组见 Schoenfeld 2017）。见 `TrainingDay` 的注释。
+  group('上下肢交替', () {
+    test('从没练过 → 上肢', () async {
+      expect(await planner.nextTrainingDay(), TrainingDay.upper);
     });
 
-    test('练过胸 → 下次轮到背', () async {
+    test('练过上肢（胸）→ 今天下肢', () async {
       await train('w1', 'ex_bb_bench_press');
-      expect(await planner.nextMuscleGroup(), 'back');
+      expect(await planner.nextTrainingDay(), TrainingDay.lower);
     });
 
-    test('练过胸 + 背 → 下次轮到腿', () async {
-      await train('w1', 'ex_bb_bench_press');
-      await train('w1', 'ex_bb_row', at: 2000);
-      expect(await planner.nextMuscleGroup(), 'legs');
+    test('练过下肢（腿）→ 今天上肢', () async {
+      await train('w1', 'ex_bb_squat');
+      expect(await planner.nextTrainingDay(), TrainingDay.upper);
     });
 
-    test('六个部位都练过 → 回到第一个', () async {
-      await train('w1', 'ex_bb_bench_press'); // chest
-      await train('w1', 'ex_bb_row', at: 2000); // back
-      await train('w1', 'ex_bb_squat', at: 3000); // legs
-      await train('w1', 'ex_bb_ohp', at: 4000); // shoulders
-      await train('w1', 'ex_bb_curl', at: 5000); // arms
-      await train('w1', 'ex_crunch', at: 6000); // core
-
-      expect(await planner.nextMuscleGroup(), 'chest');
+    test('★ 上肢日的部位都算上肢：练肩 / 练手臂也轮到下肢', () async {
+      await train('w1', 'ex_bb_ohp'); // shoulders
+      expect(await planner.nextTrainingDay(), TrainingDay.lower);
+      await train('w2', 'ex_bb_curl'); // arms
+      expect(await planner.nextTrainingDay(), TrainingDay.lower);
     });
 
-    test('只看最近一次训练：更早练过的不影响轮转', () async {
-      await train('w_old', 'ex_bb_squat', at: 1000); // 上次：腿
-      await train('w_new', 'ex_bb_row', at: 9000); // 最近：背
-
-      // 最近只练了背 → 轮转里胸没练 → 该练胸
-      expect(await planner.nextMuscleGroup(), 'chest');
+    test('只看最近一次训练：更早练过的不影响', () async {
+      await train('w_old', 'ex_bb_bench_press', at: 1000); // 上次之前：上肢
+      await train('w_new', 'ex_bb_squat', at: 9000); // 最近：下肢
+      // 最近练的是腿 → 今天上肢
+      expect(await planner.nextTrainingDay(), TrainingDay.upper);
     });
   });
 
   group('今日建议', () {
-    test('推荐 3 个动作，每个都带建议和一行理由（首练）', () async {
+    test('★ 第一次训练给 4 个动作 / 12 组（压在「单次 ≥ 12 组」护栏上）', () async {
       final List<PlannedExercise> plan = await planner.planToday();
 
-      expect(plan.length, 3);
+      expect(plan.length, kFirstSessionExercises);
+      expect(plan.length * 3, 12, reason: '3 组/动作 → 正好 12 组，不掉出护栏');
+      // 上肢日按构图：胸 3 + 背 1（budget 4 在背那一格被截断）
+      expect(plan.where((PlannedExercise p) => p.exercise.muscleGroup == 'chest').length, 3);
+      expect(plan.where((PlannedExercise p) => p.exercise.muscleGroup == 'back').length, 1);
       for (final PlannedExercise p in plan) {
-        expect(p.exercise.muscleGroup, 'chest');
         expect(p.suggestion, isNotNull);
+        expect(p.exercise.category, 'strength', reason: '推荐位只给力量动作');
         expect(p.suggestion!.reasonText, isNotEmpty,
             reason: '红线：解释不了的建议不许出现');
         expect(p.suggestion!.reasonCode, ReasonCode.firstTime);
@@ -120,7 +126,7 @@ void main() {
           reps: <int>[10, 10, 10], weight: 60, at: 1000);
 
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'chest');
+          await planner.planForGroup(muscleGroup: 'chest');
       final PlannedExercise bench = plan
           .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
 
@@ -135,7 +141,7 @@ void main() {
           reps: <int>[10, 6, 5], weight: 60, at: 1000);
 
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'chest');
+          await planner.planForGroup(muscleGroup: 'chest');
       final PlannedExercise bench = plan
           .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
 
@@ -145,7 +151,7 @@ void main() {
 
     test('自重动作的展示是「自重 × n」', () async {
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'back', count: 60);
+          await planner.planForGroup(muscleGroup: 'back', count: 60);
       final Iterable<PlannedExercise> pull =
           plan.where((PlannedExercise p) => p.exercise.id == 'ex_pull_up');
 
@@ -154,14 +160,22 @@ void main() {
       expect(pull.first.loadLabel, startsWith('自重 × '));
     });
 
-    test('count 生效', () async {
+    test('不传 count 时按分化给满：上肢 6 个（第一次才收成 4 个）', () async {
+      // 先练一次，让"第一次"那条规定失效
+      await train('w1', 'ex_bb_squat');
+      final List<PlannedExercise> plan = await planner.planToday();
+      expect(plan.length, 6, reason: '上肢构图 = 胸 3 + 背 2 + 肩 1');
+      expect(plan.length * 3, 18, reason: '18 组，过「单次 ≥ 12 组」护栏');
+    });
+
+    test('count 覆盖（引导页用它按用户选的频率给动作数）', () async {
       expect((await planner.planToday(count: 5)).length, 5);
     });
 
     test('指定部位时不走轮转', () async {
       await train('w1', 'ex_bb_bench_press'); // 练过胸，轮转本该给背
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'shoulders');
+          await planner.planForGroup(muscleGroup: 'shoulders');
 
       expect(plan.every((PlannedExercise p) => p.exercise.muscleGroup == 'shoulders'),
           isTrue);
@@ -174,7 +188,7 @@ void main() {
           reps: <int>[10, 10, 10], weight: 60);
 
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'chest');
+          await planner.planForGroup(muscleGroup: 'chest');
       final PlannedExercise bench = plan
           .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
 
@@ -186,7 +200,7 @@ void main() {
       await train('w_old', 'ex_bb_bench_press', reps: <int>[10, 6, 5], weight: 60);
 
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'chest');
+          await planner.planForGroup(muscleGroup: 'chest');
       final PlannedExercise bench = plan
           .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
 
@@ -197,7 +211,7 @@ void main() {
 
     test('没历史时没有那一行（第一次练这个动作，理由文案已经说了）', () async {
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'chest');
+          await planner.planForGroup(muscleGroup: 'chest');
       final PlannedExercise bench = plan
           .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
 
@@ -209,7 +223,7 @@ void main() {
       await train('w_old', 'ex_bb_bench_press',
           reps: <int>[10, 10, 10], weight: 60);
 
-      final List<PlannedExercise> plan = await planner.planToday(
+      final List<PlannedExercise> plan = await planner.planForGroup(
           muscleGroup: 'chest', unit: WeightUnit.lb);
       final PlannedExercise bench = plan
           .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
@@ -219,7 +233,7 @@ void main() {
     });
 
     test('「换一批」也要带单位 —— 以前这里漏了 unit，一换就变回 kg', () async {
-      final List<PlannedExercise> first = await planner.planToday(
+      final List<PlannedExercise> first = await planner.planForGroup(
           muscleGroup: 'chest', unit: WeightUnit.lb);
       final List<PlannedExercise> again =
           await planner.reroll(current: first, unit: WeightUnit.lb);
@@ -235,7 +249,7 @@ void main() {
   group('按时长动作（track_type 真的被读到了）', () {
     test('平板支撑的处方是 3 组 × 30–45 秒，不是 8–10 次', () async {
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'core', count: 60);
+          await planner.planForGroup(muscleGroup: 'core', count: 60);
       final PlannedExercise plank =
           plan.firstWhere((PlannedExercise p) => p.exercise.id == 'ex_plank');
 
@@ -249,7 +263,7 @@ void main() {
 
     test('侧平板同属按时长；负重平板是 weight_time 且保留重量', () async {
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'core', count: 60);
+          await planner.planForGroup(muscleGroup: 'core', count: 60);
       final PlannedExercise side =
           plan.firstWhere((PlannedExercise p) => p.exercise.id == 'ex_side_plank');
       final PlannedExercise wp =
@@ -266,7 +280,7 @@ void main() {
       await train('w_old', 'ex_plank', reps: <int>[40, 40, 40], weight: null);
 
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'core', count: 60);
+          await planner.planForGroup(muscleGroup: 'core', count: 60);
       final PlannedExercise plank =
           plan.firstWhere((PlannedExercise p) => p.exercise.id == 'ex_plank');
 
@@ -276,7 +290,7 @@ void main() {
 
     test('非时长动作的处方不受影响（负重与自重次数都是 3 组 × 8–10 次）', () async {
       final List<PlannedExercise> plan =
-          await planner.planToday(muscleGroup: 'chest', count: 60);
+          await planner.planForGroup(muscleGroup: 'chest', count: 60);
       for (final PlannedExercise p in plan) {
         // ⚠️ 这条测试原本断言"chest 里全都是 weight_reps" —— 那是在断言**字段值**，
         // 而不是它想守的东西。2026-09-29 按上游把俯卧撑类如实标成 reps_only
@@ -307,9 +321,9 @@ void main() {
     });
 
     test('planToday 把整个部位取回来，也一条热身/拉伸都没有（六个部位都试）', () async {
-      for (final String g in kMuscleRotation) {
+      for (final String g in kPrimaryMuscleGroups) {
         final List<PlannedExercise> all =
-            await planner.planToday(muscleGroup: g, count: 200);
+            await planner.planForGroup(muscleGroup: g, count: 200);
 
         expect(all, isNotEmpty, reason: '$g 应该有动作');
         for (final PlannedExercise p in all) {
@@ -326,13 +340,18 @@ void main() {
       // （实测过：拿掉 today_planner 的 category 过滤，它不红）。
       // core 只有 53 个（其中 3 个是热身），limit 60 会把整组取回来，它才真的守得住。
       final List<PlannedExercise> first =
-          await planner.planToday(muscleGroup: 'core', count: 3);
+          await planner.planForGroup(muscleGroup: 'core', count: 3);
       final List<PlannedExercise> again =
-          await planner.reroll(current: first, count: 100);
+          await planner.reroll(current: first);
 
-      expect(again, isNotEmpty);
-      expect(again.length, greaterThan(10),
-          reason: '拿回来太少的话这条测试又变成空转了');
+      // 2026-10-04：「换一批」改成**按原来的形状换**（同部位、同个数），
+      // 所以这里不再比"拿回来一大把"，而是比"个数不缩水 + 真的换了动作 + 全是力量"。
+      expect(again.length, first.length, reason: '换一批不该让计划缩水');
+      final Set<String> before =
+          first.map((PlannedExercise p) => p.exercise.id).toSet();
+      expect(again.map((PlannedExercise p) => p.exercise.id).toSet().difference(before),
+          isNotEmpty,
+          reason: '换一批得真的换掉动作');
       for (final PlannedExercise p in again) {
         expect(p.exercise.category, 'strength',
             reason: '「换一批」拿出了 ${p.exercise.category}：${p.exercise.id}');
@@ -384,9 +403,9 @@ void main() {
     });
 
     test('六个部位全取回来：力量类的距离动作在，有氧的不在', () async {
-      for (final String g in kMuscleRotation) {
+      for (final String g in kPrimaryMuscleGroups) {
         final List<PlannedExercise> all =
-            await planner.planToday(muscleGroup: g, count: 200);
+            await planner.planForGroup(muscleGroup: g, count: 200);
 
         for (final PlannedExercise p in all) {
           expect(p.exercise.category, 'strength',
@@ -399,7 +418,7 @@ void main() {
 
     test('背部的推荐里能看到农夫行走，而且带着距离处方', () async {
       final List<PlannedExercise> back =
-          await planner.planToday(muscleGroup: 'back', count: 200);
+          await planner.planForGroup(muscleGroup: 'back', count: 200);
       final PlannedExercise? carry = back
           .where((PlannedExercise p) => p.exercise.id == 'ex_farmer_walk')
           .firstOrNull;
@@ -428,9 +447,9 @@ void main() {
     test('同一部位动作不够换时保持原样，不会返回空', () async {
       // core 的动作少，要一大批就换不出等量的
       final List<PlannedExercise> first =
-          await planner.planToday(muscleGroup: 'core', count: 60);
+          await planner.planForGroup(muscleGroup: 'core', count: 60);
       final List<PlannedExercise> again =
-          await planner.reroll(current: first, count: 60);
+          await planner.reroll(current: first);
 
       expect(again, isNotEmpty);
     });

@@ -40,6 +40,51 @@ ActiveSession _session({int index = 0, int? restEndsAtMs}) => ActiveSession(
       source: 'suggestion',
     );
 
+/// 一条"杀进程前已经记下"的组。id 与 `WorkoutController::_logSet` 的规则一致 ——
+/// 所以"恢复后从 1 重新数"在库里表现为**覆盖**（总数不变），这正是那个 P0 的样子。
+SetRecord _logged(
+  String workoutId,
+  String exerciseId,
+  int setIndex, {
+  int atMs = 1000,
+  SetType type = SetType.normal,
+}) =>
+    SetRecord(
+      id: 's_${workoutId}_${exerciseId}_$setIndex',
+      workoutId: workoutId,
+      exerciseId: exerciseId,
+      setIndex: setIndex,
+      reps: 8,
+      weightKg: 40,
+      completedAtMs: atMs + setIndex * 1000,
+      setType: type,
+    );
+
+/// 一个杠铃卧推的控制器。`alreadyLogged` 就是这次修复的入口。
+WorkoutController _controller({
+  required LocalStore store,
+  List<SetRecord> alreadyLogged = const <SetRecord>[],
+  int? startedAtMs,
+  int Function()? clock,
+}) =>
+    WorkoutController(
+      exercise: const ExerciseSpec(
+        id: 'ex_bb_bench_press',
+        name: '杠铃卧推',
+        trackType: 'weight_reps',
+        defaultRestSec: 90,
+        weightIncrement: 2.5,
+      ),
+      plan: const PlanTarget(targetSets: 3, targetRepsLow: 8, targetRepsHigh: 12),
+      analytics: NoopAnalytics(),
+      store: store,
+      syncQueue: InMemorySyncQueue(),
+      workoutId: 'w1',
+      clock: clock,
+      alreadyLogged: alreadyLogged,
+      startedAtMs: startedAtMs,
+    );
+
 void main() {
   group('未结束的训练会话：存 / 读 / 清（两个实现同一组断言）', () {
     for (final ({String name, LocalStore Function() make}) impl
@@ -217,6 +262,80 @@ void main() {
         expect(e.category == 'cardio', isFalse,
             reason: '$id 是有氧：有氧有自己的呈现（里程/配速），不该混进"5 分钟活动"');
       }
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ★ 2026-10-04 真机走查抓到的 P0：恢复后记一组会**覆盖**已记的那一组。
+  //
+  // 复现（Redmi `flourite` / v1.37.0，`adb shell input` 注入）：记 2 组 → 杀进程 →
+  // 点「继续」→ 训练屏显示 **第 1 组、已完成列表为空**（而休息时间接着数）→
+  // 再记一组 → 界面变「第 2 组」，而「我」页统计**仍是 2 组 / 640 kg**
+  // —— 新那组按 `set_seq = 1` 写库，把原来第 1 组覆盖了。
+  //
+  // 根因：恢复时控制器是新建的，`_setSeq` 从 0 开始。修法：调用方把
+  // `store.setsFor(workoutId)` 传进 `alreadyLogged`（数据库是真源，不另存计数器）。
+  group('★ 恢复后接着记：不许覆盖已记的组（真机 P0 的回归）', () {
+    test('把已记的组读回来：第几组 / 已完成列表 / 开始时刻 都对', () async {
+      final WorkoutController c = _controller(
+        store: InMemoryLocalStore(),
+        alreadyLogged: <SetRecord>[
+          _logged('w1', 'ex_bb_bench_press', 1),
+          _logged('w1', 'ex_bb_bench_press', 2),
+        ],
+        startedAtMs: 4242,
+      );
+
+      expect(c.loggedSets.length, 2, reason: '已完成列表要显示杀进程前记的那两组');
+      expect(c.setNumber, 3, reason: '接着数的应当是第 3 组，不是第 1 组');
+      expect(c.workout.startedAtMs, 4242,
+          reason: '开始时刻要沿用原来那次训练（否则总结页的时长只剩后半段）');
+    });
+
+    test('★ 真机那条复现：恢复前 2 组 → 恢复后记一组 = 库里 3 组，原第 1 组还在', () async {
+      final LocalStore store = InMemoryLocalStore();
+      // 杀进程前：记了 2 组（id 是确定性的，所以"覆盖"在这里会表现为"还是 2 组"）
+      await store.saveSet(_logged('w1', 'ex_bb_bench_press', 1, atMs: 5000));
+      await store.saveSet(_logged('w1', 'ex_bb_bench_press', 2, atMs: 6000));
+      await store.saveActiveSession(_session());
+      expect((await store.setsFor('w1')).length, 2);
+
+      // 恢复 —— `main.dart::_resumeSession` 做的就是这两步
+      final WorkoutController c = _controller(
+        store: store,
+        alreadyLogged: await store.setsFor('w1'),
+      );
+      c.onBigButtonTap();
+      await Future<void>.delayed(Duration.zero); // 让 unawaited 的落库跑完
+
+      final List<SetRecord> after = await store.setsFor('w1');
+      expect(after.length, 3,
+          reason: '**修复前这里一直是 2** —— 真机上"总数没变"就是这么来的');
+      expect(after.map((SetRecord s) => s.id).toSet().length, 3, reason: '三条不同的组，谁都没被覆盖');
+      expect(after.map((SetRecord s) => s.setIndex).toList(), <int>[1, 2, 3]);
+      expect(after.first.id, 's_w1_ex_bb_bench_press_1', reason: '原来那组必须还在');
+    });
+
+    test('热身组占过的序号也不会被重用（_setSeq 取的是最大值）', () async {
+      final WorkoutController c = _controller(
+        store: InMemoryLocalStore(),
+        alreadyLogged: <SetRecord>[
+          _logged('w1', 'ex_bb_bench_press', 1, type: SetType.warmup),
+          _logged('w1', 'ex_bb_bench_press', 2),
+        ],
+      );
+
+      expect(c.setNumber, 2, reason: '只有一组正式组 → 接着的是第 2 组');
+      c.onBigButtonTap();
+      await Future<void>.delayed(Duration.zero);
+      expect(c.loggedSets.last.id, 's_w1_ex_bb_bench_press_3',
+          reason: '热身占了 1、正式组占了 2 → 新一组必须是 3');
+    });
+
+    test('全新训练（没传 alreadyLogged）行为一点没变', () {
+      final WorkoutController c = _controller(store: InMemoryLocalStore());
+      expect(c.setNumber, 1);
+      expect(c.loggedSets, isEmpty);
     });
   });
 }

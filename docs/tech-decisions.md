@@ -147,6 +147,30 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 
 ---
 
+## 界面零件为什么也抽共用件：一个 bug 被抄了三遍（2026-10-04 定）
+
+**问题**：胶囊选项（休息时长 / 组数 / 部位…）在仓库里是**三份拷贝**
+（`profile_widgets.choicePill`、`routine_screen._chip`、`custom_exercise_screen._chip`）。
+同一个 `Container(alignment: Alignment.center)` 写法，在 `Wrap` 里会被**撑成通栏** ——
+于是同一个"6 个选项各占一整行"的 bug 也**复制了三份**，而没有任何一行报错
+（`Row` / 横向 `ListView` 给的是无界宽度，同一个写法在那儿看着完全正常）。
+
+**做法**：抽到 `app/lib/core/pills.dart`，三处都调它；
+`profile_widgets.dart` 用 `export` 转出去，既有调用方的 import 不用动。
+
+**判据不是"看着还行"，是量出来的**：`app/test/pill_layout_test.dart` 把胶囊放进
+**固定 360pt 宽**的 `Wrap` 里量真实尺寸，并且**真的开出两个页面**量 `set-5` /
+`custom-muscle-chest` 这些真控件 —— 只测组件的话，"组件改好了、页面又抄了一遍旧的"仍然会绿。
+
+**为什么文件里留着两条"旧写法"的对照测试**：它们断言**旧的错写法确实被撑满**（360pt）。
+没有它们，"量出来很窄"可能只是量错了地方，守卫会退化成永远绿的摆设 ——
+这和 `tool/mutation.mjs` 是同一个道理（**测试数量从来不等于测试有效性**）。
+
+> 这类"共享组件 + 组件级守卫"的做法只对**会被复制**的零件值得做。
+> 一个只在一个页面出现的私有 widget 抽出来只会多一层跳转。
+
+---
+
 ## MVP 之后的触发条件（不要提前做）
 
 | 能力 | 触发条件 |
@@ -168,13 +192,15 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 | 决策 | 代码现状 | 证据 / 指针 |
 |---|---|---|
 | Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
-| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v15**） |
+| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v18**） |
 | **只支持 iPhone**（不承诺 iPad） | ✅ 2026-09-30 拍板 | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1"`；`tool/check-ios-app.mjs` 把"产物含 iPad"判红；依据（iPad 上只是拉长的手机版）见 `release-admin.md` §二之四之四 |
 | **「我」页按"多久碰一次"分三个二级页** | ✅ 2026-10-01 拍板并落地 | 统计每天看；偏好与备份设一次就不管；隐私与关于是给别人看的。`app/test/profile_structure_test.dart` 钉住"第一屏不许再长回去"；政策入口 3 次点击（小米"四步之内"） |
 | **体重单位默认跟随训练单位**（可单独选「斤」） | ✅ 2026-10-01 | `ProfileRepository.setUnit` 的联动判据 + `app/test/units_test.dart`；此前全局选了磅、身体页还写 kg，两套口径各说各的 |
 | **加 `flutter_localizations` 中文化系统页面** | ✅ 2026-10-01 | 它不是第三方 SDK（Flutter 官方、随 SDK 分发），政策中英两版的依赖清单里都如实写明；`locale: zh_CN` 写死（这一版只有中文文案） |
 | **CI 跑的就是门禁本身** | ✅ 2026-09-30 拍板 | `.github/workflows/ci.yml` 只有一条 `./verify.sh`；守卫 `tool/check-ci.mjs`（此前 CI 只是子集，"CI 绿 ≠ 门禁绿"） |
-| **备份只备份训练记录** | ✅ 2026-09-30 拍板（范围就此定死） | 边界由 `app/test/backup_scope_test.dart` 钉住；要做"全都要"就得同时动 format 版本 + 政策 + 隐私事实表 + 云备份 |
+| **备份只备份训练记录** | ✅ 2026-09-30 拍板（范围就此定死）→ ⚠️ **2026-10-04 改了一次**：**加了「动作置顶（收藏）」**（用户拍板，理由：换手机时收藏没了，用户会认为"数据没全回来"） | 边界由 `app/test/backup_scope_test.dart` 钉住（含"老备份不提置顶时不许清空本机置顶"）；**体重 / 计划模板 / 其它设置仍不在**，再要扩就得同时动 format 版本 + 政策 + 隐私事实表 + 云备份 |
+| **训练提醒（本地通知）** | ✅ 2026-10-04（用户拍板"探针 + ① + ② 全做"） | **自己写原生、不引通知插件**：需要的只是"排一个闹钟 + 弹一条本地通知"，而 `flutter_local_notifications` 会带进 `timezone`（还得初始化时区数据）、Android 的 desugaring 配置与一整套用不到的能力 —— 本项目的规矩是"依赖只允许必要"，而且每多一个第三方 SDK，政策依赖表 + 两张商店表单 + 隐私事实表就多一条要维护的东西。Android 用**非精确**闹钟（`setAndAllowWhileIdle`），因此**不需要** `SCHEDULE_EXACT_ALARM` 那个特殊权限；iOS 用 `UNCalendarNotificationTrigger`。开关**默认关**，通知权限只在用户打开开关时请求 |
+| **组间休息的 Live Activity（iOS）** | ✅ 2026-10-04（用户拍板"探针 + 做"） | 只碰 iOS、**不碰权限、不碰数据落库**（`docs/plan-scene-and-return.md` ①）；最低 **iOS 16.2**；扩展在 `app/ios/RestWidget/`，门禁第 ⑪ 条守"它真的在产物里"。⚠️ **视觉尚未验收**（本机没有 `Simulator.app`，锁不了屏）—— 见该方案页的「验证到了哪一步」 |
 | Apple Watch 原生 Swift 扩展 | ⏸ MVP 就不做 | — |
 | **HealthKit 读写** | ⏸ **明确不做（后续版本）** —— 2026-09-30 用户拍板 | `your-todo.md` 第 5 条已结；上线材料里**不再出现"MVP 只做 HealthKit"**这种没实现的话 |
 | **Android 对接 Health Connect** | ⏸ 同上，同一版节奏 | 同上 |

@@ -23,6 +23,8 @@ import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, Workou
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
+import 'package:lianleme/data/reminder_repository.dart';
+import 'package:lianleme/features/profile/reminder.dart';
 import 'package:lianleme/data/routine_repository.dart';
 import 'package:lianleme/domain/models.dart';
 
@@ -87,6 +89,13 @@ void main() {
     await BodyMetricRepository(db).save(date: '2026-09-28', weightKg: 72.5, nowMs: 1000);
     final RoutineData r = await RoutineRepository(db).create('推日', nowMs: 1000);
     await RoutineRepository(db).addItem(r.id, 'ex_bb_bench_press', nowMs: 1000);
+    // v16：动作置顶（用户钉住的那些动作）。走公开 API，不写裸 SQL。
+    await store.setPinnedExerciseIds(<String>['ex_bb_bench_press']);
+    // v17：训练提醒的设置（开关 + 时间）
+    await ReminderRepository(db).save(
+      const ReminderSettings(enabled: true, minutesOfDay: 20 * 60),
+      nowMs: 1000,
+    );
   }
 
   test('逐表核对：删除后除动作库外，一张表都不许有行', () async {
@@ -128,6 +137,12 @@ void main() {
       // v15（2026-10-01）：未结束的训练会话。**删** —— 它也是用户状态，
       // 留着会让"删光之后首页还问你要不要继续上次的训练"。
       'active_session_row',
+      // v16（2026-10-04）：动作置顶。**删** —— 那是用户自己钉的收藏，
+      // 属于"删除全部数据"的范围（留着会让选择器在他删光之后还摆着置顶区）。
+      'pinned_exercise',
+      // v17（2026-10-04）：训练提醒的设置。**删** —— 那是用户自己选的开关与时间，
+      // "删除全部数据"之后不该还留着一条他看不见的提醒。
+      'reminder_setting',
     };
     expect(actual, equals(known),
         reason: '库里的表和这份清单对不上 —— 新增/改名一张表就要来改这里，'

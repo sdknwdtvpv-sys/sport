@@ -31,6 +31,23 @@ abstract class LocalStore {
   Future<void> saveSet(SetRecord record);
   Future<void> deleteSet(String id);
   Future<List<SetRecord>> setsFor(String workoutId);
+
+  /// **回收站**（2026-10-04）：被软删除的组，最近删的在前。
+  ///
+  /// 为什么要有它：`deleteSet` 一直是**软删除**（只写 `deletedAt`），
+  /// 但全仓**没有任何恢复入口** —— 训练中长按撤销之后，那组就永远取不回来了。
+  /// 而项目自己写着"数据丢失是工具类死刑"（`PRODUCT.md` §10.5），
+  /// 对手最集中的抱怨也正是数据丢失。**留痕不留出路，等于没留。**
+  Future<List<DeletedSet>> deletedSets({int limit = 200});
+
+  /// 从回收站恢复一组（清掉 `deletedAt`）。
+  ///
+  /// ⚠️ **不发埋点**：这是罕见的数据找回动作，不是可用性信号；而多发一个事件
+  /// 就要同步中英政策 + 隐私事实表 + 两张商店表单
+  /// （`tool/privacy-audit.mjs` 会把代码里多发的事件判红）。理由留在这里，
+  /// 免得下次有人"顺手补上"。
+  Future<void> restoreSet(String id);
+
   Future<void> saveWorkout(Workout workout);
   Future<Workout?> loadWorkout(String id);
 
@@ -74,6 +91,17 @@ abstract class LocalStore {
   /// 而部位要拿动作 id 去动作库换，所以这里只返回 id。
   Future<List<String>> recentExerciseIds();
 
+  /// **动作置顶**（收藏）的 id，**按用户定的顺序**。
+  ///
+  /// 为什么它在这个接口里（而不是 `user_profile` 那条偏好通道）：用它的两处都只拿着
+  /// 一个 `LocalStore` —— 选择器（S3）要按它分「置顶」区，备份要把它写进文件。
+  /// 而它又不是标量偏好，是一份有顺序的集合，所以落库形态是一张自己的表。
+  Future<List<String>> pinnedExerciseIds();
+
+  /// 整体替换置顶清单（顺序即数组顺序）。**不做增量**：这是一份 3–5 项的小清单，
+  /// 整体写既简单又不会出现"取消一半"的中间态。
+  Future<void> setPinnedExerciseIds(List<String> ids);
+
   /// 删除**全部用户数据**（S10「我 → 数据与备份 → 删除全部数据」）。
   ///
   /// 只清用户自己产生的数据 —— 训练、组记录、个人设置。**动作库不动**：
@@ -112,6 +140,12 @@ class InMemoryLocalStore implements LocalStore {
   /// 记录被删除的 id，供"撤销误触"的测试断言。
   final List<String> deletedIds = <String>[];
 
+  /// 回收站：软删除的组挪到这里，`restoreSet` 再挪回去。
+  final Map<String, DeletedSet> _bin = <String, DeletedSet>{};
+
+  /// 动作置顶（顺序即列表顺序）
+  final List<String> _pinned = <String>[];
+
   @override
   Future<void> saveSet(SetRecord record) async {
     _sets[record.id] = record;
@@ -119,7 +153,24 @@ class InMemoryLocalStore implements LocalStore {
 
   @override
   Future<void> deleteSet(String id) async {
-    if (_sets.remove(id) != null) deletedIds.add(id);
+    final SetRecord? gone = _sets.remove(id);
+    if (gone == null) return;
+    deletedIds.add(id);
+    _bin[id] = DeletedSet(set: gone, deletedAtMs: DateTime.now().millisecondsSinceEpoch);
+  }
+
+  @override
+  Future<List<DeletedSet>> deletedSets({int limit = 200}) async =>
+      (_bin.values.toList()
+            ..sort((DeletedSet a, DeletedSet b) => b.deletedAtMs.compareTo(a.deletedAtMs)))
+          .take(limit)
+          .toList();
+
+  @override
+  Future<void> restoreSet(String id) async {
+    final DeletedSet? back = _bin.remove(id);
+    if (back == null) return;
+    _sets[id] = back.set;
   }
 
   @override
@@ -185,6 +236,17 @@ class InMemoryLocalStore implements LocalStore {
   }
 
   @override
+  Future<List<String>> pinnedExerciseIds() async =>
+      List<String>.unmodifiable(_pinned);
+
+  @override
+  Future<void> setPinnedExerciseIds(List<String> ids) async {
+    _pinned
+      ..clear()
+      ..addAll(ids);
+  }
+
+  @override
   Future<LastSession?> lastSessionFor(
     String exerciseId, {
     String? excludeWorkoutId,
@@ -212,5 +274,6 @@ class InMemoryLocalStore implements LocalStore {
     _active = null; // 未结束的会话也算用户状态（与 drift 实现保持一致）
     _sets.clear();
     _workouts.clear();
+    _pinned.clear(); // 置顶也是用户数据（"删除全部数据"之后它必须真的没了）
   }
 }

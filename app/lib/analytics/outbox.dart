@@ -109,6 +109,37 @@ class AnalyticsOutboxStore {
     await (_db.delete(_db.analyticsOutbox)..where((t) => t.id.isIn(ids))).go();
   }
 
+  /// **只读**地取出队列里的全部事件（含 parked 的），按"优先级 + 时间"排好。
+  ///
+  /// 为什么要有它：「导出统计事件」是**唯一能把 `tap_count` 从设备上取回来的路径**。
+  /// 没配上报地址的包里 `_NullTransport` 恒失败，事件只会一直攒在本地 ——
+  /// 而 `tap_count` 中位数是"less is more"唯一的客观守卫（`docs/analytics.md` §3）。
+  ///
+  /// 三个刻意的选择：
+  ///   * **不过滤 parked**（连续失败 ≥ 3 次的那些）：它们正是"发不出去"的那批，
+  ///     过滤掉等于把最该看的数据藏起来；
+  ///   * **不删除**（与 `markSent` 是两件事）：导出是只读动作，不改队列状态；
+  ///   * 排序与 [takeBatch] 一致，所以"导出的顺序"与"真要发出去的顺序"是同一个。
+  Future<List<AnalyticsEventPayload>> peekAll() async {
+    final rows = await (_db.select(_db.analyticsOutbox)
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.priority),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
+        .get();
+
+    return rows
+        .map((AnalyticsOutboxData r) => AnalyticsEventPayload(
+              id: r.id,
+              name: r.name,
+              props: (jsonDecode(r.payload) as Map<String, dynamic>)
+                  .cast<String, Object?>(),
+              priority: r.priority,
+              createdAt: r.createdAt,
+            ))
+        .toList();
+  }
+
   Future<void> markFailed(List<String> ids, String error) async {
     for (final String id in ids) {
       final row = await (_db.select(_db.analyticsOutbox)
@@ -141,6 +172,20 @@ class AnalyticsOutboxStore {
   }
 
   /// 超出上限时丢弃：**低优先级先丢，同级旧的先丢**，返回丢弃条数。
+  /// **清空整个队列**（不只是已发送的）。
+  ///
+  /// 只在一个地方用：`docs/analytics.md` §10 拍板的 **B 方案** ——
+  /// 第一次在"配了上报地址的包"里冷启动时，把此前攒下的历史积压丢掉。
+  /// 理由：那些事件产生时，用户用的是**不对外发送**的包，我们从没告诉过他它们会被发出去；
+  /// 接上地址的那天补传，等于事后改主意。**谁记的谁发。**
+  ///
+  /// ⚠️ 这是本项目里唯一一处**主动删掉用户数据**的地方，所以它必须由
+  /// `AnalyticsMetaRepository.legacyPurgedAt` 保证**只发生一次**，
+  /// 而且只在"真的有地址"时发生（没配地址的包继续攒，行为不变）。
+  Future<int> clearAll() async {
+    return _db.delete(_db.analyticsOutbox).go();
+  }
+
   Future<int> dropOverflow() async {
     final int total = await pending();
     if (total <= maxRows) return 0;

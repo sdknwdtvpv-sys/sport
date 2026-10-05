@@ -192,18 +192,55 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    /// 2026-10-04 起：6 个选项收进**底部弹层**（页面上只留当前值一行）。
+    /// 所以"选某个值"现在是两步：开弹层 → 选。
     Future<void> tapRest(WidgetTester tester, String key) async {
       await tester.dragUntilVisible(
-        find.byKey(Key(key)),
+        find.byKey(const Key('rest-row')),
         find.byType(ListView),
         const Offset(0, -220),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('rest-row')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(Key(key)));
       await tester.pumpAndSettle();
     }
 
-    testWidgets('默认高亮「跟随动作」，并解释各动作自带的值不一样',
+    testWidgets('★ 休息时长在页面上**只占一行**（6 个选项收进弹层）',
+      (WidgetTester tester) async {
+    // 两次真机反馈的收尾：
+    //   第一次说"每个选项占一整行、半个屏没了"（那是 `choicePill` 在 `Wrap` 里被撑满的 bug）；
+    //   第二次说"还是臃肿，收起来吧"。现在页面上只留**当前值 + 一句解释**。
+    await pump(tester);
+    await openPreferences(tester);
+
+    final Finder row = find.byKey(const Key('rest-row'));
+    await tester.dragUntilVisible(row, find.byType(ListView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+
+    expect(row, findsOneWidget);
+    expect(find.byKey(const Key('rest-current')), findsOneWidget);
+    // 选项**不在页面上**，都在弹层里
+    for (final String k in <String>['rest-follow', 'rest-45', 'rest-90', 'rest-180']) {
+      expect(find.byKey(Key(k)), findsNothing, reason: '$k 不该直接铺在页面上');
+    }
+    // 量出来的：这一行现在是 **72pt 高**（标题「90 秒」+ 一行解释 + 右箭头）。
+    // 判据从 <90 收紧到 <80：<90 连"两行胶囊"（2026-10-04 那次是 ~90pt）都能放过去，
+    // 松到等于没钉住。
+    expect(tester.getSize(row).height, lessThan(80),
+        reason: '这一行应当就是"一行"（实测 72pt），不是一坨');
+
+    // 点开之后 6 个选项都在，且当前值有勾
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    for (final String k in <String>['rest-follow', 'rest-45', 'rest-60', 'rest-90', 'rest-120', 'rest-180']) {
+      expect(find.byKey(Key(k)), findsOneWidget, reason: '$k 应该在弹层里');
+    }
+    expect(find.byIcon(Icons.check), findsOneWidget, reason: '当前值要有勾');
+  });
+
+  testWidgets('默认高亮「跟随动作」，并解释各动作自带的值不一样',
         (WidgetTester tester) async {
       await pump(tester);
       await openPreferences(tester);
@@ -222,7 +259,16 @@ void main() {
 
       expect(await profile.restOverrideSec(), 60, reason: '必须落库');
       expect(notified, 60, reason: '必须通知上层，否则训练屏还用旧值');
-      expect(find.textContaining('所有动作统一休息 60 秒'), findsOneWidget);
+      // 文案审计（2026-10-04）：原来这里断言副标题「所有动作统一休息 60 秒」——
+      // 那句是**把标题复述一遍**（标题本来就写着「60 秒」），已删。
+      // 改成断言两件更有意义的事：当前值确实显示出来了；而那句只对「跟随动作」
+      // 成立的解释必须消失（否则它会变成一句假话挂在页面上）。
+      expect(
+        tester.widget<Text>(find.byKey(const Key('rest-current'))).data,
+        '60 秒',
+      );
+      expect(find.textContaining('每个动作'), findsNothing,
+          reason: '选了具体秒数后，那句解释就不适用了，必须消失');
     });
 
     testWidgets('再点「跟随动作」能回到默认', (WidgetTester tester) async {

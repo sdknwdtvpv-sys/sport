@@ -25,7 +25,11 @@ ProtectControlGroups=true
 RestrictAddressFamilies=AF_INET AF_INET6
 RestrictNamespaces=true
 LockPersonality=true
-MemoryDenyWriteExecute=true
+# ⚠️ **故意没有 `MemoryDenyWriteExecute=true`**（2026-10-04 真机上量到的）：
+# V8 的 JIT 需要"可写且可执行"的内存页，开这个开关后 Node **一启动就 SIGTRAP 崩溃**
+# （`MemoryAllocator::SetPermissionsOnExecutableMemoryChunk`），systemd 会无限重启 + core dump。
+# 这条是这一包第一次面对真 systemd 时才发现的 —— 自检抓不到它，只有真跑一次才知道。
+# 其余加固项照旧（它们不影响 Node）。
 CapabilityBoundingSet=
 ReadWritePaths=__DATA_DIR__
 

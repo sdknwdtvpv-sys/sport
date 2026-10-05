@@ -416,6 +416,73 @@ function checkDocNumbers(fileCount, lineCount, appVersion) {
   return problems;
 }
 
+// `release-checklist` 的「终局核验」表里还抄了一份**带页数**的：
+// `182 个源文件 / 49,027 行 / 全文 981 页`。上面那条守卫只认「N 个源文件 / M 行」，
+// **页数不在它的射程里** —— 2026-10-04 就是这么发现的：页数从 979 变成 981（源码多了、
+// 每页 50 行，于是多出两页），行数那条当场红了，页数却没人看。
+// 页数会变、且它是**要填进申请表**的数字，所以一并钉住；真源就是 PDF 本身（数页对象，
+// 零依赖），不是谁记在文档里的旧值。
+const CHECKLIST = 'docs/release-checklist.md';
+// ⚠️ 措辞与说明书那边**不一样**：这里是「N 个文件 / M 行 / 全文 P 页」（没有"源"字），
+// 说明书是「N 个源文件 / M 行」。第一版守卫照抄了说明书那套措辞，于是对 checklist 永远
+// 匹配不上、直接报"找不到" —— 两种措辞都得认。
+const FULL_RE = /(\d+) 个(?:源)?文件 \/ ([\d,]+) 行 \/ 全文 ([\d,]+) 页/g;
+
+/** 纯函数版（自检用）：文本进、问题出，不碰磁盘。 */
+function checkChecklistText(text, fileCount, lineCount, totalPages) {
+  const problems = [];
+  const hits = [...text.matchAll(FULL_RE)];
+  if (!hits.length) {
+    problems.push(`${CHECKLIST}：找不到「N 个文件 / M 行 / 全文 P 页」（措辞变了？检查要跟着改）`);
+    return problems;
+  }
+  for (const m of hits) {
+    const [, n, l, p] = m;
+    if (Number(n) !== fileCount || Number(l.replace(/,/g, '')) !== lineCount) {
+      problems.push(`${CHECKLIST}：写的是 ${n} 个文件 / ${l} 行，实际是 ${fileCount} / ${lineCount}`);
+    }
+    // ⚠️ 「全文 P 页」**不能**去数 dist 里那份 PDF：那是提交用的「前 30 + 后 30」= 60 页的
+    // 鉴别材料，不是全文。全文页数是排版算出来的（每页 50 行 → ceil(行数/50)），
+    // 真源就是上面那两行（行数 ÷ 每页 50 行）。第一版守卫数了 PDF、于是把 981 判成"实际 60 页"。
+    if (Number(p.replace(/,/g, '')) !== totalPages) {
+      problems.push(`${CHECKLIST}：写的是源程序"全文 ${p} 页"，实际是 ${totalPages} 页`
+        + `（= ${lineCount} 行 ÷ 每页 ${PER_PAGE} 行；申请表与鉴别材料要跟着改）`);
+    }
+  }
+  return problems;
+}
+
+function checkChecklistNumbers(fileCount, lineCount, totalPages) {
+  return checkChecklistText(readFileSync(join(ROOT, CHECKLIST), 'utf8'), fileCount, lineCount, totalPages);
+}
+
+// ---------------------------------------------------------------- 自检
+//
+// 为什么这条守卫也要自检：它盯的三个数字（文件数 / 行数 / 页数）**都是"加几行代码就会变"**的，
+// 而它自己很容易变成"永远绿的摆设" —— 第一版就是这么写的：页数去数提交用的那份 60 页 PDF，
+// 于是正的、反的都报"实际是 60 页"。自检把四种漂法各造一份，验它真的抓得住。
+// `--selftest` 不碰磁盘（纯函数进、纯函数出），所以它能在干净克隆上跑。
+if (argv.includes('--selftest')) {
+  let failed = 0;
+  const ok = (name, cond) => { if (!cond) { failed++; console.log(`✗ ${name}`); } };
+  const row = (n, l, p) => `| 软著材料 | 源程序 **${n} 个文件 / ${l} 行 / 全文 ${p} 页** |`;
+  const F = 3, L = 1234, P = 25;             // ⚠️ 自检用的**假数据**，不是仓库真值（真值由门禁每次实测）
+
+  ok('对得上时不出问题', checkChecklistText(row(F, '1,234', P), F, L, P).length === 0);
+  const pag = checkChecklistText(row(F, '1,234', '24'), F, L, P);
+  ok('页数漂了要抓住', pag.length === 1 && /全文 24 页.*实际是 25 页/.test(pag[0]));
+  const lin = checkChecklistText(row(F, '9,999', P), F, L, P);
+  ok('行数漂了要抓住', lin.length === 1 && /实际是 3 \/ 1234/.test(lin[0]));
+  const fil = checkChecklistText(row('9', '1,234', P), F, L, P);
+  ok('文件数漂了要抓住', fil.length === 1 && /写的是 9 个文件/.test(fil[0]));
+  const miss = checkChecklistText('这一行被改写过了', F, L, P);
+  ok('措辞变了要报"找不到"', miss.length === 1 && /找不到/.test(miss[0]));
+
+  if (failed) { console.log(`✗ 软著文档数字守卫自检：${failed} 条不过`); process.exit(1); }
+  console.log('✓ 软著文档数字守卫自检 5 条通过（文件数 / 行数 / 页数 / 措辞）');
+  process.exit(0);
+}
+
 // ---------------------------------------------------------------- 跑
 mkdirSync(OUT, { recursive: true });
 console.log(`软著鉴别材料 PDF　${APP_NAME} V${APP_VERSION}　著作权人：${ownerText}\n`);
@@ -472,13 +539,14 @@ function checkStaleDist() {
 if (argv.includes('--check-docs')) {
   const problems = [
     ...checkDocNumbers(src.fileCount, src.lineCount, APP_VERSION),
+    ...checkChecklistNumbers(src.fileCount, src.lineCount, src.totalPages),
     ...checkManualNumbers(APP_VERSION, schemaVersionFromDb()),
     ...checkStaleDist(),
   ];
   console.log(`实际：${src.fileCount} 个源文件 / ${src.lineCount} 行`);
   console.log(`     版本 V${APP_VERSION} · 数据库模式 v${schemaVersionFromDb()}`);
   if (problems.length) { for (const p of problems) console.log(`✗ ${p}`); process.exit(1); }
-  console.log('✓ 说明书与申请表里的源程序量与实际一致，dist/copyright 里没有旧版本残留');
+  console.log('✓ 说明书/申请表/release-checklist 里的源程序量与实际一致，dist/copyright 里没有旧版本残留');
   process.exit(0);
 }
 

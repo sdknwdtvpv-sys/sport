@@ -43,9 +43,15 @@ class _Harness {
       store: store,
       syncQueue: syncQueue,
       lastSession: lastSession,
+      // 钟是**单调递增的毫秒**（每次取值 +1，保证时间戳各不相同），
+      // 而测试可以用 [advance] 把它一次推过去 —— 因为休息倒计时现在
+      // **按墙上时钟算**（`_restEndsAtMs - now`），不再"每秒减一"。
+      // 后者在 App 被系统挂起时会白送掉挂起的那段时间，见 `rest_activity_test.dart`。
       clock: () => _t++,
     );
   }
+
+
 
   final RecordingAnalytics analytics = RecordingAnalytics();
   final InMemoryLocalStore store = InMemoryLocalStore();
@@ -53,6 +59,13 @@ class _Harness {
   late final WorkoutController controller;
 
   int _t = 1000;
+
+  /// 把假时钟往前推 [ms] 毫秒（与 `tester.pump(Duration)` 配对使用）。
+  ///
+  /// 休息倒计时现在**按墙上时钟算**（`_restEndsAtMs - now`），不再"每秒减一"——
+  /// 后者在 App 被系统挂起时会白送掉挂起的那段时间（见 `rest_activity_test.dart`）。
+  /// 所以测"倒计时真的在走"必须**同时**推进这个假钟与 `tester.pump`。
+  void advance(int ms) => _t += ms;
 
   List<Map<String, Object?>> get setEvents => analytics.propsOf('set_logged');
 }
@@ -318,6 +331,7 @@ void main() {
     expect(h.controller.restRunning, isTrue);
     expect(h.controller.restRemainingSec, 120);
 
+    h.advance(1000); // 真实世界过了 1 秒（倒计时按墙上时钟算）
     await tester.pump(const Duration(seconds: 1));
     expect(h.controller.restRemainingSec, 119, reason: '倒计时必须真的走');
 

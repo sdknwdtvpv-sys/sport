@@ -125,7 +125,9 @@ void main() {
         nowMs: 1790612345678,
       );
       final Map<String, dynamic> root = jsonDecode(json) as Map<String, dynamic>;
-      expect(root['format'], 2, reason: '加了字段就要升版本，否则老备份的语义会漂');
+      // v3（2026-10-04）：多了 `pinned_exercises`（动作置顶）。这条断言就是
+      // "加字段必须升版本"的守卫 —— 它在这一版真的拦下过一次改口径没改测试。
+      expect(root['format'], 3, reason: '加了字段就要升版本，否则老备份的语义会漂');
 
       final BackupParse parsed = parseBackup(json);
       expect(parsed.ok, isTrue);

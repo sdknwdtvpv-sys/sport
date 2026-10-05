@@ -22,6 +22,22 @@
 训练结束（路由返回）或用户"删除全部数据"时清掉。
 App 被杀掉时它就留在库里，下次冷启动首页据此显示「继续上次的训练」。
 
+## pinned_exercise（v16，2026-10-04）
+
+| 列 | 类型 | 说明 |
+|---|---|---|
+| `exercise_id` | TEXT PK | 被置顶的动作 |
+| `position` | INTEGER | **用户排的顺序**（0 起）—— 顺序显式存，不靠插入时间 |
+| `created_at` | INTEGER | 什么时候钉的（只作记录，不参与排序） |
+
+**为什么单独一张表、而不是 `user_profile` 的一列**：它是一份**有顺序的集合**
+（用户钉 3–5 个动作），而 `user_profile` 全是标量偏好 —— 与 `active_session_row`
+同一类判断（那张表是因为"运行时状态、每次记一组都重写"）。
+**为什么顺序显式存**：这个顺序用户看得见（选择器的「置顶」分区），
+不该由两次点击相差几毫秒来决定。
+**取消置顶 = 删行**（不是软删）：这张表里没有"历史"可言，留着反而会让
+"同一动作出现在置顶区两次"这种状态成为可能。
+
 ## 全局约定
 
 1. **主键 = 客户端生成的 UUID**。离线优先的前提：不依赖服务端分配 ID，不产生冲突。
@@ -72,8 +88,9 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ```json
 {
-  "app": "lianleme", "format": 1, "exported_at": 1790612345678, "unit": "kg",
+  "app": "lianleme", "format": 3, "exported_at": 1790612345678, "unit": "kg",
   "exercise_names": { "ex_bb_bench_press": "杠铃卧推" },
+  "pinned_exercises": [ "ex_bb_squat", "ex_bb_bench_press" ],
   "workouts": [
     { "id": "w_...", "started_at": 0, "ended_at": 0,
       "sets": [ { "id": "s_...", "exercise_id": "ex_bb_bench_press", "set_index": 1,
@@ -96,6 +113,12 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
    （`isBuiltin: false`，分组/器械记「未分类」）—— 这样"换手机导回来"看到的还是同一批动作名，
    而不是 `ex_xxxxxxxx`。补建是**幂等**的（同一份导两次不会建两个），映射里没有的动作
    照旧退化成显示 id。
+
+6. **`pinned_exercises` 是 v3 加的（2026-10-04），而且"没有这个键" ≠ "空列表"**：
+   v1/v2 的备份根本没提置顶 → 解析成 `null` → **导入时不碰本机的置顶**；
+   v3 里写了 `[]` 才是"我一个都没置顶"。把这两件事混起来的后果是：
+   用户拿一份老备份恢复，收藏被**静默清空**（`backup_scope_test.dart` 有一条专门钉它）。
+   同一次扩张的边界：**只加了置顶**，体重 / 计划模板 / 其它设置仍然不进备份。
 
 ### category 词表
 

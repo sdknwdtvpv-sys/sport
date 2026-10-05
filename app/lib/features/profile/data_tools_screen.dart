@@ -32,6 +32,7 @@ import 'backup.dart';
 import 'backup_exporter.dart';
 import 'backup_source.dart';
 import 'profile_widgets.dart';
+import 'trash_screen.dart';
 
 class DataToolsScreen extends StatefulWidget {
   const DataToolsScreen({
@@ -105,6 +106,20 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
     );
   }
 
+  /// 打开回收站（2026-10-04）。恢复之后要通知上层刷新统计。
+  Future<void> _openTrash() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) => TrashScreen(
+          store: widget.store,
+          repository: widget.repository,
+          unit: widget.unit,
+          onRestored: widget.onDataChanged,
+        ),
+      ),
+    );
+  }
+
   /// 导出**可导回的备份**（JSON，不是那份给人看的 CSV）。
   ///
   /// 为什么单独做一个：`_export` 那份 CSV 是**报表** —— 日期精确到分钟、
@@ -126,7 +141,9 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('已导出 ${bundle.workouts} 次训练 / ${bundle.sets} 组'),
+        // 置顶也是这次一起带走的（2026-10-04 起）：带没带、带了几个，用户有权知道
+        content: Text('已导出 ${bundle.workouts} 次训练 / ${bundle.sets} 组'
+            '${bundle.pinned > 0 ? ' / ${bundle.pinned} 个置顶动作' : ''}'),
         backgroundColor: Tokens.elevated,
       ),
     );
@@ -335,7 +352,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
                 style: TextStyle(color: Tokens.text, fontSize: 15),
               ),
               subtitle: const Text(
-                '记录体重，看长期变化。一天一条',
+                '记录体重。一天一条',
                 style: TextStyle(color: Tokens.text3, fontSize: 13),
               ),
               trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
@@ -351,7 +368,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               style: TextStyle(color: Tokens.text, fontSize: 15),
             ),
             subtitle: const Text(
-              '复制成 CSV 到剪贴板，可贴进表格（报表，不能导回来）',
+              '复制成 CSV 到剪贴板（报表，不能导回来）',
               style: TextStyle(color: Tokens.text3, fontSize: 13),
             ),
             trailing: const Icon(Icons.ios_share, color: Tokens.text3, size: 20),
@@ -368,10 +385,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               '导出备份文件',
               style: TextStyle(color: Tokens.text, fontSize: 15),
             ),
-            subtitle: const Text(
-              '存成文件或发给自己。导回来是同一批数据',
-              style: TextStyle(color: Tokens.text3, fontSize: 13),
-            ),
+            // 文案审计（2026-10-04，你拍的板）：这里原本是「导回来是同一批数据」——
+            // 那是**在"导出"这一行下面说"导回来"的事**，读着跳；而且"导回来"这件事
+            // 本来就该由下面那行「导入备份」负责。**彻底删掉**，一行都不留。
+            // ⚠️ 这一行因此成了这一屏**唯一没有副标题**的导航行（其余五行都留着），
+            // 这是刻意的：想不出该说什么，就什么都不说 —— 见 `docs/copy.md`。
             trailing: const Icon(Icons.save_alt, color: Tokens.text3, size: 20),
           ),
           const Divider(height: 1, color: Tokens.line),
@@ -384,10 +402,28 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               style: TextStyle(color: Tokens.text, fontSize: 15),
             ),
             subtitle: const Text(
-              '把备份内容粘进来。换手机、或想补齐历史都用它',
+              '把备份内容粘进来',
               style: TextStyle(color: Tokens.text3, fontSize: 13),
             ),
             trailing: const Icon(Icons.download, color: Tokens.text3, size: 20),
+          ),
+          const Divider(height: 1, color: Tokens.line),
+          // 回收站（2026-10-04）：软删除从第一天起就存在，但**从来没有恢复入口** ——
+          // 训练中长按撤销之后那组就永远没了，而"数据丢失是工具类死刑"是本项目的红线，
+          // 对手最集中的抱怨也正是数据丢失。**留痕不留出路，等于没留。**
+          ListTile(
+            key: const Key('open-trash'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+            onTap: _openTrash,
+            title: const Text(
+              '回收站',
+              style: TextStyle(color: Tokens.text, fontSize: 15),
+            ),
+            subtitle: const Text(
+              '撤销掉的组会落到这里，可以恢复',
+              style: TextStyle(color: Tokens.text3, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.delete_outline, color: Tokens.text3, size: 20),
           ),
           // 云备份的入口**只在配了服务器地址的包里存在**（见 lib/backup/backup_config.dart）：
           // 一个点进去必然报错的入口，比没有这个功能更伤。正式包没配地址 → 这里什么也不显示。
