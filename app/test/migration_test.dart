@@ -16,6 +16,7 @@ import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/analytics_meta_repository.dart';
+import 'package:lianleme/data/notification_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/reminder_repository.dart';
 import 'package:lianleme/features/profile/reminder.dart';
@@ -415,6 +416,47 @@ void main() {
     final ReminderSettings again = await repo.load();
     expect(again.enabled, isTrue);
     expect(again.label, '07:30');
+
+    await legacy.close();
+  });
+
+  test('v18 的库升到 v19：多出「站内消息」那张表，而且是空的（老库没有任何消息）',
+      () async {
+    // v19 又是"只加表、不动既有列"（v18 那条是例外）。
+    // ⚠️ 但这一版**多了一件事**：去重靠一条 partial unique index，
+    // `onCreate` 只在**新库**上跑，老库升级走的是迁移那条路 —— 所以这里要验的是
+    // **"索引也建出来了"**，否则去重在老用户身上形同虚设（表建了、索引没建）。
+    late List<String> tablesBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 18);
+        raw.execute(legacySeedExerciseSql);
+        tablesBefore = raw
+            .select("SELECT name FROM sqlite_master WHERE type='table'")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+    await legacy.customSelect('SELECT 1').get();
+    expect(tablesBefore, isNot(contains('app_notification')),
+        reason: 'fixture 里不该有这张表，否则这条测试是空转');
+
+    final NotificationRepository repo = NotificationRepository(legacy);
+    expect(await repo.list(), isEmpty, reason: '老库升上来 = 一条消息都没有（准确的历史）');
+
+    // 表能用，而且**去重索引真的在**
+    expect(
+      await repo.add(
+          kind: NotificationKind.achievement, title: '解锁「首训」', body: 'x', refKey: 'first_workout'),
+      isTrue,
+    );
+    expect(
+      await repo.add(
+          kind: NotificationKind.achievement, title: '解锁「首训」', body: 'x', refKey: 'first_workout'),
+      isFalse,
+      reason: '重复的那条要被唯一索引挡掉 —— 索引没建出来的话这里会返回 true',
+    );
+    expect((await repo.list()).length, 1);
 
     await legacy.close();
   });

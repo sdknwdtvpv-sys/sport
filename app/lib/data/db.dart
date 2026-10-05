@@ -297,6 +297,39 @@ class PinnedExercise extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{exerciseId};
 }
 
+/// **站内消息**（通知中心）。2026-10-05，v19。
+///
+/// 三类消息**全部本地生成**（`kind` 就是这三类，见 `docs/screens.md` S18）：
+///   * `achievement` —— 徽章解锁（现算出来的徽章与已发过的消息对账，见下面 `ref_key`）；
+///   * `reminder` —— 训练提醒到点而你还没练（进 App 时补记一条，说明"当时提醒过你"）；
+///   * `backup` —— 云备份结果（成功/失败各一条）。
+///
+/// **为什么要有 `ref_key`**：同一件事只能发一次（同一个徽章不能每练一次就报一次）。
+/// 去重靠**数据库层的唯一索引**（见 `onCreate`/迁移里那条 partial index），
+/// 而不是靠调用方记得先查一次 —— 那种"记得"迟早会漏。
+///
+/// ⚠️ 它**是用户数据**：`deleteAllUserData` 必须把它一起清掉
+/// （`test/delete_all_test.dart` 的表清单守门会盯着这一条）。
+class AppNotification extends Table {
+  TextColumn get id => text()();
+
+  /// achievement | reminder | backup
+  TextColumn get kind => text()();
+
+  TextColumn get title => text()();
+  TextColumn get body => text()();
+  IntColumn get createdAtMs => integer()();
+
+  /// 读过的时刻。null = 未读（通知中心那几个未读点靠它）。
+  IntColumn get readAtMs => integer().nullable()();
+
+  /// **去重键**：同一 `kind` + 同一个 `refKey` 只会有一条。可空 = 不参与去重。
+  TextColumn get refKey => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 /// **训练提醒的设置**（单行）。2026-10-04，v17。
 ///
 /// 为什么自己一张单行表、而不是塞进 `user_profile`：那张表的**每个 setter 都要把整行带回来**
@@ -414,6 +447,7 @@ class BackupAccount extends Table {
   ActiveSessionRow,
   PinnedExercise,
   ReminderSetting,
+  AppNotification,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -423,6 +457,7 @@ class AppDatabase extends _$AppDatabase {
   /// v4：`exercise` 新增 `category`（热身/拉伸进库，但不进推荐）—— **第一次给已有表加列**。
   /// v5：`set_record` 新增 `distance_m`（有氧记录：跑步机/划船机/跳绳/农夫行走）。
   /// v6：`user_profile` 新增 `body_weight_unit`（体重的显示单位：千克 / 斤）。
+  /// v19（2026-10-05）：新增 `app_notification`（站内消息 / 通知中心）。
   /// v7：新增 `analytics_meta`（设备 ID / 会话 ID / 首次启动时间 —— 埋点公共字段）。
   /// v8：`exercise` 新增 `default_target_distance_m`（距离处方：每组多少米）。
   /// v9：`exercise` 新增 `instructions`（动作说明：怎么做 + 最常见的错）。
@@ -432,10 +467,12 @@ class AppDatabase extends _$AppDatabase {
   /// v16：新增 `pinned_exercise`（动作置顶 —— 选择器的「置顶」分区）。
   /// v17：新增 `reminder_setting`（训练提醒：开关 + 一天中的第几分钟）。
   ///
-  /// **老版本的库已经装在用户手机上了**，所以每次加表/加列都必须有 onUpgrade ——
+  /// **老版本的库已经装在用户手机上**，所以每次加表/加列都必须有 onUpgrade ——
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
+  ///
+  /// v19（2026-10-05）：+ `app_notification`（站内消息 / 通知中心）。**只加表、不动任何既有列**。
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -450,6 +487,13 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'CREATE INDEX IF NOT EXISTS idx_set_workout_item '
             'ON set_record (workout_item_id, set_index)',
+          );
+          // 消息去重：**数据库层**保证"同一件事只发一次"（partial unique index）。
+          // 不靠调用方"记得先查一次"—— 那种记得迟早会漏，而漏了的后果是
+          // 同一个徽章每练一次就报一次，用户会以为这 App 在刷屏。
+          await customStatement(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_ref '
+            "ON app_notification (kind, ref_key) WHERE ref_key IS NOT NULL",
           );
           await customStatement(
             'CREATE INDEX IF NOT EXISTS idx_workout_user_time '
@@ -589,6 +633,18 @@ class AppDatabase extends _$AppDatabase {
                 await m.addColumn(analyticsMeta, analyticsMeta.legacyPurgedAt);
               }
             }
+          }
+
+          // v18 → v19：站内消息（通知中心）。只加表、不动既有列，所以老库升上来是空的 ——
+          // **准确的历史**：这个功能出现之前没有任何消息。
+          // ⚠️ 那条 partial unique index 也要在这里建：`onCreate` 只在**新库**上跑，
+          // 老库升级走的是这条路径（漏了它，去重在老库上就形同虚设）。
+          if (from < 19) {
+            await m.createTable(appNotification);
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_ref '
+              "ON app_notification (kind, ref_key) WHERE ref_key IS NOT NULL",
+            );
           }
         },
       );

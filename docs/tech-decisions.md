@@ -192,7 +192,7 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 | 决策 | 代码现状 | 证据 / 指针 |
 |---|---|---|
 | Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
-| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v18**） |
+| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v19**） |
 | **只支持 iPhone**（不承诺 iPad） | ✅ 2026-09-30 拍板 | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1"`；`tool/check-ios-app.mjs` 把"产物含 iPad"判红；依据（iPad 上只是拉长的手机版）见 `release-admin.md` §二之四之四 |
 | **「我」页按"多久碰一次"分三个二级页** | ✅ 2026-10-01 拍板并落地 | 统计每天看；偏好与备份设一次就不管；隐私与关于是给别人看的。`app/test/profile_structure_test.dart` 钉住"第一屏不许再长回去"；政策入口 3 次点击（小米"四步之内"） |
 | **体重单位默认跟随训练单位**（可单独选「斤」） | ✅ 2026-10-01 | `ProfileRepository.setUnit` 的联动判据 + `app/test/units_test.dart`；此前全局选了磅、身体页还写 kg，两套口径各说各的 |
