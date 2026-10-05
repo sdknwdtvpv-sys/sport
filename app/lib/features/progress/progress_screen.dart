@@ -14,9 +14,10 @@ import 'package:flutter/material.dart';
 
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
 import '../../core/labels.dart';
-import '../../core/sparkline.dart';
 import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
+import '../../core/vi_area_chart.dart';
+import '../../core/vi_cards.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import '../../data/exercise_repository.dart';
@@ -80,6 +81,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
   BodyMetricData? _latestWeight;
   bool _loading = true;
 
+  /// 原始组数据。卡片的三个数字与曲线都按**区间**现算 ——
+  /// 所以这里要留着它（`ProgressData` 里只有"最近 7 天"那一份）。
+  List<SetRecord> _sets = const <SetRecord>[];
+
+  /// 「周 / 月 / 年」当前选中项（2026-10-05，新 VI）。
+  ProgressRange _range = ProgressRange.week;
+
+  DateTime get _today => widget.now ?? DateTime.now();
+
   /// 体重单位：初值来自构造参数，身体数据页里切了之后本地也跟着变
   /// （否则回来那张卡片还按旧单位念）。
   late BodyWeightUnit _bodyUnit = widget.bodyUnit;
@@ -124,6 +134,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final BodyMetricData? weight = await widget.bodyMetrics?.latest();
     if (!mounted) return;
     setState(() {
+      _sets = sets;
       _data = buildProgress(
         sets: sets,
         exerciseNames: names,
@@ -274,7 +285,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
           )
         else ...<Widget>[
-          _weekCard(d),
+          _statsBlock(),          // 四张统计卡（按区间现算）
+          const SizedBox(height: Tokens.s3),
+          _trendCard(),           // 容量趋势（周 / 月 / 年）
           const SizedBox(height: Tokens.s5),
           // 本周每部位组数（2026-10-04）：**并进 S8、不新开屏**。
           // 它回答的是"我这周练均衡了吗"—— 这一屏原来只有容量/PR/体重三块，
@@ -363,50 +376,121 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  Widget _weekCard(ProgressData d) {
-    return Container(
-      padding: const EdgeInsets.all(Tokens.s5),
-      decoration: BoxDecoration(
-        color: Tokens.surface,
-        borderRadius: BorderRadius.circular(Tokens.rCard),
-        border: Border.all(color: Tokens.line),
-      ),
+  /// 四张统计卡（2026-10-05，新 VI）：区间容量 / 训练次数 / 总组数 / 个人纪录。
+  ///
+  /// 前三张**跟着区间走**（周 / 月 / 年），第四张是全时段的历史纪录数 ——
+  /// 所以它的标签上写明了「全部」，不改口径也不含糊。
+  Widget _statsBlock() {
+    final ({DateTime from, DateTime to}) w = rangeWindow(_today, _range);
+    final double volume = volumeIn(_sets, w.from, w.to);
+    final int workouts = workoutCountIn(_sets, w.from, w.to);
+    final int sets = setCountIn(_sets, w.from, w.to);
+    final int prs = _data?.prs.length ?? 0;
+    return Column(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: ViCard(
+                child: StatTile(
+                  label: '${rangeLabel(_range)}容量',
+                  value: formatVolume(volume, widget.unit),
+                  valueKey: const Key('progress-week-volume'),
+                  delta: rangeHint(_range),
+                ),
+              ),
+            ),
+            const SizedBox(width: Tokens.s3),
+            Expanded(
+              child: ViCard(
+                child: StatTile(
+                  label: '训练次数',
+                  value: '$workouts 次',
+                  delta: rangeHint(_range),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Tokens.s3),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: ViCard(
+                child: StatTile(
+                  label: '总组数',
+                  value: '$sets 组',
+                  delta: rangeHint(_range),
+                ),
+              ),
+            ),
+            const SizedBox(width: Tokens.s3),
+            Expanded(
+              child: ViCard(
+                child: StatTile(
+                  label: '个人纪录',
+                  value: '$prs 项',
+                  delta: '全部历史',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 容量趋势（周 / 月 / 年）。曲线是零依赖自绘的 `ViAreaChart`。
+  Widget _trendCard() {
+    final List<double> series = volumeSeries(_sets, _today, _range);
+    final List<String> ends = seriesEndLabels(_today, _range);
+    return ViCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text('本周容量', style: TextStyle(color: Tokens.text3, fontSize: 13)),
-          const SizedBox(height: Tokens.s2),
-          Text(
-            d.weekVolumeLabel,
-            key: const Key('progress-week-volume'),
-            style: Tokens.display(28, weight: 700, letterSpacing: -0.5),
+          Row(
+            children: <Widget>[
+              const Expanded(
+                child: Text('训练容量趋势',
+                    style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+              ),
+              ViSegmented(
+                labels: const <String>['周', '月', '年'],
+                current: _range.index,
+                onChanged: (int i) => setState(() => _range = ProgressRange.values[i]),
+              ),
+            ],
           ),
-          Text(
-            d.weekWorkouts == 0 ? '这 7 天还没练' : '这 7 天练了 ${d.weekWorkouts} 次',
-            style: const TextStyle(color: Tokens.text3, fontSize: 13),
-          ),
-          const SizedBox(height: Tokens.s4),
-          SizedBox(
-            height: 56,
-            width: double.infinity,
-            child: CustomPaint(
-              key: const Key('progress-sparkline'),
-              painter: SparklinePainter(d.sparkline),
-            ),
+          const SizedBox(height: Tokens.s3),
+          ViAreaChart(
+            key: const Key('progress-sparkline'),
+            points: series,
+            height: 120,
           ),
           const SizedBox(height: Tokens.s2),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text(_dayLabel(d.week.first.day),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 11)),
-              const Text('今天', style: TextStyle(color: Tokens.text3, fontSize: 11)),
+              Text(ends.first, style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+              Text(rangeHint(_range), style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+              Text(ends.last, style: const TextStyle(color: Tokens.text3, fontSize: 11)),
             ],
           ),
+          // 这个区间一条记录都没有就说清楚 —— 曲线画成一条平线时，
+          // 人分不清"没练"和"练了但没重量"，而这两件事完全不同。
+          if (series.every((double v) => v == 0))
+            Padding(
+              padding: const EdgeInsets.only(top: Tokens.s2),
+              child: Text(
+                '${rangeHint(_range)}还没练',
+                style: const TextStyle(color: Tokens.text3, fontSize: 12),
+              ),
+            ),
         ],
       ),
     );
   }
+
 
   Widget _prCard(ProgressData d) {
     return Container(
@@ -474,5 +558,4 @@ class _ProgressScreenState extends State<ProgressScreen> {
         child: Text(t, style: const TextStyle(color: Tokens.text3, fontSize: 13)),
       );
 
-  String _dayLabel(DateTime d) => '${d.month}/${d.day}';
 }

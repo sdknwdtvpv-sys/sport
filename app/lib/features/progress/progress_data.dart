@@ -276,3 +276,101 @@ ProgressData buildProgress({
           : weeklySetsByMuscle(
               sets: sets, muscleOf: muscleOf, today: today),
     );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 区间口径（2026-10-05，新 VI 的「周 / 月 / 年」切换）
+//
+// 为什么另起一套而不是改 `lastSevenDays`：那三个函数被 S8/S9 与一批测试用着，
+// 语义是"最近 7 天"。这里要的是**同一套口径、三种长度**，所以抽成参数化的窗口，
+// 并且**共用同一条边界规则**（未来时间不算 —— 时钟偏移时两处口径必须一致）。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// 进度的三种区间。界面上的「周 / 月 / 年」就是它。
+enum ProgressRange { week, month, year }
+
+/// 中文标签（标题与卡片用）。
+String rangeLabel(ProgressRange r) => switch (r) {
+      ProgressRange.week => '本周',
+      ProgressRange.month => '本月',
+      ProgressRange.year => '全年',
+    };
+
+/// 口径说明（副标题用）。**写清楚是"最近 N 天"而不是自然周/月** ——
+/// 否则每月 1 号那一屏会突然变成空的，用户以为数据丢了。
+String rangeHint(ProgressRange r) => switch (r) {
+      ProgressRange.week => '最近 7 天',
+      ProgressRange.month => '最近 30 天',
+      ProgressRange.year => '最近 12 个月',
+    };
+
+/// 区间窗口：`[from, to)`，本地时间零点起。
+({DateTime from, DateTime to}) rangeWindow(DateTime today, ProgressRange r) {
+  final DateTime to = startOfDay(today).add(const Duration(days: 1));
+  final int days = switch (r) {
+    ProgressRange.week => 7,
+    ProgressRange.month => 30,
+    ProgressRange.year => 365,
+  };
+  return (from: to.subtract(Duration(days: days)), to: to);
+}
+
+/// 窗口内所有组的容量（kg）。
+double volumeIn(List<SetRecord> sets, DateTime from, DateTime to) {
+  double v = 0;
+  for (final SetRecord s in sets) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+    if (!t.isBefore(from) && t.isBefore(to)) v += s.volume;
+  }
+  return v;
+}
+
+/// 窗口内有几次训练（按 workoutId 去重 —— 一次训练记 12 组也只算一次）。
+int workoutCountIn(List<SetRecord> sets, DateTime from, DateTime to) {
+  final Set<String> ids = <String>{};
+  for (final SetRecord s in sets) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+    if (!t.isBefore(from) && t.isBefore(to)) ids.add(s.workoutId);
+  }
+  return ids.length;
+}
+
+/// 窗口内记了多少组。
+int setCountIn(List<SetRecord> sets, DateTime from, DateTime to) {
+  int n = 0;
+  for (final SetRecord s in sets) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+    if (!t.isBefore(from) && t.isBefore(to)) n++;
+  }
+  return n;
+}
+
+/// 曲线用的点（0..1）：周 = 7 个日点、月 = 30 个日点、年 = 12 个月点。
+///
+/// **全 0 时返回全 0**（不是 NaN）：界面拿它直接画，空数据不该让画家除零。
+List<double> volumeSeries(List<SetRecord> sets, DateTime today, ProgressRange r) {
+  final int buckets = switch (r) {
+    ProgressRange.week => 7,
+    ProgressRange.month => 30,
+    ProgressRange.year => 12,
+  };
+  final ({DateTime from, DateTime to}) w = rangeWindow(today, r);
+  final List<double> raw = List<double>.filled(buckets, 0);
+  final int spanMs = w.to.difference(w.from).inMilliseconds;
+  for (final SetRecord s in sets) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+    if (t.isBefore(w.from) || !t.isBefore(w.to)) continue;
+    final double frac = t.difference(w.from).inMilliseconds / spanMs;
+    final int i = (frac * buckets).floor().clamp(0, buckets - 1);
+    raw[i] += s.volume;
+  }
+  final double maxV = raw.fold<double>(0, (double a, double b) => a > b ? a : b);
+  if (maxV <= 0) return raw;
+  return raw.map((double v) => v / maxV).toList();
+}
+
+/// 曲线两端的标签（左旧右新）。月/年用中点日期，周用"周几"太啰嗦，统一用 M/D。
+List<String> seriesEndLabels(DateTime today, ProgressRange r) {
+  final ({DateTime from, DateTime to}) w = rangeWindow(today, r);
+  String md(DateTime d) => '${d.month}/${d.day}';
+  return <String>[md(w.from), md(w.to.subtract(const Duration(days: 1)))];
+}

@@ -331,8 +331,16 @@ void main() {
         tester.widget<Text>(find.byKey(const Key('progress-week-volume'))).data,
         '960 kg',
       );
-      expect(find.textContaining('这 7 天练了 1 次'), findsOneWidget);
+      // 2026-10-05 改版：那句"这 7 天练了 N 次"并进「训练次数」统计卡
+      expect(find.text('1 次'), findsOneWidget);
       expect(find.byKey(const Key('progress-sparkline')), findsOneWidget);
+      // 2026-10-05 改版：顶部多了四张统计卡，PR 墙被推到首屏之外 ——
+      // ListView 是懒构建的，**不滚下去它根本不存在**，所以要滚一次再断言。
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('pr-ex_bb_bench_press')), 300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsOneWidget);
       expect(find.text('杠铃卧推'), findsOneWidget);
       expect(find.text('60 kg'), findsOneWidget);
@@ -369,7 +377,13 @@ void main() {
 
       // PR 墙仍然有（历史最佳），但本周容量是 —
       expect(find.text('—'), findsOneWidget);
-      expect(find.textContaining('这 7 天还没练'), findsOneWidget);
+      expect(find.textContaining('最近 7 天还没练'), findsOneWidget);
+      // 同上：滚下去才有 PR 墙（懒构建）
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('pr-ex_bb_bench_press')), 300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsOneWidget);
     });
 

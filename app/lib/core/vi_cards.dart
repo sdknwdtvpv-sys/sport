@@ -91,10 +91,14 @@ class StatTile extends StatelessWidget {
     this.delta,
     this.deltaUp,
     this.valueSize = 28,
+    this.valueKey,
   });
 
   final String label;
   final String value;
+
+  /// 挂在**数值那行**上的 Key（测试要按它读数字，例：`progress-week-volume`）。
+  final Key? valueKey;
 
   /// 涨跌文案（例：`+18%`）。为空就不占位。
   final String? delta;
@@ -119,7 +123,9 @@ class StatTile extends StatelessWidget {
           style: const TextStyle(color: Tokens.text2, fontSize: 13, height: 1.3),
         ),
         const SizedBox(height: Tokens.s2),
-        Text(value, style: Tokens.display(valueSize, weight: 700, letterSpacing: -0.5)),
+        Text(value,
+            key: valueKey,
+            style: Tokens.display(valueSize, weight: 700, letterSpacing: -0.5)),
         if (delta != null) ...<Widget>[
           const SizedBox(height: Tokens.s1),
           Text(
