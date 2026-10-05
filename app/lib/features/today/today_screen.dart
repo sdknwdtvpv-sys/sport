@@ -50,6 +50,8 @@ class TodayScreen extends StatelessWidget {
     this.onOpenLibrary,
     this.onLogWeight,
     this.onOpenAchievements,
+    this.onOpenNotifications,
+    this.unreadNotifications = 0,
   });
 
   /// **今天的安排**（2026-10-04 加）—— 首页中间那一块。
@@ -122,6 +124,12 @@ class TodayScreen extends StatelessWidget {
 
   /// 快速入口：我的成就（徽章与收集进度）。
   final VoidCallback? onOpenAchievements;
+
+  /// 右上角铃铛（通知中心）。为 null 时不显示。
+  final VoidCallback? onOpenNotifications;
+
+  /// 未读消息数（0 = 不显示那个点）。
+  final int unreadNotifications;
 
   /// 「今天不想练？做 5 分钟活动 ›」（2026-10-01 加）。
   ///
@@ -211,6 +219,37 @@ class TodayScreen extends StatelessWidget {
             style: const TextStyle(color: Tokens.text3, fontSize: 13),
           ),
         ),
+        const Spacer(),
+        // 铃铛（2026-10-05，新 VI 的首页右上角）。有未读才带那个点 ——
+        // 永远亮着的红点等于没有点。
+        if (onOpenNotifications != null)
+          GestureDetector(
+            key: const Key('open-notifications'),
+            behavior: HitTestBehavior.opaque,
+            onTap: onOpenNotifications,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  const Icon(Icons.notifications_none, color: Tokens.text2, size: 22),
+                  if (unreadNotifications > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        key: const Key('notifications-unread-dot'),
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                            color: Tokens.accent, shape: BoxShape.circle),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

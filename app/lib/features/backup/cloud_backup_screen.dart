@@ -27,7 +27,9 @@ import '../../core/theme.dart';
 import '../../data/db.dart' show BackupAccountData;
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
+import '../../data/notification_repository.dart';
 import '../../data/profile_repository.dart';
+import '../notifications/notification_rules.dart';
 import '../profile/backup.dart';
 import '../profile/backup_source.dart';
 
@@ -40,6 +42,7 @@ class CloudBackupScreen extends StatefulWidget {
     this.cloud,
     this.onDataChanged,
     this.clock,
+    this.notifications,
   });
 
   final LocalStore store;
@@ -48,6 +51,10 @@ class CloudBackupScreen extends StatefulWidget {
 
   /// 云备份服务。不传就按编译期配置建一个真身（测试一律注入假传输）。
   final CloudBackup? cloud;
+
+  /// 站内消息仓库（可选）。**上传有结果时记一条**（成功/失败）——
+  /// 通知中心里那类"系统"消息就是这么来的。不传就不记（测试与"单独打开这页"的场景）。
+  final NotificationRepository? notifications;
 
   /// 从云端恢复之后通知上层刷新（首页那张"我上周练了 N 次"要跟着变）
   final VoidCallback? onDataChanged;
@@ -151,6 +158,17 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
       // 别的（平台异常、底层 IO 异常）一律兜底 —— `'$e'` 会把类名一起印在屏幕上。
       // 这一条由 `tool/check-user-text.mjs` 的"不许把整个异常插进字符串"守着。
       debugPrint('云备份出错了：$e');
+      // 失败也记一条（用户第二天回来能看到"那次没传上去"）——
+      // **记录失败不是抱怨，是让他知道数据还在本机**。
+      final NotificationRepository? notes = widget.notifications;
+      if (notes != null) {
+        await addBackupMessage(
+          repo: notes,
+          ok: false,
+          detail: '这次没传上去。数据还在本机，下次打开 App 会再试。',
+          now: DateTime.fromMillisecondsSinceEpoch(_nowMs),
+        );
+      }
       if (mounted) setState(() => _error = '出错了：${_userFacing(e)}');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -240,6 +258,18 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
       // **上传成功之后**才记时间：这一行会显示成"上次备份于…"，
       // 它一旦会撒谎，用户就会以为数据安全了。
       await widget.profile.markCloudUpload(r.bytes, nowMs: _nowMs);
+      // 记一条站内消息：备份这件事**只有这一屏知道结果**，所以规则在这里调。
+      // 仓库是可选的（测试与"单独打开这页"时不传）—— 不传就不记，不发明别的东西。
+      final NotificationRepository? notes = widget.notifications;
+      if (notes != null) {
+        await addBackupMessage(
+          repo: notes,
+          ok: true,
+          detail: '已上传 ${bundle.workouts} 次训练 / ${bundle.sets} 组'
+              '（${_sizeLabel(r.bytes)} 密文）',
+          now: DateTime.fromMillisecondsSinceEpoch(_nowMs),
+        );
+      }
       await _load();
       if (!mounted) return;
       setState(() =>

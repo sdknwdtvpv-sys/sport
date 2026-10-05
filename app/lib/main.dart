@@ -30,6 +30,7 @@ import 'data/body_metric_repository.dart';
 import 'data/drift_local_store.dart';
 import 'data/exercise_repository.dart';
 import 'data/local_store.dart';
+import 'data/notification_repository.dart';
 import 'data/profile_repository.dart';
 import 'data/reminder_repository.dart';
 import 'data/routine_repository.dart';
@@ -48,6 +49,8 @@ import 'features/summary/workout_summary.dart';
 import 'features/routine/routine_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/body/body_metric_screen.dart';
+import 'features/notifications/notification_center_screen.dart';
+import 'features/notifications/notification_rules.dart';
 import 'features/progress/achievements_screen.dart';
 import 'features/progress/streak.dart';
 import 'features/progress/all_data_screen.dart';
@@ -185,6 +188,9 @@ class _HomeShellState extends State<HomeShell> {
   late final ExerciseRepository _repo = ExerciseRepository(_db);
   late final BodyMetricRepository _bodyMetrics = BodyMetricRepository(_db);
   late final RoutineRepository _routines = RoutineRepository(_db);
+
+  /// 站内消息（通知中心）。2026-10-05，v1.50。
+  late final NotificationRepository _notifications = NotificationRepository(_db);
   late final TodayPlanner _planner =
       TodayPlanner(repository: _repo, store: _store);
   late final SummaryService _summaryService =
@@ -239,6 +245,9 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 一共练过多少次 —— 分享卡打卡版的 "Day N"。
   int _totalWorkouts = 0;
+
+  /// 未读消息数（首页铃铛上那个点）。
+  int _unreadNotifications = 0;
   List<({String workoutId, DateTime day, int exercises, int sets, double volume})> _recent =
       const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[];
 
@@ -463,12 +472,20 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _refreshHome() async {
     final List<SetRecord> sets = await _store.allSets();
     if (!mounted) return;
+    // 三条消息生成规则**都在这里跑**（冷启动与"练完回来"都经过这个出口）：
+    // 徽章解锁 / 错过的训练提醒 —— 都是本地算的，且各自带去重键，重复调用安全。
+    // ⚠️ 云备份那条不在这里：它由云备份那一屏在上传有结果时调（那才是它发生的时刻）。
+    await syncAchievementMessages(repo: _notifications, sets: sets);
+    await maybeRemindMissed(repo: _notifications, settings: _reminder, sets: sets);
+    final int unread = await _notifications.unreadCount();
+    if (!mounted) return;
     setState(() {
       _weekSessions = weekWorkoutCount(sets, DateTime.now());
       _streak = currentStreak(sets, DateTime.now());
       _totalWorkouts = totalWorkouts(sets);
       _recent = recentWorkouts(sets);
       _reminderHint = _hintFor(sets);
+      _unreadNotifications = unread;
     });
     await _loadTodayPlan();
     // 训练提醒也在这里同步：这个函数是"开 App / 练完回来"的公共出口，
@@ -886,6 +903,20 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  /// 打开消息通知（首页右上角铃铛）。回来时刷新未读数 ——
+  /// 用户在里面点了「全部已读」，首页那个点要跟着消失（否则他会以为没生效）。
+  Future<void> _openNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NotificationCenterScreen(repository: _notifications),
+      ),
+    );
+    if (!mounted) return;
+    final int unread = await _notifications.unreadCount();
+    if (!mounted) return;
+    setState(() => _unreadNotifications = unread);
+  }
+
   /// 快速入口：我的成就。**组记录已经在手上**（`_recent` 那次加载拿过），
   /// 但成就要的是全量，所以这里重新读一次并交给那一屏 —— 不与「我」页共用状态，
   /// 免得两处的"已解锁"在返回后不同步。
@@ -1141,6 +1172,8 @@ class _HomeShellState extends State<HomeShell> {
             onOpenLibrary: _openLibrary,
             onLogWeight: _openBodyMetric,
             onOpenAchievements: _openAchievements,
+            onOpenNotifications: _openNotifications,
+            unreadNotifications: _unreadNotifications,
           );
       case 1:
         return ProgressScreen(
