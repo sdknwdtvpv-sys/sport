@@ -226,6 +226,9 @@ class _HomeShellState extends State<HomeShell> {
   /// 连续打卡天数与最近几次训练（2026-10-05，新 VI 首页）。
   /// 两个都是**算出来的**（见 features/progress/streak.dart）。
   int _streak = 0;
+
+  /// 一共练过多少次 —— 分享卡打卡版的 "Day N"。
+  int _totalWorkouts = 0;
   List<({String workoutId, DateTime day, int exercises, int sets, double volume})> _recent =
       const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[];
 
@@ -447,6 +450,7 @@ class _HomeShellState extends State<HomeShell> {
     setState(() {
       _weekSessions = weekWorkoutCount(sets, DateTime.now());
       _streak = currentStreak(sets, DateTime.now());
+      _totalWorkouts = totalWorkouts(sets);
       _recent = recentWorkouts(sets);
       _reminderHint = _hintFor(sets);
     });
@@ -1030,6 +1034,9 @@ class _HomeShellState extends State<HomeShell> {
           stretches: stretches,
           nextLine: nextLine,
           analytics: _analytics,
+          streak: _streak,
+          // "第几次训练"用**练完之后**的总数（这次刚记完，已经在库里了）
+          ordinal: _totalWorkouts,
         ),
       ),
     );

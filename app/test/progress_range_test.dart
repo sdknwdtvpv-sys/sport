@@ -79,6 +79,16 @@ void main() {
     expect(volumeSeries(<SetRecord>[], today, ProgressRange.year).length, 12);
   });
 
+  test('一共练过几次：按 workoutId 去重（一次训练记 24 组也只算一次）', () {
+    final List<SetRecord> sets = <SetRecord>[
+      _set('w1', DateTime(2026, 10, 1)),
+      _set('w1', DateTime(2026, 10, 1, 10)),
+      _set('w2', DateTime(2026, 10, 3)),
+    ];
+    expect(totalWorkouts(sets), 2);
+    expect(totalWorkouts(<SetRecord>[]), 0);
+  });
+
   test('两端标签：左旧右新，且右边是"今天"（不是明天）', () {
     expect(seriesEndLabels(today, ProgressRange.week), <String>['9/29', '10/5']);
     expect(seriesEndLabels(today, ProgressRange.year), <String>['10/6', '10/5']);

@@ -408,3 +408,15 @@ List<({String workoutId, DateTime day, int exercises, int sets, double volume})>
         ..sort((a, b) => b.day.compareTo(a.day));
   return out.take(limit).toList();
 }
+
+/// 一共练过多少次（全时段，按 workoutId 去重）。
+///
+/// 分享卡的打卡版要一个 "Day N" —— 它就是**第几次训练**。
+/// 用去重后的 workoutId 数，不是组数：一次训练记 24 组也只该算一次。
+int totalWorkouts(List<SetRecord> sets) {
+  final Set<String> ids = <String>{};
+  for (final SetRecord s in sets) {
+    ids.add(s.workoutId);
+  }
+  return ids.length;
+}

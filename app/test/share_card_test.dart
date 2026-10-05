@@ -66,6 +66,8 @@ Future<GlobalKey> _pumpCard(WidgetTester tester, WorkoutSummary s) async {
 }
 
 void main() {
+  // 第二款版式（打卡版，2026-10-05 新 VI）
+  _streakGroup();
   testWidgets('分享卡能抓成合法 PNG', (WidgetTester tester) async {
     final GlobalKey key = await _pumpCard(tester, _summary());
 
@@ -162,5 +164,67 @@ void main() {
       }
     });
     expect(err, isA<StateError>());
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 第二款版式（打卡版，2026-10-05 新 VI）
+// ─────────────────────────────────────────────────────────────────────────────
+
+void _streakGroup() {
+  testWidgets('标准版与打卡版是两张不同的卡，Key 也不一样（抓图抓的是当前那张）',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: ShareCard(summary: _summary(), variant: ShareCardVariant.standard),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('share-card')), findsOneWidget);
+    expect(find.byKey(const Key('share-card-streak')), findsNothing);
+
+    await tester.pumpWidget(MaterialApp(
+      home: ShareCard(
+        summary: _summary(),
+        variant: ShareCardVariant.streak,
+        streak: 23,
+        ordinal: 42,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('share-card-streak')), findsOneWidget);
+    expect(find.byKey(const Key('share-card')), findsNothing);
+    expect(find.text('DAY 42'), findsOneWidget);
+    expect(find.text('连续打卡 23 天'), findsOneWidget);
+  });
+
+  testWidgets('打卡版不知道"第几次训练"时**不编一个数**：那一行直接不显示',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: ShareCard(
+        summary: _summary(),
+        variant: ShareCardVariant.streak,
+        streak: 3,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('share-card-streak')), findsOneWidget);
+    expect(find.byKey(const Key('share-card-day')), findsNothing);
+    expect(find.textContaining('DAY'), findsNothing);
+    // 打卡天数照样在
+    expect(find.text('连续打卡 3 天'), findsOneWidget);
+  });
+
+  testWidgets('打卡版仍然带日期与"分享自练了么"（社交形态的那两件不能少）',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: ShareCard(
+        summary: _summary(),
+        variant: ShareCardVariant.streak,
+        streak: 9,
+        ordinal: 9,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('分享自练了么'), findsOneWidget);
+    expect(find.text(formatCardDate(_summary().startedAtMs)), findsOneWidget);
   });
 }

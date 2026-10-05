@@ -10,6 +10,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/vi_cards.dart';
 import '../../analytics/analytics.dart';
 import 'share_card.dart';
 import 'share_card_exporter.dart';
@@ -22,9 +23,17 @@ class ShareCardPreviewScreen extends StatefulWidget {
     this.exporter = const PluginShareCardExporter(),
     this.capture = captureCardPng,
     this.analytics,
+    this.streak = 0,
+    this.ordinal,
   });
 
   final WorkoutSummary summary;
+
+  /// 连续打卡天数与"第几次训练" —— 打卡版要用。
+  /// **streak <= 1 时不给这个选项**：只有一天的人看到"连续打卡 1 天"不会想分享，
+  /// 摆一个没人会选的版式反而是噪音。
+  final int streak;
+  final int? ordinal;
 
   /// 测试里换成假的 —— 插件调用本身在 widget 测试里跑不了
   final ShareCardExporter exporter;
@@ -47,6 +56,9 @@ class ShareCardPreviewScreen extends StatefulWidget {
 
 class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
   final GlobalKey _boundaryKey = GlobalKey();
+
+  /// 当前版式（2026-10-05，新 VI 给了两款）。
+  ShareCardVariant _variant = ShareCardVariant.standard;
   bool _busy = false;
 
   /// 导出用的文件名：带上日期，用户在相册/文件里能认出来。
@@ -171,6 +183,15 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
                       ),
                     ),
                   ),
+                  // 第二款版式：**只有真的连续练过 2 天以上才给** ——
+                  // "连续打卡 1 天"没人会分享（见 widget.streak 的注释）。
+                  if (widget.streak >= 2)
+                    ViSegmented(
+                      labels: const <String>['明细', '打卡'],
+                      current: _variant.index,
+                      onChanged: (int i) => setState(
+                          () => _variant = ShareCardVariant.values[i]),
+                    ),
                 ],
               ),
             ),
@@ -182,7 +203,12 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
                   // 所以这里用正常的可见布局（Offstage 会跳过绘制，抓出来是空的）。
                   child: RepaintBoundary(
                     key: _boundaryKey,
-                    child: ShareCard(summary: widget.summary),
+                    child: ShareCard(
+                      summary: widget.summary,
+                      variant: _variant,
+                      streak: widget.streak,
+                      ordinal: widget.ordinal,
+                    ),
                   ),
                 ),
               ),

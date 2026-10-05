@@ -27,14 +27,35 @@ const double kShareCardHeight = 460;
 /// 导出倍数。3 倍 → 1080 × 1380，够社交平台用且不至于太大。
 const double kShareCardPixelRatio = 3;
 
+/// 两种版式（2026-10-05，新 VI 的 `vi/share-card.html` 里就给了两款）：
+///   * [standard]：训练明细 —— 容量 / 组数 / 时长 + 前三个动作。想说"我今天练了什么"用它；
+///   * [streak]：打卡 —— Day N + 连续天数 + 今日容量。想说"我坚持了多久"用它。
+enum ShareCardVariant { standard, streak }
+
 /// 分享卡：一张自包含的、固定尺寸的图。
 class ShareCard extends StatelessWidget {
-  const ShareCard({super.key, required this.summary});
+  const ShareCard({
+    super.key,
+    required this.summary,
+    this.variant = ShareCardVariant.standard,
+    this.streak = 0,
+    this.ordinal,
+  });
 
   final WorkoutSummary summary;
 
+  final ShareCardVariant variant;
+
+  /// 连续打卡天数（打卡版要）。**算出来的**，见 `features/progress/streak.dart`。
+  final int streak;
+
+  /// 这是第几次训练（打卡版的 "Day N"）。未知时传 null，那一行就不显示 ——
+  /// 宁可少一行，也不编一个数出来。
+  final int? ordinal;
+
   @override
   Widget build(BuildContext context) {
+    if (variant == ShareCardVariant.streak) return _streakCard(context);
     return SizedBox(
       width: kShareCardWidth,
       height: kShareCardHeight,
@@ -119,6 +140,85 @@ class ShareCard extends StatelessWidget {
       ),
     );
   }
+
+  /// 打卡版（新 VI 的第二款版式）。
+  ///
+  /// 与标准版的区别是**它在说什么**：标准版回答"今天练了什么"，
+  /// 这一版回答"我坚持了多久"—— 所以主角是 Day N 与连续天数，容量退成配角。
+  Widget _streakCard(BuildContext context) => SizedBox(
+        width: kShareCardWidth,
+        height: kShareCardHeight,
+        child: Container(
+          key: const Key('share-card-streak'),
+          padding: const EdgeInsets.all(Tokens.s6),
+          decoration: BoxDecoration(
+            color: Tokens.bg,
+            borderRadius: BorderRadius.circular(Tokens.rCard),
+            border: Border.all(color: Tokens.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  const Text('练了么',
+                      style: TextStyle(
+                          color: Tokens.accent,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1)),
+                  const Spacer(),
+                  Text(formatCardDate(summary.startedAtMs),
+                      style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                ],
+              ),
+              const Spacer(),
+              if (ordinal != null)
+                Text('DAY $ordinal',
+                    key: const Key('share-card-day'),
+                    style: Tokens.display(44, weight: 700, letterSpacing: -1.5)),
+              const SizedBox(height: Tokens.s2),
+              Row(
+                children: <Widget>[
+                  const Icon(Icons.local_fire_department, color: Tokens.accent, size: 20),
+                  const SizedBox(width: Tokens.s2),
+                  Text('连续打卡 $streak 天',
+                      key: const Key('share-card-streak-text'),
+                      style: const TextStyle(
+                          color: Tokens.text, fontSize: 18, fontWeight: FontWeight.w700)),
+                ],
+              ),
+              const Spacer(),
+              Text(summary.volumeLabel,
+                  style: Tokens.display(36, weight: 700, letterSpacing: -1)),
+              const SizedBox(height: Tokens.s1),
+              Text('今日总容量 · ${summary.exerciseCount} 个动作 · ${summary.totalSets} 组',
+                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+              const Spacer(),
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: const BoxDecoration(
+                        color: Tokens.accent, shape: BoxShape.circle),
+                    child: const Center(
+                      child: Text('练',
+                          style: TextStyle(
+                              color: Tokens.accentInk,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: Tokens.s3),
+                  const Text('分享自练了么',
+                      style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _stat(String label, String value) {
     return Row(

@@ -28,6 +28,8 @@ class WorkoutSummaryScreen extends StatefulWidget {
     this.stretches = const <ExerciseData>[],
     this.nextLine,
     this.analytics,
+    this.streak = 0,
+    this.ordinal,
   });
 
   final SummaryService service;
@@ -51,6 +53,11 @@ class WorkoutSummaryScreen extends StatefulWidget {
   /// 埋点（可选）。用它上报 `pr_achieved` —— 破纪录是留存钩子，
   /// 而"这个钩子有没有用"目前没有任何数据能回答。
   final Analytics? analytics;
+
+  /// 连续打卡天数与"第几次训练"（2026-10-05）：分享卡的打卡版要用。
+  /// 由外壳算好传进来 —— **不在这一屏现算**，否则同一件事会有两份口径。
+  final int streak;
+  final int? ordinal;
 
   /// 分享卡的交付实现。测试里换成假的（插件调用在 widget 测试里跑不了）。
   final ShareCardExporter exporter;
@@ -542,6 +549,9 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 summary: s,
                 exporter: widget.exporter,
                 analytics: widget.analytics,
+                // 打卡版要用：连续天数与"第几次训练"都由外壳算好传进来
+                streak: widget.streak,
+                ordinal: widget.ordinal,
               ),
             ),
           ),
