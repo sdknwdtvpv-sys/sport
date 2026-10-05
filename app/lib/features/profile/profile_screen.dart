@@ -22,6 +22,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_info.dart';
 import '../../core/theme.dart';
+import '../../core/vi_cards.dart';
+import '../progress/streak.dart';
 import '../../core/units.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/exercise_repository.dart';
@@ -132,6 +134,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   TrainingStats? _stats;
   bool _loading = true;
 
+  /// 连续打卡天数（2026-10-05，新 VI 的「我」页要）。**算出来的**，见
+  /// `features/progress/streak.dart` —— 存一份就会和训练记录不一致。
+  int _streak = 0;
+
   @override
   void initState() {
     super.initState();
@@ -147,6 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     setState(() {
       _stats = TrainingStats.fromSets(sets, unit: widget.unit);
+      _streak = currentStreak(sets, DateTime.now());
       _loading = false;
     });
   }
@@ -222,21 +229,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('训练统计'),
-        settingsCard(<Widget>[
-          if (s.isEmpty)
+        // 2026-10-05 按新 VI 换成**四张统计卡 + 打卡进度**（原来是三行文字）。
+        // 等级 Lv 与成就徽章要新数据，按计划留给 v1.47。
+        if (s.isEmpty)
+          settingsCard(<Widget>[
             const Padding(
               padding: EdgeInsets.all(Tokens.s5),
               child: Text(
                 '还没有训练记录。练完第一次，这里就有数了。',
                 style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.5),
               ),
-            )
-          else ...<Widget>[
-            _statRow('训练次数', '${s.workoutCount} 次', const Key('profile-stat-workouts')),
-            _statRow('总组数', '${s.setCount} 组', const Key('profile-stat-sets')),
-            _statRow('总容量', s.volumeLabel, const Key('profile-stat-volume')),
+            ),
+          ])
+        else ...<Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: ViCard(
+                  child: StatTile(
+                    label: '训练次数',
+                    value: '${s.workoutCount} 次',
+                    valueKey: const Key('profile-stat-workouts'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: ViCard(
+                  child: StatTile(
+                    label: '连续天数',
+                    value: '$_streak 天',
+                    valueKey: const Key('profile-stat-streak'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s3),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: ViCard(
+                  child: StatTile(
+                    label: '总组数',
+                    value: '${s.setCount} 组',
+                    valueKey: const Key('profile-stat-sets'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: ViCard(
+                  child: StatTile(
+                    label: '总容量',
+                    value: s.volumeLabel,
+                    valueKey: const Key('profile-stat-volume'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_streak > 0) ...<Widget>[
+            const SizedBox(height: Tokens.s3),
+            _streakCard(),
           ],
-        ]),
+        ],
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('设置'),
         settingsCard(<Widget>[
@@ -281,20 +338,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _statRow(String label, String value, Key key) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Tokens.s4, vertical: Tokens.s4),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(label,
-                  style: const TextStyle(color: Tokens.text2, fontSize: 15)),
-            ),
-            Text(
-              value,
-              key: key,
-              style: Tokens.display(17, weight: 700),
-            ),
+  /// 打卡进度（新 VI）。文案与首页那张卡同一套口径（`streakCopy` / 里程碑）。
+  Widget _streakCard() {
+    final int? next = nextStreakMilestone(_streak);
+    return ViCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.local_fire_department, color: Tokens.accent, size: 18),
+              const SizedBox(width: Tokens.s2),
+              Text('已连续打卡 $_streak 天',
+                  style: const TextStyle(
+                      color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          Text(streakCopy(_streak),
+              style: const TextStyle(color: Tokens.text2, fontSize: 12, height: 1.4)),
+          if (next != null) ...<Widget>[
+            const SizedBox(height: Tokens.s3),
+            ViProgressBar(value: (_streak / next).clamp(0.0, 1.0)),
           ],
-        ),
-      );
+        ],
+      ),
+    );
+  }
+
 }
