@@ -18,11 +18,17 @@
  *   node tool/usability-report.mjs --example            # 拿样例数据跑一遍看输出长什么样
  *   node tool/usability-report.mjs --selftest           # 口径自检（verify.sh 会跑）
  *
+ * ⚠️ **`tap_count` 的门槛不写在这份脚本里**（2026-10-05 改）：它读
+ * `docs/analytics.md` §3 那张表 —— 门槛由**熟人短测**标定（`docs/usability-test-kit.md` §A），
+ * 标定结果只写在那里。没标定时报告把那一项标成"⚠️ 未标定"，**不判不通过**
+ * （正式那 5 场已经降级成"建议做、不卡上架"，更不该拿一把没做出来的尺子宣布失败）。
+ *
  * 退出码：输入有硬错误（抄错/缺项）→ 1；只有"没达标"不会返回非 0
  *        —— 测试结果是事实，不该让脚本失败把人吓回去改数字。
  */
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,7 +38,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const TARGETS = {
   t1Completion: 1.0,      // T1 完成率 5/5
   t1MedianSeconds: 90,    // T1 中位耗时 ≤ 90 秒
-  tapMedian: 1,           // **记录一组的中位 tap_count = 1（硬约束）**
+  // ⚠️ **`tapMedian` 不在这里**（2026-10-05 移走）：门槛的**唯一事实源**是
+  // `docs/analytics.md` §3 那张「分位 / 目标」表（由熟人手测的分布标定），
+  // 见下面的 [readTapMedianTarget]。以前这里硬编码 `tapMedian: 1`，
+  // 那是**窄口径**时代拍的估计值：换成端到端口径后光导航就 2–3 次，
+  // 于是正式那 5 场**必然判"不通过"** —— 一把量错东西的尺子比没有尺子更坏。
   typing: 0,              // 首次训练全程打字 0 次
   scrolls: 0,             // 需滚动找动作 0 次
   adoptRate: 0.6,         // 建议采纳率 ≥ 60%（T6）
@@ -46,6 +56,39 @@ export const TARGETS = {
   // 4 题简版的信度也撑不起"≥ 80"这条线。**删掉比补一套题更诚实**：
   // 留着它只会让人以为有这么一道门。
 };
+
+/**
+ * 从 `docs/analytics.md` 的 markdown 里读出 `tap_count` 中位数门槛（**纯函数，可测**）。
+ *
+ * 口径：只看 `## 3.` 那一节（体验守卫指标）里的第一张表，取 `| 中位数 | … |` 那一行，
+ * 把单元格里**第一个数字**当门槛。
+ *   * `待定` / `待校准` / 空 → `null` = **未标定**（熟人短测还没做）。
+ *     ⚠️ 这时**不许拿某个数去判**，也不许把整份报告判成"不通过" —— 要说"未标定"。
+ *   * `3` / `≤ 3` / `3 次` → `3`（写法宽松，含义只有一个）。
+ *
+ * 为什么门槛要"读"而不是"写死"：它由**熟人短测的实测分布**标定（kit §A5），
+ * 标定结果写在 `docs/analytics.md` §3（那里是唯一真源）。
+ * 两处各写一个数的下场是"文档说 3、脚本按 1 判"，而且**没有任何症状**。
+ */
+export function parseTapMedianTarget(markdown) {
+  const section = String(markdown ?? '').split(/^## /m).find((s) => s.startsWith('3.'));
+  if (!section) return { value: null, why: 'docs/analytics.md 里找不到 §3 那一节' };
+  const row = section.split('\n').find((l) => /^\|\s*中位数\s*\|/.test(l.trim()));
+  if (!row) return { value: null, why: '§3 那张表里没有「中位数」这一行' };
+  const cell = row.split('|').map((c) => c.trim())[2] ?? '';
+  const m = cell.match(/-?\d+(?:\.\d+)?/);
+  if (!m) return { value: null, why: `§3 的中位数门槛还是「${cell || '空'}」——熟人短测还没标定` };
+  return { value: Number(m[0]), why: `来自 docs/analytics.md §3：「${cell}」` };
+}
+
+/** 读真仓库里那份；读不到也不算致命（报告照样出，只是那一项标"未标定"）。 */
+export function readTapMedianTarget() {
+  try {
+    return parseTapMedianTarget(readFileSync(join(ROOT, 'docs/analytics.md'), 'utf8'));
+  } catch (e) {
+    return { value: null, why: `读不到 docs/analytics.md（${e.message}）` };
+  }
+}
 
 export const TASKS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
 const TAP_SOURCES = ['bigButton', 'stepper', 'sheetConfirm', 'keyboard', 'other'];
@@ -155,12 +198,29 @@ export function compute(doc) {
   };
 }
 
-/** 逐条对着 §8 的目标判；返回 {pass, checks:[{name, value, target, ok}]} */
-export function verdict(r) {
+/**
+ * 逐条对着 §8 的目标判；返回 `{pass, uncalibrated, checks:[{name, value, target, ok}]}`。
+ *
+ * `ok` 三态：`true` 达标 / `false` 没达标 / **`null` = 这一项现在判不了**（目前只有
+ * "门槛还没标定"这一种情形）。三态是刻意的：把"判不了"当成"没达标"，
+ * 会让正式那 5 场在**尺子还没做出来**的时候就被宣布失败。
+ *
+ * [opts.tapTarget] 不传就读 `docs/analytics.md` §3（生产路径）；测试直接传值。
+ */
+export function verdict(r, opts = {}) {
+  const tapTarget = opts.tapTarget === undefined ? readTapMedianTarget().value : opts.tapTarget;
   const checks = [
     { name: 'T1 完成率', value: `${r.t1Done}/${r.n}`, ok: r.t1Completion === 1, target: '5/5' },
     { name: 'T1 中位耗时', value: r.t1MedianSeconds, ok: r.t1MedianSeconds !== null && r.t1MedianSeconds <= TARGETS.t1MedianSeconds, target: `≤ ${TARGETS.t1MedianSeconds} 秒` },
-    { name: '记录一组中位 tap_count', value: r.tapMedian, ok: r.tapMedian === TARGETS.tapMedian, target: `= ${TARGETS.tapMedian}` },
+    {
+      name: '记录一组中位 tap_count',
+      value: r.tapMedian,
+      // 门槛在 `docs/analytics.md` §3（熟人短测标的）；没标定就**不判**，标"未标定"
+      target: tapTarget === null
+        ? '未标定 —— 先按 docs/usability-test-kit.md §A 做熟人短测，把门槛写进 docs/analytics.md §3'
+        : `≤ ${tapTarget}`,
+      ok: tapTarget === null ? null : (r.tapMedian !== null && r.tapMedian <= tapTarget),
+    },
     { name: '首次训练打字次数', value: r.typing, ok: r.typing === TARGETS.typing, target: `= ${TARGETS.typing}` },
     { name: '需滚动找动作次数', value: r.scrolls, ok: r.scrolls === TARGETS.scrolls, target: `= ${TARGETS.scrolls}` },
     { name: '建议采纳率（T6）', value: r.adoptRate === null ? '—' : `${Math.round(r.adoptRate * 100)}%`, ok: r.adoptRate !== null && r.adoptRate >= TARGETS.adoptRate, target: `≥ ${Math.round(TARGETS.adoptRate * 100)}%` },
@@ -172,7 +232,9 @@ export function verdict(r) {
     },
   ];
   // 这里**刻意没有** SUS-lite —— 见 TARGETS 上方那段注释（2026-10-01 拍板删掉）。
-  return { pass: checks.every((c) => c.ok), checks };
+  const uncalibrated = checks.filter((c) => c.ok === null).map((c) => c.name);
+  const judged = checks.filter((c) => c.ok !== null);
+  return { pass: judged.length > 0 && judged.every((c) => c.ok), uncalibrated, checks };
 }
 
 /**
@@ -201,10 +263,11 @@ function markdown(r, v) {
   L.push('| 指标 | 实测 | 目标 | 判定 |');
   L.push('|---|---|---|---|');
   for (const c of v.checks) {
-    L.push(`| ${c.name} | ${c.value} | ${c.target} | ${c.ok ? '✅' : '❌'} |`);
+    L.push(`| ${c.name} | ${c.value} | ${c.target} | ${c.ok === null ? '⚠️ 未标定' : (c.ok ? '✅' : '❌')} |`);
   }
   L.push('');
-  L.push(`**结论：${v.pass ? '通过（可冻结设计）' : '不通过'}**`);
+  L.push(`**结论：${v.pass ? '通过（可冻结设计）' : '不通过'}**`
+    + (v.uncalibrated.length ? `（⚠️ 未判：${v.uncalibrated.join('、')}）` : ''));
   const cards = taskCards();
   if (cards.length) {
     L.push('');
@@ -284,8 +347,17 @@ if (process.argv[1] && process.argv[1].endsWith('usability-report.mjs')) {
   if (argv.includes('--template')) {
     console.log(JSON.stringify(template, null, 2));
   } else if (argv.includes('--selftest')) {
-    const { selftest } = await import('./usability-selftest.mjs');
-    process.exit(await selftest());
+    // ⚠️ 这里**不能** `await import('./usability-selftest.mjs')`（2026-10-05 修这个 bug）：
+    // 那份自检**静态 import 本文件**（它要检查这里的 TARGETS / verdict），
+    // 于是本文件动态 import 它就构成**循环依赖**：两边互相等对方求值完，
+    // 顶层 await 永远不落定 —— Node 报 "Detected unsettled top-level await"，
+    // **退出码是 13**（不是 0 也不是 1）。也就是说这个 `--selftest` 开关一直是坏的，
+    // 只是门禁跑的是 `usability-selftest.mjs` 那个文件本身、没经过这条路，所以没人发现。
+    // 正解：**开子进程**跑它，环就断了（stdio 直通，输出与单独跑一模一样）。
+    const r = spawnSync(process.execPath, [join(ROOT, 'tool/usability-selftest.mjs')], {
+      stdio: 'inherit',
+    });
+    process.exitCode = r.status ?? 1;
   } else {
     const useExample = argv.includes('--example');
     const dir = useExample ? join(ROOT, 'usability') : argOf('--dir', join(ROOT, 'usability/sessions'));
@@ -306,7 +378,10 @@ if (process.argv[1] && process.argv[1].endsWith('usability-report.mjs')) {
     } else {
       console.log(`可用性测试：n=${out.n}　数据目录 ${useExample ? 'usability/（样例）' : dir}\n`);
       for (const c of out.verdict.checks) {
-        console.log(`  ${c.ok ? '✓' : '✗'} ${c.name.padEnd(22)} ${String(c.value).padEnd(10)} 目标 ${c.target}`);
+        console.log(`  ${c.ok === null ? '⚠︎' : (c.ok ? '✓' : '✗')} ${c.name.padEnd(22)} ${String(c.value).padEnd(10)} 目标 ${c.target}`);
+      }
+      if (out.verdict.uncalibrated.length) {
+        console.log(`\n  ⚠️ 这几项**判不了**（不是没达标）：${out.verdict.uncalibrated.join('、')}`);
       }
       console.log(`\n  ${out.verdict.pass ? '通过（可冻结设计）' : '不通过 —— 按 §判据逐条对'}`
         + `\n  Q3：本品 ${out.q3Count} · 训记 ${out.q3Xunji} · 犹豫 ${out.q3Unsure}`);

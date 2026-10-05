@@ -7,7 +7,10 @@
  * 所以这里把口径钉死在三件事上：
  *   1. **中位数**：5 个人 1/1/1/2/4 的中位数是 1（不是 1.8）
  *   2. **硬错误真的会拦**：分项加总 ≠ 手填合计、缺 T1、q3 写了别的词 —— 必须 exit 1
- *   3. **判定与 §8 的目标一致**：差一点点（tap 中位数 = 2）也必须判不通过
+ *   3. **判定与目标一致，且"判不了"与"没达标"是两件事**（2026-10-05 改）：
+ *      `tap_count` 的门槛由熟人短测标定、写在 `docs/analytics.md` §3 ——
+ *      **没标定时那一项是"⚠️ 未标定"（`ok: null`），不许当成不通过**；
+ *      标了（比如 3）之后，中位数 2 通过、4 不通过。
  *
  * 退出码：0 全过 / 1 有失败。
  */
@@ -15,7 +18,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build, median, compute, verdict, TARGETS, TASKS } from './usability-report.mjs';
+import { build, median, compute, verdict, TARGETS, TASKS, parseTapMedianTarget } from './usability-report.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -80,6 +83,12 @@ export function docConsistency() {
       + '它已不在判据里（2026-10-01 删掉：题项与公式全仓不存在）');
   }
   if (/SUS/i.test(JSON.stringify(TARGETS))) failures.push('TARGETS 里还有 SUS —— 已拍板删掉');
+  // ⚠️ tap_count 的门槛**不该回到 TARGETS 里**（2026-10-05 移走的）：
+  // 唯一事实源是 `docs/analytics.md` §3，写回这里就等于又出现了两把尺子。
+  if (TARGETS.tapMedian !== undefined) {
+    failures.push('TARGETS.tapMedian 又回来了 —— 它现在只该从 docs/analytics.md §3 读'
+      + '（见 tool/usability-report.mjs 的 parseTapMedianTarget）');
+  }
   if (TARGETS.susLite !== undefined) failures.push('TARGETS.susLite 还在');
   if (!TASKS.length) failures.push('TASKS 是空的');
   return failures;
@@ -127,7 +136,41 @@ export async function selftest() {
     ],
   });
   check('3 人点 2 次 → 中位数 2', twoThree.tapMedian === 2, `实际 ${twoThree.tapMedian}`);
-  check('中位数 2 → 不通过（硬约束 = 1）', twoThree.verdict.pass === false);
+
+  // ---- 3b. tap_count 门槛：从 docs/analytics.md §3 读，没标定就"判不了" ----
+  // 以前这里钉的是 `= 1` 的硬约束（窄口径时代的估计值）—— 端到端口径下光导航就 2–3 次，
+  // 于是正式那 5 场**必然判不通过**。2026-10-05 改：门槛由熟人短测标定、只写在 §3 那张表里。
+  const tapCheck = (v) => v.checks.find((c) => c.name === '记录一组中位 tap_count');
+  check('§3 还没标定 → 那一项是「未标定」（ok === null），不是不通过',
+    tapCheck(twoThree.verdict).ok === null
+      && twoThree.verdict.uncalibrated.includes('记录一组中位 tap_count'),
+    `ok=${JSON.stringify(tapCheck(twoThree.verdict).ok)}`);
+  check('未标定**不许**把整份结论拖成不通过', twoThree.verdict.pass === true);
+  check('§3 标了门槛 3 → 中位数 2 通过（判据是 ≤ 门槛）',
+    tapCheck(verdict(twoThree, { tapTarget: 3 })).ok === true);
+  const fourFour = build({
+    participants: [
+      person('P1', { tap: { firstLog: { bigButton: 4, stepper: 0, sheetConfirm: 0, keyboard: 0, other: 0 } } }),
+      person('P2', { tap: { firstLog: { bigButton: 4, stepper: 0, sheetConfirm: 0, keyboard: 0, other: 0 } } }),
+      person('P3', { tap: { firstLog: { bigButton: 4, stepper: 0, sheetConfirm: 0, keyboard: 0, other: 0 } } }),
+      person('P4'),
+      person('P5'),
+    ],
+  });
+  check('§3 标了门槛 3 而中位数是 4 → 不通过',
+    tapCheck(verdict(fourFour, { tapTarget: 3 })).ok === false
+      && verdict(fourFour, { tapTarget: 3 }).pass === false);
+
+  // ---- 3c. 读门槛本身（纯函数，不依赖真仓库那一格的当前内容）----
+  const pending = '## 3. 体验守卫指标\n\n| 分位 | 目标（**待校准**） |\n|---|---|\n| 中位数 | 待定 |\n| P90 | 待定 |\n';
+  const calibrated = pending.replace('| 中位数 | 待定 |', '| 中位数 | 3 |');
+  const tolerant = pending.replace('| 中位数 | 待定 |', '| 中位数 | ≤ 3 次 |');
+  check('§3 写「待定」→ 门槛 null（未标定）', parseTapMedianTarget(pending).value === null);
+  check('§3 写「3」→ 门槛 3', parseTapMedianTarget(calibrated).value === 3);
+  check('写法宽松：「≤ 3 次」也读成 3', parseTapMedianTarget(tolerant).value === 3);
+  check('读不到 §3 那一节 → null，且给出原因',
+    parseTapMedianTarget('# 别的文档').value === null
+      && /找不到/.test(parseTapMedianTarget('# 别的文档').why));
 
   // ---- 4. Q3 的裁判作用 ----
   const q3Bad = build({
