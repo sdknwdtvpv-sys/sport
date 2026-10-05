@@ -14,7 +14,9 @@
          用 maxSdkVersion 把范围限死在 API ≤ 29：
            * API 30+ 走 MediaStore，**不需要任何权限**，新系统上根本看不到这条
            * API ≤ 29 的老设备才需要它
-         加上 INTERNET，release 版一共只声明这两条权限。 -->
+         加上 INTERNET 与下面的通知权限，release 版一共只声明**三条**权限
+         （这条注释以前写的是"两条"—— 加 POST_NOTIFICATIONS 那次没跟着改；
+         `app/test/reminder_test.dart` 现在把这三项逐个钉住了）。 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
                      android:maxSdkVersion="29" />
 

@@ -219,4 +219,4 @@
 - [ ] `xxxLarge` 字号下主按钮文字不截断、高度不变
 - [ ] VoiceOver 走通"记录一组"全流程
 - [ ] `prefers-reduced-motion` 下无动效残留
-- [ ] 埋点 `set_logged.tap_count` 中位数仍为 1
+- [ ] 埋点 `set_logged.tap_count` 中位数**不高于 `docs/analytics.md` §3 的门槛**（门槛由熟人短测标定；"仍为 1"是旧窄口径，端到端口径下不成立）

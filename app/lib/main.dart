@@ -180,6 +180,9 @@ class _HomeShellState extends State<HomeShell> {
     repository: _reminderRepo,
     bridge: _reminderBridge,
     store: _store,
+    // 「下一次练哪个部位」—— 训练结束那条预告的输入（没有训练历史时它是 null，
+    // 于是那句预告不排，退回通用的"今天还没练"）。问 planner，不在这里现算。
+    nextMuscle: () => _planner.nextMuscleGroupKey(),
   );
   ReminderSettings _reminder = ReminderSettings.off;
 
@@ -417,6 +420,8 @@ class _HomeShellState extends State<HomeShell> {
     // 训练提醒的设置也在这里读一次（设置页要显示它）。
     // 注意**不在这里请求权限** —— 那是用户主动打开开关时才做的事。
     final ReminderSettings reminder = await _reminderRepo.load();
+    // 提示行用**刚读出来那份**设置算（此刻还没落进 `_reminder` 字段）
+    final String? hint = await _hintFor(const <SetRecord>[], settings: reminder);
     if (!mounted) return;
     setState(() {
       _unit = u;
@@ -424,7 +429,7 @@ class _HomeShellState extends State<HomeShell> {
       _restOverrideSec = rest;
       _goalWire = goal;
       _reminder = reminder;
-      _reminderHint = _hintFor(const <SetRecord>[]);
+      _reminderHint = hint;
     });
   }
 
@@ -480,13 +485,14 @@ class _HomeShellState extends State<HomeShell> {
     await syncAchievementMessages(repo: _notifications, sets: sets);
     await maybeRemindMissed(repo: _notifications, settings: _reminder, sets: sets);
     final int unread = await _notifications.unreadCount();
+    final String? hint = await _hintFor(sets);
     if (!mounted) return;
     setState(() {
       _weekSessions = weekWorkoutCount(sets, DateTime.now());
       _streak = currentStreak(sets, DateTime.now());
       _totalWorkouts = totalWorkouts(sets);
       _recent = recentWorkouts(sets);
-      _reminderHint = _hintFor(sets);
+      _reminderHint = hint;
       _unreadNotifications = unread;
     });
     await _loadTodayPlan();
@@ -496,16 +502,26 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   /// 「下次提醒：…」。传 sets 是为了知道**今天练过没有** ——
-  /// 练过就会顺延到明天，而那正是用户最需要被告知的一件事。
-  String? _hintFor(List<SetRecord> sets) {
-    final int now = DateTime.now().millisecondsSinceEpoch;
+  /// 练过就会顺延到明天（或者今晚换成训练结束那条预告），
+  /// 而那正是用户最需要被告知的一件事。
+  ///
+  /// [settings] 不传就用字段上那份设置。为什么留这个口子：两处调它的时候
+  /// **新的设置还没有落进 `_reminder`**（`_loadUnit` 刚读出来、`_setReminder` 刚保存），
+  /// 用字段算出来的提示行会是上一份设置的结果 —— 那正是"界面与系统里排着的那条不一致"。
+  Future<String?> _hintFor(List<SetRecord> sets, {ReminderSettings? settings}) async {
+    final ReminderSettings now = settings ?? _reminder;
+    final int at = DateTime.now().millisecondsSinceEpoch;
+    final bool trainedToday = hasTrainedOn(
+      sets: sets,
+      day: DateTime.fromMillisecondsSinceEpoch(at),
+    );
     return reminderHint(
-      settings: _reminder,
-      trainedToday: hasTrainedOn(
-        sets: sets,
-        day: DateTime.fromMillisecondsSinceEpoch(now),
-      ),
-      nowMs: now,
+      settings: now,
+      trainedToday: trainedToday,
+      nowMs: at,
+      // 与 `ReminderService.sync()` 问的是同一个问题 —— 界面上的这一行必须
+      // 与系统里**真的排着的那条**一致，否则它就是一句会撒谎的话。
+      nextMuscleKey: trainedToday ? await _planner.nextMuscleGroupKey() : null,
     );
   }
 
@@ -523,12 +539,14 @@ class _HomeShellState extends State<HomeShell> {
       if (!allowed) return false;
     }
     await _reminderRepo.save(next);
-    // setState 是同步闭包，取数据必须在它外面（await 不能写在里面）
+    // setState 是同步闭包，取数据必须在它外面（await 不能写在里面）；
+    // 提示行也用**刚保存的这份**算，别用字段上那份旧的（见 [_hintFor]）。
     final List<SetRecord> sets = await _store.allSets();
+    final String? hint = await _hintFor(sets, settings: next);
     if (mounted) {
       setState(() {
         _reminder = next;
-        _reminderHint = _hintFor(sets);
+        _reminderHint = hint;
       });
     }
     await _syncReminder();
@@ -791,6 +809,23 @@ class _HomeShellState extends State<HomeShell> {
       c.dispose();
     }
     _flusher.resume();
+
+    // **训练结束 → 把提醒重新同步一次**（`docs/feature-backlog.md` 第 6 条）。
+    //
+    // 为什么在这个出口、而不是各个调用点：每一段训练（首页大按钮 / 计划 / 轻量活动 /
+    // 崩溃后恢复）都从这里回来，而"练完了"这件事对提醒的影响是同一件 ——
+    // 从前只有走 `_refreshHome()` 的那几条路会同步，恢复后再练那条不会。
+    //
+    // 此刻这一趟的组**已经逐条落库**了（组是记一组写一条），所以 sync() 看到的
+    // 就是"今天练过了"这个事实；说不说得出来"下次练哪儿"由 planner 回答，
+    // 综合判断在 `composeReminder`（纯函数、有测试）。
+    //
+    // ⚠️ **绝不能 await**（2026-10-05 写这一行时踩到的）：`sync()` 最后要走平台通道
+    // （排/撤系统通知），而**平台通道没有回复时那个 Future 永远不会完成** ——
+    // 在 widget 测试里当场就是"总结页再也出不来"（`home_entry_test` 的漏斗那条红），
+    // 在真机上就是"点了返回，界面卡在训练屏"。提醒是"顺手做的事"，
+    // 排不上/排得慢都绝不该挡住总结页 —— 与 `persistSession()` 同一条纪律。
+    unawaited(_syncReminder());
   }
 
   /// 继续上次没结束的训练（2026-10-01）。

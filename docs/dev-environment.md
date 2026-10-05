@@ -199,10 +199,56 @@ flutter_tools 拿不到输出 → 认定"没剥掉调试符号" → 报失败。
   它检查骨架三件套、三个 ABI 的原生库、以及版本号是否与 `app_info.dart` 一致。
 * 想让命令真的退出 0：SDK 必须放在**没有空格**的路径上。
   而这块 SSD 的**卷名**里就有空格 —— 所以任何放在它上面的 SDK 路径都带空格。
-  三条路（**都需要你定**，我不擅自改磁盘布局或搬回内置盘）：
-  1. 在这块 SSD 上再建一个**名字没有空格的 APFS 卷**（同一个容器，空间共享），SDK 放那里；
-  2. 把 Android SDK 放回内置盘（约 3.5G，用掉刚腾出来的一部分空间）；
-  3. 接受现状：APK 照常构建，AAB 用 `check-aab.mjs` 核产物（CI 里也能出 AAB）。
+
+### ✅ 首选做法（方案 C，用户 2026-10-05 拍板）：把同一个卷**另外**挂到一个没有空格的挂载点
+
+真源不动（还是 `/Volumes/Elliot's SSD`，数据一个字节都不搬），只是让工具链换一条
+**路径里没有空格**的入口进去：
+
+```bash
+sudo tool/mount-ssd-space-free.sh        # 挂载（幂等；已挂好就直接过）
+tool/mount-ssd-space-free.sh --check     # 只读检查，**不需要 sudo**
+sudo tool/mount-ssd-space-free.sh --unmount   # 卸掉别名挂载点
+sudo tool/mount-ssd-space-free.sh --fstab     # 打印重启后仍然生效的那一行
+```
+
+脚本头顶写着为什么需要它（AAB 误报 / `privacy-audit --apk` 空转 / `sdkmanager` 报错，
+三次受害者）、真值从哪来、以及**哪一步没验证过**。
+
+**这一步为什么不能"顺便"做掉**：一个 APFS 卷同一时刻只能挂在一个地方。所以顺序必然
+是"先从 `/Volumes/Elliot's SSD` 卸下来 → 再挂到 `~/HARNESS/ssd`"，而不是"多挂一个"。
+
+**本机验证到哪一步**（写这段的人和跑这个脚本的人不是同一个时间点，所以分开写）：
+
+| 环节 | 状态 | 证据 |
+|---|---|---|
+| 卷的身份（UUID / 设备节点 / 文件系统） | ✅ 验证过 | `diskutil info -plist "/Volumes/Elliot's SSD"`：`VolumeUUID=C25E83A4-B93C-404E-8726-953F7DE08BD5`、`DeviceIdentifier=disk7s1`、`FilesystemType=apfs`、`APFSContainerReference=disk7`（物理载体 `disk6s2`） |
+| `diskutil mount` 支不支持自定义挂载点 | ✅ 验证过 | `diskutil mount` 的用法行：`[-mountPoint Path] DiskIdentifier\|DeviceNode` |
+| `/etc/fstab` 会不会被认 | ✅ 查了手册 | `man diskarbitrationd`："/etc/fstab is consulted for user-defined mount points, indexed by filesystem"；`man fstab` 的 EXAMPLES 里是 `UUID=… <挂载点> apfs rw`，并且明说 **APFS 卷别写块设备节点** |
+| **一个卷同一时刻只能挂一处**（所以必须先卸再挂） | ✅ 验证过 | 卷挂在 `/Volumes/Elliot's SSD` 时，`/sbin/mount_apfs /dev/disk7s1 <别的目录>` → **rc=75**，`volume could not be mounted: Operation already in progress` |
+| **"卸下来 → 换到自定义挂载点挂上"这个动作本身** | ✅ 验证过 | 用一个临时 APFS 镜像（**不需要 root**）做的对照实验：`diskutil unmount /Volumes/probevol` → `diskutil mount -mountPoint /tmp/probe-mnt-nospace <UUID>` → 挂载表里真的出现 `on /private/tmp/probe-mnt-nospace`。**所以方案 C 的机制成立**；实验后镜像已卸载删除 |
+| **挂载点那条路径里有软链时，挂载表记的是物理路径** | ✅ 验证过 | 挂载点用软链 `/tmp/probe-link`（指向真实目录）时，挂载表记成 `/private/tmp/probe-real-dir` —— 照字面 grep 会**找不到**，把"挂好了"误报成"没挂上"。脚本因此同时认你给的路径和它的物理路径（默认挂载点 `~/HARNESS/ssd` 的物理路径就是它本身，已核过） |
+| **`diskutil mount` 的"成功"是假的** | ✅ 验证过 | 卷已挂载时 `diskutil mount -mountPoint <空目录> <UUID>` → 退 **0**、打印 `Volume Elliot's SSD on C25E… mounted`，而挂载表里**根本没有**那个目录。所以脚本一律**以挂载表为准**，不看它的输出和退出码 |
+| 在**这块真 SSD** 上卸下再挂上 | ❌ **没验证** | 这台机器 `sudo -n true` 返回 **126 Operation not permitted**（没有挂载权限）；而且这个卷现在正被跑着的仓库、编辑器、终端占着，`diskutil unmount` 会被 `dissented by PID …` 顶回来 —— 不能拿正在用的真源盘试（上面那条对照实验是**另一块临时镜像**，不是它） |
+| `--fstab` 持久化 | ❌ **没验证** | 同上（`/etc/fstab` 要 root 写）。**另有一个没验证的风险**：生效之后卷会不会**只**挂在指定挂载点、`/Volumes/Elliot's SSD` 就此消失 —— 那样硬编码真源的 `tool/dev-env.sh`、`verify.sh`、`tool/workbench.mjs`、`tool/asset-check.mjs` 会一起红。所以先只做挂载，fstab 另说 |
+| 挂上之后工具链是不是真的好了 | ❌ **没验证** | 缺的就是这个卷尺：挂好后要真跑一次 `flutter build appbundle --release`，看那句误报在不在、退出码是不是 0 |
+
+**用户跑完请回报两件事**（缺了就没法判断这条到底成没成）：
+1. `tool/mount-ssd-space-free.sh --check` 的完整输出；
+2. `cd app && flutter build appbundle --release` 的退出码，以及还打不打印
+   `Release app bundle failed to strip debug symbols from native libraries.`
+
+### 挂不了 / 没权限时用这几条（**备选**，都是真跑过的记录，不是纸上的选项）
+
+1. 在这块 SSD 上再建一个**名字没有空格的 APFS 卷**（同一个容器，空间共享），SDK 放那里 ——
+   等于把"多一个挂载点"换成"多一个卷"，一个卷一处挂载，因此没有上面的卸载问题；
+2. 把 Android SDK 放回内置盘（约 3.5G，用掉刚腾出来的一部分空间）；
+3. 接受现状：APK 照常构建，AAB 用 `node tool/check-aab.mjs` 核产物（CI 里也能出 AAB）；
+4. 继续用绕法：`sdkmanager` / `avdmanager` 直接调 Java 类（**四条命令在下文
+   「`sdkmanager` / `avdmanager` 在这台机器上是坏的」那一节**，每条都真跑过）。
+
+> **符号链接不算一条路**（试过了）：`apkanalyzer` 自己会 `cd` 进去再取 `pwd -P`，
+> 物理路径里的空格照样露出来。新挂载点是**真挂载**，不是软链 —— 这正是它和软链的区别。
 
 > 这一条和"依赖装在 SSD"是**真的冲突**，不是配置没调好：Android 的工具链对空格路径
 > 本来就不支持（`flutter doctor` 也会为此报一条 `[!]`）。
@@ -257,8 +303,15 @@ $ sdkmanager --list
 
 和 AAB 那次（`apkanalyzer`）、和 `privacy-audit --apk` 那次是**同一个根因**：
 这两个都是 shell 脚本，把自己的位置拼进 classpath 时**没加引号**，
-而卷名 `Elliot's SSD` 里的空格把它劈开了。**符号链接绕不过去**（脚本会把真实路径解析回来，
-试过了）。绕法是**直接调 Java 类**，把脚本本该设的属性自己设上：
+而卷名 `Elliot's SSD` 里的空格把它劈开了。
+
+**首选做法**：把卷另外挂到一个没有空格的挂载点 —— 见本文
+「✅ 首选做法（方案 C…）」那一节，一条命令是 `sudo tool/mount-ssd-space-free.sh`。
+挂上之后 `sdkmanager --list` 应当**直接能跑**，下面这段绕法就不用再抄了。
+
+**下面这段是备选（挂不了 / 没权限时用），也是真跑过的记录** ——
+原理是**直接调 Java 类**，把脚本本该设的属性自己设上。
+（符号链接**绕不过去**：脚本会 `cd` 进去再取 `pwd -P`，把物理路径里的空格解析回来，试过了。）
 
 ```bash
 SDK="/Volumes/Elliot's SSD/harness-deps/android-sdk"; CT="$SDK/cmdline-tools/latest"
@@ -275,8 +328,10 @@ yes | "$JAVA_HOME/bin/java" -cp "$(ls $CT/lib/*.jar | tr '\n' ':')" \
 ```
 
 **根因还是那条**：Android 工具链不支持带空格的 SDK 路径，而这块 SSD 的卷名带空格。
-想彻底解决只有三条路（**都需要你定**，见 `docs/release-checklist.md` 的"待处理"）：
-SSD 上再建一个名字没有空格的 APFS 卷 / 把 SDK 放回内置盘 / 继续用这些绕法。
+首选是**方案 C**：把卷另外挂到没有空格的挂载点（`sudo tool/mount-ssd-space-free.sh`，
+要动磁盘布局，所以是你来跑；哪一步在本机验证过、哪一步没有，都写在上文那张表里）。
+挂不了或没权限时，退到本文那几条备选：SSD 上再建一个名字没有空格的 APFS 卷 /
+把 SDK 放回内置盘 / 继续用上面这些绕法。
 
 ## 没搬的东西，以及为什么
 

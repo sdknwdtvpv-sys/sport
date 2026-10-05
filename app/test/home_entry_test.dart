@@ -24,8 +24,10 @@ import 'package:lianleme/main.dart';
 
 /// 从 outbox 里读事件（按入队顺序）。
 ///
-/// 用 `takeBatch()` 而不是 `peekAll()`：outbox 没有"偷看"接口，
-/// 而 takeBatch 只读不改（真正标记已发是 markSent）。
+/// 用 `takeBatch()` 而不是 `peekAll()`：outbox 没有"偷看"接口。
+/// ⚠️ **`takeBatch()` 不是纯读**（2026-10-05 起）：它会先把**超过 30 天**的事件删掉
+/// （D 方案，见 `docs/analytics.md` §10）。这里读的是刚记下的事件，所以不受影响；
+/// 但如果哪天有人把这条断言改成"翻出很久以前的事件"，它会先被清掉 —— 那时该用 `peekAll()`。
 Future<List<AnalyticsOutboxData>> _rows(AppDatabase db) async {
   await AnalyticsOutboxStore(db).takeBatch();
   final rows = await db.select(db.analyticsOutbox).get();

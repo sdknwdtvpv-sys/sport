@@ -115,7 +115,10 @@ void main() {
 
     setUp(() {
       db = AppDatabase(NativeDatabase.memory());
-      outbox = AnalyticsOutboxStore(db);
+      // ⚠️ 假时钟是**必须**的（2026-10-05 加 D 方案之后）：outbox 里有"超过 30 天就丢"
+      // 这条规则，它拿 `clock()` 去和 `createdAt` 比；而这组用例的时间戳是 10–300
+      // （1970 年），不注入就会全部被当成超龄事件清掉 —— 那是测试时钟没对齐。
+      outbox = AnalyticsOutboxStore(db, clock: () => 1000);
     });
     tearDown(() => db.close());
 

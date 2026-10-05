@@ -40,7 +40,11 @@ class AnalyticsEventPayload {
 }
 
 class AnalyticsOutboxStore {
-  AnalyticsOutboxStore(this._db, {this.maxRows = defaultMaxRows});
+  AnalyticsOutboxStore(
+    this._db, {
+    this.maxRows = defaultMaxRows,
+    int Function()? clock,
+  }) : _clock = clock ?? _systemNowMs;
 
   final AppDatabase _db;
 
@@ -56,9 +60,31 @@ class AnalyticsOutboxStore {
   /// 连续失败多少次之后不再自动重试
   static const int maxAttempts = 3;
 
+  /// **超龄即丢**：比这还老的事件不再上报（2026-10-05 拍板的 D 方案，`docs/analytics.md` §10）。
+  ///
+  /// 30 天这个数解决的是两件事，而它们本来是一对矛盾：
+  ///   * **不污染当期曲线** —— 三个月前排不出去的事件混进今天的漏斗里，
+  ///     分母就错了，而且错得看不出来；
+  ///   * **又不至于把"离线一阵子"当成丢失** —— 出差一周、进山跑步、关掉开关几周，
+  ///     回来照样上报（30 天里全都留着）。
+  static const Duration maxAge = Duration(days: 30);
+
+  /// 「现在」从哪来。**为什么要注入**：超龄判断必须与 `createdAt` 在**同一个时钟域**里做。
+  /// 真身用系统时钟；测试里的时间戳是 `1000`、`5000` 这种假值，
+  /// 不注入的话它们会全部"超过 30 岁"（1970 年）而被丢掉 —— 那是测试写错，
+  /// 不是实现错，所以这里留一个显式的口子，让测试自己说清"现在几点"。
+  static int _systemNowMs() => DateTime.now().millisecondsSinceEpoch;
+
+  final int Function() _clock;
+
   int _seq = 0;
 
   /// 入队。**纯本地写入，绝不联网。**
+  ///
+  /// 顺手做一次超龄清理（`docs/analytics.md` §10 的 D 方案）：队列里那些已经
+  /// 发不出去的老事件不该继续占着 10000 条的额度，也不该在某次网络恢复时挤进当期曲线。
+  /// 用**这一条自己的 `nowMs`** 当"现在"：它就是调用方此刻的时钟，
+  /// 于是判断与时间戳永远在同一个时钟域里（测试传假时间也不会误伤）。
   Future<void> enqueue({
     required String name,
     required Map<String, Object?> props,
@@ -78,11 +104,35 @@ class AnalyticsOutboxStore {
             attempts: 0,
           ),
         );
+    await dropExpired(nowMs: nowMs);
+  }
+
+  /// **把超过 [maxAge] 的事件从队列里删掉**，返回删掉的条数。
+  ///
+  /// 边界（有测试钉着）：**整整 30 天还留着，多一毫秒就丢**。
+  /// 只在两个地方被调：入队（顺手清）与出队（发之前清）——
+  /// 也就是说，一个事件只有两条出路：**被发出去**，或者**被这条规则清掉**；
+  /// 超龄的那种永远走不到"被发出去"那一步。
+  /// ⚠️ 这是本项目第二处**主动删掉用户数据**的地方（第一处是 `clearAll`），
+  /// 所以它的判据必须写死在代码里、而且只按"时间"这一个事实判断。
+  Future<int> dropExpired({required int nowMs}) async {
+    final int cutoff = nowMs - maxAge.inMilliseconds;
+    return (_db.delete(_db.analyticsOutbox)
+          ..where((t) => t.createdAt.isSmallerThanValue(cutoff)))
+        .go();
   }
 
   /// 取一批待发送的：优先级高的先送（0 = P0），同级按时间先进先出。
   /// 已连续失败 3 次的（parked）不再返回 —— 等下次冷启动由 [resetParked] 放出来。
+  ///
+  /// ⚠️ **取之前先丢超龄的**（D 方案）。为什么放在这里而不只放在入队：
+  /// 入队那条路只有在"用户还在产生事件"时才会跑；而"离线很久之后第一次回来"
+  /// 恰恰是从冷启动走到发送这一段 —— 那一段没有新事件可依赖，
+  /// 所以发送前的这一步才是**真正的闸门**（入队那次只是省额度）。
+  /// 于是 `takeBatch` **不再是纯读**：它会删掉超龄的行（这一点在
+  /// `app/test/home_entry_test.dart` 的注释里也写着，改这句话时两处一起改）。
   Future<List<AnalyticsEventPayload>> takeBatch({int limit = maxBatch}) async {
+    await dropExpired(nowMs: _clock());
     final rows = await (_db.select(_db.analyticsOutbox)
           ..where((t) => t.attempts.isSmallerThanValue(maxAttempts))
           ..orderBy([
@@ -118,6 +168,10 @@ class AnalyticsOutboxStore {
   /// 三个刻意的选择：
   ///   * **不过滤 parked**（连续失败 ≥ 3 次的那些）：它们正是"发不出去"的那批，
   ///     过滤掉等于把最该看的数据藏起来；
+  ///   * **也不过滤超龄的**（D 方案那条 30 天的线）：理由与上一条同源 ——
+  ///     导出是"看看队列里到底堵着什么"的**诊断**路径，不是发送路径；
+  ///     但要知道**它们不会再被发出去**（`takeBatch` 会先把它们删掉）。
+  ///     判据在 `docs/analytics.md` §10 的 D 方案。
   ///   * **不删除**（与 `markSent` 是两件事）：导出是只读动作，不改队列状态；
   ///   * 排序与 [takeBatch] 一致，所以"导出的顺序"与"真要发出去的顺序"是同一个。
   Future<List<AnalyticsEventPayload>> peekAll() async {

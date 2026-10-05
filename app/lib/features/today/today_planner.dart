@@ -299,6 +299,24 @@ class TodayPlanner {
     return lastWasUpper ? TrainingDay.lower : TrainingDay.upper;
   }
 
+  /// **下一次练的第一个部位**（`docs/feature-backlog.md` 第 6 条：训练结束那条预告的输入）。
+  ///
+  /// 取"下一次那个训练日的构图里的第一个部位"——上肢日是 `chest`（3 个动作，份额最大）、
+  /// 下肢日是 `legs`（4 个），于是文案念出来是「明天该练胸了 / 明天该练腿了」。
+  /// 为什么不用 `TrainingDay.label`（"上肢/下肢"）：那是分化的名字，不是叫人练什么；
+  /// 而"明天该练上肢了"在健身房里是句没信息量的话。
+  ///
+  /// **从没练过 → null**（不是"上肢"）：没有上一次，就没有"下一次"可言 ——
+  /// 预告那条的口径是"宁可不排，也不编"。
+  Future<String?> nextMuscleGroupKey() async {
+    final List<String> recentIds = await _store.recentExerciseIds();
+    if (recentIds.isEmpty) return null;
+    final TrainingDay day = await nextTrainingDay();
+    final List<({String group, int count})>? slots = kDayComposition[day];
+    if (slots == null || slots.isEmpty) return null;
+    return slots.first.group;
+  }
+
   /// 生成今天的建议。
   ///
   /// [muscleGroup] 传 null 时自动做部位轮转；[count] 是要推荐几个动作。

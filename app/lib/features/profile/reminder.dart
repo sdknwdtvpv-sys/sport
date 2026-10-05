@@ -11,6 +11,7 @@
 library;
 
 import '../../domain/models.dart';
+import 'next_training_copy.dart';
 
 /// 用户的提醒设置。
 class ReminderSettings {
@@ -77,6 +78,18 @@ int? nextReminderAtMs({
   return DateTime(now.year, now.month, now.day + 1, h, m).millisecondsSinceEpoch;
 }
 
+/// 两个毫秒时间戳是不是**同一个本地日**。
+///
+/// 只给"训练结束那条预告"用：它必须排在**今天**那个点（练完当晚说"明天该练背了"）。
+/// 一旦算出来是明天，那句话在响的那一刻就不成立了 —— 于是退回通用那条。
+/// ⚠️ 按年月日比、不是"相差 24 小时以内"：后者会把"今晚 23:30 排的、明天 20:00 响的"
+/// 也算成同一天（相差 20.5 小时），而那正是要挡掉的情形。
+bool isSameLocalDay(int aMs, int bMs) {
+  final DateTime a = DateTime.fromMillisecondsSinceEpoch(aMs);
+  final DateTime b = DateTime.fromMillisecondsSinceEpoch(bMs);
+  return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
 /// 界面上那行**「下次什么时候响」**。
 ///
 /// 为什么必须有它（2026-10-04 真机反馈"设了闹钟但没响"）：排程规则是对的
@@ -85,10 +98,16 @@ int? nextReminderAtMs({
 /// 这条困惑就消失了；顺带也解释了"为什么刚练完设的提醒不响"。
 ///
 /// 返回 null = 没开提醒（界面不显示这一行）。
+///
+/// **2026-10-05**：加了 `nextMuscleKey`。练完当天、而且知道下次练哪儿时，真正排着的是
+/// 训练结束那条预告（今晚就响），所以这一行**必须跟着改** —— 否则它一边说"明天 20:00
+/// （今天已经练过了，不打扰）"、系统里却排着今晚 20:00，这就是"会撒谎的界面"，
+/// 比不显示更坏。没有下次部位 / 那个点今天已经过了 → 一个字不改，照旧。
 String? reminderHint({
   required ReminderSettings settings,
   required bool trainedToday,
   required int nowMs,
+  String? nextMuscleKey,
 }) {
   if (!settings.enabled) return null;
   final DateTime now = DateTime.fromMillisecondsSinceEpoch(nowMs);
@@ -99,6 +118,11 @@ String? reminderHint({
   final String clock =
       '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   if (laterToday) return '下次提醒：今天 $clock';
+  // 练过了、预告说得出来、而且那个点今天还没过 → 今晚响的就是那条预告
+  if (trainedToday && todayAt.isAfter(now)) {
+    final (String, String)? copy = nextTrainingReminderCopy(nextMuscleKey);
+    if (copy != null) return '下次提醒：今天 $clock（${copy.$1}）';
+  }
   return trainedToday
       ? '下次提醒：明天 $clock（今天已经练过了，不打扰）'
       : '下次提醒：明天 $clock（今天的点已经过了）';

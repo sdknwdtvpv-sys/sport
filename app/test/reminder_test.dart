@@ -1,10 +1,15 @@
 /// 练了么 · 训练提醒（本地通知）
 ///
-/// 这一组守三件事：
+/// 这一组守四件事：
 ///   1. **什么时候该提醒** —— 规则是"到点了还没练才提醒"，而不是"每天准点响"；
 ///   2. **服务把三件事捏对了**：开关关着要撤、开着要排、练过了要顺延；
-///   3. **通道载荷**：Android/iOS 那两边按这些键取值。
+///   3. **训练结束那条预告**（2026-10-05 第 6 条）：练完当晚换成"明天该练X了"，
+///      说不出来（没下次部位 / 那个点已经过了 / planner 挂了）就一字不改地退回通用那条，
+///      而且**不许新增任何权限**；
+///   4. **通道载荷**：Android/iOS 那两边按这些键取值。
 library;
+
+import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter/services.dart';
@@ -174,6 +179,42 @@ void main() {
       expect(h, contains('明天 17:58'));
       expect(h, contains('已经过'));
     });
+
+    test('★ 今晚响的是"训练结束那条预告"时，这一行必须跟着改（否则界面会撒谎）', () {
+      final String? h = reminderHint(
+        settings: const ReminderSettings(enabled: true, minutesOfDay: 20 * 60),
+        trainedToday: true,
+        nowMs: _at(2026, 10, 4, 10, 0),
+        nextMuscleKey: 'chest',
+      );
+      expect(h, contains('今天 20:00'),
+          reason: '系统里真的排着今晚 20:00 —— 这一行还写"明天"就是句假话');
+      expect(h, contains('明天该练胸了'),
+          reason: '顺带把"今晚响的是哪条"说清楚');
+    });
+
+    test('说不出下次部位 → 这一行一个字不改（还是老文案）', () {
+      final String? h = reminderHint(
+        settings: const ReminderSettings(enabled: true, minutesOfDay: 20 * 60),
+        trainedToday: true,
+        nowMs: _at(2026, 10, 4, 10, 0),
+        nextMuscleKey: null,
+      );
+      expect(h, contains('明天 20:00'));
+      expect(h, contains('今天已经练过'));
+    });
+
+    test('练完了但那个点今天已经过了 → 预告不发，这一行也不提它', () {
+      final String? h = reminderHint(
+        settings: const ReminderSettings(enabled: true, minutesOfDay: 20 * 60),
+        trainedToday: true,
+        nowMs: _at(2026, 10, 4, 21, 30),
+        nextMuscleKey: 'chest',
+      );
+      expect(h, contains('明天 20:00'));
+      expect(h!.contains('明天该练胸了'), isFalse,
+          reason: '那一刻不排预告，界面上就不该说它');
+    });
   });
 
   group('服务：把设置 + 今天的事实 + 桥捏在一起', () {
@@ -238,6 +279,209 @@ void main() {
         await service.sync(nowMs: _at(2026, 10, 4, 9, 0));
       }
       expect(await bridge.scheduledAtMs(), _at(2026, 10, 4, 20, 0));
+    });
+  });
+
+  group('训练结束那条预告：composeReminder（纯函数）', () {
+    const ReminderSettings on20 =
+        ReminderSettings(enabled: true, minutesOfDay: 20 * 60);
+
+    test('★ 练完了 + 知道下次部位 + 那个点还没到 → 今晚说"明天该练胸了"', () {
+      final ReminderRequest? r = composeReminder(
+        nowMs: _at(2026, 10, 5, 10, 0),
+        settings: on20,
+        trainedToday: true,
+        nextMuscleKey: 'chest',
+      );
+      expect(r, isNotNull);
+      expect(r!.atMs, _at(2026, 10, 5, 20, 0));
+      expect(r.title, '明天该练胸了');
+      expect(r.body, contains('点开直接开始'));
+    });
+
+    test('★ 那个点今天已经过了 → 不发预告，退回通用那条（"明天"会说错日子）', () {
+      final ReminderRequest? r = composeReminder(
+        nowMs: _at(2026, 10, 5, 21, 30),
+        settings: on20,
+        trainedToday: true,
+        nextMuscleKey: 'chest',
+      );
+      expect(r!.atMs, _at(2026, 10, 6, 20, 0));
+      expect(r.title, kTrainingReminderTitle,
+          reason: '预告顺延到明天就成了假话（那时"明天"是后天）—— 宁可不发');
+    });
+
+    test('说不出下次部位 → 一字不改地退回通用那条', () {
+      final ReminderRequest? r = composeReminder(
+        nowMs: _at(2026, 10, 5, 10, 0),
+        settings: on20,
+        trainedToday: true,
+        nextMuscleKey: null,
+      );
+      expect(r!.atMs, _at(2026, 10, 6, 20, 0));
+      expect(r.title, kTrainingReminderTitle);
+    });
+
+    test('没练过 → 与预告无关，通用那条照旧（哪怕传了部位）', () {
+      final ReminderRequest? r = composeReminder(
+        nowMs: _at(2026, 10, 5, 10, 0),
+        settings: on20,
+        trainedToday: false,
+        nextMuscleKey: 'chest',
+      );
+      expect(r!.atMs, _at(2026, 10, 5, 20, 0));
+      expect(r.title, kTrainingReminderTitle);
+    });
+
+    test('开关关着 → 不排（调用方负责把系统里旧的撤掉）', () {
+      expect(
+        composeReminder(
+          nowMs: _at(2026, 10, 5, 10, 0),
+          settings: ReminderSettings.off,
+          trainedToday: true,
+          nextMuscleKey: 'chest',
+        ),
+        isNull,
+      );
+    });
+
+    test('非法时间 → 不排（连预告也不排，而不是夹到别的钟点）', () {
+      expect(
+        composeReminder(
+          nowMs: _at(2026, 10, 5, 10, 0),
+          settings: const ReminderSettings(enabled: true, minutesOfDay: 1440),
+          trainedToday: true,
+          nextMuscleKey: 'chest',
+        ),
+        isNull,
+      );
+    });
+
+    test('是不是同一个本地日：按年月日比，不是按"相差 24 小时"', () {
+      expect(isSameLocalDay(_at(2026, 10, 5, 0, 1), _at(2026, 10, 5, 23, 59)),
+          isTrue);
+      // 相差 20.5 小时，但跨了日 —— 正是要挡掉的那种
+      expect(isSameLocalDay(_at(2026, 10, 5, 23, 30), _at(2026, 10, 6, 20, 0)),
+          isFalse);
+    });
+  });
+
+  group('训练结束那条预告：服务（接上"下次练哪儿"之后）', () {
+    late AppDatabase db;
+    late DriftLocalStore store;
+    late ReminderRepository repo;
+    late FakeReminder bridge;
+    late ReminderService service;
+    String? muscle;
+
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
+      store = DriftLocalStore(db);
+      repo = ReminderRepository(db);
+      bridge = FakeReminder();
+      muscle = 'chest';
+      service = ReminderService(
+        repository: repo,
+        bridge: bridge,
+        store: store,
+        nextMuscle: () async => muscle,
+      );
+    });
+
+    tearDown(() => db.close());
+
+    Future<void> logOneSet(int atMs) => store.saveSet(SetRecord(
+          id: 's_$atMs',
+          workoutId: 'w1',
+          exerciseId: 'ex_bb_bench_press',
+          setIndex: 1,
+          reps: 8,
+          completedAtMs: atMs,
+          weightKg: 60,
+        ));
+
+    test('★ 练完一次就把今天那条「今天还没练」换成「明天该练胸了」', () async {
+      await repo.save(const ReminderSettings(enabled: true, minutesOfDay: 20 * 60));
+      await service.sync(nowMs: _at(2026, 10, 5, 9, 0));
+      expect(bridge.scheduled.single.title, kTrainingReminderTitle);
+      expect(bridge.scheduled.single.atMs, _at(2026, 10, 5, 20, 0));
+
+      await logOneSet(_at(2026, 10, 5, 10, 30));
+      await service.sync(nowMs: _at(2026, 10, 5, 10, 35));
+
+      expect(bridge.scheduled.last.title, '明天该练胸了',
+          reason: '练完了，今晚该说的是"明天练哪儿"，不是"今天还没练"');
+      expect(bridge.scheduled.last.atMs, _at(2026, 10, 5, 20, 0));
+      expect(await bridge.scheduledAtMs(), _at(2026, 10, 5, 20, 0),
+          reason: '同一时刻只该有一条（真身会先撤再排）');
+    });
+
+    test('说不出下次部位（没有训练历史）→ 退回通用那条、顺延到明天', () async {
+      muscle = null;
+      await repo.save(const ReminderSettings(enabled: true, minutesOfDay: 20 * 60));
+      await logOneSet(_at(2026, 10, 5, 10, 30));
+      await service.sync(nowMs: _at(2026, 10, 5, 10, 35));
+
+      expect(bridge.scheduled.single.title, kTrainingReminderTitle);
+      expect(bridge.scheduled.single.atMs, _at(2026, 10, 6, 20, 0));
+    });
+
+    test('幂等：同一个事实连 sync 三次，排的还是同一条', () async {
+      await repo.save(const ReminderSettings(enabled: true, minutesOfDay: 20 * 60));
+      await logOneSet(_at(2026, 10, 5, 10, 30));
+      for (int i = 0; i < 3; i++) {
+        await service.sync(nowMs: _at(2026, 10, 5, 10, 35));
+      }
+      expect(bridge.scheduled, hasLength(3));
+      expect(bridge.scheduled.map((ReminderRequest r) => r.atMs).toSet(),
+          <int>{_at(2026, 10, 5, 20, 0)});
+      expect(await bridge.scheduledAtMs(), _at(2026, 10, 5, 20, 0));
+    });
+
+    test('问不出答案（planner 抛了）→ 静默退回通用那条，绝不往上抛', () async {
+      service = ReminderService(
+        repository: repo,
+        bridge: bridge,
+        store: store,
+        nextMuscle: () async => throw StateError('planner 挂了'),
+      );
+      await repo.save(const ReminderSettings(enabled: true, minutesOfDay: 20 * 60));
+      await logOneSet(_at(2026, 10, 5, 10, 30));
+      await expectLater(service.sync(nowMs: _at(2026, 10, 5, 10, 35)), completes);
+
+      expect(bridge.scheduled.single.title, kTrainingReminderTitle,
+          reason: '排不上预告是小事，影响记录训练才是大事');
+    });
+
+    test('开关关着 → 不排，而且把旧的撤掉（与从前一致）', () async {
+      await logOneSet(_at(2026, 10, 5, 10, 30));
+      await service.sync(nowMs: _at(2026, 10, 5, 10, 35));
+      expect(bridge.scheduled, isEmpty);
+      expect(bridge.cancels, 1);
+    });
+  });
+
+  group('通知不新增权限（第 6 条施工清单的最后一条）', () {
+    test('源码 manifest 里仍然只有三项 uses-permission，且没有精确闹钟那两条', () {
+      final String xml =
+          File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+      final List<String> perms = RegExp(r'<uses-permission\s+android:name="([^"]+)"')
+          .allMatches(xml)
+          .map((RegExpMatch m) => m.group(1)!)
+          .toList();
+      expect(perms, <String>[
+        'android.permission.INTERNET',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        'android.permission.POST_NOTIFICATIONS',
+      ], reason: '加一条"训练结束预告"不该多要任何权限 —— 它复用通知权限');
+
+      // ⚠️ 要先把注释剥掉再看：这份 manifest 的注释里**故意提到了** SCHEDULE_EXACT_ALARM
+      // （解释"为什么不需要它"），直接 contains 会把自己的说明当成权限命中。
+      final String bare =
+          xml.replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '');
+      expect(bare.contains('SCHEDULE_EXACT_ALARM'), isFalse,
+          reason: '用非精确闹钟换来的一整个权限面，别又加回来');
+      expect(bare.contains('USE_EXACT_ALARM'), isFalse);
     });
   });
 

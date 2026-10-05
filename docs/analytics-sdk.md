@@ -168,6 +168,7 @@ CREATE INDEX idx_outbox_flush ON analytics_outbox(priority, created_at);
 | 重试 | 1s / 4s / 16s + 随机抖动，最多 3 次 |
 | 超过 3 次 | 标记 parked（`attempts >= 3`），不再自动重试，等下次冷启动 |
 | 容量上限 | 10000 行。超出时按 `priority` 从低到高、同优先级按 `created_at` 从旧到新丢弃，并上报 `outbox_overflow` |
+| **超龄即丢** | **超过 30 天的事件不再上报**（2026-10-05 拍板的 D 方案，`docs/analytics.md` §10）。入队时按"这一条自己的时间戳"顺手清一次（把额度腾出来），**出队（`takeBatch`）发之前再按 store 的时钟清一次** —— 后者才是真闸门（离线很久之后第一次回来，那一段没有新事件可依赖）。判据：早于 `now - 30 天`；整整 30 天还留着，多 1 毫秒就丢。⚠️ 因此 `takeBatch` **不再是纯读**（它会删掉超龄的行）；只读的 `peekAll()`（导出）仍然把超龄的列出来 —— 导出是诊断路径，队列里堵着什么都要看得见 |
 | 上报失败 | **绝不弹 UI**。连续失败 3 次且用户回到首页时，在「我」页显示一个静默红点 |
 
 ---
@@ -288,6 +289,7 @@ flutter build apk --release --dart-define=LIANLEME_ANALYTICS_URL=https://your.ho
 - [x] **关闭隐私开关 → 除崩溃外零上报**（2026-09-30 在设备上验过，见 `app/integration_test/analytics_outbox_e2e_test.dart`）：默认（关）状态下跑完整轮训练后，应用**自己的库**里 `analytics_enabled=false · pending=0`；同一个流程把开关预置成开，则是 `analytics_enabled=true · pending=11` —— 两跑缺一不可，否则「0 条」可能只是测量坏了。
       **2026-09-30 又在 iOS 上跑了两跑**（iPhone 17 Pro Max 模拟器 / iOS 27.0）：`pending=0` 与 `pending=11` 逐项一致 —— 也就是说这条设备级证明**不是安卓独有**，两端同结论（线 1 的"同等可发布"要求这个）
 - [ ] outbox 灌到 10000 行 → 丢弃顺序符合优先级，且上报了 `outbox_overflow`
+- [x] **超过 30 天的事件不再上报**（2026-10-05，D 方案）：入队顺手清 + 出队发之前清，两侧都验；边界（整整 30 天还留着 / 多 1 毫秒就丢）与"离线一周照样上报"各一条 —— `app/test/analytics_outbox_age_test.dart`（7 条）
 - [ ] 手动把系统时间改到未来 → 所有耗时属性仍为非负
 - [ ] 训练进行中抓包 → **无任何网络请求**
 - [ ] `set_logged` 条数与 `workout_finished.total_sets` 能对上（量级 sanity check）

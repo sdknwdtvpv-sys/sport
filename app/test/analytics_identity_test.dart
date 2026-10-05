@@ -108,10 +108,14 @@ void main() {
     });
   });
 
+  // ⚠️ 这一组统一用 `clock: () => 5000` 这把假时钟（`OutboxAnalytics` 与
+  // `AnalyticsOutboxStore` 两处都要）：这一层的时间戳就是 5000，而 outbox 从
+  // 2026-10-05 起有"超过 30 天就丢"的规则 —— 两把时钟不一致时事件会被当成
+  // 超龄的丢掉，失败现场看起来像"埋点根本没写进去"。
   group('公共字段（docs/analytics.md §2.1）', () {
     test('每个事件都自动带上七个字段，且调用方传的同名字段被覆盖', () async {
       final OutboxAnalytics analytics = OutboxAnalytics(
-        outbox: AnalyticsOutboxStore(db),
+        outbox: AnalyticsOutboxStore(db, clock: () => 5000),
         context: DeviceAnalyticsContext(
           repository: meta,
           platform: () => 'android',
@@ -131,7 +135,7 @@ void main() {
       });
       await Future<void>.delayed(Duration.zero);
 
-      final List<AnalyticsEventPayload> rows = await AnalyticsOutboxStore(db).takeBatch();
+      final List<AnalyticsEventPayload> rows = await AnalyticsOutboxStore(db, clock: () => 5000).takeBatch();
       final AnalyticsEventPayload e = rows.single;
       expect(e.name, 'set_logged');
       expect(e.props['reps'], 8);
@@ -147,7 +151,7 @@ void main() {
 
     test('取不到公共字段时**事件照样送出去**（少字段好过丢事件）', () async {
       final OutboxAnalytics analytics = OutboxAnalytics(
-        outbox: AnalyticsOutboxStore(db),
+        outbox: AnalyticsOutboxStore(db, clock: () => 5000),
         context: _BrokenContext(),
         clock: () => 5000,
       );
@@ -156,7 +160,7 @@ void main() {
       analytics.track('set_logged', <String, Object?>{'reps': 8});
       await Future<void>.delayed(Duration.zero);
 
-      final List<AnalyticsEventPayload> rows = await AnalyticsOutboxStore(db).takeBatch();
+      final List<AnalyticsEventPayload> rows = await AnalyticsOutboxStore(db, clock: () => 5000).takeBatch();
       expect(rows.single.name, 'set_logged');
       expect(rows.single.props['reps'], 8);
       expect(rows.single.props.containsKey('device_id'), isFalse);
@@ -164,7 +168,7 @@ void main() {
 
     test('公共字段为空时也不影响隐私开关（关掉就一条都不记）', () async {
       final OutboxAnalytics analytics = OutboxAnalytics(
-        outbox: AnalyticsOutboxStore(db),
+        outbox: AnalyticsOutboxStore(db, clock: () => 5000),
         context: FakeAnalyticsContext(),
         clock: () => 5000,
       )..setEnabled(false);
@@ -172,7 +176,7 @@ void main() {
       analytics.track('set_logged', <String, Object?>{'reps': 8});
       await Future<void>.delayed(Duration.zero);
 
-      expect(await AnalyticsOutboxStore(db).takeBatch(), isEmpty);
+      expect(await AnalyticsOutboxStore(db, clock: () => 5000).takeBatch(), isEmpty);
     });
   });
 }

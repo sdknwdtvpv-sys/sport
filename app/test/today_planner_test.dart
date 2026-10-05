@@ -103,6 +103,31 @@ void main() {
     });
   });
 
+  // 训练结束那条预告的**输入**（`docs/feature-backlog.md` 第 6 条）：
+  // 句子本身在 next_training_copy.dart，这里只管"下一次练哪块"。
+  group('下一次练的第一个部位（预告的输入）', () {
+    test('★ 从没练过 → null（不能拿"上肢"编一句话出来）', () async {
+      expect(await planner.nextMuscleGroupKey(), isNull);
+    });
+
+    test('练过胸 → 明天轮到下肢，报腿（那天份额最大的那块）', () async {
+      await train('w1', 'ex_bb_bench_press');
+      expect(await planner.nextMuscleGroupKey(), 'legs');
+    });
+
+    test('练过腿 → 明天轮到上肢，报胸', () async {
+      await train('w1', 'ex_bb_squat');
+      expect(await planner.nextMuscleGroupKey(), 'chest');
+    });
+
+    test('报出来的 key 必须是能念出人话的部位（不是 upper/lower 这种内部名）', () async {
+      await train('w1', 'ex_bb_bench_press');
+      final String? key = await planner.nextMuscleGroupKey();
+      expect(kPrimaryMuscleGroups, contains(key));
+      expect(muscleLabel(key!), isNot(key), reason: '念不出中文就说明拿错了 key');
+    });
+  });
+
   group('今日建议', () {
     test('★ 第一次训练给 4 个动作 / 12 组（压在「单次 ≥ 12 组」护栏上）', () async {
       final List<PlannedExercise> plan = await planner.planToday();

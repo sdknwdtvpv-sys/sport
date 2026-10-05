@@ -18,9 +18,15 @@ void main() {
   late AppDatabase db;
   late AnalyticsOutboxStore outbox;
 
+  // ⚠️ 这把假时钟是**必须**的（2026-10-05 加 D 方案之后）：outbox 里有"超过 30 天就丢"
+  // 这条规则，它会拿 `clock()` 去和 `createdAt` 比。这组用例的时间戳是 1000–4000
+  // （1970 年），不注入的话它们全都"超过 30 岁"、会被当成超龄事件丢掉 ——
+  // 那是测试的时钟没对齐，不是实现错。10000 与那批时间戳同一个域，且远在 30 天之内。
+  int Function() fakeClock() => (() => 10000);
+
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
-    outbox = AnalyticsOutboxStore(db);
+    outbox = AnalyticsOutboxStore(db, clock: fakeClock());
   });
 
   tearDown(() => db.close());
@@ -160,7 +166,7 @@ void main() {
     });
 
     test('溢出时先丢低优先级，同级先丢旧的（§5）', () async {
-      final AnalyticsOutboxStore small = AnalyticsOutboxStore(db, maxRows: 3);
+      final AnalyticsOutboxStore small = AnalyticsOutboxStore(db, maxRows: 3, clock: fakeClock());
       await small.enqueue(name: 'p0_old', props: <String, Object?>{}, priority: 0, nowMs: 1000);
       await small.enqueue(name: 'p1_mid', props: <String, Object?>{}, priority: 1, nowMs: 2000);
       await small.enqueue(name: 'p2_new', props: <String, Object?>{}, priority: 2, nowMs: 3000);
@@ -177,7 +183,7 @@ void main() {
     });
 
     test('没超上限时不动队列', () async {
-      final AnalyticsOutboxStore small = AnalyticsOutboxStore(db, maxRows: 3);
+      final AnalyticsOutboxStore small = AnalyticsOutboxStore(db, maxRows: 3, clock: fakeClock());
       await small.enqueue(name: 'a', props: <String, Object?>{}, priority: 0, nowMs: 1000);
       expect(await small.dropOverflow(), 0);
       expect(await small.pending(), 1);
