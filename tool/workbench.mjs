@@ -290,6 +290,36 @@ export function opsStatus(a) {
   });
 }
 
+/**
+ * CLI 摘要行。**抽成函数是为了能被自检** —— 2026-10-05 在这里抓到过一次
+ * "工具自己在撒谎"：页面那段已经改成"看不到线上"了，**CLI 这行还硬编码写着
+ * 「业务指标：4 格全部 ⊘ 待接入（还没有后端）」**，而后端当天已经上线。
+ * 所以现在这行也走 `opsStatus()` 的口径，并照样声明"看不到线上"。
+ */
+export function summaryLines(state) {
+  const v = state.version;
+  const ops = opsStatus(state.analytics);
+  const ready = ops.filter((o) => o.state === 'ready').length;
+  const why = [...new Set(ops.filter((o) => o.state !== 'ready').map((o) => o.detail))];
+  const lines = [];
+  lines.push(`练了么 · 工作台快照\u3000v${v.version} (${v.build})`);
+  lines.push(`  对账：${state.gates.guards.length - state.gates.failed}/${state.gates.guards.length} 通过`
+    + (state.gates.failed ? `（${state.gates.guards.filter((g) => !g.ok).map((g) => g.rel).join(', ')}）` : ''));
+  lines.push(`  最新改动：${state.changelog}`);
+  if (state.git.available) lines.push(`  git：${state.git.head?.hash} · 工作区 ${state.git.changed} 个文件未提交`);
+  lines.push(`  路线图：${state.roadmap.available ? `${state.roadmap.stages.filter((s) => s.status === 'done').length}/${state.roadmap.stages.length} 阶段完成` : `⊘ ${state.roadmap.why}`}`);
+  lines.push(`  上架清单：${state.checklist.available ? `${state.checklist.totals.done}/${state.checklist.totals.total} 项完成` : `⊘ ${state.checklist.why}`}`);
+  lines.push(`  卡在你那边：${state.todos.available ? `${state.todos.open.length} 件` : state.todos.why}`);
+  lines.push(`  埋点：${SOURCE_LABEL[state.analytics.source][0]} · ${state.analytics.report.events} 条事件 / ${state.analytics.report.devices} 台设备`);
+  lines.push(`  业务指标：${ready}/${ops.length} 格有数`
+    + (ready === ops.length ? '' : ` · 其余的还差：${why.join('；')}`));
+  lines.push('  （线上收集端在不在跑，这一页看不到 —— 自己验：curl -fsS https://<你的域名>/healthz）');
+  lines.push(`  真机：安卓 ${state.devices.android.available ? `${state.devices.android.devices.length} 台` : state.devices.android.why}`
+    + ` · iOS ${state.devices.ios.available ? `${state.devices.ios.devices.length} 台` : state.devices.ios.why}`);
+  lines.push('  （要看页面：node tool/workbench.mjs --serve）');
+  return lines;
+}
+
 // ──────────────────────────────────────────────────────────── 汇总
 
 export function collect(opts = {}) {
@@ -1190,6 +1220,19 @@ export function selftest() {
     check('★ 客户端已编入地址时，那段要改成"已经"（同一段文案必须跟着事实走）',
       opsCloud.includes('已经') && !opsCloud.includes('还没有</strong>编入'), '没跟着事实走');
 
+    // ★ 2026-10-05：同一条规矩要管到 **CLI 摘要**——页面改了，命令行那行还硬编码写着
+    //   「业务指标：4 格全部 ⊘ 待接入（还没有后端）」，而后端那天早上就上线了。
+    const slEmpty = summaryLines({
+      ...state, analytics: { ...a, source: 'empty', eventNames: [], report: buildReport([]) },
+    }).join('\n');
+    check('★ CLI 摘要里也不许替线上断言（"还没有后端"/"收集端没部署"一律不许出现）',
+      !/还没有后端|收集端没部署|收集端没在跑/.test(slEmpty), '命令行又在替线上断言');
+    check('★ CLI 摘要要声明"线上看不到"并给出那条 curl',
+      slEmpty.includes('看不到') && slEmpty.includes('curl -fsS https://'), '没写清');
+    check('★ CLI 摘要里的业务指标必须说出**真实原因**（空数据时是"还没有任何事件"）',
+      slEmpty.includes('业务指标：0/') && slEmpty.includes('还没有任何事件'),
+      slEmpty.split('\n').find((l) => l.includes('业务指标')));
+
     // ★ 待办只读：页面要说明白、服务端不许有写文件的接口
     check('★ 待办勾选说明写在页面上（"不写回仓库任何文件"）', html.includes('不写回仓库任何文件'), '没说明');
     check('★ 勾选走 localStorage', html.includes('localStorage') && html.includes('data-ck='), '没有本地存储');
@@ -1285,20 +1328,7 @@ if (process.argv[1] && process.argv[1].endsWith('workbench.mjs')) {
     if (argv.includes('--json')) {
       console.log(JSON.stringify(state, replacerJson, 2));
     } else if (!out) {
-      const v = state.version;
-      console.log(`练了么 · 工作台快照　v${v.version} (${v.build})`);
-      console.log(`  对账：${state.gates.guards.length - state.gates.failed}/${state.gates.guards.length} 通过`
-        + (state.gates.failed ? `（${state.gates.guards.filter((g) => !g.ok).map((g) => g.rel).join(', ')}）` : ''));
-      console.log(`  最新改动：${state.changelog}`);
-      if (state.git.available) console.log(`  git：${state.git.head?.hash} · 工作区 ${state.git.changed} 个文件未提交`);
-      console.log(`  路线图：${state.roadmap.available ? `${state.roadmap.stages.filter((s) => s.status === 'done').length}/${state.roadmap.stages.length} 阶段完成` : `⊘ ${state.roadmap.why}`}`);
-      console.log(`  上架清单：${state.checklist.available ? `${state.checklist.totals.done}/${state.checklist.totals.total} 项完成` : `⊘ ${state.checklist.why}`}`);
-      console.log(`  卡在你那边：${state.todos.available ? `${state.todos.open.length} 件` : state.todos.why}`);
-      console.log(`  埋点：${SOURCE_LABEL[state.analytics.source][0]} · ${state.analytics.report.events} 条事件 / ${state.analytics.report.devices} 台设备`);
-      console.log(`  业务指标：${OPS_METRICS.length} 格全部 ⊘ 待接入（还没有后端）`);
-      console.log(`  真机：安卓 ${state.devices.android.available ? `${state.devices.android.devices.length} 台` : state.devices.android.why}`
-        + ` · iOS ${state.devices.ios.available ? `${state.devices.ios.devices.length} 台` : state.devices.ios.why}`);
-      console.log('  （要看页面：node tool/workbench.mjs --serve）');
+      for (const line of summaryLines(state)) console.log(line);
     }
   }
 }
