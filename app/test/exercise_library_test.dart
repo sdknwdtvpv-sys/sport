@@ -97,4 +97,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ExerciseDetailScreen), findsOneWidget);
   });
+
+  testWidgets('浏览态那一区叫「热门」（与 VI 的动作库说法对齐），排序仍是种子里人工定的 popularity',
+      (WidgetTester tester) async {
+    await _pump(tester);
+
+    expect(find.text('热门'), findsOneWidget,
+        reason: '动作库是"看"动作的地方，与 VI 稿动作库那一屏的说法对齐');
+    expect(find.text('常用'), findsNothing,
+        reason: '同一屏里两个叫法会让人以为是两批数据');
+  });
 }

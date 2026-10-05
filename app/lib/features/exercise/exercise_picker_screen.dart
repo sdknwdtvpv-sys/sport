@@ -439,7 +439,11 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       children.addAll(recentShown.map((ExerciseData e) => _tile(e, method: 'recent')));
     }
     if (popular.isNotEmpty) {
-      children.add(_sectionHeader('常用'));
+      // 同一份数据、两种叫法（2026-10-05）：选动作时叫「常用」（用户关心的是
+      // "我常练的在哪"），动作库（浏览态）里叫「热门」—— 与 VI 稿 `vi/complete-library.html`
+      // 那一屏的说法对齐。**排序口径是同一个**：种子里人工定的 `popularity`（内置固定排序，
+      // 不引服务端、也不看别人的数据）。
+      children.add(_sectionHeader(widget.onBrowse != null ? '热门' : '常用'));
       children.addAll(popular.map((ExerciseData e) => _tile(e, method: 'suggest')));
     }
     if (rest.isNotEmpty) {
