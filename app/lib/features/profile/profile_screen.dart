@@ -24,6 +24,7 @@ import '../../core/app_info.dart';
 import '../../core/theme.dart';
 import '../../core/vi_cards.dart';
 import '../progress/achievements_screen.dart';
+import '../progress/level.dart';
 import '../progress/streak.dart';
 import '../../core/units.dart';
 import '../../data/body_metric_repository.dart';
@@ -243,6 +244,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const SizedBox(height: Tokens.s5),
+        // 等级（2026-10-05，新 VI 的「我」页头部）：**算出来的**（只按训练次数），
+        // 见 `features/progress/level.dart` 的文件头 —— 存一列就一定会和记录不一致。
+        _levelCard(),
+        const SizedBox(height: Tokens.s5),
         profileSectionTitle('训练统计'),
         // 2026-10-05 按新 VI 换成**四张统计卡 + 打卡进度**（原来是三行文字）。
         // 等级 Lv 与成就徽章要新数据，按计划留给 v1.47。
@@ -362,6 +367,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 等级卡。数字走 Oswald，进度条复用共用件 —— 与首页打卡卡是同一种"卡片 + 进度"。
+  Widget _levelCard() {
+    final LevelInfo info = levelFor(_stats?.workoutCount ?? 0);
+    return ViCard(
+      glow: info.level > 1,
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: Tokens.accent,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '${info.level}',
+                key: const Key('profile-level-number'),
+                style: Tokens.display(20, weight: 700, color: Tokens.accentInk),
+              ),
+            ),
+          ),
+          const SizedBox(width: Tokens.s4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(levelLabel(info),
+                    key: const Key('profile-level-label'),
+                    style: const TextStyle(
+                        color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+                const SizedBox(height: Tokens.s2),
+                ViProgressBar(value: info.progress),
+                const SizedBox(height: Tokens.s2),
+                Text(levelHint(info),
+                    style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -121,7 +121,7 @@ diskutil eject "$MP"
 
 ```bash
 # 签名 MD5 / SHA-1 / SHA-256（从已签名产物，与备案口径一致）
-apksigner verify --print-certs dist/练了么-v1.46.0.apk
+apksigner verify --print-certs dist/练了么-v1.47.0.apk
 
 # 公钥（base64 单行）
 keytool -exportcert -rfc -alias upload -keystore app/android/upload-keystore.p12 \

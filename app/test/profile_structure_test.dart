@@ -184,6 +184,14 @@ void main() {
 
   testWidgets('隐私与关于里有政策、清单与许可三个入口', (WidgetTester tester) async {
     await pumpProfile(tester);
+    // 2026-10-05：这一屏顶部多了等级卡，`open-privacy-about` 被推出测试视口 ——
+    // 不先滚到它就点了个寂寞（同一屏的 `openEntry` 一直是这么做的，这里漏了）。
+    await tester.dragUntilVisible(
+      find.byKey(const Key('open-privacy-about')),
+      find.byType(ListView),
+      const Offset(0, -220),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('open-privacy-about')));
     await tester.pumpAndSettle();
 
