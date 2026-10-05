@@ -232,7 +232,14 @@ void main() {
       expect(find.byKey(const Key('summary-duration')), findsOneWidget);
       expect(find.byKey(const Key('summary-sets')), findsOneWidget);
       expect(tester.widget<Text>(find.byKey(const Key('summary-sets'))).data, '3');
-      expect(find.text('训练完成'), findsOneWidget);
+      expect(find.text('训练完成！'), findsOneWidget);
+      // 2026-10-05 新 VI：完成标记是**绿色实心圆 + 白勾**，且用的是语义色 success
+      expect(find.byKey(const Key('summary-done-title')), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.check_rounded)).color,
+        const Color(0xFF06231A),
+        reason: '勾的颜色变了就是换皮肤时被顺手改掉了',
+      );
     });
 
     testWidgets('三个大数在同一水平线上：中间那格再长也不许换行把标签顶下去',
@@ -313,11 +320,11 @@ void main() {
       ));
       await tester.tap(find.text('看总结'));
       await tester.pumpAndSettle();
-      expect(find.text('训练完成'), findsOneWidget);
+      expect(find.text('训练完成！'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('summary-done')));
       await tester.pumpAndSettle();
-      expect(find.text('训练完成'), findsNothing);
+      expect(find.text('训练完成！'), findsNothing);
     });
 
     testWidgets('练完给拉伸建议：有动作就显示，带做法', (WidgetTester tester) async {

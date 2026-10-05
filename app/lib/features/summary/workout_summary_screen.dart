@@ -152,15 +152,9 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s6, Tokens.s5, Tokens.s4),
             children: <Widget>[
-              const Text(
-                '训练完成',
-                style: TextStyle(
-                  color: Tokens.text,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              ),
+              // 2026-10-05 按新 VI 重做：一个**成功的绿勾** + 「训练完成！」 + 一句人话。
+              // 旧版只有一行「训练完成」四个字 —— 刚练完那一刻值得给一个明确的完成感。
+              _doneMark(),
               const SizedBox(height: Tokens.s5),
               _stats(s),
               if (s.hasDistance) _cardio(s),
@@ -322,6 +316,47 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   }
 
   /// 一行三个大数：容量 / 时长 / 组数
+  /// 完成标记（新 VI）：绿色圆 + 白勾 + 标题与一句人话。
+  ///
+  /// **不只靠颜色**：勾的图形本身就在表达"完成"，色盲用户读到的信息一样
+  /// （`docs/interaction-spec.md` 的第二条硬约束）。
+  Widget _doneMark() => Column(
+        children: <Widget>[
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: Tokens.success,
+              shape: BoxShape.circle,
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Tokens.success.withValues(alpha: 0.25),
+                  blurRadius: 28,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.check_rounded, color: Color(0xFF06231A), size: 42),
+          ),
+          const SizedBox(height: Tokens.s4),
+          const Text(
+            '训练完成！',
+            key: Key('summary-done-title'),
+            style: TextStyle(
+              color: Tokens.text,
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: Tokens.s2),
+          const Text(
+            '干得漂亮，又变强了一点',
+            style: TextStyle(color: Tokens.text2, fontSize: 14),
+          ),
+        ],
+      );
+
   Widget _stats(WorkoutSummary s) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: Tokens.s5, horizontal: Tokens.s4),
@@ -407,12 +442,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 key: key,
                 maxLines: 1,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Tokens.text,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
+                style: Tokens.display(22, weight: 700, letterSpacing: -0.5),
               ),
             ),
           ),

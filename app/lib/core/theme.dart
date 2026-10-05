@@ -42,8 +42,14 @@ abstract final class Tokens {
   /// 深色是 6.06:1。界面稿里两种都出现过（训练首页那颗白胶囊是例外），这里按 6:1 那条来。
   static const Color accentInk = Color(0xFF141210);
 
-  /// 仅用于破纪录，不用于普通成功态。
-  static const Color pr = Color(0xFFF5C451);
+  /// **成功/完成**（训练完成页那个勾）。值量自界面稿（`vi/complete-library.html` 渲染出来的
+  /// 绿色主体是 #0AA674–#0CAD79）。新 VI 之前这个语义色根本不存在 ——
+  /// 完成页原来只有一行文字。
+  static const Color success = Color(0xFF0CAC78);
+
+  /// 仅用于破纪录，不用于普通成功态。**2026-10-05 跟着新 VI 换成更亮的琥珀**：
+  /// 界面稿里那张 PR 卡是 #FBBF24（旧的 #F5C451 在暖黑底上偏灰，不够"奖杯"）。
+  static const Color pr = Color(0xFFFBBF24);
 
   /// 仅用于删除与不可逆操作。**新 VI 没给这个语义色** —— 保留旧的，
   /// 而不是"为了统一"把它也做成橙色（那样删除和主操作就分不出来了）。
