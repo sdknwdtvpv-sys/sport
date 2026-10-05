@@ -20,7 +20,7 @@
 | 5 | **`tap_count` 校准规则能不能改** | ✅ **用户 2026-10-05 拍板：改成 ③ 熟人短测 —— 规则与材料已改（见下）**。3–5 个熟人各 5 分钟、只取 `tap_count` 分布，半天做完就能定门槛；「校准前不允许上架」**作废**。可执行口径在 `docs/usability-test-kit.md` **§A**（唯一真源，别处只给指针）。⚠️ **一处仍然钉着旧值**：`tool/usability-report.mjs` 的 `TARGETS.tapMedian = 1`（"硬约束"）——它是**正式 5 人测试**的判据，而那条路已经降级成"建议做、不卡上架"；改它要同时动 `tool/usability-selftest.mjs` 的两条自检与 `docs/usability-test.md` 那张 7 行表（`usability-selftest` 会核对行数），**这一轮没动**，留到真要跑正式测试之前一起改 | 🟡 规则已改，报告工具的目标值待改 |
 | 6 | **训练结束的本地提醒做** | 训练结束那一刻排一条「明天该练背了」 | ✅ **已做（2026-10-05）**：`composeReminder()`（纯函数）把"通用那条 vs 训练结束那条"的判断收在一处，`ReminderService.sync()` 是唯一出口（`nextMuscle` 由 `TodayPlanner.nextMuscleGroupKey()` 回答），`_trainSession` 结束处 `unawaited(_syncReminder())`（**不许 await**：平台通道没回复时会把总结页堵死）。合规五处已同步。清单与踩坑见下 |
 | 7 | **埋点报表先跑通** | ✅ **已做（2026-10-05）**：本机起收集端 → POST 一批自洽的造数 → `tool/analytics-report.mjs` 算出北极星 60% / 漏斗 / tap_count 中位数 1 / 一致性自查 ✓。**配方与实测输出写进 `docs/analytics.md`**（含两条踩坑：`total_sets` 这个真字段名、造数必须自洽） | ✅ 已定 |
-| 8 | **商店首图换成引导页那张** | 商店图清单（`tool/check-screenshots.mjs` 的显式名单）+ 三套图重出 + `docs/store-listing*.md` 文案 | ⬜ 待做 |
+| 8 | **商店首图换成引导页那张** | ✅ **已做（2026-10-05）**：`00-intro`（引导页轮播第一屏「一次点击 记录一组」）进三套图并当**商店列表首图**；脚本在跳过轮播前先截它（`screenshots_test.dart`）；三套图**全部重出**（安卓 1080×2400 / 1080×1920 走模拟器、App Store 1320×2868 走 iOS 模拟器 + `flatten-png.mjs`），**都是干净安装那一跑**（轮播只在首次启动出现）；`check-screenshots.mjs` 的 CORE 加它、两张自检夹具的数字跟着改；`store-listing.md` §六 文案表重排（首图换成那句卖点）、三处张数 15/14/14 → 16/15/15；软著说明书引用的 8 屏也一并刷新 | ✅ 已做 |
 | 9 | **买断制 Pro 做，名字改叫 `Ultra`** ✅ 可以 | 内购商品显示名可自定义；商品 ID 一旦创建不能改；**卡在 Apple/Google 开发者账号** | ⏸ 等账号 |
 | 10 | **删掉 `android:requestLegacyExternalStorage`** | ✅ **已删（2026-10-05）**：manifest 一行删掉；中英政策 §四那段改成「曾经有过、现在不在包里」并留了复算命令。⚠️ **下次出包要用 `privacy-audit --apk` 复核合并后的 manifest 里确实没有它** | ✅ 已定 |
 | 11 | **Android SDK 路径空格的根治** | ✅ **用户 2026-10-05 拍板：C 同一卷挂到无空格挂载点**。**脚本与文档已就绪**：`tool/mount-ssd-space-free.sh`（`sudo tool/mount-ssd-space-free.sh` 一条命令，幂等；另有 `--check` / `--unmount` / `--fstab`）+ `docs/dev-environment.md` 两处小节改写成「方案 C 首选 + 四条备选」并附验证状态表。**机制已用临时 APFS 镜像验通**（卸下 → `diskutil mount -mountPoint` 挂上，不需要 root）；**并纠正一处**：一个 APFS 卷同一时刻只能挂一处（`mount_apfs` 返回 rc=75 "Operation already in progress"），所以必须**先卸真源、再挂新点**，原 ① 写的"直接多挂一个"做不到。**还差**：① 在这块真 SSD 上真跑一次（本机 `sudo -n true` = 126 Operation not permitted；且 `lsof +D` 显示 Electron/Feishu/Chrome/DSH agent 一堆进程占着，`diskutil unmount` 被 securityd dissent）② 挂上后 `flutter build appbundle --release` 确认误报消失 ③ `--fstab` 持久化（**未验证的风险**：卷可能只挂在指定点、`/Volumes` 下就没了，届时硬编码真源路径的四处 —— `tool/dev-env.sh:37`、`verify.sh:95`、`tool/asset-check.mjs:68`、`tool/workbench.mjs:138` —— 会红） | 🟡 脚本就绪，等一次真挂载 |
@@ -209,8 +209,14 @@
 所以**下次出包前**要确认公网那份隐私政策页（`store-assets/privacy/`）也一起更新了 ——
 它已经重新生成，但**上传到公网是你的动作**。
 
-**下一轮第一件**：第 8 条 —— **商店首图换成引导页那张**（三套图重出 + 商店文案）。
-之后：第 9 条 Ultra（等账号）。
+**这一轮做完的**：第 8 条 —— **商店首图换成引导页那张**（三套图重出，全是干净安装那一跑；
+⚠️ 踩到的两件事：①**安卓模拟器跑久了会僵**（黑屏、App 渲染不出来 → `flutter drive` 卡在
+`request_data`，日志里连一步都看不到）→ `adb emu kill` 重启即可；②`flutter drive` 产出的
+`app-debug.apk` 是**测试入口**的包，装上去会自己跑测试 —— 要手工验证界面得另跑 `flutter build apk --debug`。
+另：iOS 那一跑第一次会栽在 `SqliteException(14) unable to open database file`（0 张图），
+**重跑一次就全绿** —— 与 `docs/screenshots.md` 里记的那条一次性现象一致）。
+
+**下一轮第一件**：第 9 条 Ultra（等账号）。
 
 **操作纪律（两轮都踩过，别再踩）**：
 1. **先跑完 `./verify.sh` 再 push** —— 有一次提交时门禁还没跑完就推了，软著页数（1267 → 1268）没跟上，中间那一版 CI 红了；

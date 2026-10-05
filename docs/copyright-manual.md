@@ -5,7 +5,8 @@
 > 界面图见 `store-assets/screenshots/`（真实 App 生成，见 [`screenshots.md`](screenshots.md)）。
 >
 > **提交前需要你补的**：**只有实名信息**（见 [`copyright-application.md`](copyright-application.md)）。
-> 界面图已就位：11 屏截图在 `store-assets/screenshots/`，本文第四节引用了其中 8 屏。
+> 界面图已就位：`store-assets/screenshots/` 那一套共 16 张（2026-10-05 在 v1.53.0 上重出），
+> 本文第四节引用了其中 8 屏。
 > 这批图是**当前版本**在 Android 模拟器（Pixel 6 / API 36，1080×2400）上跑
 > `integration_test/screenshots_test.dart` 现出的 —— 见 [`screenshots.md`](screenshots.md)。
 
@@ -34,7 +35,7 @@
 | 本地数据库 | SQLite（经 drift 管理），当前模式版本 **v20** |
 | 开发环境 | macOS（Apple Silicon），Android SDK，Gradle |
 | 运行环境 | Android 7.0（API 24）～ Android 16（API 36），arm64 / armeabi-v7a / x86_64 |
-| 源程序量 | **244 个源文件 / 64,619 行**（截至 V1.53.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
+| 源程序量 | **244 个源文件 / 64,631 行**（截至 V1.53.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
 
 ## 三、主要功能模块
 
@@ -149,7 +150,7 @@
 | ![](../store-assets/screenshots/08-progress.png) | **进步**：本周容量、周训练次数、个人纪录墙、逐动作最好成绩。 |
 | ![](../store-assets/screenshots/11-body-metric.png) | **身体数据**：记录体重、体脂率、腰围、肌肉量与身高，顶部摘要卡给出 **BMI**；体重单位可在千克 / 斤之间**实时切换**。 |
 
-> 全部 11 屏（含训练屏、记完一组、全部数据、我页）见
+> 全部 16 张（含引导页、训练屏、记完一组、全部数据、我页）见
 > [`../store-assets/screenshots/`](../store-assets/screenshots/) 与 [`screenshots.md`](screenshots.md)。
 
 ## 五、技术特点

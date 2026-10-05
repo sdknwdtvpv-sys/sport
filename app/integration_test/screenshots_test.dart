@@ -136,6 +136,14 @@ void main() {
     if (find.byKey(const Key('intro-skip')).evaluate().isNotEmpty) {
       await settle(1500);
       debugPrint('LIANLEME-SHOT intro-carousel-present');
+      // ★ 2026-10-05：**先把这一屏拍下来，再跳过它**（用户拍板：商店首图换成引导页那张）。
+      // 为什么它该当首图：商店列表第一张要回答"我能得到什么"，而轮播这一屏
+      // 就是产品自己写的答案（`docs/store-listing.md` §六 的那条口径）。
+      // 拍不到的情形只有一种：**不是干净安装**（轮播只在首次启动出现）——
+      // 与 `11a-body-consent` / `11b-body-revoke` 同一个前提，`docs/screenshots.md` 里写着。
+      await step('00-intro', () async {
+        await capture('00-intro');
+      });
       await tester.tap(find.byKey(const Key('intro-skip')));
       await settle(1800);
     }
