@@ -277,10 +277,11 @@ grant `READ_EXTERNAL_STORAGE` as well (`aapt2 dump badging` reports it as
 photos or files — that permission comes from platform behaviour, not from a request of ours;
 on API 30+ neither permission exists (MediaStore writes need none).
 
-There is also **`android:requestLegacyExternalStorage="true"`** on `application`: an
-**Android 10 (API 29) only** compatibility switch (so the "save to gallery" path on that one
-release uses the legacy route), **ignored on API 30+**. We state it because a reviewer can find
-it in the package. Verify it yourself: `aapt2 dump badging <apk> | grep permission`.
+**(Updated 2026-10-05)** We used to carry `android:requestLegacyExternalStorage="true"` on
+`application` — an **Android 10 (API 29) only** compatibility switch. **It has been removed**:
+MediaStore works on that release too, so keeping it only left a switch a reviewer would ask
+about. This note stays only to record that it existed and why it is no longer needed.
+Verify the current package yourself: `aapt2 dump badging <apk> | grep permission`.
 
 **On iOS we request exactly one photo permission, and it is add-only**:
 `NSPhotoLibraryAddUsageDescription`, used to **write** the share card into your photo library.

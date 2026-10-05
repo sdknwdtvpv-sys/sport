@@ -250,9 +250,11 @@
 `uses-implied-permission ... reason='requested WRITE_EXTERNAL_STORAGE'`）。
 我们**从不读取**你的照片或文件 —— 这条权限是平台行为带来的，不是我们要的；
 API 30+ 上这两条都不存在（走 MediaStore 免权限写入）。
-另外 `application` 上还有一个 **`android:requestLegacyExternalStorage="true"`**：
-它是 **Android 10（API 29）专用**的兼容开关（让那一版的"存相册"走老路径），
-在 API 30+ 上**被系统忽略**。如实写在这里，是因为审核时能在包里查到它。
+**（2026-10-05 更新）** 以前 `application` 上还挂着一个
+`android:requestLegacyExternalStorage="true"`（Android 10 专用的兼容开关）；
+**已经删掉了** —— 它只在 Android 10 上有意义，而那一版走 MediaStore 也能写相册，
+留着它反而是个"包里多一个审核会问的开关"。所以这一条从现在起**不在包里**，
+这段说明保留在这里是为了让你知道**它曾经存在、以及为什么不再需要**。
 
 **iOS 侧只申请一项「仅新增」权限**：`NSPhotoLibraryAddUsageDescription`，
   用来把分享卡**写入**你的相册。我们**不申请**读取相册的权限

@@ -31,8 +31,7 @@
         android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:requestLegacyExternalStorage="true">
+        android:roundIcon="@mipmap/ic_launcher_round">
         <!-- **锁竖屏**（2026-09-30 实测后定的）：横屏下首页那条大按钮所在的 Column
              会 RenderFlex overflow（现场日志："BOTTOM OVERFLOWED BY 80 PIXELS"），
              入口文字还会与底部导航撞在一起。我们一个横屏设计都没有 —— 与其留着

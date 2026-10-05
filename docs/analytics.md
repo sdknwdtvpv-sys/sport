@@ -427,3 +427,45 @@ node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 1
 
 **下一步（写进 `docs/your-todo.md` 的那条）**：等真的接了上报地址、有 2–4 周数据之后，
 拿"最近 30 天有没有人查过这个事件"做一次决定；在那之前**只标记、不删**。
+
+## 怎么把报表跑起来（2026-10-05 实测跑通）
+
+口径写在本文档里、**可执行版本**是 `tool/analytics-report.mjs`。它读的是"收集端落盘的那堆
+jsonl"，所以整条链是这样三步（**全程本机，不碰线上**）：
+
+```bash
+# ① 起一个本地收集端（数据落在临时目录，用完就删）
+node server/collector.mjs --port 8799 --out /tmp/ev-e2e
+
+# ② 让它收一批事件。真机走 USB 转发（`adb reverse tcp:8799 tcp:8799`）+
+#    `--dart-define=LIANLEME_ANALYTICS_URL=http://127.0.0.1:8799/v1/events`；
+#    只想验报表本身的话，直接 POST 一批即可 —— 字段是硬的：
+#    `{id, event, ts, device_id, session_id, app_version, schema_version, ...}`
+#    （少一个必填字段就被拒，收集端会回 400 并说明缺哪个）
+
+# ③ 算报表
+node tool/analytics-report.mjs --dir /tmp/ev-e2e
+```
+
+**实测过一次"人工造数 → 报表"**（10 台设备：都 app_open、8 台开练、6 台记满一组并完成训练）：
+
+```
+北极星：首次 app_open 起 24h 内完成一次训练（含 ≥1 组）
+  分母 10 台 · 分子 6 台 · **60.0%**（目标 ≥ 55.0%）
+漏斗：app_open 10 · workout_started 80% · first_set_logged 60% · workout_finished 60%
+tap_count：1.53.0  n=6  中位数 1  P90 2
+一致性自查：set_logged 6 条 · workout_finished 声明 6 组 ✓ 对得上
+```
+
+⚠️ 这一步顺带教了我两件事，都写在这儿免得下次再踩：
+
+1. **报表读的是真实字段名**：`workout_finished` 的组数叫 **`total_sets`**（不是 `sets`），
+   叫错了不会报错，只会让"一致性自查"那一行红（`声明 0 组 ⚠️ 对不上`）——
+   **那条自查就是为这个存在的**；
+2. **人工造数必须自洽**：第一次我发了 7 条 `set_logged` 却声明 72 组，自查立刻红。
+   **造数骗不过它**，这也是它可用的前提。
+
+**线上那份**（`https://api.elliotli.work`）用同一份代码：把 `--dir` 换成服务器上
+`lianleme-collector` 的落盘目录即可（`docs/backend-hosting.md` §四有路径）。
+**现在线上一条数据都没有** —— 开关默认关、也没人按过「帮助改进产品」，所以报表
+"能算"但"没得算"，如实记着。
