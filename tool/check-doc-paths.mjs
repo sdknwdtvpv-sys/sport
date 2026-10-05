@@ -70,6 +70,13 @@ const NOT_OURS = [
     '构建时生成的插件注册码（跑过 `flutter build`/`flutter drive` 才有）'],
   ['app/ios/Flutter/Generated.xcconfig', '`flutter build ios` 生成的编译常量文件（不入库）'],
   ['Flutter/Generated.xcconfig', '同一个文件的另一种写法（文档从 `app/ios/` 出发写相对路径）'],
+  // ⚠️ 2026-10-06：这三条是"同一个坑的另一面"—— 那两个文件**存在过、但里头的
+  // `FLUTTER_ROOT` 是过期的**（指着已经搬走的 Flutter），所以 `dev-environment.md` 让读者
+  // **删掉它们**再构建。既然是"让人删的文件"，干净克隆上当然没有 —— 名字得写进这份名单。
+  ['app/ios/Flutter/flutter_export_environment.sh', '`flutter build ios` 生成（不入库）；文档在讲"删掉它让 flutter 重写"'],
+  ['app/ios/Flutter/ephemeral/flutter_native_integration.env', '同上，ephemeral 里的生成物（整个 `ephemeral/` 都不入库）'],
+  ['Flutter/flutter_export_environment.sh', '同一个文件的另一种写法（文档从 `app/ios/` 出发写相对路径）'],
+  ['ephemeral/flutter_native_integration.env', '同上'],
   ['server/data/events-2026-09-29.jsonl', '本机收集端的运行时数据（`server/data/` 已 gitignore）；文档在讲"看板的数据从哪来"'],
 ];
 

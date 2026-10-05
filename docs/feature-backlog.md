@@ -26,7 +26,7 @@
 | 11 | **Android SDK 路径空格的根治** | ✅ **用户 2026-10-05 拍板：C 同一卷挂到无空格挂载点**。**脚本与文档已就绪**：`tool/mount-ssd-space-free.sh`（`sudo tool/mount-ssd-space-free.sh` 一条命令，幂等；另有 `--check` / `--unmount` / `--fstab`）+ `docs/dev-environment.md` 两处小节改写成「方案 C 首选 + 四条备选」并附验证状态表。**机制已用临时 APFS 镜像验通**（卸下 → `diskutil mount -mountPoint` 挂上，不需要 root）；**并纠正一处**：一个 APFS 卷同一时刻只能挂一处（`mount_apfs` 返回 rc=75 "Operation already in progress"），所以必须**先卸真源、再挂新点**，原 ① 写的"直接多挂一个"做不到。**还差**：① 在这块真 SSD 上真跑一次（本机 `sudo -n true` = 126 Operation not permitted；且 `lsof +D` 显示 Electron/Feishu/Chrome/DSH agent 一堆进程占着，`diskutil unmount` 被 securityd dissent）② 挂上后 `flutter build appbundle --release` 确认误报消失 ③ `--fstab` 持久化（**未验证的风险**：卷可能只挂在指定点、`/Volumes` 下就没了，届时硬编码真源路径的四处 —— `tool/dev-env.sh:37`、`verify.sh:95`、`tool/asset-check.mjs:68`、`tool/workbench.mjs:138` —— 会红） | 🟡 脚本就绪，等一次真挂载 |
 | 12 | **给熟人短测配一个小工具**（我提的） | 新建一个小工具（**还没建**，名字等真做时定）：输入 3–5 个人的 `tap_count` → 按 kit §A5 算门槛（含"中位数是 .5 时向上去整"那条）→ **打印该填进 `docs/analytics.md` §3 那一格的确切内容**（`tool/usability-report.mjs` 现在读的就是那一格）→ 含自检并接进门禁。理由与当初做 `usability-report.mjs` 同源：现场手抄最容易错的就是中位数与口径 | ⬜ 待做 |
 | 13 | **上架前"横着对"加固**（我提的） | 继续钉"审核当天才会疼"的地方：政策 ↔ 商店表单 ↔ 产物的三边对账；`store-assets/privacy/` 那两页与仓库政策**同源**（政策改过就要重出）；备案号的填入位；截图 ↔ 软著说明书的一致性 | ⬜ 待做 |
-| 14 | **iOS 液态玻璃效果**（2026-10-06 你提的） | ✅ **2026-10-06 你拍板：A 路线（原生真材质）、仅 iOS，Android 保持原样**。已用**一次性 spike** 在 iOS 27 模拟器上验过真材质（见下）：`UIGlassEffect` 能用，但**在纯炭黑底上会变成一块浅灰板** —— 所以落地带一条设计规矩。**载体选"自己写桥"而不是引第三方包**（理由见下），实现与设计规矩写在「⑦」那一节 | 🟡 已拍板，待实现 |
+| 14 | **iOS 液态玻璃效果**（2026-10-06 你提的） | ✅ **2026-10-06 你拍板：A 路线（原生真材质）、仅 iOS，Android 保持原样**。已用**一次性 spike** 在 iOS 27 模拟器上验过真材质（见下）：`UIGlassEffect` 能用，但**在纯炭黑底上会变成一块浅灰板** —— 所以落地带一条设计规矩。**载体选"自己写桥"而不是引第三方包**（理由见下）。**已实现并接上底部 Tab 栏**（iOS 模拟器上实拍验过）；**2026-10-06 第二轮按你的清单做完全部「像切 tab 的」地方**（底栏 + 四个分段控件 + 两处单位行 + 全部数据页维度切换），见下面「③④ 已做完」 | 🟡 全部接完；选中胶囊改成**独立玻璃**（2026-10-06 真机反馈后修的），待你再真机看一眼 + 测帧率 |
 
 ### ⑦ iOS「液态玻璃」：已拍板 A（仅 iOS）+ spike 结论（2026-10-06）
 
@@ -67,6 +67,80 @@ platform view 有整屏合成代价，package 文档与 Apple 文档都这么说
 <26 退回系统材质、非 iOS 直接返回 child 或占位 → **Android 完全不变**）；
 ② 先只接**底部 Tab 栏**一处，真机 release 看帧率与观感；③ 过了再看弹层/Sheet；
 ④ 界面一改，**三套截图 + 软著说明书要重出**（`docs/screenshots.md` 里那套流程）。
+
+**① ② 已做完（2026-10-06）**：
+* 桥：`app/ios/Runner/GlassBridge.swift`（platform view factory；`.regular`/`.clear` + `tint` +
+  `radius` + `interactive`；圆角走 iOS 26 的 `UIView.cornerConfiguration`；<26 退回
+  `UIBlurEffect(.systemUltraThinMaterial)`）+ `AppDelegate.swift` 注册（**唯一一个收 registrar
+  而不是 messenger 的桥** —— platform view 的 factory 只能这么注册）+ `project.pbxproj` 登记；
+* widget：`app/lib/core/glass_surface.dart`（`GlassSurface` / `GlassStyle`；用
+  `defaultTargetPlatform` 而不是 `Platform.isIOS` —— 前者测试里能改，否则 iOS 分支只有真机能验）；
+* 接进 `app/lib/core/app_tab_bar.dart`：**非 iOS 直接 `return bar`（Android 零差异）**；
+  iOS 上 `.clear` + `#FF5C2620` + 一道暖色辉光 backdrop；
+* 测试：`app/test/glass_surface_test.dart` 4 条（非 iOS 原样放行 / iOS 创建参数逐项对 /
+  backdrop 只在 iOS 画 / 不传 tint 就不带那个键）；
+* **验过的**：iOS 模拟器构建通过、装到 iPhone 17 Pro Max 模拟器上**真跑起来并截图看过**
+  （底栏是一条暖色调的极淡玻璃带，不是 spike 里那块灰板）；
+* ⚠️ **没验的**：真机 release 帧率（下一步，要你把 iPhone 插上）、iOS 26 以下的退回形态、
+  动效/可按压手感。
+
+**③ ④ 已做完（2026-10-06 第二轮，按你的清单）**：你给的那张原生参考图里最要紧的一件事是
+**"选中那一格与本底溶在一起"** —— 那不是一块玻璃，是**两块**（底托 + 选中胶囊）被苹果合起来：
+
+* 新增 `app/lib/core/glass_segmented.dart`：`GlassSegmented`（**两块各自独立**的玻璃：
+  底托 + 选中胶囊；胶囊往里缩 5pt、带一点白；切换时原生自己跑弹簧动画滑过去）
+  + `GlassSegmentedRow`（通用的一行多选）；
+* ⚠️ **当天纠了一次错，值得记住**：第一版把两块放进 `UIGlassContainerEffect`（苹果那个
+  "合成一块"的容器）—— 真机上它的表现是**把叠着的两块抹平成一块**，选中胶囊的亮边和凸起
+  全没了，屏幕上就是一条平的玻璃带（用户原话"切 tab 的时候完全感觉不到玻璃的感觉"）。
+  同一组参数只把容器去掉，胶囊立刻变成一块有亮边的凸起玻璃。逐行对比证据
+  `docs/images/glass-probe-segment-variants.png`。**"融合"与"看得见的玻璃质感"在这件事上
+  是二选一**，按用户当场的诉求选了后者；
+* ⚠️ **几何契约：条目必须等宽**（原生按 `frame.width / count` 切格子）。这条是**静默失败**——
+  Dart 那边改回"按内容收缩"，原生不报错，只会让胶囊与它上面那几个字**越往右越偏**。
+  所以：① 组件注释里写明；② `app/test/glass_segmented_test.dart` 钉住"每格一样宽"；
+  ③ 为此把 `ViSegmented` 在 iOS 上改成**等分**（非 iOS 仍然是按内容收缩的实心胶囊）；
+* **接进去的地方**（一次做完，非 iOS 全部原样放行 → Android 一个像素都不动）：
+  1. **底部 Tab 栏**（5 格本来就是 `Expanded`，正合"等宽"这个前提）；
+  2. `ViSegmented` 四处：进步页 周/月/年、计划页 本周/模板库/历史、身体数据 指标切换、
+     分享卡 明细/打卡；
+  3. **单位那两行**（`GlassSegmentedRow`）：偏好设置「重量单位」kg/lb、身体数据「体重」kg/lb/斤；
+  4. **全部数据页的维度切换**：从右上角「更多」菜单**改回明面上的分段控件**（反转 2026-10-01
+     的决定：iOS 26 的分段控件一眼读完两个选项，而藏在菜单里等于每次换维度多点一次；
+     代价"新手多一次选择"用自解释的标签「按动作看 / 按时间看」抵掉）——
+     `docs/competitor-xunji-pro-v7.md` 里那两行"收一个维度做对了"已同步改。
+* ⚠️ **材质上的一个例外，记下来**：单位那两行在**卡片的平底**上（背后没有内容经过），
+  按规矩**不能用 `.regular`**（会变灰板）→ 它们用 `.clear` + 一点点白
+  （`#FFFFFF14` / 选中 `#FFFFFF2E`）。**同一套控件在两处用不同材质是有意的**，不是漏改。
+* 底栏材质定成 **`.regular`、不加 tint**（就是你真机上看到的那一版：你说亮度不够，
+  但先不动，看"融合"这一改之后观感变不变再定）—— 为调材质临时加的
+  `LIANLEME_GLASS_STYLE` / `LIANLEME_GLASS_TINT` 两个 `--dart-define` 旋钮**已删**。
+* **按压反馈（2026-10-06 追加，同日按你的反馈调过一轮）**：按住某一格时，选中胶囊会
+  **跑到手指那一格 + 鼓出边界（每边 14pt）+ 保持通透（`.clear`）**，松手弹回去
+  （按下 damping 0.32 会过冲、松手 0.62 轻回弹）。第一版是"鼓 3pt + 提亮 ×1.8 + `.regular`"，
+  被你一眼否掉的三点（幅度太小 / 不超出边界 / 鼓起来像奶白疙瘩）就是这三处改的。为什么不是苹果原生的 `isInteractive`：平台视图在
+  Flutter 内容下面，UIKit 收不到触摸 —— 所以由 Dart 的 `Listener` 通报给原生去演
+  （点击、旁白、长按一条链路都没动）。底栏在 iOS 上同时关掉了 Material 水波纹。
+  证据 `docs/images/glass-press-tab.png`。
+* **按下去"两滴水滴融合"（2026-10-06 第四轮，我先前理解错了你的意思）**：按住相邻的
+  另一格时，手指底下冒出**第二颗水滴**并与选中那颗**融在一起**（同一个
+  `UIGlassContainerEffect`，`spacing 34` → 中间长出一道"脖子"）；松手后**两滴一起滑到
+  新那一格再收掉一颗**（= 融成一滴）。顺带支持**按住横向拖到别格松手 = 换 tab**。
+  证据 `docs/images/glass-drop-merge.png`。
+* **切 tab 的丝滑过渡（2026-10-06 第三轮追加）**：iOS 的外壳从"直接换一屏"换成
+  **可拖的 `PageView` + 玻璃跟手**（`PageController` 每帧把小数页号喂给原生，
+  胶囊跟着手指连续滑；点 tab 则"图标立刻变色 + 页面滑过去"）。**只在 iOS 开** ——
+  Android 保持"直接换一屏"。证据 `docs/images/glass-swipe-pill-follows.png`。
+* **选中胶囊改成全透明**（同一天，你的第二次追问）：`.clear` + 一点白都不染，
+  "选中的是谁"交给图标颜色与玻璃的边缘折射（平底卡片上的单位行是例外）。
+* **顺手抓到一个只在真机/真 App 上才露头的 bug**：给 `GlassSegmented` 加 `Listener` 时把内容
+  包成了 `Positioned.fill`，于是那个 `Stack` **算不出自己的大小**（`size: MISSING`），
+  真机上直接抛 layout 断言 —— 而 widget 测试里"能找到 key"的断言照样全绿。
+  integration test 一跑就现形；回归测试补了一条"底栏那层必须有尺寸"。
+* **没做**：训练屏那条工作流条（红线区）、picker / 计划编辑 / 新建动作 / 通知筛选那批
+  **多行筛选 chip**（第三类，你说了先不动）。
+* **这一轮还没验的**：真机上的融合观感与滑动手感（这一版刚装上）、iOS 26 以下的退回形态、
+  真机 release 帧率。
 
 ## 一、现在就能做（不依赖你，出处明确）
 

@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_info.dart';
 import '../../core/theme.dart';
+import '../../core/app_tab_bar.dart';
 import '../../core/vi_cards.dart';
 import '../progress/achievements_screen.dart';
 import '../progress/level.dart';
@@ -232,7 +233,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bool cloudOn = widget.cloudBackupAvailable ?? isCloudBackupConfigured;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s5),
+      padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
+          Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         const Text(
           '我',

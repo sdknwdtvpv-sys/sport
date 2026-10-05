@@ -19,6 +19,7 @@ import 'analytics/outbox.dart';
 import 'analytics/outbox_analytics.dart';
 import 'analytics/transport.dart';
 import 'core/app_tab_bar.dart';
+import 'core/glass_surface.dart';
 import 'core/labels.dart';
 import 'core/theme.dart';
 import 'core/units.dart';
@@ -205,6 +206,44 @@ class _HomeShellState extends State<HomeShell> {
   /// 当前 Tab。五个（训练 / 进步 / 数据 / 计划 / 我的，见 docs/screens.md）。
   int _tab = 0;
 
+  /// iOS 的外壳用 `PageView`（**可以左右拖着换 tab**）+ 这个控制器。
+  /// Android 不用它（那边仍然是"直接换一屏"，见 `build` 里那条平台判据）。
+  final PageController _pages = PageController();
+
+  /// 手指拖到哪儿了（小数页号）—— 底栏那颗玻璃**跟着手指滑**就是靠它喂。
+  /// `-1` = 没人在拖（胶囊停在整格上）。
+  final ValueNotifier<double> _glassDrag = ValueNotifier<double>(-1);
+
+  /// 正在跑"点 tab 换页"的动画。**这段时间里不喂拖动位置** ——
+  /// 那趟动画由原生弹簧自己走（见 `GlassSegmented`），两边同时驱动会打架、看起来是抖。
+  bool _tapPaging = false;
+
+  void _onPageScrolled() {
+    if (_tapPaging || !_pages.hasClients) return;
+    final double? p = _pages.page;
+    if (p == null) return;
+    _glassDrag.value = p;
+  }
+
+  /// 点底栏换 tab：图标颜色**立刻**变（不然要等动画跑完，手感会钝），
+  /// 页面滑过去，玻璃由原生弹簧接管。
+  void _selectTab(int i) {
+    if (i == _tab) return;
+    final int from = _tab;
+    setState(() => _tab = i);
+    if (!GlassSurface.isSupportedPlatform) return;
+    _tapPaging = true;
+    // 远的 tab 给长一点的时间（不然四页在 300ms 里一闪而过）
+    _pages
+        .animateToPage(i,
+            duration: Duration(milliseconds: 260 + 90 * (i - from).abs()),
+            curve: Curves.easeOutCubic)
+        .whenComplete(() {
+      _tapPaging = false;
+      _glassDrag.value = -1;
+    });
+  }
+
   /// 有没有同意过隐私政策。**null = 还没从库里读出来**（读出来之前什么都不做）。
   ///
   /// 这一屏是法律要求：国内商店要求"首次运行时以弹窗等明显方式提示用户阅读隐私政策
@@ -294,6 +333,8 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   void initState() {
+    // 手指拖页面时，每帧把"当前停在第几页"（小数）推给底栏那颗玻璃
+    _pages.addListener(_onPageScrolled);
     super.initState();
     _refreshHome();
     unawaited(_loadUnit());
@@ -593,6 +634,8 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   void dispose() {
+    _pages.dispose();
+    _glassDrag.dispose();
     // 两个定时器都要取消：不然 widget 测试会因 pending timer 直接判失败
     _coldStartTimer?.cancel();
     _flushTimer?.cancel();
@@ -1236,18 +1279,53 @@ class _HomeShellState extends State<HomeShell> {
         },
       );
     }
+    // 外壳有两种排布，**判据只有一条**（`GlassSurface.isSupportedPlatform`）：
+    //   * **iOS**：内容铺满整屏，底栏作为**浮动胶囊浮在它上面** —— 滚动时真实内容从玻璃
+    //     后面经过，那正是 iOS 26 那个观感的来源（用户 2026-10-06 拍板要的就是这个）；
+    //   * **Android**：底栏仍然贴在内容的**下面**（通栏、贴底）—— **一个像素都不改**。
+    // 两种排布下各屏都要留出底栏的位置，那份空间由 `AppTabBar.reservedSpaceFor(context)`
+    // 回答（Android 上它是 0）。
+    final Widget tabBar = AppTabBar(
+      current: _tab,
+      onChanged: _selectTab,
+      dragIndex: GlassSurface.isSupportedPlatform ? _glassDrag : null,
+    );
     return Scaffold(
       backgroundColor: Tokens.bg,
       body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            Expanded(child: _bodyFor(_tab)),
-            AppTabBar(
-              current: _tab,
-              onChanged: (int i) => setState(() => _tab = i),
-            ),
-          ],
-        ),
+        child: !GlassSurface.isSupportedPlatform
+            ? Column(
+                children: <Widget>[
+                  Expanded(child: _bodyFor(_tab)),
+                  tabBar,
+                ],
+              )
+            : Stack(
+                children: <Widget>[
+                  Positioned.fill(
+                    // **可以左右拖着换 tab**（用户 2026-10-06 要的"丝滑 + 左右拖动的感觉"）。
+                    // 拖动时每帧把小数页号喂给底栏那颗玻璃 → 它跟着手指滑；
+                    // 松手后 `onPageChanged` 落到整页，玻璃再交回"整格"轨道（原生 setIndex）。
+                    // 点 tab 走 `_selectTab`（图标立刻变色 + `animateToPage`）。
+                    child: PageView(
+                      controller: _pages,
+                      onPageChanged: (int i) {
+                        if (i != _tab) setState(() => _tab = i);
+                        _glassDrag.value = -1;
+                      },
+                      children: <Widget>[
+                        for (int i = 0; i < AppTabBar.tabs.length; i++) _bodyFor(i),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    left: AppTabBar.floatMargin,
+                    right: AppTabBar.floatMargin,
+                    bottom: AppTabBar.floatMargin,
+                    child: tabBar,
+                  ),
+                ],
+              ),
       ),
     );
   }

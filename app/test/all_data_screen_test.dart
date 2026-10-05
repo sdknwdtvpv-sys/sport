@@ -165,11 +165,9 @@ void main() {
     await saveSet(id: 'a', exerciseId: 'ex_bb_bench_press');
     await pump(tester);
 
-    // 2026-10-01：维度切换收进右上角「更多」——先进菜单再选
-    await tester.tap(find.byKey(const Key('all-data-more')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('all-data-mode-time')));
-    await tester.pumpAndSettle();
+    // 2026-10-06：维度切换改回**明面上的分段控件**（一次点击就够）
+    expect(find.byKey(const Key('all-data-mode')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('seg-按时间看')));
     await tester.pumpAndSettle();
 
     expect(find.text('本周'), findsOneWidget);

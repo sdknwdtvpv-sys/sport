@@ -14,7 +14,9 @@ import 'package:flutter/services.dart';
 
 import '../../core/sparkline.dart';
 import '../../core/theme.dart';
+import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
+import '../../core/vi_cards.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
@@ -201,53 +203,37 @@ class _AllDataScreenState extends State<AllDataScreen> {
     );
   }
 
-  /// 维度切换：**默认「按动作」，另一个收进右上角的「更多」**（2026-10-01）。
+  /// 维度切换：**明面上的分段控件**（2026-10-06 从右上角「更多」菜单改回来）。
   ///
-  /// 为什么收：老手两个维度都要，而**新手在这里只是被问了一个他答不上来的问题** ——
-  /// "按动作还是按时间"对第一次进来的人不是选择，是障碍。
-  /// 首屏因此只留一行"看的是哪个维度、怎么换"，不再摆两个并列的胶囊。
+  /// 2026-10-01 曾经把它收进「更多」菜单，理由是"新手在这里只是被问了一个他答不上来的
+  /// 问题"。改回来的原因：iOS 26 的分段控件把两个选项**并排摆着、一眼读完**，
+  /// 而藏在菜单里意味着**每次换维度都要多点一次** —— 对老手是天天付的税。
+  /// 代价（新手多一次选择）用一个自解释的标签抵掉：「按动作看 / 按时间看」。
+  /// 这条反转记在 `docs/competitor-xunji-pro-v7.md`（那里原来写着"收一个维度做对了"）。
   Widget _modeBar() {
-    final bool byExercise = _mode == _Mode.byExercise;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s3, 0),
-      child: Row(
-        children: <Widget>[
-          Text(
-            byExercise ? '按动作看' : '按时间看（周报 / 月报）',
-            style: const TextStyle(color: Tokens.text3, fontSize: 13),
-          ),
-          const Spacer(),
-          PopupMenuButton<_Mode>(
-            key: const Key('all-data-more'),
-            tooltip: '换一种看法',
-            color: Tokens.elevated,
-            onSelected: (_Mode m) => setState(() => _mode = m),
-            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<_Mode>>[
-              PopupMenuItem<_Mode>(
-                key: const Key('all-data-mode-exercise'),
-                value: _Mode.byExercise,
-                child: const Text('按动作看', style: TextStyle(color: Tokens.text)),
-              ),
-              PopupMenuItem<_Mode>(
-                key: const Key('all-data-mode-time'),
-                value: _Mode.byTime,
-                child: const Text('按时间看（周报 / 月报）',
-                    style: TextStyle(color: Tokens.text)),
-              ),
-            ],
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ViSegmented(
+          key: const Key('all-data-mode'),
+          // 四个汉字的标签，格子要比默认宽一点（否则要紧贴边框）
+          itemWidth: 80,
+          labels: const <String>['按动作看', '按时间看'],
+          current: _mode.index,
+          onChanged: (int i) => setState(() => _mode = _Mode.values[i]),
+        ),
       ),
     );
   }
-
 
   // ---------- 按动作 ----------
 
   Widget _byExercise() {
     final ExerciseStats? s = _stats;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s6),
+      padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
+          Tokens.s6 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         GestureDetector(
           key: const Key('all-data-pick-exercise'),
@@ -398,7 +384,8 @@ class _AllDataScreenState extends State<AllDataScreen> {
     final PeriodReport? w = _week;
     final PeriodReport? m = _month;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s6),
+      padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
+          Tokens.s6 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         if (w != null) ...<Widget>[
           _sectionTitle('本周'),

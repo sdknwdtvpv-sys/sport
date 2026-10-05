@@ -9,6 +9,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'glass_segmented.dart';
+import 'glass_surface.dart';
 import 'theme.dart';
 
 /// 卡片：`surface` 底 + **白 6% 描边** + `rCard` 圆角。
@@ -140,54 +142,92 @@ class StatTile extends StatelessWidget {
 
 /// 分段选择（**周 / 月 / 年**）：界面稿里每个图表右上角都是它。
 ///
-/// 与 `choicePill` 的区别：那个是"多选一"的胶囊行，这个是**贴着图表的一小块**，
-/// 所以更小、更密，且**必须按内容收缩**（同样的坑：带 alignment 的 Container 会撑满）。
+/// 与 `choicePill` 的区别：那个是"多选一"的胶囊行，这个是**贴着图表的一小块**。
+///
+/// ## iOS 26：底托一块玻璃 + 选中一块玻璃，两块"溶"在一起
+/// 见 `core/glass_segmented.dart`。融合的前提是**条目等宽**，所以 iOS 上改成等分
+/// （用户 2026-10-06 拍板："融在一起的这个我觉得挺好的 要做并且全局所有涉及到
+/// 类似于切换 tab 的都做"）。**非 iOS 一个像素都不动**（仍然是按内容收缩的实心胶囊）。
+///
+/// ⚠️ 等宽要有个宽度，`itemWidth` 就是它 —— 默认 56 够装三个汉字（最长的标签是
+/// "肌肉量"）。宽度必须是**定值**：原生侧按 `frame.width / count` 切格子，
+/// 给它一个"内容撑开"的宽度就等于把几何交给两次布局去对齐，迟早错位。
 class ViSegmented extends StatelessWidget {
   const ViSegmented({
     super.key,
     required this.labels,
     required this.current,
     required this.onChanged,
+    this.itemWidth = 56,
   });
 
   final List<String> labels;
   final int current;
   final ValueChanged<int> onChanged;
 
+  /// iOS 上每格的宽度（等宽）。非 iOS 不生效。
+  final double itemWidth;
+
+  /// iOS 上分段控件的高度：胶囊圆角 = 高度 / 2。
+  static const double _glassHeight = 32;
+
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final bool glass = GlassSurface.isSupportedPlatform;
+    final Widget row = GlassSegmentedRow(
+      count: labels.length,
+      index: current,
+      itemWidth: itemWidth,
+      height: _glassHeight,
+      itemBuilder: _item,
+    );
+
+    if (!glass) {
+      // 老样子：实心胶囊行，按内容收缩（Android 一个像素都不动）
+      return Container(
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           color: Tokens.elevated,
           borderRadius: BorderRadius.circular(Tokens.rPill),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (int i = 0; i < labels.length; i++)
-              GestureDetector(
-                key: Key('seg-${labels[i]}'),
-                onTap: () => onChanged(i),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: i == current ? Tokens.accent : null,
-                    borderRadius: BorderRadius.circular(Tokens.rPill),
-                  ),
-                  child: Text(
-                    labels[i],
-                    style: TextStyle(
-                      color: i == current ? Tokens.accentInk : Tokens.text2,
-                      fontSize: 12,
-                      height: 1.2,
-                      fontWeight: i == current ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+        child: row,
       );
+    }
+
+    return row;
+  }
+
+  Widget _item(int i, bool glass) {
+    final bool on = i == current;
+    // 选中项的字色：非 iOS 是"实心 accent 胶囊上的深墨"；玻璃上没有实心底，
+    // 玻璃自己就是那块亮色，字反过来要用最亮的 —— 否则深字压在浅玻璃上会糊。
+    final Text label = Text(
+      labels[i],
+      style: TextStyle(
+        color: on ? (glass ? Tokens.text : Tokens.accentInk) : Tokens.text2,
+        fontSize: 12,
+        height: 1.2,
+        fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+      ),
+    );
+
+    return GestureDetector(
+      key: Key('seg-${labels[i]}'),
+      // 玻璃那支：整格都要能点（否则只有字上那几像素是热区）
+      behavior: glass ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+      onTap: () => onChanged(i),
+      child: glass
+          ? Center(child: label)
+          : Container(
+              padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: 5),
+              decoration: BoxDecoration(
+                color: on ? Tokens.accent : null,
+                borderRadius: BorderRadius.circular(Tokens.rPill),
+              ),
+              child: label,
+            ),
+    );
+  }
 }
 
 /// 细进度条（打卡进度、周目标那种）。**必须夹到 0..1**：调用方算错比例时

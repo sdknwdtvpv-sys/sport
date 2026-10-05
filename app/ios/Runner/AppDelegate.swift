@@ -29,5 +29,11 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ScreenAwakeBridge") {
       ScreenAwakeBridge.register(messenger: registrar.messenger())
     }
+    // iOS 26 的液态玻璃（2026-10-06）：Dart → UiKitView → UIGlassEffect（真材质）。
+    // ⚠️ 这是**唯一一个收 registrar 而不是 messenger 的桥** —— platform view 的 factory
+    // 只能通过 registrar 注册（见 GlassBridge.swift 顶部那段注释）。
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "GlassBridge") {
+      GlassBridge.register(registrar: registrar)
+    }
   }
 }

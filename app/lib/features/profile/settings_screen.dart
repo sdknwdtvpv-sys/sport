@@ -14,6 +14,8 @@ library;
 import 'package:flutter/cupertino.dart' show CupertinoPicker, FixedExtentScrollController;
 import 'package:flutter/material.dart';
 
+import '../../core/glass_segmented.dart';
+import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/profile_repository.dart';
@@ -274,15 +276,48 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 const Text('重量单位',
                     style: TextStyle(color: Tokens.text2, fontSize: 13)),
                 const SizedBox(width: Tokens.s3),
-                for (final WeightUnit u in WeightUnit.values) ...<Widget>[
-                  choicePill(
-                    key: Key('unit-${u.wire}'),
-                    label: u.wire,
-                    active: _unit == u,
-                    onTap: () => _setUnit(u),
-                  ),
-                  if (u != WeightUnit.values.last) const SizedBox(width: Tokens.s2),
-                ],
+                // iOS 26：等宽 + 底托/选中胶囊两块玻璃；非 iOS 原样（Android 一个像素都不动）。
+                // ⚠️ 这里在**卡片的平底**上，所以用 `.clear` + 一点点白，而不是 `.regular` ——
+                // 背后没有内容经过时，`.regular` 会变成一块灰板（2026-10-06 试出来的）。
+                GlassSegmentedRow(
+                  count: WeightUnit.values.length,
+                  index: WeightUnit.values.indexOf(_unit),
+                  itemWidth: 52,
+                  height: 32,
+                  style: GlassStyle.clear,
+                  baseTint: '#FFFFFF14',
+                  pillTint: '#FFFFFF2E',
+                  itemBuilder: (int i, bool glass) {
+                    final WeightUnit u = WeightUnit.values[i];
+                    final bool on = _unit == u;
+                    if (!glass) {
+                      // 老样子（`choicePill` 自己就是热区）
+                      return Padding(
+                        padding: EdgeInsets.only(
+                            right: u == WeightUnit.values.last ? 0 : Tokens.s2),
+                        child: choicePill(
+                          key: Key('unit-${u.wire}'),
+                          label: u.wire,
+                          active: on,
+                          onTap: () => _setUnit(u),
+                        ),
+                      );
+                    }
+                    return GestureDetector(
+                      key: Key('unit-${u.wire}'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _setUnit(u),
+                      child: Text(
+                        u.wire,
+                        style: TextStyle(
+                          color: on ? Tokens.text : Tokens.text2,
+                          fontSize: 13,
+                          fontWeight: on ? FontWeight.w700 : FontWeight.w400,
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 const Spacer(),
                 const Text(
                   '只影响显示',

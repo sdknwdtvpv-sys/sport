@@ -24,6 +24,7 @@
 		AA0000000000000000000012 /* RestWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000005 /* RestWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000000000000000000021 /* RestActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000020 /* RestActivityBridge.swift */; };
 		AA0000000000000000000041 /* ScreenAwakeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000040 /* ScreenAwakeBridge.swift */; };
+		AA0000000000000000000043 /* GlassBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000042 /* GlassBridge.swift */; };
 		AA0000000000000000000031 /* ReminderBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000030 /* ReminderBridge.swift */; };
 /* End PBXBuildFile section */
 
@@ -94,6 +95,7 @@
 		AA0000000000000000000005 /* RestWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RestWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000020 /* RestActivityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestActivityBridge.swift; sourceTree = "<group>"; };
 		AA0000000000000000000040 /* ScreenAwakeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenAwakeBridge.swift; sourceTree = "<group>"; };
+		AA0000000000000000000042 /* GlassBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBridge.swift; sourceTree = "<group>"; };
 		AA0000000000000000000030 /* ReminderBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -170,6 +172,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				AA0000000000000000000020 /* RestActivityBridge.swift */,
+				AA0000000000000000000042 /* GlassBridge.swift */,
 				AA0000000000000000000040 /* ScreenAwakeBridge.swift */,
 				AA0000000000000000000030 /* ReminderBridge.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
@@ -377,6 +380,7 @@
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				AA000000000000000000000E /* RestActivityAttributes.swift in Sources */,
 				AA0000000000000000000021 /* RestActivityBridge.swift in Sources */,
+				AA0000000000000000000043 /* GlassBridge.swift in Sources */,
 				AA0000000000000000000041 /* ScreenAwakeBridge.swift in Sources */,
 				AA0000000000000000000031 /* ReminderBridge.swift in Sources */,
 			);

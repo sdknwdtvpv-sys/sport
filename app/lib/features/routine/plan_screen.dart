@@ -13,6 +13,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/exercise_repository.dart';
@@ -137,7 +138,8 @@ class _PlanScreenState extends State<PlanScreen> {
     const List<String> names = <String>['一', '二', '三', '四', '五', '六', '日'];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, Tokens.s5),
+      padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
+          Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         ViCard(
           child: Row(
@@ -289,7 +291,8 @@ class _PlanScreenState extends State<PlanScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, Tokens.s5),
+      padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
+          Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         for (final ({String title, List<({String workoutId, DateTime day, int exercises, int sets, double volume})> rows}) g in groups) ...<Widget>[
           Padding(

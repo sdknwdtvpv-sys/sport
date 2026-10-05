@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../../core/labels.dart';
 import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
+import '../../core/app_tab_bar.dart';
 import '../../core/vi_area_chart.dart';
 import '../../core/vi_cards.dart';
 import '../../core/units.dart';
@@ -248,7 +249,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final ProgressData d = _data!;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s5),
+      padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
+          Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         Row(
           children: <Widget>[

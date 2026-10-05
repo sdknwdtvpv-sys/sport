@@ -44,6 +44,25 @@ source ~/HARNESS/lianleme/flutter-env.sh   # 跑道上的副本（内容相同�
 > 那两项（`~/.config/flutter/settings` 里的 `jdk-dir` / `android-sdk`）**优先级高于环境变量**，
 > 曾经导致 release 构建报 "JAVA_HOME is an invalid directory" 而六层门禁全绿。
 
+> ⚠️ **同一个坑的第三副面孔：iOS 的三个"生成文件"也会记住旧的 Flutter 路径**
+> （2026-10-06 撞到，症状离根因很远）：
+> ```
+> PhaseScriptExecution failed with a nonzero exit code
+> /bin/sh: /Users/elliot.li/development/flutter/packages/flutter_tools/bin/xcode_backend.sh: No such file or directory
+> ```
+> `flutter build ios` 报这个，**不是代码问题**：`app/ios/Flutter/Generated.xcconfig`、
+> `flutter_export_environment.sh`、`ephemeral/flutter_native_integration.env` 这三个
+> **不入库的生成文件**里，`FLUTTER_ROOT` 还指着已经不存在的那份 Flutter
+> （`~/development/flutter`，2026-09-30 搬到 SSD 之前的位置），而 flutter 不会因为路径变了
+> 就重写它们。**修法**：删掉这三个文件再构建 —— flutter 会按当前 `FLUTTER_ROOT` 重新生成：
+> ```bash
+> cd app && rm -f ios/Flutter/Generated.xcconfig ios/Flutter/flutter_export_environment.sh \
+>                  ios/Flutter/ephemeral/flutter_native_integration.env
+> flutter build ios --simulator --no-codesign     # 生成物里就会是 SSD 那条路径
+> ```
+> 判据：`grep FLUTTER_ROOT app/ios/Flutter/Generated.xcconfig` 应当是
+> `/Volumes/Elliot's SSD/harness-deps/flutter`。
+
 ## Node 的版本要求（两个门槛，别混）
 
 | 用途 | 最低版本 | 为什么 |

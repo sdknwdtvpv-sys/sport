@@ -17,6 +17,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/glass_segmented.dart';
+import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
 import '../../core/vi_area_chart.dart';
 import '../../core/vi_cards.dart';
@@ -841,7 +843,13 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     );
   }
 
-  /// 「体重  [kg][斤]」——标签行右边挂两个小 chip，切换立即生效。
+  /// 「体重  [kg][lb][斤]」——标签行右边挂三个小 chip，切换立即生效。
+  ///
+  /// iOS 26：等宽 + 底托/选中胶囊两块玻璃（用户 2026-10-06 拍板"所有像切 tab 的都做"）；
+  /// 非 iOS 原样 —— Android 一个像素都不动。
+  ///
+  /// ⚠️ 材质用 `.clear` + 一点点白：这一行在**卡片的平底**上，背后没有内容经过，
+  /// `.regular` 在这里只会变成一块灰板（这条规矩是 2026-10-06 试出来的）。
   Widget _weightUnitRow() {
     return Padding(
       padding: const EdgeInsets.only(bottom: Tokens.s2),
@@ -851,30 +859,59 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               style: TextStyle(
                   color: Tokens.text2, fontSize: 13, fontWeight: FontWeight.w600)),
           const Spacer(),
-          for (final BodyWeightUnit u in BodyWeightUnit.values) ...<Widget>[
-            GestureDetector(
-              key: Key('body-unit-${u.wire}'),
-              onTap: () => _switchUnit(u),
-              child: Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
-                height: 28,
-                decoration: BoxDecoration(
-                  color: _unit == u ? Tokens.accent : Tokens.surface,
-                  borderRadius: BorderRadius.circular(Tokens.rPill),
-                ),
+          GlassSegmentedRow(
+            count: BodyWeightUnit.values.length,
+            index: BodyWeightUnit.values.indexOf(_unit),
+            itemWidth: 52,
+            height: 28,
+            style: GlassStyle.clear,
+            baseTint: '#FFFFFF14',
+            pillTint: '#FFFFFF2E',
+            itemBuilder: (int i, bool glass) {
+              final BodyWeightUnit u = BodyWeightUnit.values[i];
+              final bool on = _unit == u;
+              if (!glass) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                      right: u == BodyWeightUnit.values.last ? 0 : Tokens.s2),
+                  child: GestureDetector(
+                    key: Key('body-unit-${u.wire}'),
+                    onTap: () => _switchUnit(u),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: on ? Tokens.accent : Tokens.surface,
+                        borderRadius: BorderRadius.circular(Tokens.rPill),
+                      ),
+                      child: Text(
+                        u.label,
+                        style: TextStyle(
+                          color: on ? Tokens.accentInk : Tokens.text2,
+                          fontSize: 12,
+                          fontWeight: on ? FontWeight.w700 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return GestureDetector(
+                key: Key('body-unit-${u.wire}'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _switchUnit(u),
                 child: Text(
                   u.label,
                   style: TextStyle(
-                    color: _unit == u ? Tokens.accentInk : Tokens.text2,
+                    color: on ? Tokens.text : Tokens.text2,
                     fontSize: 12,
-                    fontWeight: _unit == u ? FontWeight.w700 : FontWeight.w400,
+                    fontWeight: on ? FontWeight.w700 : FontWeight.w400,
                   ),
                 ),
-              ),
-            ),
-            if (u != BodyWeightUnit.values.last) const SizedBox(width: Tokens.s2),
-          ],
+              );
+            },
+          ),
         ],
       ),
     );

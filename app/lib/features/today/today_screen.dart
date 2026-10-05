@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../progress/streak.dart';
@@ -149,7 +150,9 @@ class TodayScreen extends StatelessWidget {
     // 首屏顶部到按钮约 1.5 屏高的 1/3，单手仍然够得着，而卡片把"练什么"与
     // "开始"合成了一件事。`docs/screens.md` S1 记着这次改动。
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s4),
+      // 底部多留出浮动底栏的位置（Android 上那一项是 0 —— 底栏在内容下面）
+      padding: EdgeInsets.fromLTRB(
+          Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s4 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         // 「接着练」永远排最上面：此刻用户是"我刚才在练"，接着练是他唯一该做的事
         if (onResume != null) _resumeCard(),
