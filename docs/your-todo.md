@@ -221,6 +221,7 @@ PIPL 第 29 条还要求敏感个人信息**单独同意**，而训练数据按�
 | 10e | ~~**要不要让 CI 直接跑 `./verify.sh`**~~ ✅ **已拍板并落地（2026-09-30）** | 以前 CI 只是门禁的**子集**（不含场景级 eval、一批 node 守卫、第 6 层变异测试），所以「CI 绿」不等于「门禁绿」 | **已改**（见 §③ 第 6 条）：CI 只有一条 `./verify.sh`；为了让它在 ubuntu 上真跑完，补了 `tool/lib/plist.mjs`（plist 读写不依赖 macOS `plutil`）并把"开发机专属"的环境检查改成**不适用**而不是失败。守卫 `tool/check-ci.mjs` 也随之换模型（现在核的是"CI 跑的是不是门禁本身"）。首次在 GitHub 上的结果记在 `CHANGELOG` 的 v1.33.0 |
 | 11b | ~~**`android:requestLegacyExternalStorage` 要不要删**~~ ✅ **你拍板删掉，2026-10-05 已删** | 它只在 Android 10 上有意义（那一版走 MediaStore 也能写相册），留着就是包里多一个审核会问的开关 | **已做**：源码 manifest 删掉这一行，中英政策 §四 那段改成「曾经有过、现在不在包里」，复算命令 `aapt2 dump badging <apk> \| grep permission` |
 | 11 | **Android SDK 路径里的空格怎么根治** | 卷名 `Elliot's SSD` 有空格，而 Android 工具链不支持带空格的 SDK 路径 —— 已经咬了三次（AAB 误报、`privacy-audit --apk` 空转、`sdkmanager`/`avdmanager` 直接报错） | ✅ **2026-10-05 你拍板：C 同一卷挂到无空格挂载点**。脚本与文档已就绪（`tool/mount-ssd-space-free.sh`、`docs/dev-environment.md`），**剩一条只有你能跑**：`sudo tool/mount-ssd-space-free.sh`（要先把占着这块盘的程序退掉 —— 现在 Electron/Feishu/Chrome 等一堆进程占着，`diskutil unmount` 会被 securityd 挡回来），挂上之后回报脚本 `--check` 的输出 + 一次 `flutter build appbundle --release` 的退出码 |
+| 12 | **iOS「液态玻璃」走哪条路**（2026-10-06 你提的） | 三条路各有真实代价：**原生 platform view**（真材质、iOS 26+，但 Android 端什么都不渲染，且整屏合成有代价）· **着色器仿制**（双端一致，但包自己标实验性、有显存尖峰）· **自绘**（`BackdropFilter`，零新依赖、效果最保守）；**引依赖还牵动政策 SDK 表 + 两张商店表单 + 事实表** | 判据、风险与我建议的顺序在 `docs/feature-backlog.md` §〇 的「⑦ iOS 液态玻璃：三条路与判据」。⚠️ 最要紧的一条：**VI 是炭黑底，玻璃折射的东西几乎全黑** —— 先出图稿验这个，验不过就别做。你说一句"做不做 + 做在哪几处"我就动 |
 
 ## 四、一分钟就能解锁的一大块（**最划算**）
 
