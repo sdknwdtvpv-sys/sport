@@ -46,7 +46,7 @@ import 'features/onboarding/privacy_consent_screen.dart';
 import 'features/today/today_screen.dart';
 import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
-import 'features/routine/routine_screen.dart';
+import 'features/routine/plan_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/body/body_metric_screen.dart';
 import 'features/notifications/notification_center_screen.dart';
@@ -1200,11 +1200,16 @@ class _HomeShellState extends State<HomeShell> {
       case 3:
         // 「计划」= 原来的计划模板列表（v1.45.0 起提到一级）。
         // VI 里它还要加周历与历史两个视图，同样属于 v1.46.0。
-        return RoutineListScreen(
+        // 2026-10-05（v1.51）：这一栏从"只有模板列表"变成**三个视图**
+        // （本周 / 模板库 / 历史）—— 模板库那一栏嵌的就是原来这一屏。
+        return PlanScreen(
           repository: _routines,
           exercises: _repo,
-          unit: _unit,
           store: _store,
+          unit: _unit,
+          todayPlan: _todayPlan,
+          todayLabel: _todayDay?.label,
+          onResume: _activeSession == null ? null : _resumeSession,
         );
       default:
         return ProfileScreen(

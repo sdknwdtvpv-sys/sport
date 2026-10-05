@@ -52,6 +52,7 @@ class RoutineListScreen extends StatefulWidget {
     required this.exercises,
     this.unit = WeightUnit.kg,
     this.store,
+    this.embedded = false,
   });
 
   final RoutineRepository repository;
@@ -60,6 +61,12 @@ class RoutineListScreen extends StatefulWidget {
 
   /// 本地库：只用来把它传给选择器（置顶 / 最近做过两个分区）。可选。
   final LocalStore? store;
+
+  /// **嵌进别的页面**（2026-10-05，训练计划 Tab 的「模板库」那一栏）。
+  ///
+  /// 传了它就不返回自己的 Scaffold 与标题行，只给内容 —— 否则会出现两个返回箭头、
+  /// 两行标题（动作库那次已经吃过一遍同样的亏）。独立打开这条路一点没变。
+  final bool embedded;
 
   @override
   State<RoutineListScreen> createState() => _RoutineListScreenState();
@@ -157,6 +164,26 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 嵌入模式：只要内容（壳与标题由嵌它的那一页负责）
+    if (widget.embedded) {
+      return Column(
+        children: <Widget>[
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: Tokens.s5),
+              child: TextButton(
+                key: const Key('routine-create'),
+                style: TextButton.styleFrom(foregroundColor: Tokens.accent),
+                onPressed: _create,
+                child: const Text('＋ 新建', style: TextStyle(fontSize: 14)),
+              ),
+            ),
+          ),
+          Expanded(child: _listBody()),
+        ],
+      );
+    }
     return Scaffold(
       backgroundColor: Tokens.bg,
       body: SafeArea(
@@ -191,8 +218,15 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                 ],
               ),
             ),
-            Expanded(
-              child: _loading
+            Expanded(child: _listBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 计划列表本体（独立打开与嵌进 Tab 都用它，只有一份实现）。
+  Widget _listBody() => _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _routines.isEmpty
                       ? ListView(
@@ -233,13 +267,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                             const SizedBox(height: Tokens.s2),
                             for (final RoutineData r in _routines) _row(r),
                           ],
-                        ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                        );
 
   /// 模板那一行：名字 + 一句说明 + 几个动作。
   Widget _templateRow(PlanTemplate t) {
