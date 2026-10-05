@@ -36,6 +36,7 @@ import 'data/routine_repository.dart';
 import 'data/sync_queue.dart';
 import 'domain/models.dart';
 import 'domain/tap_meter.dart';
+import 'features/exercise/exercise_library_screen.dart';
 import 'features/exercise/exercise_picker_screen.dart';
 import 'features/today/today_planner.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -855,15 +856,16 @@ class _HomeShellState extends State<HomeShell> {
   ///
   /// 2026-10-04：原先这里还有一行「看看今天练什么 ›」，删掉了（卡已经把"今天练什么"
   /// 回答了，同一件事不留两个入口），见 `today_screen.dart` 里 `onSeePlan` 的说明。
-  /// 快速入口：动作库 = 「全部数据」那一屏（按动作看历史最佳）。
-  /// VI 里的"动作库"是分类宫格，那需要新数据口径（v1.46 之后单独排）；
-  /// 这里先接到**已经存在**的那一屏，不假装有分类浏览。
+  /// 快速入口：动作库（2026-10-05 v1.48）。
+  ///
+  /// ⚠️ 这里以前接的是「全部数据」—— 那是 v1.46 里写明的**过渡状态**
+  /// （真正的动作库还没做）。现在换成真的动作库页，偏差收掉。
   Future<void> _openLibrary() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AllDataScreen(
-          store: _store,
+        builder: (_) => ExerciseLibraryScreen(
           repository: _repo,
+          store: _store,
           unit: _unit,
         ),
       ),

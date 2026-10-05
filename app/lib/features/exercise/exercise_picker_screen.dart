@@ -27,6 +27,7 @@ class ExercisePickerScreen extends StatefulWidget {
     this.store,
     this.unit = WeightUnit.kg,
     this.analytics,
+    this.onBrowse,
   });
 
   final ExerciseRepository repository;
@@ -40,6 +41,13 @@ class ExercisePickerScreen extends StatefulWidget {
 
   /// 显示单位。列表右侧的起始重量要跟着变。
   final WeightUnit unit;
+
+  /// **浏览态**（2026-10-05，动作库页用）：点了动作**不"选中并返回"**，而是交给这个回调。
+  ///
+  /// 为什么必须区分：这个页面原本只有一种用法（在训练里选动作 → `pop(e)` 把结果带回去）。
+  /// 动作库是**看**动作的地方 —— 传了它，点击就改成"打开这个动作的详情"；
+  /// 不传，行为与以前一模一样（训练里选动作那条路一点没变）。
+  final ValueChanged<ExerciseData>? onBrowse;
 
   @override
   State<ExercisePickerScreen> createState() => _ExercisePickerScreenState();
@@ -165,6 +173,12 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   }
 
   void _pick(ExerciseData e, {String method = 'all'}) {
+    // 浏览态：**不报 `exercise_added`**（那件事没发生），也不 pop —— 交给回调打开详情
+    final ValueChanged<ExerciseData>? browse = widget.onBrowse;
+    if (browse != null) {
+      browse(e);
+      return;
+    }
     widget.analytics?.track('exercise_added', <String, Object?>{
       'exercise_id': e.id,
       'add_method': method,
@@ -203,26 +217,36 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                   SizedBox(
                     width: 36,
                     height: 36,
-                    child: IconButton(
-                      key: const Key('picker-back'),
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.chevron_left, color: Tokens.text2),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+                    // 浏览态里**不画返回键**：外层（动作库）自己有一个，
+                    // 两个返回箭头并排会让人以为"要退两层"
+                    child: widget.onBrowse != null
+                        ? const SizedBox(width: 36)
+                        : IconButton(
+                            key: const Key('picker-back'),
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(Icons.chevron_left, color: Tokens.text2),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
                   ),
                   const SizedBox(width: Tokens.s3),
-                  const Expanded(
-                    child: Text(
-                      '选动作',
-                      style: TextStyle(
-                        color: Tokens.text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                  // 浏览态（动作库）**不印这一行标题**：外层已经写着「动作库」了，
+                  // 两行标题叠在一起读起来像"套了两层壳"（真机截图里一眼看到的问题）。
+                  // 数量与「＋新建」照旧留着 —— 那两个是有用的信息/入口。
+                  if (widget.onBrowse == null)
+                    const Expanded(
+                      child: Text(
+                        '选动作',
+                        style: TextStyle(
+                          color: Tokens.text,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                  ),
+                    )
+                  else
+                    const Spacer(),
                   Text(
-                    '${_rows.length} 个',
+                    widget.onBrowse == null ? '${_rows.length} 个' : '共 ${_rows.length} 个动作',
                     style: const TextStyle(color: Tokens.text3, fontSize: 13),
                   ),
                   const SizedBox(width: Tokens.s2),
