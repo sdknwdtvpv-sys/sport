@@ -21,3 +21,17 @@ import '../../core/labels.dart';
   if (muscle.isEmpty) return null;
   return ('明天该练$muscle了', '点开直接开始 · 已经按你的习惯排好');
 }
+
+/// 这条提醒**什么时候响**（纯函数，同样为了可测）。
+///
+/// 口径：排在**用户自己设的那个时刻**（`reminder_setting.minutes_of_day`，默认 20:00），
+/// 取"下一个还没到的那个时刻"—— 今天还没到就今天，已经过了就明天。
+/// **不另造一个时间设置**：用户已经告诉过我们他习惯几点练，再问一次就是折腾。
+int nextTrainingReminderAt({required int nowMs, required int minutesOfDay}) {
+  final DateTime now = DateTime.fromMillisecondsSinceEpoch(nowMs);
+  final int h = (minutesOfDay ~/ 60).clamp(0, 23);
+  final int m = (minutesOfDay % 60).clamp(0, 59);
+  DateTime at = DateTime(now.year, now.month, now.day, h, m);
+  if (!at.isAfter(now)) at = at.add(const Duration(days: 1));
+  return at.millisecondsSinceEpoch;
+}
