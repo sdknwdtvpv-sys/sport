@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/profile_repository.dart';
+import 'package:lianleme/features/onboarding/intro_carousel_screen.dart';
 import 'package:lianleme/features/onboarding/privacy_consent_screen.dart';
 import 'package:lianleme/features/profile/privacy_policy_screen.dart';
 import 'package:lianleme/main.dart';
@@ -104,6 +105,12 @@ void main() {
     await settle(tester, 1500);
 
     expect(find.byType(PrivacyConsentScreen), findsNothing);
+    // 2026-10-05：同意之后紧接着是**首启引导**（3 屏卖点），跳过才落到主界面 ——
+    // 顺序是"同意门 → 引导页 → 主界面"，见 `docs/screens.md` 与引导页的四条约束。
+    expect(find.byType(IntroCarouselScreen), findsOneWidget, reason: '引导页就在同意门之后');
+    await tester.tap(find.byKey(const Key('intro-skip')));
+    await settle(tester, 400);
+    expect(find.byType(IntroCarouselScreen), findsNothing);
     expect(find.byKey(const Key('start-workout')), findsOneWidget);
     expect(await ProfileRepository(db).privacyConsentAtMs(), isNotNull,
         reason: '同意状态必须落库，否则下次冷启动又弹');
@@ -135,6 +142,10 @@ void main() {
     // 191 号文四.2 禁止"因不同意收集非必要信息而拒绝提供业务功能" ——
     // 所以拒绝之后必须能进 App，而不是被请出去。
     expect(find.byType(PrivacyConsentScreen), findsNothing, reason: '拒绝之后要放行');
+    // 拒绝收集也照样给他看引导页：它讲的是"这 App 怎么用"，不是"请同意收集"
+    expect(find.byType(IntroCarouselScreen), findsOneWidget);
+    await tester.tap(find.byKey(const Key('intro-skip')));
+    await settle(tester, 400);
     expect(find.byKey(const Key('start-workout')), findsOneWidget,
         reason: '本地记录不需要联网与权限，拒绝的代价只是没有匿名统计');
     expect(find.byKey(const Key('consent-exit')), findsNothing,

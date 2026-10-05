@@ -40,6 +40,7 @@ import 'features/exercise/exercise_library_screen.dart';
 import 'features/exercise/exercise_picker_screen.dart';
 import 'features/today/today_planner.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/onboarding/intro_carousel_screen.dart';
 import 'features/onboarding/privacy_consent_screen.dart';
 import 'features/today/today_screen.dart';
 import 'features/today/today_suggestion_screen.dart';
@@ -203,6 +204,13 @@ class _HomeShellState extends State<HomeShell> {
   /// 用户**明确拒绝过**（拒绝后不弹第二次；且**永远不启动埋点**）。
   bool _declined = false;
 
+  /// 本次启动里**刚过完同意门** —— 首启引导（3 屏卖点轮播）就挂在它上面。
+  ///
+  /// ⚠️ 为什么不需要新增"看过没"的落库标记：同意门本身就是"每次安装只出现一次"的那个标记。
+  /// 用户同意过之后冷启动不会再走到同意门，因此也**不会再走到引导页** ——
+  /// 少一个字段就少一处会漂的真相（见引导页文件头那四条约束）。
+  bool _introPending = false;
+
   /// 显示单位。启动时从 user_profile 读一次，用户在 S10 改了之后整棵树重建。
   /// **只影响显示**：存储、引擎、埋点始终是 kg（见 core/units.dart）。
   WeightUnit _unit = WeightUnit.kg;
@@ -316,6 +324,9 @@ class _HomeShellState extends State<HomeShell> {
     setState(() {
       _declined = true;
       _consented = false;
+      // 拒绝收集也照样能用 App（191 号文那条），所以引导页同样给他看 ——
+      // 它讲的是"这 App 怎么用"，不是"请同意收集"。
+      _introPending = true;
     });
     // 刻意**不**调用 `_initAnalytics()` —— 拒绝之后一条事件都不该产生
   }
@@ -323,7 +334,10 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _onPrivacyAgreed() async {
     await _profile.setPrivacyConsent();
     if (!mounted) return;
-    setState(() => _consented = true);
+    setState(() {
+      _consented = true;
+      _introPending = true; // 首次进来的三屏卖点（约束 3：在同意门之后）
+    });
     // 同意之后才开始：埋点 + 第一次种子导入
     unawaited(_initAnalytics());
     unawaited(_importSeedQuietly());
@@ -1069,6 +1083,17 @@ class _HomeShellState extends State<HomeShell> {
       return PrivacyConsentScreen(
         onAgree: _onPrivacyAgreed,
         onDecline: _onPrivacyDeclined,
+      );
+    }
+    // 首启引导：**在同意门之后**、主界面之前（约束 3）。
+    // 跳过 → 直接进主界面；末屏按钮 → 开始第一次训练（约束 4）。
+    if (_introPending) {
+      return IntroCarouselScreen(
+        onSkip: () => setState(() => _introPending = false),
+        onStartFirst: () {
+          setState(() => _introPending = false);
+          unawaited(_startNow());
+        },
       );
     }
     return Scaffold(
