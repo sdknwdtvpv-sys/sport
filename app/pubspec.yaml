@@ -50,6 +50,15 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # 展示字体：**只给数字与拉丁字母用**（见 core/theme.dart 的 Tokens.display）。
+  # 中文不在这里 —— Oswald 没有汉字，正文走系统字体（VI 里中文标题也是 Noto Sans SC，
+  # 与系统字体同族），所以只让"大数字"换脸，整包体积只多了 172 KB。
+  # 许可：OFL-1.1，原文随字体一起入库（fonts/OFL-Oswald.txt），
+  # 并在应用内「开源许可」页登记（main.dart 的 LicenseRegistry）—— 商店要求可查。
+  fonts:
+    - family: Oswald
+      fonts:
+        - asset: fonts/Oswald-VariableFont_wght.ttf
   assets:
     # 由 node seed/build.mjs 生成；唯一真源是 seed/parts/*.json
     - assets/exercises.json
@@ -62,3 +71,5 @@ flutter:
     # 同样是生成物：收集清单 ← docs/privacy-facts.json，共享清单 ← 政策正文的 SDK 表。
     # 生成命令与防漂守卫都在 tool/gen-privacy-page.mjs（--check）。
     - assets/collection-list.txt
+    # 字体许可原文（OFL-1.1）—— main.dart 会把它读进「开源许可」页，所以要打包
+    - fonts/OFL-Oswald.txt

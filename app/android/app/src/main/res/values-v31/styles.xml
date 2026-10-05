@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ 的**系统启动屏**（`values-v31` 只在 API 31 及以上生效）。
+         默认行为会拿**自适应图标**当启动图 —— 于是那块冷调深蓝的瓦片会印在暖黑的启动底色上，
+         看得见一圈边（2026-10-05 在模拟器上抓帧抓到的：环是对的，但周围多了一个圆）。
+         这里显式换成"自发光圆环"那张图案，跟 Android 11 及以下的 `launch_background` 一致：
+         **两个版本的启动屏看起来是同一张图**。 -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowSplashScreenBackground">@color/app_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/launch_glyph</item>
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+</resources>

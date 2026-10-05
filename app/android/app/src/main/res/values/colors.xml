@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 由 tool/gen-icons.py 的配方决定，手改请同步那边 -->
 <resources>
-    <color name="app_background">#0B0B0D</color>
+    <color name="app_background">#0E0C0A</color>
 </resources>

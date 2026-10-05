@@ -292,11 +292,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               value,
               key: key,
-              style: const TextStyle(
-                color: Tokens.text,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-              ),
+              style: Tokens.display(17, weight: 700),
             ),
           ],
         ),

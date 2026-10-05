@@ -6,10 +6,9 @@ JPEG 或 24 位 PNG（**不带透明**）。我们一直只有图标与截图，
 而它在 Play Console 里是必填项之一。
 
 品牌 token 与 `tool/gen-icons.py` / `app/lib/core/theme.dart` 同源，不另立一套：
-    bg      #0B0B0D   应用底色
-    volt    #D8FF47   强调色（App 里所有主按钮）
-    voltInk #12180A   volt 上的字色
-    text2   #9A9AA5   次级文字色
+    bg      #0E0C0A   应用底色（暖黑）
+    accent  #FF5C26   强调色（App 里所有主按钮）
+    text2   #ABA49A   次级文字色
 
 画什么、不画什么（Play 有明确规矩）：
   * **不画界面**、不堆文字、不带号召语（"立即下载"这类会被判违规）；
@@ -37,10 +36,9 @@ OUT = os.path.join(ROOT, 'store-assets/feature-graphic-1024x500.png')
 W, H = 1024, 500
 SS = 4  # 超采样：先放大画再缩小，汉字边缘才干净
 
-BG = (11, 11, 13)          # Tokens.bg      #0B0B0D
-VOLT = (216, 255, 71)      # Tokens.volt    #D8FF47
-VOLT_INK = (18, 24, 10)    # Tokens.voltInk #12180A
-TEXT2 = (154, 154, 165)    # Tokens.text2   #9A9AA5
+BG = (14, 12, 10)          # Tokens.bg      #0E0C0A（2026-10-05 换新 VI 时同步）
+ACCENT = (255, 92, 38)     # Tokens.accent  #FF5C26
+TEXT2 = (171, 164, 154)    # Tokens.text2   #ABA49A
 
 FONT = '/System/Library/Fonts/STHeiti Medium.ttc'
 
@@ -83,12 +81,13 @@ def main():
     # 左边：**启动图标那个标记**，由 gen-icons.py 现渲（同一个配方，换图标时自动跟着换）
     box, bx, by = 260, 92, (H - 260) // 2
     icons = load_icon_module()
-    icons.set_scheme('volt')          # 线上那套：深底 + 白「练」+ volt 哑铃
-    mark = icons.db_logo(box * SS, rounded=True)
+    # 线上的标记 = 圆环方向（用户 2026-10-05 定的 `icon/` 主图）。**现渲**，不在这里重画 ——
+    # 上一版是照抄的一份，换图标时它就成了全仓库唯一还在用旧标记的地方。
+    mark = icons._ring_layer(box * SS, rounded=True)
     img.paste(mark, (bx * SS, by * SS), mark)
 
-    # 一句话卖点下面的小横杠仍用 volt —— 与 App 里主按钮同一个颜色
-    _ = (VOLT_INK, GLYPH)             # 这两个常量现在不再直接用（标记由图标模块负责）
+    # 一句话卖点下面的小横杠用 accent —— 与 App 里主按钮同一个颜色
+    _ = GLYPH                        # 这个常量现在不再直接用（标记由图标模块负责）
 
     # 右边：产品名 + 一句话（不写号召语，Play 会判违规）
     f_name, f_tag = font(104 * SS), font(44 * SS)
@@ -105,7 +104,7 @@ def main():
     cy = 348
     d.rounded_rectangle(
         [(mid - bw / 2) * SS, cy * SS, (mid + bw / 2) * SS, (cy + bh) * SS],
-        radius=(bh / 2) * SS, fill=VOLT)
+        radius=(bh / 2) * SS, fill=ACCENT)
 
     out = img.resize((W, H), Image.LANCZOS).convert('RGB')  # RGB = 一定不带 alpha
 

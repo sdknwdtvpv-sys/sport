@@ -65,6 +65,35 @@ abstract final class Tokens {
 
   /// 主按钮高度 —— 单手可达的硬约束，任何字号下都不允许压缩。
   static const double hPrimary = 88;
+
+  // 展示字体（VI：Oswald 管数字与拉丁标题，中文正文走系统字体）
+  /// 字体族名，与 `pubspec.yaml` 里声明的一致。
+  static const String displayFont = 'Oswald';
+
+  /// 展示数字/拉丁的一站式样式。
+  ///
+  /// **只给数字与拉丁字符串用**：Oswald 不含汉字，中文会**回落到系统字体** ——
+  /// 混排时会出现"数字是 Oswald、汉字是系统字"的效果，这正是 VI 的做法。
+  /// 反过来说，**别拿它包整句中文**（那就等于没换字体，还多一层困惑）。
+  ///
+  /// `wght` 轴 200–700 由 [fontVariations] 驱动：可变字体单文件出所有字重，
+  /// 只声明 `fontWeight` 在多数平台上不会真的选到那一档。
+  static TextStyle display(
+    double size, {
+    double weight = 600,
+    Color color = text,
+    double? height,
+    double letterSpacing = 0,
+  }) =>
+      TextStyle(
+        fontFamily: displayFont,
+        fontSize: size,
+        height: height,
+        letterSpacing: letterSpacing,
+        color: color,
+        fontWeight: FontWeight.w600,
+        fontVariations: <FontVariation>[FontVariation('wght', weight)],
+      );
 }
 
 ThemeData buildAppTheme() {

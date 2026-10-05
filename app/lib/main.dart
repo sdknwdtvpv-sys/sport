@@ -8,7 +8,9 @@ library;
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'analytics/analytics_context.dart';
@@ -54,7 +56,22 @@ import 'features/workout/workout_screen.dart';
 import 'features/workout/workout_session.dart';
 
 void main() {
+  _registerFontLicense();
   runApp(const LianLeMeApp());
+}
+
+/// 把展示字体（Oswald，OFL-1.1）的许可原文登记进 Flutter 自带的许可页。
+///
+/// 为什么必须有这一段：政策与商店规则都要求"开源许可在应用内可查"（我 → 隐私与关于 → 开源许可
+/// 走的就是 `showLicensePage`），而**字体许可不会自动出现** —— Flutter 只登记各插件包自带的
+/// LICENSE。字体文件是我们自己放进 `app/fonts/` 的，许可也得自己登记，否则那一页会缺一条。
+void _registerFontLicense() {
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(
+      <String>['Oswald'],
+      await rootBundle.loadString('fonts/OFL-Oswald.txt'),
+    );
+  });
 }
 
 class LianLeMeApp extends StatelessWidget {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 启动页。原来是模板的纯白 —— App 本体是深色的，于是每次冷启动都闪一下白。
-     现在与 App 同色（#0B0B0D），正中放一个 volt 的「练」（与图标同源）。 -->
+     现在与 App 同色（#0E0C0A，2026-10-05 换新 VI 时同步），正中放品牌标记「圆环」（`tool/gen-icons.py` 从 `icon/` 主图抠出来的自发光层）。 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/app_background" />
     <item>

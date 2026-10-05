@@ -259,6 +259,133 @@ def db_ends(size):
     return img.resize((size, size), Image.LANCZOS)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 方向 D：**圆环**（2026-10-05 用户给的 `icon/AppIcon-1024x1024@1x.png`）—— 现在这是默认
+#
+# 和方向 C 的做法**不一样，故意不一样**：哑铃那版是"照着设计稿重画"（几何能量就量、能画就画），
+# 这一版是**直接拿主图缩放**。原因：主图上有两样手画不出同等质感的东西 ——
+# 环内的暖光晕、以及瓦片底色的细渐变。重画只会像"仿的"。
+#
+# 主图是"圆角瓦片 + 白底"（量出来：瓦片圆角 68px/1024，白底在四角），而两个平台要的东西不同：
+#   * **iOS**：满幅方图、不许带 alpha、**不许自己切圆角**（系统自己裁）→ 白底那圈得补掉；
+#   * **Android 传统图标**：要有 alpha 的圆角方块（我们的房子风格是 22% 圆角）；
+#   * **Android 自适应**：背景是纯色、前景是图案（保持在 72% 安全区内）。
+# 补角**不是拿一个平均色去糊**：沿水平方向从瓦片内部镜像取样，竖向渐变因此保住。
+RING_MASTER = os.path.join(ROOT, 'icon/AppIcon-1024x1024@1x.png')
+RING_CORNER = 68             # 瓦片自身的圆角（占 1024 的 6.6%，量出来的）
+RING_TILE = (8, 12, 23)      # 瓦片边缘色（自适应图标的背景色，采样 px[10, 512]）
+RING_OUTER = 0.4515          # 环外径占画布比例（量出来：包围盒 456/1024 ≈ 44.5%）
+RING_INNER = 0.2580          # 环内径（内圈半径 132/512 = 25.8%）
+_ring_cache = {}
+
+
+def _ring_square():
+    """主图 → **满幅方图**（白底角补成瓦片色）。缓存，因为每张图都要用。"""
+    if 'square' in _ring_cache:
+        return _ring_cache['square']
+
+    img = Image.open(RING_MASTER).convert('RGB')
+    px = img.load()
+    W, H = img.size
+    R = RING_CORNER
+
+    def bright(p):
+        return sum(p) > 600      # 白底
+
+    # 四个角：沿水平方向找同一行里最靠内的"非白"像素，拿它的颜色往外填
+    for cy0, cy1, cxs in ((0, R, range(R)), (H - R, H, range(R))):
+        for y in range(cy0, cy1):
+            for xs in (list(range(R - 1, -1, -1)), list(range(W - R, W))):
+                inner = None
+                for x in xs:
+                    if not bright(px[x, y]):
+                        inner = (x, px[x, y])
+                        break
+                if not inner:
+                    continue
+                ix, col = inner
+                rng = range(ix - 1, -1, -1) if ix < W / 2 else range(ix + 1, W)
+                for x in rng:
+                    if not bright(px[x, y]):
+                        break
+                    px[x, y] = col
+
+    _ring_cache['square'] = img
+    return img
+
+
+def _ring_layer(size, *, rounded=False, circle=False, scale=1.0):
+    """满幅方图 → 指定尺寸；`rounded` 给传统图标切 22% 圆角，`circle` 给圆形图标切正圆。"""
+    art = _ring_square()
+    inner = int(size * scale)
+    art = art.resize((inner, inner), Image.LANCZOS).convert('RGBA')
+    if rounded:
+        mask = rounded_square(inner, (255, 255, 255), 0.22).getchannel('A')
+    elif circle:
+        mask = Image.new('L', (inner, inner), 0)
+        ImageDraw.Draw(mask).ellipse([0, 0, inner - 1, inner - 1], fill=255)
+    else:
+        mask = Image.new('L', (inner, inner), 255)
+    art.putalpha(mask)
+    if inner == size:
+        return art
+    canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    off = (size - inner) // 2
+    canvas.alpha_composite(art, (off, off))
+    return canvas
+
+
+def _ring_glyph(size):
+    """启动页中央的图案：**把主图当自发光层抠出来**（暗底变全透明，环与光晕留住）。
+
+    为什么不直接用那张方图：启动页底色是 App 的暖黑 `Tokens.bg`，而主图的瓦片是冷调深蓝 ——
+    方图贴上去会看见一圈"另一个黑"。抠成自发光之后，环自己发光、底下就是启动页的底色。
+    做法就是 `alpha = 亮度`、颜色照抄：对"亮物 + 近黑底"这种图，这一步等价于标准的 screen 合成。
+    """
+    big = size * SS
+    src = _ring_square().resize((big, big), Image.LANCZOS).convert('RGB')
+    px = src.load()
+    out = Image.new('RGBA', (big, big), (0, 0, 0, 0))
+    op = out.load()
+    half = big / 2
+    for y in range(big):
+        for x in range(big):
+            r, g, b = px[x, y]
+            lum = max(r, g, b)
+            # ⚠️ 阈值 45 是量出来的、不是拍的：主图瓦片底色是 #080C15–#161A25
+            # （亮度 21–37），而环内的光晕亮度 140+。阈值低于 37 就会在启动页上
+            # 留下一块**看得见的方影子**（第一版阈值 6，预览里就是那个四方块）。
+            if lum <= 45:
+                continue
+            a = min(255, int((lum - 45) * 255 / 105))
+            # 再乘一圈**径向淡出**：主图的中心光晕是被瓦片"裁"住的，直接抠会留下一道
+            # 方形的光边（第二版预览里就是它）。让它自己淡出去，边界就不存在了。
+            dx, dy = (x + 0.5 - half) / half, (y + 0.5 - half) / half
+            rr = (dx * dx + dy * dy) ** 0.5
+            if rr >= 0.92:
+                continue
+            if rr > 0.70:
+                a = int(a * (0.92 - rr) / 0.22)
+            op[x, y] = (r, g, b, a)
+    return out.resize((size, size), Image.LANCZOS)
+
+
+def _ring_mono(size):
+    """主题剪影（Android 13+ 单色图标）：系统自己上色，所以只留**白色圆环**的形状。
+
+    形状由量出来的内外径决定 —— 直接拿主图做 alpha 是不行的：主图整块都不透明。
+    """
+    big = size * SS
+    img = Image.new('RGBA', (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    cy = big / 2
+    r_out = big * RING_OUTER / 2
+    r_in = big * RING_INNER
+    d.ellipse([cy - r_out, cy - r_out, cy + r_out, cy + r_out], fill=(255, 255, 255, 255))
+    d.ellipse([cy - r_in, cy - r_in, cy + r_in, cy + r_in], fill=(0, 0, 0, 0))
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def db_logo(size, ratio=DB_GLYPH, rounded=False, tile=True, radius_ratio=0.22):
     """底色（可圆角、可透明）+ 哑铃头 + 白色斜「练」。字形画在最上面，压住横档。"""
     if tile:
@@ -279,7 +406,26 @@ def db_silhouette(img):
 
 
 def render(variant, size, alt, logo):
-    """两个方向（classic / dumbbell）× 七种用途，只有一个入口 —— 免得两套配方各长各的。"""
+    """三个方向（classic / dumbbell / ring）× 七种用途，只有一个入口 —— 免得两套配方各长各的。"""
+    if logo == 'ring':
+        if variant == 'legacy':
+            return _ring_layer(size, rounded=True)
+        if variant == 'round':
+            return _ring_layer(size, circle=True)
+        if variant == 'adaptive':
+            # 前景缩到安全区（同方向 C 的做法）；背景是纯色，由 ic_launcher_colors.xml 给
+            return _ring_layer(size, scale=DB_SAFE)
+        if variant == 'mono':
+            inner = _ring_mono(int(size * DB_SAFE))
+            canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+            off = (size - inner.size[0]) // 2
+            canvas.alpha_composite(inner, (off, off))
+            return canvas
+        if variant == 'launch':
+            return _ring_glyph(size)
+        if variant in ('ios', 'store'):
+            return _ring_square().resize((size, size), Image.LANCZOS).convert('RGB')
+        raise SystemExit(f'不认识的 variant: {variant}')
     if logo == 'dumbbell':
         if variant == 'legacy':
             return db_logo(size, rounded=True)
@@ -328,13 +474,16 @@ def render(variant, size, alt, logo):
 
 def bg_color(logo):
     """自适应图标的背景层颜色（写进 ic_launcher_colors.xml）。"""
+    if logo == 'ring':
+        return RING_TILE
     return DB_TILE if logo == 'dumbbell' else VOLT
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--logo', choices=('classic', 'dumbbell'), default='dumbbell',
-                    help='图标方向：dumbbell（默认：深底 + 「练」 + 哑铃）｜classic（volt 底）')
+    ap.add_argument('--logo', choices=('classic', 'dumbbell', 'ring'), default='ring',
+                    help='图标方向：ring（默认：用户给的橙色圆环主图）｜dumbbell（深底 + 「练」 + 哑铃）'
+                         '｜classic（volt 底，最早那版）')
     ap.add_argument('--scheme', choices=tuple(DB_SCHEMES), default='volt',
                     help='dumbbell 的配色：volt（默认，品牌绿哑铃）｜ember（橙，设计稿）｜'
                          'allvolt（全绿）｜inverse（绿底墨物）')
@@ -350,6 +499,10 @@ def main():
             for size in (48, 192, 512):
                 render('legacy', size, alt, logo).save(f'{out}/{tag}-{size}.png')
             render('store', 1024, alt, logo).save(f'{out}/{tag}-1024.png')
+        # 圆环方向（当前默认）
+        for size in (48, 192, 512):
+            render('legacy', size, False, 'ring').save(f'{out}/D-ring-{size}.png')
+        render('store', 1024, False, 'ring').save(f'{out}/D-ring-1024.png')
         # 哑铃方向的四种配色，同一套几何只换颜色
         for name in DB_SCHEMES:
             set_scheme(name)
@@ -420,7 +573,10 @@ def main():
     render('store', 512, alt, logo).save(os.path.join(store, 'icon-512.png'))
     render('store', 1024, alt, logo).save(os.path.join(store, 'icon-1024.png'))
     print('  商店图标：store-assets/icon-512.png（512×512，无透明）+ icon-1024.png')
-    print(f'方向：{"C（哑铃 · " + args.scheme + "）" if logo == "dumbbell" else ("B（深底 + volt 字）" if alt else "A（volt 底 + 墨色字）")}')
+    if logo == 'ring':
+        print('方向：D（用户给的橙色圆环主图，直接缩放；白底角已按瓦片色补满）')
+    else:
+        print(f'方向：{"C（哑铃 · " + args.scheme + "）" if logo == "dumbbell" else ("B（深底 + volt 字）" if alt else "A（volt 底 + 墨色字）")}')
 
 
 if __name__ == '__main__':

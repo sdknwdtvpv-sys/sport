@@ -479,8 +479,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
           Text(
             value,
             key: key,
-            style: const TextStyle(
-                color: Tokens.text, fontSize: 16, fontWeight: FontWeight.w600),
+            style: Tokens.display(16, weight: 600),
           ),
         ],
       ),

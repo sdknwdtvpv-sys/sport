@@ -168,12 +168,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         // 在「身体数据」看到「188.5 lb」：同一个体重，两个单位两块屏。
                         formatBodyWeight(w.weightKg, _bodyUnit),
                         key: const Key('progress-weight'),
-                        style: const TextStyle(
-                          color: Tokens.text,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                        ),
+                        style: Tokens.display(24, weight: 700, letterSpacing: -0.3),
                       ),
                       const SizedBox(height: Tokens.s1),
                       Text(
@@ -384,12 +379,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           Text(
             d.weekVolumeLabel,
             key: const Key('progress-week-volume'),
-            style: const TextStyle(
-              color: Tokens.text,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-            ),
+            style: Tokens.display(28, weight: 700, letterSpacing: -0.5),
           ),
           Text(
             d.weekWorkouts == 0 ? '这 7 天还没练' : '这 7 天练了 ${d.weekWorkouts} 次',

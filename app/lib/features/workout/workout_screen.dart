@@ -701,12 +701,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }) {
     return Row(
       children: <Widget>[
-        Text(value,
-            style: const TextStyle(
-                color: Tokens.text,
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5)),
+        Text(value, style: Tokens.display(36, weight: 700, letterSpacing: -0.5)),
         if (unit.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(left: Tokens.s1),

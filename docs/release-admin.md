@@ -517,7 +517,7 @@ cocoapods.dart:307-310
 | 材料 | 谁做 | 说明 |
 |---|---|---|
 | 应用图标 | ✅ 已做（我） | `store-assets/icon-512.png`；Android 全套（传统 5 密度 + 自适应 + 圆形 + 主题剪影） |
-| 应用图标·怎么重做 | 一条命令 | `python3 tool/gen-icons.py`（默认：深底 + 白「练」 + volt 哑铃）；`tool/asset-check.mjs` 守着"不许是 Flutter 默认图" |
+| 应用图标·怎么重做 | 一条命令 | `python3 tool/gen-icons.py`（**默认方向 D：用户给的橙色圆环主图**，直接缩放 `icon/AppIcon-1024x1024@1x.png`；白底角按瓦片色补满，启动页那张是按「自发光」抠出来的）；`--logo dumbbell` 是上一版（深底 + 白「练」 + 哑铃）。`tool/asset-check.mjs` 守着「不许是 Flutter 默认图」 |
 | 截图 | 你（或设计师） | 主流要求 3–8 张；**注意**：截图必须来自真实 App，不能拿原型图充数 |
 | 应用描述（短/长） | ✅ **已备好** | [`docs/store-listing.md`](store-listing.md) §2/§3，可直接粘贴 |
 | 分类 / 内容分级 | ✅ **已备好答案** | [`docs/store-listing.md`](store-listing.md) §4（逐题答案，你确认即可） |

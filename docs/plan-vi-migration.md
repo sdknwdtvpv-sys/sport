@@ -183,11 +183,13 @@ VI 的值取自 `vi/*.html` 的 `:root`（15 份各自抄了一份，14 种略�
 | 色板换新 VI（`app/lib/core/theme.dart`） | ✅ **已落地** | `Tokens.volt*` → `Tokens.accent*`（23 个文件重命名）；暖黑 + 橙 + 半透明白边线；`flutter analyze` 无问题、**887 项测试全绿** |
 | 规格与原型同步（"三处必须一致"） | ✅ 已改 | `docs/interaction-spec.md` §4 色板、`prototype/index.html` 的 CSS 变量 |
 | 在 App 内的隐私页配色 | ✅ 已改 | `tool/gen-privacy-page.mjs` 重新生成 `store-assets/privacy/index.html`（`--check` 通过） |
-| 真机/模拟器对照 | ✅ 拍过 | 同一台模拟器同一份数据的换色前后（首页 / 进步 / 我），见 `练了么-换色对比.png` |
-| 字体（Oswald + 正文策略） | ⬜ 未做 | 要先定：Noto 子集化还是正文继续用系统字体 |
+| 真机/模拟器对照 | ✅ 拍过 | 换色前后（`练了么-换色对比.png`）；新图标的四处落点（`练了么-新图标.png`：主图 / 启动器 / 冷启动启动屏 / 商店 512 + 特征图） |
+| 字体（Oswald + 正文走系统） | ✅ **已落地**（2026-10-05） | 变量字体 172 KB 进包、`Tokens.display()` 助手、**只给数字与拉丁用**；许可原文入库并在 `LicenseRegistry` 登记（应用内「开源许可」可查）；新增 4 条守卫测试（`app/test/display_font_test.dart`：声明/文件/许可/**量宽度证明它真的加载了**） |
+| 图标换成橙色圆环 | ✅ **已落地** | `tool/gen-icons.py` 新增方向 D（**默认**）：直接缩放 `icon/` 主图，白底角按瓦片色补满；启动页那张按「自发光」抠出来（阈值 45 + 径向淡出，都是量出来的）；两端全套 + 商店图标 + 特征图 |
+| 启动屏 / 原生底色跟着换 | ✅ 已改 | 安卓 `app_background` 与 iOS `LaunchScreen.storyboard` 都从旧冷黑 `#0B0B0D` 改到 `#0E0C0A`（**这是一处没人守着的漂移，换色时才被发现**）；新增 `app/android/app/src/main/res/values-v31/styles.xml` 把 Android 12+ 的系统启动屏也换成那张圆环（默认会拿自适应图标，暖黑底上看得见一圈冷色边） |
 | 5 个 Tab 骨架 | ⬜ 未做 | `app/lib/core/app_tab_bar.dart` 现在仍是 3 个 |
 | 卡片/统计块/图表组件 | ⬜ 未做 | — |
-| 图标与启动图、商店图、三套截图 | ⬜ 未做 | 图标方向要先定（圆环 vs 绿哑铃） |
+| 三套商店截图重出 | ⬜ 未做 | 换完 Tab 骨架再拍（不然要拍两遍） |
 
 > ⚠️ 这一版**还没切版本号**（仓库仍是 v1.44.0）。等 5 Tab 与图标都落地，再一次性切 v1.45.0
 > 并补 `CHANGELOG.md` —— 切版要连商店图与三套截图一起重出，那才是"一版看起来就是新 App"。
