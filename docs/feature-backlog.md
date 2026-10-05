@@ -177,3 +177,25 @@
    的表 → 三条；**顺带核一遍两张商店表单里有没有枚举通知用途**（`check-store-forms` 会盯）；
 5. **测试**：文案纯函数（含"没练过就不该有下次部位"）、排程/取消的幂等、
    "练完一次就把今天那条撤掉"、以及**通知不新增权限**这一条（manifest 权限数不许变）。
+
+### 断点（2026-10-05 收尾时的工作状态，下一轮从这里开始）
+
+**已完成**：④ 报表跑通 · ⑥ 删 `requestLegacyExternalStorage` · ② 热门动作（改叫法 + 测试）·
+③ 的**文案**（`next_training_copy.dart`，3 条测试）与**排程时刻**（同文件 `nextTrainingReminderAt`，2 条测试）。
+
+**下一轮第一步（③ 的最后一块，改动半径小、不动 schema）**：
+1. 在总结页出现处（`main.dart` 的 `_trainSession` 返回之后）调 `nextTrainingReminderCopy(nextMuscleKey)`
+   → 拿到 `(title, body)` 就排一条**一次性**通知，时刻用 `nextTrainingReminderAt(nowMs:…, minutesOfDay: 设置值)`；
+   拿到 `null` 就**不排**；
+2. 取消走现成的 `ReminderService.sync()` 出口（当天再练就撤掉那条）——**不新增权限**，
+   `app/test/` 要有"练完一次就撤掉今天那条"的测试，并断言 manifest 权限数不变；
+3. 合规五处：中英政策 `POST_NOTIFICATIONS` 行 + "说明五点"→六点、`privacy-facts.json` 权限 why、
+   `screens.md` "本地通知两条"→三条、核两张商店表单里有没有枚举通知用途。
+
+**之后**：① 身体数据进备份（最重：备份 format+1、老备份仍可读、中英政策 §3.1、事实表）→ ⑤ 商店首图换引导页（三套图重出）→ ⑧ Ultra（等账号）。
+
+**仍等用户三个选择**（不回就按建议默认执行并在文档写明）：埋点积压事件 **A/B/C/D**（建议 **D** 超龄丢弃）·
+`tap_count` 校准规则 **①②③**（建议 **③** 熟人短测）· Android SDK 路径 **A/B/C/D**（建议 **C** 同一卷挂到无空格挂载点）。
+
+**操作纪律（这一轮踩过）**：**先跑完 `./verify.sh` 再 push** —— 有一次提交时门禁还没跑完就推了，
+软著页数（1267 → 1268）没跟上，中间那一版 CI 红了；下一提交修好，当前 HEAD 是绿的。
