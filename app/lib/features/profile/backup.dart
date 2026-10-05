@@ -27,10 +27,26 @@ import '../../domain/models.dart';
 ///   ⚠️ 这是本项目第一次**扩大备份范围**：原先只有训练记录（用户 2026-09-30 拍板
 ///   "范围就此定死"），2026-10-04 用户点头把"置顶"这一项也带上 ——
 ///   理由很直接：换手机时如果收藏没了，用户会觉得"我的数据没全回来"。
-///   **只加这一项**：体重、计划模板、其它设置**仍然不进备份**（要动它们得再拍一次板）。
-///   读的时候三版都认：v1/v2 里没有这个键 → `pinnedExerciseIds == null`，
-///   表示"这份备份对置顶没有意见"，导入时**不许拿它去清掉本机已有的置顶**。
-const int kBackupFormat = 3;
+/// * **4** —— 2026-10-05 加 `body`（**身体数据**：身高 + 逐日的体重/体脂率/腰围/
+///   肌肉量/备注）。第二次扩大范围，用户点头（同一条理由：换手机时那几样也得回来）。
+///
+/// ## 一条比"版本号"更要紧的纪律：**没提过的东西，不许动**
+///
+/// 读的时候 1–4 版全认。缺的键一律解析成 **null**，而 null 的语义是
+/// **"这份备份对这件事没有意见"** —— 导入时**不许**拿它去清空本机已有的东西：
+///   * v1/v2 没有 `pinned_exercises` → 不动本机的置顶（否则拿老备份恢复会清空收藏）；
+///   * v1–v3 没有 `body` → 不动本机的身体数据与身高。
+/// 反过来说，**空列表是有意义的**（"我一个都没置顶"）—— 两件事混成一件就是数据丢失。
+///
+/// ## 身体数据还多一道门（2026-10-05）
+///
+/// 体重那一类属于**敏感个人信息**（PIPL 第 29 条），本机记它之前先过了一道
+/// **单独同意**。所以：
+///   * **攒备份时**：那道同意不在（从没同意过、或已经撤回）→ **一个数值都不放进去**；
+///   * **写回库时**：本机没有那道同意 → **一个数值都不写**（摘要里如实说有多少条没进来）。
+/// 这条不是"多一层开关"，而是"同意范围到哪，处理就到哪"：撤回之后继续把它传出去，
+/// 撤回就成了空话。判据在 `backup_source.dart`，测试在 `app/test/backup_scope_test.dart`。
+const int kBackupFormat = 4;
 
 /// 备份里的应用标识。粘错东西时要能一眼认出来，所以不只看 JSON 能不能解析。
 const String kBackupApp = 'lianleme';
@@ -40,6 +56,53 @@ String backupFileName(int nowMs) {
   final DateTime t = DateTime.fromMillisecondsSinceEpoch(nowMs);
   String two(int n) => n.toString().padLeft(2, '0');
   return '练了么-备份-${t.year}-${two(t.month)}-${two(t.day)}.json';
+}
+
+/// 备份里**一条身体数据**（一天一条，v4 起）。
+///
+/// 字段与 `body_metric` 表一一对应，但**故意不直接用 drift 的 `BodyMetricData`**：
+/// 这一层是"格式与解析"，不该认识数据库（认识它的后果是"改一列 schema 就会
+/// 悄悄改掉导出的形状"，而备份的形状是要长期稳定的）。
+class BackupBodyMetric {
+  const BackupBodyMetric({
+    required this.date,
+    this.weightKg,
+    this.bodyFatPct,
+    this.waistCm,
+    this.muscleMassKg,
+    this.note,
+  });
+
+  /// `YYYY-MM-DD`（本地日）—— 与库里的业务键同一个口径（`body_metric_repository.dart`）
+  final String date;
+  final double? weightKg;
+  final double? bodyFatPct;
+  final double? waistCm;
+  final double? muscleMassKg;
+  final String? note;
+
+  /// 一条"有内容的"记录：至少要有一个值或一句备注。
+  /// 只有日期的空壳不该被写回库里（那会造出一行什么都不表示的记录）。
+  bool get hasContent =>
+      weightKg != null ||
+      bodyFatPct != null ||
+      waistCm != null ||
+      muscleMassKg != null ||
+      (note != null && note!.trim().isNotEmpty);
+}
+
+/// 备份里的**身体数据整块**（v4 起）。
+///
+/// **`null`（整块没有）与"有块但一条都没有"是两件事**（见 `kBackupFormat` 的注释）：
+/// v1–v3 的备份里没有这个键 → 解析成 null → 导入时**不动**本机的身体数据。
+class BackupBody {
+  const BackupBody({this.heightCm, this.metrics = const <BackupBodyMetric>[]});
+
+  /// 身高（cm）。它不是每日指标，存在档案里、只用来算 BMI —— 不带上它，
+  /// 恢复后 BMI 就一直空着（同一个功能"只回来一半"）。
+  final double? heightCm;
+
+  final List<BackupBodyMetric> metrics;
 }
 
 /// 把训练数据编码成备份文本。
@@ -55,6 +118,7 @@ String encodeBackup({
   required List<Workout> workouts,
   required Map<String, String> exerciseNames,
   List<String> pinnedExerciseIds = const <String>[],
+  BackupBody? body,
   int? nowMs,
 }) {
   final Map<String, Object?> root = <String, Object?>{
@@ -65,6 +129,24 @@ String encodeBackup({
     'exercise_names': exerciseNames,
     // **动作置顶**（v3 起）。按用户排的顺序写 —— 导回来时顺序要一样。
     'pinned_exercises': pinnedExerciseIds,
+    // **身体数据**（v4 起）。攒它的人负责先过那道单独同意门（见 kBackupFormat 的注释）：
+    // 传 null 就是"这份备份不带身体数据"，读的人会原样理解成"不动本机那些"。
+    'body': body == null
+        ? null
+        : <String, Object?>{
+            'height_cm': body.heightCm,
+            'metrics': <Object?>[
+              for (final BackupBodyMetric m in body.metrics)
+                <String, Object?>{
+                  'date': m.date,
+                  'weight_kg': m.weightKg,
+                  'body_fat_pct': m.bodyFatPct,
+                  'waist_cm': m.waistCm,
+                  'muscle_mass_kg': m.muscleMassKg,
+                  'note': m.note,
+                },
+            ],
+          },
     'workouts': <Object?>[
       for (final Workout w in workouts)
         <String, Object?>{
@@ -98,7 +180,9 @@ class BackupParse {
     this.workouts = const <Workout>[],
     this.exerciseNames = const <String, String>{},
     this.pinnedExerciseIds,
+    this.body,
     this.skippedSets = 0,
+    this.skippedBodyMetrics = 0,
     this.error,
   });
 
@@ -114,8 +198,16 @@ class BackupParse {
   /// 把这两件事混成一件的后果：拿一份老备份去恢复，会把用户的收藏静默清空。
   final List<String>? pinnedExerciseIds;
 
+  /// 备份里的**身体数据**（v4 起）。**null 与"有块"是两件事**（同上）：
+  /// `null` = v1–v3 没提过 → 导入时不动本机的身体数据与身高。
+  final BackupBody? body;
+
   /// 因为缺字段/类型不对被跳过的组数。> 0 时界面必须如实说出来。
   final int skippedSets;
+
+  /// 同理，被跳过的**身体数据条数**。整块 `body` 读不出来时也记 1 ——
+  /// 粒度退化了，但**必须留痕**：静默丢掉一整个块，比这个数字不精确更坏。
+  final int skippedBodyMetrics;
 
   /// 非 null 表示整份文件不可用（不是 JSON / 不是本应用的备份）。
   final String? error;
@@ -126,6 +218,9 @@ class BackupParse {
       workouts.fold<int>(0, (int a, Workout w) => a + w.sets.length);
 
   int get workoutCount => workouts.length;
+
+  /// 这份备份里带了几条身体数据（0 = 没带）
+  int get bodyMetricCount => body?.metrics.length ?? 0;
 }
 
 int? _asInt(Object? v) {
@@ -191,6 +286,55 @@ BackupParse parseBackup(String text) {
       for (final Object? v in pinnedRaw)
         if (v is String && v.trim().isNotEmpty) v,
     ];
+  }
+
+  // 身体数据同样是**可选**的（v4 才有），规则与置顶完全一样：
+  // 没有这个键 → null → 导入时不动本机的身体数据。
+  int skippedBody = 0;
+  BackupBody? body;
+  final Object? bodyRaw = decoded['body'];
+  if (bodyRaw is Map) {
+    final List<BackupBodyMetric> metrics = <BackupBodyMetric>[];
+    final Object? listRaw = bodyRaw['metrics'];
+    if (listRaw is List) {
+      for (final Object? mRaw in listRaw) {
+        if (mRaw is! Map) {
+          skippedBody++;
+          continue;
+        }
+        final Object? dateRaw = mRaw['date'];
+        if (dateRaw is! String || dateRaw.trim().isEmpty) {
+          skippedBody++;
+          continue;
+        }
+        final BackupBodyMetric m = BackupBodyMetric(
+          date: dateRaw.trim(),
+          weightKg: _asDouble(mRaw['weight_kg']),
+          bodyFatPct: _asDouble(mRaw['body_fat_pct']),
+          waistCm: _asDouble(mRaw['waist_cm']),
+          muscleMassKg: _asDouble(mRaw['muscle_mass_kg']),
+          note: (mRaw['note'] is String && (mRaw['note'] as String).trim().isNotEmpty)
+              ? (mRaw['note'] as String).trim()
+              : null,
+        );
+        // 只有日期的空壳不写回库（那会造出一行什么都不表示的记录）
+        if (!m.hasContent) {
+          skippedBody++;
+          continue;
+        }
+        metrics.add(m);
+      }
+    } else if (listRaw != null) {
+      skippedBody++; // 有 metrics 这一格但不是列表
+    }
+    body = BackupBody(
+      heightCm: _asDouble(bodyRaw['height_cm']),
+      metrics: metrics,
+    );
+  } else if (bodyRaw != null) {
+    // 有 body 这一格但不是对象：**不当成"没有身体数据"**（那会静默地什么都不恢复），
+    // 而是留痕：解析成 null（最安全的解释 = 不动本机），并记 1 处没认出来。
+    skippedBody++;
   }
 
   final List<Workout> out = <Workout>[];
@@ -259,6 +403,8 @@ BackupParse parseBackup(String text) {
     workouts: out,
     exerciseNames: names,
     pinnedExerciseIds: pinned,
+    body: body,
     skippedSets: skipped,
+    skippedBodyMetrics: skippedBody,
   );
 }

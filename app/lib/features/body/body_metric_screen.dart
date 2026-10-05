@@ -145,13 +145,21 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           // 所以说明里的"记的是体重"必须跟着改 —— 只写体重就变成"收集了没说"。
           // 它们共用**这一次**同意（同一类数据、同一个页面、同一个用途），
           // 不是每加一个字段就再弹一次窗。
+          //
+          // ⚠️ 2026-10-05：这一句原来写的是「不会上传（云备份里也不含身体数据）」，
+          // 而身体数据那天起**会进备份** —— 那句话就成了假话。改法不是把它删掉
+          // （"去向"是这道门最要紧的一句），而是把真实条件写出来：
+          // **只有你自己打开云备份**，它才会以密文离开这台手机。
+          // 撤回同意之后连备份里也不会再有（判据在 backup_source.dart）。
           '「身体数据」记的是你的体重、体脂率、腰围、肌肉量和身高 —— '
           '按《个人信息保护法》，这类健康数据属于'
           '敏感个人信息，需要我们单独征求你的同意（首次启动时那次是政策总同意，'
           '不等于这一条）。\n\n'
-          '· 它们只存在这台手机上，不会上传（云备份里也不含身体数据）；\n'
+          '· 它们默认只存在这台手机上。只有你自己在「数据与备份 → 云备份」里'
+          '开启云备份时，它们才会和训练记录一起以密文上传（端到端加密，服务端读不出来）；'
+          '云备份默认是关的，你不开就不上传。\n'
           '· 用途只有一个：给你自己看长期变化（身高只用来算 BMI）；\n'
-          '· 你可以随时在「全部数据」里改或删掉它们。',
+          '· 你可以随时在「全部数据」里改或删掉它们，也可以随时撤回这次同意。',
           key: Key('body-consent'),
           style: TextStyle(color: Tokens.text2, height: 1.6),
         ),
@@ -193,6 +201,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           '撤回的是「同意」，不是数据：\n\n'
           '· 这一页下次进来会重新问你一次；\n'
           '· 你不同意之前，不会再读、也不会再写体重、体脂率、腰围、肌肉量和身高；\n'
+          '· 之后的备份（本机导出与云备份）里也不会再带上它们；\n'
           '· 已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
           key: Key('body-revoke-note'),
           style: TextStyle(color: Tokens.text2, height: 1.6),
@@ -672,7 +681,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         Expanded(child: _smallField('肌肉量 kg', 'body-muscle', _muscle)),
                       ],
                     ),
-                    _label('身高 cm（只用来算 BMI，只存本机）'),
+                    _label('身高 cm（只用来算 BMI）'),
                     _smallField('例如 175', 'body-height', _height),
                     _label('备注（可选）'),
                     TextField(

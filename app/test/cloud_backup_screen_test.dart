@@ -157,6 +157,19 @@ void main() {
         find.descendant(of: dialog, matching: find.textContaining('服务端只拿到密文')),
         findsOneWidget,
       );
+      // ★ 2026-10-05：备份里**多了身体数据**，而这是用户开启它的那一刻 ——
+      // 弹层必须逐项说清带走了什么（政策 §3.3 是同一份清单）。
+      // 少了这一句就是"带走了没说"，与"收集了没说"是同一种错。
+      expect(
+        find.descendant(of: dialog, matching: find.textContaining('身体数据')),
+        findsOneWidget,
+        reason: '开启云备份的弹层里没提身体数据 —— 用户不知道自己开了什么',
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.textContaining('单独同意')),
+        findsOneWidget,
+        reason: '要说清"只在给过那次单独同意时才带上"，否则这句承诺是含糊的',
+      );
       expect(
         find.descendant(of: dialog, matching: find.textContaining('丢了')),
         findsOneWidget,

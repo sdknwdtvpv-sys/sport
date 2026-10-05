@@ -54,6 +54,20 @@ class BodyMetricRepository {
             ..limit(limit))
           .get();
 
+  /// **全部有效记录**，按日期升序（老的在前）。
+  ///
+  /// 为什么升序：它只给**备份**用（`collectBackup`），而写进 JSON 的顺序
+  /// 最好与"人翻记录"的顺序一致 —— 导回来之后时间线还是顺着读的。
+  /// 软删除的（还在回收站里）**不算**：备份是"有效数据"的副本，
+  /// 与训练记录同一个口径（`allSets()` 也只给有效组）。
+  Future<List<BodyMetricData>> all() =>
+      (_db.select(_db.bodyMetric)
+            ..where((t) => t.deletedAt.isNull())
+            ..orderBy(<OrderingTerm Function($BodyMetricTable)>[
+              (t) => OrderingTerm.asc(t.date),
+            ]))
+          .get();
+
   /// 保存某天的身体数据。同一天再存就是**改那一条**，不会变成两条。
   Future<BodyMetricData> save({
     required String date,

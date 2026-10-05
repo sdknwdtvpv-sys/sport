@@ -133,6 +133,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
     final BackupBundle bundle = await collectBackup(
       store: widget.store,
       repository: widget.repository,
+      // 身体数据（2026-10-05 起进备份）：要不要带上由那道**单独同意**决定，
+      // 所以这里必须把身体数据的库与档案一起交进去。
+      // ⚠️ `bodyMetrics` 在这一屏是**可选**的（截图脚本不传），不传 = 不带身体数据。
+      bodyMetrics: widget.bodyMetrics,
+      profile: widget.profile,
       nowMs: now,
     );
     await widget.backupExporter
@@ -141,9 +146,9 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        // 置顶也是这次一起带走的（2026-10-04 起）：带没带、带了几个，用户有权知道
-        content: Text('已导出 ${bundle.workouts} 次训练 / ${bundle.sets} 组'
-            '${bundle.pinned > 0 ? ' / ${bundle.pinned} 个置顶动作' : ''}'),
+        // 带走了什么，用户有权知道（置顶 2026-10-04 起、身体数据 2026-10-05 起）。
+        // 这句话由 `BackupBundle.summary` 一处拼好 —— 云备份那边用的是同一句。
+        content: Text('已导出 ${bundle.summary}'),
         backgroundColor: Tokens.elevated,
       ),
     );
@@ -171,9 +176,15 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
     }
 
     // 落库的活儿同样在 backup_source.dart 里（与"从云端恢复"共用）
-    // 把 repository 传进去：恢复到的库若缺某个动作，用备份里的名字按原 id 补建一个
-    final BackupApplyResult applied =
-        await applyBackup(widget.store, parsed, exercises: widget.repository);
+    // 把 repository 传进去：恢复到的库若缺某个动作，用备份里的名字按原 id 补建一个；
+    // 身体数据（v4）要过那道单独同意才写得进去，没过就在摘要里如实说有多少条没进来。
+    final BackupApplyResult applied = await applyBackup(
+      widget.store,
+      parsed,
+      exercises: widget.repository,
+      bodyMetrics: widget.bodyMetrics,
+      profile: widget.profile,
+    );
     if (!mounted) return;
     widget.onDataChanged?.call();
     if (!mounted) return;
@@ -216,6 +227,9 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           store: widget.store,
           repository: widget.repository,
           profile: widget.profile,
+          // 身体数据（2026-10-05 起进备份）—— 云备份那条路也要带上它，
+          // 否则会出现"本机导出有身体数据、云端备份没有"，而用户看不出区别。
+          bodyMetrics: widget.bodyMetrics,
           onDataChanged: () => widget.onDataChanged?.call(),
         ),
       ),

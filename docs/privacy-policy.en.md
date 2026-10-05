@@ -68,8 +68,9 @@ yourself**: that copy is encrypted on your phone before it leaves, and only ciph
 > Under Article 29 of China's Personal Information Protection Law, processing sensitive
 > personal information in the health category requires **separate consent** — the general
 > "agree to the privacy policy" on first launch **is not** that consent. So the **first time
-> you open the Body metrics screen** we show a dedicated explanation (stored on this device
-> only, never uploaded, editable and deletable at any time) and only start recording after
+> you open the Body metrics screen** we show a dedicated explanation (kept on this device by
+> default; uploaded as ciphertext only if you yourself turn on cloud backup; editable and
+> deletable at any time) and only start recording after
 > you agree; choosing "not now" means we do not open that screen and collect nothing.
 > To be explicit about purpose: it is used **only so you can see your own long-term change** —
 > never for advertising or any other purpose (App Store Guideline 5.1.3 likewise forbids
@@ -77,9 +78,19 @@ yourself**: that copy is encrypted on your phone before it leaves, and only ciph
 >
 > **Body fat percentage, waist, muscle mass and height sit behind the same gate** (since
 > v1.52): they are body metrics just like weight, so they share that one separate consent
-> instead of prompting again for every new field — but every one of those numbers is
-> **stored on your device only, never uploaded and never included in analytics**. Height is
+> instead of prompting again for every new field — but none of those numbers is
+> **included in analytics**, and we never collect them on our own. Height is
 > used solely to compute BMI (weight ÷ height²); with no height entered we show no BMI.
+>
+> ⚠️ **Since 2026-10-05 body metrics travel with the cloud backup you enable yourself**
+> (they were not in the backup before that): when you change phones, body weight, body fat,
+> waist, muscle mass and height should come back too — otherwise users reasonably conclude
+> "my data did not all come back". Their destination is exactly the same as your workout
+> records: **only if you turn on cloud backup** under Me → Data & backup → Cloud backup does
+> that copy get **end-to-end encrypted** and uploaded (the server holds ciphertext only and
+> cannot read a single value). Cloud backup is **off by default**, so nothing is uploaded
+> unless you turn it on. **After you withdraw this consent, no later backup contains those
+> values** (the rule lives in code and is pinned by tests).
 >
 > **You can withdraw that consent at any time** (PIPL Article 15). The entry sits at the
 > bottom of the Body metrics screen — "Withdraw my consent". After withdrawal we stop
@@ -146,8 +157,9 @@ A few clarifications:
 - ❌ Contacts, photos, camera, microphone
 - ❌ Advertising identifiers (no ad SDKs)
 - ❌ Clipboard contents ("Export" **writes** to your clipboard for you; we never read it)
-- ❌ **Body-weight and other body-metric values** — only booleans such as "weight recorded" /
-  "note present" are reported; the numbers never leave the device
+- ❌ **Body-weight and other body-metric values** — analytics reports only booleans such as
+  "weight recorded" / "note present"; **the numbers never enter analytics and we never read
+  them**. The only path off the device is the cloud backup you enable yourself (see 2.1 and 3.3)
 - ❌ **Free text** such as workout notes or custom exercise names
 
 ---
@@ -168,7 +180,8 @@ switches, and both are **off by default**:
   versions**: that backlog is cleared the first time a reporting build starts ("whoever recorded
   it, sends it"). Events you recorded in an older version are **not** uploaded retroactively.
 - **Cloud backup** (**off by default**; you turn it on in Profile → Data & backup → Cloud backup).
-  Once on, your workout records are **end-to-end encrypted** and stored on a server — so you can
+  Once on, **your workout records and body metrics** (weight / body fat / waist / muscle mass /
+  height) are **end-to-end encrypted** and stored on a server — so you can
   get them back on a new phone, or if your phone is lost. **The server only ever receives
   ciphertext**: encryption happens on your phone, and we cannot read a single field;
   the **recovery code** is the only key and the server does not hold it — so **if you lose the
@@ -191,6 +204,30 @@ switches, and both are **off by default**:
   account deletion (the cloud copy is deleted).
 - We **never sell, rent, or share** your personal information with third parties. No third-party
   advertising. No data brokers.
+
+### 3.3 What a cloud backup actually contains
+
+Only **this** leaves the device as ciphertext once you enable cloud backup — here is its
+entire content, with nothing "else we did not mention":
+
+| Content | What it is |
+|---|---|
+| Workout records | Every workout: exercise id, weight (always kg), reps, set index, warm-up flag, RPE, distance, completion time |
+| Exercise name table | Exercise id → Chinese name. **Used only to display names after a restore** (it never overwrites a name you changed yourself) |
+| Pinned exercises | The exercises you pinned, in your order (in backups since 2026-10-04) |
+| **Body metrics** | Daily body weight, body fat percentage, waist, muscle mass and note, plus height (in backups since 2026-10-05). ⚠️ **Included only while you still hold the separate consent in 2.1**; after you withdraw it, no later backup contains them |
+| The backup's own bookkeeping | Export time, format version, weight-unit marker (`kg`) |
+
+**Not included**: routine templates, settings such as units / rest duration / switches,
+the anonymous analytics events, and your **recovery code itself** (it exists only on your
+device — the server does not have it, so losing it means losing it).
+
+Two points to be explicit about:
+
+* **The server only ever has ciphertext**: encryption happens on your phone; not a single
+  field is readable on our side;
+* **Restoring only ever adds**: restoring fills in or overwrites the entry for the *same day* —
+  it **never deletes** the readings you recorded yourself on the new phone.
 
 ---
 

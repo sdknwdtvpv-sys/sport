@@ -75,6 +75,14 @@ void main() {
         expect(body.contains(field), isTrue,
             reason: '单独同意弹层里没提到「$field」—— 收集了没说');
       }
+      // ⚠️ 2026-10-05：身体数据**进了备份**，所以那句"只存在这台手机上、不会上传"
+      // 必须带上真实条件。这一条钉的是"别把它悄悄写回去" ——
+      // 只写"只存本机"而事实上云备份会带走它，就是**同意书上的一句假话**。
+      expect(body.contains('云备份'), isTrue,
+          reason: '身体数据会随云备份离开设备 —— 这道门里必须说清"什么条件下才会"');
+      expect(body.contains('只有你自己') || body.contains('你不开'),
+          isTrue,
+          reason: '要说清"默认不上传、是你自己开云备份才会"');
     });
 
     testWidgets('点「先不用」：退出这一页，库里仍然什么都没有',

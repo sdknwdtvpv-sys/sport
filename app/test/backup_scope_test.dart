@@ -2,27 +2,29 @@
 ///
 /// **为什么单独一组**：设计稿第四节的子决策 3 写的是「备份粒度 → **全都要（设置也备份）**」，
 /// 而实现里 `collectBackup` 攒的只有**训练记录**（workouts + sets）加一张给人看的动作名表。
-/// 于是实际边界是：
+/// 于是实际边界是（**v4，2026-10-05**）：
 ///
 /// | 数据 | 在备份里吗 |
 /// |---|---|
 /// | 训练记录（动作/重量/次数/组序/热身/RPE/距离/完成时间） | ✅ |
 /// | 动作 id → 中文名（只为人看，恢复时能显示名字） | ✅ |
-/// | **动作置顶（收藏）** | ✅ **2026-10-04 起**（见下） |
-/// | 身体数据（体重） | ❌ |
+/// | **动作置顶（收藏）** | ✅ **2026-10-04 起** |
+/// | **身体数据（体重/体脂率/腰围/肌肉量/备注 + 身高）** | ✅ **2026-10-05 起**（见下） |
 /// | 计划模板（routines） | ❌ |
 /// | 个人设置（单位 / 渐进开关 / 休息时长 / 统计开关） | ❌ |
 ///
-/// **2026-10-04 的范围扩张（唯一一次）**：用户拍板把「动作置顶」加进备份 ——
-/// 理由很直接：换手机时收藏没了，用户会认为"我的数据没全回来"。
-/// **只加了这一项**：体重 / 计划模板 / 其它设置**仍然不进**（要动它们得再拍一次板，
-/// 并同步 `privacy-facts.json` 的 `cloudBackup` 与 `docs/backend-design.md` 第四节的子决策 3）。
+/// **两次范围扩张，理由是同一条**：换手机时东西没了，用户会认为"我的数据没全回来"。
+/// 第一次（2026-10-04）加的是**动作置顶**；第二次（2026-10-05）加的是**身体数据**。
 ///
-/// 也就是说：**换手机或从云端恢复之后，训练记录与置顶回来了，但体重那几样没有。**
-/// 这不是 bug（代码行为一致），但它是**设计稿与实现不一致**，而且用户很容易以为
-/// "我的数据都回来了"。所以这里把边界钉死：
-///   * 谁想改这个范围，必须先改这里的断言 —— 而看到断言就会顺手去改政策与设计稿；
-///   * 断言同时说明"现在为什么会丢"，免得下一个人把它当 bug 去"顺手修好"而没同步政策。
+/// ⚠️ 第二次比第一次多一道门：身体数据是**敏感个人信息**（PIPL 第 29 条），
+/// 本机记它之前先过了一道**单独同意**。所以备份这边多两条硬规则（都有断言）：
+///   1. **攒备份**：那道同意不在（从没给过 / 已撤回）→ **一个数值都不放进去**；
+///   2. **写回库**：目标设备没有那道同意 → **一个数值都不写**，并在摘要里如实
+///      说"有 N 条没进来"（换新手机第一次恢复就是这种情形）。
+/// 撤回同意之后照样把数据从云上走一圈，"撤回"就成了空话 —— 这是这一组要守的东西。
+///
+/// **剩下没进备份的**（计划模板 / 其它设置）仍然不进：要动它们得再拍一次板，
+/// 并同步 `privacy-facts.json` 的 `cloudBackup` 与 `docs/backend-design.md` 第四节的子决策 3。
 library;
 
 import 'dart:convert';
@@ -64,6 +66,10 @@ Future<DriftLocalStore> seedRichDevice(AppDatabase db) async {
   await profile.setUnit(WeightUnit.lb, nowMs: 1000);
   await profile.setProgressionMode(ProgressionMode.off, nowMs: 1000);
   await profile.setRestOverrideSec(180, nowMs: 1000);
+  // 身体数据那道**单独同意**也过一下 —— 真实用户有身体数据就必然过过这道门
+  // （不过门就进不了那一页）。身高同样属于这一组数据。
+  await profile.setBodyMetricConsent(nowMs: 1000);
+  await profile.setHeightCm(178, nowMs: 1000);
   return store;
 }
 
@@ -78,6 +84,8 @@ void main() {
     final BackupBundle bundle = await collectBackup(
       store: store,
       repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
       nowMs: 1000,
     );
     final Map<String, Object?> root =
@@ -90,11 +98,12 @@ void main() {
       'unit',
       'exercise_names',
       'pinned_exercises', // v3（2026-10-04）：动作置顶
+      'body', // v4（2026-10-05）：身体数据（身高 + 逐日的体重/体脂率/腰围/肌肉量/备注）
       'workouts',
     }, reason: '备份的结构变了 —— 那就说明"备份范围"变了，'
         '请同时检查：docs/backend-design.md 第四节的子决策 3、隐私政策里的措辞、'
         '以及 docs/privacy-facts.json 的 cloudBackup 说明');
-    expect(root['format'], 3, reason: 'v3 就是"多了动作置顶"那一版');
+    expect(root['format'], 4, reason: 'v4 就是"多了身体数据"那一版');
 
     // 数值一律 kg，与显示单位无关（显示单位是 lb，导出的还是 kg）
     expect(root['unit'], 'kg');
@@ -102,30 +111,30 @@ void main() {
         reason: '前置：本机显示单位确实是 lb');
   });
 
-  test('身体数据 / 计划模板 / 其它设置**不在**备份里（当前边界，故意的）', () async {
+  test('计划模板 / 其它设置**仍然不在**备份里（剩下的那部分边界）', () async {
     final DriftLocalStore store = await seedRichDevice(db);
     final BackupBundle bundle = await collectBackup(
       store: store,
       repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
       nowMs: 1000,
     );
 
-    // 这些值在本机确实存在……
-    expect(await BodyMetricRepository(db).count(), 1);
     expect(await RoutineRepository(db).routines(), hasLength(1));
-    // ……但它们不该出现在备份文本里
-    expect(bundle.json.contains('72.5'), isFalse,
-        reason: '体重进了备份 —— 要么把范围扩大并同步政策，要么这不是你想要的');
     expect(bundle.json.contains('推日模板'), isFalse,
-        reason: '计划模板进了备份 —— 同上');
-    expect(bundle.json.contains('rest_override'), isFalse);
+        reason: '计划模板进了备份 —— 要动它得再拍一次板，并同步政策与事实表');
+    expect(bundle.json.contains('rest_override'), isFalse,
+        reason: '其它设置仍然不进备份（要动它同样得再拍一次板）');
   });
 
-  test('换手机的真实后果：训练记录回来了，体重/计划/设置**没回来**', () async {
+  test('换手机的真实后果：训练记录回来了；计划模板与设置**没回来**', () async {
     final DriftLocalStore oldPhone = await seedRichDevice(db);
     final BackupBundle bundle = await collectBackup(
       store: oldPhone,
       repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
       nowMs: 1000,
     );
 
@@ -141,10 +150,8 @@ void main() {
     await applyBackup(newPhone, parsed);
 
     expect(await newPhone.allSets(), hasLength(1), reason: '训练记录必须回来');
-    expect(await BodyMetricRepository(db2).count(), 0,
-        reason: '体重**不会**回来 —— 这是当前边界，不是意外');
     expect(await RoutineRepository(db2).routines(), isEmpty,
-        reason: '计划模板**不会**回来');
+        reason: '计划模板**不会**回来（仍在备份范围之外）');
     expect(await ProfileRepository(db2).unit(), WeightUnit.kg,
         reason: '设置回到默认值（不是原手机的 lb）');
   });
@@ -156,6 +163,8 @@ void main() {
     final BackupBundle bundle = await collectBackup(
       store: oldPhone,
       repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
       nowMs: 1000,
     );
     expect(bundle.pinned, 2, reason: '导出时要说清带了几个置顶');
@@ -241,6 +250,8 @@ void main() {
     final BackupBundle bundle = await collectBackup(
       store: oldPhone,
       repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
       nowMs: 1000,
     );
     final Map<String, Object?> root =
@@ -300,7 +311,8 @@ void main() {
       id: 'w_custom', startedAtMs: 1000, endedAtMs: 2000,
     ));
     final BackupBundle bundle = await collectBackup(
-      store: DriftLocalStore(db), repository: ExerciseRepository(db), nowMs: 1000,
+      store: DriftLocalStore(db), repository: ExerciseRepository(db), 
+      profile: ProfileRepository(db), bodyMetrics: BodyMetricRepository(db), nowMs: 1000,
     );
 
     // 新手机：先导入，再**把名字改掉**，然后再导一次同一份备份
@@ -323,6 +335,250 @@ void main() {
         reason: '第二次导入时动作已经在了 —— 不该重复建（幂等）');
   });
 
+  // ──────────────────────────────────────────────────────────────────────
+  // ★ 身体数据（v4，2026-10-05 的第二次范围扩张）
+  //
+  // 这一组比"动作置顶"那次多守一条：**那道单独同意**。
+  // 同意不在时，一个数值都不许进备份、也不许写回库 —— 否则"撤回同意"就等于空话。
+  // ──────────────────────────────────────────────────────────────────────
+
+  test('★ 进备份：逐日的数值、备注与身高都在（过了那道单独同意）', () async {
+    final DriftLocalStore store = await seedRichDevice(db);
+    await BodyMetricRepository(db).save(
+      date: '2026-10-01', weightKg: 71.2, bodyFatPct: 17.5,
+      waistCm: 81, muscleMassKg: 31.4, note: '早上空腹', nowMs: 2000,
+    );
+
+    final BackupBundle bundle = await collectBackup(
+      store: store,
+      repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
+      nowMs: 3000,
+    );
+
+    expect(bundle.bodyMetrics, 2, reason: '两条记录都要带走');
+    expect(bundle.hasBodyHeight, isTrue, reason: '身高也属于这一组数据');
+    final Map<String, Object?> root =
+        jsonDecode(bundle.json) as Map<String, Object?>;
+    final Map<String, Object?> body =
+        (root['body'] as Map<Object?, Object?>).cast<String, Object?>();
+    expect(body['height_cm'], 178);
+    final List<Object?> metrics = body['metrics']! as List<Object?>;
+    expect(metrics, hasLength(2));
+    final Map<String, Object?> first =
+        (metrics.first as Map<Object?, Object?>).cast<String, Object?>();
+    expect(first['date'], '2026-09-28',
+        reason: '按日期升序写（老的在前面，与人翻记录的顺序一致）');
+    expect((metrics.last as Map<Object?, Object?>)['note'], '早上空腹');
+    // 汇总那句话也要对得上 —— 导出的 SnackBar 与云备份用的是同一句
+    expect(bundle.summary, contains('2 条身体数据'));
+    expect(bundle.summary, contains('含身高'));
+
+    // 界面上不许出现 markdown 记号（SnackBar 的 Text 不渲染 markdown）
+    expect(bundle.summary.contains('**'), isFalse);
+  });
+
+  test('★ 单独同意**撤回之后**：一个数值都不进备份，而且"没带上几条"要说得出来',
+      () async {
+    final DriftLocalStore store = await seedRichDevice(db);
+    final ProfileRepository profile = ProfileRepository(db);
+    await profile.clearBodyMetricConsent(nowMs: 2000); // 用户撤回
+
+    final BackupBundle bundle = await collectBackup(
+      store: store,
+      repository: ExerciseRepository(db),
+      profile: profile,
+      bodyMetrics: BodyMetricRepository(db),
+      nowMs: 3000,
+    );
+
+    expect(bundle.json.contains('72.5'), isFalse,
+        reason: '撤回同意之后身体数据还在备份里 —— 那等于"撤回"是句空话');
+    expect(bundle.json.contains('178'), isFalse, reason: '身高同理');
+    expect(bundle.bodyMetrics, 0);
+    // 但**不许静默**：用户看到的是"备份成功"，得让他知道身体数据没进去、为什么
+    expect(bundle.bodyHeldBack, 1, reason: '本机有 1 条有效记录，要说出来');
+    expect(bundle.bodyHeightHeldBack, isTrue);
+    expect(bundle.summary, contains('没带上'));
+    expect(bundle.summary, contains('单独同意'));
+  });
+
+  test('★ 写回库也要过那道门：新手机还没同意 → 一条都不写，摘要里如实说',
+      () async {
+    final DriftLocalStore oldPhone = await seedRichDevice(db);
+    final BackupBundle bundle = await collectBackup(
+      store: oldPhone,
+      repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
+      nowMs: 1000,
+    );
+
+    // 新手机：全新安装，**还没过**「身体数据」那道单独同意
+    final AppDatabase db2 = AppDatabase(NativeDatabase.memory());
+    addTearDown(db2.close);
+    await ExerciseRepository(db2).importSeed(
+      loadJson: () => File('assets/exercises.json').readAsString(),
+    );
+    final BackupApplyResult r = await applyBackup(
+      DriftLocalStore(db2),
+      parseBackup(bundle.json),
+      bodyMetrics: BodyMetricRepository(db2),
+      profile: ProfileRepository(db2),
+    );
+
+    expect(await BodyMetricRepository(db2).count(), 0,
+        reason: '没过同意就写身体数据 = 在用户没点头之前收集敏感个人信息');
+    expect(await ProfileRepository(db2).heightCm(), isNull);
+    expect(r.bodyMetrics, 0);
+    expect(r.bodySkipped, 1, reason: '有一条没进来，必须报出来');
+    expect(r.summary, contains('没进来'));
+    expect(r.summary, contains('身体数据'));
+  });
+
+  test('★ 过了那道门 → 数值与身高都回来，而且**导两遍不会变成两条**', () async {
+    final DriftLocalStore oldPhone = await seedRichDevice(db);
+    final BackupBundle bundle = await collectBackup(
+      store: oldPhone,
+      repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
+      nowMs: 1000,
+    );
+
+    final AppDatabase db2 = AppDatabase(NativeDatabase.memory());
+    addTearDown(db2.close);
+    await ExerciseRepository(db2).importSeed(
+      loadJson: () => File('assets/exercises.json').readAsString(),
+    );
+    final ProfileRepository profile2 = ProfileRepository(db2);
+    await profile2.setBodyMetricConsent(nowMs: 1); // 新手机上他点了"同意并记录"
+
+    final BackupParse parsed = parseBackup(bundle.json);
+    final BackupApplyResult first = await applyBackup(
+      DriftLocalStore(db2), parsed,
+      bodyMetrics: BodyMetricRepository(db2), profile: profile2,
+    );
+    expect(first.bodyMetrics, 1);
+    expect(first.bodySkipped, 0);
+
+    final BodyMetricData? m = await BodyMetricRepository(db2).forDate('2026-09-28');
+    expect(m, isNotNull);
+    expect(m!.weightKg, 72.5, reason: '数值要原样回来');
+    expect(m.deletedAt, isNull);
+    expect(await profile2.heightCm(), 178, reason: '身高也回来了（BMI 才显示得出来）');
+
+    // 再导一遍同一份：按**日期**落库，所以还是那一条
+    await applyBackup(DriftLocalStore(db2), parsed,
+        bodyMetrics: BodyMetricRepository(db2), profile: profile2);
+    expect(await BodyMetricRepository(db2).count(), 1,
+        reason: '导两遍不该变成两条（同一天是"改那条"）');
+  });
+
+  test('★ 恢复**只增不减**：新手机上自己记的那几天，不会被一份旧备份抹掉', () async {
+    final DriftLocalStore oldPhone = await seedRichDevice(db);
+    final BackupBundle bundle = await collectBackup(
+      store: oldPhone,
+      repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
+      nowMs: 1000,
+    );
+
+    final AppDatabase db2 = AppDatabase(NativeDatabase.memory());
+    addTearDown(db2.close);
+    await ExerciseRepository(db2).importSeed(
+      loadJson: () => File('assets/exercises.json').readAsString(),
+    );
+    final ProfileRepository profile2 = ProfileRepository(db2);
+    await profile2.setBodyMetricConsent(nowMs: 1);
+    // 他在新手机上已经自己记了今天这条
+    await BodyMetricRepository(db2).save(date: '2026-10-05', weightKg: 70.0, nowMs: 1);
+
+    await applyBackup(DriftLocalStore(db2), parseBackup(bundle.json),
+        bodyMetrics: BodyMetricRepository(db2), profile: profile2);
+
+    expect(await BodyMetricRepository(db2).count(), 2,
+        reason: '备份里的那条 + 他自己记的那条，两条都在（恢复绝不删本机数据）');
+    expect((await BodyMetricRepository(db2).forDate('2026-10-05'))!.weightKg, 70.0);
+  });
+
+  test('★ 老备份（v3，没有 body 那一块）→ **不许**动本机的身体数据与身高', () async {
+    final DriftLocalStore store = await seedRichDevice(db);
+    final BackupBundle bundle = await collectBackup(
+      store: store,
+      repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
+      nowMs: 1000,
+    );
+    // 造一份"v3 老备份"：把 body 那一块删掉（老版本导出的就是这个形状）
+    final Map<String, Object?> root =
+        jsonDecode(bundle.json) as Map<String, Object?>;
+    root.remove('body');
+    root['format'] = 3;
+    final BackupParse parsed = parseBackup(jsonEncode(root));
+    expect(parsed.body, isNull, reason: '没有这一块 → null（"这份备份对这件事没有意见"）');
+
+    final AppDatabase db2 = AppDatabase(NativeDatabase.memory());
+    addTearDown(db2.close);
+    await ExerciseRepository(db2).importSeed(
+      loadJson: () => File('assets/exercises.json').readAsString(),
+    );
+    final ProfileRepository profile2 = ProfileRepository(db2);
+    await profile2.setBodyMetricConsent(nowMs: 1);
+    await BodyMetricRepository(db2).save(date: '2026-10-05', weightKg: 70.0, nowMs: 1);
+    await profile2.setHeightCm(170, nowMs: 1);
+
+    final BackupApplyResult r = await applyBackup(
+      DriftLocalStore(db2), parsed,
+      bodyMetrics: BodyMetricRepository(db2), profile: profile2,
+    );
+
+    expect(await BodyMetricRepository(db2).count(), 1, reason: '本机那条还在（没被清）');
+    expect(await profile2.heightCm(), 170, reason: '身高保持本机原样（不是被清空）');
+    expect(r.bodyMetrics, 0);
+    expect(r.bodySkipped, 0, reason: '这份备份没提身体数据，就不该说"有 N 条没进来"');
+  });
+
+  test('身体数据里的坏行：跳过并计数，但**不影响**训练记录导入', () async {
+    final DriftLocalStore store = await seedRichDevice(db);
+    final BackupBundle bundle = await collectBackup(
+      store: store,
+      repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
+      nowMs: 1000,
+    );
+    final Map<String, Object?> root =
+        jsonDecode(bundle.json) as Map<String, Object?>;
+    (root['body']! as Map<String, Object?>)['metrics'] = <Object?>[
+      <String, Object?>{'date': '2026-10-02', 'weight_kg': 70.5},
+      <String, Object?>{'weight_kg': 71.0}, // 没有日期 → 跳过
+      <String, Object?>{'date': '2026-10-03'}, // 只有日期、什么都没有 → 跳过
+      'not-a-map', // 不是对象 → 跳过
+    ];
+    final BackupParse parsed = parseBackup(jsonEncode(root));
+    expect(parsed.skippedBodyMetrics, 3);
+    expect(parsed.bodyMetricCount, 1);
+
+    final AppDatabase db2 = AppDatabase(NativeDatabase.memory());
+    addTearDown(db2.close);
+    await ExerciseRepository(db2).importSeed(
+      loadJson: () => File('assets/exercises.json').readAsString(),
+    );
+    final ProfileRepository profile2 = ProfileRepository(db2);
+    await profile2.setBodyMetricConsent(nowMs: 1);
+    final BackupApplyResult r = await applyBackup(
+      DriftLocalStore(db2), parsed,
+      bodyMetrics: BodyMetricRepository(db2), profile: profile2,
+    );
+    expect(r.bodyMetrics, 1, reason: '认出来的那一条照样写进去');
+    expect(await DriftLocalStore(db2).allSets(), hasLength(1),
+        reason: '身体数据里的坏行**不许**连累训练记录');
+  });
+
   test('动作库变了也能显示名字：备份里带了一份"动作 id → 中文名"', () async {
     // 这一条是设计上的**有意补偿**：动作名表让恢复后仍能显示中文，
     // 所以即使服务端/新版本的库里没有那个动作，用户也看得懂。
@@ -330,6 +586,8 @@ void main() {
     final BackupBundle bundle = await collectBackup(
       store: store,
       repository: ExerciseRepository(db),
+      profile: ProfileRepository(db),
+      bodyMetrics: BodyMetricRepository(db),
       nowMs: 1000,
     );
     final Map<String, Object?> root =

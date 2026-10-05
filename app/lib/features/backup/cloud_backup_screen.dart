@@ -24,6 +24,7 @@ import '../../backup/backup_transport.dart';
 import '../../backup/cloud_backup.dart';
 import '../../backup/recovery_code.dart';
 import '../../core/theme.dart';
+import '../../data/body_metric_repository.dart';
 import '../../data/db.dart' show BackupAccountData;
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
@@ -39,6 +40,7 @@ class CloudBackupScreen extends StatefulWidget {
     required this.store,
     required this.repository,
     required this.profile,
+    this.bodyMetrics,
     this.cloud,
     this.onDataChanged,
     this.clock,
@@ -48,6 +50,11 @@ class CloudBackupScreen extends StatefulWidget {
   final LocalStore store;
   final ExerciseRepository repository;
   final ProfileRepository profile;
+
+  /// 身体数据（2026-10-05 起进备份）。
+  /// 不传 = 这条路径不碰身体数据 —— 那时上传/恢复都会在摘要里如实说
+  /// "有 N 条身体数据没带上/没进来"，而不是静默少一截。
+  final BodyMetricRepository? bodyMetrics;
 
   /// 云备份服务。不传就按编译期配置建一个真身（测试一律注入假传输）。
   final CloudBackup? cloud;
@@ -185,7 +192,12 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         title: const Text('开启云备份', style: TextStyle(color: Tokens.text)),
         content: const Text(
           '备份会先加密、再存到服务器上。\n\n'
-          '· 服务端只拿到密文，看不到动作名、重量、体重\n'
+          // ⚠️ 2026-10-05：这一句必须**逐项说清带走了什么** —— 那天起备份里多了身体数据，
+          // 而这是用户开启它的那一刻（等于对这个用途的一次明确表示）。
+          // 政策 §3.3 列的是同一份清单，两处一起改。
+          '· 备份里是：训练记录、动作置顶（收藏）、以及你的身体数据'
+          '（体重、体脂率、腰围、肌肉量、身高 —— 只在你给过「身体数据」那次单独同意时才带上）\n'
+          '· 服务端只拿到密文，上面这些它一项都读不出来\n'
           '· 钥匙是一串「恢复码」，只显示这一次 —— 请抄在纸上\n'
           '· 恢复码丢了，连我们也帮不了你（服务端没有你的钥匙）',
           style: TextStyle(color: Tokens.text2, height: 1.6),
@@ -249,6 +261,8 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
       final BackupBundle bundle = await collectBackup(
         store: widget.store,
         repository: widget.repository,
+        profile: widget.profile,
+        bodyMetrics: widget.bodyMetrics,
         nowMs: _nowMs,
       );
       final BackupUploadResult r = await cloud.upload(
@@ -265,16 +279,14 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         await addBackupMessage(
           repo: notes,
           ok: true,
-          detail: '已上传 ${bundle.workouts} 次训练 / ${bundle.sets} 组'
-              '（${_sizeLabel(r.bytes)} 密文）',
+          detail: '已上传 ${bundle.summary}（${_sizeLabel(r.bytes)} 密文）',
           now: DateTime.fromMillisecondsSinceEpoch(_nowMs),
         );
       }
       await _load();
       if (!mounted) return;
-      setState(() =>
-          _notice = '已备份 ${bundle.workouts} 次训练 / ${bundle.sets} 组'
-              '（${_sizeLabel(r.bytes)} 密文）');
+      setState(() => _notice = '已备份 ${bundle.summary}'
+          '（${_sizeLabel(r.bytes)} 密文）');
     });
   }
 
@@ -298,9 +310,16 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         setState(() => _error = '云端的备份读不出来：${parsed.error}');
         return;
       }
-      // 同上：云端恢复也要补建本机缺的动作（否则换手机后动作名退化成 id）
-      final BackupApplyResult r =
-          await applyBackup(widget.store, parsed, exercises: widget.repository);
+      // 同上：云端恢复也要补建本机缺的动作（否则换手机后动作名退化成 id）；
+      // 身体数据（v4）要过那道单独同意才写得进去 —— 新手机上第一次恢复通常没有，
+      // 那时摘要里会说"有 N 条没进来、去「身体数据」页同意后重来一次"。
+      final BackupApplyResult r = await applyBackup(
+        widget.store,
+        parsed,
+        exercises: widget.repository,
+        bodyMetrics: widget.bodyMetrics,
+        profile: widget.profile,
+      );
       if (!mounted) return;
       widget.onDataChanged?.call();
       setState(() => _notice = '已从云端恢复：${r.summary}');
