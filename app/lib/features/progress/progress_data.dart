@@ -374,3 +374,37 @@ List<String> seriesEndLabels(DateTime today, ProgressRange r) {
   String md(DateTime d) => '${d.month}/${d.day}';
   return <String>[md(w.from), md(w.to.subtract(const Duration(days: 1)))];
 }
+
+/// 最近几次训练（首页「最近训练」与分享卡的打卡版都要）。
+///
+/// 从组记录**聚合**出来：`workout` 表里有开始/结束时间，但这一层拿不到它，
+/// 所以这里只用组里已有的信息 —— 日期、几个动作、多少组、总容量。
+/// ⚠️ **口径写清楚**：时间是"最后一组的完成时刻"，不是训练开始时刻。
+List<({String workoutId, DateTime day, int exercises, int sets, double volume})>
+    recentWorkouts(List<SetRecord> sets, {int limit = 3}) {
+  final Map<String, List<SetRecord>> byWorkout = <String, List<SetRecord>>{};
+  for (final SetRecord s in sets) {
+    byWorkout.putIfAbsent(s.workoutId, () => <SetRecord>[]).add(s);
+  }
+  final List<({String workoutId, DateTime day, int exercises, int sets, double volume})> out =
+      byWorkout.entries.map((MapEntry<String, List<SetRecord>> e) {
+    final List<SetRecord> rows = e.value;
+    int lastMs = 0;
+    double volume = 0;
+    final Set<String> exercises = <String>{};
+    for (final SetRecord s in rows) {
+      if (s.completedAtMs > lastMs) lastMs = s.completedAtMs;
+      volume += s.volume;
+      exercises.add(s.exerciseId);
+    }
+    return (
+      workoutId: e.key,
+      day: DateTime.fromMillisecondsSinceEpoch(lastMs),
+      exercises: exercises.length,
+      sets: rows.length,
+      volume: volume,
+    );
+  }).toList()
+        ..sort((a, b) => b.day.compareTo(a.day));
+  return out.take(limit).toList();
+}

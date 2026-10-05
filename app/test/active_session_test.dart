@@ -239,8 +239,10 @@ void main() {
         ),
       ));
       await tester.pumpAndSettle();
+      // 2026-10-05：那条「今天不想练？…」的独立链接并进了**快速入口磁贴** ——
+      // 同一个动作不该有两个入口。判据（轻量出口在主动作之后）照旧。
       expect(find.byKey(const Key('light-workout')), findsOneWidget);
-      expect(find.textContaining('今天不想练'), findsOneWidget);
+      expect(find.text('5 分钟活动'), findsOneWidget);
 
       // 主按钮在它上面：一遍过（"点一下就开始记录"这条不能被这条活动挤下去）
       final double primary = tester.getCenter(find.text('开始今天的训练')).dy;

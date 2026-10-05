@@ -174,9 +174,17 @@ void main() {
       expect(find.byKey(const Key('today-plan')), findsOneWidget);
       expect(find.text('今天还没有排动作'), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('open-plan')));
+      // 2026-10-05：主按钮进了卡片（新 VI），而 `tester.tap` 点的是**中心**——
+      // 现在中心是那颗按钮。所以要**点卡片的非按钮区域**（标题那行），
+      // 并且顺手钉死一件事：**点按钮不能顺带把建议卡也打开**（两个目标是分开的）。
+      await tester.tap(find.text('今天还没有排动作'));
       await tester.pumpAndSettle();
       expect(opened, isTrue);
+
+      opened = false;
+      await tester.tap(find.byKey(const Key('start-workout')));
+      await tester.pumpAndSettle();
+      expect(opened, isFalse, reason: '点主按钮不该同时打开建议卡');
 
       await teardown(tester);
     });

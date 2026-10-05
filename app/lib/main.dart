@@ -45,6 +45,8 @@ import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
 import 'features/routine/routine_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/body/body_metric_screen.dart';
+import 'features/progress/streak.dart';
 import 'features/progress/all_data_screen.dart';
 import 'features/progress/progress_data.dart';
 import 'features/progress/progress_screen.dart';
@@ -220,6 +222,12 @@ class _HomeShellState extends State<HomeShell> {
   /// 最近 7 天练了几次 —— 空态那行字要用。
   /// 之前这个值从没被算过，所以练完回来空态还写着「还没有训练记录」。
   int _weekSessions = 0;
+
+  /// 连续打卡天数与最近几次训练（2026-10-05，新 VI 首页）。
+  /// 两个都是**算出来的**（见 features/progress/streak.dart）。
+  int _streak = 0;
+  List<({String workoutId, DateTime day, int exercises, int sets, double volume})> _recent =
+      const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[];
 
   /// **今天的安排**（首页中间那一块，2026-10-04 加）。
   ///
@@ -438,6 +446,8 @@ class _HomeShellState extends State<HomeShell> {
     if (!mounted) return;
     setState(() {
       _weekSessions = weekWorkoutCount(sets, DateTime.now());
+      _streak = currentStreak(sets, DateTime.now());
+      _recent = recentWorkouts(sets);
       _reminderHint = _hintFor(sets);
     });
     await _loadTodayPlan();
@@ -840,6 +850,36 @@ class _HomeShellState extends State<HomeShell> {
   ///
   /// 2026-10-04：原先这里还有一行「看看今天练什么 ›」，删掉了（卡已经把"今天练什么"
   /// 回答了，同一件事不留两个入口），见 `today_screen.dart` 里 `onSeePlan` 的说明。
+  /// 快速入口：动作库 = 「全部数据」那一屏（按动作看历史最佳）。
+  /// VI 里的"动作库"是分类宫格，那需要新数据口径（v1.46 之后单独排）；
+  /// 这里先接到**已经存在**的那一屏，不假装有分类浏览。
+  Future<void> _openLibrary() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AllDataScreen(
+          store: _store,
+          repository: _repo,
+          unit: _unit,
+        ),
+      ),
+    );
+  }
+
+  /// 快速入口：记录体重（与「进步」页那张体重卡是同一个页面）。
+  Future<void> _openBodyMetric() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => BodyMetricScreen(
+          repository: _bodyMetrics,
+          unit: _bodyUnit,
+          analytics: _analytics,
+          profile: _profile,
+          onSaved: () => unawaited(_refreshHome()),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openSuggestion() async {
     // 端到端 tap_count：用户按「开始训练」这一下就是这条记录的第一步。
     // 周期必须**在这里**开 —— 控制器要等建议卡/选动作走完才被构造，
@@ -1046,6 +1086,13 @@ class _HomeShellState extends State<HomeShell> {
             todayPlan: _todayPlan,
             todayLabel: _todayDay?.label,
             onReroll: _todayPlan.isEmpty ? null : _rerollTodayPlan,
+            // 新 VI 的首页三块（2026-10-05）：打卡 / 快速入口 / 最近训练
+            streak: _streak,
+            streakCopy: streakCopy(_streak),
+            recent: _recent,
+            onOpenLibrary: _openLibrary,
+            onLogWeight: _openBodyMetric,
+            onOpenPlans: () => setState(() => _tab = 3),
           );
       case 1:
         return ProgressScreen(
