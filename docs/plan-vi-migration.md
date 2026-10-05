@@ -180,7 +180,7 @@ VI 的值取自 `vi/*.html` 的 `:root`（15 份各自抄了一份，14 种略�
 
 | 步骤 | 状态 | 证据 |
 | --- | --- | --- |
-| 色板换新 VI（`app/lib/core/theme.dart`） | ✅ **已落地** | `Tokens.volt*` → `Tokens.accent*`（23 个文件重命名）；暖黑 + 橙 + 半透明白边线；`flutter analyze` 无问题、**947 项测试全绿** |
+| 色板换新 VI（`app/lib/core/theme.dart`） | ✅ **已落地** | `Tokens.volt*` → `Tokens.accent*`（23 个文件重命名）；暖黑 + 橙 + 半透明白边线；`flutter analyze` 无问题、**951 项测试全绿** |
 | 规格与原型同步（"三处必须一致"） | ✅ 已改 | `docs/interaction-spec.md` §4 色板、`prototype/index.html` 的 CSS 变量 |
 | 在 App 内的隐私页配色 | ✅ 已改 | `tool/gen-privacy-page.mjs` 重新生成 `store-assets/privacy/index.html`（`--check` 通过） |
 | 真机/模拟器对照 | ✅ 拍过 | 换色前后（`练了么-换色对比.png`）；新图标的四处落点（`练了么-新图标.png`：主图 / 启动器 / 冷启动启动屏 / 商店 512 + 特征图） |
@@ -240,7 +240,9 @@ VI 里还剩五件事没做。排序的判据是**改动半径**：不碰数据�
 
 **每一版的四条规矩（与 v1.46 一样，少一条都算没做完）**：
 1. `flutter analyze` + 全量测试（新增组件/页面要有自测）；
-2. `./verify.sh` 六层；**改完要能在干净克隆里也绿**（CI 的口径）；
+2. `./verify.sh` 六层；**改完要能在干净克隆里也绿**（CI 的口径）——
+   ⚠️ 尤其**加了测试之后**：`docs/release-checklist.md` 里那句「门禁 N 项全绿」要跟着改。
+   这条只有干净克隆（第 5 层真能跑）才会红 —— 2026-10-05 因此红过两次；
 3. 文档同步：`docs/screens.md`、本文件的进度、必要时 `docs/interaction-spec.md` 与 `CHANGELOG.md`；
 4. **模拟器截图**当视觉证据；没做的部分如实写出来。
 
