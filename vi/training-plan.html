@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>练了么 · 训练计划页</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary-50: #FFF3EE;
+    --primary-300: #FF9E7C;
+    --primary-400: #FF7D50;
+    --primary-500: #FF5C26;
+    --primary-600: #E04A18;
+    --primary-700: #B83810;
+    --neutral-50: #F5F3F1;
+    --neutral-400: #8A8176;
+    --neutral-500: #6B6157;
+    --neutral-700: #38322C;
+    --neutral-800: #24201C;
+    --neutral-900: #141210;
+    --bg: #0E0C0A;
+    --surface: #1A1714;
+    --surface-2: #24201C;
+    --fg: #F5F3F1;
+    --success-500: #10B981;
+    --warning-500: #F59E0B;
+    --info-400: #22D3EE;
+    --purple-400: #A78BFA;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+    --font-display: 'Oswald', 'Noto Sans SC', sans-serif;
+    --font-body: 'Noto Sans SC', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: #0a0908;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 60px 20px 40px;
+    font-family: var(--font-body);
+    gap: 48px;
+  }
+
+  .page-title {
+    text-align: center;
+    color: var(--fg);
+  }
+
+  .page-title h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .page-title p {
+    font-size: 14px;
+    color: var(--neutral-400);
+  }
+
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: var(--bg);
+    border-radius: 48px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 40px 80px -20px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 30px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 10;
+  }
+
+  .status-bar {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 32px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    z-index: 5;
+  }
+
+  .screen-body {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 100px;
+  }
+
+  .page-header {
+    padding: 52px 20px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .page-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  .add-plan-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255,92,38,0.3);
+  }
+
+  .add-plan-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+  }
+
+  .segmented-control {
+    margin: 0 16px 20px;
+    display: flex;
+    background: var(--surface);
+    border-radius: var(--radius-full);
+    padding: 4px;
+  }
+
+  .seg-item {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--neutral-400);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+  }
+
+  .seg-item.active {
+    background: var(--primary-500);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(255,92,38,0.3);
+  }
+
+  .week-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    padding: 0 16px 20px;
+  }
+
+  .day-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 4px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    background: var(--surface);
+    border: 1px solid transparent;
+  }
+
+  .day-cell .day-name {
+    font-size: 11px;
+    color: var(--neutral-500);
+    font-weight: 500;
+  }
+
+  .day-cell .day-num {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .day-cell .day-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: transparent;
+  }
+
+  .day-cell.has-plan .day-dot {
+    background: var(--primary-500);
+  }
+
+  .day-cell.rest .day-dot {
+    background: var(--neutral-500);
+  }
+
+  .day-cell.active {
+    background: rgba(255,92,38,0.12);
+    border-color: var(--primary-500);
+  }
+
+  .day-cell.active .day-name,
+  .day-cell.active .day-num {
+    color: var(--primary-400);
+  }
+
+  .section-label {
+    padding: 8px 20px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .section-label h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .section-label .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.5px;
+  }
+
+  .plan-card {
+    margin: 0 16px 12px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+
+  .plan-card-header {
+    padding: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .plan-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .plan-icon svg {
+    width: 26px;
+    height: 26px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .plan-icon.chest { background: linear-gradient(135deg, var(--primary-500), var(--primary-700)); }
+  .plan-icon.back { background: linear-gradient(135deg, #6366F1, #4338CA); }
+  .plan-icon.leg { background: linear-gradient(135deg, var(--success-500), #059669); }
+  .plan-icon.rest { background: var(--neutral-700); }
+
+  .plan-info {
+    flex: 1;
+  }
+
+  .plan-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+
+  .plan-meta {
+    font-size: 12px;
+    color: var(--neutral-400);
+    display: flex;
+    gap: 10px;
+  }
+
+  .plan-meta span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .plan-card.rest-card .plan-name {
+    color: var(--neutral-400);
+  }
+
+  .plan-exercises {
+    padding: 0 16px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .exercise-chip {
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    color: var(--neutral-300);
+    font-weight: 500;
+  }
+
+  .plan-card-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .progress-info {
+    font-size: 12px;
+    color: var(--neutral-400);
+  }
+
+  .progress-info strong {
+    color: var(--success-500);
+    font-weight: 600;
+  }
+
+  .start-btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-full);
+    background: var(--primary-500);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  .start-btn.secondary {
+    background: rgba(255,255,255,0.08);
+    color: var(--fg);
+  }
+
+  .plan-templates {
+    padding: 0 16px 16px;
+  }
+
+  .template-card {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .template-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(255,92,38,0.2), rgba(255,92,38,0.05));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-400);
+    flex-shrink: 0;
+  }
+
+  .template-thumb svg {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .template-info {
+    flex: 1;
+  }
+
+  .template-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+
+  .template-desc {
+    font-size: 12px;
+    color: var(--neutral-400);
+    line-height: 1.4;
+  }
+
+  .template-meta {
+    margin-top: 6px;
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--neutral-500);
+  }
+
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 18, 16, 0.92);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px 4px 24px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: var(--neutral-500);
+    flex: 1;
+  }
+
+  .tab-item svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tab-item span {
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .tab-item.active {
+    color: var(--primary-500);
+  }
+
+  .tab-item.active svg {
+    fill: rgba(255, 92, 38, 0.12);
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: var(--fg);
+    border-radius: 3px;
+    opacity: 0.9;
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+  <div class="page-title">
+    <h1>TRAINING PLAN</h1>
+    <p>训练计划页</p>
+  </div>
+
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-size:12px;opacity:0.8">100%</span>
+    </div>
+    <div class="screen-body">
+      <div class="page-header">
+        <h2>训练计划</h2>
+        <div class="add-plan-btn">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+      </div>
+
+      <div class="segmented-control">
+        <div class="seg-item active">本周</div>
+        <div class="seg-item">模板库</div>
+        <div class="seg-item">历史</div>
+      </div>
+
+      <div class="week-calendar">
+        <div class="day-cell has-plan">
+          <span class="day-name">周一</span>
+          <span class="day-num">30</span>
+          <span class="day-dot"></span>
+        </div>
+        <div class="day-cell has-plan">
+          <span class="day-name">周二</span>
+          <span class="day-num">1</span>
+          <span class="day-dot"></span>
+        </div>
+        <div class="day-cell rest">
+          <span class="day-name">周三</span>
+          <span class="day-num">2</span>
+          <span class="day-dot"></span>
+        </div>
+        <div class="day-cell has-plan active">
+          <span class="day-name">周四</span>
+          <span class="day-num">3</span>
+          <span class="day-dot"></span>
+        </div>
+        <div class="day-cell has-plan">
+          <span class="day-name">周五</span>
+          <span class="day-num">4</span>
+          <span class="day-dot"></span>
+        </div>
+        <div class="day-cell has-plan">
+          <span class="day-name">周六</span>
+          <span class="day-num">5</span>
+          <span class="day-dot"></span>
+        </div>
+        <div class="day-cell rest">
+          <span class="day-name">周日</span>
+          <span class="day-num">6</span>
+          <span class="day-dot"></span>
+        </div>
+      </div>
+
+      <div class="section-label">
+        <h3>今日计划</h3>
+        <span class="ai-badge">AI 生成</span>
+      </div>
+
+      <!-- Today's plan -->
+      <div class="plan-card">
+        <div class="plan-card-header">
+          <div class="plan-icon chest">
+            <svg viewBox="0 0 24 24"><path d="M2 12h2M20 12h2M6 8v8M18 8v8M6 12h12"/></svg>
+          </div>
+          <div class="plan-info">
+            <div class="plan-name">胸 + 三头训练</div>
+            <div class="plan-meta">
+              <span>8 动作</span>
+              <span>·</span>
+              <span>45 分钟</span>
+              <span>·</span>
+              <span>第 4 周</span>
+            </div>
+          </div>
+        </div>
+        <div class="plan-exercises">
+          <span class="exercise-chip">杠铃卧推</span>
+          <span class="exercise-chip">上斜哑铃卧推</span>
+          <span class="exercise-chip">飞鸟</span>
+          <span class="exercise-chip">绳索下压</span>
+          <span class="exercise-chip">+4</span>
+        </div>
+        <div class="plan-card-footer">
+          <div class="progress-info">进度 <strong>3 / 8</strong> 完成</div>
+          <button class="start-btn">继续训练</button>
+        </div>
+      </div>
+
+      <div class="section-label">
+        <h3>本周其他</h3>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-card-header">
+          <div class="plan-icon back">
+            <svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/></svg>
+          </div>
+          <div class="plan-info">
+            <div class="plan-name">背 + 二头训练</div>
+            <div class="plan-meta">
+              <span>7 动作</span>
+              <span>·</span>
+              <span>40 分钟</span>
+              <span>·</span>
+              <span>明天</span>
+            </div>
+          </div>
+        </div>
+        <div class="plan-card-footer">
+          <div class="progress-info">未开始</div>
+          <button class="start-btn secondary">查看</button>
+        </div>
+      </div>
+
+      <div class="plan-card rest-card">
+        <div class="plan-card-header">
+          <div class="plan-icon rest">
+            <svg viewBox="0 0 24 24" style="stroke: var(--neutral-400);"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </div>
+          <div class="plan-info">
+            <div class="plan-name">休息日</div>
+            <div class="plan-meta">
+              <span>主动恢复</span>
+              <span>·</span>
+              <span>轻量拉伸</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">
+        <h3>推荐模板</h3>
+      </div>
+
+      <div class="plan-templates">
+        <div class="template-card">
+          <div class="template-thumb">
+            <svg viewBox="0 0 24 24"><path d="M2 12h2M20 12h2M6 8v8M18 8v8M6 12h12"/></svg>
+          </div>
+          <div class="template-info">
+            <div class="template-name">新手 5×5 线性计划</div>
+            <div class="template-desc">适合零基础，三大项线性增重，8 周见效</div>
+            <div class="template-meta">
+              <span>3 练 / 周</span>
+              <span>·</span>
+              <span>8 周</span>
+              <span>·</span>
+              <span>初级</span>
+            </div>
+          </div>
+        </div>
+        <div class="template-card">
+          <div class="template-thumb" style="background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(167,139,250,0.05)); color: var(--purple-400);">
+            <svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8 5.8 21.3l2.4-7.4L2 9.4h7.6z"/></svg>
+          </div>
+          <div class="template-info">
+            <div class="template-name">推拉腿分化</div>
+            <div class="template-desc">经典三分化，适合有一定基础的训练者</div>
+            <div class="template-meta">
+              <span>3-6 练 / 周</span>
+              <span>·</span>
+              <span>12 周</span>
+              <span>·</span>
+              <span>中级</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>
+        <span>训练</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        <span>进步</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg>
+        <span>数据</span>
+      </div>
+      <div class="tab-item active">
+        <svg viewBox="0 0 24 24"><path d="M8 6h8M8 12h8M8 18h5"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg>
+        <span>计划</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        <span>我的</span>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</body>
+</html>

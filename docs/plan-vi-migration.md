@@ -1,0 +1,128 @@
+# 把新 VI 落到 App：逐屏对齐表（2026-10-05 出的讨论稿）
+
+> **这份表回答一个问题**：用户给的 `vi/`（15 个 HTML，约 22 屏 + 1 套图标规范）与 `icon/`（新图标），
+> 要落到现在的 App 上，**哪些是换皮、哪些是新功能、哪些和已有决定打架**。
+>
+> ⚠️ **它是讨论稿，不是承诺**：标了 ⚠️ 的四条要先拍板，没拍板之前不动手。
+> 每个"现在是什么"都写了文件或文档出处，可以逐条核。
+
+---
+
+## 一、结论先行
+
+| 层 | 可行吗 | 成本 | 为什么 |
+| --- | --- | --- | --- |
+| **视觉层（换肤）** | ✅ 可行 | 小 —— 一版能全站换 | 配色是单一真源：整个 `app/lib` 里只有 **1 处** `Color(0x…)` 写在 `app/lib/core/theme.dart` 之外，圆角/间距/主按钮高度也早就是 token |
+| **结构层（新页面）** | ✅ 可行，但要拆版本 | 中 | 5 Tab 导航 + 动作库/计划周历/身体数据扩字段/完成页/分享卡第二版式 —— 是**新功能**，不是改样式 |
+| **激励层（打卡·徽章·通知中心）** | ⚠️ 与既有决定冲突 | 中 | `docs/screens.md` 的「明确不做（一期）」里就写着**成就徽章体系** |
+| **账号层（手机号登录/注册）** | ❌ 建议 P0 不做 | 大 | `docs/wechat-login-feasibility.md`（2026-10-01）已经算过一遍：Apple 4.8 要等价登录方式、主体资质、应用内注销、AppSecret 必须走服务端 —— 而且它和"无账号 + 恢复码 + 端到端加密"这个架构正面冲突 |
+
+---
+
+## 二、视觉层：设计令牌对照（旧 → 新）
+
+VI 的值取自 `vi/*.html` 的 `:root`（15 份各自抄了一份，14 种略有差异 —— 见第六节第 3 条）。
+
+| 语义 | 现在（`app/lib/core/theme.dart`） | VI 给的 | 备注 |
+| --- | --- | --- | --- |
+| 底色 | `bg` #0B0B0D（冷黑） | `--bg` #0E0C0A | 冷 → 暖，全站观感变化最大的一条 |
+| 卡片 | `surface` #16161A | `--neutral-800` #24201C / `--neutral-900` #141210 | VI 是"底色上浮一档的暖灰" |
+| 分割线 | `line` #2A2A31 | `--neutral-700` #38322C | |
+| 主色 | `volt` #D8FF47 | `--primary-500` #FF5C26 | ⚠️ **全局**：所有主按钮、进度、强调都在用它 |
+| 主色按下 | `voltPress` #C2E63A | `--primary-600` #E04A18 | |
+| 主色上的字 | `voltInk` #12180A | 近黑 #141210 | 橙底 + 近黑 = **6.06:1** ✅（橙底 + 白字只有 **3.08:1**，小字不合规 —— 主按钮文字要用深色） |
+| 正文 | `text` #F5F5F7 | `--neutral-50` #F5F3F1 | |
+| 次要 | `text2` #9A9AA5 | `--neutral-300` #ABA49A | |
+| 危险 | `danger` #FF5A5F | **VI 没给** | 建议保留现有语义红，别为了统一把"危险"做成橙色 |
+| 成功 / 纪录 | 现在没有这两个语义色 | VI 用了**绿**（完成页的勾）+ **琥珀**（PR 卡） | 要新增两个语义色（`semantic-success` / `semantic-record`） |
+| 字体 | 系统字体 | **Oswald**（数字与标题）+ Noto Sans SC（正文） | 见第六节第 2 条：Noto 全量太大 |
+| 圆角 | `rCard` 20 · `rSheet` 28 · `rPill` 999 | 8 / 12 / 9999 | 卡片圆角 20 → 12，是观感上第二大的变化 |
+
+**这一层要做的事**：改 `theme.dart` 的 token + 补两个语义色 + 把卡片/统计块/胶囊抽成共用件（现在 `app/lib/core/pills.dart` 已经有一部分）+ 图表按新风格重画（我们零依赖自绘，见 `app/lib/core/sparkline.dart` 与 `progress_screen.dart` 的 `CustomPainter`）。
+
+---
+
+## 三、逐屏对齐表
+
+状态：✅ 已有，只需跟主题｜🔧 要改（视觉 + 结构）｜➕ 新增｜⚠️ 与既有决定冲突，要拍板
+
+| VI 那一屏（`vi/`） | 现在是什么 | 状态 | 要做的事 | 依赖 / 风险 |
+| --- | --- | --- | --- | --- |
+| `splash-screen.html` 启动页 | 原生启动图（`app/ios/Runner/Assets.xcassets/LaunchImage.imageset` + `app/android/app/src/main/res/drawable-nodpi/launch_glyph.png`），由 `tool/gen-icons.py` 出 | 🔧 | 换新 Logo（橙圆环）与底色 | 图标要先定稿 |
+| `onboarding.html` 引导页（3 屏卖点） | `onboarding_screen.dart` 是**三步设置**（目标/经验/频率），不是卖点轮播 | ⚠️ | 二选一：保留"设置式引导"或改成"卖点轮播" | `docs/screens.md` 的「不做」清单里写着**不做启动引导轮播** |
+| `auth-setup.html` 登录 / 注册（手机号 + 三方） | **没有**：现在是本地优先、无账号、云备份用恢复码 | ⚠️ | 建议 P0 不做 | `docs/wechat-login-feasibility.md` 的结论、以及 Apple 4.8 |
+| `auth-setup.html` 第二个：选训练目标 | `onboarding.dart` 里已有四档目标（增肌 / 力量 / 减脂 / 保持） | ✅ | 跟着换皮 | — |
+| `training-home.html` 训练首页 | `today_screen.dart`（`docs/screens.md` S1） | 🔧 | 加**打卡卡**（连续天数 + 下一档解锁）、**快速入口**四宫格、**最近训练**列表；顶部加搜索与通知入口 | 打卡 = 新数据（见第四节 3） |
+| `workout-detail.html` 训练中 | `workout_screen.dart`（S4，设计重心） | 🔧 | 顶部加"3/8 进度 · 已用时 · 已完成容量"，组表按新样式 | — |
+| `rest-timer.html` 休息倒计时（计时中 + 完成态） | 训练流里的休息计时（`workout` 目录 + Live Activity / 提醒） | 🔧 | 两态视觉重做 + 改时长按钮 | 锁屏那套（iOS Live Activity）要跟着换色 |
+| `complete-library.html` 训练完成页 | `workout_summary_screen.dart`（S7） | 🔧 | 绿色完成标记 + 三个统计 + 🏆 新纪录卡 + 分享按钮 | 新语义色 |
+| `complete-library.html` 动作库 | `exercise_picker_screen.dart` + `exercise_detail_screen.dart` + `custom_exercise_screen.dart`（S3） | 🔧 | 搜索框 + 部位筛选 + 分类宫格 + 热门动作 | ⚠️ mockup 里写的是「胸部 28 个」这类占位数字，进 App 必须由种子真值算（现在种子是 351 条，`tool/check-doc-facts.mjs` 每次对着它核） |
+| `progress-home.html` 进步首页 | `progress_screen.dart`（S8） | 🔧 | 四张统计卡 + **容量趋势面积图**（周/月/年）+ PR 列表 | 图表要自绘（零依赖） |
+| `training-plan.html` 训练计划（周历 + 模板库 + 历史） | `routine_screen.dart` + `plan_templates.dart`（S11，只有模板） | 🔧 | 加周历与历史两个视图 | 周历是新结构 |
+| `body-tracking.html` 身体数据 | `body_metric_screen.dart`；表里现在只有**体重 / 体脂 / 备注**（`app/lib/data/db.dart` 的 `body_metric`） | 🔧 | mockup 还要 BMI / 腰围 / 肌肉量 + 趋势图 | 新字段 = schema 变更（现在 schema 是 v18）+ 属于敏感个人信息，政策那边要跟着看 |
+| `achievement-badges.html` 成就徽章（20 枚三档） | **没有** | ⚠️ ➕ | 建议放到"激励层"那一版，先拍板 | `docs/screens.md` 的「明确不做（一期）」里就有它 |
+| `notifications-settings.html` 消息通知中心 | 只有**训练提醒**（本地通知，`reminder*.dart`） | ➕ | 站内消息中心（成就/训练/系统 三类）+ 设置分组 | 要拍板：站内消息是本地生成还是服务端推 |
+| `notifications-settings.html` 设置页 | `settings_screen.dart` + `privacy_about_screen.dart` + `data_tools_screen.dart` | ✅ 🔧 | 跟着换皮，通知设置单独分组 | — |
+| `profile.html` 个人主页 | `profile_screen.dart`（S10） | 🔧 | 头像 + **等级 Lv.** + 四个统计 + 徽章预览 + 打卡进度条 | Lv / 徽章 = 新数据 |
+| `share-card.html` 分享卡（标准版 + 打卡版） | `share_card_preview_screen.dart`，只有一版 | 🔧 | 加"打卡版"第二版式 | 依赖打卡数据 |
+| `tab-icon-system.html` Tab 图标体系（5 个） | `app/lib/core/app_tab_bar.dart`，**3 个 Tab**（练 / 进步 / 我） | ⚠️ 🔧 | 5 Tab + 描边图标体系 | 直接反转 `docs/screens.md` 的「**3 个 Tab 封顶**」 |
+
+**VI 里没给图、但也要跟着换皮的现有页面**（列出来免得漏）：
+`all_data_screen.dart`（S9 全部数据）· `trash_screen.dart`（回收站）· `cloud_backup_screen.dart`（云备份）·
+`privacy_policy_screen.dart` / `collection_list_screen.dart`（政策 / 收集清单）· `today_suggestion_screen.dart`（S2 建议卡）·
+`workout_screen.dart` 里的长按编辑（S5）与动作切换（S6）· `privacy_consent_screen.dart`（首次同意门）· 训练提醒设置页。
+
+---
+
+## 四、四处要你拍板的冲突（按重要性排序）
+
+| # | VI 要的东西 | 现在的决定（出处） | 我的建议 |
+| --- | --- | --- | --- |
+| 1 | **5 个 Tab**（训练 / 进步 / 数据 / 计划 / 我的） | `docs/screens.md`：「**3 个 Tab 封顶**：练 / 进步 / 我」 | 这一条**值得改**：数据与计划确实是高频二级页。但要同时改 `docs/screens.md` 与 `app_tab_bar.dart` 的注释（否则文档和代码互相打脸） |
+| 2 | **登录 / 注册** | 无账号体系；`docs/wechat-login-feasibility.md` 结论 **P0 不做** | **先不做**。要做也走"可选绑定"：恢复码保持默认，账号只是多一条找回路径 |
+| 3 | **成就徽章 + 连续打卡** | `docs/screens.md` 的「明确不做（一期）」包含成就徽章体系 | 可以反转，但建议**全部本地算**（不落服务器），这样不碰隐私承诺；也先别上排行榜 |
+| 4 | **引导页卖点轮播** | `docs/screens.md`：「不做开屏广告、**启动引导轮播**、"新功能"弹窗」 | 建议**保留现在的设置式引导**，只换皮。卖点轮播对"第一次训练更快发生"没有帮助 |
+
+---
+
+## 五、版本切分草案（每版都能单独上线）
+
+| 版本 | 内容 | 为什么这么切 |
+| --- | --- | --- |
+| **v1.45 换肤 + 5 Tab 骨架** | 新 token、Oswald、卡片组件、图标体系、把现有 22 屏塞进新壳；顺带把**图标、启动图、商店图、三套截图**一起换 | 这是"一版看起来就是新 App"的最小代价版本；商店图本来就要重出，和图标换挡一起做最省 |
+| **v1.46 结构层** | 动作库、计划周历、身体数据扩字段、训练完成页重做、分享卡第二版式 | 都是已有功能的加深，不引入新的隐私面 |
+| **v1.47 激励层** | 打卡、徽章、通知中心（**全本地**） | 依赖打卡数据，放最后 |
+| **账号体系** | 单独决策 | 见 `docs/wechat-login-feasibility.md`；它要动服务端、政策、备案、软著说明书 |
+
+---
+
+## 六、动手前必须先解决的六个技术问题
+
+1. **`icon/` 里的 PNG 其实是 JPEG** —— `icon/AppIcon-1024x1024@1x.png` 的文件头是 `JFIF`（JPEG）。
+   Xcode 会拒、我们的 `tool/asset-check.mjs` 也会当场判红。**要真转一次 PNG**（我可以一条命令转）。
+2. **字体体积** —— Noto Sans SC 全量 10MB+，直接内置会让包明显变大。方案：**Oswald 进包**（拉丁，几百 KB）+
+   正文继续用系统字体，或者给 Noto 做**子集化**（只打包常用汉字）。
+3. **15 份 `:root` 各自漂移** —— `vi/*.html` 里 15 个文件各抄了一份设计令牌，14 种变体（核心色值一致）。
+   落地时**真源必须是 `app/lib/core/theme.dart`**；要让 mockup 跟着走，就像隐私政策那样由脚本生成。
+4. **橙底白字只有 3.08:1** —— 主按钮改深字（6.06:1）。VI 里两种都有（训练首页是白底橙字、完成页是橙底白字），要统一。
+5. **图表要自绘** —— 我们没有图表库，容量趋势/环形进度得用 `CustomPainter`（已有 `sparkline.dart` 的基础）。
+6. **换皮会牵动一批产物与文档** —— 三套商店截图共 43 张、Play 特征图、软著说明书里的 8 屏界面图、
+   `docs/screens.md` 的 ASCII 原型、`store-assets/` 那几张图。这些都有守卫盯着（`tool/check-screenshots.mjs`、
+   `tool/asset-check.mjs`），跟着重出即可，但要算进工作量。
+
+---
+
+## 七、明确不在这一轮做的事
+
+- ❌ 账号体系 / 手机号登录 / 三方登录（见第四节 2）
+- ❌ 排行榜、社区、视频课程（`docs/screens.md` 的「明确不做」）
+- ❌ 把 mockup 里的占位数字（动作数、训练次数、连续天数）当成事实写进代码或文档
+- ❌ 为了"统一橙色"把语义色也做成橙色（危险、成功、纪录该有自己的颜色）
+
+---
+
+## 八、下一步
+
+按第四节拍完板，我就按第五节的 **v1.45** 开工：先换 token 与字体（一处改、全站变），
+再把 5 Tab 骨架搭起来，最后统一重出图标/启动图/商店图/截图。
+需要的话我可以先出一张**换肤后的对比图**（同一屏：现在 vs 换 token 后），你看效果再决定要不要继续。

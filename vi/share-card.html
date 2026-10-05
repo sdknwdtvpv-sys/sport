@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>练了么 · 分享卡</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary-400: #FF7D50;
+    --primary-500: #FF5C26;
+    --primary-600: #E04A18;
+    --primary-700: #B83810;
+    --neutral-50: #F5F3F1;
+    --neutral-200: #D1CCC5;
+    --neutral-300: #ABA49A;
+    --neutral-400: #8A8176;
+    --neutral-500: #6B6157;
+    --neutral-700: #38322C;
+    --neutral-800: #24201C;
+    --neutral-900: #141210;
+    --bg: #0E0C0A;
+    --surface: #1A1714;
+    --surface-2: #24201C;
+    --fg: #F5F3F1;
+    --success-500: #10B981;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-full: 9999px;
+    --font-display: 'Oswald', 'Noto Sans SC', sans-serif;
+    --font-body: 'Noto Sans SC', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: #0a0908;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 60px 20px 40px;
+    font-family: var(--font-body);
+    gap: 48px;
+  }
+
+  .page-title {
+    text-align: center;
+    color: var(--fg);
+  }
+
+  .page-title h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .page-title p {
+    font-size: 14px;
+    color: var(--neutral-400);
+  }
+
+  .cards-wrapper {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .share-card {
+    width: 375px;
+    background: linear-gradient(160deg, var(--neutral-800) 0%, var(--neutral-900) 100%);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7);
+  }
+
+  .share-card::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(255,92,38,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .card-header {
+    padding: 24px 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 4px solid var(--primary-500);
+    position: relative;
+  }
+
+  .brand-icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary-400);
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: 1px;
+  }
+
+  .card-date {
+    font-size: 12px;
+    color: var(--neutral-400);
+    font-weight: 500;
+  }
+
+  .card-body {
+    padding: 28px 24px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .workout-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+
+  .workout-subtitle {
+    font-size: 13px;
+    color: var(--neutral-400);
+    margin-bottom: 24px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-item {
+    background: rgba(255,255,255,0.04);
+    border-radius: var(--radius-md);
+    padding: 16px 12px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-500);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-item.secondary .stat-value {
+    color: var(--fg);
+    font-size: 24px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--neutral-400);
+    font-weight: 500;
+  }
+
+  .exercises-list {
+    background: rgba(255,255,255,0.02);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .exercise-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .exercise-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .exercise-item:first-child {
+    padding-top: 0;
+  }
+
+  .exercise-name {
+    font-size: 13px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  .exercise-detail {
+    font-size: 12px;
+    color: var(--neutral-400);
+    font-family: var(--font-mono);
+  }
+
+  .card-footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+    z-index: 1;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+  }
+
+  .user-name {
+    font-size: 13px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  .share-badge {
+    font-size: 11px;
+    color: var(--primary-400);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* Variant 2: Minimal */
+  .share-card.minimal .stats-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-bottom: 20px;
+  }
+
+  .share-card.minimal .stat-item {
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+  }
+
+  .share-card.minimal .stat-value {
+    font-size: 56px;
+    letter-spacing: -1px;
+  }
+
+  .share-card.minimal .stat-label {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .share-card.minimal .workout-title {
+    font-size: 18px;
+  }
+
+  .share-card.minimal .card-body {
+    padding-bottom: 20px;
+  }
+
+  .achievement-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-500);
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .achievement-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .card-variant-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--neutral-500);
+    margin-top: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .card-with-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+  <div class="page-title">
+    <h1>SHARE CARD</h1>
+    <p>训练分享卡片 · 两款版式</p>
+  </div>
+
+  <div class="cards-wrapper">
+    <!-- Variant 1: Full Stats -->
+    <div class="card-with-label">
+      <div class="share-card">
+        <div class="card-header">
+          <div class="card-brand">
+            <div class="brand-icon"></div>
+            <span class="brand-name">练了么</span>
+          </div>
+          <span class="card-date">10月5日 · 周一</span>
+        </div>
+        <div class="card-body">
+          <div class="workout-title">胸 + 三头训练</div>
+          <div class="workout-subtitle">8 个动作 · 45 分钟</div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-value">320</div>
+              <div class="stat-label">总重量 kg</div>
+            </div>
+            <div class="stat-item secondary">
+              <div class="stat-value">24</div>
+              <div class="stat-label">总组数</div>
+            </div>
+            <div class="stat-item secondary">
+              <div class="stat-value">45</div>
+              <div class="stat-label">分钟</div>
+            </div>
+          </div>
+          <div class="exercises-list">
+            <div class="exercise-item">
+              <span class="exercise-name">杠铃卧推</span>
+              <span class="exercise-detail">60kg × 4组</span>
+            </div>
+            <div class="exercise-item">
+              <span class="exercise-name">上斜哑铃飞鸟</span>
+              <span class="exercise-detail">20kg × 4组</span>
+            </div>
+            <div class="exercise-item">
+              <span class="exercise-name">绳索下压</span>
+              <span class="exercise-detail">25kg × 4组</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="user-info">
+            <div class="avatar">L</div>
+            <span class="user-name">练了么用户</span>
+          </div>
+          <span class="share-badge">分享自练了么</span>
+        </div>
+      </div>
+      <div class="card-variant-label">标准版 · Standard</div>
+    </div>
+
+    <!-- Variant 2: Minimal Big Number -->
+    <div class="card-with-label">
+      <div class="share-card minimal">
+        <div class="card-header">
+          <div class="card-brand">
+            <div class="brand-icon"></div>
+            <span class="brand-name">练了么</span>
+          </div>
+          <span class="card-date">Day 23</span>
+        </div>
+        <div class="card-body">
+          <div class="achievement-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            连续打卡 23 天
+          </div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-value">320</div>
+              <div class="stat-label">今日推推重量 kg</div>
+            </div>
+          </div>
+          <div class="workout-title">胸 + 三头训练</div>
+          <div class="workout-subtitle">8 动作 · 24 组 · 45 分钟</div>
+        </div>
+        <div class="card-footer">
+          <div class="user-info">
+            <div class="avatar">L</div>
+            <span class="user-name">练了么用户</span>
+          </div>
+          <span class="share-badge">LIANLE.ME</span>
+        </div>
+      </div>
+      <div class="card-variant-label">极简版 · Minimal</div>
+    </div>
+  </div>
+</body>
+</html>

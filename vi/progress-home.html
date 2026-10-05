@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>练了么 · 进步首页</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary-50: #FFF3EE;
+    --primary-300: #FF9E7C;
+    --primary-400: #FF7D50;
+    --primary-500: #FF5C26;
+    --primary-600: #E04A18;
+    --primary-700: #B83810;
+    --neutral-50: #F5F3F1;
+    --neutral-400: #8A8176;
+    --neutral-500: #6B6157;
+    --neutral-700: #38322C;
+    --neutral-800: #24201C;
+    --neutral-900: #141210;
+    --bg: #0E0C0A;
+    --surface: #1A1714;
+    --surface-2: #24201C;
+    --fg: #F5F3F1;
+    --success-500: #10B981;
+    --success-400: #34D399;
+    --warning-500: #F59E0B;
+    --warning-400: #FBBF24;
+    --info-400: #22D3EE;
+    --purple-400: #A78BFA;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+    --font-display: 'Oswald', 'Noto Sans SC', sans-serif;
+    --font-body: 'Noto Sans SC', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: #0a0908;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 60px 20px 40px;
+    font-family: var(--font-body);
+    gap: 48px;
+  }
+
+  .page-title {
+    text-align: center;
+    color: var(--fg);
+  }
+
+  .page-title h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .page-title p {
+    font-size: 14px;
+    color: var(--neutral-400);
+  }
+
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: var(--bg);
+    border-radius: 48px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 40px 80px -20px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 30px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 10;
+  }
+
+  .status-bar {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 32px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    z-index: 5;
+  }
+
+  .screen-body {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 100px;
+  }
+
+  .page-header {
+    padding: 52px 20px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .page-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px;
+    color: var(--fg);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .filter-btn svg {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .stats-overview {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 16px 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    opacity: 0.08;
+  }
+
+  .stat-card.volume::after { background: var(--primary-500); }
+  .stat-card.workouts::after { background: var(--success-500); }
+  .stat-card.duration::after { background: var(--info-400); }
+  .stat-card.pr::after { background: var(--warning-500); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--neutral-400);
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-value .unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--neutral-400);
+    margin-left: 2px;
+  }
+
+  .stat-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+  }
+
+  .stat-change.up {
+    background: rgba(16,185,129,0.12);
+    color: var(--success-500);
+  }
+
+  .stat-change svg {
+    width: 10px;
+    height: 10px;
+    stroke: currentColor;
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .chart-section {
+    margin: 0 16px 20px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .chart-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .chart-tabs {
+    display: flex;
+    background: var(--surface-2);
+    border-radius: var(--radius-full);
+    padding: 3px;
+  }
+
+  .chart-tab {
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--neutral-400);
+    font-weight: 500;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+  }
+
+  .chart-tab.active {
+    background: var(--primary-500);
+    color: white;
+  }
+
+  .chart-area {
+    height: 160px;
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .chart-grid-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .chart-grid-line {
+    height: 1px;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .chart-svg-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+  }
+
+  .chart-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--neutral-500);
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .pr-wall {
+    padding: 0 16px 20px;
+  }
+
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .section-title h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .section-title a {
+    font-size: 12px;
+    color: var(--neutral-400);
+    text-decoration: none;
+  }
+
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .pr-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: 14px 10px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+  }
+
+  .pr-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--warning-400), #D97706);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    font-weight: 700;
+  }
+
+  .pr-icon {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 8px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pr-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .pr-icon.chest { background: rgba(255,92,38,0.12); color: var(--primary-400); }
+  .pr-icon.back { background: rgba(99,102,241,0.12); color: #818CF8; }
+  .pr-icon.leg { background: rgba(16,185,129,0.12); color: var(--success-400); }
+
+  .pr-name {
+    font-size: 11px;
+    color: var(--neutral-400);
+    margin-bottom: 4px;
+  }
+
+  .pr-value {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1;
+  }
+
+  .pr-value span {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--neutral-500);
+  }
+
+  .body-section {
+    padding: 0 16px 16px;
+  }
+
+  .body-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .body-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(34,211,238,0.05));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--info-400);
+    flex-shrink: 0;
+  }
+
+  .body-icon svg {
+    width: 26px;
+    height: 26px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .body-info {
+    flex: 1;
+  }
+
+  .body-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+
+  .body-desc {
+    font-size: 12px;
+    color: var(--neutral-400);
+    line-height: 1.4;
+  }
+
+  .body-arrow {
+    color: var(--neutral-500);
+  }
+
+  .body-arrow svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 18, 16, 0.92);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px 4px 24px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: var(--neutral-500);
+    flex: 1;
+  }
+
+  .tab-item svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tab-item span {
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .tab-item.active {
+    color: var(--primary-500);
+  }
+
+  .tab-item.active svg {
+    fill: rgba(255, 92, 38, 0.12);
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: var(--fg);
+    border-radius: 3px;
+    opacity: 0.9;
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+  <div class="page-title">
+    <h1>PROGRESS</h1>
+    <p>进步首页</p>
+  </div>
+
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-size:12px;opacity:0.8">100%</span>
+    </div>
+    <div class="screen-body">
+      <div class="page-header">
+        <h2>进步</h2>
+        <div class="filter-btn">
+          本月
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+
+      <!-- Stats overview -->
+      <div class="stats-overview">
+        <div class="stat-card volume">
+          <div class="stat-label">总训练容量</div>
+          <div class="stat-value">12.4<span class="unit">t</span></div>
+          <div class="stat-change up">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+            +18%
+          </div>
+        </div>
+        <div class="stat-card workouts">
+          <div class="stat-label">训练次数</div>
+          <div class="stat-value">23<span class="unit">次</span></div>
+          <div class="stat-change up">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+            +5 次
+          </div>
+        </div>
+        <div class="stat-card duration">
+          <div class="stat-label">总时长</div>
+          <div class="stat-value">18.5<span class="unit">h</span></div>
+          <div class="stat-change up">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+            +12%
+          </div>
+        </div>
+        <div class="stat-card pr">
+          <div class="stat-label">新 PR</div>
+          <div class="stat-value">6<span class="unit">次</span></div>
+          <div class="stat-change up">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+            本月
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-section">
+        <div class="chart-header">
+          <span class="chart-title">训练容量趋势</span>
+          <div class="chart-tabs">
+            <span class="chart-tab active">周</span>
+            <span class="chart-tab">月</span>
+            <span class="chart-tab">年</span>
+          </div>
+        </div>
+        <div class="chart-area">
+          <div class="chart-grid-lines">
+            <div class="chart-grid-line"></div>
+            <div class="chart-grid-line"></div>
+            <div class="chart-grid-line"></div>
+            <div class="chart-grid-line"></div>
+          </div>
+          <div class="chart-svg-wrap">
+            <svg width="100%" height="100%" viewBox="0 0 320 140" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#FF5C26;stop-opacity:0.3"/>
+                  <stop offset="100%" style="stop-color:#FF5C26;stop-opacity:0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,110 L30,95 L60,100 L90,75 L120,80 L150,60 L180,65 L210,45 L240,50 L270,30 L300,35 L320,20 L320,140 L0,140 Z" fill="url(#areaGrad)"/>
+              <path d="M0,110 L30,95 L60,100 L90,75 L120,80 L150,60 L180,65 L210,45 L240,50 L270,30 L300,35 L320,20" fill="none" stroke="#FF5C26" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="320" cy="20" r="5" fill="#FF5C26"/>
+              <circle cx="320" cy="20" r="10" fill="#FF5C26" opacity="0.2"/>
+            </svg>
+          </div>
+          <div class="chart-labels">
+            <span>第1周</span>
+            <span>第2周</span>
+            <span>第3周</span>
+            <span>第4周</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PR Wall -->
+      <div class="pr-wall">
+        <div class="section-title">
+          <h3>个人纪录</h3>
+          <a href="#">全部 PR ›</a>
+        </div>
+        <div class="pr-grid">
+          <div class="pr-card">
+            <span class="pr-badge">🏆</span>
+            <div class="pr-icon chest">
+              <svg viewBox="0 0 24 24"><path d="M2 12h2M20 12h2M6 8v8M18 8v8M6 12h12"/></svg>
+            </div>
+            <div class="pr-name">卧推</div>
+            <div class="pr-value">65<span>kg</span></div>
+          </div>
+          <div class="pr-card">
+            <div class="pr-icon back">
+              <svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/></svg>
+            </div>
+            <div class="pr-name">引体向上</div>
+            <div class="pr-value">8<span>个</span></div>
+          </div>
+          <div class="pr-card">
+            <div class="pr-icon leg">
+              <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-7"/></svg>
+            </div>
+            <div class="pr-name">深蹲</div>
+            <div class="pr-value">80<span>kg</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Body tracking -->
+      <div class="body-section">
+        <div class="section-title">
+          <h3>身体数据</h3>
+        </div>
+        <div class="body-card">
+          <div class="body-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20"/><circle cx="12" cy="5" r="2"/><path d="M8 10l4-2 4 2"/><path d="M8 22l4-8 4 8"/></svg>
+          </div>
+          <div class="body-info">
+            <div class="body-name">体重 72.5 kg · 体脂 18.5%</div>
+            <div class="body-desc">本周减重 1.2 kg，体脂下降 0.3%，继续加油！</div>
+          </div>
+          <div class="body-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>
+        <span>训练</span>
+      </div>
+      <div class="tab-item active">
+        <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        <span>进步</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg>
+        <span>数据</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><path d="M8 6h8M8 12h8M8 18h5"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg>
+        <span>计划</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        <span>我的</span>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</body>
+</html>

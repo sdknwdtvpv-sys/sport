@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>练了么 · Tab 图标体系</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary-50: #FFF3EE;
+    --primary-400: #FF7D50;
+    --primary-500: #FF5C26;
+    --primary-600: #E04A18;
+    --neutral-50: #F5F3F1;
+    --neutral-200: #D1CCC5;
+    --neutral-400: #8A8176;
+    --neutral-500: #6B6157;
+    --neutral-700: #38322C;
+    --neutral-800: #24201C;
+    --neutral-900: #141210;
+    --bg: #0E0C0A;
+    --surface: #1A1714;
+    --fg: #F5F3F1;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+    --font-display: 'Oswald', 'Noto Sans SC', sans-serif;
+    --font-body: 'Noto Sans SC', sans-serif;
+    --success-500: #10B981;
+    --warning-500: #F59E0B;
+  }
+
+  body {
+    background: #0a0908;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 60px 20px 40px;
+    font-family: var(--font-body);
+    gap: 48px;
+  }
+
+  .page-title {
+    text-align: center;
+    color: var(--fg);
+  }
+
+  .page-title h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .page-title p {
+    font-size: 14px;
+    color: var(--neutral-400);
+  }
+
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: var(--bg);
+    border-radius: 48px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 40px 80px -20px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 30px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 10;
+  }
+
+  .status-bar {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 32px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    z-index: 5;
+  }
+
+  .screen-content {
+    padding: 60px 20px 100px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen-header {
+    margin-bottom: 24px;
+  }
+
+  .screen-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+
+  .screen-header p {
+    font-size: 14px;
+    color: var(--neutral-400);
+  }
+
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 18, 16, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px 4px 24px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .tab-item svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.8;
+  }
+
+  .tab-item .tab-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+
+  .tab-item.inactive {
+    color: var(--neutral-500);
+  }
+
+  .tab-item.inactive svg {
+    stroke: var(--neutral-500);
+    fill: none;
+  }
+
+  .tab-item.active {
+    color: var(--primary-500);
+  }
+
+  .tab-item.active svg {
+    stroke: var(--primary-500);
+    fill: rgba(255, 92, 38, 0.12);
+  }
+
+  .tab-item.active .tab-label {
+    font-weight: 600;
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: var(--fg);
+    border-radius: 3px;
+    opacity: 0.9;
+    z-index: 20;
+  }
+
+  /* Icon showcase grid */
+  .icon-showcase {
+    width: 100%;
+    max-width: 640px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .icon-showcase h3 {
+    color: var(--fg);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+  }
+
+  .icon-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 10px;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .icon-card svg {
+    width: 32px;
+    height: 32px;
+    stroke: var(--primary-500);
+    stroke-width: 1.8;
+    fill: rgba(255, 92, 38, 0.1);
+  }
+
+  .icon-card .icon-name {
+    font-size: 12px;
+    color: var(--neutral-400);
+    font-weight: 500;
+  }
+
+  .icon-states {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .state-group {
+    flex: 1;
+  }
+
+  .state-group h4 {
+    font-size: 12px;
+    color: var(--neutral-400);
+    font-weight: 500;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .state-icons {
+    display: flex;
+    gap: 16px;
+  }
+
+  .state-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .state-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 1.8;
+  }
+
+  .state-icon span {
+    font-size: 10px;
+    color: var(--neutral-500);
+  }
+
+  .state-icon.active svg {
+    stroke: var(--primary-500);
+    fill: rgba(255, 92, 38, 0.12);
+  }
+
+  .state-icon.inactive svg {
+    stroke: var(--neutral-500);
+    fill: none;
+  }
+</style>
+</head>
+<body>
+  <div class="page-title">
+    <h1>TAB ICON SYSTEM</h1>
+    <p>底部导航栏图标体系 · 5 个主 Tab</p>
+  </div>
+
+  <!-- Phone Preview -->
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-size:12px;opacity:0.8">100%</span>
+    </div>
+    <div class="screen-content">
+      <div class="screen-header">
+        <h2>今日训练</h2>
+        <p>卧推 · 4 组 · 预计 25 分钟</p>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+          <path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke-dasharray="2 2"/>
+        </svg>
+        <span class="tab-label">训练</span>
+      </div>
+      <div class="tab-item inactive">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 17l6-6 4 4 8-8"/>
+          <path d="M14 7h7v7"/>
+        </svg>
+        <span class="tab-label">进步</span>
+      </div>
+      <div class="tab-item inactive">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <path d="M4 10h16M10 4v16"/>
+        </svg>
+        <span class="tab-label">数据</span>
+      </div>
+      <div class="tab-item inactive">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 6h8M8 12h8M8 18h5"/>
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+        </svg>
+        <span class="tab-label">计划</span>
+      </div>
+      <div class="tab-item inactive">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
+        </svg>
+        <span class="tab-label">我的</span>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+
+  <!-- Icon Showcase -->
+  <div class="icon-showcase">
+    <h3>图标设计规范</h3>
+    <div class="icon-grid">
+      <div class="icon-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+          <path d="M12 3v2M12 19v2M3 12h2M19 12h2" stroke-dasharray="2 2"/>
+        </svg>
+        <span class="icon-name">训练</span>
+      </div>
+      <div class="icon-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 17l6-6 4 4 8-8"/>
+          <path d="M14 7h7v7"/>
+        </svg>
+        <span class="icon-name">进步</span>
+      </div>
+      <div class="icon-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <path d="M4 10h16M10 4v16"/>
+        </svg>
+        <span class="icon-name">数据</span>
+      </div>
+      <div class="icon-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 6h8M8 12h8M8 18h5"/>
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+        </svg>
+        <span class="icon-name">计划</span>
+      </div>
+      <div class="icon-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
+        </svg>
+        <span class="icon-name">我的</span>
+      </div>
+    </div>
+    <div class="icon-states">
+      <div class="state-group">
+        <h4>激活态 Active</h4>
+        <div class="state-icons">
+          <div class="state-icon active">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            </svg>
+            <span>主色描边 + 填充</span>
+          </div>
+        </div>
+      </div>
+      <div class="state-group">
+        <h4>默认态 Inactive</h4>
+        <div class="state-icons">
+          <div class="state-icon inactive">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="2.5"/>
+            </svg>
+            <span>灰色描边 + 空</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
