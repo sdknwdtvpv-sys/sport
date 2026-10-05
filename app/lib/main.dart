@@ -46,6 +46,7 @@ import 'features/summary/workout_summary.dart';
 import 'features/routine/routine_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/body/body_metric_screen.dart';
+import 'features/progress/achievements_screen.dart';
 import 'features/progress/streak.dart';
 import 'features/progress/all_data_screen.dart';
 import 'features/progress/progress_data.dart';
@@ -869,6 +870,19 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  /// 快速入口：我的成就。**组记录已经在手上**（`_recent` 那次加载拿过），
+  /// 但成就要的是全量，所以这里重新读一次并交给那一屏 —— 不与「我」页共用状态，
+  /// 免得两处的"已解锁"在返回后不同步。
+  Future<void> _openAchievements() async {
+    final List<SetRecord> sets = await _store.allSets();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AchievementsScreen(sets: sets),
+      ),
+    );
+  }
+
   /// 快速入口：记录体重（与「进步」页那张体重卡是同一个页面）。
   Future<void> _openBodyMetric() async {
     await Navigator.of(context).push(
@@ -1099,7 +1113,7 @@ class _HomeShellState extends State<HomeShell> {
             recent: _recent,
             onOpenLibrary: _openLibrary,
             onLogWeight: _openBodyMetric,
-            onOpenPlans: () => setState(() => _tab = 3),
+            onOpenAchievements: _openAchievements,
           );
       case 1:
         return ProgressScreen(

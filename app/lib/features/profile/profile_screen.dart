@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_info.dart';
 import '../../core/theme.dart';
 import '../../core/vi_cards.dart';
+import '../progress/achievements_screen.dart';
 import '../progress/streak.dart';
 import '../../core/units.dart';
 import '../../data/body_metric_repository.dart';
@@ -138,6 +139,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// `features/progress/streak.dart` —— 存一份就会和训练记录不一致。
   int _streak = 0;
 
+  /// 全部组记录。成就页要用（徽章也是现算的），**在这里存一份传给那一屏** ——
+  /// 让成就页自己去数据库再读一遍，同一份数据就有了两条路径。
+  List<SetRecord> _sets = const <SetRecord>[];
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _stats = TrainingStats.fromSets(sets, unit: widget.unit);
       _streak = currentStreak(sets, DateTime.now());
+      _sets = sets;
       _loading = false;
     });
   }
@@ -205,6 +211,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final String rest =
         widget.restOverrideSec == null ? '休息跟随动作' : '休息 ${widget.restOverrideSec} 秒';
     return '$rest · 单位 ${widget.unit.wire} · 渐进建议';
+  }
+
+  /// 打开「我的成就」。徽章与进度都在那一屏现算（数据由这一页带过去）。
+  Future<void> _openAchievements() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AchievementsScreen(sets: _sets),
+      ),
+    );
   }
 
   @override
@@ -294,6 +309,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _streakCard(),
           ],
         ],
+        const SizedBox(height: Tokens.s5),
+        // 成就入口（2026-10-05）：**放统计下面、设置上面** ——
+        // 它读的就是刚算出来的那些数，"我练了多少"与"我拿到了什么"挨着看才成立。
+        profileSectionTitle('成就'),
+        settingsCard(<Widget>[
+          navTile(
+            key: const Key('open-achievements'),
+            title: '我的成就',
+            subtitle: '徽章与收集进度',
+            onTap: _openAchievements,
+          ),
+        ]),
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('设置'),
         settingsCard(<Widget>[

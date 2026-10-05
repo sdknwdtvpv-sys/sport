@@ -49,7 +49,7 @@ class TodayScreen extends StatelessWidget {
     this.recent = const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[],
     this.onOpenLibrary,
     this.onLogWeight,
-    this.onOpenPlans,
+    this.onOpenAchievements,
   });
 
   /// **今天的安排**（2026-10-04 加）—— 首页中间那一块。
@@ -120,8 +120,8 @@ class TodayScreen extends StatelessWidget {
   /// 快速入口：记录体重。
   final VoidCallback? onLogWeight;
 
-  /// 快速入口：我的计划（切到「计划」Tab）。
-  final VoidCallback? onOpenPlans;
+  /// 快速入口：我的成就（徽章与收集进度）。
+  final VoidCallback? onOpenAchievements;
 
   /// 「今天不想练？做 5 分钟活动 ›」（2026-10-01 加）。
   ///
@@ -262,7 +262,9 @@ class TodayScreen extends StatelessWidget {
       (icon: Icons.timer_outlined, label: '5 分钟活动', onTap: onLightWorkout, key: const Key('light-workout')),
       (icon: Icons.menu_book_outlined, label: '动作库', onTap: onOpenLibrary, key: const Key('quick-library')),
       (icon: Icons.monitor_weight_outlined, label: '记录体重', onTap: onLogWeight, key: const Key('quick-weight')),
-      (icon: Icons.event_note_outlined, label: '我的计划', onTap: onOpenPlans, key: const Key('quick-plans')),
+      // 2026-10-05：这一格原来是「我的计划」—— 但计划已经是一级 Tab，
+      // 同一件事留两个入口正是这一轮在清的毛病，所以换成「成就」（新功能，没有 Tab）。
+      (icon: Icons.emoji_events_outlined, label: '成就', onTap: onOpenAchievements, key: const Key('quick-achievements')),
     ];
     return Row(
       children: <Widget>[

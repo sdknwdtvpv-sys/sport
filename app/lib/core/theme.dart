@@ -47,6 +47,12 @@ abstract final class Tokens {
   /// 完成页原来只有一行文字。
   static const Color success = Color(0xFF0CAC78);
 
+  /// **稀有徽章的紫**（2026-10-05 加的，量自 `vi/achievement-badges.html` 的稀有度那三个圆：
+  /// 普通 #EB5220 / 稀有 #8551F0 / 传说 #F0A71A）。
+  /// 三档里只新加这一个颜色 —— 普通用 [accent]、传说用 [pr]，
+  /// 免得同一套里出现两个几乎一样的琥珀（#F0A71A 与 pr #FBBF24 肉眼分不出）。
+  static const Color tierRare = Color(0xFF8350EE);
+
   /// 仅用于破纪录，不用于普通成功态。**2026-10-05 跟着新 VI 换成更亮的琥珀**：
   /// 界面稿里那张 PR 卡是 #FBBF24（旧的 #F5C451 在暖黑底上偏灰，不够"奖杯"）。
   static const Color pr = Color(0xFFFBBF24);
