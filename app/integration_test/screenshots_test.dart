@@ -185,7 +185,7 @@ void main() {
     });
 
     await step('10-profile', () async {
-      await tester.tap(find.byKey(const Key('tab-我')));
+      await tester.tap(find.byKey(const Key('tab-我的')));
       await settle(1800);
       await capture('10-profile');
     });

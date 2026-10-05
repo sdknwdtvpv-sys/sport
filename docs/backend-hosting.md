@@ -228,7 +228,7 @@ bash server/deploy/install.sh --probe
 
 | 步 | 做法 | 结果 |
 |---|---|---|
-| 清空 | `adb uninstall` → 装 `dist/练了么-v1.45.0.apk`（`versionCode 64`） | 首页写着「还没有训练记录」 |
+| 清空 | `adb uninstall` → 装 `dist/练了么-v1.46.0.apk`（`versionCode 65`） | 首页写着「还没有训练记录」 |
 | 绑定恢复码 | 我 → 数据与备份 → 云备份 → 「我有恢复码，取回已有备份」 | 「已绑定这个恢复码」；云端 **22.2 KB · 10-05 00:09**（与 v1.43.0 那次上传的 22743 字节对得上） |
 | 取回 | 「从云端恢复（合并，不覆盖本机）」 | **「已从云端恢复：已导入 2 次训练 / 2 组，置顶 0 个动作」** |
 | 核对 | 我 → 训练统计 | **2 次 / 2 组**（证据图 `docs/images/v144-cloud-restore-banner.png` · `v144-cloud-restore-stats.png`） |

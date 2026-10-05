@@ -76,7 +76,7 @@ void main() {
       mark('consent-agreed');
     }
 
-    await tester.tap(find.byKey(const Key('tab-我')));
+    await tester.tap(find.byKey(const Key('tab-我的')));
     await settle(1200);
 
     // 先滚到底，把「关于」那一整块（云备份入口 + 版本行）都带进视口

@@ -58,6 +58,13 @@ flutter drive --driver=test_driver/screenshot_driver.dart \
 
 产物写进 `store-assets/screenshots/`（**入库**：它是交付物，不是 `dist/` 那种构建产物）。
 
+> ⚠️ **2026-10-05：三套都在 v1.46.0 上重出过一遍**（新 VI 的五个 Tab 与四屏重做之后）。
+> 触发原因是**换 VI**（旧图还是 volt 绿那一版，与现在的界面不是同一个 App）。
+> ⚠️ 同一次重出还撞见一个真问题：`screenshots_test` 等三个 integration test 还在点
+> `Key('tab-我')`，而 Tab 已经改名成「我的」—— 它们会**静默失败到「找不到控件」**。
+> 判据是那一行 `LIANLEME-SHOT-SUMMARY`：`失败 0 步` 才算过（失败现场会留 `zz-fail-*.png`，
+> 那是失败现场图，**不许当交付物留着**）。
+
 ## App Store 那套：iOS 模拟器出图 + 一次"压平"
 
 2026-09-30，模拟器运行时（iOS 27.0，8G，`xcodebuild -downloadPlatform iOS`）装好后，
