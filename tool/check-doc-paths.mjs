@@ -62,6 +62,15 @@ const NOT_OURS = [
   // 判据本来就该是"文档指向的东西要么在仓库里、要么在下面这份名单里（并写明理由）"。
   ['app/android/upload-keystore.p12', '签名密钥，**故意不入库**（`.gitignore`）；只在开发机 + 密码管理器/离线介质里'],
   ['app/android/key.properties', '同上：Gradle 读的签名配置（含口令），故意不入库'],
+  // ⚠️ 下面五条是**2026-10-05 在干净克隆里跑 `check-doc-paths` 才发现的**：
+  // 它们在开发机上都存在（都是"跑过一次构建/同步之后就会有"的文件），
+  // 所以本地怎么跑都绿 —— CI 一跑就红。这正是"干净克隆"这个动作的价值。
+  ['app/android/local.properties', 'Flutter 生成的 SDK 路径文件，**不入库**；一次 `flutter build` 之后才会有'],
+  ['app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java',
+    '构建时生成的插件注册码（跑过 `flutter build`/`flutter drive` 才有）'],
+  ['app/ios/Flutter/Generated.xcconfig', '`flutter build ios` 生成的编译常量文件（不入库）'],
+  ['Flutter/Generated.xcconfig', '同一个文件的另一种写法（文档从 `app/ios/` 出发写相对路径）'],
+  ['server/data/events-2026-09-29.jsonl', '本机收集端的运行时数据（`server/data/` 已 gitignore）；文档在讲"看板的数据从哪来"'],
 ];
 
 /** 这些前缀是**构建产物**，不存在是正常的（尤其干净克隆上）。 */
