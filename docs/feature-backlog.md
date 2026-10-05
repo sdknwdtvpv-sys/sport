@@ -26,32 +26,47 @@
 | 11 | **Android SDK 路径空格的根治** | ✅ **用户 2026-10-05 拍板：C 同一卷挂到无空格挂载点**。**脚本与文档已就绪**：`tool/mount-ssd-space-free.sh`（`sudo tool/mount-ssd-space-free.sh` 一条命令，幂等；另有 `--check` / `--unmount` / `--fstab`）+ `docs/dev-environment.md` 两处小节改写成「方案 C 首选 + 四条备选」并附验证状态表。**机制已用临时 APFS 镜像验通**（卸下 → `diskutil mount -mountPoint` 挂上，不需要 root）；**并纠正一处**：一个 APFS 卷同一时刻只能挂一处（`mount_apfs` 返回 rc=75 "Operation already in progress"），所以必须**先卸真源、再挂新点**，原 ① 写的"直接多挂一个"做不到。**还差**：① 在这块真 SSD 上真跑一次（本机 `sudo -n true` = 126 Operation not permitted；且 `lsof +D` 显示 Electron/Feishu/Chrome/DSH agent 一堆进程占着，`diskutil unmount` 被 securityd dissent）② 挂上后 `flutter build appbundle --release` 确认误报消失 ③ `--fstab` 持久化（**未验证的风险**：卷可能只挂在指定点、`/Volumes` 下就没了，届时硬编码真源路径的四处 —— `tool/dev-env.sh:37`、`verify.sh:95`、`tool/asset-check.mjs:68`、`tool/workbench.mjs:138` —— 会红） | 🟡 脚本就绪，等一次真挂载 |
 | 12 | **给熟人短测配一个小工具**（我提的） | 新建一个小工具（**还没建**，名字等真做时定）：输入 3–5 个人的 `tap_count` → 按 kit §A5 算门槛（含"中位数是 .5 时向上去整"那条）→ **打印该填进 `docs/analytics.md` §3 那一格的确切内容**（`tool/usability-report.mjs` 现在读的就是那一格）→ 含自检并接进门禁。理由与当初做 `usability-report.mjs` 同源：现场手抄最容易错的就是中位数与口径 | ⬜ 待做 |
 | 13 | **上架前"横着对"加固**（我提的） | 继续钉"审核当天才会疼"的地方：政策 ↔ 商店表单 ↔ 产物的三边对账；`store-assets/privacy/` 那两页与仓库政策**同源**（政策改过就要重出）；备案号的填入位；截图 ↔ 软著说明书的一致性 | ⬜ 待做 |
-| 14 | **iOS 液态玻璃效果**（2026-10-06 你提的） | 三条路（原生 platform view / 着色器仿制 / 自绘），**先拍板三件事**：走哪条、用在哪儿、允不允许新增依赖（新增依赖 = 政策 SDK 表 + 两张商店表单 + 隐私事实表 + 守卫全要跟着改）。判据、风险与建议顺序见下面那一节 | ⏸ 待你拍板 |
+| 14 | **iOS 液态玻璃效果**（2026-10-06 你提的） | ✅ **2026-10-06 你拍板：A 路线（原生真材质）、仅 iOS，Android 保持原样**。已用**一次性 spike** 在 iOS 27 模拟器上验过真材质（见下）：`UIGlassEffect` 能用，但**在纯炭黑底上会变成一块浅灰板** —— 所以落地带一条设计规矩。**载体选"自己写桥"而不是引第三方包**（理由见下），实现与设计规矩写在「⑦」那一节 | 🟡 已拍板，待实现 |
 
-### ⑦ iOS「液态玻璃」：三条路与判据（2026-10-06 你提的，等拍板）
+### ⑦ iOS「液态玻璃」：已拍板 A（仅 iOS）+ spike 结论（2026-10-06）
 
-**先记住一条事实**：Flutter 自己画 UI、不经过 UIKit，所以 iOS 26 那套**系统级液态玻璃不会自动落到我们的界面上**
-（用 iOS 26 SDK 重编之后，会自动变样的只有**原生那几个面**：系统分享面板、权限弹窗、Live Activity / 桌面小组件）。
-App 内的玻璃只能**自己做**，于是有三条路：
+**决定**：走 **A 原生真材质**、**只做 iOS**；Android 一个像素都不动。
+**载体**：**自己写一个 platform view**（约 100 行 Swift + 一个 Flutter widget），
+**不引第三方包** —— 与本仓库一贯做法一致（通知/Live Activity/休息提示都是自己写的桥，
+当初为的是"多一个依赖就多一条要维护、要如实说明的东西"）。A 路线里 pub 上那两个包
+（`native_liquid_glass` 未验证发布者 · `liquid_glass_renderer` 自标 experimental）
+在我们只需要"一块玻璃"的场景下都不划算：**不引依赖 = 政策 SDK 表 / 两张商店表单 /
+隐私事实表 / `collection-live` 清单一个字都不用改。**
 
-| 路 | 做法 | 真不真 | 平台 | 代价 |
-|---|---|---|---|---|
-| **A 原生** | `native_liquid_glass`（0.3.1 · MIT · iOS-only）—— 每个控件是真的 `UIView`（UITabBarController / UINavigationBar / UIButton / UISwitch…），走 `UiKitView` | **是真的**：Apple 以后调材质，我们免费跟着变 | iOS 26+ 有玻璃；iOS<26 退回系统常态；**Android/桌面什么都不渲染**（空 `SizedBox`，必须自己兜底） | platform view 有**整屏合成的代价**（它在屏上时 Flutter 的栅格化不再与 Dart 并行）；浮层/切 Tab 时会闪（要 `LiquidGlassNavigatorObserver` + 手动抑制）；一个屏放一两个，不能每行一个 |
-| **B 着色器仿制** | `liquid_glass_renderer`（0.2.0-dev.4 · MIT · whynotmake.it）—— 纯 Flutter 着色器：折射 + 模糊 + 多形状融合；带轻量版 `FakeGlass`（只用背景模糊、不折射） | 仿的（但双端一致、可控） | iOS/Android/macOS（**仅 Impeller**） | 包自己标 **EXPERIMENTAL**；动画形状时**显存尖峰**（[Flutter #138627](https://github.com/flutter/flutter/issues/138627)）；一个融合组≤16 个形状；模糊+融合有瑕疵；**低端安卓机要实测** |
-| **C 自绘** | 只用 Flutter 自带：`BackdropFilter(ImageFilter.blur)` + 一层渐变高光 + 1px 描边 | 最"土"、也最轻 | 双端一致 | **零新依赖**（不动政策/SDK 表/商店表单）；效果介于"毛玻璃"与"液态玻璃"之间，做不出折射与形状融合 |
+**SDK 事实**（本机 Xcode 27.0 / iPhoneSimulator27.0.sdk 头文件实读）：
+`UIGlassEffect : UIVisualEffect`（`API_AVAILABLE(ios(26.0))`）有 `+effectWithStyle:`（`.regular` / `.clear`）、
+`isInteractive`、`tintColor`；另有 `UIGlassContainerEffect`（多个玻璃元素合并、`spacing`）；
+圆角走 `UIView.cornerConfiguration`（`UICornerConfiguration`）。本机**没装 CocoaPods**，
+所以桥要跟着现有工程走 **SPM**（与 `ReminderBridge.swift` 那批一致）。
 
-**四条本项目特有的约束（这才是判据）**：
-1. **依赖不是一行 `pubspec`**：多一个直接依赖 → 中英政策 §三之五 SDK 表 + Play 数据安全 + App Store 隐私标签 + `privacy-facts.json` + `check-store-forms`/`privacy-audit` 全要同步。**C 路线没有这笔账**。
-2. **暗底是物理限制**：VI 是炭黑 `#101014` + 熔岩橙，而液态玻璃是**折射它背后的东西**——背后几乎全黑时，玻璃看起来只是一块"略浅的灰板"。Apple 自己的深色玻璃之所以好看，是因为背后有照片/彩色内容。**这一条必须先在图稿/真机上验，验不过就不做**。
-3. **别放在训练屏**：那里每秒都在跑休息计时、还有大按钮，是"一组=一次点击"的红线区；玻璃的重绘代价与它正面冲突。**最适合的两处**：底部 Tab 栏、弹层/Sheet/Toast（以及总结页的卡片）。
-4. **iOS-only ≠ 双端**：走 A 的话，Android（国内主渠道）什么都不显示 → 仍然要写一套 Flutter 兜底；走 B/C 则两端同貌。
+**spike 实测（两张证据图，同一块 `UIGlassEffect` 只换背后的东西）**：
 
-**建议顺序（先便宜后贵，验不过就停）**：
-1. 先在 `vi/` 出一版"玻璃"图稿（底部 Tab + 弹层两处），与 iOS 26 系统观感**并排比**——判"暗底上值不值得做"；
-2. 图稿过了，**先走 C**（零依赖、一天内能上真机），真机 release 看帧率与观感；
-3. C 明显不够"液态"、且实测性能有余量 → 再评估 B（双端一致）或 A（只给 iOS 上真材质 + Android 兜底）；
-4. 真要引依赖（A/B），按 §〇 第 14 条那笔账一次改齐：政策两版 + 两张商店表单 + 事实表 + 守卫；
-5. 最后才动**三套截图 + 软著说明书**（界面一变，它们全要重出）。
+| 背后是 | 观感 | 证据 |
+|---|---|---|
+| **纯炭黑 `#101014`** | ❌ **一块浅灰板** —— 比屏幕上所有东西都亮、抢视线，完全不像玻璃 | `docs/images/glass-spike-1-flat-vs-content.png` |
+| **暗 + 纹理/辉光**（炭黑 → `#1D1B26` → `#2A1A16` + 橙色辉光） | 🟡 `.regular` = 像"烟熏玻璃"，可用；**✅ `.clear` + 淡橙 `#FF5A1F33` = 最好看**，暗底上仍读得出是玻璃 | `docs/images/glass-spike-2-dark-textured.png` |
+| **彩色内容**（渐变 + 卡片） | ✅ 就是 Apple 那个样子：吸色、亮边、跟着内容动 | 同上 |
+
+**由此定下三条落地规矩**（写在这里，免得实现时凭感觉）：
+1. **玻璃只在"背后真的有内容经过"的地方用** —— 滚动列表/卡片/图片/彩色元素的后面。
+   最典型的就是**底部 Tab 栏**（内容从它下面滚过去时才是它最好看的时候）；
+2. **纯色空屏上不要用 `.regular`**（会变灰板）；那里要用就 `.clear` + 极淡的 tint，
+   或者干脆不用（`Screens` 那种设置页就是这一类）；
+3. **训练屏不碰**（每秒跑休息计时 + 大按钮，"一组=一次点击"的红线区）。
+
+**未验的两件事（如实记）**：① iOS **26 以下**的退回形态没验过（本机只有 iOS 27 运行时；
+桥里写的是 `UIBlurEffect(.systemUltraThinMaterial)`）；② **真机 release 的帧率**没测 ——
+platform view 有整屏合成代价，package 文档与 Apple 文档都这么说，必须上真机测过再铺开。
+
+**落地顺序**：① 桥 + 一个 Flutter widget（`GlassSurface`，`UiKitView`，iOS 26+ 真材质、
+<26 退回系统材质、非 iOS 直接返回 child 或占位 → **Android 完全不变**）；
+② 先只接**底部 Tab 栏**一处，真机 release 看帧率与观感；③ 过了再看弹层/Sheet；
+④ 界面一改，**三套截图 + 软著说明书要重出**（`docs/screenshots.md` 里那套流程）。
 
 ## 一、现在就能做（不依赖你，出处明确）
 
