@@ -325,7 +325,10 @@ function selftest() {
   const real = [
     ['版本', readVersion(REPO), (r) => r.available && /^\d+\.\d+\.\d+$/.test(r.version) && r.build],
     ['CHANGELOG 时间线', readChangelogTitles(REPO, 5), (r) => r.available && r.items.length === 5],
-    ['dist', readDist(REPO), (r) => r.available && r.files.length > 0],
+    // ⚠️ 干净克隆上**没有 dist/**（它是 gitignore 的构建产物）——
+    // 所以判据是"要么读出产物、要么如实说没有"，而不是"必须有产物"。
+    // 这条是 2026-10-05 CI 抓出来的：本地一直绿，因为开发机上 dist/ 一直在。
+    ['dist', readDist(REPO), (r) => (r.available ? r.files.length > 0 : /没有 dist/.test(r.why))],
     ['git', readGit(REPO), (r) => r.available && r.head && r.head.hash],
     ['证据图', readEvidence(REPO), (r) => r.images.count > 0 && r.store.groups.length >= 3],
     ['合规', readCompliance(REPO), (r) => r.deploy.available && r.privacy.available],

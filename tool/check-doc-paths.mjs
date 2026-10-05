@@ -57,6 +57,11 @@ const NOT_OURS = [
   ['ios/Flutter/AppFrameworkInfo.plist', '同上（CocoaPods 路线才会被写入 MinimumOSVersion）'],
   ['app/ios/Runner/PrivacyInfo.xcprivacy', '文档写的是"**如果**收到 ITMS-91053 才加"的文件，现在还没有'],
   ['bundle/release/app-release.aab', '构建产物路径（文档在讲构建输出在哪）'],
+  // ⚠️ 2026-10-05：这两条是**CI 抓出来的**（本地一直绿，因为文件在本机真的存在）——
+  // 签名密钥与口令故意不入库（见 `.gitignore`），所以干净克隆上一定找不到。
+  // 判据本来就该是"文档指向的东西要么在仓库里、要么在下面这份名单里（并写明理由）"。
+  ['app/android/upload-keystore.p12', '签名密钥，**故意不入库**（`.gitignore`）；只在开发机 + 密码管理器/离线介质里'],
+  ['app/android/key.properties', '同上：Gradle 读的签名配置（含口令），故意不入库'],
 ];
 
 /** 这些前缀是**构建产物**，不存在是正常的（尤其干净克隆上）。 */

@@ -68,7 +68,7 @@ openssl x509 -in /tmp/dev.pem -pubkey -noout | openssl pkey -pubin -outform DER 
 ### 密钥怎么备份（2026-10-05 实际跑过一遍）
 
 **要备份的只有两样，但它们是"丢了就永久锁死"的那种**：
-`app/android/upload-keystore.p12`（签名本身）+ **keystore 密码**（脚本把 key 密码设成与它相同）。
+`app/android/upload-keystore.p12`（签名本身，**故意不入库**）+ **keystore 密码**（脚本把 key 密码设成与它相同）。
 `key.properties` 里是**明文密码**，它只是给 gradle 读的便利文件 —— 丢了可以用密码重建，不必单独备份。
 
 **① 做成加密磁盘映像**（已实测：产物是 AES-256 加密的，`hdiutil imageinfo` 里能看到 `CEncryptedEncoding`）：
