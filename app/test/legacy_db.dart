@@ -126,6 +126,11 @@ CREATE TABLE IF NOT EXISTS user_profile (
 ''';
 
 /// v2 的 `body_metric`（v2 引入的那张表）。
+/// ⚠️ **2026-10-05 修**：这份 fixture 原来多写了一列 `created_at NOT NULL`，
+/// 而**真实的 `body_metric` 从来没有这一列**（`docs/data-model.md` 与 drift 的表定义都没有，
+/// 仓库的 `save()` 也从不写它）。平时看不出来 —— 直到 v20 那条迁移测试要在老库里
+/// **插入一行**，才以 `NOT NULL constraint failed: body_metric.created_at` 炸出来。
+/// 这就是"fixture 假了"的第三种形式：**多写了一列**（前两种是少写表、写错列名）。
 const String legacyBodyMetricDdl = '''
 CREATE TABLE IF NOT EXISTS body_metric (
   id TEXT NOT NULL PRIMARY KEY,
@@ -133,7 +138,6 @@ CREATE TABLE IF NOT EXISTS body_metric (
   weight_kg REAL NULL,
   body_fat_pct REAL NULL,
   note TEXT NULL,
-  created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   deleted_at INTEGER NULL
 )

@@ -56,7 +56,7 @@ anonymous usage statistics — and that switch is **off by default**: you have t
 |---|---|---|
 | Workout records | Exercise, weight, reps, set index, warm-up flag, completion time | Log your training; compute volume and progress |
 | Workout sessions | Start/end time, total sets, total volume | Workout summary screen |
-| **Body metrics** | **Body weight (kg; displayed in the unit you pick), a note** | So you can see long-term change |
+| **Body metrics** | **Body weight (kg; displayed in the unit you pick), body fat percentage, waist (cm), muscle mass (kg), height (cm), a note** | So you can see long-term change |
 | Preferences | Progression-suggestion switch, unit preference, "Help improve the product" switch, **pinned exercises** | Remember your choices |
 
 This data lives in the app's private local database (SQLite, managed by drift) and
@@ -75,9 +75,16 @@ yourself**: that copy is encrypted on your phone before it leaves, and only ciph
 > never for advertising or any other purpose (App Store Guideline 5.1.3 likewise forbids
 > using health data for advertising or sale).
 >
+> **Body fat percentage, waist, muscle mass and height sit behind the same gate** (since
+> v1.52): they are body metrics just like weight, so they share that one separate consent
+> instead of prompting again for every new field — but every one of those numbers is
+> **stored on your device only, never uploaded and never included in analytics**. Height is
+> used solely to compute BMI (weight ÷ height²); with no height entered we show no BMI.
+>
 > **You can withdraw that consent at any time** (PIPL Article 15). The entry sits at the
 > bottom of the Body metrics screen — "Withdraw my consent". After withdrawal we stop
-> collecting new weight readings immediately and that screen asks for your consent again
+> collecting new weight, body fat, waist, muscle mass and height readings immediately and
+> that screen asks for your consent again
 > the next time you open it; **records you already saved are not deleted automatically**
 > (withdrawing consent and deleting data are two different things — delete data yourself
 > under "All data").

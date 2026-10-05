@@ -200,6 +200,13 @@ class UserProfile extends Table {
   /// double | linear | off
   TextColumn get progressionMode => text().withDefault(const Constant('double'))();
 
+  /// 身高（cm）。2026-10-05，v20。**只用来算 BMI**（BMI = 体重 ÷ 身高²）。
+  ///
+  /// 可空是刻意的：不填就**不显示 BMI**，而不是拿一个默认身高去编一个数出来 ——
+  /// 编出来的 BMI 比没有 BMI 更糟。
+  /// 它同样是身体数据（敏感个人信息），与体重共享那一道单独同意门。
+  RealColumn get heightCm => real().nullable()();
+
   /// 「帮助改进产品」开关。关掉后除崩溃外一律不上报（见 analytics-sdk.md §10）。
   ///
   /// **默认关闭**（2026-09-30，审计 A 的后半段）。此前是默认开着：政策正文虽然写了
@@ -357,6 +364,17 @@ class BodyMetric extends Table {
   /// 体重。允许单独记体脂而不记体重，所以这一列可空。
   RealColumn get weightKg => real().nullable()();
   RealColumn get bodyFatPct => real().nullable()();
+
+  /// 腰围（cm）。2026-10-05，v20。
+  ///
+  /// 与体重一样属**敏感个人信息**（身体数据），所以它和体重共享那一道**单独同意**门
+  /// （`body_metric_screen.dart` 的 `_ensureSensitiveConsent`）——
+  /// 不是"新开一扇门"，而是同一扇门后面的新字段。
+  RealColumn get waistCm => real().nullable()();
+
+  /// 骨骼肌量（kg）。2026-10-05，v20。同样在敏感信息那道门后面。
+  RealColumn get muscleMassKg => real().nullable()();
+
   TextColumn get note => text().nullable()();
   IntColumn get updatedAt => integer()();
   IntColumn get deletedAt => integer().nullable()();
@@ -471,8 +489,11 @@ class AppDatabase extends _$AppDatabase {
   /// 只改表定义不改 onUpgrade 的话，老用户的 App 一开就崩。
   ///
   /// v19（2026-10-05）：+ `app_notification`（站内消息 / 通知中心）。**只加表、不动任何既有列**。
+  /// v20（2026-10-05）：`body_metric` +`waist_cm`/`muscle_mass_kg`、`user_profile` +`height_cm`
+  ///（身体数据扩展：腰围 / 肌肉量 / BMI）。**这一版动既有表**，所以两块都要
+  /// 「先看库里真实的形状再决定加不加」——见迁移链尾那段的说明。
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -645,6 +666,29 @@ class AppDatabase extends _$AppDatabase {
               'CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_ref '
               "ON app_notification (kind, ref_key) WHERE ref_key IS NOT NULL",
             );
+          }
+
+          // v19 → v20：身体数据扩展。
+          // ⚠️ 这是**第二次动既有表**（第一次是 v18），所以照 v18 那两条教训来：
+          //   ① 排在**链尾**（前面可能有 createTable 把这张表建出来）；
+          //   ② 判据不是版本号，是**"这一列现在有没有"** —— 新库走 `onCreate` 时
+          //      这两张表已经带着新列建好了，再 addColumn 会 `duplicate column name`。
+          // 用一个小工具把这三列统一处理，免得三处各写一遍判断。
+          Future<void> addIfMissing(TableInfo table, GeneratedColumn<Object> col) async {
+            final String name = table.actualTableName;
+            final List<QueryRow> exists = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='$name'",
+            ).get();
+            if (exists.isEmpty) return; // 这张表还没有（更老的库）—— 由它自己那条迁移负责
+            final List<QueryRow> cols = await customSelect("PRAGMA table_info('$name')").get();
+            if (cols.any((QueryRow r) => r.read<String>('name') == col.name)) return;
+            await m.addColumn(table, col);
+          }
+
+          if (from < 20) {
+            await addIfMissing(bodyMetric, bodyMetric.waistCm);
+            await addIfMissing(bodyMetric, bodyMetric.muscleMassKg);
+            await addIfMissing(userProfile, userProfile.heightCm);
           }
         },
       );

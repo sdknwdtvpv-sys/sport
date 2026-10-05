@@ -84,6 +84,51 @@ export function scanManifestPermissions(xml) {
   return out;
 }
 
+/**
+ * 「身体数据」字段 ↔ 政策正文 ↔ `db.dart` 的**双向**对账。
+ *
+ * 抽成纯函数只为一件事：能喂**故意写坏**的输入进去自检（`node tool/privacy-audit.mjs --selftest`）。
+ * 一个从没抓住过东西的守卫等于没有 —— 这条规则自己就踩过这个坑（政策正文里"默认关"
+ * 那句话在别处出现过，于是规则一路绿灯，见 CHANGELOG 2026-09-30）。
+ *
+ * @param {{fields?: object, policy: string, enText: string, dbSrc: string}} input
+ * @returns {string[]} 错误（空数组 = 通过）
+ */
+export function checkSensitiveFields({ fields, policy, enText, dbSrc }) {
+  const errors = [];
+  if (!fields) {
+    return ['privacy-facts.json 的 sensitiveLocal 少了 fields —— '
+      + '「身体数据」有哪些字段必须显式列出来，否则新加字段没人拦'];
+  }
+  for (const f of fields.zh ?? []) {
+    if (!policy.includes(f)) {
+      errors.push(`身体数据字段「${f}」写进了库，但中文政策正文里没有它`
+        + '（收集了没说 = 政策失实）');
+    }
+  }
+  for (const f of fields.en ?? []) {
+    // 英文**不区分大小写**：同一句里「Body weight」在句首会大写、在句中是小写，
+    // 按字面比会为一个大写字母误报（自检里当场抓到过一次 —— 那就是这条规则的价值）。
+    if (!enText.toLowerCase().includes(f.toLowerCase())) {
+      errors.push(`身体数据字段「${f}」的中文政策点了名，但英文政策里没有它`
+        + '（英文版也是要发布的那一份）');
+    }
+  }
+  for (const c of fields.columns ?? []) {
+    if (!new RegExp(`get ${c.column}\\b`).test(dbSrc)) {
+      errors.push(`政策承诺了身体数据字段「${c.zh}」，但 app/lib/data/db.dart 里`
+        + `找不到那一列（${c.column}）—— 政策与库已经对不上`);
+    }
+  }
+  // 反向：库里有身高这一列，政策也要点到名（身高不在 columns 里，
+  // 因为它不进 body_metric，而是 user_profile.height_cm，单独查一次）。
+  if (/get heightCm\b/.test(dbSrc) && !(fields.zh ?? []).includes('身高')) {
+    errors.push('db.dart 里有 heightCm（身高），但 sensitiveLocal.fields.zh 没列它 —— '
+      + '库里存了、政策没写，就是"收集了没说"');
+  }
+  return errors;
+}
+
 export function audit({ root = ROOT, apkPermissions = null } = {}) {
   const facts = JSON.parse(readFileSync(FACTS, 'utf8'));
   const policy = readFileSync(POLICY, 'utf8');
@@ -402,6 +447,15 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
           errors.push(`敏感个人信息单独同意：英文政策里没有「${phrase}」`);
         }
       }
+
+      // v1.52 起「身体数据」不止体重：腰围 / 肌肉量 / 身高都进了库。
+      // 这一类漂移最隐蔽 —— 功能加了、政策表格那一格没改，于是"收集了没说"。
+      // 所以**双向**对账：政策正文里必须点到每一列的名字，db.dart 里也必须真有那一列，
+      // 少一头都报错（删了列却留着政策、或加了列忘了政策，两种都是错的）。
+      // 规则抽在下面那个纯函数里，为的是能喂假输入自检（`--selftest`）。
+      errors.push(...checkSensitiveFields({
+        fields: sl.fields, policy, enText, dbSrc,
+      }));
     }
   }
 
@@ -636,10 +690,55 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
   return { emitted, common, manifest, errors, warnings, apkPermissions };
 }
 
+// ---------------------------------------------------------------- 自检
+
+/**
+ * 自检：拿**真文件**当基线（现状必须 0 错），再逐个把关键处改坏，看它抓不抓得住。
+ *
+ * 为什么这条规则要自检：它是"政策 ↔ 库"的横切检查，写错了会**静默通过** ——
+ * 而静默通过的政策检查比没有更坏（会让人以为已经核过了）。这五种坏法各对应一次
+ * 真实可能发生的漂移：加字段忘改中文政策 / 忘改英文政策 / 忘改库 / 库加了列而
+ * fields 没列它 / fields 整个丢了。
+ */
+function selftest() {
+  const facts = JSON.parse(readFileSync(FACTS, 'utf8'));
+  const fields = facts.sensitiveLocal?.fields;
+  const policy = readFileSync(POLICY, 'utf8');
+  const enText = readFileSync(POLICY_EN, 'utf8');
+  const dbSrc = readFileSync(join(ROOT, 'app/lib/data/db.dart'), 'utf8');
+  const err = (o) => checkSensitiveFields({ fields, policy, enText, dbSrc, ...o });
+
+  const cases = [
+    ['现状（真文件）不该有错', err({}), 0],
+    ['中文政策漏了「腰围」要报', err({ policy: policy.split('腰围').join('围度') }), 1],
+    ['英文政策漏了 waist 要报', err({ enText: enText.split('waist').join('girth') }), 1],
+    ['库里没有 waistCm 要报',
+      err({ dbSrc: dbSrc.split('get waistCm').join('get waistCmX') }), 1],
+    ['fields 整个丢了要报', err({ fields: undefined }), 1],
+    ['库里身高没在 fields 里点名要报',
+      err({ fields: { ...fields, zh: fields.zh.filter((f) => f !== '身高') } }), 1],
+  ];
+
+  let bad = 0;
+  for (const [name, got, want] of cases) {
+    const ok = want === 0 ? got.length === 0 : got.length >= 1;
+    if (!ok) bad += 1;
+    console.log(`${ok ? '✓' : '✗'} ${name}（错 ${got.length} 条，期望 ${want === 0 ? '0' : '≥1'}）`);
+    if (!ok) for (const e of got) console.log(`    · ${e}`);
+  }
+  if (bad) {
+    console.error(`\n✗ 隐私政策对账自检失败：${bad}/${cases.length} 条没抓住`);
+    process.exit(1);
+  }
+  console.log(`隐私政策对账自检通过（${cases.length} 条：政策漏字段 / 英文版漏 / 库没列 / fields 丢了 / 身高未点名都抓得住）`);
+  process.exit(0);
+}
+
 // ---------------------------------------------------------------- CLI
 
 if (process.argv[1] && process.argv[1].endsWith('privacy-audit.mjs')) {
   const argv = process.argv.slice(2);
+  if (argv.includes('--selftest')) selftest();
   const argOf = (n, d) => {
     const i = argv.indexOf(n);
     return i >= 0 && argv[i + 1] ? argv[i + 1] : d;

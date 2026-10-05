@@ -59,6 +59,10 @@ class BodyMetricRepository {
     required String date,
     double? weightKg,
     double? bodyFatPct,
+    /// 腰围（cm）。2026-10-05（v20）加的 —— 与体重共享同一道单独同意门。
+    double? waistCm,
+    /// 骨骼肌量（kg）。同上。
+    double? muscleMassKg,
     String? note,
     int? nowMs,
     String? id,
@@ -85,6 +89,8 @@ class BodyMetricRepository {
             date: Value<String>(date),
             weightKg: Value<double?>(weightKg),
             bodyFatPct: Value<double?>(bodyFatPct),
+            waistCm: Value<double?>(waistCm),
+            muscleMassKg: Value<double?>(muscleMassKg),
             note: Value<String?>(note),
             updatedAt: Value<int>(now),
             // 显式清掉删除标记 = 复活

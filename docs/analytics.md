@@ -75,7 +75,7 @@ app_open ──▶ workout_started ──▶ first_set_logged ──▶ workout_
 | `workout_finished` | 结束训练 | `duration_sec`, `total_sets`, `total_volume_kg`, `exercise_count` | 北极星分子 |
 | `pr_achieved` | 破纪录 | `exercise_id`, `pr_type`, `value`, `prev_value` | 留存钩子效果 |
 | `share_card_created` | 生成分享卡 | `channel`(save/wechat) | 一期唯一社交形态的效果 |
-| `body_metric_logged` | 记录体重 | `has_weight`, `has_note` | **不上报具体数值**，见 §6 |
+| `body_metric_logged` | 记录身体数据 | `has_weight`, `has_note` | **不上报具体数值**（v1.52 新加的腰围 / 肌肉量 / 身高同样不上报），见 §6 |
 | `sync_failed` | 同步连续失败 | `retry_count`, `entity`, `error_code` | 健康度 |
 | `paywall_viewed` | 会员页曝光 | `entry_point` | 变现漏斗 |
 | `purchase_completed` | 支付成功 | `plan`, `price`, `is_trial` | 变现 |

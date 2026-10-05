@@ -329,6 +329,17 @@
       "zh": "体重（身体数据）",
       "en": "body weight (body metrics)"
     },
+    "fields": {
+      "_why": "v1.52 给「身体数据」加了腰围 / 肌肉量 / 身高。它们和体重同属敏感个人信息、共用同一道单独同意门，但**政策必须逐项点名**：库里存了而政策没写就是「收集了没说」。下面两半都由 privacy-audit.mjs 机器核对 —— 政策正文必须出现这些词，且 db.dart 里对应的列必须真的存在（双向对账，删了列却留着政策也会报）。",
+      "zh": ["体重", "体脂率", "腰围", "肌肉量", "身高"],
+      "en": ["body weight", "body fat percentage", "waist", "muscle mass", "height"],
+      "columns": [
+        { "column": "weightKg", "zh": "体重", "en": "body weight" },
+        { "column": "bodyFatPct", "zh": "体脂率", "en": "body fat percentage" },
+        { "column": "waistCm", "zh": "腰围", "en": "waist" },
+        { "column": "muscleMassKg", "zh": "肌肉量", "en": "muscle mass" }
+      ]
+    },
     "gate": {
       "where": "app/lib/features/body/body_metric_screen.dart::_ensureSensitiveConsent",
       "storedAt": "user_profile.body_metric_consent_at_ms（schema v14）",

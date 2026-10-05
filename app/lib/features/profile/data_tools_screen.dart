@@ -352,7 +352,8 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
                 style: TextStyle(color: Tokens.text, fontSize: 15),
               ),
               subtitle: const Text(
-                '记录体重。一天一条',
+                // v1.52 起不止体重了 —— 副标题跟着字段走，别让用户以为只记体重。
+                '体重、体脂率、腰围、肌肉量。一天一条',
                 style: TextStyle(color: Tokens.text3, fontSize: 13),
               ),
               trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),

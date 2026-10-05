@@ -137,6 +137,14 @@ void main() {
         {BodyWeightUnit unit = BodyWeightUnit.kg,
         ProfileRepository? profile,
         ValueChanged<BodyWeightUnit>? onUnitChanged}) async {
+      // v1.52 这一页长高了一截（顶部摘要卡 + 腰围/肌肉量/身高三个输入框）。
+      // 默认 800×600 的测试视口里，靠下的「备注」不会被懒构建的 ListView 建出来，
+      // `find.byKey(Key('body-note'))` 于是**找不到**（`Bad state: No element`）——
+      // 那不是页面错了，是视口比手机小。这里统一放大到接近真机的逻辑尺寸
+      // （400×1200，约等于一台 1080×3240 的机器），组件行为不变。
+      tester.view.physicalSize = const Size(1200, 3600);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
       // v1.31.0 起这一页先过**敏感个人信息单独同意**（PIPL 第 29 条）。
       // 本文件测的是单位切换与展示，不测那道门（那道门由 test/body_consent_test.dart 覆盖），
       // 所以传了 profile 就先替用户同意掉 —— 免得每个用例都要写一遍。
@@ -221,8 +229,16 @@ void main() {
       final BodyMetricData row = (await repo.forDate('2026-09-28'))!;
       expect(row.weightKg, 85.5, reason: '171 斤 = 85.5 kg（存储永远 kg）');
 
-      // 最近记录那一行也按斤念
-      expect(find.text('171 斤'), findsOneWidget);
+      // 最近记录那一行也按斤念。v1.52 起这一页顶部还有一张摘要卡，
+      // 它同样按当前单位念，所以「171 斤」会**出现两次**：摘要卡一处 + 最近记录一处。
+      // 光数次数没意义，要分别认：少一处就说明有一边还在念 kg。
+      expect(
+        tester.widget<Text>(find.byKey(const Key('body-summary-weight'))).data,
+        '171 斤',
+        reason: '摘要卡要跟着单位走',
+      );
+      expect(find.text('171 斤'), findsNWidgets(2),
+          reason: '摘要卡一处 + 最近记录一处');
     });
 
     testWidgets('斤的上限按斤算（800 斤 = 400 kg），别把 500 斤当合法',

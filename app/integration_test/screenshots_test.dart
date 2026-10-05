@@ -51,8 +51,22 @@ void main() {
     /// 结果 11 步都跑完了、`takeScreenshot` 却再也不返回 —— 整个 run 卡死，
     /// driver 侧一张图都写不出来（截图字节是等 run 结束才回传的）。
     /// 少一张现场图无所谓，把全部截图赔进去才是灾难。
+    /// 截图前必须先把 Flutter 的 surface 转成图片（Android 上只做一次）。
+    ///
+    /// ⚠️ 这一步原先只在**成功路径**（`capture`）里做，于是"第一步就失败"时
+    /// 那张现场图必定抛 `Call convertFlutterSurfaceToImage() before taking a screenshot`
+    /// —— 而那正是最需要看图的时候（2026-10-05 重跑时 15 步全红、一张诊断图都没有）。
+    Future<void> ensureSurface() async {
+      if (Platform.isAndroid && !surfaceReady) {
+        await binding.convertFlutterSurfaceToImage();
+        surfaceReady = true;
+        await settle(400);
+      }
+    }
+
     Future<void> shotWithTimeout(String name) async {
       try {
+        await ensureSurface();
         await binding.takeScreenshot(name).timeout(const Duration(seconds: 8));
       } catch (e) {
         debugPrint('LIANLEME-SHOT-TIMEOUT $name — $e');
@@ -60,11 +74,7 @@ void main() {
     }
 
     Future<void> capture(String name) async {
-      if (Platform.isAndroid && !surfaceReady) {
-        await binding.convertFlutterSurfaceToImage();
-        surfaceReady = true;
-        await settle(400);
-      }
+      await ensureSurface();
       await shotWithTimeout(name);
       shot.add(name);
       debugPrint('LIANLEME-SHOT $name');
@@ -80,6 +90,22 @@ void main() {
         // 不知道当时到底停在哪一屏。（第一次跑就吃了这个亏：9 步连败，无从查起。）
         await shotWithTimeout('zz-fail-$name');
       }
+    }
+
+    /// 滚到某个 key 可见。
+    ///
+    /// ⚠️ 必须指名"整页那个滚动体"（`body-scroll`）：身体数据页从 v1.52 起
+    /// **有两个 ListView**（整页纵向 + 日期那排横向 chips），
+    /// `find.byType(ListView)` 会同时命中两个，`dragUntilVisible` 当场抛
+    /// `Found 2 widgets`。这也是 v1.52 补页内 key 的原因。
+    Future<void> scrollTo(WidgetTester tester, Key key,
+        {int step = 220}) async {
+      await tester.dragUntilVisible(
+        find.byKey(key),
+        find.byKey(const Key('body-scroll')),
+        Offset(0, -step.toDouble()),
+      );
+      await settle(500);
     }
 
     /// 点 App 自己的返回键。**不要用 `Navigator.pop()` 硬弹** ——
@@ -100,6 +126,18 @@ void main() {
       await tester.tap(find.byKey(const Key('consent-agree')));
       await settle(2500);
       debugPrint('LIANLEME-SHOT privacy-consent-agreed');
+    }
+
+    // v1.49 起：同意之后还有**三屏卖点轮播**（只在首次启动出现 —— 同意门本身就是那个标记）。
+    // 截图脚本必须走这一步：不处理它，后面每一步都找不到控件。
+    // ⚠️ 2026-10-05 重跑这套图时**就是这么 15 步全红的** —— v1.48–v1.52 做完之后从没重拍过，
+    // 脚本与 App 之间差了这一个新屏。教训：新屏上线后要**立刻**重跑一次这套脚本，
+    // 否则"截图脚本还能跑通"这件事本身没有任何守卫。
+    if (find.byKey(const Key('intro-skip')).evaluate().isNotEmpty) {
+      await settle(1500);
+      debugPrint('LIANLEME-SHOT intro-carousel-present');
+      await tester.tap(find.byKey(const Key('intro-skip')));
+      await settle(1800);
     }
 
     await step('01-home', () async {
@@ -230,18 +268,55 @@ void main() {
         await tester.tap(find.byKey(const Key('body-consent-agree')));
         await settle(1800);
       }
+
+      // v1.52：这一页多了腰围 / 肌肉量 / 身高，摘要卡会算 BMI，趋势卡要**两次以上**记录。
+      // 所以这里顺手把真实录入路径走两遍（今天 + 昨天）—— 截到的才是"有数据的样子"，
+      // 而不是一张空表单（空表单证明不了 BMI 与趋势真的能用）。
+      Future<void> fillAndSave(String date, String weight, String waist,
+          String muscle, String height) async {
+        if (date.isNotEmpty) {
+          await tester.tap(find.byKey(Key('body-day-$date')));
+          await settle(700);
+        }
+        await tester.enterText(find.byKey(const Key('body-weight')), weight);
+        await settle(400);
+        await scrollTo(tester, const Key('body-waist'));
+        await tester.enterText(find.byKey(const Key('body-waist')), waist);
+        await settle(300);
+        await tester.enterText(find.byKey(const Key('body-muscle')), muscle);
+        await settle(300);
+        await tester.enterText(find.byKey(const Key('body-height')), height);
+        await settle(300);
+        await scrollTo(tester, const Key('body-save'));
+        await tester.tap(find.byKey(const Key('body-save')));
+        await settle(1500);
+      }
+
+      String day(DateTime d) => '${d.year}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+      final String today = day(DateTime.now());
+      final String y = day(DateTime.now().subtract(const Duration(days: 1)));
+
+      await step('11c-body-fill-two-days', () async {
+        // ⚠️ 两次**都要点日期 chip**：页面选中的那天不会自己跳回今天，
+        // 第二次不点的话两次都写进昨天那一条 —— 只有一条记录，
+        // 趋势卡就（正确地）不出现。第一版就是这么写的，图里少了趋势。
+        await fillAndSave(y, '73.2', '82.5', '34.2', '176');
+        await fillAndSave(today, '72.4', '82', '34.6', '176');
+        // 存完滚回顶部：图里要同时有摘要卡（含 BMI）与趋势卡
+        await tester.drag(find.byKey(const Key('body-scroll')), const Offset(0, 2400));
+        await settle(800);
+      });
+      // SnackBar（"已记录 …的身体数据"）会浮在表单上方，等它自己走掉再拍
+      await settle(4200);
       await capture('11-body-metric');
 
       await step('11b-body-revoke', () async {
         // 撤回同意（PIPL 第 15 条）的入口在这一页最下面，滚到底才可见 ——
         // 单独留一张，作为"这个入口真的在、而且没渲染坏"的证
         // （`**` 那类漏字只有截图看得见，单测看的是 key）。
-        await tester.dragUntilVisible(
-          find.byKey(const Key('body-revoke')),
-          find.byType(ListView),
-          const Offset(0, -220),
-        );
-        await settle(800);
+        await scrollTo(tester, const Key('body-revoke'));
         await capture('11b-body-revoke');
       });
     });

@@ -18,6 +18,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme.dart';
+import '../../core/vi_area_chart.dart';
+import '../../core/vi_cards.dart';
+import 'bmi.dart';
+import 'body_trend.dart';
 import '../../core/units.dart';
 import '../../analytics/analytics.dart';
 import '../../data/body_metric_repository.dart';
@@ -72,6 +76,23 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   late BodyWeightUnit _unit = widget.unit;
   final TextEditingController _note = TextEditingController();
   List<BodyMetricData> _recent = const <BodyMetricData>[];
+
+  /// 腰围 / 肌肉量 / 身高的输入（2026-10-05，v1.52）。
+  ///
+  /// ⚠️ 身高**不是**每日指标，它存进 `user_profile`（只用来算 BMI）——
+  /// 和其它三项一起进表单，但保存时走的是另一条路（见 `_save`）。
+  final TextEditingController _waist = TextEditingController();
+  final TextEditingController _muscle = TextEditingController();
+  final TextEditingController _height = TextEditingController();
+
+  /// 最近一次记录里的体脂/肌肉量/腰围（摘要块用）。
+  BodyMetricData? _latest;
+
+  /// 身高（cm）。存在 `user_profile` 里，不是每日指标 —— 只用来算 BMI。
+  double? _heightCm;
+
+  /// 趋势卡当前选中的指标（v1.52）。记过哪个才切得过去，见 `trendMetrics`。
+  BodyTrendMetric _trendMetric = BodyTrendMetric.weight;
   late DateTime _selected;
   bool _loading = true;
 
@@ -113,18 +134,24 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
-        title: const Text('体重是敏感个人信息，要先单独征得你同意',
+        title: const Text('身体数据是敏感个人信息，要先单独征得你同意',
             style: TextStyle(color: Tokens.text)),
         content: const Text(
           // ⚠️ 这里**不能**写 markdown 的 `**`：`Text` 不渲染 markdown，
           // 用户会直接看到星号（v1.31.0 真机截图时抓到过一次）。
           // test/body_consent_test.dart 里有一条断言专门守着这件事。
-          '「身体数据」记的是你的体重 —— 按《个人信息保护法》，这类健康数据属于'
+          //
+          // v1.52：这一页不止记体重了（还记体脂率 / 腰围 / 肌肉量 / 身高），
+          // 所以说明里的"记的是体重"必须跟着改 —— 只写体重就变成"收集了没说"。
+          // 它们共用**这一次**同意（同一类数据、同一个页面、同一个用途），
+          // 不是每加一个字段就再弹一次窗。
+          '「身体数据」记的是你的体重、体脂率、腰围、肌肉量和身高 —— '
+          '按《个人信息保护法》，这类健康数据属于'
           '敏感个人信息，需要我们单独征求你的同意（首次启动时那次是政策总同意，'
           '不等于这一条）。\n\n'
-          '· 它只存在这台手机上，不会上传（云备份里也不含身体数据）；\n'
-          '· 用途只有一个：给你自己看长期变化；\n'
-          '· 你可以随时在「全部数据」里改或删掉它。',
+          '· 它们只存在这台手机上，不会上传（云备份里也不含身体数据）；\n'
+          '· 用途只有一个：给你自己看长期变化（身高只用来算 BMI）；\n'
+          '· 你可以随时在「全部数据」里改或删掉它们。',
           key: Key('body-consent'),
           style: TextStyle(color: Tokens.text2, height: 1.6),
         ),
@@ -160,12 +187,12 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
-        title: const Text('撤回后不再收集体重',
+        title: const Text('撤回后不再收集身体数据',
             style: TextStyle(color: Tokens.text)),
         content: const Text(
           '撤回的是「同意」，不是数据：\n\n'
           '· 这一页下次进来会重新问你一次；\n'
-          '· 你不同意之前，不会再读、也不会再写体重；\n'
+          '· 你不同意之前，不会再读、也不会再写体重、体脂率、腰围、肌肉量和身高；\n'
           '· 已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
           key: Key('body-revoke-note'),
           style: TextStyle(color: Tokens.text2, height: 1.6),
@@ -210,10 +237,15 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   }
 
   Future<void> _load() async {
+    final double? height = await widget.profile?.heightCm();
     final List<BodyMetricData> recent = await widget.repository.recent();
     if (!mounted) return;
     setState(() {
       _recent = recent;
+      _heightCm = height;
+      // 摘要块看的是**最近一条有体重的记录**（`recent` 已按日期倒序）
+      _latest = recent.isEmpty ? null : recent.first;
+      if (height != null) _height.text = trimNumber(round1(height));
       _loading = false;
     });
     await _prefill();
@@ -232,6 +264,10 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           ? trimNumber(round1(toDisplayBodyWeight(row.weightKg ?? 0, _unit)))
           : '';
       _note.text = usable ? (row.note ?? '') : '';
+      // 新字段也一样回填（2026-10-05）：补录时"看到已有值再改"，不是面对空框重猜
+      _waist.text = usable && row.waistCm != null ? trimNumber(round1(row.waistCm!)) : '';
+      _muscle.text =
+          usable && row.muscleMassKg != null ? trimNumber(round1(row.muscleMassKg!)) : '';
     });
   }
 
@@ -293,6 +329,190 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
 
   bool get _canSave => !_saving && _parsedWeight != null;
 
+  /// 把输入框里的字变成数字。**空 / 非法一律当"没填"**（null），
+  /// 而不是当 0 —— 0 会写进库里，变成"今天腰围 0 厘米"。
+  double? _parsed(TextEditingController c) {
+    final String t = c.text.trim();
+    if (t.isEmpty) return null;
+    final double? v = double.tryParse(t);
+    return (v == null || v <= 0) ? null : v;
+  }
+
+  /// 表单里的一个小输入框（腰围 / 肌肉量 / 身高）。
+  Widget _smallField(String hint, String key, TextEditingController c) => TextField(
+        key: Key(key),
+        controller: c,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: <TextInputFormatter>[
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+        ],
+        style: const TextStyle(color: Tokens.text, fontSize: 18),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Tokens.text3, fontSize: 15),
+          filled: true,
+          fillColor: Tokens.surface,
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: Tokens.s4, vertical: Tokens.s3),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(Tokens.rCard),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      );
+
+  /// 趋势卡（v1.52）：把最近记过的那几项画成一条线。
+  ///
+  /// 规则全在 `body_trend.dart`（纯计算，有单测），这里只管画：
+  ///  * **一个点都不画** —— 记不到两次就不出现这张卡。画一条两个点的"趋势"是编故事，
+  ///    而画一条平线会让人以为"我这段时间完全没变"。
+  ///  * 切换器**只列画得出的指标** —— 列一个点了没反应的，等于给个假入口。
+  ///  * 用 `ViAreaChart`（与「进步」页那张容量图同一个组件），不抄第二份画法。
+  Widget _trendCard() {
+    final List<BodyTrendMetric> available = trendMetrics(_recent);
+    if (available.isEmpty) return const SizedBox.shrink();
+    final BodyTrendMetric metric =
+        available.contains(_trendMetric) ? _trendMetric : available.first;
+    final BodyTrend trend = bodyTrend(_recent, metric);
+    final double? delta = trend.delta;
+    return Padding(
+      padding: const EdgeInsets.only(top: Tokens.s5),
+      child: ViCard(
+        key: const Key('body-trend'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Expanded(
+                  child: Text('身体数据趋势',
+                      style: TextStyle(
+                          color: Tokens.text,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600)),
+                ),
+                ViSegmented(
+                  key: const Key('body-trend-seg'),
+                  labels: <String>[
+                    for (final BodyTrendMetric m in available) m.label,
+                  ],
+                  current: available.indexOf(metric),
+                  onChanged: (int i) =>
+                      setState(() => _trendMetric = available[i]),
+                ),
+              ],
+            ),
+            const SizedBox(height: Tokens.s3),
+            ViAreaChart(
+              key: const Key('body-trend-chart'),
+              points: trendPoints(trend.values),
+              height: 110,
+            ),
+            const SizedBox(height: Tokens.s2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(shortDate(trend.firstDate),
+                    style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+                // 首尾差：**带单位和正负号**，否则"掉了 2"读不出是 kg 还是 cm
+                Text(
+                  delta == null ? '' : trendDeltaText(metric, delta),
+                  key: const Key('body-trend-delta'),
+                  style: TextStyle(
+                    color: delta != null && delta < 0
+                        ? Tokens.success
+                        : Tokens.text2,
+                    fontSize: 11,
+                  ),
+                ),
+                Text(shortDate(trend.lastDate),
+                    style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: Tokens.s2),
+              child: Text(
+                '这条线只有 ${trend.samples.length} 次记录，'
+                '${metric.label}的单位是 ${metric.unit}',
+                key: const Key('body-trend-hint'),
+                style: const TextStyle(color: Tokens.text3, fontSize: 11),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 摘要：当前体重 + BMI（含分档）+ 体脂 / 肌肉量 / 腰围。
+  ///
+  /// ⚠️ 有一项没记就**不摆那一格**，而不是摆一个「—」占位 ——
+  /// 空格子会让人以为"我记过但是丢了"。
+  Widget _summaryCard(BodyMetricData m) {
+    final double? bmi = bmiOf(weightKg: m.weightKg, heightCm: _heightCm);
+    final List<(String, String)> tiles = <(String, String)>[
+      if (m.bodyFatPct != null) ('体脂率', '${m.bodyFatPct!.toStringAsFixed(1)} %'),
+      if (m.muscleMassKg != null) ('肌肉量', '${m.muscleMassKg!.toStringAsFixed(1)} kg'),
+      if (m.waistCm != null) ('腰围', '${m.waistCm!.toStringAsFixed(1)} cm'),
+      ('BMI', bmiText(bmi)),
+    ];
+    return Container(
+      key: const Key('body-summary'),
+      padding: const EdgeInsets.all(Tokens.s4),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              Text(
+                m.weightKg == null
+                    ? '还没记体重'
+                    : formatBodyWeight(m.weightKg!, _unit),
+                key: const Key('body-summary-weight'),
+                style: Tokens.display(28, weight: 700, letterSpacing: -0.5),
+              ),
+              const SizedBox(width: Tokens.s2),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(m.date, style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s3),
+          Wrap(
+            spacing: Tokens.s3,
+            runSpacing: Tokens.s2,
+            children: <Widget>[
+              for (final (String label, String value) in tiles)
+                Column(
+                  key: Key('body-tile-$label'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(label, style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+                    Text(value,
+                        style: const TextStyle(
+                            color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          Text(
+            bmi == null ? bmiHint(bmi) : 'BMI ${bmiText(bmi)} · ${bmiBand(bmi)} —— ${bmiHint(bmi)}',
+            key: const Key('body-bmi-hint'),
+            style: const TextStyle(color: Tokens.text3, fontSize: 11, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (!_canSave) return;
     setState(() => _saving = true);
@@ -300,8 +520,17 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     await widget.repository.save(
       date: dayKey(_selected),
       weightKg: _parsedWeight,
+      bodyFatPct: null, // 体脂本页不录（走「全部数据」/导入）；保留字段以免覆盖
+      waistCm: _parsed(_waist),
+      muscleMassKg: _parsed(_muscle),
       note: _note.text.trim().isEmpty ? null : _note.text.trim(),
     );
+    // 身高不是每日指标：存进 profile（只用来算 BMI）。填了才存，空着不动。
+    final double? newHeight = _parsed(_height);
+    if (newHeight != null && widget.profile != null) {
+      await widget.profile!.setHeightCm(newHeight);
+      _heightCm = newHeight;
+    }
 
     // `body_metric_logged`：**保存成功之后**才报 —— 放在 `_load` 里会变成
     // "一打开页面就报记了一次体重"（第一次就是这么写错的，测试当场抓到）。
@@ -315,13 +544,15 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     if (!mounted) return;
     setState(() {
       _recent = recent;
+      // 摘要块跟着更新（刚记完的那条可能不是"最近一条有体重的"）
+      _latest = recent.isEmpty ? null : recent.first;
       _saving = false;
     });
     widget.onSaved?.call();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('已记录 ${dayKey(_selected)} 的体重'),
+        content: Text('已记录 ${dayKey(_selected)} 的身体数据'),
         backgroundColor: Tokens.elevated,
         // 浮动到保存按钮**上方**。默认贴底会盖住按钮 —— 用户发现填错了
         // 想立刻改一次，却点不到按钮（这个是被测试抓出来的）。
@@ -378,10 +609,22 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else
               Expanded(
+                // 这一页里有两个滚动体（纵向整页 + 「日期」那排横向 chips），
+                // 所以给整页这个一个 key：测试里 `find.byType(ListView)` 会同时命中两个，
+                // 拖拽/滚动就无从下手。有了名字，测试点的是"整页"而不是"某个 ListView"。
                 child: ListView(
+                  key: const Key('body-scroll'),
                   padding: const EdgeInsets.fromLTRB(
                       Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s6),
                   children: <Widget>[
+                    // 摘要在最上面（2026-10-05）：进来第一眼该看到"现在是多少"，
+                    // 而不是先看到一排输入框。没有记录时整块不出现。
+                    if (_latest != null) ...<Widget>[
+                      _summaryCard(_latest!),
+                      const SizedBox(height: Tokens.s5),
+                    ],
+                    // 趋势卡：两个点以上才出现（一个点画不出趋势，见 body_trend.dart）
+                    _trendCard(),
                     _label('日期'),
                     SizedBox(
                       height: 36,
@@ -421,6 +664,16 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         ),
                       ),
                     ),
+                    // 腰围与肌肉量并排（都是可选的）—— 一次录完，不用翻两页
+                    Row(
+                      children: <Widget>[
+                        Expanded(child: _smallField('腰围 cm', 'body-waist', _waist)),
+                        const SizedBox(width: Tokens.s3),
+                        Expanded(child: _smallField('肌肉量 kg', 'body-muscle', _muscle)),
+                      ],
+                    ),
+                    _label('身高 cm（只用来算 BMI，只存本机）'),
+                    _smallField('例如 175', 'body-height', _height),
                     _label('备注（可选）'),
                     TextField(
                       key: const Key('body-note'),
@@ -474,7 +727,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                             const Text(
                               // ⚠️ 这里同样不能出现 markdown 的星号（Text 不渲染 markdown）
                               key: Key('body-revoke-caption'),
-                              '撤回后不再收集新的体重，这一页会重新问你一次；'
+                              '撤回后不再收集新的身体数据，这一页会重新问你一次；'
                               '已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
                               style: TextStyle(
                                 color: Tokens.text3,

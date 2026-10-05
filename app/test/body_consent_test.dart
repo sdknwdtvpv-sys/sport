@@ -68,6 +68,13 @@ void main() {
       expect(body.contains('**'), isFalse,
           reason: '弹层正文里出现了 ** —— 那是 markdown 记号，用户会直接看到星号');
       expect(body.contains('敏感个人信息'), isTrue);
+      // v1.52 起这一页还记体脂率 / 腰围 / 肌肉量 / 身高 —— 说明里必须**逐项点名**。
+      // 只写"体重"就是"收集了没说"：`privacy-audit.mjs` 那条机器对账盯的是**政策**，
+      // 而用户真正会读到的是这个弹层，所以弹层也得有自己的一条。
+      for (final String field in <String>['体脂率', '腰围', '肌肉量', '身高']) {
+        expect(body.contains(field), isTrue,
+            reason: '单独同意弹层里没提到「$field」—— 收集了没说');
+      }
     });
 
     testWidgets('点「先不用」：退出这一页，库里仍然什么都没有',
@@ -134,10 +141,14 @@ void main() {
 
     /// 「撤回我的同意」在这一页的**最下面**（表单 + 历史记录之后），
     /// 懒构建的 ListView 不滚过去就根本不存在 —— 已经栽过一次，先滚再点。
+    ///
+    /// 拖哪个滚动体要指名道姓：这一页 v1.52 起有两个 ListView（整页纵向 +
+    /// 日期那排横向 chips），`find.byType(ListView)` 会同时命中两个，
+    /// `getCenter` 直接抛 `Found 2 widgets`。页面那边给了 `body-scroll`。
     Future<void> tapRevoke(WidgetTester tester) async {
       await tester.dragUntilVisible(
         find.byKey(const Key('body-revoke')),
-        find.byType(ListView),
+        find.byKey(const Key('body-scroll')),
         const Offset(0, -200),
       );
       await tester.pumpAndSettle();
@@ -248,7 +259,7 @@ void main() {
       expect(find.byKey(const Key('body-consent')), findsNothing);
       await tester.dragUntilVisible(
         find.byKey(const Key('body-save')),
-        find.byType(ListView),
+        find.byKey(const Key('body-scroll')),
         const Offset(0, -200),
       );
       await tester.pumpAndSettle();

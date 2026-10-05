@@ -16,6 +16,7 @@ import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/analytics_meta_repository.dart';
+import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/notification_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/reminder_repository.dart';
@@ -416,6 +417,56 @@ void main() {
     final ReminderSettings again = await repo.load();
     expect(again.enabled, isTrue);
     expect(again.label, '07:30');
+
+    await legacy.close();
+  });
+
+  test('v19 的库升到 v20：body_metric 多出腰围/肌肉量、user_profile 多出身高，老数据原样',
+      () async {
+    // v20 是**第二次"动既有表"**（第一次是 v18 给 analytics_meta 加列）。
+    // 所以这条测试守的是同一类坑：新库走 `onCreate` 时这两张表**已经带着新列**建好了，
+    // 迁移里若无条件 addColumn 就会 `duplicate column name`；反过来 fixture 里是"旧形状"，
+    // 不 add 又查不到列。判据必须是"这一列现在有没有"。
+    late List<String> colsBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 19);
+        raw.execute(legacySeedExerciseSql);
+        // ⚠️ `body_metric` 从 v2 起就**没有** `created_at` 这一列（只有 updated_at）。
+        // 第一版 fixture 里我凭空写了个 `created_at NOT NULL`，于是这条测试以
+        // `NOT NULL constraint failed` 失败 —— 那是**测试自己假了**，不是迁移的问题。
+        // 教训：fixture 的 DDL 必须和 `docs/data-model.md` / `db.dart` 逐列对齐。
+        raw.execute("INSERT INTO body_metric (id, date, weight_kg, note, updated_at) "
+            "VALUES ('bm_old', '2026-10-01', 72.5, '旧记录', 1000)");
+        colsBefore = raw
+            .select("PRAGMA table_info('body_metric')")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+    await legacy.customSelect('SELECT 1').get();
+    expect(colsBefore, isNot(contains('waist_cm')),
+        reason: 'fixture 里不该有新列，否则这条测试是空转');
+
+    final BodyMetricRepository repo = BodyMetricRepository(legacy);
+    // 老记录原样还在，新列是 null（"没记过"，不是 0）
+    final BodyMetricData old = (await repo.forDate('2026-10-01'))!;
+    expect(old.weightKg, 72.5);
+    expect(old.note, '旧记录');
+    expect(old.waistCm, isNull);
+    expect(old.muscleMassKg, isNull);
+
+    // 新列能写能读
+    await repo.save(date: '2026-10-02', weightKg: 72, waistCm: 81.5, muscleMassKg: 34);
+    final BodyMetricData fresh = (await repo.forDate('2026-10-02'))!;
+    expect(fresh.waistCm, 81.5);
+    expect(fresh.muscleMassKg, 34);
+
+    // 身高那一列同样加上了，而且老库是 null（"没填过"）
+    final ProfileRepository profile = ProfileRepository(legacy);
+    expect(await profile.heightCm(), isNull);
+    await profile.setHeightCm(176);
+    expect(await profile.heightCm(), 176);
 
     await legacy.close();
   });

@@ -325,8 +325,10 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
-**当前 `schemaVersion = 15`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
-`tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红）。
+**当前 `schemaVersion = 20`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+`tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红 —— 包括这种 `schemaVersion = 20`
+的写法，2026-10-05 之前它只认 `schema v20`，而本文档恰好用的是前者，于是**只有这份文档
+逃过了检查**：规则补上 `=` 之后当场抓到它写着 15）。
 
 | 版本 | 改动 | 需要注意的地方 |
 |---|---|---|
@@ -345,6 +347,11 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v13 | **统计开关的默认值从"开"改成"关"**（`UPDATE user_profile SET analytics_enabled = 0`） | 列默认值只影响以后新插入的行，**老库里那几个 `true` 必须显式翻过来** —— 否则"默认同意"这个毛病会跟着老用户一直活下去。（写这一刀时还没有真实用户，所以没有覆盖任何人的选择） |
 | v14 | `user_profile` 新增 `body_metric_consent_at_ms`（体重的**单独同意**） | PIPL 第 29 条：敏感个人信息要单独征得同意。老库为 null —— 老用户下次进「身体数据」会看到那道说明（对的：他们当初同意的是政策，不是"处理敏感个人信息"这件事本身） |
 | v15 | 新增 `active_session_row`（**未结束的训练会话**） | 2026-10-01：训练中断后能回来接着练（见本文上面那节）。只加表；「删除全部数据」会把它一起清掉（有"表清单守门"测试盯着） |
+| v16 | 新增 `pinned_exercise`（动作置顶 / 收藏） | 只加表。老库升上来是空的 —— **准确的历史**：这个功能出现之前用户一个动作都没置顶过 |
+| v17 | 新增 `reminder_setting`（训练提醒） | 只加表。老库升上来是空的 —— 那正是要的：**提醒默认关闭**，没有那行代表"这台机器还没开过提醒" |
+| v18 | `analytics_meta` 新增 `legacy_purged_at`（"旧数据已清"的时刻） | **第二次给既有表加列**，两条教训见 `db.dart` 里那段注释：迁移必须排在**链尾**（那张表是 v7 才建的），判据是"这一列现在有没有"而不是版本号。老库为 null = 还没清过 |
+| v19 | 新增 `app_notification`（站内消息 / 通知中心） | 只加表。⚠️ 那条**部分唯一索引**（`idx_notification_ref`）在迁移里也要建一遍 —— 老库升级走的是迁移这条路，`onCreate` 只管新库 |
+| v20 | 身体数据扩展：`body_metric` 新增 `waist_cm` / `muscle_mass_kg`，`user_profile` 新增 `height_cm` | **第三次给既有表加列**（v18 之后）。老库这三列都是 **null = 没记过**（不是 0）—— 腰围 0 cm 是个有意义的值，不能拿来当"没填"。同样排在链尾、同样按"这一列有没有"判断（新库 `onCreate` 已经带着这三列，无条件 `addColumn` 会 `duplicate column name`） |
 
 迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
 ⚠️ **fixture 必须用当年的 DDL 手写**：拿当前 schema 建完再改的话，
@@ -446,14 +453,16 @@ CREATE INDEX idx_set_exercise ON set_record(exercise_id, completed_at DESC);  --
 
 ```sql
 CREATE TABLE body_metric (
-  id           TEXT PRIMARY KEY,
-  user_id      TEXT,
-  date         TEXT NOT NULL,          -- YYYY-MM-DD，一天一条
-  weight_kg    REAL,
-  body_fat_pct REAL,
-  note         TEXT,
-  updated_at   INTEGER NOT NULL,
-  deleted_at   INTEGER
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT,
+  date           TEXT NOT NULL,        -- YYYY-MM-DD，一天一条
+  weight_kg      REAL,
+  body_fat_pct   REAL,
+  waist_cm       REAL,                 -- 腰围（v20 加）；null = 没记过，不是 0
+  muscle_mass_kg REAL,                 -- 骨骼肌量（v20 加）；同样 null = 没记过
+  note           TEXT,
+  updated_at     INTEGER NOT NULL,
+  deleted_at     INTEGER
 );
 
 -- S8「进步」要按日期倒序取最近若干条
@@ -492,19 +501,29 @@ CREATE TABLE suggestion_log (
 );
 CREATE INDEX idx_suggestion_exercise ON suggestion_log(exercise_id, created_at DESC);
 
--- 用户画像：规则引擎的输入
+-- 用户画像：规则引擎的输入（2026-10-05 逐列对齐 db.dart，之前这份 DDL 停在 v6 的形状）
 CREATE TABLE user_profile (
-  user_id            TEXT PRIMARY KEY,
-  goal               TEXT,      -- hypertrophy | strength | fat_loss
-  weekly_frequency   INTEGER,   -- 每周几天，用于部位轮转
-  unit_pref          TEXT DEFAULT 'kg',       -- 训练重量的显示单位：kg / lb
-  body_weight_unit   TEXT DEFAULT 'kg',       -- 体重的显示单位：kg / jin（1 斤 = 500 g）
-  default_rest_sec   INTEGER DEFAULT 90,
-  progression_mode   TEXT DEFAULT 'double',  -- double | linear | off（用户可关闭建议）
-  created_at         INTEGER NOT NULL,
-  updated_at         INTEGER NOT NULL
+  user_id                 TEXT PRIMARY KEY,
+  goal                    TEXT,      -- hypertrophy | strength | fat_loss
+  weekly_frequency        INTEGER,   -- 每周几天，用于部位轮转
+  unit_pref               TEXT DEFAULT 'kg',    -- **训练重量**的显示单位：kg / lb
+  body_weight_unit        TEXT DEFAULT 'kg',    -- **体重**的显示单位：kg / jin（1 斤 = 500 g）
+  default_rest_sec        INTEGER DEFAULT 90,
+  progression_mode        TEXT DEFAULT 'double', -- double | linear | off（用户可关闭建议）
+  height_cm               REAL,                 -- 身高（v20 加）；只用来算 BMI，null = 没填过
+  analytics_enabled       INTEGER DEFAULT 0,    -- 「帮助改进产品」开关，**默认关**（v13 起）
+  privacy_consent_at_ms   INTEGER,              -- 政策同意的时刻（v11 加）；null = 还没同意过
+  privacy_declined_at_ms  INTEGER,              -- 明确拒绝过的时刻（v12 加）；拒绝 ≠ 同意
+  body_metric_consent_at_ms INTEGER,            -- 身体数据的**单独同意**（v14 加）；null = 还没问过
+  created_at              INTEGER NOT NULL,
+  updated_at              INTEGER NOT NULL
 );
 ```
+
+> 这张表里有两列是"**不能混**"的：`analytics_enabled`（使用统计开关，随时可关、关掉
+> 功能不受影响）和 `privacy_consent_at_ms`（法律意义上的同意）。另有
+> `body_metric_consent_at_ms` 专门记**敏感个人信息**的单独同意（PIPL 第 29 条）——
+> 三者是三个东西，撤回同意的那条路（`clearBodyMetricConsent`）只清第三个。
 
 ### 离线同步
 

@@ -80,7 +80,12 @@ export function facts(root) {
 
 /** 三条"数字说法"规则：正则（第 1 组是数字）、对应哪个事实、人话名字 */
 const RULES = [
-  [/(?:schema|schemaVersion)\s*\**\s*v?(\d+)/i, 'schemaVersion', 'schema 版本'],
+  // `=` 那个可选的等号是 2026-10-05 补的：`docs/data-model.md` 里写的是
+  // 「当前 `schemaVersion = 15`」，而旧正则要求 `schemaVersion` 之后**紧跟**版本号 ——
+  // 中间那个 ` = ` 让它整条不匹配。于是**唯一一份把版本号写错的文档恰好躲过了检查**，
+  // 而它上面还写着"这个数字由 check-doc-facts 每次对着代码核，写旧了会判红"。
+  // 教训：守卫的漏，常常就在它自己文档举的那个例子的写法上。
+  [/(?:schema|schemaVersion)\s*\**\s*=?\s*v?(\d+)/i, 'schemaVersion', 'schema 版本'],
   // ⚠️ 这两条踩过坑（第一版就误报）：
   //   * `模式版本…v(\d+)` 用**非贪婪**匹配时，"已从 v1 演进到 v12" 会抓到 **v1**（开头那个）；
   //     改成贪婪（`[^\n]*`）= 取这一行里**最后**一个版本号，那才是"现在是几版"。
@@ -203,6 +208,10 @@ function selftest() {
   const cases = [
     ['全都对得上 → 绿', { 'docs/a.md': '当前模式版本 **v15**\n351 个内置动作\n18 类事件 · 7 个公共字段\n' }, true, null],
     ['schema 写旧了 → 必须报', { 'docs/a.md': '当前 schema **v14**\n' }, false, 'schema 版本 = 14'],
+    // 2026-10-05：这条是**真实漏网**的写法（data-model.md 原文，事实是 20 而它写 15）。
+    // 注意自检里的事实是 15，所以这条故意写 14。
+    ['`schemaVersion = N` 这种写法写旧了 → 也必须报',
+      { 'docs/a.md': '**当前 `schemaVersion = 14`**（真源是 `app/lib/data/db.dart`）\n' }, false, 'schema 版本 = 14'],
     ['模式版本写旧了 → 必须报', { 'docs/a.md': '模式版本已从 v1 演进到 v12（12 次迁移）\n' }, false, '模式版本 = 12'],
     ['动作数写旧了 → 必须报', { 'docs/a.md': '已产出 165 个内置动作\n' }, false, '内置动作数 = 165'],
     ['动作库总数写旧了 → 必须报', { 'docs/a.md': '动作库（300 个动作）\n' }, false, '动作库总数 = 300'],

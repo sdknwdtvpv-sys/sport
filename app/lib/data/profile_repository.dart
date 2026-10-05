@@ -206,6 +206,42 @@ class ProfileRepository {
   /// 显示单位。没有档案时返回 kg（与 `unit_pref` 的 DB 默认值一致）。
   ///
   /// 注意这里读的只是**显示**偏好 —— 存储与引擎始终是 kg，见 core/units.dart。
+  /// 身高（cm）。2026-10-05（v20）。**只用来算 BMI** —— 没填就不显示 BMI，
+  /// 而不是拿默认身高编一个数出来（编出来的 BMI 比没有 BMI 更糟）。
+  Future<double?> heightCm() async {
+    final UserProfileData? row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.heightCm;
+  }
+
+  /// 存身高。连带把这一列的其它设置原样带回去（drift 的 upsert 写整行 ——
+  /// 漏一列就会被抹成默认值，这个坑项目里踩过三次，注释写在下面 `setUnit` 那里）。
+  Future<void> setHeightCm(double? cm, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final UserProfileData? existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            goal: existing?.goal,
+            weeklyFrequency: existing?.weeklyFrequency,
+            unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
+            defaultRestSec: existing?.defaultRestSec ?? 90,
+            progressionMode: existing?.progressionMode ?? 'double',
+            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
+            heightCm: cm,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
   Future<WeightUnit> unit() async {
     final row = await (_db.select(_db.userProfile)
           ..where((t) => t.userId.equals(kLocalUserId)))
