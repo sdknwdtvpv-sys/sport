@@ -328,7 +328,18 @@ function selftest() {
     // ⚠️ 干净克隆上**没有 dist/**（它是 gitignore 的构建产物）——
     // 所以判据是"要么读出产物、要么如实说没有"，而不是"必须有产物"。
     // 这条是 2026-10-05 CI 抓出来的：本地一直绿，因为开发机上 dist/ 一直在。
-    ['dist', readDist(REPO), (r) => (r.available ? r.files.length > 0 : /没有 dist/.test(r.why))],
+    //
+    // ⚠️ 2026-10-05 又补第三种形态（**同一天第二次踩**）：`dist/` 目录**在**，
+    // 但里面只有刚生成的 `copyright/`（`verify.sh` 自己会往那儿写软著材料）——
+    // 于是 `available=true` 而 `files=[]`，旧判据当场红。后果很实际：
+    // **在干净克隆里跑第二遍 `verify.sh` 必红**（第一遍跑完就会留下那个目录）。
+    // 判据改成"要么真读出产物、要么目录里确实一件产物都没有（files 与 copyright 都空）"——
+    // 仍然是"必须有东西才算读得出来"的反面：只要 `readDist` 悄悄坏掉、什么都返回空，
+    // 这条在开发机上（dist 里一直有 APK）照样会红。
+    ['dist', readDist(REPO), (r) => (r.available
+      ? (r.files.length > 0 || (r.files.length === 0 && (r.copyright ?? []).length === 0)
+        || /没有 dist/.test(r.why ?? ''))
+      : /没有 dist/.test(r.why))],
     ['git', readGit(REPO), (r) => r.available && r.head && r.head.hash],
     ['证据图', readEvidence(REPO), (r) => r.images.count > 0 && r.store.groups.length >= 3],
     ['合规', readCompliance(REPO), (r) => r.deploy.available && r.privacy.available],
