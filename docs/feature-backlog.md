@@ -81,7 +81,7 @@
 | 事项 | 状态 / 出处 |
 |---|---|
 | **HealthKit / Health Connect** | ⏸ 你 2026-09-30 拍板推到后续版本（`tech-decisions.md`） |
-| **账号体系：微信登录 + Sign in with Apple** | ⏸ P1，13–17 人日 + 资质；Apple 4.8 要求两者成对（`wechat-login-feasibility.md`） |
+| **账号体系：登录 / 注册**（VI 里的手机号+验证码 + 三方登录） | ⏸ **2026-10-05 用户拍板：放待办**（不删不做）。原方案与代价见 `wechat-login-feasibility.md`：P1，13–17 人日 + 资质，Apple 4.8 要求微信与 Apple 登录成对出现；新 VI 给了完整的登录/注册界面（`vi/auth-setup.html`），落地时对齐 |
 | **商业化 P1 云备份订阅 / P2 AI 建议** | ⏸ `monetization-plan.md`：P1 要服务端收据校验，P2 要算力（会碰"数据不出设备"） |
 | **增量同步（多端同一份数据）** | ⏸ 一期只有**快照式**备份；`backend-design.md` §五：「增量留到真的有人两台设备时」 |
 | **匿名账号绑定邮箱（找回）** | ⏸ `backend-design.md` §三：「一期不做」 |
