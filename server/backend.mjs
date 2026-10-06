@@ -8,15 +8,28 @@
  * 接口：
  *   POST   /v1/account        体：{"account_id":"…","device_id":"…","device_name":"…"}
  *                             → 201 新建 / 200 已存在（幂等）
- *   GET    /v1/account/me     → 200 {"exists":true,"bytes":N,"updated_at":…,"devices":N}
+ *   GET    /v1/account/me     → 200 {"exists":true,"bytes":N,"updatedAt":…,"devices":N}
  *   PUT    /v1/backup         体：**原始密文**（application/octet-stream，≤8MB）
  *                             → 200 {"bytes":N,"updated_at":…}
  *   GET    /v1/backup         → 200 原始密文（原样还）
  *   DELETE /v1/account        → 200 {"deleted":N}  （账号+设备+备份一起删）
  *   GET    /healthz           → 200 {"ok":true,"accounts":N,"backups":N}
  *
- * 鉴权：`Authorization: Bearer <account_id>`。**不发明 token** ——
- * `account_id` 本身就是客户端密钥的哈希，服务端不认识别的身份。
+ * 账号体系（**可选**，配了邮件通道才有；见 `docs/plan-account-login.md`）：
+ *   POST   /v1/auth/salt            体：{"email"} → 200 {"salt","kdf"}（不存在的邮箱回**假盐**）
+ *   POST   /v1/auth/code            体：{"email","purpose"} → 200 {"ok":true}（发 6 位验证码）
+ *   POST   /v1/auth/register        体：{email,code,verifier,wrapped,account_id,salt,kdf,…}
+ *                                   → 201 {"account_id","token"}
+ *   POST   /v1/auth/login           体：{email,verifier} → 200 {"account_id","token","wrapped","salt","kdf"}
+ *   POST   /v1/auth/reset           体：{email,code,account_id,verifier,wrapped,salt,kdf}
+ *                                   → 200 {"account_id","token"}（忘口令 → 用恢复码设新口令）
+ *   POST   /v1/auth/logout          头：Bearer 令牌 → 200 {"revoked":N}
+ *   POST   /v1/auth/change-password 体：{current_verifier,verifier,wrapped,salt,kdf} → 200
+ *   GET    /v1/auth/me              头：Bearer 令牌 → 200 {"email","account_id",…}
+ *
+ * 鉴权：`Authorization: Bearer <凭据>`。凭据有两种解释 —— **先当会话令牌**
+ * （`/v1/auth/login` 发的那串），解释不出来再按老规矩当 `account_id`
+ * （= 客户端密钥的哈希；账号体系上线之前只有这一种）。服务端仍然不认识别的身份。
  *
  * 三条安全纪律（写在代码里，因为它们是承诺）：
  *   1. **日志绝不打印 `Authorization`**（它等同于凭据）。下面所有日志只打方法与路径。
@@ -84,7 +97,7 @@ const bearer = (req) => {
   return m ? m[1].trim() : null;
 };
 
-export function createBackend({ store, log = console.log }) {
+export function createBackend({ store, log = console.log, auth = null }) {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
     const p = url.pathname;
@@ -97,8 +110,13 @@ export function createBackend({ store, log = console.log }) {
       // ---- 健康检查（不需要鉴权）----
       if (req.method === 'GET' && p === '/healthz') {
         say(200);
-        return json(res, 200, { ok: true, ...store.stats() });
+        return json(res, 200, { ok: true, ...store.stats(), ...(auth ? auth.store.stats() : {}) });
       }
+
+      // ---- 账号体系（注册 / 登录 / 会话 / 改口令 / 重置 / 注销会话）----
+      // ⚠️ **必须写在下面那道"账号必须存在"的闸门之前**：否则会变成"要先登录才能登录"。
+      // 什么时候有账号体系由调用方决定（没配 SMTP 就没有）——没配时这几个路径会落到 404。
+      if (auth && (await auth.tryHandle({ req, res, p, say, json, readBody }))) return;
 
       // ---- 建账号（幂等）----
       if (req.method === 'POST' && p === '/v1/account') {
@@ -117,8 +135,13 @@ export function createBackend({ store, log = console.log }) {
       }
 
       // ---- 以下都要鉴权 ----
-      const accountId = bearer(req);
-      if (!accountId || !ACCOUNT_ID_RE.test(accountId)) {
+      // 凭据有两种解释：**先当会话令牌**（账号体系上线后客户端用的就是这个），
+      // 再按老规矩当 `account_id`（恢复码算出来的哈希；正式包还没有账号体系那一版就靠它）。
+      // 两种都解释不出来 → 401；这里不区分"令牌过期"与"账号不存在"，外面不需要知道差别。
+      const raw = bearer(req);
+      const resolved = auth ? auth.resolveBearer(raw) : (raw && ACCOUNT_ID_RE.test(raw) ? { accountId: raw } : null);
+      const accountId = resolved?.accountId ?? null;
+      if (!accountId) {
         say(401);
         return json(res, 401, { error: '缺少或非法的 Authorization: Bearer' });
       }
@@ -160,11 +183,13 @@ export function createBackend({ store, log = console.log }) {
         return say(200);
       }
 
-      // ---- 注销：账号、设备、备份一起删 ----
+      // ---- 注销：账号、设备、备份一起删；**加了账号体系之后，邮箱绑定与令牌也一起删** ----
+      // 这一条是合规要求（应用内注销），少删任何一样，政策里那句"注销后不再保留"就是假话。
       if (req.method === 'DELETE' && p === '/v1/account') {
         const n = store.deleteAccount(accountId);
+        const a = auth ? auth.store.deleteByAccount(accountId) : 0;
         say(200);
-        return json(res, 200, { deleted: n });
+        return json(res, 200, { deleted: n + a });
       }
 
       say(404);
@@ -189,7 +214,30 @@ if (isMain) {
   const dbPath = argOf('--db', join(ROOT, 'server/data/backend.sqlite'));
 
   const store = createSqliteStore({ path: dbPath });
-  const { server } = createBackend({ store });
+  // ---- 账号体系是**可选**的：没配邮件通道就没有它（那台服务仍然只做备份）----
+  // 为什么做成可选而不是"必须有"：正式包（没有账号体系那一版）与 DEV/自检都还在用
+  // 只有备份的那套接口。加一个账号体系不该让"只跑备份"变成跑不起来。
+  let auth = null;
+  const authDbPath = argOf('--auth-db', dbPath.replace(/\.sqlite$/, '') + '-auth.sqlite');
+  const mailOut = argOf('--mail-out', process.env.LIANLEME_MAIL_OUT ?? null);
+  const authSecret = argOf('--auth-secret', process.env.LIANLEME_AUTH_SECRET ?? null);
+  const smtpHost = process.env.LIANLEME_SMTP_HOST;
+  if (mailOut || smtpHost) {
+    const { createAuthStore } = await import('./auth-store.mjs');
+    const { createAuth } = await import('./auth.mjs');
+    const { mailerFromEnv } = await import('./mailer.mjs');
+    if (!authSecret) {
+      throw new Error('开了账号体系就必须给 --auth-secret 或 LIANLEME_AUTH_SECRET（生成随机盐要用它；'
+        + '不固定的话每次重启都会换一套假盐，客户端拿到的盐对不上）');
+    }
+    auth = createAuth({
+      store: createAuthStore({ path: authDbPath }),
+      backendStore: store,
+      mailer: mailerFromEnv({ ...process.env, ...(mailOut ? { LIANLEME_MAIL_OUT: mailOut } : {}) }),
+      secret: authSecret,
+    });
+  }
+  const { server } = createBackend({ store, auth });
   // `--port 0` 让内核挑一个空闲端口；**必须把真实端口打出来**，
   // 否则自动化测试拿到 "0" 就没法连上（app/test/cloud_backup_test.dart 正靠这一行）。
   // ⚠️ **必须显式绑 127.0.0.1**（2026-10-04 真机上量到的）：只写 server.listen(port)
@@ -201,6 +249,9 @@ if (isMain) {
     console.log(`✓ 极薄后端在 http://127.0.0.1:${actual}`);
     console.log(`  库：${dbPath}`);
     console.log('  接口：POST /v1/account · GET /v1/account/me · PUT|GET /v1/backup · DELETE /v1/account');
+    console.log(auth
+      ? `  账号：已开（库 ${authDbPath}）· POST /v1/auth/{salt,code,register,login,reset,logout,change-password} · GET /v1/auth/me`
+      : '  账号：**没开**（没有 SMTP 或 --mail-out；接口 /v1/auth/* 会 404）');
     console.log('  ⚠️ 服务端只存密文；生产必须走 HTTPS（凭据在 Authorization 头里）。');
   });
 }

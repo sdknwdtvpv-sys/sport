@@ -205,8 +205,12 @@ run "install -d -o root -g root -m 755 '$APP_DIR'"
 run "install -d -o '$SVC_USER' -g '$SVC_USER' -m 750 '$DATA_DIR'"
 run "install -d -o root -g root -m 755 '$APP_DIR/server'"
 
-step "3/7 拷代码（只拷服务端要用的 3 个文件）"
-for f in backend.mjs backend-store.mjs collector.mjs; do
+step "3/7 拷代码（只拷服务端要用的 6 个文件）"
+# ⚠️ 这份白名单是**唯一**决定"哪些文件会到服务器上"的地方（`tool/check-deploy.mjs` 只看
+# ExecStart 的入口在仓库里存在，**不查它是否被拷过去**）。漏一个的后果不是部署报错，
+# 而是运行到那一步才崩：`backend.mjs` 是按需 `await import('./auth-store.mjs')` 的
+# （没配邮件通道就永远不 import）—— 少了它，症状是"启用账号体系后第一次请求 500"。
+for f in backend.mjs backend-store.mjs collector.mjs auth.mjs auth-store.mjs mailer.mjs; do
   run "install -o root -g root -m 644 '$REPO_SERVER/$f' '$APP_DIR/server/$f'"
 done
 say "库文件位置：$DATA_DIR/backend.sqlite（首次启动自动建）"

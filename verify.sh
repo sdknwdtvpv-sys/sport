@@ -249,6 +249,26 @@ else
   strip "$LOG"; echo "${RED}✗ 极薄后端自检失败${OFF}"; fail=1
 fi
 
+# 邮件模块自检：注册/找回要发验证码，而这个后端**零依赖**（不引 nodemailer），
+# 所以 SMTP 客户端是自己写的几十行 —— 自己写的协议对话必须有一条自检盯着：
+# 对着假 SMTP 服务器跑完整对话、明文默认必拒、真 TLS（465，生产就是这条）也走一遍。
+# openssl 不在时 TLS 那一步如实标"跳过"，不判失败也不假装通过。
+if node server/mailer.selftest.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 邮件模块自检通过"
+else
+  strip "$LOG"; echo "${RED}✗ 邮件模块自检失败${OFF}"; fail=1
+fi
+
+# 账号体系自检：注册 / 登录 / 会话令牌 / 改口令踢号 / 忘口令重置 / 应用内注销。
+# 邮件走 `--mail-out`（文件）模式，所以**不需要真的 SMTP** 就能端到端跑通。
+# 它盯的是"看起来成功了"的那类错：令牌没吊销、注销没删干净、库里/日志里出现明文、
+# 以及最要紧的 —— 服务端**解不开**账号密钥（`wrapped` 原样保管）。
+if node server/auth.selftest.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 账号体系自检通过"
+else
+  strip "$LOG"; echo "${RED}✗ 账号体系自检失败${OFF}"; fail=1
+fi
+
 # plist 读写库的**自检**：核 iOS 产物要读 Info.plist，macOS 上靠 /usr/bin/plutil，
 # 而 CI 是 ubuntu（**没有 plutil**）—— 那就得有一个自己的解析器，且它必须被验过
 # （解析/序列化互逆、坏输入会抛、与系统 plutil 结果一致）。

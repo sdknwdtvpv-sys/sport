@@ -135,6 +135,34 @@ sync_ops(account_id text, seq bigint,  -- 增量同步：客户端产生、服�
 鉴权：`Authorization: Bearer <account_id>`（因为 `account_id` 本身就是密钥的哈希，
 不额外发明 token）。**因此必须走 HTTPS**，且服务端日志**不得记录 Authorization 头**。
 
+### 六之二、账号体系（2026-10-06 起，**邮箱 + 口令**）
+
+> 这一节 2026-10-06 追加。它是那一轮用户拍板的结果（**做账号，且"必须先登录才能用"**），
+> 完整方案在 `docs/plan-account-login.md`；这里只记**接口与鉴权口径的变化**。
+
+| 方法 | 路径 | 做什么 |
+|---|---|---|
+| POST | `/v1/auth/salt` | 取这个邮箱的 KDF 盐（**不存在的邮箱回假盐**，防枚举） |
+| POST | `/v1/auth/code` | 发 6 位验证码（注册 / 重置；60 秒一条、每邮箱每天 10 条、全局每天 200 条） |
+| POST | `/v1/auth/register` | 邮箱 + 验证码 + `auth_verifier` + `wrapped_master`（**被 KEK 包起来的账号密钥**） |
+| POST | `/v1/auth/login` | 邮箱 + `auth_verifier` → 会话令牌 + `wrapped_master` |
+| POST | `/v1/auth/reset` | 忘口令：验证码 + **恢复码算出的 `account_id`** → 设新口令 |
+| POST | `/v1/auth/change-password` | 验当前口令 → 换 `wrapped_master`，并踢掉**其他**会话 |
+| POST | `/v1/auth/logout` | 吊销当前会话令牌 |
+| GET | `/v1/auth/me` | 这个会话是谁（邮箱 / account_id / 设备数） |
+
+* **鉴权变成"两种解释"**：`Bearer` 里**先当会话令牌**（`/v1/auth/login` 发的那串 64 位十六进制），
+  解释不出来再按老规矩当 `account_id`。老接口（`/v1/backup` 等）语义**一个字节没改**，
+  所以"还没有账号体系"的正式包不受影响。
+* **口令永不出设备**：客户端用口令 + 盐派生两样东西 —— `auth_verifier`（发过来认证）与 KEK
+  （**不发过来**，用来解开 `wrapped_master`）。服务端只存 `auth_verifier` 的 **scrypt 结果**
+  与 `wrapped_master`（**密文**）——"服务端读不到训练数据"这条底线因此**没有被账号体系破坏**。
+  残余风险（拿到库的一方可以离线爆破弱口令）写在方案 §三，不装作没有。
+* **服务端因此多存了一样可识别信息：邮箱**。政策、收集清单、两张商店表单都要跟着改（方案 §五）。
+* **注销**（`DELETE /v1/account`）现在会把**邮箱绑定与全部会话令牌**一起删 —— 合规要求。
+* **账号体系是可选能力**：没配邮件通道（`LIANLEME_SMTP_HOST` / `--mail-out`）时
+  `/v1/auth/*` 一律 404，服务仍然只做备份。
+
 ## 七、客户端接入点（改动面）
 
 | 位置 | 改动 |
