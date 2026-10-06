@@ -229,7 +229,27 @@ PROXY_MODE=existing DOMAIN=api.elliotli.work bash server/deploy/install.sh
 ⚠️ 它**不会**替你写口令 —— 那条 `sed` 渲染通道会把值写进 0644 的单元文件、
 进 `--dry-run` 输出、进 shell 历史（`server/deploy/README.md` 里写了原因）。
 
-### 只剩这一步：填 SMTP 那五项（**这一条真的只有你能做**）
+### ✅ SMTP 已填，账号体系已开（2026-10-06 深夜）
+
+用户给的是一枚 QQ 邮箱的 **SMTP 授权码**（不是登录密码）。写进 `/etc/lianleme/mail.env`
+（`0600 root:root`，通过 stdin 传，不进任何进程参数）→ 重启 → 外网验收：
+
+| 验收 | 结果 |
+|---|---|
+| `/healthz` | `{"ok":true,"accounts":2,"backups":1,"bytes":21551,"binds":0,"tokens":0}` —— **多了 `binds`/`tokens`** |
+| `POST /v1/auth/salt` | `200` + 32 字节盐 + `kdf`（与客户端默认参数一致：`m=65536,t=3,p=4,v=19`）|
+| `POST /v1/auth/code` | `200 {"ok":true}`，journal 里出现 **`验证码已发（register · 0c8066eb）`** —— 真的走完了 AUTH + DATA |
+| 限流 | 60 秒内第二次请求 → **`429 刚发过一封，请 60 秒后再试`**（线上实测）|
+| 登录（错凭据）| `401 {"error":"邮箱或口令不对"}` —— 不区分「邮箱不存在 / 口令错」|
+| 老客户端 | `/v1/account/me` 无凭据仍 `401`、不存在的 account_id 仍 `404`（**备份那条路一字未变**）|
+
+**又修了一个部署后才暴露的缺口**（`server/backend.mjs`，只有服务端、不切版）：
+CLI 建 auth 时**没传 `log`**，而 `createAuth` 的 log 默认是 no-op —— 于是 journal 里
+只有 `POST /v1/auth/code → 200`，而「验证码已发（指纹）」「**发信失败（原因）**」「登录成功」
+这些**全被丢掉**。运维时最想看的恰好是「为什么没收到信」。现在接上 stdout 了
+（上表那条 `验证码已发` 就是证据）。
+
+### （历史）这一步原本要你做的：填 SMTP 那五项
 
 服务器上 `/etc/lianleme/mail.env` 已经建好、`LIANLEME_AUTH_SECRET` 已经填好了，
 **只差 SMTP 那五行**（一个能发信的邮箱 —— 多数邮箱这里要填的不是登录密码而是**授权码**）：

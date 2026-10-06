@@ -245,6 +245,11 @@ if (isMain) {
         backendStore: store,
         mailer: mailerFromEnv({ ...process.env, ...(mailOut ? { LIANLEME_MAIL_OUT: mailOut } : {}) }),
         secret: authSecret,
+        // ⚠️ **必须显式传 log**（2026-10-06 部署后才发现的缺口）：createAuth 的 log 默认是
+        // no-op，而"验证码已发（指纹）/ 发信失败（原因）/ 登录成功 / 口令已改"这些**只从这里出**——
+        // 不传的话 journal 里只剩 `POST /v1/auth/code → 200`，而"为什么没收到信"这种问题
+        // 恰好需要那一行。运营时最想看的就是 `发信失败` 那句。
+        log: (m) => console.log(m),
       });
     } catch (e) {
       // ⚠️ **配错账号体系，不许把整个后端拖下水**（2026-10-06 部署前想通的）：
