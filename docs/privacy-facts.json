@@ -170,6 +170,32 @@
         "has_weight",
         "has_note"
       ]
+    },
+    {
+      "name": "cloud_backup_done",
+      "when": "云备份上传成功（P1-1，2026-10-06）：**只报密文的字节数**，不报内容、不报文件名",
+      "fields": [
+        "ciphertext_bytes",
+        "has_body"
+      ]
+    },
+    {
+      "name": "cloud_backup_failed",
+      "when": "云备份上传失败，或开启备份那条路上的建号/绑定/输恢复码失败（**只报失败本身**，不带错误文本 —— 那句话可能含服务器地址）",
+      "fields": []
+    },
+    {
+      "name": "cloud_restore_done",
+      "when": "从云端恢复成功（**只报恢复了多少条**）",
+      "fields": [
+        "workouts",
+        "body_synced"
+      ]
+    },
+    {
+      "name": "cloud_restore_failed",
+      "when": "从云端恢复失败（同上：只报失败本身）",
+      "fields": []
     }
   ],
   "commonFields": [

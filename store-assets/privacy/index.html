@@ -65,7 +65,7 @@
 <p><strong>你随时可以撤回这个同意</strong>（《个人信息保护法》第 15 条）：入口就放在「身体数据」页 最下面 ——「撤回我的同意」。撤回后我们<strong>立即停止收集</strong>新的体重、体脂率、腰围、 肌肉量与身高，这一页下次进来会 重新征求你的同意；而<strong>已经记下来的历史记录不会被自动删除</strong>（撤回同意与删除数据是 两件事，删数据请你到「全部数据」里单独操作）。</p>
 </blockquote>
 <h3 id="2-2-帮助改进产品-打开时才会产生的数据">2.2 「帮助改进产品」打开时才会产生的数据</h3>
-<p>这是一个<strong>默认关闭</strong>的开关：只有你<strong>主动</strong>到「我 → 隐私与关于 → 帮助改进产品」把它打开，下面这些事件才会产生（打开后随时可关，立即生效）。它只产生下面 18 类事件 —— 字段是<strong>有限且固定</strong>的，逐条列在下面这张表里（不多不少）：</p>
+<p>这是一个<strong>默认关闭</strong>的开关：只有你<strong>主动</strong>到「我 → 隐私与关于 → 帮助改进产品」把它打开，下面这些事件才会产生（打开后随时可关，立即生效）。它只产生下面 22 类事件 —— 字段是<strong>有限且固定</strong>的，逐条列在下面这张表里（不多不少）：</p>
 <table>
 <thead><tr><th>事件</th><th>什么时候发</th><th>携带的字段</th></tr></thead>
 <tbody>
@@ -87,6 +87,10 @@
 <tr><td><code>pr_achieved</code></td><td>这次训练破了纪录</td><td><code>exercise_id</code>、<code>pr_type</code>、<code>value</code>、<code>prev_value</code></td></tr>
 <tr><td><code>share_card_created</code></td><td>生成分享卡（存相册 / 系统分享）</td><td><code>channel</code></td></tr>
 <tr><td><code>body_metric_logged</code></td><td>记录身体数据</td><td><code>has_weight</code>、<code>has_note</code> —— <strong>只报&quot;填没填&quot;，体重数值不出设备</strong></td></tr>
+<tr><td><code>cloud_backup_done</code></td><td>云备份<strong>上传成功</strong></td><td><code>ciphertext_bytes</code>、<code>has_body</code> —— <strong>只报密文多大、带没带身体数据</strong>，不报内容、不报文件名</td></tr>
+<tr><td><code>cloud_backup_failed</code></td><td>云备份上传失败（或开启备份那条路上的建号 / 绑定 / 输入恢复码失败）</td><td>无字段 —— <strong>只报失败本身</strong>（错误文本可能含服务器地址，不发）</td></tr>
+<tr><td><code>cloud_restore_done</code></td><td>从云端<strong>恢复成功</strong></td><td><code>workouts</code>、<code>body_synced</code> —— 只报恢复了多少条</td></tr>
+<tr><td><code>cloud_restore_failed</code></td><td>从云端恢复失败</td><td>无字段 —— 同上，只报失败本身</td></tr>
 </tbody>
 </table>
 <p><strong>每个事件都会另外带上这 7 个公共字段</strong>（它们回答&quot;这是哪台设备、哪一次使用、哪个版本&quot;）：</p>
@@ -131,7 +135,7 @@
 </ul>
 <h3 id="3-2-这两个开关的边界">3.2 这两个开关的边界</h3>
 <ul>
-<li><strong>统计开关</strong>：关着时一行都不发；开着时发的是 §2.2 那 18 类事件与 §2.3 的 7 个公共字段 —— 不含任何自由文本、不含体重数值。</li>
+<li><strong>统计开关</strong>：关着时一行都不发；开着时发的是 §2.2 那 22 类事件与 §2.3 的 7 个公共字段 —— 不含任何自由文本、不含体重数值。</li>
 <li><strong>云备份开关</strong>：关着时<strong>没有任何数据离开设备</strong>；开着时离开的是 §3.3 那些内容的<strong>密文</strong>。</li>
 <li>两个开关<strong>随时可以关掉</strong>：统计关掉后队列不再发送；云备份可以在「数据与备份」里关闭 （云端那份保留），或注销（云端那份删除）。</li>
 <li>我们<strong>不向任何第三方出售、出租或共享</strong>你的个人信息。不接入第三方广告、不接入数据经纪。</li>

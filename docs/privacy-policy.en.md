@@ -104,7 +104,7 @@ yourself**: that copy is encrypted on your phone before it leaves, and only ciph
 
 This is a **switch that is off by default**: nothing below is produced unless you
 **turn it on yourself** (Profile → Privacy & About → "Help improve the product");
-once on, you can turn it off again at any time, effective immediately. It produces exactly **18 event types** with a
+once on, you can turn it off again at any time, effective immediately. It produces exactly **22 event types** with a
 **fixed, limited** set of fields (the full list lives in `docs/privacy-facts.json` and is
 checked against the code by `tool/privacy-audit.mjs`):
 
@@ -128,6 +128,10 @@ checked against the code by `tool/privacy-audit.mjs`):
 | `pr_achieved` | A personal record was broken | `exercise_id`, `pr_type`, `value`, `prev_value` |
 | `share_card_created` | A share card was saved or shared | `channel` |
 | `body_metric_logged` | A body-metric entry was saved | `has_weight`, `has_note` — **only whether a value was entered; the value itself never leaves the device** |
+| `cloud_backup_done` | Cloud backup **uploaded successfully** | `ciphertext_bytes`, `has_body` — **only how large the ciphertext is and whether body data was included**; never the content, never a file name |
+| `cloud_backup_failed` | Cloud backup upload failed (or account creation / binding / entering a recovery code failed) | no fields — **only the failure itself** (the error text could contain a server address, so it is not sent) |
+| `cloud_restore_done` | Restore from the cloud **succeeded** | `workouts`, `body_synced` — only how many records came back |
+| `cloud_restore_failed` | Restore from the cloud failed | no fields — the failure itself only |
 
 **Every event also carries these 7 common fields:**
 
@@ -195,7 +199,7 @@ switches, and both are **off by default**:
 
 ### 3.2 Where the two switches draw the line
 
-- **Statistics switch**: off — not a single event is sent; on — what leaves is the 18 event types
+- **Statistics switch**: off — not a single event is sent; on — what leaves is the 22 event types
   in 2.2 plus the 7 common fields in 2.3, with no free text and no body-weight values.
 - **Cloud-backup switch**: off — **no data leaves the device at all**; on — what leaves is
   **ciphertext** of the contents listed in 3.3.
@@ -416,7 +420,7 @@ for your consent separately.
 
 | Statement | Source |
 |---|---|
-| The 18 analytics events and their fields | `app/lib/features/workout/workout_controller.dart` (`track(...)` call sites) |
+| The 22 analytics events and their fields | `app/lib/features/workout/workout_controller.dart` (`track(...)` call sites) |
 | Switch defaults to ON and is persisted | `app/lib/data/db.dart` (`analyticsEnabled`, default `true`), `app/lib/data/profile_repository.dart` |
 | When off, nothing is recorded | `app/lib/analytics/analytics.dart` (`NoopAnalytics`, and `if (!enabled) return;`) |
 | Nothing is uploaded today | `app/lib/main.dart` (`_NullTransport`), `app/lib/data/sync_queue.dart` (`InMemorySyncQueue`) |

@@ -63,6 +63,15 @@ const FIELDS_OK = new Set([
   'set_type', 'skipped', 'source', 'step_index', 'suggested_reps', 'suggested_weight_kg',
   'suggestion_id', 'tap_count', 'tap_kinds', 'to', 'total_sets', 'total_volume_kg',
   'value', 'workout_id',
+  // 2026-10-06（P1-1，云备份那 4 个事件）：**决定 = 不敏感，不必单独披露**。
+  // 理由逐条写下来，因为这份名单的每一行都等于一句签字：
+  //   * `ciphertext_bytes` / `workouts` / `body_synced` —— 都是**数量**（密文多大、
+  //     恢复了多少次训练、带回来几条身体数据），是聚合计数，不含任何可识别信息；
+  //   * `has_body` —— **布尔**（这次备份里有没有身体数据），与其他 `has_*` 同类
+  //     （`has_weight` / `has_note` 早就这么处理了）。
+  // ⚠️ 它们与 `weight_kg` 那种"真的把数值发出去"的字段是两回事：一个数字是
+  // "有多少条"，另一个数字是"你练了多重"。前者不披露，后者必须披露。
+  'ciphertext_bytes', 'has_body', 'workouts', 'body_synced',
 ]);
 
 /** 事实里的公共字段 → 两张表分别该出现什么。 */

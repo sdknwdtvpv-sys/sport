@@ -230,6 +230,8 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           // 身体数据（2026-10-05 起进备份）—— 云备份那条路也要带上它，
           // 否则会出现"本机导出有身体数据、云端备份没有"，而用户看不出区别。
           bodyMetrics: widget.bodyMetrics,
+          // 云备份是唯一会让数据离开设备的功能，它自己的成败要有埋点（P1-1）
+          analytics: widget.analytics,
           onDataChanged: () => widget.onDataChanged?.call(),
         ),
       ),

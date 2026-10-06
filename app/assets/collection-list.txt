@@ -15,7 +15,7 @@
   开关位置：「我 → 隐私与关于 → 帮助改进产品」。默认关闭 ——
   只有你主动打开，下面这些才会产生；打开后随时可以关掉。
 
-  收集的信息：18 类事件，字段是有限且固定的，逐条如下：
+  收集的信息：22 类事件，字段是有限且固定的，逐条如下：
 
     · app_open（冷启动完成）
         字段：is_first_open、ms_since_launch、entry
@@ -53,6 +53,14 @@
         字段：channel
     · body_metric_logged（记录身体数据（只报填没填，数值不出设备））
         字段：has_weight、has_note
+    · cloud_backup_done（云备份上传成功（P1-1，2026-10-06）：只报密文的字节数，不报内容、不报文件名）
+        字段：ciphertext_bytes、has_body
+    · cloud_backup_failed（云备份上传失败，或开启备份那条路上的建号/绑定/输恢复码失败（只报失败本身，不带错误文本 —— 那句话可能含服务器地址））
+        字段：无
+    · cloud_restore_done（从云端恢复成功（只报恢复了多少条））
+        字段：workouts、body_synced
+    · cloud_restore_failed（从云端恢复失败（同上：只报失败本身））
+        字段：无
 
   每个事件都会额外带上这些公共字段：
     · schema_version —— 事件格式版本，只增不改

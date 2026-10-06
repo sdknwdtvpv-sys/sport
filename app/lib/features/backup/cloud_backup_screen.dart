@@ -22,6 +22,7 @@ import 'package:flutter/services.dart';
 import '../../backup/backup_crypto.dart';
 import '../../backup/backup_transport.dart';
 import '../../backup/cloud_backup.dart';
+import '../../analytics/analytics.dart';
 import '../../backup/recovery_code.dart';
 import '../../core/theme.dart';
 import '../../data/body_metric_repository.dart';
@@ -45,7 +46,13 @@ class CloudBackupScreen extends StatefulWidget {
     this.onDataChanged,
     this.clock,
     this.notifications,
+    this.analytics,
   });
+
+  /// 埋点（可选）。**云备份是唯一会让数据离开设备的功能**，所以它自己的
+  /// 成功/失败必须能被观测到 —— 不传就什么都不记（测试与"单独打开这页"）。
+  /// 关掉「帮助改进产品」时 `Analytics.track` 自己会静默丢弃。
+  final Analytics? analytics;
 
   final LocalStore store;
   final ExerciseRepository repository;
@@ -144,22 +151,41 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   ///
   /// **备份失败必须让用户看见** —— 这和埋点恰好相反（埋点失败要静默）。
   /// 用户点完"立即备份"就走了，界面上却什么都没发生，他会以为数据安全了。
-  Future<void> _run(Future<void> Function() body) async {
+  Future<void> _run(Future<void> Function() body, {required String kind}) async {
     if (_busy) return;
     setState(() {
       _busy = true;
       _error = null;
       _notice = null;
     });
+    // 埋点：**只报"成没成"，不报任何内容**（成功那条在 `_uploadNow` / `_restore`
+    // 各自成功后报，因为只有它们知道字节数）。失败这一条在这里统一报 ——
+    // 四种异常路径都会走到下面，不必在每一处各写一遍（写了就会漏一处）。
+    void reportFail() {
+      // ⚠️ **两个事件名都要是 `track('…')` 的字面量**：`tool/privacy-audit.mjs`
+      // 扫的就是 `track('名字'` 这个形状（它决定了"政策该披露什么"）。
+      // 写成 `track(a ? 'x' : 'y')` 会让它一个都扫不到 —— 那就成了
+      // "代码在发、政策没写"，而这正是这个仓库最防的那种漂移。
+      if (kind == 'backup') {
+        widget.analytics?.track('cloud_backup_failed');
+      } else {
+        widget.analytics?.track('cloud_restore_failed');
+      }
+    }
+
     try {
       await body();
     } on BackupTransportException catch (e) {
+      reportFail();
       if (mounted) setState(() => _error = e.message);
     } on BackupDecryptException catch (e) {
+      reportFail();
       if (mounted) setState(() => _error = e.message);
     } on FormatException catch (e) {
+      reportFail();
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
+      reportFail();
       // 意料之外的错也要说出来，不能吞 —— 但别把栈甩给用户
       // 给用户看的一句话：我们自己抛的异常，消息本来就是中文人话（"连不上服务器：…"）；
       // 别的（平台异常、底层 IO 异常）一律兜底 —— `'$e'` 会把类名一起印在屏幕上。
@@ -222,7 +248,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     // 对话框如果留在 `_run` 里，`_busy` 会一直为真 —— 顶上那个转圈
     // 永远不会停（`pumpAndSettle` 直接超时；真机上则是"背后一直在转"）。
     CloudAccount? account;
-    await _run(() async {
+    await _run(kind: 'backup', () async {
       final CloudBackup? cloud = _cloud;
       if (cloud == null) {
         setState(() => _error = '这个版本没有配备份服务器');
@@ -252,7 +278,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   Future<void> _uploadNow() async {
     final BackupAccountData? account = _account;
     if (account == null) return;
-    await _run(() async {
+    await _run(kind: 'backup', () async {
       final CloudBackup? cloud = _cloud;
       if (cloud == null) {
         setState(() => _error = '这个版本没有配备份服务器');
@@ -284,6 +310,13 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         );
       }
       await _load();
+      // 成功：只报字节数量级（**密文**的字节数，不含任何内容）
+      widget.analytics?.track('cloud_backup_done', <String, Object?>{
+        'ciphertext_bytes': r.bytes,
+        // 身体数据有没有被带上（用户那次没同意就是 0）——
+        // 这条能让"身体数据进备份"这件事在真实数据里被验证
+        'has_body': bundle.bodyMetrics > 0 || bundle.hasBodyHeight,
+      });
       if (!mounted) return;
       setState(() => _notice = '已备份 ${bundle.summary}'
           '（${_sizeLabel(r.bytes)} 密文）');
@@ -293,7 +326,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   Future<void> _restore() async {
     final BackupAccountData? account = _account;
     if (account == null) return;
-    await _run(() async {
+    await _run(kind: 'restore', () async {
       final CloudBackup? cloud = _cloud;
       if (cloud == null) {
         setState(() => _error = '这个版本没有配备份服务器');
@@ -320,6 +353,12 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         bodyMetrics: widget.bodyMetrics,
         profile: widget.profile,
       );
+      // 成功：只报"恢复了多少条"（数量级），**不报任何内容**。
+      // 空备份/空恢复也照报 —— "有人点了恢复但什么都没进来"正是要看见的事。
+      widget.analytics?.track('cloud_restore_done', <String, Object?>{
+        'workouts': r.workouts,
+        'body_synced': r.bodyMetrics,
+      });
       if (!mounted) return;
       widget.onDataChanged?.call();
       setState(() => _notice = '已从云端恢复：${r.summary}');
@@ -390,7 +429,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     );
     if (ok != true || !mounted) return;
 
-    await _run(() async {
+    await _run(kind: 'backup', () async {
       final CloudBackup? cloud = _cloud;
       if (cloud == null) {
         setState(() => _error = '这个版本没有配备份服务器');
@@ -439,7 +478,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     );
     if (code == null || !mounted) return;
 
-    await _run(() async {
+    await _run(kind: 'backup', () async {
       final CloudBackup? cloud = _cloud;
       if (cloud == null) {
         setState(() => _error = '这个版本没有配备份服务器');

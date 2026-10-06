@@ -65,7 +65,7 @@
 <p><strong>You can withdraw that consent at any time</strong> (PIPL Article 15). The entry sits at the bottom of the Body metrics screen — &quot;Withdraw my consent&quot;. After withdrawal we stop collecting new weight, body fat, waist, muscle mass and height readings immediately and that screen asks for your consent again the next time you open it; <strong>records you already saved are not deleted automatically</strong> (withdrawing consent and deleting data are two different things — delete data yourself under &quot;All data&quot;).</p>
 </blockquote>
 <h3 id="2-2-collected-only-when-help-improve-the-product-is-on">2.2 Collected only when &quot;Help improve the product&quot; is ON</h3>
-<p>This is a <strong>switch that is off by default</strong>: nothing below is produced unless you <strong>turn it on yourself</strong> (Profile → Privacy &amp; About → &quot;Help improve the product&quot;); once on, you can turn it off again at any time, effective immediately. It produces exactly <strong>18 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
+<p>This is a <strong>switch that is off by default</strong>: nothing below is produced unless you <strong>turn it on yourself</strong> (Profile → Privacy &amp; About → &quot;Help improve the product&quot;); once on, you can turn it off again at any time, effective immediately. It produces exactly <strong>22 event types</strong> with a <strong>fixed, limited</strong> set of fields (the full list lives in <code>docs/privacy-facts.json</code> and is checked against the code by <code>tool/privacy-audit.mjs</code>):</p>
 <table>
 <thead><tr><th>Event</th><th>When</th><th>Fields</th></tr></thead>
 <tbody>
@@ -87,6 +87,10 @@
 <tr><td><code>pr_achieved</code></td><td>A personal record was broken</td><td><code>exercise_id</code>, <code>pr_type</code>, <code>value</code>, <code>prev_value</code></td></tr>
 <tr><td><code>share_card_created</code></td><td>A share card was saved or shared</td><td><code>channel</code></td></tr>
 <tr><td><code>body_metric_logged</code></td><td>A body-metric entry was saved</td><td><code>has_weight</code>, <code>has_note</code> — <strong>only whether a value was entered; the value itself never leaves the device</strong></td></tr>
+<tr><td><code>cloud_backup_done</code></td><td>Cloud backup <strong>uploaded successfully</strong></td><td><code>ciphertext_bytes</code>, <code>has_body</code> — <strong>only how large the ciphertext is and whether body data was included</strong>; never the content, never a file name</td></tr>
+<tr><td><code>cloud_backup_failed</code></td><td>Cloud backup upload failed (or account creation / binding / entering a recovery code failed)</td><td>no fields — <strong>only the failure itself</strong> (the error text could contain a server address, so it is not sent)</td></tr>
+<tr><td><code>cloud_restore_done</code></td><td>Restore from the cloud <strong>succeeded</strong></td><td><code>workouts</code>, <code>body_synced</code> — only how many records came back</td></tr>
+<tr><td><code>cloud_restore_failed</code></td><td>Restore from the cloud failed</td><td>no fields — the failure itself only</td></tr>
 </tbody>
 </table>
 <p><strong>Every event also carries these 7 common fields:</strong></p>
@@ -130,7 +134,7 @@
 </ul>
 <h3 id="3-2-where-the-two-switches-draw-the-line">3.2 Where the two switches draw the line</h3>
 <ul>
-<li><strong>Statistics switch</strong>: off — not a single event is sent; on — what leaves is the 18 event types in 2.2 plus the 7 common fields in 2.3, with no free text and no body-weight values.</li>
+<li><strong>Statistics switch</strong>: off — not a single event is sent; on — what leaves is the 22 event types in 2.2 plus the 7 common fields in 2.3, with no free text and no body-weight values.</li>
 <li><strong>Cloud-backup switch</strong>: off — <strong>no data leaves the device at all</strong>; on — what leaves is <strong>ciphertext</strong> of the contents listed in 3.3.</li>
 <li>Both switches can be turned off <strong>at any time</strong>: turning statistics off stops the queue from sending; cloud backup can be closed in Data &amp; backup (the cloud copy stays) or closed with account deletion (the cloud copy is deleted).</li>
 <li>We <strong>never sell, rent, or share</strong> your personal information with third parties. No third-party advertising. No data brokers.</li>
