@@ -119,7 +119,7 @@ export async function selftest() {
       device_id: 'dev_1', device_name: '自检机',
     });
     const regBody = await reg.json();
-    check('注册成功（201）并拿到令牌', reg.status === 201 && /^[0-9a-f]{64}$/.test(regBody.token ?? ''),
+    check('注册成功（201）并拿到令牌', reg.status === 201 && /^lm1_[0-9a-f]{64}$/.test(regBody.token ?? ''),
       `实际 ${reg.status}`);
     // ⚠️ 这里刻意**不**期望 409：注册接口是先验验证码、再谈邮箱占用的 ——
     // 否则任何人不用验证码就能拿"这个邮箱注册过没有"当探针。邮箱被占用的正确告知方式是
@@ -229,6 +229,14 @@ export async function selftest() {
     check('登出返回吊销数量（200）', out.status === 200 && (await out.json()).revoked === 1);
     check('登出之后那个令牌立刻失效',
       (await fetch(`${base}/v1/auth/me`, { headers: session })).status === 401);
+    // ⚠️ 下面两条是**抓 bug 抓出来的回归用例**：令牌以前是 64 位纯十六进制，与 account_id
+    // 形状一样，于是"已被吊销的令牌"会被当成"不存在的 account_id"，回 404「账号不存在」
+    // 而不是 401。现在令牌带 `lm1_` 前缀，两种凭据一眼可分。**这两条不许删。**
+    const revokedOnBackup = await fetch(`${base}/v1/backup`, { headers: session });
+    check('被吊销的令牌在备份接口上是 401（**不是** 404「账号不存在」）',
+      revokedOnBackup.status === 401, `实际 ${revokedOnBackup.status}`);
+    check('令牌与 account_id 的形状不重叠（前缀就是为这个存在的）',
+      afterReset.token.startsWith('lm1_'), String(afterReset.token).slice(0, 8));
 
     // ---- 9. 注销账号：三样一起删 ----
     const fresh = await (await post('/v1/auth/login', { email: EMAIL, verifier: resetVerifier })).json();

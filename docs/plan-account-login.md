@@ -325,4 +325,23 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 **一行都没动**。唯一改的是 `backup_crypto.dart` 文件头那句"不需要被包裹的密钥这一层"——
 加了口令之后它不再成立，已在原处加注并指向 `account_login.dart`。
 
+### C 期·底座已落地（同日，界面还没做）
+
+| 文件 | 作用 |
+|---|---|
+| `app/lib/backup/auth_transport.dart` | 账号那几个接口的网络通道（`AuthTransport` 抽象 + `FakeAuthTransport` + `HttpAuthTransport`）。**失败一律抛**，`statusCode == null` 表示没连上；只依赖 `dart:io` |
+| `app/lib/backup/login_session.dart` | `LoginSession`：注册 / 老用户绑邮箱 / 登录 / 恢复码重置 / 改口令 / 登出 / 注销。`SessionStore` 抽象 + 内存实现（drift 真身下一批接）。**顺序是安全的一部分**：登录先解开账号密钥再写本地；登出/注销即便联网失败也一定清本地 |
+| `app/test/login_session_test.dart` | 16 项（**含一条真实链路**：真的起 `server/backend.mjs`，用客户端真的会发的代码走完 注册 → 登录 → 改口令 → 登出 → 注销） |
+
+**这一批抓到一个真 bug（服务端）**：令牌以前是 64 位纯十六进制，**与 `account_id` 形状一样**，
+于是"已被吊销的令牌"被当成"不存在的 account_id"，回 404「账号不存在（恢复码算错了？）」
+而不是 401 —— 客户端看到的是一句完全误导的话。现在令牌带 `lm1_` 前缀，两种凭据一眼可分，
+并在 `server/auth.selftest.mjs` 里补了**两条回归用例**（吊销的令牌在备份接口上必须是 401）。
+真链路测试第一次就是把这条抓出来的。
+
+**C 期还没做的**：drift 的 `auth_session` 表（含迁移与 `delete_all` 两处）、五屏界面、
+启动闸门与那六处并发动作的判据、把云备份那条通道切到令牌上（今天它仍可用 `account_id`，
+服务端两种都认）。**以及那个必须由你定的问题**：Apple 5.1.1(v)（见 §二-3）。
+
+
 

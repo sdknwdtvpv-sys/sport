@@ -166,6 +166,33 @@ Uint8List newAccountKey([Random? random]) {
   return Uint8List.fromList(List<int>.generate(kAccountKeyLength, (_) => r.nextInt(256)));
 }
 
+/// 生成一个新盐（32 字节随机）。**改口令时换盐**：老盐配老口令不再有任何用处。
+Uint8List newLoginSalt([Random? random]) {
+  final Random r = random ?? Random.secure();
+  return Uint8List.fromList(List<int>.generate(kLoginSaltLength, (_) => r.nextInt(256)));
+}
+
+/// 字节 → 十六进制（与 `accountIdFromKey` 同一套写法：小写、定长两位）
+String hexOf(List<int> bytes) {
+  final StringBuffer out = StringBuffer();
+  for (final int b in bytes) {
+    out.write(b.toRadixString(16).padLeft(2, '0'));
+  }
+  return out.toString();
+}
+
+/// 十六进制 → 字节。**服务端给的盐/凭据都是这种形状**，解析不了就抛
+/// [LoginFormatException]（而不是悄悄当成空盐 —— 那会算出一把错的密钥）。
+Uint8List bytesFromHex(String hex) {
+  final String clean = hex.trim().toLowerCase();
+  if (clean.isEmpty || clean.length.isOdd || !RegExp(r'^[0-9a-f]+$').hasMatch(clean)) {
+    throw const LoginFormatException('不是合法的十六进制串');
+  }
+  return Uint8List.fromList(<int>[
+    for (int i = 0; i < clean.length; i += 2) int.parse(clean.substring(i, i + 2), radix: 16),
+  ]);
+}
+
 /// 账号密钥 → 恢复码（27 位，用户抄在纸上的那一串）
 String recoveryCodeFor(Uint8List accountKey) =>
     formatRecoveryCode(encodeRecoveryKey(accountKey));

@@ -29,16 +29,23 @@ Uint8List _salt(int seed) =>
 
 const String _pw = '正确的马口令 horse-battery-staple';
 
+/// **测试用的便宜 KDF 参数**：Argon2id 是**刻意的慢**函数（默认档一次约 0.2 秒），
+/// 而这个文件里有十几处派生 —— 用默认档的话，跑整套门禁时这些用例会互相抢 CPU
+/// 直到撞上 30 秒超时（2026-10-06 真的撞过一次：单独跑 4 秒，和别的文件一起跑 9 条超时）。
+/// 所以只有**一条**用例用真实默认档（证明出货参数真的能用），其余走这个。
+const LoginKdf _fast = LoginKdf(memory: 1024, iterations: 1, parallelism: 1);
+
+
 void main() {
   // Argon2id 是**刻意的慢**函数（一次 ≈ 0.2 秒），所以这一组用例比别处慢几秒。
   group('账号登录 · 口令 → KEK → 账号密钥', () {
     test('同口令同盐，派生是确定的（换台设备也能登进来）', () async {
       final Uint8List key = _key(1);
       final PreparedAccount a = await prepareAccount(
-        password: _pw, salt: _salt(9), accountKey: key, nonce: List<int>.filled(12, 3),
+        password: _pw, salt: _salt(9), accountKey: key, nonce: List<int>.filled(12, 3), kdf: _fast,
       );
       final PreparedAccount b = await prepareAccount(
-        password: _pw, salt: _salt(9), accountKey: key, nonce: List<int>.filled(12, 3),
+        password: _pw, salt: _salt(9), accountKey: key, nonce: List<int>.filled(12, 3), kdf: _fast,
       );
       expect(a.accountId, b.accountId);
       expect(a.authVerifier, b.authVerifier);
@@ -47,8 +54,8 @@ void main() {
 
     test('盐不同 → 认证凭据与包裹都不同，但账号 id 不变（账号密钥才是身份）', () async {
       final Uint8List key = _key(2);
-      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(1), accountKey: key);
-      final PreparedAccount b = await prepareAccount(password: _pw, salt: _salt(2), accountKey: key);
+      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(1), accountKey: key, kdf: _fast);
+      final PreparedAccount b = await prepareAccount(password: _pw, salt: _salt(2), accountKey: key, kdf: _fast);
       expect(a.authVerifier, isNot(b.authVerifier));
       expect(a.wrapped, isNot(b.wrapped));
       expect(a.accountId, b.accountId);
@@ -56,7 +63,7 @@ void main() {
     });
 
     test('口令错 → 解不开，且与"密文被改"是同一种错（不区分原因）', () async {
-      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(3), accountKey: _key(3));
+      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(3), accountKey: _key(3), kdf: _fast);
       final String? wrongPw = await _throwsLogin(() => unlockAccountKey(
             password: '不是这个口令', salt: _salt(3), wrapped: a.wrapped, accountId: a.accountId,
           ));
@@ -74,7 +81,7 @@ void main() {
     });
 
     test('把 A 的包裹挪给 B → 解不开（AAD 绑死了账号）', () async {
-      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(4), accountKey: _key(4));
+      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(4), accountKey: _key(4), kdf: _fast);
       final String other = await accountIdFromKey(_key(5));
       final String? msg = await _throwsLogin(() => unlockAccountKey(
             password: _pw, salt: _salt(4), wrapped: a.wrapped, accountId: other,
@@ -83,10 +90,10 @@ void main() {
     });
 
     test('换 KDF 参数 → 解不开（参数是密钥的一部分，不是可选优化）', () async {
-      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(6), accountKey: _key(6));
+      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(6), accountKey: _key(6), kdf: _fast);
       final String? msg = await _throwsLogin(() => unlockAccountKey(
             password: _pw, salt: _salt(6), wrapped: a.wrapped, accountId: a.accountId,
-            kdf: const LoginKdf(memory: 19456, iterations: 2, parallelism: 1),
+            kdf: const LoginKdf(memory: 2048, iterations: 1, parallelism: 1),
           ));
       expect(msg, isNotNull);
     });
@@ -110,14 +117,14 @@ void main() {
 
       // 老用户路径：拿本机恢复码对应的密钥去"绑邮箱"，而不是新建账号
       final PreparedAccount bound = await prepareAccount(
-        password: _pw, salt: _salt(8), accountKey: decodeRecoveryKey(code),
+        password: _pw, salt: _salt(8), accountKey: decodeRecoveryKey(code), kdf: _fast,
       );
       expect(bound.recoveryCode, code);
       expect(bound.accountId, await accountIdFromRecoveryCode(code));
 
       // 而且用口令能把它解回来 —— 与恢复码那条路拿到的是**同一个**账号
       final Uint8List back = await unlockAccountKey(
-        password: _pw, salt: _salt(8), wrapped: bound.wrapped, accountId: bound.accountId,
+        password: _pw, salt: _salt(8), wrapped: bound.wrapped, accountId: bound.accountId, kdf: _fast,
       );
       expect(back, key);
     });
@@ -129,6 +136,8 @@ void main() {
         plaintext: '{"workouts":[{"kg":62.5}]}', recoveryCode: code, nonce: List<int>.filled(12, 1),
       );
       final PreparedAccount acct = await prepareAccount(password: _pw, salt: _salt(11), accountKey: key);
+      // ⚠️ 这一条**故意用出货的默认档**（`kDefaultLoginKdf`）：别的用例为了跑得快
+      // 都用 `_fast`，如果全都用便宜的参数，"真实参数到底能不能用"就没人验了。
       final Uint8List unlocked = await unlockAccountKey(
         password: _pw, salt: _salt(11), wrapped: acct.wrapped, accountId: acct.accountId,
       );
@@ -148,7 +157,7 @@ void main() {
     });
 
     test('信封格式不对时报的是格式错，不是"口令不对"（可诊断）', () async {
-      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(12), accountKey: _key(12));
+      final PreparedAccount a = await prepareAccount(password: _pw, salt: _salt(12), accountKey: _key(12), kdf: _fast);
       expect(
         () => unwrapAccountKey(envelope: '不是 JSON', kek: _fakeKek(), accountId: a.accountId),
         throwsA(isA<LoginFormatException>()),

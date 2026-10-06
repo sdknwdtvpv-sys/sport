@@ -37,7 +37,7 @@
 
 import { createHash, createHmac, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { TOKEN_RE } from './auth-store.mjs';
+import { TOKEN_PREFIX, TOKEN_RE } from './auth-store.mjs';
 
 const scrypt = promisify(scryptCb);
 
@@ -103,9 +103,11 @@ export function createAuth({
   const validEmail = (e) => typeof e === 'string' && e.length <= 254 && EMAIL_RE.test(e);
   const fakeSaltFor = (email) => createHmac('sha256', secret).update(`salt|${store.normalizeEmail(email)}`).digest('hex');
 
-  /** 发一个会话令牌：**明文只回给客户端一次**，库里只留 sha256。 */
+  /** 发一个会话令牌：**明文只回给客户端一次**，库里只留 sha256。
+   *  前缀 `lm1_` 的作用见 auth-store.mjs 的 TOKEN_RE 注释（不加前缀的话，
+   *  "令牌被吊销"会退化成"账号不存在"）。 */
   function issueToken(accountId, deviceId) {
-    const token = randomBytes(32).toString('hex');
+    const token = TOKEN_PREFIX + randomBytes(32).toString('hex');
     store.createToken({ tokenHash: sha256hex(token), accountId, deviceId });
     return token;
   }

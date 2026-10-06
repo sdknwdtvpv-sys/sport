@@ -22,8 +22,18 @@
 
 import { DatabaseSync } from 'node:sqlite';
 
-/** 会话令牌的形状：32 字节随机数的十六进制（64 个字符）。 */
-export const TOKEN_RE = /^[0-9a-f]{64}$/;
+/**
+ * 会话令牌的形状：`lm1_` + 32 字节随机数的十六进制（共 68 个字符）。
+ *
+ * ⚠️ **那个前缀不是装饰**：老客户端用 `Bearer <account_id>`（32–64 位纯十六进制），
+ * 而会话令牌也曾经是 64 位纯十六进制 —— 两者**形状一样**，于是"这个令牌已经被吊销了"
+ * 会被解释成"这是一个不存在的 account_id"，回一句 404（"账号不存在（恢复码算错了？）"），
+ * 而不是 401。加前缀之后两种凭据一眼可分，吊销就是 401。
+ */
+export const TOKEN_RE = /^lm1_[0-9a-f]{64}$/;
+
+/** 令牌的前缀（发令牌与验令牌两处都要用同一个常量） */
+export const TOKEN_PREFIX = 'lm1_';
 
 export function createAuthStore({ path = ':memory:' } = {}) {
   const db = new DatabaseSync(path);
