@@ -32,6 +32,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 PBX="$REPO/app/ios/Runner.xcodeproj/project.pbxproj"
 BAK="$(mktemp -t lianleme-pbxproj)"
+PATCHED=""   # 只有真的动过工程才允许 restore（见 restore() 的注释）
 DEV_ID="${LIANLEME_DEV_BUNDLE_ID:-com.sdknwdtvpv.lianleme.dev}"
 DEVICE="${LIANLEME_DEVICE:-}"
 KEEP="${LIANLEME_KEEP_PATCH:-}"
@@ -47,15 +48,24 @@ ok()  { printf '\033[32m%s\033[0m\n' "$1"; }
 
 # ── 中途失败也要把工程改回去（否则门禁会在你不知情时判红）────────────────────
 restore() {
-  if [ -f "$BAK" ]; then
+  # ⚠️ **宁可什么都不做，也不许把空文件盖回去。** 2026-10-06 真出过一次事故：
+  # `$BAK` 是 `mktemp` 建出来的空文件，而任何一次失败（哪怕是"没给设备"）
+  # 都会走到这个 trap —— 于是 `cp "$BAK" "$PBX"` 把 `project.pbxproj` 清成了 **0 字节**，
+  # 而报错信息说的是"工程不是一个合法的 property list"（看起来像工程坏了，
+  # 其实是这行把好文件盖没了）。所以：**备份必须有内容才允许 restore**。
+  if [ -s "$BAK" ]; then
     cp "$BAK" "$PBX"
     rm -f "$BAK"
     if [ -n "$KEEP" ]; then
       red "⚠️ 按 LIANLEME_KEEP_PATCH 保留了工程改动（dev bundle id + Team）。"
       echo "   用完请恢复：git -C \"$REPO\" checkout -- app/ios/Runner.xcodeproj/project.pbxproj"
     else
-      echo "↩︎ 已把 iOS 工程改回原来的 bundle id 与 Team 设置"
+      echo "↩︎ 已把 iOS 工程改回原来的 bundle id + Team"
     fi
+  elif [ -n "$PATCHED" ]; then
+    red "✗ 备份文件是空的（$BAK）—— 工程可能已经被改过，**请手动核对**："
+    echo "    git -C \"$REPO\" diff --stat app/ios/Runner.xcodeproj/project.pbxproj"
+    echo "    要恢复： git -C \"$REPO\" checkout -- app/ios/Runner.xcodeproj/project.pbxproj"
   fi
 }
 trap restore EXIT
@@ -100,6 +110,10 @@ echo "→ 用 Team $TEAM_ID"
 
 echo "→ 临时把 bundle id 换成 ${DEV_ID}（主 App 与扩展一起）、并写入 Team"
 cp "$PBX" "$BAK"
+# 闸门 2：备份与原件都必须有内容才往下走（这里是那次事故的正前方）
+[ -s "$BAK" ] || { red "✗ 备份没成功（$BAK 是空的）—— 不动工程，直接退出"; exit 1; }
+[ -s "$PBX" ] || { red "✗ 工程文件是空的（$PBX）—— 先跑：git -C \"$REPO\" checkout -- app/ios/Runner.xcodeproj/project.pbxproj"; exit 1; }
+PATCHED=1
 python3 - "$PBX" "$DEV_ID" "$TEAM_ID" <<'PY'
 import sys
 
@@ -121,8 +135,19 @@ for ident in (f'{dev}.RestWidget;', f'{dev};'):
         f'\t\t\t\tCODE_SIGN_STYLE = Automatic;\n'
         f'\t\t\t\tDEVELOPMENT_TEAM = {team};\n',
     )
-open(path, 'w', encoding='utf-8').write(s)
+# 闸门 3：**先写临时文件再原子替换**，而且写完当场核一遍。
+# 直接 `open(path,'w')` 一旦在中途出错，留下的是一个被截断的工程文件 —— 那正是
+# 2026-10-06 那次事故的形态（0 字节）。原子替换之后"截断"这件事在物理上不可能发生。
+tmp = path + '.lianleme-tmp'
+with open(tmp, 'w', encoding='utf-8') as f:
+    f.write(s)
+import os
+assert os.path.getsize(tmp) > 1000, 'patch 之后文件太小，肯定是写坏了'
+os.replace(tmp, path)
 PY
+
+[ -s "$PBX" ] || { red "✗ patch 之后工程文件是空的 —— 立刻停手（备份在 $BAK）"; exit 1; }
+grep -q "DEVELOPMENT_TEAM = ${TEAM_ID}" "$PBX" || { red "✗ patch 没生效（工程里找不到 Team $TEAM_ID）"; exit 1; }
 
 echo "→ 编 + 签（release；自动签名，Xcode 会自动建描述文件）"
 #
