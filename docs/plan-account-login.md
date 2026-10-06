@@ -237,10 +237,22 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 | 期 | 内容 | 验收 |
 |---|---|---|
 | **A** ✅ **已完成（2026-10-06）** | 服务端身份层：`server/` 下新增 `mailer.mjs`（零依赖 SMTP）+ `auth-store.mjs`（邮箱/凭据/令牌/验证码/限流）+ `auth.mjs`（七个接口）+ `backend.mjs` 接线（**新接口写在"账号必须存在"那道闸门之前**，凭据"先当令牌、再当 account_id"）+ `server/auth.selftest.mjs`（38 项）+ `server/mailer.selftest.mjs`（19 项）+ `install.sh` 拷贝白名单 3 → 6 个文件 | ✅ `node server/auth.selftest.mjs` / `node server/mailer.selftest.mjs` / `node server/backend.selftest.mjs` 三条全绿；`check-guards-wired` / `check-deploy` 绿。**这条路上没有一行客户端代码**，所以"账号体系"与"必须先登录"可以在这一期之后分开推进 |
-| **B** | 客户端密码学：KEK 派生 + 解包 + `authVerifier`；**Argon2id 基准测试**（定参数） | 纯 Dart 单元测试（固定向量：同口令同盐 → 同 account_id；错口令 → 解包失败）；基准测试打印到设备上的耗时，参数写死在一个常量里。⚠️ **本机跑不了 Flutter 测试**（路径含撇号，`verify.sh:40-44` 判阻塞）→ B/C 期的证据只能来自 `dart analyze` + **CI** |
-| **C** | 客户端闸门与五屏界面 + 会话表 + 老用户绑邮箱 | widget 测试（CI）+ 模拟器走查（`docs/images/`）+ `delete_all_test.dart` 表清单与种子 + **离线仍可用**要有一条测试（服务端不可达时已登录用户能进） |
+| **B** ✅ **已完成（2026-10-06）** | 客户端密码学：`app/lib/backup/account_login.dart`（口令 → KEK → 包裹/解开账号密钥；纯 Dart、**不 import flutter**）+ `app/test/account_login_test.dart`（15 项）。**KDF 参数按实测定**（见下面那段） | ✅ 真 Flutter 测试跑过 15/15（**在无撇号的跑道副本里**，见下）；`dart analyze --fatal-infos` 干净。**老用户路径也验了**：拿本机恢复码对应的密钥去"绑邮箱"，解出来还是同一把密钥、同一串恢复码、能直接解密既有云备份 |
+| **C** | 客户端闸门与五屏界面 + 会话表 + 老用户绑邮箱 | widget 测试（跑道里能跑，不必等 CI）+ 模拟器走查（`docs/images/`）+ `delete_all_test.dart` 表清单与种子 + **离线仍可用**要有一条测试（服务端不可达时已登录用户能进） |
 | **D** | 政策 / 事实表 / 收集清单 / 两张商店表单 / 公网政策页**同步**改写（清单见 §五） | §五 那张表逐条勾掉；`privacy-audit`、`check-store-forms`（判据要重写）、`gen-privacy-page --check`、中英结构对账全绿；顺手把 `check-doc-facts.mjs` 真检查接进 `verify.sh` |
 | **E** | 部署包与守卫：`server/deploy/` 加 SMTP 配置（**不要把口令塞进 systemd 单元**，见下）、`check-deploy.mjs` 跟上、软著数字重算 | `./verify.sh` 全绿；`tool/copyright-pdf.mjs --check-docs` 绿（改了 `server/**` 的 `.mjs` 会影响源程序量） |
+
+> ⚠️ **KDF 参数是量出来的，不是猜的**（2026-10-06，B 期）：
+> 纯 Dart 的 `Argon2id(m=64MB, t=3, p=4)` 在这台开发机上 **5 次中位 174 ms**
+> （152/163/174/175/220；JIT，手机 AOT 会慢一些但仍在可接受区间），
+> OWASP 最低档 `m=19MB, t=2, p=1` 是 62 ms。
+> 所以**按原计划取 m=64MB / t=3 / p=4**（`kDefaultLoginKdf`）——
+> 参数越高，拿到库的一方离线爆破弱口令的代价越大；降低它不是优化，是降低攻击成本。
+>
+> ⚠️ **另一条更正（我先前说错了一句）**：Flutter 测试**不是"本机跑不了"** ——
+> 仓库早就有无撇号的**跑道副本** `~/HARNESS/lianleme/sport` 与同步脚本
+> `~/HARNESS/lianleme/sync-and-verify.sh`（`verify.sh` 文件头与 `tool/dev-env.sh` 都写了）。
+> SSD 上那份是唯一真源，**跑 Flutter 层要走跑道**。B 期的 15 项就是那么跑出来的。
 
 > ⚠️ **E 期的一条坑（侦察到的，别踩）**：`install.sh` 的 `render()` 用 `sed` 把值写进
 > `/etc/systemd/system/*.service` —— SMTP 口令走这条路就是**明文落盘 + 进 `--dry-run` 输出 +
@@ -276,6 +288,17 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 * `docs/store-listing.md:19` 与 `privacy-facts.json:312`、`store-listing-ios.md:184` 之间那两处
   **疑似既有漂移**（"云备份配没配/可不可用"）—— D 期顺手定性并改掉。
 
+### B 期留下的两件小事（下一轮补，不阻塞）
+
+1. **线格式的"金向量"测试**：现在验的是"同输入同输出"（确定性），还没有把某个固定
+   `(口令, 盐, nonce)` 的 `authVerifier` / `wrapped` 字节**钉死**。加一条的价值是：
+   将来 `package:cryptography` 升级如果改了 Argon2id/HKDF 的细节，老用户的 `wrapped`
+   会**当场解不开** —— 金向量能在测试里先红，而不是在用户手机上才发现。B 期没加是因为
+   每次加测试都会动"门禁条数"这个事实源（`docs/release-checklist.md` 唯一那一格），
+   想跟 C 期那批一起改，一次跑完门禁。
+2. **门禁条数这条账**：本轮从 **1233 → 1248**（+15 = 这一批的客户端用例）。
+   C 期继续加用例时要一起改（`verify.sh` 第 5 层会拿实测数比它）。
+
 ## 十、A 期落地了什么（2026-10-06，供下一轮直接接）
 
 | 文件 | 作用 |
@@ -289,4 +312,17 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 
 **这一期刻意没碰客户端**：服务端先把"邮箱 → account_id → 密文"这条链立住并验完，
 客户端（B/C 期）才有东西可对。**旧接口一个字节没改语义**，所以正式包不受影响。
+
+### B 期落地了什么（同日）
+
+| 文件 | 作用 |
+|---|---|
+| `app/lib/backup/account_login.dart` | 口令 → KEK（Argon2id）→ 认证凭据 / 包裹密钥；`wrapAccountKey` / `unwrapAccountKey`（信封 AAD 绑 account_id，解开后再核一次 `SHA-256(密钥) == account_id`，防服务端把别人的包裹塞过来）；`prepareAccount` / `unlockAccountKey` 两个一站式入口；`PasswordPolicy`（本地弱口令与长度门槛）。**纯 Dart、不 import flutter** |
+| `app/test/account_login_test.dart` | 15 项：确定性、盐/口令/KDF 参数变一处的后果、改一个 bit、A 的包裹挪给 B、信封里无明文、恢复码仍有效、解出的密钥能直接解密既有云备份、KDF 编解码回落、口令策略 |
+
+**没有改的地方**（这是 B 期最重要的一条）：`accountIdFromKey` / `deriveBackupKeyFromKey` /
+`encryptBackupWithKey` / `decryptBackupWithKey` / 整个 `backup_transport.dart` / 服务端备份接口
+**一行都没动**。唯一改的是 `backup_crypto.dart` 文件头那句"不需要被包裹的密钥这一层"——
+加了口令之后它不再成立，已在原处加注并指向 `account_login.dart`。
+
 
