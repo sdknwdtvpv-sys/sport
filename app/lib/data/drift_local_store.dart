@@ -377,6 +377,11 @@ class DriftLocalStore implements LocalStore {
       // `_deleteAll()`：先问用户 → 先删云端、失败则整个中止 → 再清本机）。
       // 数据层这行只负责清**本机**那串凭据，不联网；这里曾写着"这一条还没做"，也是句过期的话。
       await _db.delete(_db.backupAccount).go();
+      // 登录会话（令牌 + 邮箱 + 账号密钥）。**必须清**：注销/清除之后本机不该留下
+      // 任何能代表"这个人是谁"的东西，也不该留着一个还有效的会话令牌。
+      // ⚠️ 注销账号（连云端一起删）走的是 `LoginSession.deleteAccount()`，
+      // 那是另一条路；这里只负责本机这一份。
+      await _db.delete(_db.authSession).go();
       // exercise（动作库）刻意不删：那是产品资产，不是用户数据，
       // 删了用户就没法再记录任何动作。
     });

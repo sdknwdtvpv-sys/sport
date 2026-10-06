@@ -330,7 +330,8 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 | 文件 | 作用 |
 |---|---|
 | `app/lib/backup/auth_transport.dart` | 账号那几个接口的网络通道（`AuthTransport` 抽象 + `FakeAuthTransport` + `HttpAuthTransport`）。**失败一律抛**，`statusCode == null` 表示没连上；只依赖 `dart:io` |
-| `app/lib/backup/login_session.dart` | `LoginSession`：注册 / 老用户绑邮箱 / 登录 / 恢复码重置 / 改口令 / 登出 / 注销。`SessionStore` 抽象 + 内存实现（drift 真身下一批接）。**顺序是安全的一部分**：登录先解开账号密钥再写本地；登出/注销即便联网失败也一定清本地 |
+| `app/lib/backup/login_session.dart` | `LoginSession`：注册 / 老用户绑邮箱 / 登录 / 恢复码重置 / 改口令 / 登出 / 注销。`SessionStore` 抽象 + 内存实现。**顺序是安全的一部分**：登录先解开账号密钥再写本地；登出/注销即便联网失败也一定清本地 |
+| `app/lib/data/auth_session_repository.dart` | 会话落盘的 drift 真身（表 `auth_session`，`schemaVersion` **21 → 22**）。按仓库那条**新加表的四步**走完：① `db.dart` 加表 + 注册 + 迁移链尾 ② `dart run build_runner build` 重生成 `db.g.dart` ③ `deleteAllUserData()` 里删它 ④ `delete_all_test.dart` 的表清单**与种子**各加一条（第 ④ 步的"种子"容易被漏 —— 漏了就是 0 → 0，删没删根本测不出来） |
 | `app/test/login_session_test.dart` | 16 项（**含一条真实链路**：真的起 `server/backend.mjs`，用客户端真的会发的代码走完 注册 → 登录 → 改口令 → 登出 → 注销） |
 
 **这一批抓到一个真 bug（服务端）**：令牌以前是 64 位纯十六进制，**与 `account_id` 形状一样**，
@@ -339,9 +340,10 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 并在 `server/auth.selftest.mjs` 里补了**两条回归用例**（吊销的令牌在备份接口上必须是 401）。
 真链路测试第一次就是把这条抓出来的。
 
-**C 期还没做的**：drift 的 `auth_session` 表（含迁移与 `delete_all` 两处）、五屏界面、
-启动闸门与那六处并发动作的判据、把云备份那条通道切到令牌上（今天它仍可用 `account_id`，
-服务端两种都认）。**以及那个必须由你定的问题**：Apple 5.1.1(v)（见 §二-3）。
+**C 期还没做的**：五屏界面、启动闸门与那六处并发动作的判据、把云备份那条通道切到令牌上
+（今天它仍可用 `account_id`，服务端两种都认）、以及闸门形态按 §二-3 的结论落地。
+**还有一件必须由你定的**：Apple 5.1.1(v)（见 §二-3）—— 登录到底"必须"还是"可选"，
+它决定引导流程与审核备注怎么写。
 
 
 

@@ -450,6 +450,40 @@ class BackupAccount extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{userId};
 }
 
+/// **登录会话**（2026-10-06，账号体系 P1-3）。
+///
+/// 一行（`user_id` 恒为 `local`）：这个设备上**已经登录**的那个账号。
+///
+/// 存了什么、为什么这些能存：
+///
+///   * `token` —— 会话凭据（服务端只说"这是谁"，读不到训练明细）；
+///   * `email` —— 用户自己填的，界面要显示"当前登录：a@b.com"；
+///   * `account_id` —— 账号密钥的哈希，云备份那条链一直在用的身份；
+///   * `account_key` —— **账号密钥本体**（16 字节）。它听起来敏感，但今天的
+///     `backup_account.recovery_code` 就是同一把密钥、一直是明文存的 ——
+///     这一张表没有让本机存储变得更差，只是换了个位置（真要与"设备被拿走"对抗，
+///     得上 Keychain/Keystore，那是另一件事，见 `docs/plan-account-login.md` §六）。
+///   * `salt_hex` / `kdf` —— 改口令时要拿旧盐算"当前口令的凭据"。
+///
+/// ⚠️ **它会被「删除全部数据」一起清掉**（见 `drift_local_store.deleteAllUserData`）——
+/// 注销/清除之后本机不该留着任何能代表"这个人是谁"的东西。
+class AuthSession extends Table {
+  TextColumn get userId => text()();
+  TextColumn get token => text()();
+  TextColumn get email => text()();
+  TextColumn get accountId => text()();
+
+  /// 账号密钥（16 字节）
+  BlobColumn get accountKey => blob()();
+
+  TextColumn get saltHex => text()();
+  TextColumn get kdf => text()();
+  IntColumn get loginAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{userId};
+}
+
 /// **连续打卡保护（补签）**（2026-10-06，第二部分第 2 条）。
 ///
 /// 一天一行：**这一天被补签保护了**。这是这个仓库里极少数的"用户写下来的**关于历史**的
@@ -492,6 +526,7 @@ class StreakProtection extends Table {
   ReminderSetting,
   AppNotification,
   StreakProtection,
+  AuthSession,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -519,8 +554,9 @@ class AppDatabase extends _$AppDatabase {
   ///（身体数据扩展：腰围 / 肌肉量 / BMI）。**这一版动既有表**，所以两块都要
   /// 「先看库里真实的形状再决定加不加」——见迁移链尾那段的说明。
   /// v21（2026-10-06）：新增 `streak_protection`（连续打卡保护 / 补签）。**只加表**。
+  /// v22（2026-10-06）：新增 `auth_session`（登录会话，账号体系 P1-3）。**只加表**。
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -723,6 +759,13 @@ class AppDatabase extends _$AppDatabase {
           // 谁也没有补签过（也就是说，他们的连续天数从来没有被补签撑过）。
           if (from < 21) {
             await m.createTable(streakProtection);
+          }
+
+          // v21 → v22：登录会话表。**只加表**，同样排在这条链的**链尾**
+          // （"新加的 createTable 要排在链尾"是纪律，见上面 <18/<20 那两块的教训）。
+          // 老库升上来时它是空的 —— 准确的历史：升级之前，这台设备没有登录过任何账号。
+          if (from < 22) {
+            await m.createTable(authSession);
           }
         },
       );

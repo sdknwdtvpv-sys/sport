@@ -327,7 +327,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
-**当前 `schemaVersion = 21`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+**当前 `schemaVersion = 22`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
 `tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红 —— 包括这种 `schemaVersion = 20`
 的写法，2026-10-05 之前它只认 `schema v20`，而本文档恰好用的是前者，于是**只有这份文档
 逃过了检查**：规则补上 `=` 之后当场抓到它写着 15）。
@@ -355,6 +355,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v19 | 新增 `app_notification`（站内消息 / 通知中心） | 只加表。⚠️ 那条**部分唯一索引**（`idx_notification_ref`）在迁移里也要建一遍 —— 老库升级走的是迁移这条路，`onCreate` 只管新库 |
 | v20 | 身体数据扩展：`body_metric` 新增 `waist_cm` / `muscle_mass_kg`，`user_profile` 新增 `height_cm` | **第三次给既有表加列**（v18 之后）。老库这三列都是 **null = 没记过**（不是 0）—— 腰围 0 cm 是个有意义的值，不能拿来当"没填"。同样排在链尾、同样按"这一列有没有"判断（新库 `onCreate` 已经带着这三列，无条件 `addColumn` 会 `duplicate column name`） |
 | v21 | 新增 `streak_protection`（连续保护 / 补签，第二部分第 2 条） | 只加表。老库升上来是空的 —— **准确的历史**：这个功能出现之前谁也没补签过（也就是说，他们的连续天数从来没被补签撑过）。⚠️ 这是**唯一一张「关于历史」的用户声明**（其余一切都是训练记录的推导结果）——所以它只能新开一张表，绝不能去改 `set_record`/`workout`：**记录就是事实**。删表清单（`test/delete_all_test.dart` 的表清单守门）里它是**删** |
+| v22 | 新增 `auth_session`（登录会话，账号体系 P1-3） | 只加表。老库升上来是空的 —— **准确的历史**：升级之前这台设备没有登录过任何账号。⚠️ 里面存着账号密钥（16 字节）与**还有效的会话令牌**，所以「删除全部数据」**必须清它**（`drift_local_store.deleteAllUserData` + `delete_all_test.dart` 的表清单与种子两处都接上了）|
 
 迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
 ⚠️ **fixture 必须用当年的 DDL 手写**：拿当前 schema 建完再改的话，

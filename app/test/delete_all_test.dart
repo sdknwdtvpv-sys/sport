@@ -12,10 +12,13 @@
 library;
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/analytics/outbox.dart';
+import 'package:lianleme/backup/login_session.dart';
+import 'package:lianleme/data/auth_session_repository.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/analytics_meta_repository.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
@@ -101,6 +104,18 @@ void main() {
     // ⚠️ 它是这一批唯一新增的表，也是**唯一一件"关于历史"的用户声明**：
     // 留着它，"删除全部数据"之后连续天数就还是被补签撑着的（自相矛盾的界面）。
     await StreakProtectionRepository(db).protect('2026-10-05', nowMs: 1000);
+    // v22：登录会话（账号体系）。这一行**非有不可** —— 表清单守门只强制你"表态"，
+    // 真正证明"删掉了"的是下面逐表核行数那一条；而一张从没被塞过行的表
+    // 是 0 → 0，删没删都看不出来。
+    await AuthSessionRepository(db).write(StoredSession(
+      token: 'lm1_${'0' * 64}',
+      email: 'seed@example.com',
+      accountId: 'a' * 64,
+      accountKey: Uint8List.fromList(List<int>.generate(16, (int i) => i)),
+      saltHex: 'b' * 64,
+      kdf: '{"alg":"argon2id"}',
+      loginAtMs: 1000,
+    ));
   }
 
   test('逐表核对：删除后除动作库外，一张表都不许有行', () async {
@@ -139,6 +154,7 @@ void main() {
       'routine',
       'routine_item',
       'backup_account',
+    'auth_session',
       // v15（2026-10-01）：未结束的训练会话。**删** —— 它也是用户状态，
       // 留着会让"删光之后首页还问你要不要继续上次的训练"。
       'active_session_row',
