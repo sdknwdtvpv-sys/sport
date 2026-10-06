@@ -342,6 +342,10 @@ class DriftLocalStore implements LocalStore {
       // 站内消息也是用户数据（那是他练出来的通知）。新加表最容易漏这一步 ——
       // `test/delete_all_test.dart` 有一份表清单守门，出现新表就要去改那里。
       await _db.delete(_db.appNotification).go();
+      // 补签保护也是用户数据（他自己决定"这一天不能让链断"）。⚠️ 它是这一批里
+      // 唯一一张新增的表，所以这份清单里漏了它、用户点了"删除全部数据"之后
+      // 连续天数还是被补签撑着的读法就成立了 —— 那既错又难查。
+      await _db.delete(_db.streakProtection).go();
       await _db.delete(_db.setRecord).go();
       await _db.delete(_db.workoutItem).go();
       await _db.delete(_db.workout).go();

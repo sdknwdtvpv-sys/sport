@@ -536,6 +536,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                   color: Tokens.text3, fontSize: 12),
                             ),
                           ),
+                        // 距上次破纪录多少天（第二部分第 4 条，2026-10-06）。
+                        // "68 kg"是上周刚破的还是半年前破的，是完全不同的两件事：
+                        // 前者说明还在涨，后者说明该换计划了。**从没破过就不显示这一行**
+                        // （显示"0 天前"会是假话）。
+                        if (lastPrLabel(d.daysSinceLastPr, d.prs[i].exerciseId) != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              lastPrLabel(d.daysSinceLastPr, d.prs[i].exerciseId)!,
+                              key: Key('pr-age-${d.prs[i].exerciseId}'),
+                              style: const TextStyle(
+                                  color: Tokens.text3, fontSize: 12),
+                            ),
+                          ),
                       ],
                     ),
                   ),

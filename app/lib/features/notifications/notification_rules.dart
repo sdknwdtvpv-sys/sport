@@ -5,6 +5,8 @@
 ///
 ///   * **成就解锁** —— 徽章解锁了（`badges.dart` 现算）；`refKey` = 徽章 id，
 ///     所以同一个徽章一辈子只发一条（数据库层的唯一索引兜底，见 `notification_repository.dart`）；
+///     **A3 的每周挑战也走这一条**（同一个 kind，不新增枚举值）：`refKey` 带上周序号，
+///     于是"同一周只发一条、下一周同一枚挑战还能再发一条"；
 ///   * **训练提醒** —— 提醒时间过了、而**今天还没练**（进 App 时补记一条）；
 ///     `refKey` = 那一天的日期，所以一天最多一条；
 ///   * **备份结果** —— 云备份成功后由云备份那一屏调用（成功/失败各一条，
@@ -18,6 +20,7 @@ import '../../domain/models.dart';
 import '../../data/notification_repository.dart';
 import '../profile/reminder.dart';
 import '../progress/badges.dart';
+import '../progress/weekly_challenge.dart';
 
 /// 徽章解锁 → 站内消息。返回**这次新发了几条**（已发过的不会重复发）。
 Future<int> syncAchievementMessages({
@@ -39,6 +42,33 @@ Future<int> syncAchievementMessages({
     if (ok) sent++;
   }
   return sent;
+}
+
+/// **A3 本周挑战完成** → 站内消息（复用 `NotificationKind.achievement`，不新增枚举值）。
+///
+/// 什么时候才发：**这一周的挑战已经完成**、而且**这一周还没为它发过**。
+///
+/// ⚠️ `refKey` 里**必须带周序号**，不能只用 `weekly-<id>`：池子只有 9 枚，第 10 周会轮回到
+/// 第一枚 —— 只用 id 的话，那一周完成了也**发不出来**（被第 1 周那条挡住）。
+///
+/// ⚠️ 而周序号是**只增不减**的（见 `weekly_challenge.dart` 的 `weekIndex`），
+/// 所以"上周完成了 → 这周又完成同一枚"会生成两个不同的 key，两条消息都出得来 ——
+/// 那是对的：**它们是两件事**（两次独立的限时挑战）。
+Future<bool> maybeWeeklyChallengeDone({
+  required NotificationRepository repo,
+  required List<SetRecord> sets,
+  DateTime? now,
+}) async {
+  final DateTime today = now ?? DateTime.now();
+  final WeeklyChallenge c = weeklyChallenge(sets, today);
+  if (!c.done) return false;
+  return repo.add(
+    kind: NotificationKind.achievement,
+    title: '本周挑战完成：${c.spec.name}',
+    body: '${c.spec.how}。下周会换一枚新的。',
+    refKey: 'weekly-${weekIndex(today)}-${c.spec.id}',
+    nowMs: today.millisecondsSinceEpoch,
+  );
 }
 
 /// 提醒到点却还没练 → 站内消息。

@@ -34,6 +34,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'glass_surface.dart';
+import 'theme.dart';
+
+/// `Color` → `#RRGGBB`（原生按这个解析）。
+String _hex(Color c) {
+  final int v = c.toARGB32() & 0xFFFFFF;
+  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
 
 class GlassSegmented extends StatefulWidget {
   const GlassSegmented({
@@ -50,6 +57,12 @@ class GlassSegmented extends StatefulWidget {
     this.pressBulge = 14,
     this.dragIndex,
     this.onDragSelect,
+    this.labels,
+    this.icons,
+    this.selectedColor,
+    this.unselectedColor,
+    this.labelFontSize = 12,
+    this.iconSize = 22,
   });
 
   /// 盖在玻璃上面的内容（标签/图标 —— 仍然是 Flutter 画的，也仍然由 Flutter 收点击）。
@@ -101,6 +114,28 @@ class GlassSegmented extends StatefulWidget {
   /// 两条路不会重复触发（调用方那边 `_selectTab` 也是幂等的）。
   /// 这就是"按住不放、拖着换 tab"那条路（用户 2026-10-06 要的）。
   final ValueChanged<int>? onDragSelect;
+
+  // ── 原生文案（2026-10-06 加，修的是"文字重影"那个 bug）────────────────────
+  //
+  // ⚠️ 给了 [labels] 之后，**iOS 上的字由原生画**，[child] 里那份被隐掉（布局与点击照旧）。
+  // 原因：玻璃会**折射它背后的东西**，而 Flutter 画的字就在玻璃背后（iOS 平台视图永远盖在
+  // Flutter 内容之上）→ 屏幕上出现**两份字**（一份清晰、一份是折射出来的错位虚影），
+  // 用户看到的就是「重量单位这里显示 bug」。字画进玻璃**里面**就没有第二份可折射。
+  // 非 iOS 不受影响（`labels` 只是不发过去）。
+
+  /// 每格的字。给了就在 iOS 上由原生画。
+  final List<String>? labels;
+
+  /// 每格的 SF Symbol 名（底栏用："dumbbell.fill" 那类）。给了就是"图标 + 文字"竖排。
+  final List<String>? icons;
+
+  /// 选中/未选中的字色与图标色（`#RRGGBB`）。默认取 `Tokens.accent` / `Tokens.text3`
+  /// —— 不写死十六进制是为了不让它和调色板漂（`theme.dart` 一改，这里跟着走）。
+  final String? selectedColor;
+  final String? unselectedColor;
+
+  final double labelFontSize;
+  final double iconSize;
 
   @override
   State<GlassSegmented> createState() => _GlassSegmentedState();
@@ -217,7 +252,10 @@ class _GlassSegmentedState extends State<GlassSegmented> {
         if (box == null) return;
         _release(e.localPosition, box.size);
       },
-      child: widget.child,
+      // iOS 上字由原生画：这一份**只留布局与点击**，不画（不画的东西才不会被玻璃折射）
+      child: widget.labels == null
+          ? widget.child
+          : Opacity(opacity: 0, child: widget.child),
     );
 
     // ⚠️ `content` 必须是 **Stack 的非定位子项**（不能包 `Positioned.fill`）：
@@ -241,6 +279,13 @@ class _GlassSegmentedState extends State<GlassSegmented> {
               'pillStyle': widget.pillStyle.wire,
               'pillInset': widget.pillInset,
               'pressBulge': widget.pressBulge,
+              if (widget.labels != null) 'labels': widget.labels,
+              if (widget.icons != null) 'icons': widget.icons,
+              if (widget.labels != null) 'selectedColor': widget.selectedColor ?? _hex(Tokens.accent),
+              if (widget.labels != null)
+                'unselectedColor': widget.unselectedColor ?? _hex(Tokens.text3),
+              if (widget.labels != null) 'labelFontSize': widget.labelFontSize,
+              if (widget.labels != null) 'iconSize': widget.iconSize,
               if (widget.baseTint != null) 'baseTint': widget.baseTint,
               if (widget.pillTint != null) 'pillTint': widget.pillTint,
             },
@@ -278,6 +323,10 @@ class GlassSegmentedRow extends StatelessWidget {
     this.pillInset = 5,
     this.pillStyle = GlassStyle.clear,
     this.pressBulge = 14,
+    this.labels,
+    this.selectedColor,
+    this.unselectedColor,
+    this.labelFontSize = 12,
   });
 
   final int count;
@@ -308,6 +357,12 @@ class GlassSegmentedRow extends StatelessWidget {
   /// 按住时每边再鼓出来多少 pt（见 `GlassSegmented.pressBulge`）。
   final double pressBulge;
 
+  /// 每格的字（给了就由**原生**画 —— 见 `GlassSegmented.labels`：玻璃会折射背后的字）。
+  final List<String>? labels;
+  final String? selectedColor;
+  final String? unselectedColor;
+  final double labelFontSize;
+
   @override
   Widget build(BuildContext context) {
     if (!GlassSurface.isSupportedPlatform) {
@@ -329,6 +384,10 @@ class GlassSegmentedRow extends StatelessWidget {
       pillInset: pillInset,
       pillStyle: pillStyle,
       pressBulge: pressBulge,
+      labels: labels,
+      selectedColor: selectedColor,
+      unselectedColor: unselectedColor,
+      labelFontSize: labelFontSize,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -336,7 +395,10 @@ class GlassSegmentedRow extends StatelessWidget {
             SizedBox(
               width: itemWidth,
               height: height,
-              child: Center(child: itemBuilder(i, true)),
+              // 给了 labels 就由原生画字：这一份只留格子尺寸与点击热区，不画
+              child: labels == null
+                  ? Center(child: itemBuilder(i, true))
+                  : Opacity(opacity: 0, child: Center(child: itemBuilder(i, true))),
             ),
         ],
       ),

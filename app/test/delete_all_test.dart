@@ -21,6 +21,7 @@ import 'package:lianleme/data/analytics_meta_repository.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
+import 'package:lianleme/data/streak_protection_repository.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/reminder_repository.dart';
@@ -96,6 +97,10 @@ void main() {
       const ReminderSettings(enabled: true, minutesOfDay: 20 * 60),
       nowMs: 1000,
     );
+    // v21：连续保护（补签）—— 走公开 API，不写裸 SQL。
+    // ⚠️ 它是这一批唯一新增的表，也是**唯一一件"关于历史"的用户声明**：
+    // 留着它，"删除全部数据"之后连续天数就还是被补签撑着的（自相矛盾的界面）。
+    await StreakProtectionRepository(db).protect('2026-10-05', nowMs: 1000);
   }
 
   test('逐表核对：删除后除动作库外，一张表都不许有行', () async {
@@ -146,6 +151,9 @@ void main() {
       // v19（2026-10-05）：站内消息（通知中心）。**删** —— 那些消息全是他自己的训练
       // 攒出来的（徽章解锁/提醒/备份结果）；留着会让"删光之后"通知中心还摆着旧消息。
       'app_notification',
+      // v21（2026-10-06）：连续保护（补签）。**删** —— 那是用户自己做的决定
+      // （"这一天不能让链断"），属于他的数据；留着会让删光之后连续天数还是被补签撑着的。
+      'streak_protection',
     };
     expect(actual, equals(known),
         reason: '库里的表和这份清单对不上 —— 新增/改名一张表就要来改这里，'

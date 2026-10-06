@@ -8,6 +8,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/glass_switch.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
@@ -96,8 +97,8 @@ void main() {
     await pump(tester, onChanged: (_) async => true);
     await reveal(tester, const Key('reminder-switch'));
 
-    final SwitchListTile sw =
-        tester.widget<SwitchListTile>(find.byKey(const Key('reminder-switch')));
+    final AppSwitchTile sw =
+        tester.widget<AppSwitchTile>(find.byKey(const Key('reminder-switch')));
     expect(sw.value, isFalse);
     expect(find.byKey(const Key('reminder-time')), findsNothing);
     // 文案审计（2026-10-04）：原来断言的是「默认关闭」——那是**复述开关的状态**
@@ -119,8 +120,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(seen.single.enabled, isTrue);
-    final SwitchListTile sw =
-        tester.widget<SwitchListTile>(find.byKey(const Key('reminder-switch')));
+    final AppSwitchTile sw =
+        tester.widget<AppSwitchTile>(find.byKey(const Key('reminder-switch')));
     expect(sw.value, isTrue);
     expect(find.byKey(const Key('reminder-time')), findsOneWidget);
     expect(find.byKey(const Key('reminder-time-label')), findsOneWidget);
@@ -133,8 +134,8 @@ void main() {
     await tester.tap(find.byKey(const Key('reminder-switch')));
     await tester.pumpAndSettle();
 
-    final SwitchListTile sw =
-        tester.widget<SwitchListTile>(find.byKey(const Key('reminder-switch')));
+    final AppSwitchTile sw =
+        tester.widget<AppSwitchTile>(find.byKey(const Key('reminder-switch')));
     expect(sw.value, isFalse, reason: '没拿到权限就不该显示成"已开启"');
     expect(find.textContaining('系统没有给通知权限'), findsOneWidget);
     expect(find.byKey(const Key('reminder-time')), findsNothing);
@@ -208,5 +209,67 @@ void main() {
     expect(seen, isNotEmpty, reason: '拨完必须通知上层（存库 + 重排都由上层做）');
     expect(seen.last.minutesOfDay, 7 * 60 + 30);
     expect(find.text('07:30'), findsOneWidget);
+  });
+
+  _trainingTimeSuggestionUiTests();
+}
+
+// ── 固定训练时段建议（第二部分第 6 条，2026-10-06）──────────────────
+
+void _trainingTimeSuggestionUiTests() {
+  testWidgets('★ 有建议时那一行出现；点它**打开开关并把时间改成建议的点**',
+      (WidgetTester tester) async {
+    final AppDatabase db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final ProfileRepository profile = ProfileRepository(db);
+    ReminderSettings? applied;
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: Scaffold(
+        body: PreferencesScreen(
+          profile: profile,
+          unit: WeightUnit.kg,
+          reminder: const ReminderSettings(enabled: false, minutesOfDay: 20 * 60),
+          onReminderChanged: (ReminderSettings next) async {
+            applied = next;
+            return true;
+          },
+          trainingTimeSuggestion: '你多数在 19:00 前后开始练（8 次）—— 要不要把提醒定在这个点？',
+          suggestedReminderMinutes: 19 * 60,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final Finder tile = find.byKey(const Key('reminder-suggestion'));
+    await tester.dragUntilVisible(
+        tile, find.byType(ListView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+    expect(tile, findsOneWidget);
+    expect(find.textContaining('19:00'), findsWidgets);
+
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    expect(applied, isNotNull, reason: '点了要真的把设置交出去');
+    expect(applied!.enabled, isTrue, reason: '采纳建议 = 打开提醒');
+    expect(applied!.minutesOfDay, 19 * 60, reason: '时间要变成建议的那个点');
+  });
+
+  testWidgets('★ 没有建议时那一行**完全不出现**（数据不够就不许瞎建议）',
+      (WidgetTester tester) async {
+    final AppDatabase db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: Scaffold(
+        body: PreferencesScreen(
+          profile: ProfileRepository(db),
+          unit: WeightUnit.kg,
+          reminder: const ReminderSettings(enabled: false, minutesOfDay: 20 * 60),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('reminder-suggestion')), findsNothing);
   });
 }

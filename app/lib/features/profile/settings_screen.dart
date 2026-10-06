@@ -15,13 +15,22 @@ import 'package:flutter/cupertino.dart' show CupertinoPicker, FixedExtentScrollC
 import 'package:flutter/material.dart';
 
 import '../../core/glass_segmented.dart';
+import '../../core/glass_switch.dart';
 import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/models.dart';
 import 'profile_widgets.dart';
+
 import 'reminder.dart';
+
+/// `Color` → `#RRGGBB`（原生按这个解析；`GlassSegmented` 的原生字色用它）
+String _hexOf(Color c) {
+  final int v = c.toARGB32() & 0xFFFFFF;
+  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
 
 /// 休息时长的候选值。放在这里而不是 units.dart：它是产品决定，不是单位问题。
 const List<int> kRestChoices = <int>[45, 60, 90, 120, 180];
@@ -36,6 +45,8 @@ class PreferencesScreen extends StatefulWidget {
     this.onRestOverrideChanged,
     this.reminder = ReminderSettings.off,
     this.reminderHint,
+    this.trainingTimeSuggestion,
+    this.suggestedReminderMinutes,
     this.onReminderChanged,
   });
 
@@ -59,6 +70,17 @@ class PreferencesScreen extends StatefulWidget {
   /// 「下次提醒：…」那一行。**由上层算好传下来**（要"今天练过没有"，那是数据层的事）。
   /// null = 没开提醒，不显示。
   final String? reminderHint;
+
+  /// 建议里那个时刻（一天里的第几分钟）。null = 没有建议。
+  /// **单独给一个数**而不是让这一页去解析那句话：文案与数不该互相依赖。
+  final int? suggestedReminderMinutes;
+
+  /// **固定训练时段建议**（第二部分第 6 条）。null = 不说（数据不够 / 没有固定时段）。
+  ///
+  /// 由上层按 `training_time.dart` 的 `trainingTimeSuggestion()` 算好传下来
+  /// （那需要全部训练记录）。**点它只是把提醒时间改成建议那个点**，
+  /// 开关仍然要用户自己开 —— 我们不偷偷设闹钟。
+  final String? trainingTimeSuggestion;
 
   /// 用户改了提醒设置。**返回是否真的生效** —— false 表示系统没给通知权限
   /// （Android 13+ / iOS 都会问一次；用户拒绝时开关要弹回去，不能假装打开了）。
@@ -184,6 +206,29 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             : null,
       );
 
+  /// 采纳"固定训练时段"建议：**只把提醒时间改到那个点，并打开开关**（用户是点了
+  /// 那句话才走到这里的，点了就等于同意"定在这个点"）。仍然走 `_toggleReminder`
+  /// 那条路，所以系统权限那一步一个字都没少。
+  Future<void> _applySuggestedTime() async {
+    final int? minutes = widget.suggestedReminderMinutes;
+    if (minutes == null) return;
+    final ReminderSettings next = _reminder.copyWith(
+      enabled: true,
+      minutesOfDay: minutes,
+    );
+    final Future<bool> Function(ReminderSettings)? handler = widget.onReminderChanged;
+    final bool ok = handler == null ? true : await handler(next);
+    if (!mounted) return;
+    if (!ok) {
+      // 权限被拒：与 `_toggleReminder` 同一套话术（同一条路，不许两处口径）
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('系统没有给通知权限 —— 到「系统设置 → 通知」里允许之后再来开'),
+      ));
+      return;
+    }
+    setState(() => _reminder = next);
+  }
+
   /// 选提醒时间：**闹钟式双滚轮**（与系统闹钟同一种交互）。
   ///
   /// 2026-10-04 真机反馈换掉的：Material 那个表盘点了半天、它的"输入模式"在 iOS 上
@@ -287,6 +332,11 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                   style: GlassStyle.clear,
                   baseTint: '#FFFFFF14',
                   pillTint: '#FFFFFF2E',
+                  // 字由原生画（玻璃里面）——Flutter 那份在玻璃背后会被折射出第二份虚影
+                  labels: <String>[for (final WeightUnit u in WeightUnit.values) u.wire],
+                  selectedColor: _hexOf(Tokens.text),
+                  unselectedColor: _hexOf(Tokens.text2),
+                  labelFontSize: 13,
                   itemBuilder: (int i, bool glass) {
                     final WeightUnit u = WeightUnit.values[i];
                     final bool on = _unit == u;
@@ -330,13 +380,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('渐进建议'),
         settingsCard(<Widget>[
-          SwitchListTile(
+          AppSwitchTile(
             key: const Key('progression-switch'),
             value: _mode != ProgressionMode.off,
             onChanged: _toggleProgression,
-            activeThumbColor: Tokens.accentInk,
-            activeTrackColor: Tokens.accent,
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: const Text(
               '根据历史提示重量',
               style: TextStyle(color: Tokens.text, fontSize: 15),
@@ -350,13 +397,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('训练提醒'),
         settingsCard(<Widget>[
-          SwitchListTile(
+          AppSwitchTile(
             key: const Key('reminder-switch'),
             value: _reminder.enabled,
             onChanged: _toggleReminder,
-            activeThumbColor: Tokens.accentInk,
-            activeTrackColor: Tokens.accent,
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: const Text(
               '到点还没练就提醒我',
               style: TextStyle(color: Tokens.text, fontSize: 15),
@@ -376,6 +420,19 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
                   ),
           ),
+          // 固定训练时段建议（第二部分第 6 条）：**只在有明确集中时段时出现**，
+          // 而且只是"要不要定在这个点"的一句话 —— 点它只改时间，不改开关。
+          if (widget.trainingTimeSuggestion != null)
+            ListTile(
+              key: const Key('reminder-suggestion'),
+              onTap: _applySuggestedTime,
+              contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+              leading: const Icon(Icons.schedule, color: Tokens.text3, size: 20),
+              title: Text(
+                widget.trainingTimeSuggestion!,
+                style: const TextStyle(color: Tokens.text2, fontSize: 13, height: 1.4),
+              ),
+            ),
           if (_reminder.enabled)
             Column(
               children: <Widget>[

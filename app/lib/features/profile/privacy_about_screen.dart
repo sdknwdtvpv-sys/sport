@@ -16,6 +16,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/app_info.dart';
+import '../../core/glass_switch.dart';
 import '../../core/theme.dart';
 import '../../analytics/analytics.dart';
 import '../../analytics/analytics_export.dart';
@@ -175,13 +176,10 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
       children: <Widget>[
         profileSectionTitle('隐私开关'),
         settingsCard(<Widget>[
-          SwitchListTile(
+          AppSwitchTile(
             key: const Key('analytics-switch'),
             value: _analyticsEnabled,
             onChanged: _toggleAnalytics,
-            activeThumbColor: Tokens.accentInk,
-            activeTrackColor: Tokens.accent,
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: const Text(
               '帮助改进产品',
               style: TextStyle(color: Tokens.text, fontSize: 15),

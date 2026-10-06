@@ -10,6 +10,7 @@ import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/progress/achievements_screen.dart';
 import 'package:lianleme/features/progress/badges.dart';
+import 'package:lianleme/features/progress/weekly_challenge.dart';
 
 SetRecord _set(String workout, DateTime at, {double weight = 60}) => SetRecord(
       id: '$workout-${at.millisecondsSinceEpoch}',
@@ -35,6 +36,21 @@ Future<void> _pump(WidgetTester tester, List<SetRecord> sets) async {
   await tester.pumpAndSettle();
 }
 
+/// 把四个分区**全部展开**（2026-10-06 起每个分区默认只摊两行）。
+///
+/// 需要"逐枚断言 73 枚"的测试必须先展开 —— 否则测的是"折叠对不对"，
+/// 而不是"这一枚徽章在不在"。折叠本身由下面那条 `★ 分区折叠` 单独钉。
+Future<void> _expandAll(WidgetTester tester) async {
+  for (final BadgeCategory c in BadgeCategory.values) {
+    final Finder toggle = find.byKey(Key('badge-section-toggle-${c.name}'));
+    if (toggle.evaluate().isEmpty) continue;
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   testWidgets('顶部那行"已解锁 N / M"与数据层算出来的一致', (WidgetTester tester) async {
     final List<SetRecord> sets = <SetRecord>[
@@ -53,11 +69,61 @@ void main() {
       (WidgetTester tester) async {
     await _pump(tester, <SetRecord>[]);
     final List<BadgeStatus> all = badgeStatuses(<SetRecord>[]);
+    // 分区默认只摊两行，逐枚断言之前先把四个分区都展开
+    await _expandAll(tester);
     // 视口放大过（见 `_pump`），所以整页都在树里 —— 逐枚断言
     for (final BadgeStatus b in all) {
       expect(find.byKey(Key('badge-${b.id}')), findsOneWidget, reason: '${b.name} 不见了');
     }
     expect(find.textContaining('还差'), findsWidgets);
+  });
+
+  // ── 分区折叠（2026-10-06：73 枚不能一次铺满 ≈3000px）────────────────
+  testWidgets('★ 每个分区默认只摊两行，并如实写出"展开全部 N 枚"',
+      (WidgetTester tester) async {
+    await _pump(tester, <SetRecord>[]);
+    final Map<BadgeCategory, List<BadgeStatus>> groups =
+        badgeGroups(badgeStatuses(<SetRecord>[]));
+    for (final MapEntry<BadgeCategory, List<BadgeStatus>> e in groups.entries) {
+      // 标题右边那行"已拿 / 全部"——折叠之后它是这条线唯一的进度
+      expect(
+        tester.widget<Text>(find.byKey(Key('badge-section-count-${e.key.name}'))).data,
+        '0 / ${e.value.length}',
+      );
+      final Finder toggle =
+          find.byKey(Key('badge-section-toggle-${e.key.name}'));
+      expect(toggle, findsOneWidget, reason: '${badgeCategoryLabel(e.key)} 应当可以展开');
+      expect(find.text('展开全部 ${e.value.length} 枚'), findsWidgets);
+      // 折叠状态下，第 7 枚（两行之外）必须**还不在**树里
+      final int limit = 6;
+      if (e.value.length > limit) {
+        expect(find.byKey(Key('badge-${e.value[limit].id}')), findsNothing,
+            reason: '折叠时不该把 ${e.value[limit].name} 也画出来');
+      }
+    }
+  });
+
+  testWidgets('展开之后第 7 枚才出现，点"收起"又收回去（不是单向的）',
+      (WidgetTester tester) async {
+    await _pump(tester, <SetRecord>[]);
+    final List<BadgeStatus> streakRows =
+        badgeGroups(badgeStatuses(<SetRecord>[]))[BadgeCategory.streak]!;
+    final Finder toggle = find.byKey(const Key('badge-section-toggle-streak'));
+    final Finder seventh = find.byKey(Key('badge-${streakRows[6].id}'));
+    expect(seventh, findsNothing);
+
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(seventh, findsOneWidget, reason: '展开之后第 7 枚要出现');
+    expect(find.text('收起'), findsWidgets);
+
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(seventh, findsNothing, reason: '"收起"必须真的收回去');
   });
 
   testWidgets('已解锁与未解锁**不只靠颜色区分**：勾 vs 锁（色盲用户读到的信息一样）',
@@ -74,7 +140,12 @@ void main() {
       (WidgetTester tester) async {
     await _pump(tester, <SetRecord>[]);
     for (final BadgeCategory c in BadgeCategory.values) {
-      expect(find.text(badgeCategoryLabel(c)), findsOneWidget);
+      // ⚠️ 2026-10-06 起同一个名字会出现在两处：A1 那张「收集线」卡里、
+      // 以及分区标题。所以这里按**分区计数**那一行去找，而不是按纯文字去找
+      // （`findsOneWidget` 会挂——那不是 bug，是这句话现在本来就说两遍）。
+      expect(find.byKey(Key('badge-section-count-${c.name}')), findsOneWidget,
+          reason: '${badgeCategoryLabel(c)} 的分区标题不见了');
+      expect(find.text(badgeCategoryLabel(c)), findsWidgets);
     }
   });
 
@@ -87,9 +158,137 @@ void main() {
         badgeTierColor(BadgeTier.epic)}.length, 3);
   });
 
+
+  // ── A3 每周挑战（2026-10-06 拍板）──────────────────────────────────
+  testWidgets('★ A3：成就页有「本周挑战」那一块，且写清还剩几天（过期作废）',
+      (WidgetTester tester) async {
+    await _pump(tester, <SetRecord>[]);
+    expect(find.byKey(const Key('weekly-challenge')), findsOneWidget);
+    final WeeklyChallenge c = weeklyChallenge(<SetRecord>[], DateTime.now());
+    expect(tester.widget<Text>(find.byKey(const Key('weekly-name'))).data, c.spec.name);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('weekly-days-left'))).data,
+      '还剩 ${c.daysLeft} 天',
+      reason: '"过期作废"必须写出来 —— 不写用户会以为下周还能补',
+    );
+    expect(find.byKey(const Key('weekly-progress')), findsOneWidget);
+  });
+
+  testWidgets('本周挑战做完了 → 如实写"本周已完成"，不再画一条 0 进度',
+      (WidgetTester tester) async {
+    // 今天所在这一周，天天练（池子里每一条都做得到 —— 见 weekly_challenge_test）
+    final DateTime now = DateTime.now();
+    final DateTime monday = now.subtract(Duration(days: now.weekday - DateTime.monday));
+    final List<SetRecord> sets = <SetRecord>[
+      for (int d = 0; d < 4; d++)
+        for (int i = 0; i < 12; i++)
+          _set('w$d', monday.add(Duration(days: d, hours: 19, minutes: i))),
+    ];
+    await _pump(tester, sets);
+    expect(weeklyChallenge(sets, now).done, isTrue, reason: '这一周的挑战应当已完成');
+    expect(
+      tester.widget<Text>(find.byKey(const Key('weekly-progress'))).data,
+      contains('本周已完成'),
+    );
+  });
+
+  // ── A1 收集线（2026-10-06 拍板）────────────────────────────────────
+  testWidgets('★ A1：四条收集线各有一根条 + 一个"已拿 / 全部"的数',
+      (WidgetTester tester) async {
+    await _pump(tester, <SetRecord>[]);
+    expect(find.byKey(const Key('badge-lines')), findsOneWidget);
+    final List<BadgeLine> lines = badgeLines(badgeStatuses(<SetRecord>[]));
+    expect(lines.length, BadgeCategory.values.length);
+    for (final BadgeLine l in lines) {
+      expect(
+        tester.widget<Text>(find.byKey(Key('line-count-${l.category.name}'))).data,
+        '${l.unlocked} / ${l.total}',
+        reason: '${l.label} 那一行的数要与纯函数一致',
+      );
+      expect(find.byKey(Key('line-emblem-${l.category.name}')), findsOneWidget);
+    }
+    // 一条都没集齐时，如实说"还差一点点"
+    expect(find.text('还差一点点'), findsOneWidget);
+  });
+
+  testWidgets('★ A1 集齐奖励：集齐之后写"已集齐"，颜色换成这条线的颜色',
+      (WidgetTester tester) async {
+    // 造一条**只有两枚**的线，两枚都解锁 → 集齐。用真实的 BadgeStatus 构造，
+    // 因为奖励的判据就是"这条线上每一枚都 unlocked"。
+    final List<BadgeStatus> all = <BadgeStatus>[
+      const BadgeStatus(
+        id: 'a', name: 'a', how: 'h', tier: BadgeTier.common,
+        category: BadgeCategory.streak, current: 1, target: 1, unlocked: true,
+      ),
+      const BadgeStatus(
+        id: 'b', name: 'b', how: 'h', tier: BadgeTier.common,
+        category: BadgeCategory.streak, current: 1, target: 1, unlocked: true,
+      ),
+    ];
+    final List<BadgeLine> done = completedLines(all);
+    expect(done.length, 1);
+    expect(done.first.category, BadgeCategory.streak);
+    // 奖励是"那条线的颜色"—— 与图例里的三档颜色是两件事，这里只钉它来自 lineColor
+    expect(lineColor(BadgeCategory.streak), Tokens.accent);
+  });
+
   test('分组不会漏徽章：每个分类里的数量加起来 == 全部', () {
     final List<BadgeStatus> all = badgeStatuses(<SetRecord>[]);
     final Map<BadgeCategory, List<BadgeStatus>> groups = badgeGroups(all);
     expect(groups.values.expand((List<BadgeStatus> x) => x).length, all.length);
+  });
+
+  // ── A4 隐藏徽章（2026-10-06 拍板）──────────────────────────────────
+  testWidgets('★ 隐藏徽章：解锁前条件是「？？？」，名字照常看得见', (WidgetTester tester) async {
+    await _pump(tester, <SetRecord>[]);
+    // 隐藏徽章都在「探索发现」线的后半段，折叠态下够不到 —— 先展开
+    await _expandAll(tester);
+    final List<BadgeStatus> hidden =
+        badgeStatuses(<SetRecord>[]).where((BadgeStatus b) => b.hidden).toList();
+    expect(hidden, isNotEmpty, reason: '一枚隐藏徽章都没有的话这条测试是空转的');
+    for (final BadgeStatus b in hidden) {
+      expect(
+        tester.widget<Text>(find.byKey(Key('badge-meta-${b.id}'))).data,
+        '？？？',
+        reason: '${b.id} 解锁前不该把怎么拿到写出来',
+      );
+      expect(find.text(b.name), findsWidgets, reason: '${b.id} 的名字必须仍然可见');
+      // 也不许退化成"还差 N" —— 那等于把条件的一半说出来了
+      expect(find.textContaining('还差'), findsWidgets);
+    }
+  });
+
+  testWidgets('隐藏徽章**解锁之后**就把条件讲明白了（藏的是过程，不是结果）',
+      (WidgetTester tester) async {
+    // 「跨零点」：0~2 点之间记一组
+    await _pump(tester, <SetRecord>[
+      SetRecord(
+        id: 'midnight',
+        workoutId: 'w1',
+        exerciseId: 'bench',
+        setIndex: 0,
+        weightKg: 60,
+        reps: 8,
+        completedAtMs: DateTime(2026, 10, 5, 1, 10).millisecondsSinceEpoch,
+      ),
+    ]);
+    await _expandAll(tester);
+    final BadgeStatus b = badgeStatuses(<SetRecord>[
+      SetRecord(
+        id: 'midnight',
+        workoutId: 'w1',
+        exerciseId: 'bench',
+        setIndex: 0,
+        weightKg: 60,
+        reps: 8,
+        completedAtMs: DateTime(2026, 10, 5, 1, 10).millisecondsSinceEpoch,
+      ),
+    ]).firstWhere((BadgeStatus x) => x.id == 'midnight_crosser');
+    expect(b.unlocked, isTrue, reason: '凌晨 1 点记过一组，这枚就该解锁');
+    expect(
+      tester.widget<Text>(find.byKey(const Key('badge-meta-midnight_crosser'))).data,
+      b.how,
+      reason: '解锁之后要写清条件，不能永远挂着「？？？」',
+    );
   });
 }

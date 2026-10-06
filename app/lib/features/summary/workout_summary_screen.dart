@@ -13,9 +13,11 @@ import 'package:flutter/material.dart';
 import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../core/vi_cards.dart';
 import '../../data/db.dart' show ExerciseData;
 import 'share_card_exporter.dart';
 import 'share_card_preview_screen.dart';
+import 'tips.dart';
 import 'workout_summary.dart';
 
 class WorkoutSummaryScreen extends StatefulWidget {
@@ -179,12 +181,52 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 const SizedBox(height: Tokens.s5),
                 _stretchBlock(),
               ],
+              // 练后小知识（第二部分第 8 条）：**每次一条，由 workoutId 纯函数挑**
+              // （同一屏刷新两次看到的是同一条 —— 见 `tips.dart`）。
+              const SizedBox(height: Tokens.s5),
+              _tipBlock(),
             ],
           ),
         ),
         _shareButton(s),
         _doneButton(),
       ],
+    );
+  }
+
+  /// **练后小知识**（第二部分第 8 条）。
+  ///
+  /// 放在拉伸建议之后、总结屏的最后一块：前面几块都是"你刚才做了什么"，
+  /// 这一块是唯一说"为什么"的地方，读不读都不影响操作。
+  ///
+  /// 文案来自 `tips.dart` 的内置表（**不联网**）；挑哪一条是按 `workoutId` 的
+  /// 纯函数，所以这一屏重建时不会换一句。
+  Widget _tipBlock() {
+    final Tip t = tipFor(widget.workoutId);
+    return ViCard(
+      key: const Key('post-workout-tip'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.lightbulb_outline, color: Tokens.text3, size: 16),
+              const SizedBox(width: Tokens.s2),
+              const Text('练后小知识',
+                  style: TextStyle(color: Tokens.text3, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          Text(t.title,
+              key: const Key('tip-title'),
+              style: const TextStyle(
+                  color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: Tokens.s2),
+          Text(t.body,
+              key: const Key('tip-body'),
+              style: const TextStyle(color: Tokens.text2, fontSize: 13, height: 1.5)),
+        ],
+      ),
     );
   }
 

@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/glass_switch.dart';
 import 'package:lianleme/analytics/analytics.dart';
 import 'package:lianleme/analytics/outbox.dart';
 import 'package:lianleme/core/theme.dart';
@@ -16,6 +17,7 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
+import 'package:lianleme/features/progress/badges.dart';
 import 'package:lianleme/features/profile/profile_screen.dart';
 import 'package:lianleme/features/profile/training_stats.dart';
 
@@ -277,12 +279,139 @@ void main() {
       );
     });
 
+    testWidgets('A5 段位卡：0 枚时是青铜，如实写"还差 3 枚到白银"', (WidgetTester tester) async {
+      await pumpProfile(tester);
+      await scrollTo(tester, find.byKey(const Key('rank-card')));
+
+      expect(tester.widget<Text>(find.byKey(const Key('rank-name'))).data, '青铜 · 0 枚',
+          reason: '段位名要带上**这一段自己的门槛**，否则"离青铜多远"没人说得清');
+      expect(
+        tester.widget<Text>(find.byKey(const Key('rank-next'))).data,
+        contains('还差 3 枚到白银'),
+      );
+      expect(find.textContaining('已解锁 0 / '), findsOneWidget,
+          reason: '段位卡里的分母必须是**真的徽章总数**，不写死');
+    });
+
+    testWidgets('A5 段位卡：解锁到 3 枚以上就进白银（段位是算出来的，不落库）',
+        (WidgetTester tester) async {
+      // 5 枚最容易拿的一批：首训 / 练满 10 次还给不了、早鸟 + 夜猫 + 二十个动作要 20 个动作
+      // —— 这里直接构造"首批 5 枚"：1 次训练 + 早鸟 + 夜猫 + 不同动作 1 个 + 单次 5 吨
+      await store.saveSet(_set(id: 'a', reps: 10, weightKg: 600, atMs: 6 * 3600 * 1000));
+      await store.saveSet(_set(
+          id: 'b', reps: 10, weightKg: 600, setIndex: 2, atMs: 23 * 3600 * 1000));
+      await pumpProfile(tester);
+      await scrollTo(tester, find.byKey(const Key('rank-card')));
+
+      final String name =
+          tester.widget<Text>(find.byKey(const Key('rank-name'))).data!;
+      final String next =
+          tester.widget<Text>(find.byKey(const Key('rank-next'))).data!;
+      // 这一段**不钉死**解锁到第几枚（徽章还在分批扩），只钉"名字与门槛一致、进度与下一段自洽"
+      expect(name, matches(RegExp(r'^(青铜|白银|黄金|铂金|钻石|大师|传奇) · \d+ 枚$')));
+      expect(next, matches(RegExp(r'^(还差 \d+ 枚到.+|已经是最高段位) · 已解锁 \d+ / \d+ 枚$')));
+    });
+
+    testWidgets('★ A1 集齐奖励：集齐一条线 → 段位卡换上那条线的颜色（展示层）',
+        (WidgetTester tester) async {
+      // ⚠️ 这里**不走"造一年记录"那条路**（那测的是数据生成器）：
+      // 判据 `completedLines()` 已由 `badges_test.dart` 用构造的 BadgeStatus 钉死，
+      // 这一条只测"集齐之后界面上多了一圈什么颜色"，所以直接注入那一条已集齐的线。
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: ProfileScreen(
+            store: store,
+            repository: repo,
+            profile: profile,
+            debugCompleteLines: const <BadgeLine>[
+              BadgeLine(
+                category: BadgeCategory.streak,
+                label: '连续打卡',
+                unlocked: 20,
+                total: 20,
+              ),
+            ],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, find.byKey(const Key('rank-card')));
+
+      expect(find.byKey(const Key('rank-card-line')), findsOneWidget,
+          reason: '集齐一条收集线之后，段位卡要换上那条线的颜色（A1 的展示性奖励）');
+      final Container box =
+          tester.widget<Container>(find.byKey(const Key('rank-card-line')));
+      final BoxDecoration deco = box.decoration! as BoxDecoration;
+      expect((deco.border! as Border).top.color, Tokens.accent,
+          reason: '集齐的是「连续打卡」那条线（它的颜色就是主色）');
+    });
+
+    testWidgets('A1：**没集齐就不许换色**（空记录下没有那圈描边）',
+        (WidgetTester tester) async {
+      await pumpProfile(tester);
+      await scrollTo(tester, find.byKey(const Key('rank-card')));
+      expect(find.byKey(const Key('rank-card-line')), findsNothing,
+          reason: '一枚都没集齐时出现那圈色 = 在说假话');
+    });
+
+    testWidgets('★ 连续天数**认补签**，而且如实写"其中 N 天是补签"（与首页同一口径）',
+        (WidgetTester tester) async {
+      // 昨天与前天练了、今天没练；再往前一天被补签保护 —— 于是连续 3 天，
+      // 其中 1 天是补签。用真记录 + 注入 protectedDays（判据本身在
+      // `streak_protection_test.dart` 里逐条钉着，这里只测界面是否照实说）。
+      final DateTime now = DateTime.now();
+      final DateTime d0 = DateTime(now.year, now.month, now.day);
+      final DateTime yesterday = d0.subtract(const Duration(days: 1));
+      String key(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+      await store.saveSet(_set(
+          id: 'y', workoutId: 'wy', atMs: yesterday.millisecondsSinceEpoch));
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: ProfileScreen(
+            store: store,
+            repository: repo,
+            profile: profile,
+            protectedDays: <String>{
+              key(yesterday.subtract(const Duration(days: 1))),
+            },
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, find.byKey(const Key('profile-streak-label')));
+
+      expect(
+        tester.widget<Text>(find.byKey(const Key('profile-streak-label'))).data,
+        '已连续打卡 2 天（其中 1 天是补签）',
+        reason: '昨天练了 + 前天被补签保护 = 2 天，而且必须写明其中 1 天是补签',
+      );
+    });
+
+    testWidgets('★ 经验卡（第二部分第 7 条）：按累计组数给等级与进度',
+        (WidgetTester tester) async {
+      // 三组 → 经验等级还是「起步」，进度 3/100
+      for (int i = 0; i < 3; i++) {
+        await store.saveSet(_set(id: 'e$i', setIndex: i + 1));
+      }
+      await pumpProfile(tester);
+      await scrollTo(tester, find.byKey(const Key('experience-card')));
+
+      expect(tester.widget<Text>(find.byKey(const Key('experience-sets'))).data, '3 组');
+      expect(tester.widget<Text>(find.byKey(const Key('experience-title'))).data,
+          '经验 · 起步');
+      expect(tester.widget<Text>(find.byKey(const Key('experience-hint'))).data,
+          contains('还差 97 组'));
+    });
+
     testWidgets('开关默认开着，关掉之后写进库', (WidgetTester tester) async {
       await pumpProfile(tester);
-
       await openPage(tester, 'open-preferences');
       await scrollTo(tester, find.byKey(const Key('progression-switch')));
-      expect(tester.widget<SwitchListTile>(find.byKey(const Key('progression-switch'))).value,
+      expect(tester.widget<AppSwitchTile>(find.byKey(const Key('progression-switch'))).value,
           isTrue);
       expect(await profile.progressionMode(), ProgressionMode.doubleProgression);
 
@@ -313,7 +442,7 @@ void main() {
       await openPage(tester, 'open-privacy-about');
       await scrollTo(tester, find.byKey(const Key('analytics-switch')));
       expect(
-        tester.widget<SwitchListTile>(find.byKey(const Key('analytics-switch'))).value,
+        tester.widget<AppSwitchTile>(find.byKey(const Key('analytics-switch'))).value,
         isFalse,
         reason: '默认必须是关的 —— "默认同意"在 PIPL 下站不住',
       );

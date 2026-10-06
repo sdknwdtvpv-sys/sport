@@ -27,7 +27,11 @@ import 'core/units.dart';
 // 同时裸 import 两个库时，一用到同名类就 ambiguity_import。这里预先 hide 掉。
 import 'data/analytics_meta_repository.dart';
 import 'data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
-import 'data/body_metric_repository.dart';
+// ⚠️ 两个文件都定义了 `dayKey`：身体数据那个是给 `body_metric.date` 用的，
+// 补签那个是给 `streak_protection.date` 用的（写法一样、语义不同）。
+// 这里要的是补签那个 —— 所以把身体数据那个 hide 掉（它的使用者在本文件里
+// 都有自己的入口，不经过 main.dart 的这个名字）。
+import 'data/body_metric_repository.dart' hide dayKey;
 import 'data/drift_local_store.dart';
 import 'data/exercise_repository.dart';
 import 'data/local_store.dart';
@@ -57,6 +61,13 @@ import 'features/progress/streak.dart';
 import 'features/progress/all_data_screen.dart';
 import 'features/progress/progress_data.dart';
 import 'features/progress/progress_screen.dart';
+import 'features/progress/weekly_report.dart';
+import 'features/progress/weekly_challenge.dart';
+import 'features/progress/muscle_balance.dart';
+import 'features/progress/comeback.dart';
+import 'features/progress/streak_protection.dart';
+import 'data/streak_protection_repository.dart';
+import 'features/summary/share_card_preview_screen.dart';
 import 'features/profile/reminder.dart';
 import 'features/profile/reminder_bridge.dart';
 import 'features/profile/reminder_service.dart';
@@ -197,6 +208,10 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 站内消息（通知中心）。2026-10-05，v1.50。
   late final NotificationRepository _notifications = NotificationRepository(_db);
+
+  /// 连续保护（补签）的仓库（第二部分第 2 条）。表定义与理由见 `data/db.dart`。
+  late final StreakProtectionRepository _streakProtection =
+      StreakProtectionRepository(_db);
   late final TodayPlanner _planner =
       TodayPlanner(repository: _repo, store: _store);
   late final SummaryService _summaryService =
@@ -294,6 +309,33 @@ class _HomeShellState extends State<HomeShell> {
   int _unreadNotifications = 0;
   List<({String workoutId, DateTime day, int exercises, int sets, double volume})> _recent =
       const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[];
+
+  /// **全部组记录**（最近一次刷新时读到的，2026-10-06 加）。
+  ///
+  /// 为什么留在壳层：首页那块周报要算"上周"的完整统计（容量 / 组数 / 破纪录 / 新徽章），
+  /// 而 [_recent] 只够画"最近训练"那三行。`_refreshHome()` 本来就把 `allSets()` 读出来了
+  /// （徽章消息、提醒、周次数都用它），就手存一份 —— 免得首页为了周报再查一次全表。
+  ///
+  /// ⚠️ 它**不是状态源**：任何写入路径都会 `_refreshHome()`，所以它只会是"刚读过的那一份"。
+  /// 只读它、不直接改它。
+  List<SetRecord> _allSets = const <SetRecord>[];
+
+  /// 首页那一行**部位平衡**（第二部分第 5 条）。null = 不显示。
+  /// 判据与文案在 `muscle_balance.dart`（纯函数）；这里只负责把动作表查出来。
+  String? _muscleBalance;
+
+  /// 首页那一句**回归激励**（第二部分第 9 条）。null = 不显示。
+  String? _comebackNudge;
+
+  /// 当前这条链里有几天是补签（0 = 没有）。与 `_streak` 一起算、一起用。
+  int _protectedInStreak = 0;
+
+  /// 现在能不能补签（null = 不给）。
+  StreakProtectionOffer? _protectionOffer;
+
+  /// 被补签保护过的日子（`YYYY-MM-DD`）。**「我」页的连续天数也要它** ——
+  /// 与首页共用同一份读库结果，不各读一遍。
+  Set<String> _protectedDays = const <String>{};
 
   /// **今天的安排**（首页中间那一块，2026-10-04 加）。
   ///
@@ -520,19 +562,43 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _refreshHome() async {
     final List<SetRecord> sets = await _store.allSets();
     if (!mounted) return;
-    // 三条消息生成规则**都在这里跑**（冷启动与"练完回来"都经过这个出口）：
-    // 徽章解锁 / 错过的训练提醒 —— 都是本地算的，且各自带去重键，重复调用安全。
+    // 四条消息生成规则**都在这里跑**（冷启动与"练完回来"都经过这个出口）：
+    // 徽章解锁 / 每周挑战完成 / 错过的训练提醒 —— 都是本地算的，且各自带去重键，
+    // 重复调用安全。
     // ⚠️ 云备份那条不在这里：它由云备份那一屏在上传有结果时调（那才是它发生的时刻）。
     await syncAchievementMessages(repo: _notifications, sets: sets);
+    await maybeWeeklyChallengeDone(repo: _notifications, sets: sets);
     await maybeRemindMissed(repo: _notifications, settings: _reminder, sets: sets);
     final int unread = await _notifications.unreadCount();
     final String? hint = await _hintFor(sets);
+    // 首页那两行（第二部分第 5 / 9 条）。部位表只为**本周练过的动作**查
+    // （一次训练几个动作，不是全表读一遍），见 `muscle_balance.dart` 的说明。
+    final DateTime now = DateTime.now();
+    final Map<String, String> muscleOf = await muscleMapForWeek(
+      sets: sets,
+      muscleOfId: (String id) async => (await _repo.byId(id))?.muscleGroup,
+      day: now,
+    );
+    final ({String text, String? worst, String? most})? balance =
+        muscleBalanceHint(sets: sets, muscleOf: muscleOf, day: now);
+    final String? comeback = comebackCopy(sets, now);
+    final Set<String> protected = await _streakProtection.protectedDays();
+    final StreakProtectionOffer? offer =
+        protectionOffer(sets, protected, now);
     if (!mounted) return;
     setState(() {
       _weekSessions = weekWorkoutCount(sets, DateTime.now());
-      _streak = currentStreak(sets, DateTime.now());
+      // 连续天数**认补签**（被保护的那天撑住链、也计 1 天）——
+      // 与 `streak.dart` 的口径只差这一处，纯函数在 `streak_protection.dart`。
+      _streak = streakWithProtection(sets, protected, now);
+      _protectedInStreak = protectedDaysInStreak(sets, protected, now);
       _totalWorkouts = totalWorkouts(sets);
       _recent = recentWorkouts(sets);
+      _allSets = sets; // 首页周报要算"上周"的完整统计，见字段注释
+      _muscleBalance = balance?.text;
+      _comebackNudge = comeback;
+      _protectionOffer = offer;
+      _protectedDays = protected;
       _reminderHint = hint;
       _unreadNotifications = unread;
     });
@@ -1072,6 +1138,56 @@ class _HomeShellState extends State<HomeShell> {
   /// 快速入口：我的成就。**组记录已经在手上**（`_recent` 那次加载拿过），
   /// 但成就要的是全量，所以这里重新读一次并交给那一屏 —— 不与「我」页共用状态，
   /// 免得两处的"已解锁"在返回后不同步。
+  /// **补签保护那一天**（第二部分第 2 条）。
+  ///
+  /// 三件事，顺序不能变：先写库（`streak_protection` 表里加一行"这一天被保护了"）、
+  /// 再刷新首页（连续天数立刻变长、那一行"其中 N 天是补签"也立刻出现）、
+  /// 最后弹一句**如实**的说明 —— 用户点的是一个会改变"连续多少天"的动作，
+  /// 它值得一句确认。
+  ///
+  /// ⚠️ 这里**不动任何训练记录**：补签不是"那天我练了"，而是"我知道那天断了，
+  /// 我选择不让这条链断在这里"。记录就是事实，这一点在所有功能里都一样。
+  Future<void> _protectStreak() async {
+    final StreakProtectionOffer? offer = _protectionOffer;
+    if (offer == null) return;
+    await _streakProtection.protect(dayKey(offer.day));
+    await _refreshHome();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('已保护 ${offer.day.month} 月 ${offer.day.day} 日这一处断点 —— 每周一次。'),
+    ));
+  }
+
+  /// **周报 → 分享卡预览**（第二部分第 1 条）。
+  ///
+  /// 复用现有那套分享卡（同一棵 `ShareCard`、同一个抓图与交付路径）：
+  /// 用户已经把那张卡当成"练了么的卡"了，为周报再画一套长相不同的卡没有收益，
+  /// 而两条抓图/存相册的路径却要各自维护。
+  Future<void> _openWeeklyReport() async {
+    final WeeklyReport r = weeklyReportFor(_allSets, DateTime.now());
+    if (r.isEmpty) return; // 没练过的一周不值得做成卡（按钮本来就只在练过时出现）
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ShareCardPreviewScreen(
+          summary: WorkoutSummary(
+            workoutId: 'week-${r.start.millisecondsSinceEpoch}',
+            totalSets: r.totalSets,
+            totalVolumeKg: r.volumeKg,
+            duration: r.durationMin > 0 ? Duration(minutes: r.durationMin) : null,
+            exerciseCount: r.exerciseCount,
+            prs: const <SetPr>[],
+            startedAtMs: r.start.millisecondsSinceEpoch,
+            distanceM: r.distanceM,
+            distanceSets: r.distanceM > 0 ? 1 : 0,
+          ),
+          streak: r.activeDays,
+          ordinal: weekOrdinal(DateTime.now()),
+          analytics: _analytics,
+        ),
+      ),
+    );
+  }
+
   Future<void> _openAchievements() async {
     final List<SetRecord> sets = await _store.allSets();
     if (!mounted) return;
@@ -1361,6 +1477,22 @@ class _HomeShellState extends State<HomeShell> {
             onOpenAchievements: _openAchievements,
             onOpenNotifications: _openNotifications,
             unreadNotifications: _unreadNotifications,
+            // 周报（第二部分第 1 条）：**只在周一 / 周二 + 上周练过**才给看。
+            // 判据是纯函数（`shouldShowWeeklyReport`），所以"周三不给看"这件事有测试钉着。
+            weeklyReport: shouldShowWeeklyReport(_allSets, DateTime.now())
+                ? weeklyReportFor(_allSets, DateTime.now())
+                : null,
+            onOpenWeeklyReport: _openWeeklyReport,
+            muscleBalance: _muscleBalance,
+            comebackNudge: _comebackNudge,
+            protectedInStreak: _protectedInStreak,
+            protectionOffer: _protectionOffer,
+            // 首页那一行本周挑战（A3 的第二处落点）：与成就页共用同一份纯函数，
+            // "什么时候不显示"也写在那里面（做完了 / 只剩今天都不显示）。
+            weeklyChallengeLine:
+                weeklyChallengeLine(weeklyChallenge(_allSets, DateTime.now())),
+            onProtectStreak:
+                _protectionOffer == null ? null : _protectStreak,
           );
       case 1:
         return ProgressScreen(
@@ -1404,6 +1536,9 @@ class _HomeShellState extends State<HomeShell> {
           repository: _repo,
           profile: _profile,
           analytics: _analytics,
+          // 连续打卡保护（第二部分第 2 条）：**必须与首页同一份** ——
+          // 两边各算一遍就会出现"首页说连续 12 天、这里说 0 天"的矛盾。
+          protectedDays: _protectedDays,
           // 「隐私与关于 → 导出统计事件」用：本机攒下的事件（含发不出去的那些）。
           // 这是**唯一**能把 tap_count 从设备上取回来的路径 —— 见
           // `analytics_export.dart` 的文件头与 `docs/analytics.md` §3。

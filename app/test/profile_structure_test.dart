@@ -116,10 +116,21 @@ void main() {
     ));
     await pumpProfile(tester);
 
+    // 三个入口都在，但**可能不在首屏**（2026-10-06 加了段位卡之后，
+    // `open-preferences` 被顶到测试视口之外）—— ListView 懒构建，不滚过去
+    // `find` 就是空的。老规矩：先 dragUntilVisible，再断言。
     for (final String key in kEntries) {
+      await tester.dragUntilVisible(
+          find.byKey(Key(key)), find.byType(ListView), const Offset(0, -220));
+      await tester.pumpAndSettle();
       expect(find.byKey(Key(key)), findsOneWidget, reason: '$key 必须在「我」页上');
     }
-    // 统计还在这一页（它是"每天看"的那一类）
+
+    // 统计还在这一页（它是"每天看"的那一类）。**先滚回去再断言**：
+    // 上面为了找那三个入口已经滚到页面下部，统计卡此时已经被 ListView 回收掉了。
+    await tester.dragUntilVisible(find.byKey(const Key('profile-stat-workouts')),
+        find.byType(ListView), const Offset(0, 220));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('profile-stat-workouts')), findsOneWidget);
 
     await scrollThroughAndCheck(tester);
@@ -160,6 +171,12 @@ void main() {
 
   testWidgets('偏好设置里能看到休息时长与单位', (WidgetTester tester) async {
     await pumpProfile(tester);
+    // 老规矩：入口可能不在首屏（2026-10-06 段位卡把它往下推了一格）
+    await tester.dragUntilVisible(
+        find.byKey(const Key('open-preferences')),
+        find.byType(ListView),
+        const Offset(0, -220));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('open-preferences')));
     await tester.pumpAndSettle();
 
@@ -172,6 +189,12 @@ void main() {
   testWidgets('数据与备份里能看到导出与删除（危险动作单独一区）',
       (WidgetTester tester) async {
     await pumpProfile(tester);
+    // 同上：先滚到入口再点（不滚就是"点了个寂寞"，警告里已经写着）
+    await tester.dragUntilVisible(
+        find.byKey(const Key('open-data-tools')),
+        find.byType(ListView),
+        const Offset(0, -220));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('open-data-tools')));
     await tester.pumpAndSettle();
 

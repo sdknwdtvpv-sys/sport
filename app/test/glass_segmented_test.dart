@@ -87,6 +87,13 @@ void main() {
     expect(args['style'], 'regular', reason: '底托仍然是磨砂的 regular');
     // 按下去鼓 14pt：太小就没有那个"Q弹"的幅度（真机原话"太小了 要超出边界"）
     expect(args['pressBulge'], 14);
+    // ② 的重影 bug：字**由原生画**（`labels` 发过去），Flutter 那份不画 ——
+    // 否则玻璃会把背后的字折射出第二份（用户备忘条第 2 条）
+    expect(args['labels'], <String>['周', '月', '年'],
+        reason: '分段控件的字也要交给原生画（否则玻璃会把它折射出第二份）');
+    expect(args['selectedColor'], isNotNull);
+    expect(args['unselectedColor'], isNotNull);
+    expect(args['labelFontSize'], 12);
     // ⚠️ 不许再有"融合距离"这个参数：容器会把两块玻璃抹平成一块
     // （真机上就是"切 tab 完全感觉不到玻璃"，证据 glass-probe-segment-variants.png）
     expect(args.containsKey('spacing'), isFalse);
@@ -202,6 +209,13 @@ void main() {
     expect(seg.pillTint, isNull, reason: '底栏那颗默认全透明（靠着图标颜色与边缘高光读形状）');
     expect(seg.pillStyle, GlassStyle.clear, reason: '鼓起来那颗必须透得过去');
     expect(seg.pressBulge, 14, reason: '按下去的幅度 —— 小了就没有 Q 弹的手感');
+    // ★ 底栏的字与图标必须**交给原生画**（否则会在玻璃上出现折射重影），
+    // 且图标是 SF Symbol 那一组
+    expect(seg.labels, isNotNull);
+    expect(seg.labels!.length, 5);
+    expect(seg.icons, isNotNull);
+    expect(seg.icons!.length, 5);
+    expect(seg.icons, contains('dumbbell.fill'));
     // 拖动信号必须**一路传到玻璃组件**（外壳 → AppTabBar → GlassSegmented）：
     // 断了的话页面照样能拖，但底下那颗玻璃会跳格 —— 看起来就是"不跟手"。
     expect(seg.dragIndex, same(drag), reason: '那条"跟手"的线就靠它');

@@ -72,6 +72,38 @@ void main() {
     expect(find.text('提醒'), findsOneWidget);
   });
 
+  testWidgets('★ 点一条 → 详情弹层；且**只把这一条**标为已读', (WidgetTester tester) async {
+    // 2026-10-06 用户备忘条第 5 条："消息通知没办法点进去看详情"。
+    // 这一条钉两件事：① 点得进去（弹层里给完整正文与绝对时间）；
+    // ② 读一条只读这一条 —— 不许顺手把别的未读也变成已读（那是替用户做决定）。
+    await repo.add(kind: NotificationKind.achievement, title: '解锁「首训」', body: '完成第 1 次训练', nowMs: 1000);
+    await repo.add(kind: NotificationKind.reminder, title: '该练了', body: '今天还没练', nowMs: 2000);
+    await _pump(tester, repo);
+
+    final List<AppNotificationData> rows = await repo.list();
+    final String first = rows.first.id;   // 列表按时间倒序 → 第一条是"该练了"
+
+    await tester.tap(find.byKey(Key('notification-$first')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('notification-detail')), findsOneWidget,
+        reason: '点一条要能进详情');
+    expect(find.byKey(const Key('notification-detail-time')), findsOneWidget,
+        reason: '列表只有相对时间，详情里要给绝对时间（"到底哪天"）');
+    expect(find.text('今天还没练'), findsWidgets, reason: '完整正文');
+
+    await tester.tap(find.byKey(const Key('notification-detail-close')));
+    await tester.pumpAndSettle();
+
+    // 只剩**另一条**是未读（这一条被读过）
+    final Iterable<Element> dots = find
+        .byWidgetPredicate((Widget w) => w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith('unread-'))
+        .evaluate();
+    expect(dots.length, 1, reason: '读一条只读一条');
+    expect(find.byKey(const Key('notifications-mark-all')), findsOneWidget,
+        reason: '还有一条未读 → 那颗"全部已读"胶囊还在');
+  });
+
   testWidgets('未读点：有的消息带、已读的不带；「全部已读」点完点全消失',
       (WidgetTester tester) async {
     await repo.add(kind: NotificationKind.achievement, title: 'A', body: '', nowMs: 1);

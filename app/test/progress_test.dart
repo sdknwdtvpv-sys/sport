@@ -504,4 +504,69 @@ void main() {
       expect(prs, hasLength(1), reason: '缺省参数必须向后兼容');
     });
   });
+
+  _prAgeTests();
+}
+
+// ── PR 墙的"多久没破纪录"（第二部分第 4 条，2026-10-06）──────────────
+
+void _prAgeTests() {
+  SetRecord s(String workout, DateTime at, double weight) => SetRecord(
+        id: '$workout-${at.millisecondsSinceEpoch}',
+        workoutId: workout,
+        exerciseId: 'ex_bench',
+        setIndex: 0,
+        reps: 8,
+        weightKg: weight,
+        completedAtMs: at.millisecondsSinceEpoch,
+      );
+
+  test('★ 只记"最后一次破纪录"的那天；平了不算破纪录', () {
+    final Map<String, int> m = daysSinceLastPr(
+      sets: <SetRecord>[
+        s('w1', DateTime(2026, 9, 1), 60),
+        s('w2', DateTime(2026, 9, 10), 65), // 破
+        s('w3', DateTime(2026, 9, 20), 65), // 平 —— 不算
+        s('w4', DateTime(2026, 10, 1), 70), // 破
+      ],
+      day: DateTime(2026, 10, 6),
+    );
+    expect(m['ex_bench'], 5, reason: '最后一次破纪录是 10/1，到 10/6 是 5 天');
+  });
+
+  test('从来没有破过纪录的动作**不在表里**（不许假装"0 天前"）', () {
+    final Map<String, int> m = daysSinceLastPr(
+      sets: <SetRecord>[s('w1', DateTime(2026, 10, 1), 60)],
+      day: DateTime(2026, 10, 6),
+    );
+    expect(m, isEmpty);
+    expect(lastPrLabel(m, 'ex_bench'), isNull);
+  });
+
+  test('文案分档：今天 / 昨天 / N 天 / N 个月 / N 年', () {
+    expect(lastPrLabel(<String, int>{'a': 0}, 'a'), '今天刚刷新');
+    expect(lastPrLabel(<String, int>{'a': 1}, 'a'), '昨天刷新');
+    expect(lastPrLabel(<String, int>{'a': 9}, 'a'), '9 天前刷新');
+    expect(lastPrLabel(<String, int>{'a': 60}, 'a'), '2 个月前刷新');
+    expect(lastPrLabel(<String, int>{'a': 400}, 'a'), '1 年前刷新');
+  });
+
+  test('自重动作比次数（引体向上的纪录不可能是公斤）', () {
+    SetRecord bw(String w, DateTime at, int reps) => SetRecord(
+          id: '$w-${at.millisecondsSinceEpoch}',
+          workoutId: w,
+          exerciseId: 'ex_pull_up',
+          setIndex: 0,
+          reps: reps,
+          completedAtMs: at.millisecondsSinceEpoch,
+        );
+    final Map<String, int> m = daysSinceLastPr(
+      sets: <SetRecord>[
+        bw('w1', DateTime(2026, 9, 1), 8),
+        bw('w2', DateTime(2026, 9, 15), 12), // 次数破纪录
+      ],
+      day: DateTime(2026, 9, 20),
+    );
+    expect(m['ex_pull_up'], 5);
+  });
 }

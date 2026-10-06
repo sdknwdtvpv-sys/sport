@@ -17,6 +17,13 @@ import 'glass_segmented.dart';
 import 'glass_surface.dart';
 import 'theme.dart';
 
+/// `Color` → `#RRGGBB`（原生按这个解析；不写死十六进制，免得与调色板漂）
+String _hexOf(Color c) {
+  final int v = c.toARGB32() & 0xFFFFFF;
+  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
+
 class AppTabBar extends StatelessWidget {
   const AppTabBar({
     super.key,
@@ -134,6 +141,19 @@ class AppTabBar extends StatelessWidget {
       // 胶囊往里缩 5pt：这条缝就是"凸起来的那块"与底托的分界
       pillInset: 5,
       dragIndex: dragIndex,
+      // 字与图标交给原生画（玻璃**里面**）：Flutter 那份在玻璃背后，会被折射出第二份虚影
+      labels: <String>[for (final ({IconData icon, String label}) t in tabs) t.label],
+      icons: const <String>[
+        'dumbbell.fill',
+        'chart.line.uptrend.xyaxis',
+        'chart.bar.fill',
+        'calendar',
+        'person',
+      ],
+      selectedColor: _hexOf(Tokens.accent),
+      unselectedColor: _hexOf(Tokens.text3),
+      labelFontSize: 11,
+      iconSize: 22,
       // 按住不放、横向拖到别格再松手 = 换 tab（`changes` 幂等，与点击那条路不冲突）
       onDragSelect: onChanged,
       child: bar,

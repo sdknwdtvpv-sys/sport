@@ -450,6 +450,31 @@ class BackupAccount extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{userId};
 }
 
+/// **连续打卡保护（补签）**（2026-10-06，第二部分第 2 条）。
+///
+/// 一天一行：**这一天被补签保护了**。这是这个仓库里极少数的"用户写下来的**关于历史**的
+/// 一条声明"（其余的一切都是训练记录的推导结果）—— 所以它必须**单独存在一张表里**，
+/// 而不是去改 `set_record`/`workout`：**记录就是事实**，补签不是"那天我练了"，
+/// 而是"我知道那天断了，我选择不让这条链断在这里"。
+///
+/// ⚠️ 它**是用户数据**：`deleteAllUserData` 必须把它一起清掉，
+/// 而且 `test/delete_all_test.dart` 那份表清单守门也要加上它（新加表最容易漏这一步）。
+///
+/// 为什么不用一列"已用次数"：`date` 既是主键又是"哪一天"，一次补签一周的额度
+/// 可以直接由 `date` 反推（周一那天所在的周）—— 存计数就会和这张表本身不一致。
+class StreakProtection extends Table {
+  /// 被保护的那一天（**本地日**，`YYYY-MM-DD`，与 `body_metric.date` 同一种写法）。
+  /// 用字符串而不是时间戳：这一列要能被人肉读出来（排障时一眼看到"补的是哪一天"）。
+  TextColumn get date => text()();
+
+  /// 补签这个动作发生的时刻（毫秒）。**不是**被补的那一天 —— 这两个时间
+  /// 在界面上是两件事（"10/6 补了 10/5"）。
+  IntColumn get createdAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{date};
+}
+
 @DriftDatabase(tables: <Type>[
   Exercise,
   Workout,
@@ -466,6 +491,7 @@ class BackupAccount extends Table {
   PinnedExercise,
   ReminderSetting,
   AppNotification,
+  StreakProtection,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -492,8 +518,9 @@ class AppDatabase extends _$AppDatabase {
   /// v20（2026-10-05）：`body_metric` +`waist_cm`/`muscle_mass_kg`、`user_profile` +`height_cm`
   ///（身体数据扩展：腰围 / 肌肉量 / BMI）。**这一版动既有表**，所以两块都要
   /// 「先看库里真实的形状再决定加不加」——见迁移链尾那段的说明。
+  /// v21（2026-10-06）：新增 `streak_protection`（连续打卡保护 / 补签）。**只加表**。
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -689,6 +716,13 @@ class AppDatabase extends _$AppDatabase {
             await addIfMissing(bodyMetric, bodyMetric.waistCm);
             await addIfMissing(bodyMetric, bodyMetric.muscleMassKg);
             await addIfMissing(userProfile, userProfile.heightCm);
+          }
+
+          // v20 → v21：连续打卡保护（补签）。**只加表、不动任何既有列**，
+          // 所以老库升上来时它是空的 —— 那正是准确的历史：这个功能出现之前，
+          // 谁也没有补签过（也就是说，他们的连续天数从来没有被补签撑过）。
+          if (from < 21) {
+            await m.createTable(streakProtection);
           }
         },
       );

@@ -20,6 +20,8 @@ import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart' show PlanTarget;
 import 'package:lianleme/features/today/today_planner.dart';
+import 'package:lianleme/features/progress/streak_protection.dart';
+import 'package:lianleme/features/progress/weekly_report.dart';
 import 'package:lianleme/features/today/today_screen.dart';
 import 'package:lianleme/main.dart';
 
@@ -275,4 +277,178 @@ void main() {
       await teardown(tester);
     });
   });
+
+  _weeklyReportUiTests();
+
+  testWidgets('★ 补签保护（第二部分第 2 条）：有得补时卡片里出现那一行 + 按钮，点了回调出去',
+      (WidgetTester tester) async {
+    int protectedCount = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(
+        onStart: () {},
+        streak: 3,
+        protectedInStreak: 1,
+        protectionOffer: StreakProtectionOffer(
+          day: DateTime(2026, 10, 7),
+          label: '昨天（10 月 7 日）没练，补签一次就能接上 —— 每周一次。',
+        ),
+        onProtectStreak: () => protectedCount++,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('protection-offer')), findsOneWidget);
+    expect(find.textContaining('每周一次'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('protect-streak')));
+    await tester.pumpAndSettle();
+    expect(protectedCount, 1);
+  });
+
+  testWidgets('★ 连续天数里含补签 → **必须写出来**（不写就是假话）',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(onStart: () {}, streak: 12, protectedInStreak: 2),
+    ));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
+      '已连续打卡 12 天（其中 2 天是补签）',
+    );
+
+    // 没有补签时不多说那半句
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(onStart: () {}, streak: 12),
+    ));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
+      '已连续打卡 12 天',
+    );
+  });
+
+  testWidgets('没得补时：那一行与按钮都不出现（不许多说一个字）',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(onStart: () {}, streak: 5),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('protection-offer')), findsNothing);
+    expect(find.byKey(const Key('protect-streak')), findsNothing);
+  });
+
+  testWidgets('★ 本周挑战那一行（第二部分第 3 条）：传了就画，没传就不出现',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(
+        onStart: () {},
+        weeklyChallengeLine: '本周挑战：本周练 3 次 · 1 / 3次（还剩 5 天）',
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('weekly-challenge-line')), findsOneWidget);
+    expect(find.textContaining('本周挑战'), findsOneWidget);
+
+    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('weekly-challenge-line')), findsNothing,
+        reason: '没传就不该出现（判据在 weekly_challenge.dart 的纯函数里）');
+  });
 }
+
+// ── 周报（第二部分第 1 条，2026-10-06）──────────────────────────────
+//
+// 判据（该不该显示）在 `weekly_report_test.dart` 里是纯函数级的；这里只钉**界面契约**：
+// 传进来就画、没传就不画、点「做成一张卡」会回调出去。
+
+void _weeklyReportUiTests() {
+  final WeeklyReport report = WeeklyReport(
+    start: DateTime(2026, 9, 28),
+    end: DateTime(2026, 10, 5),
+    sessions: 4,
+    activeDays: 4,
+    totalSets: 60,
+    volumeKg: 24000,
+    durationMin: 180,
+    exerciseCount: 8,
+    distanceM: 5000,
+    prs: const <({String name, String detail})>[
+      (name: '杠铃卧推', detail: '70 kg（上次最好 65 kg）'),
+    ],
+    badgesUnlocked: 2,
+    bestDayVolumeKg: 9000,
+  );
+
+  testWidgets('周报传进来就画：范围 / 一句人话 / 数字行 / 额外收获都在',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(onStart: () {}, weeklyReport: report),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('weekly-report')), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('weekly-report-range'))).data,
+        '9 月 28 日 – 10 月 4 日');
+    expect(tester.widget<Text>(find.byKey(const Key('weekly-report-headline'))).data,
+        report.headline);
+    expect(tester.widget<Text>(find.byKey(const Key('weekly-report-stats'))).data,
+        contains('4 次训练'));
+    expect(find.textContaining('刷新 1 项纪录'), findsOneWidget);
+  });
+
+  testWidgets('★ 没传周报（周三到周日、或上周没练）→ 那一块**完全不出现**',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('weekly-report')), findsNothing,
+        reason: '回顾不许天天顶在首页');
+  });
+
+  testWidgets('★ 点「做成一张卡」把动作交回外壳（这一屏不自己推页面）',
+      (WidgetTester tester) async {
+    int opened = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(onStart: () {}, weeklyReport: report, onOpenWeeklyReport: () => opened++),
+    ));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('weekly-report-share')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('weekly-report-share')));
+    await tester.pumpAndSettle();
+    expect(opened, 1);
+  });
+
+  testWidgets('★ 部位平衡传进来就画那一行；没传就不出现（首页不许多说一句）',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(onStart: () {}, muscleBalance: '这周胸 3 次、腿还是 0 次'),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('muscle-balance')), findsOneWidget);
+    expect(find.text('这周胸 3 次、腿还是 0 次'), findsOneWidget);
+
+    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('muscle-balance')), findsNothing);
+  });
+
+  testWidgets('★ 回归激励：断 7 天以上才出现，且那条轻量入口跟着上来',
+      (WidgetTester tester) async {
+    int light = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(
+        onStart: () {},
+        onLightWorkout: () => light++,
+        comebackNudge: '已经 9 天没练了 —— 先做 5 分钟活动，也算一次。',
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('comeback-nudge')), findsOneWidget);
+    expect(find.textContaining('9 天没练'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('comeback-light')));
+    await tester.pumpAndSettle();
+    expect(light, 1, reason: '卡里那颗按钮要真的能进 5 分钟活动');
+
+    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('comeback-nudge')), findsNothing);
+  });
+}
+

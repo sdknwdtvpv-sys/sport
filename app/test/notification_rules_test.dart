@@ -11,6 +11,7 @@ import 'package:lianleme/data/notification_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/notifications/notification_rules.dart';
 import 'package:lianleme/features/profile/reminder.dart';
+import 'package:lianleme/features/progress/weekly_challenge.dart';
 
 SetRecord _set(String workout, DateTime at) => SetRecord(
       id: '$workout-${at.millisecondsSinceEpoch}',
@@ -57,6 +58,97 @@ void main() {
       final AppNotificationData first = (await repo.list()).first;
       expect(first.title, contains('解锁'));
       expect(first.body, isNotEmpty);
+    });
+  });
+
+  group('A3 每周挑战完成（2026-10-06）', () {
+    /// 把当前这一周的挑战做完（池子里每一条都做得到：一周四练那套覆盖了全部九枚）。
+    List<SetRecord> doneWeekSets() => <SetRecord>[
+          for (int d = 0; d < 4; d++) ...<SetRecord>[
+            for (int i = 0; i < 6; i++)
+              _set('w$d-am', DateTime(2026, 10, 5 + d, 9).add(Duration(minutes: i))),
+            for (int i = 0; i < 10; i++)
+              _set('w$d-pm', DateTime(2026, 10, 5 + d, 19).add(Duration(minutes: i))),
+            SetRecord(
+              id: 'run-$d',
+              workoutId: 'w$d-pm',
+              exerciseId: 'ex_running',
+              setIndex: 0,
+              reps: 1200,
+              distanceM: 3000,
+              completedAtMs: DateTime(2026, 10, 5 + d, 19, 30).millisecondsSinceEpoch,
+            ),
+            // 上午那场也塞一组上肢，保证"上肢 3 次"够（长课全是蹲）
+            SetRecord(
+              id: 'up-$d',
+              workoutId: 'w$d-am',
+              exerciseId: 'ex_bb_bench_press',
+              setIndex: 0,
+              reps: 8,
+              weightKg: 60,
+              completedAtMs: DateTime(2026, 10, 5 + d, 9, 30).millisecondsSinceEpoch,
+            ),
+          ],
+        ];
+
+    test('★ 本周做完了 → 发一条；同一周再跑不重复发', () async {
+      final List<SetRecord> sets = doneWeekSets();
+      expect(await maybeWeeklyChallengeDone(repo: repo, sets: sets, now: today), isTrue);
+      expect(await maybeWeeklyChallengeDone(repo: repo, sets: sets, now: today), isFalse,
+          reason: '同一周的挑战只该发一条');
+      final List<AppNotificationData> all = await repo.list();
+      expect(all.length, 1);
+      expect(all.first.kind, NotificationKind.achievement,
+          reason: '复用成就那一类，不新增枚举值');
+      expect(all.first.title, contains('本周挑战完成'));
+    });
+
+    test('没做完 → 一条都不发（不许"参与即得"）', () async {
+      expect(
+        await maybeWeeklyChallengeDone(
+            repo: repo,
+            sets: <SetRecord>[_set('w1', DateTime(2026, 10, 5, 9))],
+            now: today),
+        isFalse,
+      );
+      expect(await repo.list(), isEmpty);
+    });
+
+    test('★ 轮到同一枚挑战的下一个周期 → **还能再发一条**（去重键必须带周序号）', () async {
+      final List<SetRecord> sets = doneWeekSets();
+      await maybeWeeklyChallengeDone(repo: repo, sets: sets, now: today);
+      expect((await repo.list()).length, 1);
+
+      // 找到"下一次拿到同一枚挑战"的那一周（池子 9 枚 → 9 周后轮回）
+      final String firstId = weeklySpec(today).id;
+      DateTime later = today.add(const Duration(days: 7));
+      for (int i = 0; i < 12; i++) {
+        if (weeklySpec(later).id == firstId) break;
+        later = later.add(const Duration(days: 7));
+      }
+      expect(weeklySpec(later).id, firstId, reason: '池子应当会轮回');
+      expect(later.isAfter(today), isTrue);
+
+      // 把那份记录平移到 later 那一周再去发
+      final int shift = weekBounds(later).start.difference(weekBounds(today).start).inDays;
+      final List<SetRecord> shifted = <SetRecord>[
+        for (final SetRecord s in sets)
+          SetRecord(
+            id: '${s.id}-x',
+            workoutId: s.workoutId,
+            exerciseId: s.exerciseId,
+            setIndex: s.setIndex,
+            reps: s.reps,
+            weightKg: s.weightKg,
+            distanceM: s.distanceM,
+            completedAtMs: DateTime.fromMillisecondsSinceEpoch(s.completedAtMs)
+                .add(Duration(days: shift))
+                .millisecondsSinceEpoch,
+          ),
+      ];
+      expect(await maybeWeeklyChallengeDone(repo: repo, sets: shifted, now: later), isTrue,
+          reason: '下一轮拿到同一枚挑战时，完成了也要能发出来 —— 只用 id 做去重键就会漏掉这一条');
+      expect((await repo.list()).length, 2);
     });
   });
 

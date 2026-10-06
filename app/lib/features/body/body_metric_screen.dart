@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/glass_segmented.dart';
+
 import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
 import '../../core/vi_area_chart.dart';
@@ -29,6 +30,13 @@ import '../../analytics/analytics.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/db.dart';
 import '../../data/profile_repository.dart';
+
+/// `Color` → `#RRGGBB`（原生按这个解析；`GlassSegmented` 的原生字色用它）
+String _hexOf(Color c) {
+  final int v = c.toARGB32() & 0xFFFFFF;
+  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
 
 class BodyMetricScreen extends StatefulWidget {
   const BodyMetricScreen({
@@ -646,6 +654,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         ],
                       ),
                     ),
+                    // ⚠️ 单位那一行上面要留出间距：它紧贴着日期胶囊时，两行几乎叠在一起
+                    //（用户 2026-10-06 的备忘条第 4 条："身体数据这一屏明显的间距有 bug"）。
+                    const SizedBox(height: Tokens.s3),
                     // 标签本身带一个**行内实时开关**：称体重的时候才想起来要按斤看，
                     // 那时不该退出去到「我」页翻设置。
                     _weightUnitRow(),
@@ -675,6 +686,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         ),
                       ),
                     ),
+                    // 体重输入框与下面那排之间也要留缝：不留的话两张卡是**贴在一起**的，
+                    // 看起来像一张卡被劈成了两半（同一条备忘）。
+                    const SizedBox(height: Tokens.s3),
                     // 腰围与肌肉量并排（都是可选的）—— 一次录完，不用翻两页
                     Row(
                       children: <Widget>[
@@ -867,6 +881,11 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             style: GlassStyle.clear,
             baseTint: '#FFFFFF14',
             pillTint: '#FFFFFF2E',
+            // 字由原生画（玻璃里面）——Flutter 那份在玻璃背后会被折射出第二份虚影
+            labels: <String>[for (final BodyWeightUnit u in BodyWeightUnit.values) u.label],
+            selectedColor: _hexOf(Tokens.text),
+            unselectedColor: _hexOf(Tokens.text2),
+            labelFontSize: 12,
             itemBuilder: (int i, bool glass) {
               final BodyWeightUnit u = BodyWeightUnit.values[i];
               final bool on = _unit == u;

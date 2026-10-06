@@ -327,7 +327,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
-**当前 `schemaVersion = 20`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+**当前 `schemaVersion = 21`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
 `tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红 —— 包括这种 `schemaVersion = 20`
 的写法，2026-10-05 之前它只认 `schema v20`，而本文档恰好用的是前者，于是**只有这份文档
 逃过了检查**：规则补上 `=` 之后当场抓到它写着 15）。
@@ -354,6 +354,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v18 | `analytics_meta` 新增 `legacy_purged_at`（"旧数据已清"的时刻） | **第二次给既有表加列**，两条教训见 `db.dart` 里那段注释：迁移必须排在**链尾**（那张表是 v7 才建的），判据是"这一列现在有没有"而不是版本号。老库为 null = 还没清过 |
 | v19 | 新增 `app_notification`（站内消息 / 通知中心） | 只加表。⚠️ 那条**部分唯一索引**（`idx_notification_ref`）在迁移里也要建一遍 —— 老库升级走的是迁移这条路，`onCreate` 只管新库 |
 | v20 | 身体数据扩展：`body_metric` 新增 `waist_cm` / `muscle_mass_kg`，`user_profile` 新增 `height_cm` | **第三次给既有表加列**（v18 之后）。老库这三列都是 **null = 没记过**（不是 0）—— 腰围 0 cm 是个有意义的值，不能拿来当"没填"。同样排在链尾、同样按"这一列有没有"判断（新库 `onCreate` 已经带着这三列，无条件 `addColumn` 会 `duplicate column name`） |
+| v21 | 新增 `streak_protection`（连续保护 / 补签，第二部分第 2 条） | 只加表。老库升上来是空的 —— **准确的历史**：这个功能出现之前谁也没补签过（也就是说，他们的连续天数从来没被补签撑过）。⚠️ 这是**唯一一张「关于历史」的用户声明**（其余一切都是训练记录的推导结果）——所以它只能新开一张表，绝不能去改 `set_record`/`workout`：**记录就是事实**。删表清单（`test/delete_all_test.dart` 的表清单守门）里它是**删** |
 
 迁移测试在 `app/test/migration_test.dart`，fixture 在老库形状的 `app/test/legacy_db.dart`。
 ⚠️ **fixture 必须用当年的 DDL 手写**：拿当前 schema 建完再改的话，
@@ -366,6 +367,32 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 且自重时长动作的容量本来就是 0。要修就得让 `set_record` 知道自己是不是时长动作
 （加列或联表），留给真正需要"容量"统计的那次改动。
 
+
+### 连续打卡保护（`streak_protection`，v21 / 2026-10-06）
+
+**这个 App 里唯一一件「用户写下来的、关于历史」的声明。** 其余的一切（徽章、连续天数、
+段位、周报、经验）都是从训练记录**推导**出来的 —— 改历史 / 导入备份 / 换设备之后
+它们自己就对。补签是例外，所以它被刻意关在这张表里，**一行一天**：
+
+| 列 | 类型 | 说明 |
+|---|---|---|
+| `date` | TEXT **PK** | 被保护的那一天（本地日，`YYYY-MM-DD`）。用字符串是为了排障时能人肉读出来 |
+| `created_at_ms` | INTEGER | **补签这个动作**发生的时刻（不是被补的那一天 —— 界面上它们是两件事） |
+
+口径（判据全是纯函数，见 `features/progress/streak_protection.dart`）：
+
+* **每周一次**：额度**由已补的那一天反推**（周一那天所在的周），不另存计数 ——
+  存计数就会和这张表本身不一致；
+* **代价 = 本周至少练过 1 次**：白送的保护没有意义，而且这条让用户"先练一次再补"
+  （顺序是对的：先动起来，再谈保护）；
+* **补签不涨连续天数，只防断**：被补的那天**撑住链、也计 1 天**，所以界面上
+  **必须**同时写出「其中 N 天是补签」（`streakLabelWithProtection`）——
+  不写就等于在告诉用户"这些天我天天都练了"；
+* 判据第 3 条是「**昨天与前天里恰好断了一天**」，而**今天不参与**
+  （"今天还没练"从来不算断，与 `streak.dart` 同一条纪律）。
+
+⚠️ 它**不碰任何训练记录**：补签不是"那天我练了"，而是"我知道那天断了，
+我选择不让这条链断在这里"。
 
 ### 计划模板
 

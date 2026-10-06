@@ -48,12 +48,20 @@ enum GlassBridge {
   /// ⚠️ 与 `app/lib/core/glass_segmented.dart` 里的必须逐字一致。
   static let segmentedViewType = "lianleme/glass_segmented"
 
+  /// **开关**：直接用系统的 `UISwitch` —— iOS 26 上它自带液态玻璃（用户 2026-10-06 的
+  /// 备忘条第 3 条："开关按钮没有上苹果的原生玻璃效果"）。自己拿 UIView 仿一个是最下策：
+  /// 材质、按压回弹、旁白全都要重写，而且永远差一点。
+  /// ⚠️ 与 `app/lib/core/glass_switch.dart` 里的必须逐字一致。
+  static let switchViewType = "lianleme/switch"
+
   /// ⚠️ 与 `ReminderBridge` 那批"通道桥"的签名不同：platform view 要的是 **registrar**
   /// （注册 factory 用它），不是 messenger —— 拿 messenger 注册不出 platform view 来。
   static func register(registrar: FlutterPluginRegistrar) {
     registrar.register(GlassViewFactory(messenger: registrar.messenger()), withId: viewType)
     registrar.register(
       GlassSegmentedViewFactory(messenger: registrar.messenger()), withId: segmentedViewType)
+    registrar.register(
+      GlassSwitchViewFactory(messenger: registrar.messenger()), withId: switchViewType)
   }
 }
 
@@ -88,6 +96,13 @@ class GlassSegmentedViewFactory: NSObject, FlutterPlatformViewFactory {
   }
 }
 
+extension Array {
+  /// 越界就 nil（`labels` / `icons` 的条数与 count 不必逐字对齐）
+  subscript(safe index: Int) -> Element? {
+    indices.contains(index) ? self[index] : nil
+  }
+}
+
 /// 宿主：`UiKitView` 的 frame 是 **Flutter 布局时**才定的，所以不能只在 init 里画一次 ——
 /// 由它接管 `layoutSubviews`，尺寸一变就重新摆两块玻璃。
 /// （不直接继承 `UIVisualEffectView`：苹果不建议继承它，而且我们只需要一层壳。）
@@ -119,6 +134,23 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
   /// 手指左右拖动页面时，胶囊的**连续位置**（0 = 第一格，2.4 = 第二格往右 40%）。
   /// 由 Dart 侧的 `PageController` 每帧喂进来 —— 于是胶囊是**跟着手指滑**的，不是跳过去的。
   private var dragFraction: CGFloat?
+
+  // ── 原生文案（2026-10-06 加）────────────────────────────────────────────
+  //
+  // ⚠️ **为什么格子里的字必须由原生画**：玻璃会**折射它背后的东西**，而 Flutter 那一层画的字
+  // 恰好就在玻璃背后（iOS 的平台视图永远盖在 Flutter 内容之上），于是屏幕上同时出现**两份字**：
+  // 一份是 Flutter 画的（清晰、位置对），一份是玻璃把同一份字**折射**出来的（错位、发虚）——
+  // 用户看到的就是「重量单位这里显示 bug」。把字画在玻璃**里面**（同一个平台视图、玻璃之上）
+  // 就没有第二份可折射。顺带：SF Symbol 比 Material 图标更像苹果（底栏那五个）。
+  private let labelsBox = UIView()
+  private var itemViews: [UIView] = []
+  private var itemLabels: [UILabel] = []
+  private var itemIcons: [UIImageView] = []
+  private var iconNames: [String] = []
+  private var selectedColor: UIColor = .white
+  private var unselectedColor: UIColor = .gray
+  private var labelFontSize: CGFloat = 12
+  private var iconSize: CGFloat = 22
   private let channel: FlutterMethodChannel
 
   /// 按下时手指所在的那一格（`nil` = 没在按）。
@@ -236,6 +268,23 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
       guard let self else { return }
       self.layout(false)   // 尺寸变化时不要动画，否则每次布局都在滑
     }
+    // ── 原生文案：玻璃之上的那一层 ──
+    let labelStrings = (args["labels"] as? [String]) ?? []
+    iconNames = (args["icons"] as? [String]) ?? []
+    selectedColor = (args["selectedColor"] as? String)
+      .flatMap { GlassPlatformView.color($0) } ?? .white
+    unselectedColor = (args["unselectedColor"] as? String)
+      .flatMap { GlassPlatformView.color($0) } ?? .gray
+    labelFontSize = CGFloat((args["labelFontSize"] as? NSNumber)?.doubleValue ?? 12)
+    iconSize = CGFloat((args["iconSize"] as? NSNumber)?.doubleValue ?? 22)
+    labelsBox.frame = frame
+    labelsBox.backgroundColor = .clear
+    labelsBox.isUserInteractionEnabled = false
+    if !labelStrings.isEmpty || !iconNames.isEmpty {
+      buildItems(labelStrings)
+      host.addSubview(labelsBox)   // 加在玻璃**之上**
+    }
+
     channel.setMethodCallHandler { [weak self] call, result in
       guard let self else { result(nil); return }
       switch call.method {
@@ -275,6 +324,79 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
   }
 
   func view() -> UIView { host }
+
+  // ── 原生文案的三个小函数 ────────────────────────────────────────────────
+
+  /// 每格一个视图：底栏是"图标 + 文字"竖排，分段控件只有一个字。
+  private func buildItems(_ strings: [String]) {
+    for i in 0..<count {
+      let label = UILabel()
+      label.text = i < strings.count ? strings[i] : nil
+      label.textAlignment = .center
+      label.numberOfLines = 1
+      itemLabels.append(label)
+
+      if !iconNames.isEmpty {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.image = symbol(iconNames[safe: i], selected: i == index)
+        itemIcons.append(iv)
+        let stack = UIStackView(arrangedSubviews: [iv, label])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 4
+        itemViews.append(stack)
+      } else {
+        itemViews.append(label)
+      }
+      labelsBox.addSubview(itemViews[i])
+    }
+    applyColors()
+  }
+
+  /// SF Symbol（选中时用粗一号 —— 苹果自己的底栏就是这么做的）。
+  private func symbol(_ name: String?, selected: Bool) -> UIImage? {
+    guard let name else { return nil }
+    let conf = UIImage.SymbolConfiguration(
+      pointSize: iconSize, weight: selected ? .semibold : .regular)
+    return UIImage(systemName: name, withConfiguration: conf)
+  }
+
+  private func layoutItems(in bounds: CGRect) {
+    guard !itemViews.isEmpty else { return }
+    labelsBox.frame = bounds
+    let w = bounds.width / CGFloat(count)
+    for i in 0..<count {
+      let cell = CGRect(x: w * CGFloat(i), y: 0, width: w, height: bounds.height)
+      let v = itemViews[i]
+      if let stack = v as? UIStackView {
+        // ⚠️ **不许用 `sizeToFit()`**：对 UIStackView 它算出的是零尺寸（它不是普通视图，
+        // 布局要问 Auto Layout）—— 症状是**整格什么都不显示**（底栏那 5 个图标+文字全没了，
+        // 而单位行那种单个 UILabel 的反而正常）。这就是 2026-10-06 那次回归的根因。
+        let fit = stack.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+        stack.bounds = CGRect(origin: .zero, size: fit)
+        stack.center = CGPoint(x: cell.midX, y: cell.midY)
+      } else {
+        v.frame = cell
+      }
+    }
+  }
+
+  /// 选中项：字色 + 图标粗细都换一档（与胶囊滑到哪一格无关，只看"选中"）。
+  private func applyColors() {
+    for i in 0..<itemLabels.count {
+      let on = i == index
+      itemLabels[i].font = .systemFont(ofSize: labelFontSize,
+                                       weight: on ? .semibold : .regular)
+      itemLabels[i].textColor = on ? selectedColor : unselectedColor
+      if i < itemIcons.count {
+        itemIcons[i].image = symbol(iconNames[safe: i], selected: on)
+        // ⚠️ SF Symbol 是**模板图**：不显式给 tintColor 它会用系统蓝（默认 tint），
+        // 于是底栏图标是蓝的而字是橙的 —— 2026-10-06 实拍抓到。
+        itemIcons[i].tintColor = on ? selectedColor : unselectedColor
+      }
+    }
+  }
 
   /// 一格的中心 x（水滴没收到手指坐标时用它兜底）。
   private func cellCenter(_ i: Int, in bounds: CGRect) -> CGFloat {
@@ -333,6 +455,8 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
     }
 
     applyPressLook(pressedIndex != nil)
+    layoutItems(in: bounds)
+    applyColors()
     // 水滴要露面的**那一刻**不能有"从 0 蹦出来"的跳变：先摆好位置再显示
     if dropVisible && drop.isHidden {
       drop.frame = dropTarget
@@ -363,6 +487,7 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
 
   private func setIndex(_ i: Int, animated: Bool) {
     index = min(max(0, i), count - 1)
+    applyColors()        // 选中那一格的字/图标换色（底栏是橙色 + 粗一号）
     dragFraction = nil   // 拖完了：交回"整格"这条轨道
     // 手指刚抬、消息才到：这时**两滴一起滑到新那一格**，落到一起之后再收掉水滴 ——
     // 于是看起来就是"两滴融成了一滴"（而不是"一滴消失、另一滴跳过去"）。
@@ -507,5 +632,74 @@ class GlassPlatformView: NSObject, FlutterPlatformView {
       blue: CGFloat((v >> 8) & 0xFF) / 255,
       alpha: CGFloat(v & 0xFF) / 255
     )
+  }
+}
+
+// MARK: - 开关（iOS 26 的液态玻璃开关就是系统 UISwitch 本身）
+
+class GlassSwitchViewFactory: NSObject, FlutterPlatformViewFactory {
+  private let messenger: FlutterBinaryMessenger
+  init(messenger: FlutterBinaryMessenger) { self.messenger = messenger; super.init() }
+
+  func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
+    return FlutterStandardMessageCodec.sharedInstance()
+  }
+
+  func create(withFrame frame: CGRect, viewIdentifier viewId: Int64,
+              arguments args: Any?) -> FlutterPlatformView {
+    GlassSwitchView(frame: frame, viewId: viewId, messenger: messenger,
+                    args: args as? [String: Any] ?? [:])
+  }
+}
+
+class GlassSwitchView: NSObject, FlutterPlatformView {
+  private let host = GlassHostView()
+  private let toggle = UISwitch()
+  private let channel: FlutterMethodChannel
+  /// 正在被 Flutter 侧同步值：这时不要回发 `changed`，否则来回弹（经典回声）
+  private var applyingFromDart = false
+
+  init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, args: [String: Any]) {
+    channel = FlutterMethodChannel(
+      name: "lianleme/switch/\(viewId)", binaryMessenger: messenger)
+    super.init()
+
+    toggle.isOn = (args["value"] as? Bool) ?? false
+    if let hex = args["onColor"] as? String, let c = GlassPlatformView.color(hex) {
+      toggle.onTintColor = c   // iOS 26 上系统会按玻璃自己调，给了也只是"尽量"
+    }
+    toggle.addTarget(self, action: #selector(valueChanged), for: .valueChanged)
+
+    host.frame = frame
+    host.backgroundColor = .clear
+    host.addSubview(toggle)
+    host.onLayout = { [weak self] bounds in
+      guard let self else { return }
+      self.toggle.sizeToFit()
+      self.toggle.center = CGPoint(x: bounds.midX, y: bounds.midY)
+    }
+
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self else { result(nil); return }
+      switch call.method {
+      case "setValue":
+        let v = (call.arguments as? [String: Any]).flatMap { $0["value"] as? Bool } ?? false
+        if self.toggle.isOn != v {
+          self.applyingFromDart = true
+          self.toggle.setOn(v, animated: false)
+          self.applyingFromDart = false
+        }
+        result(nil)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  func view() -> UIView { host }
+
+  @objc private func valueChanged() {
+    guard !applyingFromDart else { return }
+    channel.invokeMethod("changed", arguments: ["value": toggle.isOn])
   }
 }

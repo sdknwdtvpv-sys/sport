@@ -73,6 +73,7 @@ class ProgressData {
     required this.weekWorkouts,
     this.unit = WeightUnit.kg,
     this.weekSetsByMuscle = const <({String muscleGroup, int sets})>[],
+    this.daysSinceLastPr = const <String, int>{},
   });
 
   /// 最近 7 天（含今天），没练的那天是 0
@@ -80,6 +81,12 @@ class ProgressData {
 
   /// 练过的动作的历史最佳，按数值降序
   final List<ExercisePr> prs;
+
+  /// 动作 id → **距最后一次破纪录多少天**（第二部分第 4 条"PR 墙"补的那一列）。
+  ///
+  /// 从没破过纪录的动作**不在表里** —— 界面据此显示「还没有纪录」，
+  /// 而不是假装"0 天前刷新过"。
+  final Map<String, int> daysSinceLastPr;
 
   /// 这 7 天练了几次
   final int weekWorkouts;
@@ -275,6 +282,7 @@ ProgressData buildProgress({
           ? const <({String muscleGroup, int sets})>[]
           : weeklySetsByMuscle(
               sets: sets, muscleOf: muscleOf, today: today),
+      daysSinceLastPr: daysSinceLastPr(sets: sets, day: today),
     );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -419,4 +427,56 @@ int totalWorkouts(List<SetRecord> sets) {
     ids.add(s.workoutId);
   }
   return ids.length;
+}
+
+/// **距上次破纪录多少天**（第二部分第 4 条"PR 墙"的最后一列，2026-10-06）。
+///
+/// "每个动作的历史最佳"这一栏 PR 墙早就有（`ExercisePr`）。缺的是**时间**：
+/// 一个 68 kg 的卧推摆在那儿，是上周刚破的还是半年前破的，是完全不同的两件事 ——
+/// 前者说明还在涨，后者说明该换计划了。这个函数把那个时间补上。
+///
+/// 口径与 `_weekPrs` / `badgeStatuses` 的破纪录判定**完全一致**（自己按时间扫一遍，
+/// 不看 `is_pr` 那一列 —— 领域模型上没有它）：
+///   * 有重量比公斤数，自重比次数（引体向上的纪录不可能是公斤）；
+///   * **平了不算破纪录**（相同成绩不记一次新的）。
+///
+/// 返回 `exerciseId → 距最后一次破纪录的天数`。**从没破过纪录的动作不在表里**
+/// （调用方据此显示「还没有纪录」而不是"0 天前"——那是两件事）。
+Map<String, int> daysSinceLastPr({
+  required List<SetRecord> sets,
+  required DateTime day,
+}) {
+  final List<SetRecord> chrono = sets.toList()
+    ..sort((SetRecord a, SetRecord b) => a.completedAtMs.compareTo(b.completedAtMs));
+  final Map<String, double> best = <String, double>{};
+  final Map<String, int> lastPrMs = <String, int>{};
+  for (final SetRecord s in chrono) {
+    final double v =
+        (s.weightKg == null || s.weightKg! <= 0) ? s.reps.toDouble() : s.weightKg!;
+    final double? prev = best[s.exerciseId];
+    if (prev != null && v > prev) {
+      lastPrMs[s.exerciseId] = s.completedAtMs; // 这一组破了纪录
+    }
+    if (prev == null || v > prev) best[s.exerciseId] = v;
+  }
+  final DateTime today = DateTime(day.year, day.month, day.day);
+  final Map<String, int> out = <String, int>{};
+  lastPrMs.forEach((String id, int ms) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(ms);
+    final int days =
+        today.difference(DateTime(t.year, t.month, t.day)).inDays;
+    out[id] = days < 0 ? 0 : days; // 未来时间的记录按 0 天算（时钟被调过）
+  });
+  return out;
+}
+
+/// 那一行的文案。**没有纪录时返回 null**（调用方不显示这一行，而不是显示"0 天"）。
+String? lastPrLabel(Map<String, int> daysSince, String exerciseId) {
+  final int? d = daysSince[exerciseId];
+  if (d == null) return null;
+  if (d == 0) return '今天刚刷新';
+  if (d == 1) return '昨天刷新';
+  if (d < 30) return '$d 天前刷新';
+  if (d < 365) return '${d ~/ 30} 个月前刷新';
+  return '${d ~/ 365} 年前刷新';
 }

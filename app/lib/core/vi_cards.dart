@@ -13,6 +13,12 @@ import 'glass_segmented.dart';
 import 'glass_surface.dart';
 import 'theme.dart';
 
+/// `Color` → `#RRGGBB`（原生按这个解析）
+String _hexOf(Color c) {
+  final int v = c.toARGB32() & 0xFFFFFF;
+  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
 /// 卡片：`surface` 底 + **白 6% 描边** + `rCard` 圆角。
 ///
 /// 描边用半透明白而不是实心灰，是界面稿的做法：叠在任何一层背景上都自动对
@@ -180,6 +186,11 @@ class ViSegmented extends StatelessWidget {
       itemWidth: itemWidth,
       height: _glassHeight,
       itemBuilder: _item,
+      // 字交给原生画（玻璃里面）：Flutter 那份在玻璃背后会被折射出第二份虚影
+      labels: labels,
+      selectedColor: _hexOf(Tokens.text),
+      unselectedColor: _hexOf(Tokens.text2),
+      labelFontSize: 12,
     );
 
     if (!glass) {
@@ -233,10 +244,20 @@ class ViSegmented extends StatelessWidget {
 /// 细进度条（打卡进度、周目标那种）。**必须夹到 0..1**：调用方算错比例时
 /// 宁可画满，也不要画到框外面去。
 class ViProgressBar extends StatelessWidget {
-  const ViProgressBar({super.key, required this.value, this.height = 6});
+  const ViProgressBar({
+    super.key,
+    required this.value,
+    this.height = 6,
+    this.color = Tokens.accent,
+  });
 
   final double value;
   final double height;
+
+  /// 进度条的填充色。**默认是主色**，只有"四条收集线并排"那种场合才传别的色
+  /// （A1 的线奖励，2026-10-06）—— 一屏里出现两条不同颜色的进度条而没有任何理由，
+  /// 读起来就是"这两个不是一回事"，所以别随手传。
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +269,7 @@ class ViProgressBar extends StatelessWidget {
           Container(height: height, color: Tokens.elevated),
           FractionallySizedBox(
             widthFactor: v,
-            child: Container(height: height, color: Tokens.accent),
+            child: Container(height: height, color: color),
           ),
         ],
       ),

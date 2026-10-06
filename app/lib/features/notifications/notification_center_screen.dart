@@ -57,86 +57,214 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Tokens.bg,
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
-                child: Row(
-                  children: <Widget>[
-                    SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: IconButton(
-                        key: const Key('notifications-back'),
-                        padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.chevron_left, color: Tokens.text2),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    const SizedBox(width: Tokens.s3),
-                    const Expanded(
-                      child: Text('消息通知',
-                          style: TextStyle(
-                              color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
-                    ),
-                    // 有一封未读才给这个入口（没有未读时它是个点不动的摆设）
-                    if (_unread > 0)
-                      TextButton(
-                        key: const Key('notifications-mark-all'),
-                        onPressed: _markAllRead,
-                        child: const Text('全部已读',
-                            style: TextStyle(color: Tokens.accent, fontSize: 14)),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: Tokens.s3),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Tokens.s5),
-                child: Row(
-                  children: <Widget>[
-                    for (final (String? kind, String label) in <(String?, String)>[
-                      (null, '全部'),
-                      (NotificationKind.achievement, NotificationKind.label(NotificationKind.achievement)),
-                      (NotificationKind.reminder, NotificationKind.label(NotificationKind.reminder)),
-                      (NotificationKind.backup, NotificationKind.label(NotificationKind.backup)),
-                    ])
-                      Padding(
-                        padding: const EdgeInsets.only(right: Tokens.s2),
-                        child: choicePill(
-                          key: Key('notif-filter-${label}'),
-                          label: label,
-                          active: _kind == kind,
-                          onTap: () {
-                            setState(() => _kind = kind);
-                            _load();
-                          },
+              Column(
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+                    child: Row(
+                      children: <Widget>[
+                        SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: IconButton(
+                            key: const Key('notifications-back'),
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(Icons.chevron_left, color: Tokens.text2),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
                         ),
-                      ),
-                  ],
+                        const SizedBox(width: Tokens.s3),
+                        const Expanded(
+                          child: Text('消息通知',
+                              style: TextStyle(
+                                  color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
+                        ),
+                        // 「全部已读」**不在标题栏**了（2026-10-06 用户备忘条第 6 条：
+                        // "全部已读放在这个页面最下面 做一个悬浮胶囊"）—— 见页面底部那颗胶囊。
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: Tokens.s3),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: Tokens.s5),
+                    child: Row(
+                      children: <Widget>[
+                        for (final (String? kind, String label) in <(String?, String)>[
+                          (null, '全部'),
+                          (NotificationKind.achievement,
+                              NotificationKind.label(NotificationKind.achievement)),
+                          (NotificationKind.reminder,
+                              NotificationKind.label(NotificationKind.reminder)),
+                          (NotificationKind.backup,
+                              NotificationKind.label(NotificationKind.backup)),
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: Tokens.s2),
+                            child: choicePill(
+                              key: Key('notif-filter-$label'),
+                              label: label,
+                              active: _kind == kind,
+                              onTap: () {
+                                setState(() => _kind = kind);
+                                _load();
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: Tokens.s4),
+                  Expanded(
+                    child: _loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _rows.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  '还没有消息。\n成就解锁、错过的提醒、备份结果都会记在这里。',
+                                  key: Key('notifications-empty'),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: Tokens.text3, fontSize: 14, height: 1.6),
+                                ),
+                              )
+                            : ListView.separated(
+                                // 底部多留一截：那颗悬浮胶囊不能把最后一条压住
+                                padding: EdgeInsets.fromLTRB(
+                                    Tokens.s5, 0, Tokens.s5, Tokens.s5 + 56),
+                                itemCount: _rows.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: Tokens.s3),
+                                itemBuilder: (BuildContext context, int i) =>
+                                    _tile(_rows[i]),
+                              ),
+                  ),
+                ],
+              ),
+              // 「全部已读」：一颗**悬浮胶囊**（有一封未读才出现 —— 没有未读时它是个摆设）
+              if (_unread > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: Tokens.s4,
+                  child: Center(child: _markAllCapsule()),
                 ),
+            ],
+          ),
+        ),
+      );
+
+  /// 点一条 → **详情弹层**（用户 2026-10-06 的备忘条第 5 条："消息通知没办法点进去看详情"）。
+  ///
+  /// 列表里只放得下一行正文，而"解锁了哪个成就 / 备份成没成 / 提醒是什么时候"这些
+  /// 恰恰是用户点进来想看的。弹层里给：完整正文 + 分类 + **绝对时间**（列表里只有相对时间，
+  /// 想核对"到底哪天"时相对时间是不够的）+ 一条"知道了"。
+  /// 顺手把这条标为已读（点开就是读过 —— 这条消息的意义已经被读到了）。
+  Future<void> _openDetail(AppNotificationData n) async {
+    if (n.readAtMs == null) {
+      await widget.repository.markRead(n.id);
+      if (mounted) await _load();
+    }
+    if (!mounted) return;
+    final DateTime at = DateTime.fromMillisecondsSinceEpoch(n.createdAtMs);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Tokens.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.rCard)),
+      ),
+      builder: (BuildContext ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s5, Tokens.s5, Tokens.s4),
+          child: Column(
+            key: const Key('notification-detail'),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Tokens.elevated,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(_iconFor(n.kind), color: _colorFor(n.kind), size: 18),
+                  ),
+                  const SizedBox(width: Tokens.s3),
+                  Expanded(
+                    child: Text(
+                      NotificationKind.label(n.kind),
+                      style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                    ),
+                  ),
+                  Text(
+                    '${at.year}-${_two(at.month)}-${_two(at.day)} ${_two(at.hour)}:${_two(at.minute)}',
+                    key: const Key('notification-detail-time'),
+                    style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                  ),
+                ],
               ),
               const SizedBox(height: Tokens.s4),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _rows.isEmpty
-                        ? const Center(
-                            child: Text(
-                              '还没有消息。\n成就解锁、错过的提醒、备份结果都会记在这里。',
-                              key: Key('notifications-empty'),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Tokens.text3, fontSize: 14, height: 1.6),
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(
-                                Tokens.s5, 0, Tokens.s5, Tokens.s5),
-                            itemCount: _rows.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: Tokens.s3),
-                            itemBuilder: (BuildContext context, int i) => _tile(_rows[i]),
-                          ),
+              Text(n.title,
+                  style: const TextStyle(
+                      color: Tokens.text, fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: Tokens.s2),
+              Text(n.body,
+                  style: const TextStyle(color: Tokens.text2, fontSize: 14, height: 1.6)),
+              const SizedBox(height: Tokens.s5),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton(
+                  key: const Key('notification-detail-close'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Tokens.elevated,
+                    foregroundColor: Tokens.text,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Tokens.rPill),
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('知道了'),
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _two(int v) => v.toString().padLeft(2, '0');
+
+  /// 底部那颗「全部已读」胶囊（与主按钮同一套语言：主色实心 + 深墨字）。
+  Widget _markAllCapsule() => GestureDetector(
+        key: const Key('notifications-mark-all'),
+        onTap: _markAllRead,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: Tokens.s5, vertical: 13),
+          decoration: BoxDecoration(
+            color: Tokens.accent,
+            borderRadius: BorderRadius.circular(Tokens.rPill),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Tokens.accent.withValues(alpha: 0.28),
+                blurRadius: 18,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.done_all, size: 18, color: Tokens.accentInk),
+              SizedBox(width: Tokens.s2),
+              Text('全部已读',
+                  style: TextStyle(
+                      color: Tokens.accentInk, fontSize: 15, fontWeight: FontWeight.w700)),
             ],
           ),
         ),
@@ -147,6 +275,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     return ViCard(
       key: Key('notification-${n.id}'),
       padding: const EdgeInsets.all(Tokens.s4),
+      // 点得进去看详情（用户 2026-10-06 的备忘条第 5 条：现在点不动，
+      // 而"解锁了哪个成就 / 备份成没成"这些细节在列表里是看不全的）
+      onTap: () => _openDetail(n),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

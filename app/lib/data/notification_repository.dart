@@ -103,6 +103,16 @@ class NotificationRepository {
     return r.read(c) ?? 0;
   }
 
+  /// 只把**一条**标为已读（点进详情弹层时用）。
+  ///
+  /// 与 [markAllRead] 分开是为了"点开哪条就只读哪条" —— 用户点开一条消息，
+  /// 不该顺手把其它未读也变成已读（那等于替他做了决定）。
+  Future<void> markRead(String id, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    await (_db.update(_db.appNotification)..where((t) => t.id.equals(id)))
+        .write(AppNotificationCompanion(readAtMs: Value(now)));
+  }
+
   Future<void> markAllRead({int? nowMs}) async {
     final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
     await (_db.update(_db.appNotification)..where(($AppNotificationTable t) => t.readAtMs.isNull()))

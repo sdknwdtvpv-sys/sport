@@ -14,6 +14,8 @@ import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../progress/streak.dart';
+import '../progress/weekly_report.dart';
+import '../progress/streak_protection.dart';
 import 'today_planner.dart';
 
 /// 「今天不想练」那条约 5 分钟的活动里放哪些动作（2026-10-01）。
@@ -53,7 +55,106 @@ class TodayScreen extends StatelessWidget {
     this.onOpenAchievements,
     this.onOpenNotifications,
     this.unreadNotifications = 0,
+    this.weeklyReport,
+    this.onOpenWeeklyReport,
+    this.muscleBalance,
+    this.comebackNudge,
+    this.protectedInStreak = 0,
+    this.protectionOffer,
+    this.weeklyChallengeLine,
+    this.debugToday,
+    this.onProtectStreak,
   });
+
+  /// **上一周的周报**（第二部分第 1 条，2026-10-06）。
+  ///
+  /// 为 null = 这次不显示周报这一块。**该不该显示由外壳决定**
+  /// （`weekly_report.dart` 的 `shouldShowWeeklyReport()`：周一 / 周二 + 上周练过），
+  /// 这一屏只负责画 —— 判据是纯函数，测试直接打它，不必去改系统时钟。
+  final WeeklyReport? weeklyReport;
+
+  /// 点「做成一张卡」之后去哪（外壳接上分享卡预览）。
+  /// **不在这里直接推页面**：这一屏是可测的纯展示层，导航留给外壳。
+  final VoidCallback? onOpenWeeklyReport;
+
+  /// **回归激励卡**（第二部分第 9 条）。
+  ///
+  /// 它是首页最上面那一块（问候语之下），因为**此刻这条是唯一该做的事**：
+  /// 断了一周的人翻开 App，最不该看到的就是"今天练上肢"。
+  ///
+  /// 卡里就一句话 + 一颗"做 5 分钟活动"的按钮（[onLightWorkout]）——
+  /// 没有"你落后了"、没有天数红字、也没有把连续天数拿出来说事。
+  Widget _comebackCard(String text) => ViCard(
+        key: const Key('comeback-nudge'),
+        glow: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(text,
+                key: const Key('comeback-copy'),
+                style: const TextStyle(color: Tokens.text, fontSize: 14, height: 1.4)),
+            if (onLightWorkout != null) ...<Widget>[
+              const SizedBox(height: Tokens.s3),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  key: const Key('comeback-light'),
+                  onPressed: onLightWorkout,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Tokens.text2,
+                    side: const BorderSide(color: Tokens.line),
+                    padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+                  ),
+                  child: const Text('做 5 分钟活动', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+
+  /// **部位平衡那一行**（第二部分第 5 条）。null = 不显示。
+  /// 判据与文案都在 `muscle_balance.dart`（纯函数）；外壳把动作表查好传进来。
+  final String? muscleBalance;
+
+  /// 首页那一行**本周挑战**（A3 / 第二部分第 3 条"一处实现两处用"）。
+  ///
+  /// 与成就页那块卡**同一份实现**（`weekly_challenge.dart` 的纯函数）：
+  /// 成就页给完整的一块（怎么做、还剩几天、进度条），首页只给一行 ——
+  /// 首页是"今天要做什么"的地方，挑战是"这周顺便做到什么"，给一行就够。
+  ///
+  /// null = 不显示（由外壳按纯函数决定，见 `weeklyChallengeLine()`）。
+  final String? weeklyChallengeLine;
+
+  /// **测试/证据图专用**：把"今天"固定成这一天（null = 真的今天）。
+  ///
+  /// 只影响**问候语那一行日期**与「最近训练」的"今天/昨天"措辞 ——
+  /// 判据与数字都由调用方算好传进来，这一屏本来就不算任何东西。
+  /// 留这个口子的原因很实际：证据图里必须出现"（其中 N 天是补签）"，
+  /// 而那要求"昨天恰好是那个洞"，日子不是每天都能撞上的
+  /// （第一版图里就因此出现"写着 10 月 12 日、抬头却是 10 月 6 日"的自相矛盾）。
+  final DateTime? debugToday;
+
+  /// 当前这条链里有几天是**补签**撑住的（0 = 没有）。第二部分第 2 条。
+  ///
+  /// 连续天数里含补签却不写出来 = 假话，所以 [streak] 与它必须一起给。
+  /// 算它的函数（`protectedDaysInStreak`）在外壳那一侧，用的是与 [streak] 同一份记录 ——
+  /// 两处各算一遍的话，"连续 12 天"与"其中 1 天是补签"迟早会对不上。
+  final int protectedInStreak;
+
+  /// **现在能补签**时的信息（null = 不给补）。判据在
+  /// `streak_protection.dart` 的 `protectionOffer()`（纯函数），外壳算好传进来。
+  final StreakProtectionOffer? protectionOffer;
+
+  /// 点了「补签保护」。外壳负责写库 + 刷新（这一屏不碰数据层）。
+  final VoidCallback? onProtectStreak;
+
+  /// **回归激励那一句**（第二部分第 9 条）。null = 不显示。
+  ///
+  /// 文案由 `comeback.dart` 的 `comebackCopy()` 给（纯函数：几天没练、到没到 7 天）。
+  /// 它出现时，轻量入口（5 分钟活动）会**一起搬到最上面** ——
+  /// 断了一周的人需要的是一条不可能失败的路，不是一整场训练。
+  final String? comebackNudge;
 
   /// **今天的安排**（2026-10-04 加）—— 首页中间那一块。
   ///
@@ -157,17 +258,32 @@ class TodayScreen extends StatelessWidget {
         // 「接着练」永远排最上面：此刻用户是"我刚才在练"，接着练是他唯一该做的事
         if (onResume != null) _resumeCard(),
         _greeting(),
+        // 回归激励（第二部分第 9 条）：**断 7 天以上才出现**，出现时把那条
+        // 轻量入口一起搬上来（见 `_comebackCard`）。
+        if (comebackNudge != null) ...<Widget>[
+          const SizedBox(height: Tokens.s4),
+          _comebackCard(comebackNudge!),
+        ],
         const SizedBox(height: Tokens.s4),
         _streakCard(),
+        if (weeklyChallengeLine != null) ...<Widget>[
+          const SizedBox(height: Tokens.s3),
+          _weeklyChallengeLine(weeklyChallengeLine!),
+        ],
         const SizedBox(height: Tokens.s3),
-        // 今日训练：清单 + 「换一批」+ **主按钮**（都在卡里）
+        // 今日训练：**卡里只有清单与「换一批」**
         _TodayPlanCard(
           plan: todayPlan,
           label: todayLabel,
           onReroll: onReroll,
           onOpen: onSeePlan,
-          footer: _startButton(),
         ),
+        // 主按钮是**卡外**的一颗大胶囊（用户 2026-10-06 的备忘条第 1 条：
+        // "开始今天的训练是一个大胶囊 放在训练计划的方框外"）。
+        // 2026-10-05 曾把它移进卡里（"练什么"和"开始"合成一件事），真机用下来
+        // 反倒是"它像清单的一部分"——`docs/screens.md` 当初就写了"觉得别扭就挪回来"。
+        const SizedBox(height: Tokens.s4),
+        _startButton(),
         if (onPlanHelp != null) ...<Widget>[
           const SizedBox(height: Tokens.s2),
           Center(
@@ -181,6 +297,20 @@ class TodayScreen extends StatelessWidget {
         ],
         const SizedBox(height: Tokens.s4),
         _quickEntries(),
+        // 周报（第二部分第 1 条，2026-10-06）：**只在周一 / 周二**出现，
+        // 而且上一周至少练过一次（判据在 `weekly_report.dart` 的 `shouldShowWeeklyReport`，
+        // 由外壳算好传进来）。位置在"快速入口"之后、"最近训练"之前：
+        // 它是"回顾"，不是"今天要做什么"。
+        if (weeklyReport != null && !weeklyReport!.isEmpty) ...<Widget>[
+          const SizedBox(height: Tokens.s4),
+          _weeklyReportCard(weeklyReport!),
+        ],
+        // 部位平衡提示（第二部分第 5 条）：**只陈述事实**的一行，
+        // 没有任何值得说的就不出现（判据在 `muscle_balance.dart`，纯函数）。
+        if (muscleBalance != null) ...<Widget>[
+          const SizedBox(height: Tokens.s3),
+          _muscleBalanceLine(muscleBalance!),
+        ],
         if (recent.isNotEmpty) ...<Widget>[
           const SizedBox(height: Tokens.s5),
           _recentBlock(),
@@ -200,7 +330,7 @@ class TodayScreen extends StatelessWidget {
   /// VI 里那行问候带着用户名，我们没有用户体系，印一句假名字比不印更糟。
   Widget _greeting() {
     const List<String> weekdays = <String>['一', '二', '三', '四', '五', '六', '日'];
-    final DateTime now = DateTime.now();
+    final DateTime now = debugToday ?? DateTime.now();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: <Widget>[
@@ -270,7 +400,14 @@ class TodayScreen extends StatelessWidget {
   Widget _streakCard() {
     final int? next = nextStreakMilestone(streak);
     final double progress = next == null ? 1 : (streak / next).clamp(0.0, 1.0);
+    // 连续天数里若含补签，**必须写出来**（"其中 N 天是补签"）——
+    // 不写就等于告诉用户"这些天我天天都练了"。判据与文案都在 streak_protection.dart，
+    // 数由外壳用**同一份记录**一起算好传进来（这一屏不碰数据层）。
+    final String label = streak > 0
+        ? streakLabelWithProtection(streak, protectedInStreak)
+        : '打卡';
     return ViCard(
+      key: const Key('streak-card'),
       glow: streak > 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,15 +416,40 @@ class TodayScreen extends StatelessWidget {
             children: <Widget>[
               const Icon(Icons.local_fire_department, color: Tokens.accent, size: 18),
               const SizedBox(width: Tokens.s2),
-              Text(streak > 0 ? '已连续打卡 $streak 天' : '打卡',
-                  style: const TextStyle(
-                      color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+              Expanded(
+                child: Text(label,
+                    key: const Key('streak-label'),
+                    style: const TextStyle(
+                        color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
             ],
           ),
           if (streakCopy != null) ...<Widget>[
             const SizedBox(height: Tokens.s2),
             Text(streakCopy!,
                 style: const TextStyle(color: Tokens.text2, fontSize: 12, height: 1.4)),
+          ],
+          // 补签保护（第二部分第 2 条）：**只在"恰好断了一天 + 本周练过 + 本周没补过"
+          // 时才出现**，而且用一句话说清代价与"每周一次"。
+          if (protectionOffer != null && onProtectStreak != null) ...<Widget>[
+            const SizedBox(height: Tokens.s3),
+            Text(protectionOffer!.label,
+                key: const Key('protection-offer'),
+                style: const TextStyle(color: Tokens.text2, fontSize: 12, height: 1.4)),
+            const SizedBox(height: Tokens.s2),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                key: const Key('protect-streak'),
+                onPressed: onProtectStreak,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Tokens.text2,
+                  side: const BorderSide(color: Tokens.line),
+                  padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+                ),
+                child: const Text('补签保护这一天', style: TextStyle(fontSize: 13)),
+              ),
+            ),
           ],
           if (next != null) ...<Widget>[
             const SizedBox(height: Tokens.s3),
@@ -297,6 +459,105 @@ class TodayScreen extends StatelessWidget {
       ),
     );
   }
+
+  /// **本周挑战那一行**（A3 的首页入口 / 第二部分第 3 条"一处实现两处用"）。
+  ///
+  /// 刻意只给**一行**（图标 + 文案）：成就页那块卡已经把事情说全了，
+  /// 首页再多一块卡只会把"今天的安排"往下挤 —— 而那一块才是这一屏的主角。
+  Widget _weeklyChallengeLine(String text) => Row(
+        key: const Key('weekly-challenge-line'),
+        children: <Widget>[
+          const Icon(Icons.flag_outlined, color: Tokens.text3, size: 16),
+          const SizedBox(width: Tokens.s2),
+          Expanded(
+            child: Text(text,
+                style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+          ),
+        ],
+      );
+
+  /// **周报卡**（第二部分第 1 条，2026-10-06 拍板）。
+  ///
+  /// 只在周一 / 周二出现（外壳按 `shouldShowWeeklyReport()` 传进来），内容全是算出来的：
+  /// 次数 / 天数 / 组数 / 吨数 + 一句 `headline` + 破纪录与徽章的"额外收获"。
+  ///
+  /// "做成一张卡"走的是**现有那套分享卡**（抓成 PNG / 存相册 / 剪贴板），
+  /// 不联网、不上传 —— 这是第二部分开头那三条红线的第 1 条与第 9 条。
+  Widget _weeklyReportCard(WeeklyReport r) {
+    final List<String> extras = <String>[
+      if (r.prs.isNotEmpty) '刷新 ${r.prs.length} 项纪录',
+      if (r.badgesUnlocked > 0) '新徽章 ${r.badgesUnlocked} 枚',
+      if (r.distanceM >= 1000) '${(r.distanceM / 1000).toStringAsFixed(1)} 公里',
+    ];
+    return ViCard(
+      key: const Key('weekly-report'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.insights, color: Tokens.accent, size: 18),
+              const SizedBox(width: Tokens.s2),
+              const Expanded(
+                child: Text('上周小结',
+                    style: TextStyle(
+                        color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+              ),
+              Text(r.rangeLabel,
+                  key: const Key('weekly-report-range'),
+                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: Tokens.s3),
+          Text(r.headline,
+              key: const Key('weekly-report-headline'),
+              style: const TextStyle(color: Tokens.text, fontSize: 14, height: 1.4)),
+          const SizedBox(height: Tokens.s2),
+          Text(r.statsLine,
+              key: const Key('weekly-report-stats'),
+              style: const TextStyle(color: Tokens.text3, fontSize: 12, height: 1.4)),
+          if (extras.isNotEmpty) ...<Widget>[
+            const SizedBox(height: Tokens.s2),
+            Text(extras.join(' · '),
+                style: const TextStyle(color: Tokens.text2, fontSize: 12)),
+          ],
+          if (onOpenWeeklyReport != null) ...<Widget>[
+            const SizedBox(height: Tokens.s3),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                key: const Key('weekly-report-share'),
+                onPressed: onOpenWeeklyReport,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Tokens.text2,
+                  side: const BorderSide(color: Tokens.line),
+                  padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+                ),
+                child: const Text('做成一张卡', style: TextStyle(fontSize: 13)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// **部位平衡那一行**（第二部分第 5 条）。
+  ///
+  /// 刻意**做成一行小字**而不是一张卡：这是"看一眼就知道"的信息，
+  /// 给它一张卡就等于把它抬成和"今天的安排"同级的事 —— 而它不配。
+  /// 文案由 `muscleBalanceHint()` 给（纯函数，含"没练过的部位"那条判据）。
+  Widget _muscleBalanceLine(String text) => Row(
+        key: const Key('muscle-balance'),
+        children: <Widget>[
+          const Icon(Icons.balance, color: Tokens.text3, size: 16),
+          const SizedBox(width: Tokens.s2),
+          Expanded(
+            child: Text(text,
+                style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+          ),
+        ],
+      );
 
   /// 快速入口四宫格（新 VI）。
   ///
@@ -351,7 +612,7 @@ class TodayScreen extends StatelessWidget {
   /// 最近训练（新 VI）。**最多三条** —— 首页不是历史页，看全量去「数据」。
   Widget _recentBlock() {
     String when(DateTime d) {
-      final DateTime now = DateTime.now();
+      final DateTime now = debugToday ?? DateTime.now();
       final DateTime today0 = DateTime(now.year, now.month, now.day);
       final DateTime d0 = DateTime(d.year, d.month, d.day);
       final int diff = today0.difference(d0).inDays;
@@ -462,11 +723,7 @@ class TodayScreen extends StatelessWidget {
 ///   * 动作值用的是引擎已经算好的 `loadLabel`（"62.5 kg × 8"），不是动作库默认值。
 class _TodayPlanCard extends StatelessWidget {
   const _TodayPlanCard(
-      {required this.plan, this.label, this.onReroll, this.onOpen, this.footer});
-
-  /// 卡底的**主按钮**（2026-10-05 移进来，与新 VI 一致：
-  /// "今天练什么"和"开始"本来就是一件事，分成两块反而让人多找一次）。
-  final Widget? footer;
+      {required this.plan, this.label, this.onReroll, this.onOpen});
 
   final List<PlannedExercise> plan;
   final String? label;
@@ -569,10 +826,6 @@ class _TodayPlanCard extends StatelessWidget {
               child: Text('…还有 ${plan.length - head.length} 个',
                   style: const TextStyle(color: Tokens.text3, fontSize: 12)),
             ),
-          if (footer != null) ...<Widget>[
-            const SizedBox(height: Tokens.s4),
-            footer!,
-          ],
         ],
       ),
     );
