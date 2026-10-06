@@ -268,7 +268,7 @@ adb shell dumpsys deviceidle whitelist -com.sdknwdtvpv.lianleme
 | ~~默认休息时长不可配~~（已完成） | S10 加了偏好；默认「跟随动作」，用户选具体值才全局覆盖 |
 | ~~S6 动作切换、S9 全部数据未做~~（已完成） | S6 修掉了死的底部条并加了左右滑动；S9 是新的二级页 |
 | S3/S4/S5 未打磨 | 手感问题要等真机使用才知道 |
-| **账号体系：切版前要做的四件事**（功能已完成，见 `docs/plan-account-login.md`） | ① **服务端**要有 `/etc/lianleme/mail.env`（root 0600）填好 SMTP 与 `LIANLEME_AUTH_SECRET`，否则账号入口会出现、注册却发不出验证码（`server/deploy/README.md` 有一节专门写它）；② **CHANGELOG 顶栏**要记这一批（账号页、政策与两张商店表单的改写），切版时和版本号一起做；③ **三套商店截图**要重出（「我 → 数据与备份」多了一行「账号」；账号页本身也该进截图）；④ **真机走一遍**注册 → 登录 → 改口令 → 注销（今天只有跑道里的真后端 e2e 测试，没有真机 + 真 SMTP 的证据） |
+| **账号体系：切版时做了哪些、还剩哪些** | ✅ 已做：**CHANGELOG**（v1.56.0 那一节）、**出包**（v1.56.0，三个 define 齐全）、**装真机**（Redmi `75caf509`，冷启动干净）、**真机拍到了账号页**（`docs/images/v156-account-page-redmi.png`）。⏳ 还剩：① **服务端升级** —— 线上还是老版本，`/v1/auth/*` 回 401；命令在 `docs/backend-hosting.md` §四之三，验收判据是 `/healthz` 多出 `binds`/`tokens`（这一步要你的 SSH 凭据，我这边没有）；② **账号流程的真机走查**（注册 → 登录 → 改口令 → 注销）—— 它**卡在 ①**，服务端升级 + SMTP 填好之后才能走，而且要一台能收信的邮箱；③ **三套商店截图重出** —— 「我 → 数据与备份」多了一行「账号」，现在那三套里没有它（`tool/check-screenshots.mjs` 只核齐不齐/尺寸/夹带，**核不出内容过期**，所以它不会替我们拦）|
 | 账号埋点还没加 | 见 `docs/plan-account-login.md` §十末：值得加（"有多少人愿意注册"），但一次要动事件数/政策/商店表单，留给下一次切版 |
 | 云备份那条通道仍在用 `account_id` 当凭据 | 服务端两种都认（令牌与 `account_id`）。收紧成"只用令牌"的收益是注销后老凭据立刻失效；代价是动 `backup_transport` 的每一处调用与测试 |
 | `tool/check-doc-facts.mjs` 的真检查没接进门禁 | **既有欠账**（只有 `--selftest` 在跑）：文档里的"22 类事件 / 7 个公共字段 / schemaVersion"这些数字目前**没人每次核**。补一条 `node tool/check-doc-facts.mjs` 到 `verify.sh` 即可（`check-guards-wired` 一直以为它已经在跑） |
