@@ -326,8 +326,9 @@ class TodayScreen extends StatelessWidget {
     );
   }
 
-  /// 顶部那两行：今天 + 日期。**没有账号，所以不写"下午好，某某"**——
-  /// VI 里那行问候带着用户名，我们没有用户体系，印一句假名字比不印更糟。
+  /// 顶部那两行：今天 + 日期。**不写"下午好，某某"**——
+  /// VI 里那行问候带着用户名，而我们既没有昵称、账号本身也是可选的
+  /// （2026-10-06 起有邮箱+口令登录，但邮箱不是拿来问候的），印一句假名字比不印更糟。
   Widget _greeting() {
     const List<String> weekdays = <String>['一', '二', '三', '四', '五', '六', '日'];
     final DateTime now = debugToday ?? DateTime.now();

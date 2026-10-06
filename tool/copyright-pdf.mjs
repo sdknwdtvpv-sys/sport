@@ -427,12 +427,24 @@ const CHECKLIST = 'docs/release-checklist.md';
 // 说明书是「N 个源文件 / M 行」。第一版守卫照抄了说明书那套措辞，于是对 checklist 永远
 // 匹配不上、直接报"找不到" —— 两种措辞都得认。
 const FULL_RE = /(\d+) 个(?:源)?文件 \/ ([\d,]+) 行 \/ 全文 ([\d,]+) 页/g;
+/**
+ * **同一批数字的另一种措辞**：「源程序 283 文件 / 77,332 行 / 1547 页」
+ * （`release-checklist` 里 `dist/` 内容那一行就是这么写的）。
+ *
+ * ⚠️ 为什么补这一条：原来只认「N 个源文件 / M 行 / 全文 P 页」那一种写法，
+ * 于是 dist 那一行**漂了两轮都没人发现**（2026-10-06 一次改名时它正写着 77,215 —— 差两行）。
+ * 一个只认一种措辞的守卫，等于给另一种措辞开了后门。
+ */
+const ALT_RE = /源程序\s+([\d,]+)\s+文件\s*\/\s*([\d,]+)\s+行\s*\/\s*([\d,]+)\s+页/g;
 
 /** 纯函数版（自检用）：文本进、问题出，不碰磁盘。 */
 function checkChecklistText(text, fileCount, lineCount, totalPages) {
   const problems = [];
   const hits = [...text.matchAll(FULL_RE)];
-  if (!hits.length) {
+  const altHits = [...text.matchAll(ALT_RE)];
+  // ⚠️ 「找不到」的判据要**两种措辞一起看**：只认第一种的话，一段只有第二种写法的文本
+  // 会被报成"找不到"（自检当场抓到了这个：假数据只写了 dist 那一行）。
+  if (!hits.length && !altHits.length) {
     problems.push(`${CHECKLIST}：找不到「N 个文件 / M 行 / 全文 P 页」（措辞变了？检查要跟着改）`);
     return problems;
   }
@@ -447,6 +459,15 @@ function checkChecklistText(text, fileCount, lineCount, totalPages) {
     if (Number(p.replace(/,/g, '')) !== totalPages) {
       problems.push(`${CHECKLIST}：写的是源程序"全文 ${p} 页"，实际是 ${totalPages} 页`
         + `（= ${lineCount} 行 ÷ 每页 ${PER_PAGE} 行；申请表与鉴别材料要跟着改）`);
+    }
+  }
+  // 另一种措辞（`dist/` 内容那一行）；命中 0 条不算问题 —— 那一行可能被改写掉
+  for (const m of altHits) {
+    const [, n, l, p] = m;
+    if (Number(n.replace(/,/g, '')) !== fileCount || Number(l.replace(/,/g, '')) !== lineCount
+      || Number(p.replace(/,/g, '')) !== totalPages) {
+      problems.push(`${CHECKLIST}：另一种措辞那一行写的是 ${n} 文件 / ${l} 行 / ${p} 页，`
+        + `实际是 ${fileCount} / ${lineCount} / ${totalPages}`);
     }
   }
   return problems;
@@ -475,11 +496,16 @@ if (argv.includes('--selftest')) {
   ok('行数漂了要抓住', lin.length === 1 && /实际是 3 \/ 1234/.test(lin[0]));
   const fil = checkChecklistText(row('9', '1,234', P), F, L, P);
   ok('文件数漂了要抓住', fil.length === 1 && /写的是 9 个文件/.test(fil[0]));
+  // 另一种措辞（dist 内容那一行）也必须有自检 —— 这条正是被漏掉过的那种
+  const altOk = checkChecklistText(`| \`dist/\` 内容 | 源程序 ${F} 文件 / 1,234 行 / ${P} 页 |`, F, L, P);
+  ok('另一种措辞对得上时不出问题', altOk.length === 0);
+  const altBad = checkChecklistText(`| \`dist/\` 内容 | 源程序 ${F} 文件 / 9,999 行 / ${P} 页 |`, F, L, P);
+  ok('另一种措辞漂了要抓住', altBad.length === 1 && /另一种措辞/.test(altBad[0]));
   const miss = checkChecklistText('这一行被改写过了', F, L, P);
   ok('措辞变了要报"找不到"', miss.length === 1 && /找不到/.test(miss[0]));
 
   if (failed) { console.log(`✗ 软著文档数字守卫自检：${failed} 条不过`); process.exit(1); }
-  console.log('✓ 软著文档数字守卫自检 5 条通过（文件数 / 行数 / 页数 / 措辞）');
+  console.log('✓ 软著文档数字守卫自检 7 条通过（文件数 / 行数 / 页数 / 两种措辞 / 措辞改写）');
   process.exit(0);
 }
 

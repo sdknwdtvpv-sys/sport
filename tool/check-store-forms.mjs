@@ -187,37 +187,69 @@ function inspect(root) {
   //
   // 为什么单列一条：`check-store-forms` 此前只核"类别在不在、措辞对不对"，
   // 而 App Privacy 与 Play 数据安全表里真正会判错的是**那两列怎么勾**：
-  // 「是否与身份关联」「是否用于追踪」「是否共享」。而这个 App 的事实是：
-  // **没有账号系统**（user_id 恒为 null，只有随机 device_id）、**没有广告 SDK / 没有 IDFA**、
-  // **不向第三方共享**。所以这几列的答案只能是「否」—— 填成"是"就是在商店里
-  // 自愿多背一条不应有的合规义务（而且与政策正文矛盾）。
+  // 「是否与身份关联」「是否用于追踪」「是否共享」。
+  //
+  // ⚠️ **2026-10-06 前提变了**（账号体系 P1-3）：当时的事实是"没有账号系统"，
+  // 所以那两列只能全是「否」。现在有了**可选**的账号，而注册要**邮箱** ——
+  // 邮箱就是身份本身，把它填成"否"是**假话**，Apple 那边正是一条拒审理由。
+  // 所以判据改成按事实分档（事实在 `privacy-facts.json` 的 `account` 块里）：
+  //
+  //   * 邮箱那一行：与身份关联 = **是**（邮箱就是账号身份），用于追踪 = 否；
+  //   * 其余每一行（匿名 device_id / 使用数据 / 健身数据…）：与身份关联 = 否、用于追踪 = 否；
+  //   * 两张表的"是否共享"：一律 否。
+  //
+  // 判据本身也写成了"读事实"，不是"按字面匹配一句人话" —— 原来那版是从
+  // `user_id.why` 里找「恒为 null / 没有账号」，改一句话就整块失效（这次就是它报的警）。
   {
-    const noAccount = (data.commonFields ?? [])
-      .some((c) => c.name === 'user_id' && /恒为 null|没有账号/.test(c.why ?? ''));
+    const collectsEmail = data.account?.collectsEmail === true;
     const noAdSdk = (data.neverCollected ?? []).some((x) => /广告/.test(x));
-    if (noAdSdk || noAccount) {
-      // App Store 那张表：末两列是「是否与身份关联」「是否用于追踪」
-      const iosRows = ios.split('\n').filter((l) => l.startsWith('| **'));
-      for (const row of iosRows) {
-        const cells = row.split('|').map((c) => c.trim()).filter(Boolean);
-        if (cells.length < 5) continue;
-        for (const [idx, what] of [[3, '是否与身份关联'], [4, '是否用于追踪']]) {
-          if (!/^否/.test(cells[idx].replace(/[*\s]/g, ''))) {
-            problems.push(`store-listing-ios.md 的「${cells[0]}」把「${what}」填成了`
-              + `「${cells[idx]}」—— 事实是${noAccount ? '没有账号系统、' : ''}`
-              + `${noAdSdk ? '没有广告 SDK/IDFA' : ''}，这一列只能是「否」`);
+    const because = `${collectsEmail ? '账号是可选的、注册要邮箱，' : '没有账号系统、'}`
+      + `${noAdSdk ? '没有广告 SDK/IDFA' : ''}`;
+
+    // 邮箱那一行必须**存在**（漏了它就等于没申报）；它的列由下面按行判断
+    const isEmailRow = (name) => /Contact Info|Email|邮箱/i.test(name);
+
+    const iosRows = ios.split('\n').filter((l) => l.startsWith('| **'));
+    for (const row of iosRows) {
+      const cells = row.split('|').map((c) => c.trim()).filter(Boolean);
+      if (cells.length < 5) continue;
+      const emailRow = isEmailRow(cells[0]);
+      // 第 3 列：是否与身份关联
+      {
+        const val = cells[3].replace(/[*\s]/g, '');
+        if (emailRow) {
+          if (!/^是/.test(val)) {
+            problems.push(`store-listing-ios.md 的「${cells[0]}」把「是否与身份关联」填成了`
+              + `「${cells[3]}」—— 邮箱就是账号身份，这一列必须是「是」`
+              + `（填"否"就是假话，而 Apple 的申报是要签字负责的）`);
           }
+        } else if (!/^否/.test(val)) {
+          problems.push(`store-listing-ios.md 的「${cells[0]}」把「是否与身份关联」填成了`
+            + `「${cells[3]}」—— 事实是${because}，除邮箱之外这一列只能是「否」`);
         }
       }
-      // Play 那张表：第 4 列是「是否共享」
-      const playRows = play.split('\n').filter((l) => l.startsWith('| **'));
-      for (const row of playRows) {
-        const cells = row.split('|').map((c) => c.trim()).filter(Boolean);
-        if (cells.length < 6) continue;
-        if (!/^否/.test(cells[3].replace(/[*\s]/g, ''))) {
-          problems.push(`store-listing.md 的「${cells[0]}」把「是否共享」填成了`
-            + `「${cells[3]}」—— 事实是不向第三方共享`);
+      // 第 4 列：是否用于追踪（**任何一行都不许填是**：我们没有跨 App 追踪）
+      {
+        const val = cells[4].replace(/[*\s]/g, '');
+        if (!/^否/.test(val)) {
+          problems.push(`store-listing-ios.md 的「${cells[0]}」把「是否用于追踪」填成了`
+            + `「${cells[4]}」—— 事实是${because}、也不做跨 App 追踪，这一列只能是「否」`);
         }
+      }
+    }
+    if (collectsEmail && !iosRows.some((r) => isEmailRow(r))) {
+      problems.push('facts 说账号会收集邮箱，但 store-listing-ios.md 的 App Privacy 表里'
+        + '没有邮箱那一行 —— 收集了就要逐个数据类别申报');
+    }
+
+    // Play 那张表：第 4 列是「是否共享」（一律 否）
+    const playRows = play.split('\n').filter((l) => l.startsWith('| **'));
+    for (const row of playRows) {
+      const cells = row.split('|').map((c) => c.trim()).filter(Boolean);
+      if (cells.length < 6) continue;
+      if (!/^否/.test(cells[3].replace(/[*\s]/g, ''))) {
+        problems.push(`store-listing.md 的「${cells[0]}」把「是否共享」填成了`
+          + `「${cells[3]}」—— 事实是不向第三方共享`);
       }
     }
   }
@@ -418,7 +450,7 @@ function selftest() {
     ['短描述写超了（> 80 字）', (r) => {
       const p = join(r, 'docs/store-listing.md');
       const t = readFileSync(p, 'utf8');
-      const anchor = '> 没有账号、没有广告，数据只在你手机上。';
+      const anchor = '> 不需要注册、没有广告，数据只在你手机上。';
       if (!t.includes(anchor)) throw new Error('自检夹具失效：找不到短描述那段');
       writeFileSync(p, t.replace(anchor, `${anchor}${'多出来的字'.repeat(12)}。`));
     }, false, '超过商店上限 80'],
@@ -428,6 +460,17 @@ function selftest() {
       '| **Health & Fitness → Fitness** | 是 | Analytics | 否 | **否** |',
       '| **Health & Fitness → Fitness** | 是 | Analytics | 否 | **是** |'),
       false, '「是否用于追踪」填成了'],
+    // 2026-10-06（账号体系）：**邮箱那一行的"与身份关联"必须是"是"**
+    // —— 填"否"是假话，而这是 Apple 那边一条真实的拒审理由。
+    ['App Store 表把邮箱那一行的"与身份关联"填成了否', (r) => swap(r, 'store-listing-ios.md',
+      '| **Contact Info → Email Address** | **只在用户自己注册账号时** | App Functionality（登录 / 找回口令） | **是**（邮箱就是账号身份） | **否** |',
+      '| **Contact Info → Email Address** | **只在用户自己注册账号时** | App Functionality（登录 / 找回口令） | **否** | **否** |'),
+      false, '邮箱就是账号身份'],
+    // 反过来：**别的行**填成"是"也要拦（否则这次改判据会把原来那条纪律放掉）
+    ['App Store 表把 Device ID 那行的"与身份关联"填成了是', (r) => swap(r, 'store-listing-ios.md',
+      '| **Identifiers → Device ID** | 是 | Analytics | 否（匿名随机 id，与账号无关，也不发给服务端） | **否** |',
+      '| **Identifiers → Device ID** | 是 | Analytics | **是** | **否** |'),
+      false, '除邮箱之外这一列只能是'],
     ['Play 表的"是否共享"填成了是', (r) => swap(r, 'store-listing.md',
       '| **应用活动** | 冷启动、进入训练屏、训练结束、休息计时、撤销一组 | 是 | 否 | 可选 |',
       '| **应用活动** | 冷启动、进入训练屏、训练结束、休息计时、撤销一组 | 是 | 是 | 可选 |'),

@@ -196,6 +196,15 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 
 ### 5.3 会被门禁咬到的判据（**必须一起改，否则要么红要么变假话**）
 
+> ✅ **2026-10-06 执行完毕**。执行时发现两处守卫的**判据本身**不成立（都改掉了）：
+> ① `check-store-forms` 的 `noAccount` 是从 `user_id.why` 那句人话里**按字面匹配**推出来的
+> —— 改一句话整块判据就失效（这次正是它报的警）；② `copyright-pdf --check-docs`
+> 只认「N 个源文件 / M 行 / 全文 P 页」**一种措辞**，于是 `release-checklist` 里
+> `dist/` 内容那一行（另一种写法）**漂了两轮没人发现**。两条都已改成"读事实 / 认两种措辞"，
+> 并各补了自检用例。**这两条是这一批最有价值的产出**：守卫的价值不在于它盯着的数字，
+> 而在于它的判据是不是活的。
+
+
 | 守卫 | 它现在怎么判 | 加账号后必须做什么 |
 |---|---|---|
 | `tool/check-store-forms.mjs` | `:194-196` 从 `privacy-facts.json` 的 `user_id.why` 里**按字面**匹配「恒为 null / 没有账号」推出 `noAccount`，再据此要求两张表单的"是否关联身份/是否共享"全是「否」（`:203-211`） | **这条判据本身要重写**：写成"看 facts 里 `collected` 有没有邮箱"之类的事实，而不是匹配一句人话；同时把 App Privacy 表新邮箱行如实填"是" |
@@ -245,7 +254,7 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 | **A** ✅ **已完成（2026-10-06）** | 服务端身份层：`server/` 下新增 `mailer.mjs`（零依赖 SMTP）+ `auth-store.mjs`（邮箱/凭据/令牌/验证码/限流）+ `auth.mjs`（七个接口）+ `backend.mjs` 接线（**新接口写在"账号必须存在"那道闸门之前**，凭据"先当令牌、再当 account_id"）+ `server/auth.selftest.mjs`（38 项）+ `server/mailer.selftest.mjs`（19 项）+ `install.sh` 拷贝白名单 3 → 6 个文件 | ✅ `node server/auth.selftest.mjs` / `node server/mailer.selftest.mjs` / `node server/backend.selftest.mjs` 三条全绿；`check-guards-wired` / `check-deploy` 绿。**这条路上没有一行客户端代码**，所以"账号体系"与"必须先登录"可以在这一期之后分开推进 |
 | **B** ✅ **已完成（2026-10-06）** | 客户端密码学：`app/lib/backup/account_login.dart`（口令 → KEK → 包裹/解开账号密钥；纯 Dart、**不 import flutter**）+ `app/test/account_login_test.dart`（15 项）。**KDF 参数按实测定**（见下面那段） | ✅ 真 Flutter 测试跑过 15/15（**在无撇号的跑道副本里**，见下）；`dart analyze --fatal-infos` 干净。**老用户路径也验了**：拿本机恢复码对应的密钥去"绑邮箱"，解出来还是同一把密钥、同一串恢复码、能直接解密既有云备份 |
 | **C** | 五屏界面（登录 / 注册 / 验证码 / 找回 / 注销确认）+ 入口 + 老用户绑邮箱。~~启动闸门~~ **不做**（形态选了"可选"） | widget 测试（跑道里能跑，不必等 CI）+ 模拟器走查（`docs/images/`）+ `delete_all_test.dart` 表清单与种子 + **离线仍可用**要有一条测试（服务端不可达时已登录用户能进） |
-| **D** | 政策 / 事实表 / 收集清单 / 两张商店表单 / 公网政策页**同步**改写（清单见 §五） | §五 那张表逐条勾掉；`privacy-audit`、`check-store-forms`（判据要重写）、`gen-privacy-page --check`、中英结构对账全绿；顺手把 `check-doc-facts.mjs` 真检查接进 `verify.sh` |
+| **D** ✅ **已完成（2026-10-06）** | 政策 / 事实表 / 收集清单 / 两张商店表单 / 公网政策页**同步**改写（清单见 §五） | ✅ §五 那张表逐条走完；`privacy-audit`（**新增第 ⑰ 条**）、`check-store-forms`（**判据重写成读事实**）、`gen-privacy-page --check`、中英结构对账全绿；`PrivacyInfo.xcprivacy` 补上 Email。⚠️ `check-doc-facts.mjs` 的真检查**仍未接进 `verify.sh`**（它只有自检在跑）—— 这是一处既有欠账，见 §十 |
 | **E** | 部署包与守卫：`server/deploy/` 加 SMTP 配置（**不要把口令塞进 systemd 单元**，见下）、`check-deploy.mjs` 跟上、软著数字重算 | `./verify.sh` 全绿；`tool/copyright-pdf.mjs --check-docs` 绿（改了 `server/**` 的 `.mjs` 会影响源程序量） |
 
 > ⚠️ **KDF 参数是量出来的，不是猜的**（2026-10-06，B 期）：

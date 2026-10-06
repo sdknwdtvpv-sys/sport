@@ -45,7 +45,7 @@
 </table>
 <hr>
 <h2 id="1-in-one-sentence">1. In one sentence</h2>
-<p><strong>LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone. There is no sign-up, no phone number, no location, no contacts. The only network activity is anonymous usage statistics — and that switch is </strong>off by default<strong>: you have to </strong>turn it on yourself<strong>, and you can turn it off again at any time.</strong></p>
+<p><strong>LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone. There is no sign-up requirement, no phone number, no location, no contacts. Only three things can ever reach the network, and none of them carries plaintext training data: anonymous usage statistics (</strong>off by default<strong> — you have to </strong>turn it on yourself<strong>, and you can turn it off again at any time), the cloud backup you enable yourself (the server only ever receives ciphertext), and an </strong>optional account<strong> (you can use every feature without signing up).</strong></p>
 <hr>
 <h2 id="2-what-we-collect">2. What we collect</h2>
 <h3 id="2-1-stored-only-on-your-device-never-uploaded">2.1 Stored only on your device, never uploaded</h3>
@@ -99,7 +99,7 @@
 <tbody>
 <tr><td><code>device_id</code></td><td><strong>Locally generated anonymous identifier</strong> (32 hex chars). Unrelated to any account, contains no device information. Cleared by &quot;Delete all data&quot;</td></tr>
 <tr><td><code>session_id</code></td><td>Random identifier for one usage session; a new one after 30 minutes of inactivity</td></tr>
-<tr><td><code>user_id</code></td><td><strong>Always null</strong> — there is no account system. Guests are counted too, otherwise the &quot;did new users start training&quot; metric cannot be computed</td></tr>
+<tr><td><code>user_id</code></td><td><strong>Always null</strong> — analytics carries <strong>no account identity</strong>, signed in or not; otherwise the &quot;did new users start training&quot; metric cannot be computed</td></tr>
 <tr><td><code>app_version</code></td><td>Version string (used to compare &quot;taps per set&quot; across versions)</td></tr>
 <tr><td><code>platform</code></td><td><code>android</code> / <code>ios</code></td></tr>
 <tr><td><code>is_offline</code></td><td>Whether the device was offline when the event happened</td></tr>
@@ -114,7 +114,7 @@
 </ul>
 <h3 id="2-3-what-we-do-not-collect">2.3 What we do NOT collect</h3>
 <ul>
-<li>❌ Name, phone number, email, government ID — <strong>there is no account system</strong></li>
+<li>❌ Name, phone number, government ID. An <strong>email address</strong> reaches us only if you choose to create an account (see 3.4)</li>
 <li>❌ Location</li>
 <li>❌ Contacts, photos, camera, microphone</li>
 <li>❌ Advertising identifiers (no ad SDKs)</li>
@@ -124,18 +124,20 @@
 </ul>
 <hr>
 <h2 id="3-where-the-data-lives-and-who-receives-it">3. Where the data lives and who receives it</h2>
-<h3 id="3-1-two-things-can-reach-the-network-both-off-by-default">3.1 Two things can reach the network — both off by default</h3>
-<p><strong>Nothing is uploaded unless you turn a switch on yourself</strong> — there are exactly two such switches, and both are <strong>off by default</strong>:</p>
+<h3 id="3-1-three-things-can-reach-the-network-none-without-your-action">3.1 Three things can reach the network — none without your action</h3>
+<p><strong>Nothing is uploaded unless you do something yourself.</strong> Two of the three are switches that are <strong>off by default</strong>; the third only happens if you choose to sign up:</p>
 <ul>
 <li><strong>Anonymous usage statistics</strong> (off by default). When you turn it on, the events in 2.2 are sent over HTTPS to a receiver we operate. <strong>When the switch is off, not a single event is sent</strong> — and you can verify that yourself: install the app, watch it with any packet capture tool for a full day, and with the switch off you should see <strong>zero</strong> requests to us (this is exactly how we verify it during development). ⚠️ <strong>The first release that reports anything does not send events accumulated by earlier versions</strong>: that backlog is cleared the first time a reporting build starts (&quot;whoever recorded it, sends it&quot;). Events you recorded in an older version are <strong>not</strong> uploaded retroactively.</li>
 <li><strong>Cloud backup</strong> (<strong>off by default</strong>; you turn it on in Profile → Data &amp; backup → Cloud backup). Once on, <strong>your workout records and body metrics</strong> (weight / body fat / waist / muscle mass / height) are <strong>end-to-end encrypted</strong> and stored on a server — so you can get them back on a new phone, or if your phone is lost. <strong>The server only ever receives ciphertext</strong>: encryption happens on your phone, and we cannot read a single field; the <strong>recovery code</strong> is the only key and the server does not hold it — so <strong>if you lose the recovery code, it is gone</strong>. The exact contents of a backup are listed in 3.3.</li>
+<li><strong>An account (optional, off unless you sign up)</strong> — you create it yourself under Profile → Data &amp; backup → Account. Signing up and logging in are <strong>the only steps that need a network</strong> (the code is sent to your email); what leaves is your <strong>email address, an authentication credential and a wrapped account key</strong>. Your training data still stays on this device (or inside the cloud-backup ciphertext you enabled) — details in 3.4. <strong>Never sign up and none of this sends a byte.</strong></li>
 <li><strong>Deleting all data will ask whether to delete the cloud backup as well</strong> (the default is to delete both). The order is deliberate: the cloud copy is deleted <strong>first</strong>, and if that fails the whole operation stops. We would rather have you retry than leave you with local data gone, a cloud copy still there, and no recovery code left to open it.</li>
 <li>Your workout records <strong>themselves</strong> still live only on this device; apart from the cloud-backup ciphertext you chose to enable, they go nowhere.</li>
 </ul>
-<h3 id="3-2-where-the-two-switches-draw-the-line">3.2 Where the two switches draw the line</h3>
+<h3 id="3-2-where-these-switches-draw-the-line">3.2 Where these switches draw the line</h3>
 <ul>
-<li><strong>Statistics switch</strong>: off — not a single event is sent; on — what leaves is the 22 event types in 2.2 plus the 7 common fields in 2.3, with no free text and no body-weight values.</li>
+<li><strong>Statistics switch</strong>: off — not a single event is sent; on — what leaves is the 22 event types in 2.2 plus the <strong>7 common fields in 2.2</strong>, with no free text and no body-weight values.</li>
 <li><strong>Cloud-backup switch</strong>: off — <strong>no data leaves the device at all</strong>; on — what leaves is <strong>ciphertext</strong> of the contents listed in 3.3.</li>
+<li><strong>Account</strong>: never sign up — not a single byte is sent; sign up — what leaves is your email address, an authentication credential and a wrapped account key (ciphertext). <strong>Your password never leaves your phone</strong>, and neither of the two things the server holds can be turned back into the account key.</li>
 <li>Both switches can be turned off <strong>at any time</strong>: turning statistics off stops the queue from sending; cloud backup can be closed in Data &amp; backup (the cloud copy stays) or closed with account deletion (the cloud copy is deleted).</li>
 <li>We <strong>never sell, rent, or share</strong> your personal information with third parties. No third-party advertising. No data brokers.</li>
 </ul>
@@ -158,6 +160,20 @@
 <li><strong>Restoring only ever adds</strong>: restoring fills in or overwrites the entry for the *same day* — it <strong>never deletes</strong> the readings you recorded yourself on the new phone.</li>
 </ul>
 <hr>
+<h3 id="3-4-accounts-optional-only-people-who-sign-up-give-us-an-email-address">3.4 Accounts (optional): only people who sign up give us an email address</h3>
+<p><strong>You can use every feature without signing up.</strong> An account is <strong>optional</strong>; the entry point is Profile → Data &amp; backup → Account. It is the other half of cloud backup: with an account you can log in on a new phone with <strong>email + password</strong> and get that encrypted backup back.</p>
+<p>Signing up asks for exactly two things:</p>
+<ul>
+<li><strong>An email address</strong> — used to log in, to receive verification codes, and to recover a forgotten password. It is stored on our own server (never handed to a third party) and used for those three things only: not for advertising, not sold to anyone, not for cross-app tracking.</li>
+<li><strong>A password</strong> — <strong>your password never leaves your phone.</strong> The client derives an authentication credential and a wrapping key from it; the server stores only an encrypted form of that credential and the <strong>wrapped account key (ciphertext)</strong>. It cannot read your training data and cannot recover your password.</li>
+</ul>
+<p>Three details, stated plainly:</p>
+<ul>
+<li>Signing up and logging in are <strong>the only steps that need a network</strong> (the code goes to your email). Once you are logged in, <strong>the app works offline</strong>, and an unreachable server never locks you out.</li>
+<li>After signing up you receive a <strong>recovery code</strong> (shown once). If you forget your password, reset it with &quot;recovery code + emailed code&quot;. If you lose the recovery code *and* forget the password, the account cannot be recovered — the server holds no plaintext key. That is the price of end-to-end encryption.</li>
+<li><strong>Deleting the account</strong>: Profile → Data &amp; backup → Account → Delete account, one step, processed within <strong>15 business days</strong>; it <strong>deletes the account, the email binding</strong> and the cloud backup (your local training records are untouched).</li>
+</ul>
+<p><strong>If you never sign up, none of this sends a single byte</strong> — the data in 2.1 still lives only on your phone.</p>
 <h2 id="3-5-third-party-dependencies-sdk-list">3.5 Third-party dependencies (SDK list)</h2>
 <p>The following are our <strong>direct dependencies</strong> — not services we call, but libraries distributed with the app. Chinese app stores require third-party SDKs to be listed centrally with their name, function, and how they handle personal information, so here they are:</p>
 <table>
@@ -222,6 +238,7 @@
 <tr><td><strong>Export the usage events</strong></td><td>Once that switch is on, Profile → Privacy &amp; About also shows &quot;Export statistics events&quot;: it exports the anonymous events stored on this device into a file (one JSON object per line) that you can keep or send to us. <strong>While the switch is off, this entry does not appear</strong> — nothing is being collected then</td></tr>
 <tr><td><strong>Export all your data</strong></td><td>Profile → Data &amp; Backup → &quot;Export all records&quot; — generates a CSV copied to your clipboard</td></tr>
 <tr><td><strong>Delete all data</strong></td><td>Profile → Data &amp; Backup → &quot;Delete all data&quot;. After a confirmation prompt, local records and settings are wiped immediately</td></tr>
+<tr><td><strong>Delete the account</strong> (only if you signed up)</td><td>Profile → Data &amp; backup → Account → Delete account, one step, processed within <strong>15 business days</strong>; it <strong>deletes the account, the email binding</strong> and the cloud backup</td></tr>
 <tr><td><strong>Uninstall to delete</strong></td><td>Uninstalling the app removes the local database</td></tr>
 </tbody>
 </table>

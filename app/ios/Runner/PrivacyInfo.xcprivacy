@@ -43,7 +43,25 @@
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
-	<array/>
+	<array>
+		<!-- 2026-10-06（账号体系 P1-3）：邮箱是这套应用里唯一一件"与用户身份关联"的数据，
+		     而且**只在用户主动注册账号时**才会收集 —— 所以这里是 Collected + Linked，
+		     但**不是 Tracking**（我们不做跨 App 追踪）。它与
+		     docs/store-listing-ios.md 的 App Privacy 表、docs/privacy-policy.md §3.4、
+		     docs/privacy-facts.json 的 account 块同源；改一处要一起改。 -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>

@@ -205,7 +205,7 @@
     },
     {
       "name": "device_id",
-      "why": "本机随机生成的匿名标识（32 位十六进制，与账号无关）；「删除全部数据」会一并清除"
+      "why": "本机随机生成的匿名标识（32 位十六进制），不含设备信息，也**不与账号关联** —— 注册/登录时不会把它发给服务端；「删除全部数据」会一并清除"
     },
     {
       "name": "session_id",
@@ -213,7 +213,7 @@
     },
     {
       "name": "user_id",
-      "why": "**恒为 null** —— 没有账号系统，游客态也要上报否则北极星分母缺失"
+      "why": "**恒为 null** —— 埋点**不带账号身份**：登录与否都一样，所以\"新用户有没有练起来\"这个分母始终算得出来"
     },
     {
       "name": "app_version",
@@ -300,7 +300,7 @@
   ],
   "_injectedNote": "由 AndroidX 在合并 manifest 时自动加的**签名级自有权限**（targetSdk 33+ 的要求），不涉及任何用户数据、也不会出现在系统设置里。所以它不在政策正文的权限表里，但打包后核对时要能认得它。",
   "neverCollected": [
-    "姓名、手机号、邮箱、身份证（没有账号系统）",
+    "姓名、手机号、身份证（我们不收集；邮箱只有你自己注册账号时才会给我们，见 §3.4）",
     "位置信息",
     "通讯录、相册内容、相机、麦克风",
     "设备广告标识符（无广告 SDK）",
@@ -357,13 +357,41 @@
     },
     "fields": {
       "_why": "v1.52 给「身体数据」加了腰围 / 肌肉量 / 身高。它们和体重同属敏感个人信息、共用同一道单独同意门，但**政策必须逐项点名**：库里存了而政策没写就是「收集了没说」。下面两半都由 privacy-audit.mjs 机器核对 —— 政策正文必须出现这些词，且 db.dart 里对应的列必须真的存在（双向对账，删了列却留着政策也会报）。",
-      "zh": ["体重", "体脂率", "腰围", "肌肉量", "身高"],
-      "en": ["body weight", "body fat percentage", "waist", "muscle mass", "height"],
+      "zh": [
+        "体重",
+        "体脂率",
+        "腰围",
+        "肌肉量",
+        "身高"
+      ],
+      "en": [
+        "body weight",
+        "body fat percentage",
+        "waist",
+        "muscle mass",
+        "height"
+      ],
       "columns": [
-        { "column": "weightKg", "zh": "体重", "en": "body weight" },
-        { "column": "bodyFatPct", "zh": "体脂率", "en": "body fat percentage" },
-        { "column": "waistCm", "zh": "腰围", "en": "waist" },
-        { "column": "muscleMassKg", "zh": "肌肉量", "en": "muscle mass" }
+        {
+          "column": "weightKg",
+          "zh": "体重",
+          "en": "body weight"
+        },
+        {
+          "column": "bodyFatPct",
+          "zh": "体脂率",
+          "en": "body fat percentage"
+        },
+        {
+          "column": "waistCm",
+          "zh": "腰围",
+          "en": "waist"
+        },
+        {
+          "column": "muscleMassKg",
+          "zh": "肌肉量",
+          "en": "muscle mass"
+        }
       ]
     },
     "gate": {
@@ -390,6 +418,36 @@
       "whatItDoes": "清空 user_profile.body_metric_consent_at_ms（撤回同意），**不删任何体重数据**",
       "repository": "ProfileRepository.clearBodyMetricConsent（必须用 Companion + Value(null)：drift 对 DataClass 是 nullToAbsent）",
       "test": "app/test/body_consent_test.dart（撤回清空同意 / 历史一条不删 / 点「算了」不动 / 撤回后重新问）"
+    }
+  },
+  "account": {
+    "_why": "账号体系（2026-10-06，P1-3）。形态是**可选**：不注册也能用全部功能，注册只是\"想要云备份 / 换手机能找回\"的人主动走的那条路。这一块是机器可核的那一半：tool/privacy-audit.mjs 会要求两版政策出现下面的说法，tool/check-store-forms.mjs 会拿它去核两张商店表单里\"邮箱\"那一行有没有如实填，tool/gen-privacy-page.mjs 会把它写进应用内的收集清单。改这里之前先想清楚代价。",
+    "optional": true,
+    "collectsEmail": true,
+    "signupRequiresEmail": true,
+    "whatWeStore": [
+      "邮箱（只在用户主动注册时）：存在服务端，用于登录、发验证码、找回口令",
+      "口令派生出的**认证凭据**的 scrypt 结果（服务端拿到它推不出口令，也推不出账号密钥）",
+      "被 KEK 包起来的账号密钥（**密文**，服务端解不开）"
+    ],
+    "_neverLeaves": "口令本身、明文训练数据、明文的身体数据 —— 这些只在设备上；账号密钥只以\"被口令派生的密钥包起来\"的密文形式存在服务端",
+    "policyPhrases": {
+      "zh": [
+        "不注册也能用全部功能",
+        "账号是**可选**的",
+        "邮箱",
+        "口令不会离开这台手机",
+        "15 个工作日",
+        "注销会删掉账号、邮箱绑定与云端备份"
+      ],
+      "en": [
+        "without signing up",
+        "optional",
+        "email address",
+        "never leaves your phone",
+        "15 business days",
+        "deletes the account, the email binding"
+      ]
     }
   }
 }

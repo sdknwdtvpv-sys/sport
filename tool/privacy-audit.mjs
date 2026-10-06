@@ -349,6 +349,59 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑰ 账号体系（2026-10-06，P1-3）：**邮箱是这套应用里唯一一件可识别个人信息**，
+  // 而它的形态是"可选" —— 这两件事都必须同时写在政策里，否则会落到两种谎话之一：
+  // 「我们不要邮箱」（其实注册时要）或者「你必须注册」（其实是可选的）。
+  //
+  // 为什么用"事实里写的说法"而不是在这里硬编码句子：与云备份那条同源 ——
+  // 换句子时先改 facts，政策跟着改，两边对不上就红。
+  {
+    const acc = facts.account;
+    if (!acc) {
+      errors.push('privacy-facts.json 少了 account —— 账号体系会把邮箱（可识别个人信息）'
+        + '送到服务端，这条数据流向必须显式声明');
+    } else {
+      const policyEnText = existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '';
+      if (acc.collectsEmail === true) {
+        for (const phrase of acc.policyPhrases?.zh ?? []) {
+          if (!policy.includes(phrase)) errors.push(`账号体系会收集邮箱，但政策正文里没有「${phrase}」`);
+        }
+        for (const phrase of acc.policyPhrases?.en ?? []) {
+          if (!policyEnText.includes(phrase)) errors.push(`账号体系会收集邮箱，但英文政策里没有「${phrase}」`);
+        }
+        // 可选性也必须写出来：审核与用户都会问"不注册能不能用"
+        if (acc.optional === true) {
+          if (!acc.policyPhrases?.zh?.some((x) => /不注册/.test(x))) {
+            errors.push('account 声明是"可选"的，policyPhrases.zh 里就必须有一句写明"不注册也能用"');
+          }
+        }
+      }
+      // 生成物：应用内的收集清单必须真的写到邮箱（164 号文要的是"收集了什么都写下来"）
+      const list = join(ROOT, 'app/assets/collection-list.txt');
+      if (existsSync(list)) {
+        const text = readFileSync(list, 'utf8');
+        if (acc.collectsEmail === true && !text.includes('邮箱')) {
+          errors.push('app/assets/collection-list.txt 里没有"邮箱" —— 收集清单漏了它会与政策矛盾'
+            + '（它由 node tool/gen-privacy-page.mjs 生成，改完源再重出）');
+        }
+      }
+      // 商店表单：邮箱那一行必须存在（check-store-forms 会核它的列怎么填）
+      // ⚠️ 判据要**具体到那一行**：文件里本来就有"联系邮箱"（客服联系方式），
+      // 只搜"邮箱"两个字会被它蒙过去（第一版就是这么写的，加完还是绿的）。
+      const iosListing = join(ROOT, 'docs/store-listing-ios.md');
+      if (acc.collectsEmail === true && existsSync(iosListing)
+        && !/Contact Info[^\n]*Email/i.test(readFileSync(iosListing, 'utf8'))) {
+        errors.push('docs/store-listing-ios.md 的 App Privacy 表里没有「Contact Info → Email」那一行 ——'
+          + 'Apple 要求逐个数据类别申报，收集了就要写');
+      }
+      const playListing = join(ROOT, 'docs/store-listing.md');
+      if (acc.collectsEmail === true && existsSync(playListing)
+        && !/个人信息[^\n]*邮箱/.test(readFileSync(playListing, 'utf8'))) {
+        errors.push('docs/store-listing.md 的数据安全表里没有「个人信息 → 邮箱」那一行');
+      }
+    }
+  }
+
   // ⑦ 打包后的合并权限（发布前用 --apk 跑）
   if (apkPermissions) {
     const allowed = new Set([

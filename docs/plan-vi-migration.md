@@ -26,7 +26,7 @@
 | **视觉层（换肤）** | ✅ 可行 | 小 —— 一版能全站换 | 配色是单一真源：整个 `app/lib` 里只有 **1 处** `Color(0x…)` 写在 `app/lib/core/theme.dart` 之外，圆角/间距/主按钮高度也早就是 token |
 | **结构层（新页面）** | ✅ 可行，但要拆版本 | 中 | 5 Tab 导航 + 动作库/计划周历/身体数据扩字段/完成页/分享卡第二版式 —— 是**新功能**，不是改样式 |
 | **激励层（打卡·徽章·通知中心）** | ⚠️ 与既有决定冲突 | 中 | `docs/screens.md` 的「明确不做（一期）」里就写着**成就徽章体系** |
-| **账号层（手机号登录/注册）** | ❌ 建议 P0 不做 | 大 | `docs/wechat-login-feasibility.md`（2026-10-01）已经算过一遍：Apple 4.8 要等价登录方式、主体资质、应用内注销、AppSecret 必须走服务端 —— 而且它和"无账号 + 恢复码 + 端到端加密"这个架构正面冲突 |
+| **账号层（邮箱 + 口令登录）** | ✅ **2026-10-06 做了**（P1-3，**可选**形态；手机号与三方登录仍然不做） | 中 | 这里当时写的是「建议 P0 不做」，理由是"与无账号 + 恢复码 + 端到端加密正面冲突"。落地时做成了**可选**：不登录＝原样（恢复码那条路一个字节没改），登录只多一条找回路径 —— 冲突因此不成立。方案与代价见 `docs/plan-account-login.md` |
 
 ---
 
@@ -61,7 +61,7 @@ VI 的值取自 `vi/*.html` 的 `:root`（15 份各自抄了一份，14 种略�
 | --- | --- | --- | --- | --- |
 | `splash-screen.html` 启动页 | 原生启动图（`app/ios/Runner/Assets.xcassets/LaunchImage.imageset` + `app/android/app/src/main/res/drawable-nodpi/launch_glyph.png`），由 `tool/gen-icons.py` 出 | 🔧 | 换新 Logo（橙圆环）与底色 | 图标要先定稿 |
 | `onboarding.html` 引导页（3 屏卖点） | `onboarding_screen.dart` 是**三步设置**（目标/经验/频率），不是卖点轮播 | ⚠️ | 二选一：保留"设置式引导"或改成"卖点轮播" | `docs/screens.md` 的「不做」清单里写着**不做启动引导轮播** |
-| `auth-setup.html` 登录 / 注册（手机号 + 三方） | **没有**：现在是本地优先、无账号、云备份用恢复码 | ⚠️ | 建议 P0 不做 | `docs/wechat-login-feasibility.md` 的结论、以及 Apple 4.8 |
+| `auth-setup.html` 登录 / 注册 | ✅ **已落地（邮箱 + 口令，不是手机号/三方）**：`app/lib/features/account/account_screen.dart`，入口在「我 → 数据与备份 → 账号」 | ✅ | 按邮箱+口令改，不照搬那份 VI 的手机号+三方 | 手机号与三方登录仍然不做（`docs/wechat-login-feasibility.md`、Apple 4.8）|
 | `auth-setup.html` 第二个：选训练目标 | `onboarding.dart` 里已有四档目标（增肌 / 力量 / 减脂 / 保持） | ✅ | 跟着换皮 | — |
 | `training-home.html` 训练首页 | `today_screen.dart`（`docs/screens.md` S1） | 🔧 | 加**打卡卡**（连续天数 + 下一档解锁）、**快速入口**四宫格、**最近训练**列表；顶部加搜索与通知入口 | 打卡 = 新数据（见第四节 3） |
 | `workout-detail.html` 训练中 | `workout_screen.dart`（S4，设计重心） | 🔧 | 顶部加"3/8 进度 · 已用时 · 已完成容量"，组表按新样式 | — |
