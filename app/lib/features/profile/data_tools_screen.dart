@@ -24,6 +24,8 @@ import '../../analytics/analytics.dart';
 import '../../domain/models.dart';
 import '../body/body_metric_screen.dart';
 import 'training_stats.dart' show buildSetsCsv;
+import '../../backup/login_session.dart';
+import '../account/account_screen.dart';
 import '../backup/cloud_backup_screen.dart';
 import '../../backup/backup_config.dart';
 import '../../backup/backup_transport.dart';
@@ -49,6 +51,7 @@ class DataToolsScreen extends StatefulWidget {
     this.onDataChanged,
     this.cloudBackupAvailable,
     this.cloud,
+    this.account,
   });
 
   final LocalStore store;
@@ -80,6 +83,10 @@ class DataToolsScreen extends StatefulWidget {
 
   /// 云备份服务。**null = 按编译期配置建一个真身**。
   final CloudBackup? cloud;
+
+  /// 登录会话（可选注入：测试用假传输；生产留空 → 按编译期配置造真身）。
+  /// 与 [cloud] 同一个模式 —— 由调用方注入，屏幕自己不去读全局。
+  final LoginSession? account;
 
   @override
   State<DataToolsScreen> createState() => _DataToolsScreenState();
@@ -233,6 +240,31 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           // 云备份是唯一会让数据离开设备的功能，它自己的成败要有埋点（P1-1）
           analytics: widget.analytics,
           onDataChanged: () => widget.onDataChanged?.call(),
+        ),
+      ),
+    );
+  }
+
+  /// 打开账号页（登录 / 注册 / 找回 / 改口令 / 注销）。
+  ///
+  /// **不登录也能用这个 App** —— 这里是"想要换手机能找回"的人主动走的那条路，
+  /// 所以它是一个入口，不是一道闸门（`docs/plan-account-login.md` §六）。
+  Future<void> _openAccount() async {
+    final LoginSession? session =
+        widget.account ?? LoginSession.fromConfig(store: widget.profile.authSessionStore());
+    // 入口本来就不该在没配服务器地址的包里出现；真进来了也如实说，不假装能登。
+    if (session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('这个版本没有配服务器'), backgroundColor: Tokens.elevated),
+      );
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) => AccountScreen(
+          session: session,
+          profile: widget.profile,
+          onChanged: () => widget.onDataChanged?.call(),
         ),
       ),
     );
@@ -445,6 +477,21 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           // 云备份的入口**只在配了服务器地址的包里存在**（见 lib/backup/backup_config.dart）：
           // 一个点进去必然报错的入口，比没有这个功能更伤。正式包没配地址 → 这里什么也不显示。
           if (cloudOn) ...<Widget>[
+            const Divider(height: 1, color: Tokens.line),
+            ListTile(
+              key: const Key('account'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+              onTap: _openAccount,
+              title: const Text(
+                '账号',
+                style: TextStyle(color: Tokens.text, fontSize: 15),
+              ),
+              subtitle: const Text(
+                '用邮箱和口令登录，换手机能找回。不登录也能用',
+                style: TextStyle(color: Tokens.text3, fontSize: 13),
+              ),
+              trailing: const Icon(Icons.person_outline, color: Tokens.text3, size: 20),
+            ),
             const Divider(height: 1, color: Tokens.line),
             ListTile(
               key: const Key('cloud-backup'),

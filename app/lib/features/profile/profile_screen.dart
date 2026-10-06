@@ -39,6 +39,7 @@ import '../../analytics/analytics.dart';
 import '../../analytics/outbox.dart';
 import '../../backup/backup_config.dart';
 import '../../backup/cloud_backup.dart';
+import '../../backup/login_session.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/models.dart';
 import 'backup_exporter.dart';
@@ -69,6 +70,7 @@ class ProfileScreen extends StatefulWidget {
     this.cloudBackupAvailable,
     this.debugCompleteLines,
     this.cloud,
+    this.account,
     this.reminder = ReminderSettings.off,
     this.reminderHint,
     this.protectedDays = const <String>{},
@@ -134,6 +136,9 @@ class ProfileScreen extends StatefulWidget {
   /// 云备份服务。**null = 按编译期配置建一个真身**（没配地址就是 null）。
   /// 只有「删除全部数据」会用到它 —— 那一句"云端也删吗"得真的删得掉。
   final CloudBackup? cloud;
+
+  /// 登录会话（可选注入：测试用）—— 与 [cloud] 同一个模式
+  final LoginSession? account;
 
   /// 要不要显示「云备份」入口。**null = 按编译期配置判断**
   /// （`isCloudBackupConfigured`：没配服务器地址就不显示 —— 详见 lib/backup/backup_config.dart）。
@@ -265,6 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onDataChanged: widget.onDataChanged,
         cloudBackupAvailable: widget.cloudBackupAvailable,
         cloud: widget.cloud,
+        account: widget.account,
       ));
 
   Future<void> _openPrivacyAbout() => _open(PrivacyAboutScreen(

@@ -9,12 +9,22 @@ import 'package:drift/drift.dart' show Value;
 import '../core/units.dart';
 import '../domain/models.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
+import '../backup/login_session.dart';
+import 'auth_session_repository.dart';
 import 'db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 
 class ProfileRepository {
   ProfileRepository(this._db);
 
   final AppDatabase _db;
+
+  /// 登录会话的落盘仓储（账号体系 P1-3）。
+  ///
+  /// 为什么挂在这里：这一层的仓储手里有 `AppDatabase`，而账号页是从「我」页那条链
+  /// （`ProfileScreen` → `DataToolsScreen`）进来的，那条链上只有 `ProfileRepository`。
+  /// 与其把 db 一路透传，不如让它把"这个库上的一张表"交出去 ——
+  /// 与 `cloudAccount()` / `setCloudAccount()`（同一张库里的云备份账号）同源。
+  SessionStore authSessionStore() => AuthSessionRepository(_db);
 
   /// 本地用户 id。多用户是以后的事，现在固定。
   static const String kLocalUserId = 'local';

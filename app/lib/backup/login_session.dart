@@ -29,6 +29,7 @@ import 'package:cryptography/cryptography.dart';
 
 import 'account_login.dart';
 import 'auth_transport.dart';
+import 'backup_config.dart';
 import 'recovery_code.dart';
 
 /// 本地存下来的那份登录态。
@@ -126,6 +127,31 @@ class LoginSession {
   final String? deviceId;
   final String? deviceName;
   final int Function() _clock;
+
+  /// 从编译期配置造一个**真身**（没配服务器地址就返回 null）。
+  ///
+  /// ⚠️ **复用云备份那两个 dart-define**（`LIANLEME_BACKUP_URL` 与 `LIANLEME_BACKUP_DISCLOSED`），
+  /// 不新增第四个：服务端同一台机器上同时提供 `/v1/backup` 与 `/v1/auth/*`，
+  /// 而 `tool/check-deploy.mjs` 会把"客户端用到的每个 dart-define"与部署文档逐字对账 ——
+  /// 多一个开关就多一处会对不上的地方（方案 §六 把这条写成了纪律）。
+  static LoginSession? fromConfig({
+    required SessionStore store,
+    String? deviceId,
+    String? deviceName,
+    int Function()? clock,
+  }) {
+    final Uri? configured = cloudBackupBaseUrl;
+    if (configured == null) return null;
+    // 只要 origin：配置里那一串是完整的 `/v1/backup` 地址
+    final Uri origin = Uri.parse('${configured.scheme}://${configured.authority}');
+    return LoginSession(
+      transport: HttpAuthTransport(baseUrl: origin),
+      store: store,
+      deviceId: deviceId,
+      deviceName: deviceName,
+      clock: clock,
+    );
+  }
 
   /// 只读本地会话。**不联网** —— 已经登录的人在没信号的地方照样能用。
   Future<StoredSession?> restore() => store.read();
