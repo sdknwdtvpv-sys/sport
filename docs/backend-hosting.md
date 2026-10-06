@@ -190,6 +190,62 @@ bash server/deploy/install.sh --probe
 
 ---
 
+## 四之三、**2026-10-06 账号体系上线：服务端要跑什么**（客户端已经出了包）
+
+客户端 `v1.56.0` 已经装上真机了（`docs/release-checklist.md` 的终局核验表）。
+它带了「账号」入口 —— 但**线上那台还是老服务端**：`POST /v1/auth/salt` 现在回的是
+`401 缺少或非法的 Authorization: Bearer`（请求落到了"账号必须存在"那道闸门后面）。
+客户端已经把这句话翻成人话（「这台服务器还没有账号功能（服务端要升级），先试试云备份」），
+所以**装了新包也不会看到一句莫名其妙的报错** —— 但要真的能注册，服务端得先升级。
+
+**为什么要升级服务端**：`server/` 多了三个文件（`auth.mjs` / `auth-store.mjs` / `mailer.mjs`，
+零依赖，不装任何 npm 包），后端单元多了一行 `EnvironmentFile=-/etc/lianleme/mail.env`。
+**老客户端完全不受影响**（`Bearer <account_id>` 那条路一字未动）。
+
+### 最小路径（服务器上**没有**仓库副本时用这条）
+
+```bash
+# 在你这台 Mac 上，仓库根目录：
+rsync -av server/backend.mjs server/backend-store.mjs server/collector.mjs \
+          server/auth.mjs server/auth-store.mjs server/mailer.mjs \
+          root@118.25.45.88:/opt/lianleme/server/
+
+# 然后 ssh 上去，给单元补一行（只有这一行，两条命令）：
+ssh root@118.25.45.88
+install -d -o root -g root -m 750 /etc/lianleme
+grep -q '^EnvironmentFile=' /etc/systemd/system/lianleme-backend.service \
+  || sed -i '/^RestartSec=3/a EnvironmentFile=-/etc/lianleme/mail.env' /etc/systemd/system/lianleme-backend.service
+```
+
+### 正路（服务器上有仓库副本时用这条：`install.sh` 是幂等的）
+
+```bash
+cd <服务器上的仓库>   &&   git pull
+PROXY_MODE=existing DOMAIN=api.elliotli.work bash server/deploy/install.sh
+```
+
+它会**只**做该做的：渲染两个单元（多一个 `__MAIL_ENV__` 替换）、拷 **6 个** `.mjs`、
+建 `/etc/lianleme/mail.env` 的**空模板**（已存在就**不覆盖**）。
+⚠️ 它**不会**替你写口令 —— 那条 `sed` 渲染通道会把值写进 0644 的单元文件、
+进 `--dry-run` 输出、进 shell 历史（`server/deploy/README.md` 里写了原因）。
+
+### 两条路都要做的最后三步
+
+```bash
+vi /etc/lianleme/mail.env     # 填 LIANLEME_AUTH_SECRET（一串长随机，必须固定）+ SMTP 五项
+systemctl restart lianleme-backend
+curl -s https://api.elliotli.work/healthz
+```
+
+**验收判据**：`/healthz` 的 JSON 里多出 **`binds` 与 `tokens`** 两个字段
+（老版本没有它们）。多出来就说明账号体系起来了。
+再核一条端到端的：`POST /v1/auth/salt` 对**任意**邮箱都应回 `200 {"salt":…,"kdf":…}`
+（**不存在的邮箱也回一个假盐** —— 那是刻意的防枚举，不是 bug）。
+
+⚠️ **不填 `mail.env` 会怎样**：`/v1/auth/*` 一律 404（等于没有账号体系），
+备份与埋点照常工作 —— 这是**故意**的：宁可没有账号，也不要一个"注册永远发不出验证码"的半成品。
+⚠️ 只有 465（隐式 TLS）被支持，**不支持 STARTTLS(587)**：见 `server/deploy/README.md` 那一段。
+
 ## 五、这件事我之前已经做完的部分（所以买完真的只剩一条命令）
 
 | 已经就绪 | 证据 |

@@ -220,7 +220,7 @@
       `dist/练了么-v1.55.0.apk`（64,172,399 字节 · 签名 `CN=李松` · 三 ABI 里
       `api.elliotli.work` 各出现 2 次 —— 云备份与统计那两处编译期常量都在）、
       `dist/练了么-v1.55.0.aab`（`check-aab`：121 条目 · 三 ABI · 版本 1.55.0）；
-      `adb -s 75caf509 install -r` → `Success`，`dumpsys` 读到 `1.55.0 / versionCode 70`，
+      `adb -s 75caf509 install -r` → `Success`，`dumpsys` 读到 `1.55.0 / versionCode 70`（**当时**那一版；现在的真机版本见 `docs/release-checklist.md`），
       冷启动 `E/flutter` 0 条 / `overflowed` 0 条。
       软著材料一并重生成为 V1.55.0（270 文件 / 72,359 行 / 1448 页，旧版本已自动清掉）。
       **`./verify.sh` 六层全绿（`未发现失败`）+ 1233 条测试全过。**

@@ -428,6 +428,15 @@ class HttpAuthTransport implements AuthTransport {
       case 400:
         return detail.isEmpty ? '请求不对（验证码或参数）' : detail;
       case 401:
+        // ⚠️ 一句**必须**有的翻译（2026-10-06 实测）：服务端还没升级时，
+        // `/v1/auth/*` 在那台机器上根本没注册，请求会落到"账号必须存在"那道闸门后面，
+        // 于是回的是 `401 缺少或非法的 Authorization: Bearer` —— 用户看到一句
+        // 完全不知所云的英文，而真正的原因是"服务端版本旧了"。
+        // 客户端的规矩是"点进去必然报错的入口不放出来"，所以这里至少要说人话。
+        // （Dart 里 `/…/i` 不能直接当 if 的条件开头 —— 会被解析成除号；用 RegExp 构造更稳）
+        if (RegExp('authorization', caseSensitive: false).hasMatch(detail)) {
+          return '这台服务器还没有账号功能（服务端要升级），先试试云备份';
+        }
         return detail.isEmpty ? '邮箱或口令不对' : detail;
       case 404:
         return '这一步在服务端上还没有（服务端版本旧了？）';

@@ -30,6 +30,10 @@ const String _email = 'Elliot@Example.com';
 
 /// 测试用的便宜 KDF 参数（理由同 `account_login_test.dart`：默认档一次约 0.2 秒，
 /// 整套门禁并发跑的时候会把这些用例拖到超时）。真实默认档由**真实链路**那一组验。
+///
+/// ⚠️ **每一个假传输都要显式带上它**：漏一个就会用默认档（m=64MB, t=3, p=4）真跑 Argon2id，
+/// 单跑 0.2 秒看不出来，**整包 1277 条用例并发跑的时候直接撞 30 秒超时**
+/// （2026-10-06 切版那一次就是这么红的两条：登出 / 注销）。
 const LoginKdf _fast = LoginKdf(memory: 1024, iterations: 1, parallelism: 1);
 
 /// 按真口令把假传输"装配"成一台服务端：盐、包裹、账号 id 都对得上。
@@ -51,7 +55,7 @@ Future<({FakeAuthTransport transport, PreparedAccount prepared})> _wired({
 void main() {
   group('登录会话 · 注册', () {
     test('注册先在本地算好，发出去的凭据与本地派生一致，且会话落了盘', () async {
-      final FakeAuthTransport fake = FakeAuthTransport();
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode());
       final InMemorySessionStore store = InMemorySessionStore();
       final LoginSession session = LoginSession(transport: fake, store: store, deviceId: 'dev_1');
 
@@ -67,7 +71,7 @@ void main() {
     });
 
     test('老用户"绑邮箱"：用本机已有的账号密钥，恢复码与账号都不变', () async {
-      final FakeAuthTransport fake = FakeAuthTransport();
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode());
       final InMemorySessionStore store = InMemorySessionStore();
       final LoginSession session = LoginSession(transport: fake, store: store);
       final Uint8List existing = Uint8List.fromList(List<int>.generate(16, (int i) => 200 - i));
@@ -83,7 +87,7 @@ void main() {
     });
 
     test('服务端拒绝时把话术带上来（不吞成"未知错误"）', () async {
-      final FakeAuthTransport fake = FakeAuthTransport()
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode())
         ..failWith['register'] = const AuthTransportException('验证码不对或已过期', statusCode: 400);
       final LoginSession session = LoginSession(transport: fake, store: InMemorySessionStore());
 
@@ -94,7 +98,7 @@ void main() {
     });
 
     test('没连上时标成网络问题（界面才知道该说"检查网络"）', () async {
-      final FakeAuthTransport fake = FakeAuthTransport()
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode())
         ..failWith['salt'] = const AuthTransportException('连不上服务器');
       final LoginSession session = LoginSession(transport: fake, store: InMemorySessionStore());
 
@@ -158,7 +162,7 @@ void main() {
 
   group('登录会话 · 离线与登出', () {
     test('restore 只读本地：一个字节都不发（健身房没信号也能用）', () async {
-      final FakeAuthTransport fake = FakeAuthTransport();
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode());
       final InMemorySessionStore store = InMemorySessionStore();
       final LoginSession session = LoginSession(transport: fake, store: store);
       await session.register(email: _email, code: '123456', password: _pw);
@@ -171,7 +175,7 @@ void main() {
     });
 
     test('登出：本地清干净；联网失败时如实说"服务端那份没吊销"', () async {
-      final FakeAuthTransport fake = FakeAuthTransport();
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode());
       final InMemorySessionStore store = InMemorySessionStore();
       final LoginSession session = LoginSession(transport: fake, store: store);
       await session.register(email: _email, code: '123456', password: _pw);
@@ -190,7 +194,7 @@ void main() {
     });
 
     test('注销账号：服务端删掉 + 本地清干净；服务端出错也要清本地（并把错抛上来）', () async {
-      final FakeAuthTransport fake = FakeAuthTransport();
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode());
       final InMemorySessionStore store = InMemorySessionStore();
       final LoginSession session = LoginSession(transport: fake, store: store);
       await session.register(email: _email, code: '123456', password: _pw);
@@ -236,7 +240,7 @@ void main() {
 
     test('没登录就改口令 → 如实说', () async {
       final LoginSession session =
-          LoginSession(transport: FakeAuthTransport(), store: InMemorySessionStore());
+          LoginSession(transport: FakeAuthTransport(kdf: _fast.encode()), store: InMemorySessionStore());
       await expectLater(
         () => session.changePassword(currentPassword: _pw, newPassword: 'x' * 12),
         throwsA(isA<LoginFailure>().having((LoginFailure e) => e.message, 'message', '还没登录')),
@@ -244,7 +248,7 @@ void main() {
     });
 
     test('恢复码抄错时**一个字节都不发出去**，并指出是哪一种错', () async {
-      final FakeAuthTransport fake = FakeAuthTransport();
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode());
       final LoginSession session = LoginSession(transport: fake, store: InMemorySessionStore());
       final String good = recoveryCodeFor(Uint8List.fromList(List<int>.filled(16, 9)));
       final String typo = good.substring(0, 10) + (good[10] == '0' ? '1' : '0') + good.substring(11);
@@ -259,7 +263,7 @@ void main() {
     });
 
     test('重置：恢复码 + 验证码 → 新口令，账号密钥还是原来那把', () async {
-      final FakeAuthTransport fake = FakeAuthTransport();
+      final FakeAuthTransport fake = FakeAuthTransport(kdf: _fast.encode());
       final InMemorySessionStore store = InMemorySessionStore();
       final LoginSession session = LoginSession(transport: fake, store: store);
       final Uint8List key = Uint8List.fromList(List<int>.generate(16, (int i) => (i * 31) % 256));
@@ -272,6 +276,33 @@ void main() {
       expect(s.accountKey, key);
       expect(s.accountId, await accountIdFromRecoveryCode(code));
       expect(fake.calls.last, 'reset:$_email:999999');
+    });
+  });
+
+  group('服务端还没升级时，要给一句人话（不是 401 的英文原文）', () {
+    test('老服务端把 /v1/auth/* 落到鉴权闸门后面 → 回 401「缺少或非法的 Authorization」', () async {
+      // 真起一个**假的老服务端**：只回那一句，形状与线上实测到的一模一样
+      // （2026-10-06 拿 https://api.elliotli.work/v1/auth/salt 探到的就是它）。
+      final HttpServer server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((HttpRequest req) {
+        req.response
+          ..statusCode = 401
+          ..headers.contentType = ContentType.json
+          ..write('{"error":"缺少或非法的 Authorization: Bearer"}');
+        req.response.close();
+      });
+      final HttpAuthTransport transport =
+          HttpAuthTransport(baseUrl: Uri.parse('http://127.0.0.1:${server.port}'));
+      final LoginSession session =
+          LoginSession(transport: transport, store: InMemorySessionStore(), deviceId: 'd');
+
+      await expectLater(
+        () => session.sendCode(email: 'me@example.com', purpose: 'register'),
+        throwsA(isA<LoginFailure>()
+            .having((LoginFailure e) => e.message, 'message', contains('服务端要升级'))),
+      );
+      transport.close();
+      await server.close(force: true);
     });
   });
 
