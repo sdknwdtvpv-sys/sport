@@ -229,6 +229,37 @@ PROXY_MODE=existing DOMAIN=api.elliotli.work bash server/deploy/install.sh
 ⚠️ 它**不会**替你写口令 —— 那条 `sed` 渲染通道会把值写进 0644 的单元文件、
 进 `--dry-run` 输出、进 shell 历史（`server/deploy/README.md` 里写了原因）。
 
+### 只剩这一步：填 SMTP 那五项（**这一条真的只有你能做**）
+
+服务器上 `/etc/lianleme/mail.env` 已经建好、`LIANLEME_AUTH_SECRET` 已经填好了，
+**只差 SMTP 那五行**（一个能发信的邮箱 —— 多数邮箱这里要填的不是登录密码而是**授权码**）：
+
+```bash
+ssh -i ~/.ssh/lianleme_deploy root@118.25.45.88
+vi /etc/lianleme/mail.env      # 填下面五项
+```
+
+| 变量 | 例子 | 说明 |
+|---|---|---|
+| `LIANLEME_SMTP_HOST` | `smtp.qq.com` / `smtp.exmail.qq.com` / `smtp.163.com` | 邮箱服务商的发信服务器 |
+| `LIANLEME_SMTP_PORT` | `465` | **只支持 465（隐式 TLS）**，不支持 587/STARTTLS |
+| `LIANLEME_SMTP_USER` | `noreply@elliotli.work` | 登录账号 |
+| `LIANLEME_SMTP_PASS` | （授权码） | ⚠️ 不是登录密码，是邮箱后台里的"SMTP 授权码" |
+| `LIANLEME_SMTP_FROM` | `noreply@elliotli.work` | 发件人，要与账号对得上，否则多半被拒 |
+
+填完（**没有** `mail.env` 的旧写法不用管，直接 `systemctl restart lianleme-backend` 即可）：
+
+```bash
+systemctl restart lianleme-backend
+curl -s https://api.elliotli.work/healthz        # 应当多出 "binds" 与 "tokens" 两个字段
+journalctl -u lianleme-backend --since "30 seconds ago" | tail -5   # 应当看到「账号：已开」
+```
+
+**你也可以把这五项发我，我写完顺手发一封真验证码到你指定的邮箱**（那就等于端到端验完了）；
+不想让它出现在对话里的话，就用上面那条 `vi` 自己填 —— 效果一样，只是最后那封验证码要你自己发。
+
+### （下面这两条是给"服务器上没有仓库副本"时写的，本次没用上，留着备查）
+
 ### 两条路都要做的最后三步
 
 ```bash
@@ -245,6 +276,29 @@ curl -s https://api.elliotli.work/healthz
 ⚠️ **不填 `mail.env` 会怎样**：`/v1/auth/*` 一律 404（等于没有账号体系），
 备份与埋点照常工作 —— 这是**故意**的：宁可没有账号，也不要一个"注册永远发不出验证码"的半成品。
 ⚠️ 只有 465（隐式 TLS）被支持，**不支持 STARTTLS(587)**：见 `server/deploy/README.md` 那一段。
+
+### ✅ 2026-10-06 已执行（这一步现在**不需要你动手**）
+
+这台 Mac 上一直躺着一把部署密钥 `~/.ssh/lianleme_deploy`（2026-10-04 那次部署留下的，
+服务器上仍然授权）。**我先前说"没有凭据"是错的** —— 我只试了默认密钥，而
+`~/.ssh/config` 里只给 github 配了 IdentityFile，那把非默认名字的钥匙根本没被试用。
+加上 `-i ~/.ssh/lianleme_deploy` 就通了。所以下面这些是我直接做的：
+
+| 做了什么 | 证据 |
+|---|---|
+| 备份现网（可回滚） | `/root/lianleme-backup-20261006/`（旧的 `backend.mjs` / `backend-store.mjs` / `collector.mjs` / 单元文件） |
+| 推 6 个 `.mjs` | `/opt/lianleme/server/` 下多了 `auth.mjs` / `auth-store.mjs` / `mailer.mjs`（`root:root 644`） |
+| 换单元 | `/etc/systemd/system/lianleme-backend.service` 比现网只多那一段 `EnvironmentFile=-/etc/lianleme/mail.env`（**逐行 diff 过，现网没有别的本地改动**）+ `daemon-reload` |
+| 建 `/etc/lianleme/mail.env` | `0600 root:root`；`LIANLEME_AUTH_SECRET` 是**在服务器上**用 `openssl rand -hex 32` 现生成的（不经过任何聊天记录） |
+| 重启并验收 | `systemctl is-active` 两个服务都 active；`https://api.elliotli.work/healthz` 仍是 `{"accounts":2,"backups":1,"bytes":21551}`（**数据一个字节没动**）；`POST /v1/auth/salt` 回 **404 `{"error":"账号体系没有启用（服务端还没配邮件）"}`** —— 这条恰好证明新代码在跑（老代码会回 401 英文） |
+
+**部署时顺手修掉的一个坑**（`server/backend.mjs`，只有服务端、不动 `app/`，按 CHANGELOG 的策略
+**不需要切版**）：原来 mail.env **填一半会让整个后端起不来** —— `mailerFromEnv()` 直接 throw，
+systemd 无限重启，而云备份、埋点跟着一起挂。现在改成**大声警告 + 照常启动**
+（`/v1/auth/*` 明确回 404，等于没有账号体系），因为这台服务同时供着既有用户在用的备份。
+另外"账号没启用"以前会落到鉴权闸门后面回 `401 缺少或非法的 Authorization`，现在明确 404。
+
+**只剩一步（要你的东西）**：填 SMTP 那五项。见下面。
 
 ## 五、这件事我之前已经做完的部分（所以买完真的只剩一条命令）
 
