@@ -255,7 +255,7 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
 | **B** ✅ **已完成（2026-10-06）** | 客户端密码学：`app/lib/backup/account_login.dart`（口令 → KEK → 包裹/解开账号密钥；纯 Dart、**不 import flutter**）+ `app/test/account_login_test.dart`（15 项）。**KDF 参数按实测定**（见下面那段） | ✅ 真 Flutter 测试跑过 15/15（**在无撇号的跑道副本里**，见下）；`dart analyze --fatal-infos` 干净。**老用户路径也验了**：拿本机恢复码对应的密钥去"绑邮箱"，解出来还是同一把密钥、同一串恢复码、能直接解密既有云备份 |
 | **C** | 五屏界面（登录 / 注册 / 验证码 / 找回 / 注销确认）+ 入口 + 老用户绑邮箱。~~启动闸门~~ **不做**（形态选了"可选"） | widget 测试（跑道里能跑，不必等 CI）+ 模拟器走查（`docs/images/`）+ `delete_all_test.dart` 表清单与种子 + **离线仍可用**要有一条测试（服务端不可达时已登录用户能进） |
 | **D** ✅ **已完成（2026-10-06）** | 政策 / 事实表 / 收集清单 / 两张商店表单 / 公网政策页**同步**改写（清单见 §五） | ✅ §五 那张表逐条走完；`privacy-audit`（**新增第 ⑰ 条**）、`check-store-forms`（**判据重写成读事实**）、`gen-privacy-page --check`、中英结构对账全绿；`PrivacyInfo.xcprivacy` 补上 Email。⚠️ `check-doc-facts.mjs` 的真检查**仍未接进 `verify.sh`**（它只有自检在跑）—— 这是一处既有欠账，见 §十 |
-| **E** | 部署包与守卫：`server/deploy/` 加 SMTP 配置（**不要把口令塞进 systemd 单元**，见下）、`check-deploy.mjs` 跟上、软著数字重算 | `./verify.sh` 全绿；`tool/copyright-pdf.mjs --check-docs` 绿（改了 `server/**` 的 `.mjs` 会影响源程序量） |
+| **E** ✅ **已完成（2026-10-06）** | 部署包与守卫：`install.sh` 建 **root 0600** 的 `/etc/lianleme/mail.env` 空模板（**不覆盖已有的、不替用户写值**）、后端单元用 `EnvironmentFile=-…`（前缀 `-` = 没有它也能启动）、README 写明那几个变量与「为什么不走 sed」、`check-deploy.mjs` **新增「服务端环境变量 ↔ 部署文档」逐字对账** | ✅ `./verify.sh` 全绿；`check-deploy` 真跑 + 自检（含新用例）都过；`install.sh --dry-run` 实跑看过输出；软著数字重算并重出 dist |
 
 > ⚠️ **KDF 参数是量出来的，不是猜的**（2026-10-06，B 期）：
 > 纯 Dart 的 `Argon2id(m=64MB, t=3, p=4)` 在这台开发机上 **5 次中位 174 ms**
@@ -298,7 +298,7 @@ Apple 审核时最可能的结论就是"请允许用户不登录使用"。后半
   服务端为此只保管客户端报上来的 `kdf` 字符串（`docs/privacy-facts.json` 里注明它不参与上报）；
 * 验证码的最终参数（现在是 **6 位 / 10 分钟 / 60 秒一条 / 每邮箱每天 10 条 / 全局每天 200 条 /
   每条最多试 6 次**）—— 上线前按真实发信量再核一遍；
-* SMTP 配置**走哪条通道**进 systemd（见 §七 E 期的坑：不能走 `render()` 的 sed）；
+* ~~SMTP 配置走哪条通道进 systemd~~ ✅ **已定（E 期）**：值走 root 0600 的 `/etc/lianleme/mail.env`，只有**路径**走 `render()`（路径不是秘密）；单元里 `EnvironmentFile=-…` 让「没配」也能启动。
 * 注销时**是否**同时清空云端备份（本期倾向：注销 = 全删，另有"只删账号保留备份"不做）；
 * `docs/store-listing.md:19` 与 `privacy-facts.json:312`、`store-listing-ios.md:184` 之间那两处
   **疑似既有漂移**（"云备份配没配/可不可用"）—— D 期顺手定性并改掉。

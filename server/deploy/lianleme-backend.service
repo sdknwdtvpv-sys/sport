@@ -14,6 +14,15 @@ ExecStart=__NODE__ __APP_DIR__/server/backend.mjs --port __BACKEND_PORT__ --db _
 Restart=always
 RestartSec=3
 
+# ── 账号体系的密钥与邮件口令 ─────────────────────────────────────────
+# ⚠️ 这些**故意不写在这份单元文件里**（`install.sh` 的 render() 会把值 sed 进单元文件，
+# 而 systemd 单元是 644、会被 --dry-run 打到终端、还会进 shell 历史）——
+# 口令走这个 root 0600 的 EnvironmentFile，由 install.sh 建好空模板、你手工填。
+# 前缀 `-` = 文件不存在也不阻止启动（没配就没有账号体系，备份那条路照常）。
+# 变量名（代码真的会读的那些）：LIANLEME_AUTH_SECRET / LIANLEME_SMTP_HOST / LIANLEME_SMTP_PORT
+#   / LIANLEME_SMTP_USER / LIANLEME_SMTP_PASS / LIANLEME_SMTP_FROM
+EnvironmentFile=-__MAIL_ENV__
+
 # ── 加固（服务被攻破也走不出去）────────────────────────────────────────
 NoNewPrivileges=true
 PrivateTmp=true

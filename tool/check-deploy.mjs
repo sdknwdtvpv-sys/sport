@@ -29,7 +29,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,7 +69,9 @@ function render(tpl, vars) {
     .replaceAll('__BACKEND_PORT__', vars.BACKEND_PORT)
     .replaceAll('__COLLECTOR_PORT__', vars.COLLECTOR_PORT)
     .replaceAll('__DOMAIN__', 'api.example.com')
-    .replaceAll('__NODE__', vars.NODE ?? '/usr/bin/node');
+    .replaceAll('__NODE__', vars.NODE ?? '/usr/bin/node')
+    // 邮件口令那个 EnvironmentFile 的路径（install.sh 里定的，单元里是 `EnvironmentFile=-…`）
+    .replaceAll('__MAIL_ENV__', '/etc/lianleme/mail.env');
 }
 
 const HARDENING = [
@@ -321,6 +323,33 @@ function inspect(root) {
   }
   facts.push(`占位符 ${tokens.size} 个，install.sh 全部覆盖`);
 
+  // ── 2之九. 服务端读的环境变量 ↔ 部署文档（2026-10-06，账号体系上线时加）
+  //
+  // 为什么单列一条：账号体系要读 6 个环境变量（SMTP + 反枚举密钥），而它们**不在**单元文件里
+  // （口令走 0600 的 EnvironmentFile，见 README）。于是"代码读什么"与"文档教什么"很容易
+  // 各说一套 —— 而这条错的代价是"照着文档配完，账号体系起不来/静默没有账号"，
+  // 排查要从 systemd 日志往回倒。
+  //
+  // ⚠️ 路径一律用**传进来的 root**（自检就是靠它造夹具的）。第一版这里写的是模块级的 ROOT，
+  // 于是"夹具里把变量名删掉"这条自检**永远绿**——守卫读的是真仓库，变异根本没被它看见。
+  // 这正是"守卫必须自检"的理由：它错得一点声音都没有。
+  const envNames = new Set();
+  for (const f of readdirSync(join(root, 'server'))) {
+    if (!f.endsWith('.mjs')) continue;
+    for (const m of readFileSync(join(root, 'server', f), 'utf8').matchAll(/LIANLEME_[A-Z0-9_]+/g)) {
+      envNames.add(m[0]);
+    }
+  }
+  {
+    const readme = readFileSync(join(deploy, 'README.md'), 'utf8');
+    const missing = [...envNames].filter((n) => !readme.includes(n));
+    if (missing.length) {
+      problems.push(`server/deploy/README.md 里没有写这些环境变量：${missing.join('、')} ——`
+        + '代码真的会读它们，而文档没提，照着文档配就是配不全');
+    }
+    facts.push(`服务端环境变量 ${envNames.size} 个，README 全部覆盖`);
+  }
+
   // ── 3. 与客户端对账（三个 dart-define 必须逐字相同）
   //
   // ⚠️ 为什么是**三个**：云备份要「地址 + 显式声明」两个开关同时给，入口才出现
@@ -381,7 +410,11 @@ function selftest() {
     cpSync(realDeploy, join(root, 'server/deploy'), { recursive: true });
     // 单元里 ExecStart 指的入口也要在夹具里，否则每一条用例都会红在"入口不存在"上 ——
     // 那样"变异红了"就不是因为被测的那条守卫生效（假通过）。
-    for (const f of ['backend.mjs', 'backend-store.mjs', 'collector.mjs']) {
+    // ⚠️ 这里要跟着"服务端真实有哪些 .mjs"走：环境变量那条对账是拿**仓库里所有**
+    // server/*.mjs 去搜 `LIANLEME_*` 的，夹具少拷一个，那条用例就会"因为没搜到而全绿"
+    // ——自检当场抓到了这个（2026-10-06 加 auth.mjs / mailer.mjs 时）。
+    for (const f of ['backend.mjs', 'backend-store.mjs', 'collector.mjs',
+      'auth.mjs', 'auth-store.mjs', 'mailer.mjs']) {
       cpSync(join(ROOT, 'server', f), join(root, 'server', f));
     }
     for (const [rel, src] of Object.entries(realFiles)) {
@@ -417,6 +450,9 @@ function selftest() {
   // 变异体红了却红在别的原因上，等于那条守卫根本没被测到。
   const cases = [
     ['好的部署包：全绿', null, true, null],
+    // 2026-10-06：账号体系那 6 个环境变量必须写在部署文档里
+    ['部署文档漏掉一个服务端环境变量', (r) => editAll(r, 'README.md',
+      'LIANLEME_SMTP_FROM', 'SMTP_FROM'), false, 'README.md 里没有写这些环境变量'],
     ['Caddyfile 的收集端路由指错端口', (r) => edit(r, 'Caddyfile',
       'reverse_proxy 127.0.0.1:__COLLECTOR_PORT__', 'reverse_proxy 127.0.0.1:__BACKEND_PORT__'),
       false, 'Caddyfile 的 /v1/events 指向'],

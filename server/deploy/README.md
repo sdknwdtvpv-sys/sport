@@ -45,6 +45,33 @@ BACKEND_PORT=18790 COLLECTOR_PORT=18787 DOMAIN=api.example.com bash server/deplo
 不覆盖别人的 Caddyfile（靠 `managed-by: lianleme-install` 标记区分；覆盖需显式 `--force-config` 且先备份）·
 不抢已占用的端口 · 不在已有 Nginx/Apache 的机器上装第二个反代 · Nginx 片段同样不许开 `access_log`。
 
+## 账号体系要用的环境变量（**口令不走单元文件**）
+
+装了账号体系之后，服务端要读下面这些变量（代码真的会读的就是这几个；
+`tool/check-deploy.mjs` 会拿这份文档与 `server/*.mjs` 逐字对账）：
+
+| 变量 | 作用 | 不填的后果 |
+|---|---|---|
+| `LIANLEME_AUTH_SECRET` | 反枚举用的假盐密钥（任意一串长随机串，**必须固定**：换了它，客户端拿到的盐会漂） | 服务端**拒绝启动**（宁可起不来，也不要一套会漂的盐） |
+| `LIANLEME_SMTP_HOST` | 邮件服务器（如 `smtp.qq.com`） | 没有账号体系：`/v1/auth/*` 一律 404，备份照常 |
+| `LIANLEME_SMTP_PORT` | 默认 **465**（隐式 TLS）。⚠️ **不支持 STARTTLS（587）**：那要重开一次 TLS 并把后续对话换掉，而它的历史漏洞正是"剥离攻击"（中间人拦掉 STARTTLS 广告、客户端退回明文发口令）。主流邮箱都给 465 | —— |
+| `LIANLEME_SMTP_USER` / `LIANLEME_SMTP_PASS` | SMTP 账号与**授权码**（不是登录密码） | 同上（没有账号体系） |
+| `LIANLEME_SMTP_FROM` | 发件人地址（要与 SMTP 账号对得上，否则多半被拒） | 同上 |
+| `LIANLEME_MAIL_OUT` | **只给本地与自检**：把邮件（含验证码）写到一个文件，不联网 | 生产**不要**设它 —— 那会把验证码写进服务器上的一个文件 |
+
+**它们放在哪、为什么**：`install.sh` 会建一个 **root 0600** 的
+`/etc/lianleme/mail.env`（空模板，**不覆盖已有的**），由你手工填；后端单元里是
+`EnvironmentFile=-/etc/lianleme/mail.env`（前缀 `-` = 文件不存在也不阻止启动）。
+
+**为什么不让安装脚本替你写**：`install.sh` 的 `render()` 是用 `sed` 把值渲染进
+**0644 的 systemd 单元**的 —— 口令走那条路就是明文落盘、进 `--dry-run` 的输出、
+还进 shell 历史（口令里带 `#`/`&`/`\` 更会直接破坏替换）。
+所以这一条通道是刻意与其它配置**分开**的：路径走 sed（不是秘密），值走 0600 文件。
+
+填完记得：`sudo systemctl restart lianleme-backend`，然后
+`curl -s https://api.example.com/healthz` 应当多出 `binds` / `tokens` 两个字段
+（有账号体系才会有它们）。
+
 ## 装完之后（我接手的部分）
 
 ```bash

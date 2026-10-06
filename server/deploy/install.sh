@@ -205,6 +205,47 @@ run "install -d -o root -g root -m 755 '$APP_DIR'"
 run "install -d -o '$SVC_USER' -g '$SVC_USER' -m 750 '$DATA_DIR'"
 run "install -d -o root -g root -m 755 '$APP_DIR/server'"
 
+step "2.5/7 建邮件的密钥文件（**空模板**，你手工填）"
+# ⚠️ 为什么不让安装脚本替你写这些值：`render()` 用的是 `sed -e "s#__X__#$VAL#g"`，
+# 而它渲染的目标是 0644 的 systemd 单元 —— 口令走那条路就是**明文落盘 + 进 --dry-run 输出
+# + 进 shell 历史**（口令里带 `#`/`&`/`\` 还会直接破坏替换）。所以这里只建一个 0600 的空模板，
+# 值由你 `sudo vi` 填进去；缺了它也不影响启动（单元里写的是 `EnvironmentFile=-…`）。
+MAIL_ENV_DIR=/etc/lianleme
+MAIL_ENV="$MAIL_ENV_DIR/mail.env"
+run "install -d -o root -g root -m 750 '$MAIL_ENV_DIR'"
+if [ -f "$MAIL_ENV" ]; then
+  say "已存在，**不覆盖**：$MAIL_ENV"
+else
+  if [ "$DRY_RUN" = 1 ]; then
+    say "[dry-run] 会写入空模板：$MAIL_ENV（0600，root:root）"
+    MAIL_ENV_CREATED=0
+  else
+    cat > "$MAIL_ENV" <<'MAILENV'
+# 练了么 · 后端的环境变量（由 install.sh 建的空模板）
+# ⚠️ 这个文件必须是 0600、只有 root 能读（systemd 以 root 身份读它）。
+# ⚠️ 填完要 `systemctl restart lianleme-backend`。
+# 不填的后果是"没有账号体系"：/v1/auth/* 会 404，备份那条路照常工作。
+
+# 反枚举用的假盐密钥（**必须固定**，随便一串长随机串）
+LIANLEME_AUTH_SECRET=
+
+# 邮件（发验证码）。只实现隐式 TLS（465）；不建议用明文端口。
+LIANLEME_SMTP_HOST=
+LIANLEME_SMTP_PORT=465
+LIANLEME_SMTP_USER=
+LIANLEME_SMTP_PASS=
+LIANLEME_SMTP_FROM=
+MAILENV
+    run "chown root:root '$MAIL_ENV'"
+    run "chmod 600 '$MAIL_ENV'"
+  fi
+  if [ "${MAIL_ENV_CREATED:-1}" = 1 ]; then
+    say "空模板已建好：$MAIL_ENV —— 填完再重启服务（不填＝没有账号体系，别的功能不受影响）。"
+  else
+    say "（dry-run：上面那个文件**没有真的写**）"
+  fi
+fi
+
 step "3/7 拷代码（只拷服务端要用的 6 个文件）"
 # ⚠️ 这份白名单是**唯一**决定"哪些文件会到服务器上"的地方（`tool/check-deploy.mjs` 只看
 # ExecStart 的入口在仓库里存在，**不查它是否被拷过去**）。漏一个的后果不是部署报错，
@@ -219,11 +260,12 @@ step "4/7 装 systemd 单元"
 render() {  # render <模板> <目标>
   local tpl="$1" out="$2"
   if [ "$DRY_RUN" = 1 ]; then
-    say "[dry-run] 渲染 $tpl → ${out}（APP_DIR/DATA_DIR/USER/PORT/NODE 逐个替换）"
+    say "[dry-run] 渲染 $tpl → ${out}（APP_DIR/DATA_DIR/USER/PORT/NODE/MAIL_ENV 逐个替换）"
     return 0
   fi
   sed -e "s#__APP_DIR__#$APP_DIR#g" \
       -e "s#__DATA_DIR__#$DATA_DIR#g" \
+      -e "s#__MAIL_ENV__#$MAIL_ENV#g" \
       -e "s#__USER__#$SVC_USER#g" \
       -e "s#__BACKEND_PORT__#$BACKEND_PORT#g" \
       -e "s#__COLLECTOR_PORT__#$COLLECTOR_PORT#g" \
