@@ -50,8 +50,19 @@ adb -s <设备> shell wm size reset          # 记得还原
 ```bash
 cd app
 flutter drive --driver=test_driver/screenshot_driver.dart \
-              --target=integration_test/screenshots_test.dart -d <设备 id>
+              --target=integration_test/screenshots_test.dart -d <设备 id> \
+              --dart-define=LIANLEME_BACKUP_URL=https://api.elliotli.work \
+              --dart-define=LIANLEME_BACKUP_DISCLOSED=true \
+              --dart-define=LIANLEME_ANALYTICS_URL=https://api.elliotli.work/v1/events
 ```
+
+> ⚠️ **2026-10-06 起：截图要带上面那三个 dart-define**（＝正式包那个变体）。
+> 起因很实际：**正式包从 v1.43.0 起就配了服务器地址**，于是「数据与备份」里
+> 有「云备份」与「账号」两行；而不带 define 跑出来的图**这两行是没有的** ——
+> 那等于拿一个用户装不到的形态去当商店素材。以前没写这一条，是因为那时候
+> 正式包真的没配地址（变体 A），现在是变体 B 了。
+> ⚠️ 顺带说明：**「账号」那一页本身还不在三套图里**（脚本里没有那一步）——
+> 要加就得给 `screenshots_test.dart` 加一步，并且三套的**张数与文档、守卫一起改**。
 **`-d` 一定要给**：接了两台设备时（例如真机 + 模拟器），不指定就是薛定谔的截图。
 本仓库的做法与踩过的坑见 `docs/dev-environment.md`「安卓模拟器」一节（
 `emulator-5554` 就是在那台无头模拟器上跑的，**不需要解锁真机**）。

@@ -75,7 +75,7 @@
 
 ## 三、App Privacy 隐私标签
 
-### 变体 A：当前发布的包（两个地址都没配）→ **Data Not Collected**
+### 变体 A：没配地址的包（两个地址都没配）→ **Data Not Collected**（⚠️ 正式包不是它，见变体 B）
 
 Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服务之外访问它"
 （[Apple 文档](https://developer.apple.com/app-store/app-privacy-details/)）。
@@ -84,7 +84,7 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 
 这是本项目最硬的那句卖点，也是**可以自证**的：`docs/privacy-policy.md` 附录 B 给了命令。
 
-### 变体 B：配了地址的包 → 按下表填
+### 变体 B：配了地址的包（＝正式包）→ 按下表填
 
 | Apple 类别 | 是否收集 | 用途 | 是否与身份关联 | 是否用于追踪 |
 |---|---|---|---|---|

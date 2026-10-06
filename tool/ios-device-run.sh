@@ -29,6 +29,18 @@
 #    docs/ios-free-provisioning-guide.md 第六节。
 set -euo pipefail
 
+# ── 前置：`flutter` 与 `xcodebuild` 必须在 PATH 上 ────────────────────────
+# ⚠️ 2026-10-06 踩到：脚本**不自己 source 环境**，没 source 的话会一路跑到
+# `xcodebuild` 那一步才报 `flutter: command not found`（而且那时工程已经被临时改过）。
+# 宁可在这里就停下，并给出那句要敲的命令。
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "✗ 找不到 flutter。先 source 环境再跑：" >&2
+  echo "    source ~/HARNESS/lianleme/flutter-env.sh" >&2
+  exit 1
+fi
+command -v xcodebuild >/dev/null 2>&1 || {
+  echo "✗ 找不到 xcodebuild（要装完整 Xcode，不是只有 Command Line Tools）" >&2; exit 1; }
+
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 PBX="$REPO/app/ios/Runner.xcodeproj/project.pbxproj"
 BAK="$(mktemp -t lianleme-pbxproj)"
@@ -100,6 +112,24 @@ free = [t.get("teamID") for t in flat if isinstance(t, dict) and t.get("isFreePr
 allt = [t.get("teamID") for t in flat if isinstance(t, dict)]
 print(((free or allt or [""])[0]) or "")
 ' || true)"
+fi
+# ⚠️ 兜底（2026-10-06 加，Xcode 27 上真的踩到）：新版 Xcode **不再把 Team 列表写进
+# `com.apple.dt.Xcode` 的 defaults**（`IDEProvisioningTeamByIdentifier` 那个键没了），
+# 于是上面那段读不到东西 —— 但账号其实登录着、证书也在钥匙串里。
+# 所以再试两条**只依赖本机已有产物**的路子：
+#   ① 已有描述文件里的 TeamIdentifier（Xcode 自己下的，最准）；
+#   ② 签名证书的 OU（`Apple Development: …` 那张）。
+# 两条都**不把 Team 写进仓库** —— 只是当场读出来用。
+if [ -z "$TEAM_ID" ]; then
+  TEAM_ID="$(for f in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"/*.mobileprovision; do
+      [ -f "$f" ] || continue
+      security cms -D -i "$f" 2>/dev/null | plutil -extract TeamIdentifier.0 raw - 2>/dev/null && break
+    done | head -1)"
+fi
+if [ -z "$TEAM_ID" ]; then
+  TEAM_ID="$(security find-certificate -c "Apple Development" -p 2>/dev/null \
+    | openssl x509 -noout -subject -nameopt rfc2253 2>/dev/null \
+    | sed -n 's/.*OU=\([A-Z0-9]*\).*/\1/p' | head -1)"
 fi
 if [ -z "$TEAM_ID" ]; then
   red "✗ 没找到可用的 Team —— 先在 Xcode → Settings（⌘,）→ Accounts 里登录你的 Apple ID（免费即可）"

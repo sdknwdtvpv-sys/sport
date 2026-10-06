@@ -160,6 +160,23 @@ iPhone → 设置 → 通用 → VPN 与设备管理 → 开发者 App → 你�
 
 ---
 
+## 五点五、Xcode 27 上 Team 自动识别失效了（2026-10-06 踩到）
+
+`tool/ios-device-run.sh` 原先从 `defaults export com.apple.dt.Xcode` 里读
+`IDEProvisioningTeamByIdentifier` 拿 Team。**Xcode 27 不再写这个键了**，于是脚本报
+「没找到可用的 Team」，而账号其实登录着（钥匙串里那张 `Apple Development: …` 证书就是证据）。
+
+**现在的兜底**（脚本里已加，按顺序试）：
+① 环境变量 `LIANLEME_TEAM_ID`；
+② Xcode 下过的描述文件里的 `TeamIdentifier`（`~/Library/Developer/Xcode/UserData/Provisioning Profiles/*.mobileprovision`，最准）；
+③ 签名证书的 OU（`security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject`）。
+**三条都不把 Team 写进仓库**（它属于某个 Apple ID）—— 只是当场读出来用。
+
+同一次还修了脚本的两个小坑：**没 source 环境时会一路跑到 `xcodebuild` 才报
+`flutter: command not found`**（那时工程已经被临时改过）→ 现在开头就检查 `flutter`/`xcodebuild`；
+另外记一笔：`LIANLEME_DEVICE` 那个 UDID **要照抄 `devicectl` 的输出**，
+我手工转写时多打了一个字母，`xcodebuild` 报的是 "Unable to find a device matching …"（看起来像设备没连）。
+
 ## 六、2026-10-04 实测记（iPhone 17 Pro · iOS 27.2 · Xcode 27.0）
 
 这一节只写**真跑过、看到过**的东西 —— 上面那些 🟡 里还没验到的，继续留在 🟡。
