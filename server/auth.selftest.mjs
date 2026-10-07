@@ -62,7 +62,12 @@ export async function selftest() {
     secret: SECRET,
     log: (m) => logged.push(m),
     // 自检不能等 60 秒；真实默认值在 auth.mjs 里（60 秒 / 10 条 / 10 次失败）。
-    limits: { codeMinIntervalMs: 80 },
+    //
+    // ⚠️ 2026-10-07（CI 上真红过一次）：这里原来是 `80`，而下面那条"刚发过就再发"的断言
+    // 靠的是**两次 HTTP 请求之间的真实间隔小于这个数** —— CI 机器一慢，第二次请求就在
+    // 窗口之外拿到 200，变成一条"看机器脸色"的假红。现在放到 3 秒（比实测的 CI 抖动高出
+    // 一个数量级），并且把**唯一一处真的需要等**的地方显式写出来（见下面重置那一段）。
+    limits: { codeMinIntervalMs: 3000 },
   });
   const { server } = createBackend({ store, auth, log: (m) => logged.push(m) });
 
@@ -101,7 +106,7 @@ export async function selftest() {
     const code1 = await post('/v1/auth/code', { email: EMAIL, purpose: 'register' });
     check('发验证码返回 200（不透露这个邮箱注册过没有）', code1.status === 200);
     const tooSoon = await post('/v1/auth/code', { email: EMAIL, purpose: 'register' });
-    check('80 毫秒内再发被限流（429）', tooSoon.status === 429, `实际 ${tooSoon.status}`);
+    check('刚发过就再发被限流（429）', tooSoon.status === 429, `实际 ${tooSoon.status}`);
     const theCode = lastCode(mailPath);
     check('邮件里真的有一个 6 位验证码', /^\d{6}$/.test(String(theCode)), String(theCode));
     await sleep(100);
@@ -198,6 +203,11 @@ export async function selftest() {
       && (await post('/v1/auth/login', { email: EMAIL, verifier: newVerifier })).status === 200);
 
     // ---- 7. 重置（忘口令 → 恢复码 + 邮箱验证码 → 设新口令） ----
+    //
+    // ⚠️ 这里**必须真的把最小间隔等过去**：重置验证码与第 2 节那封是同一个邮箱，
+    // 而发码的限流键就是邮箱。全自检里只有这一处等，是因为只有这一处**需要**等
+    // （其余断言都不该依赖"机器快慢"）。
+    await sleep(3100);
     const before = mailCount(mailPath);
     check('重置验证码发出（200）',
       (await post('/v1/auth/code', { email: EMAIL, purpose: 'reset' })).status === 200);
