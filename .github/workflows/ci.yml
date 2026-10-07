@@ -83,6 +83,12 @@ jobs:
       - name: 失败原因（把门禁里红的那几行抬成注解）
         if: failure()
         run: |
+          # ⚠️ 两条都要改对（2026-10-07 踩到）：
+          #   ① **缩进的诊断行也要抬**（`^    `）—— 引导失败时真正的原因就是
+          #      `verify.sh` 打印的那几行缩进正文，而它们不匹配 ✗/⊘，全被漏掉；
+          #   ② **头尾各抬一段** —— 只 `tail` 会把最前面的引导失败（pub get / build_runner）
+          #      挤出窗口，而"为什么红"在最前、"红在哪一层"在最后。
           sed 's/\x1b\[[0-9;]*m//g' /tmp/lianleme-gate.log \
-            | grep -E '✗|⊘|未发现失败|有检查未通过|^\[[0-9]/6\]' | tail -25 \
+            | grep -E '✗|⊘|未发现失败|有检查未通过|^\[[0-9]/6\]|^    ' > /tmp/redlines.txt || true
+          { head -30 /tmp/redlines.txt; echo '—— 日志尾部 ——'; tail -30 /tmp/redlines.txt; } \
             | sed 's/^/::error::/' || true

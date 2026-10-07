@@ -144,24 +144,34 @@ echo
 if [ -n "$FLUTTER_BIN" ] && [ ! -f app/.dart_tool/package_config.json ]; then
   echo "${BOLD}[0] 首次运行：拉依赖（pub get）${OFF}"
   PUBLOG=/tmp/lianleme-bootstrap-pubget.log
+  # ⚠️ **失败重试一次**（2026-10-07 加）：CI 上拉包是从 pub.dev 现拉的，
+  # registry 抖一下就会让整条门禁红成一片（而本地有缓存，永远看不到这种红）。
+  # 重试一次很便宜；真的是"拉不动"就还是红。
   if with_timeout 420 env VERIFY_APP="$REPO/app" VERIFY_CACHE="$REPO/.pub-cache" VERIFY_FLUTTER="$FLUTTER_BIN" \
-      bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" pub get' >"$PUBLOG" 2>&1; then
+      bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" pub get' >"$PUBLOG" 2>&1 \
+    || { echo "  ${YELLOW}…pub get 第一次失败，5 秒后重试${OFF}"; sleep 5; \
+         with_timeout 420 env VERIFY_APP="$REPO/app" VERIFY_CACHE="$REPO/.pub-cache" VERIFY_FLUTTER="$FLUTTER_BIN" \
+           bash -c 'cd "$VERIFY_APP" && PUB_CACHE="$VERIFY_CACHE" "$VERIFY_FLUTTER" pub get' >>"$PUBLOG" 2>&1; }; then
     echo "  ${GREEN}✓${OFF} 依赖就绪（缓存 $REPO/.pub-cache）"
   else
     echo "  ${YELLOW}⊘ 阻塞${OFF} —— pub get 没成功：属环境问题，不是测试失败。"
-    strip "$PUBLOG" | tail -5 | sed 's/^/    /'
+    # ⚠️ 尾 20 行（原先是 5）：CI 上唯一能看到原因的地方就是这几行，
+    # 而 pub 的报错正文常常在最后几行之前（2026-10-07 就是因为只看 5 行，
+    # 只知道"build_runner 没成功"却不知道**为什么**）。
+    strip "$PUBLOG" | tail -20 | sed 's/^/    /'
     blocked=1
   fi
 fi
 if [ -n "$DART_BIN" ] && [ -f app/.dart_tool/package_config.json ] && [ ! -f app/lib/data/db.g.dart ]; then
   echo "${BOLD}[0] 首次运行：生成 drift 代码（build_runner）${OFF}"
   # db.g.dart 是 part 文件：缺了它第 4 层必然报 URI 不存在、第 5 层必然编译失败。
-  if (cd app && PUB_CACHE="$REPO/.pub-cache" "$DART_BIN" run build_runner build --delete-conflicting-outputs) \
-      >>"$LOG" 2>&1; then
+  if (cd app && PUB_CACHE="$REPO/.pub-cache" "$DART_BIN" run build_runner build) >>"$LOG" 2>&1 \
+     || { echo "  ${YELLOW}…build_runner 第一次失败，5 秒后重试${OFF}"; sleep 5; \
+          (cd app && PUB_CACHE="$REPO/.pub-cache" "$DART_BIN" run build_runner build) >>"$LOG" 2>&1; }; then
     echo "  ${GREEN}✓${OFF} app/lib/data/db.g.dart 已生成"
   else
     echo "  ${YELLOW}⊘ 阻塞${OFF} —— build_runner 没成功：属环境问题。"
-    strip "$LOG" | tail -5 | sed 's/^/    /'
+    strip "$LOG" | tail -20 | sed 's/^/    /'
     blocked=1
   fi
 fi
