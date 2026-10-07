@@ -19,7 +19,7 @@ import 'package:lianleme/data/local_store.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/sync_queue.dart';
 import 'package:lianleme/domain/models.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 import 'package:lianleme/features/workout/workout_controller.dart';
 
 /// 深蹲：动作自带 180 秒
@@ -325,7 +325,7 @@ class _RestHostState extends State<_RestHost> {
 
   @override
   Widget build(BuildContext context) {
-    return ProfileScreen(
+    return SettingsHomeScreen(
       store: widget.store,
       repository: widget.repository,
       profile: widget.profile,

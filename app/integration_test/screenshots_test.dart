@@ -237,8 +237,14 @@ void main() {
     });
 
     await step('10b-data-tools', () async {
-      // 2026-10-01 重排：身体数据 / 导出 / 导入 / 删除都收进了「我 → 数据与备份」。
-      // 顺手把这一页也留一张 —— 它是"我"那一族里第二个二级页。
+      // 2026-10-01 重排：身体数据 / 导出 / 导入 / 删除都收进了「数据与备份」。
+      // ⚠️ **2026-10-07（v1.60.0）入口又变了一次**：三组设置从「我」页搬进
+      // **独立的设置页**，入口是外壳顶栏右上角那枚齿轮（用户 10.7 清单第 6 条）。
+      // 所以这一步先点齿轮，再从设置页进「数据与备份」——
+      // 少这一步，脚本会停在「我」页上截一张"找不到入口"的图（而它不会报错，
+      // 只会拍到一张错页面的截图：`check-screenshots` 只核张数与尺寸，核不出内容）。
+      await tester.tap(find.byKey(const Key('top-bar-settings')));
+      await settle(1200);
       await tester.dragUntilVisible(
         find.byKey(const Key('open-data-tools')),
         find.byType(ListView),

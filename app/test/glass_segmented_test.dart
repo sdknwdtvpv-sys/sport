@@ -215,7 +215,12 @@ void main() {
     expect(seg.labels!.length, 5);
     expect(seg.icons, isNotNull);
     expect(seg.icons!.length, 5);
-    expect(seg.icons, contains('dumbbell.fill'));
+    // ⚠️ 2026-10-07（v1.60.0）：图标顺序跟着 tab 顺序变了（「训练」挪到正中），
+    // 而且**正中那一格传的是空串** —— 它由 Flutter 画成一颗凸起的圆
+    // （`AppTabBar._withCenterAction`），原生再画一份就会叠出虚影。
+    expect(seg.icons, contains('chart.line.uptrend.xyaxis'));
+    expect(seg.icons![2], isEmpty, reason: '正中那格交给 Flutter 画，原生留空');
+    expect(seg.labels![2], isEmpty, reason: '同上：原生不画正中那格的文字');
     // 拖动信号必须**一路传到玻璃组件**（外壳 → AppTabBar → GlassSegmented）：
     // 断了的话页面照样能拖，但底下那颗玻璃会跳格 —— 看起来就是"不跟手"。
     expect(seg.dragIndex, same(drag), reason: '那条"跟手"的线就靠它');

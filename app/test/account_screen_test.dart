@@ -25,7 +25,7 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/features/account/account_screen.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 
 /// 测试用的便宜 KDF 参数（默认档一次约 0.2 秒，并发跑整套门禁时会拖到超时）
 const LoginKdf _fast = LoginKdf(memory: 1024, iterations: 1, parallelism: 1);
@@ -363,7 +363,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: h.local,
             repository: h.exercises,
             profile: h.profile,
@@ -381,7 +381,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: h.local,
             repository: h.exercises,
             profile: h.profile,

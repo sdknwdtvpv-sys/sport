@@ -29,7 +29,7 @@ import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/backup/cloud_backup_screen.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 
 /// 一个**校验位正确**的恢复码。
 ///
@@ -504,7 +504,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: h.store,
             repository: h.repository,
             profile: h.profile,
@@ -589,7 +589,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: h.store,
             repository: h.repository,
             profile: h.profile,
@@ -608,13 +608,16 @@ void main() {
     });
   });
 
-  group('「我」页的入口（决定这个功能到底出不出现在用户面前）', () {
+  group('设置页的入口（决定这个功能到底出不出现在用户面前）', () {
+    // ⚠️ 2026-10-07（v1.60.0）：入口从「我」页搬进了**设置页**（外壳顶栏那枚齿轮），
+    // 于是这一组测试的根 widget 换成了 `SettingsHomeScreen`；
+    // "那句实话说在哪儿"也跟着搬了：原来是「我」页底部的版本行，现在是设置页底部那行。
     testWidgets('没配服务器地址 → 连入口都没有，而且不说"不上传"以外的话',
         (WidgetTester tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: h.store,
             repository: h.repository,
             profile: h.profile,
@@ -624,9 +627,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // 「我」页那一行"数据只存在这台设备上"仍然在首页底部
-      await _scrollTo(tester, find.textContaining('数据只存在这台设备上'));
-      expect(find.textContaining('数据只存在这台设备上'), findsOneWidget);
+      // 设置页底部那一行：没配地址时说的是"不上传任何人"
+      await _scrollTo(tester, find.textContaining('不上传任何人'));
+      expect(find.textContaining('不上传任何人'), findsOneWidget);
 
       // 进「数据与备份」—— 没配地址时那里连「云备份」这一行都不该有
       await _openDataTools(tester);
@@ -638,7 +641,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: h.store,
             repository: h.repository,
             profile: h.profile,
@@ -649,10 +652,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // 配了云备份还说"不上传任何人"就是撒谎 —— 这句话在「我」页底部
-      await _scrollTo(tester, find.textContaining('端到端加密'));
-      expect(find.textContaining('不上传任何人'), findsNothing);
-      expect(find.textContaining('端到端加密'), findsOneWidget);
+      // 配了云备份还说"不上传任何人"就是撒谎 —— 这句话现在在设置页底部
+      await _scrollTo(tester, find.textContaining('唯一会联网的是匿名统计'));
+      expect(find.textContaining('不上传任何人'), findsNothing,
+          reason: '这个包配了服务器地址，"不上传任何人"就是一句假话');
+      expect(find.textContaining('你自己开的云备份'), findsOneWidget);
 
       // 入口本身在「数据与备份」里
       await _openDataTools(tester);

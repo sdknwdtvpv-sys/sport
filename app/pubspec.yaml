@@ -1,7 +1,7 @@
 name: lianleme
 description: 练了么 —— 一次点击记一组的力量训练记录工具
 publish_to: 'none'
-version: 1.59.0+74
+version: 1.60.0+75
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

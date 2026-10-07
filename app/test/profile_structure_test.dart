@@ -1,15 +1,17 @@
-/// 练了么 · 「我」页的**结构**（2026-10-01 重排）
+/// 练了么 · 「我」页 + 「设置」页的**结构**（2026-10-01 重排 / 2026-10-07 再收一次）
 ///
-/// 用户原话：「我」里面现在有些复杂能否有些收纳进次级页面？
-/// 真机走查证实了这条 —— 原先 7 个区块、8 个选项胶囊、要滚三屏，
-/// 导出 / 导入 / 删除全被埋在第一屏之后。重排之后这一页只留：
-/// 训练统计 + 三个入口（偏好设置 / 数据与备份 / 隐私与关于）+ 底部版本行。
+/// 两次重排的原话：
+///   * 2026-10-01：「我」里面现在有些复杂能否有些收纳进次级页面？ —— 于是这一页只留
+///     统计 + 三个入口（偏好设置 / 数据与备份 / 隐私与关于）+ 底部版本行；
+///   * **2026-10-07（v1.60.0）**：「**所有的设置相关的能不能集成到右上角，一个小齿轮图标**」
+///     —— 三个入口**连"我"页都不待了**，搬进独立的设置页（`SettingsHomeScreen`），
+///     入口是外壳顶栏右上角那枚齿轮（与你在哪一屏无关）。
 ///
-/// 这个文件钉两件事：
+/// 这个文件钉三件事：
 ///   1. **三个入口都在、都进得去**（点进去落到正确的二级页，且看到标志性内容）；
-///   2. **第一屏不许再长回去** —— 被收走的那些 key（开关 / 导出 / 删除 / 政策…）
-///      一旦重新出现在「我」页上就判红。没有这一条，下一次"顺手加一行"又会把它撑回三屏，
-///      而那时没人会记得今天为什么收。
+///   2. **「我」页上不许再出现设置类入口** —— 它们搬家了，回来一个就是 IA 走回头路；
+///   3. **「我」页自己不许再长回去** —— 被收走的那些 key（开关 / 导出 / 删除 / 政策…）
+///      一旦重新出现在「我」页上就判红。没有这一条，下一次"顺手加一行"又会把它撑回三屏。
 library;
 
 import 'dart:io';
@@ -29,8 +31,9 @@ import 'package:lianleme/features/profile/data_tools_screen.dart';
 import 'package:lianleme/features/profile/settings_screen.dart';
 import 'package:lianleme/features/profile/privacy_about_screen.dart';
 import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 
-/// 三个入口
+/// 三个入口（都在**设置页**上）
 const List<String> kEntries = <String>[
   'open-preferences',
   'open-data-tools',
@@ -53,6 +56,8 @@ const List<String> kMovedAway = <String>[
   'rest-follow',
   'rest-90',
   'unit-lb',
+  // ⚠️ 2026-10-07 新增：三个设置入口本身也不许回到「我」页上
+  ...kEntries,
 ];
 
 void main() {
@@ -86,6 +91,20 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> pumpSettings(WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: Scaffold(
+        body: SettingsHomeScreen(
+          store: store,
+          repository: repo,
+          profile: profile,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+  }
+
   /// 从头滚到底，每一步都检查一遍"这些 key 不许出现"。
   ///
   /// 为什么不只看首屏：ListView 是懒构建的，**没滚到 = 不存在** ——
@@ -94,7 +113,7 @@ void main() {
     for (int i = 0; i < 8; i++) {
       for (final String key in kMovedAway) {
         expect(find.byKey(Key(key)), findsNothing,
-            reason: '$key 属于二级页，不许再出现在「我」页上（第 $i 屏）');
+            reason: '$key 属于二级页/设置页，不许再出现在「我」页上（第 $i 屏）');
       }
       if (i == 7) break;
       await tester.drag(find.byType(ListView), const Offset(0, -300));
@@ -102,7 +121,7 @@ void main() {
     }
   }
 
-  testWidgets('「我」页只有三个入口 + 统计 + 版本行（收走的那些不许回来）',
+  testWidgets('「我」页 = 身份 + 我的进度 + 统计 + 成就 + 版本行（设置入口不许回来）',
       (WidgetTester tester) async {
     await store.saveSet(SetRecord(
       id: 's1',
@@ -116,22 +135,23 @@ void main() {
     ));
     await pumpProfile(tester);
 
-    // 三个入口都在，但**可能不在首屏**（2026-10-06 加了段位卡之后，
-    // `open-preferences` 被顶到测试视口之外）—— ListView 懒构建，不滚过去
-    // `find` 就是空的。老规矩：先 dragUntilVisible，再断言。
-    for (final String key in kEntries) {
-      await tester.dragUntilVisible(
-          find.byKey(Key(key)), find.byType(ListView), const Offset(0, -220));
-      await tester.pumpAndSettle();
-      expect(find.byKey(Key(key)), findsOneWidget, reason: '$key 必须在「我」页上');
-    }
+    // 身份块在**首屏第一个**（10.7 清单第 7 条：昵称 + 账号 ID）
+    expect(find.byKey(const Key('profile-identity')), findsOneWidget);
+    expect(find.byKey(const Key('profile-nickname')), findsOneWidget);
+    expect(find.byKey(const Key('profile-id-line')), findsOneWidget);
+    expect(find.text('还没设昵称'), findsOneWidget, reason: '没设过就如实写，不编默认名');
 
-    // 统计还在这一页（它是"每天看"的那一类）。**先滚回去再断言**：
-    // 上面为了找那三个入口已经滚到页面下部，统计卡此时已经被 ListView 回收掉了。
+    // 统计还在这一页（它是"每天看"的那一类）
     await tester.dragUntilVisible(find.byKey(const Key('profile-stat-workouts')),
-        find.byType(ListView), const Offset(0, 220));
+        find.byType(ListView), const Offset(0, -220));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('profile-stat-workouts')), findsOneWidget);
+
+    // 成就入口也还在（它读的就是这一页刚算出来的数）
+    await tester.dragUntilVisible(find.byKey(const Key('open-achievements')),
+        find.byType(ListView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('open-achievements')), findsOneWidget);
 
     await scrollThroughAndCheck(tester);
 
@@ -139,9 +159,26 @@ void main() {
     expect(find.textContaining('版本 '), findsOneWidget);
   });
 
+  testWidgets('「设置」页 = 三个入口 + 一行实话（原来的「我」页入口搬到这里）',
+      (WidgetTester tester) async {
+    await pumpSettings(tester);
+
+    for (final String key in kEntries) {
+      await tester.dragUntilVisible(
+          find.byKey(Key(key)), find.byType(ListView), const Offset(0, -220));
+      await tester.pumpAndSettle();
+      expect(find.byKey(Key(key)), findsOneWidget, reason: '$key 必须在设置页上');
+    }
+    // 一行实话：这些设置都在本机
+    await tester.dragUntilVisible(find.textContaining('设置都存在这台手机上'),
+        find.byType(ListView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('设置都存在这台手机上'), findsOneWidget);
+  });
+
   /// 点开一个入口，断言落到哪一屏、且有页内返回箭头。
   Future<void> openEntry(WidgetTester tester, String key, Type page) async {
-    await pumpProfile(tester);
+    await pumpSettings(tester);
     final Finder row = find.byKey(Key(key));
     await tester.dragUntilVisible(row, find.byType(ListView), const Offset(0, -220));
     await tester.pumpAndSettle();
@@ -153,8 +190,8 @@ void main() {
     expect(find.byKey(const Key('subpage-back')), findsOneWidget);
   }
 
-  // ⚠️ 三个入口**分成三个测试**，不要写成循环里连着 pumpProfile：
-  // `MaterialApp` 的路由栈会被复用，第二轮的「我」页其实还压在第一轮推上去的
+  // ⚠️ 三个入口**分成三个测试**，不要写成循环里连着 pumpSettings：
+  // `MaterialApp` 的路由栈会被复用，第二轮其实还压在第一轮推上去的
   // 二级页下面 —— 于是"再滚到入口"直接找不到（2026-10-01 踩过）。
 
   testWidgets('入口一：偏好设置', (WidgetTester tester) async {
@@ -170,8 +207,7 @@ void main() {
   });
 
   testWidgets('偏好设置里能看到休息时长与单位', (WidgetTester tester) async {
-    await pumpProfile(tester);
-    // 老规矩：入口可能不在首屏（2026-10-06 段位卡把它往下推了一格）
+    await pumpSettings(tester);
     await tester.dragUntilVisible(
         find.byKey(const Key('open-preferences')),
         find.byType(ListView),
@@ -188,13 +224,7 @@ void main() {
 
   testWidgets('数据与备份里能看到导出与删除（危险动作单独一区）',
       (WidgetTester tester) async {
-    await pumpProfile(tester);
-    // 同上：先滚到入口再点（不滚就是"点了个寂寞"，警告里已经写着）
-    await tester.dragUntilVisible(
-        find.byKey(const Key('open-data-tools')),
-        find.byType(ListView),
-        const Offset(0, -220));
-    await tester.pumpAndSettle();
+    await pumpSettings(tester);
     await tester.tap(find.byKey(const Key('open-data-tools')));
     await tester.pumpAndSettle();
 
@@ -206,15 +236,7 @@ void main() {
   });
 
   testWidgets('隐私与关于里有政策、清单与许可三个入口', (WidgetTester tester) async {
-    await pumpProfile(tester);
-    // 2026-10-05：这一屏顶部多了等级卡，`open-privacy-about` 被推出测试视口 ——
-    // 不先滚到它就点了个寂寞（同一屏的 `openEntry` 一直是这么做的，这里漏了）。
-    await tester.dragUntilVisible(
-      find.byKey(const Key('open-privacy-about')),
-      find.byType(ListView),
-      const Offset(0, -220),
-    );
-    await tester.pumpAndSettle();
+    await pumpSettings(tester);
     await tester.tap(find.byKey(const Key('open-privacy-about')));
     await tester.pumpAndSettle();
 

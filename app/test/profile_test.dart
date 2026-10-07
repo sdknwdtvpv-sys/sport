@@ -20,6 +20,7 @@ import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/progress/badges.dart';
 import 'package:lianleme/core/vi_cards.dart';
 import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 import 'package:lianleme/features/profile/training_stats.dart';
 
 SetRecord _set({
@@ -214,6 +215,25 @@ void main() {
         theme: buildAppTheme(),
         home: Scaffold(
           body: ProfileScreen(store: store, repository: repo, profile: profile),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    /// 进「设置」总入口（2026-10-07 v1.60.0）：偏好设置 / 数据与备份 / 隐私与关于
+    /// 三组**从「我」页搬进了独立的设置页**，入口是外壳顶栏右上角那枚齿轮。
+    /// 所以凡是要进这三屏的测试，根 widget 换成 `SettingsHomeScreen`；
+    /// 断言与 key 一个都没改（改的只是"从哪儿进去"）。
+    Future<void> pumpSettings(WidgetTester tester, {Analytics? analytics}) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: SettingsHomeScreen(
+            store: store,
+            repository: repo,
+            profile: profile,
+            analytics: analytics,
+          ),
         ),
       ));
       await tester.pumpAndSettle();
@@ -507,7 +527,7 @@ void main() {
     });
 
     testWidgets('开关默认开着，关掉之后写进库', (WidgetTester tester) async {
-      await pumpProfile(tester);
+      await pumpSettings(tester);
       await openPage(tester, 'open-preferences');
       await scrollTo(tester, find.byKey(const Key('progression-switch')));
       expect(tester.widget<AppSwitchTile>(find.byKey(const Key('progression-switch'))).value,
@@ -528,18 +548,7 @@ void main() {
       // ① 开关显示的必须与库里一致；② 拨动必须**立刻**生效（等重启就晚了）；
       // ③ 关着的时候一条都不许记。
       final RecordingAnalytics analytics = RecordingAnalytics();
-      await tester.pumpWidget(MaterialApp(
-        theme: buildAppTheme(),
-        home: Scaffold(
-          body: ProfileScreen(
-            store: store,
-            repository: repo,
-            profile: profile,
-            analytics: analytics,
-          ),
-        ),
-      ));
-      await tester.pumpAndSettle();
+      await pumpSettings(tester, analytics: analytics);
 
       // 2026-10-01 重排：隐私开关在「我 → 隐私与关于」里
       await openPage(tester, 'open-privacy-about');
@@ -568,9 +577,27 @@ void main() {
       expect(analytics.countOf('set_logged'), 1, reason: '打开了才开始记');
     });
 
+    testWidgets('★ 身份块：昵称跟着库走；没登录就不显示 ID（10.7 清单第 7 条）',
+        (WidgetTester tester) async {
+      await profile.setNickname('李松', nowMs: 1000);
+      await pumpProfile(tester);
+
+      expect(find.byKey(const Key('profile-identity')), findsOneWidget);
+      expect(tester.widget<Text>(find.byKey(const Key('profile-nickname'))).data, '李松');
+      expect(tester.widget<Text>(find.byKey(const Key('profile-id-line'))).data,
+          contains('还没登录'),
+          reason: '没登录就不显示 ID —— 凭空编一个号就是假身份');
+    });
+
+    testWidgets('★ 没设过昵称 → 写"还没设昵称"（不编默认名）', (WidgetTester tester) async {
+      await pumpProfile(tester);
+      expect(tester.widget<Text>(find.byKey(const Key('profile-nickname'))).data,
+          '还没设昵称');
+    });
+
     testWidgets('点导出会把 CSV 放进剪贴板', (WidgetTester tester) async {
       await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
-      await pumpProfile(tester);
+      await pumpSettings(tester);
 
       await openPage(tester, 'open-data-tools');
       await scrollTo(tester, find.byKey(const Key('export-csv')));
@@ -586,7 +613,7 @@ void main() {
     testWidgets('点「删除全部数据」先弹二次确认；点取消什么都不删',
         (WidgetTester tester) async {
       await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
-      await pumpProfile(tester);
+      await pumpSettings(tester);
 
       await tapDeleteAll(tester);
 
@@ -603,9 +630,9 @@ void main() {
     testWidgets('确认后数据真没了，且界面立刻刷新（不是只清了库）',
         (WidgetTester tester) async {
       await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
-      await pumpProfile(tester);
-      await scrollTo(tester, find.byKey(const Key('profile-stat-sets')));
-      expect(find.byKey(const Key('profile-stat-sets')), findsOneWidget, reason: '前置：有数据');
+      // 前置用**库**判，不用界面上的统计卡 —— 那个卡在「我」页，而这条测试的根是设置页
+      expect(await store.allSets(), hasLength(1), reason: '前置：有数据');
+      await pumpSettings(tester);
 
       await tapDeleteAll(tester);
       await tester.tap(find.byKey(const Key('delete-all-confirm')));
@@ -613,24 +640,24 @@ void main() {
 
       expect(await store.allSets(), isEmpty, reason: '库里必须真删掉（硬删除）');
 
-      // 2026-10-01 重排之后，统计卡在上一级「我」页 —— 删完得退回那一页再看。
-      // （退回这一步本身就是设计的一部分：二级页不自己复制一份统计。）
+      // 2026-10-01 重排之后，统计卡在上一级「我」页 —— 删完得退回那一级再看。
+      // ⚠️ 2026-10-07（v1.60.0）那一级变了：设置三组搬进了**独立的设置页**
+      // （`SettingsHomeScreen`），所以从「数据与备份」退回来落在设置页上，那里没有统计。
+      // 于是"界面必须一起刷新"这条改成**从设置页再退一级、重新建一次「我」页**来验：
+      // 统计是从库里现算的（`ProfileScreen._load`），所以新页面看不到旧数据 ——
+      // 这正是这条断言真正要守的东西（"删了但界面还显示旧数字"）。
+      // ⚠️ 想验"**同一个实例**当场刷新"就得 pump 整个外壳（顶栏 → 设置 → 数据与备份 → 删），
+      // 那属于端到端，留给真机走查。
       await tester.tap(find.byKey(const Key('subpage-back')));
       await tester.pumpAndSettle();
+      expect(find.byType(SettingsHomeScreen), findsOneWidget, reason: '退回来是设置页');
 
-      // ⚠️ 断言统计卡之前要先滚回顶部：`ListView` 是**懒构建**的 ——
-      // 统计卡在首屏，退回来时就在视口里；下面这句仍保留"滚到目标"的语义。
-      await tester.dragUntilVisible(
-        find.textContaining('还没有训练记录'),
-        find.byType(ListView),
-        const Offset(0, 220),
-      );
-      await tester.pumpAndSettle();
+      await pumpProfile(tester);
+      await scrollTo(tester, find.textContaining('还没有训练记录'));
 
       expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
-          reason: '界面必须一起刷新 —— 否则用户以为没删掉');
+          reason: '界面必须跟着库走 —— 否则用户以为没删掉');
       expect(find.textContaining('还没有训练记录'), findsOneWidget);
-      expect(find.textContaining('已删除全部数据'), findsOneWidget);
     });
 
     testWidgets('删除全部数据会一并清掉还没上报的埋点事件', (WidgetTester tester) async {
@@ -643,7 +670,7 @@ void main() {
       );
       expect(await outbox.pending(), 1, reason: '前置：outbox 里有待发事件');
 
-      await pumpProfile(tester);
+      await pumpSettings(tester);
       await tapDeleteAll(tester);
       await tester.tap(find.byKey(const Key('delete-all-confirm')));
       await tester.pumpAndSettle();
@@ -658,7 +685,7 @@ void main() {
       await body.save(date: '2026-09-28', weightKg: 72.5, nowMs: 1000);
       expect(await body.count(), 1, reason: '前置：有一条体重');
 
-      await pumpProfile(tester);
+      await pumpSettings(tester);
       await tapDeleteAll(tester);
       await tester.tap(find.byKey(const Key('delete-all-confirm')));
       await tester.pumpAndSettle();

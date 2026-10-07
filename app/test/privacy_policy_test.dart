@@ -22,7 +22,7 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/features/profile/privacy_policy_screen.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 import 'package:drift/native.dart';
 
 Widget _wrapPolicy({Future<String> Function()? loader, String filing = ''}) => MaterialApp(
@@ -132,7 +132,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: store,
             repository: ExerciseRepository(db),
             profile: ProfileRepository(db),
@@ -189,7 +189,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: store,
             repository: ExerciseRepository(db),
             profile: ProfileRepository(db),

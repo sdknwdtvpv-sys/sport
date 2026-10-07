@@ -53,8 +53,6 @@ class TodayScreen extends StatelessWidget {
     this.onOpenLibrary,
     this.onLogWeight,
     this.onOpenAchievements,
-    this.onOpenNotifications,
-    this.unreadNotifications = 0,
     this.weeklyReport,
     this.onOpenWeeklyReport,
     this.muscleBalance,
@@ -228,10 +226,7 @@ class TodayScreen extends StatelessWidget {
   final VoidCallback? onOpenAchievements;
 
   /// 右上角铃铛（通知中心）。为 null 时不显示。
-  final VoidCallback? onOpenNotifications;
 
-  /// 未读消息数（0 = 不显示那个点）。
-  final int unreadNotifications;
 
   /// 「今天不想练？做 5 分钟活动 ›」（2026-10-01 加）。
   ///
@@ -257,7 +252,6 @@ class TodayScreen extends StatelessWidget {
       children: <Widget>[
         // 「接着练」永远排最上面：此刻用户是"我刚才在练"，接着练是他唯一该做的事
         if (onResume != null) _resumeCard(),
-        _greeting(),
         // 回归激励（第二部分第 9 条）：**断 7 天以上才出现**，出现时把那条
         // 轻量入口一起搬上来（见 `_comebackCard`）。
         if (comebackNudge != null) ...<Widget>[
@@ -326,75 +320,6 @@ class TodayScreen extends StatelessWidget {
     );
   }
 
-  /// 顶部那两行：今天 + 日期。**不写"下午好，某某"**——
-  /// VI 里那行问候带着用户名，而我们既没有昵称、账号本身也是可选的
-  /// （2026-10-06 起有邮箱+口令登录，但邮箱不是拿来问候的），印一句假名字比不印更糟。
-  Widget _greeting() {
-    const List<String> weekdays = <String>['一', '二', '三', '四', '五', '六', '日'];
-    final DateTime now = debugToday ?? DateTime.now();
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: <Widget>[
-        const Text(
-          '今天',
-          style: TextStyle(
-            color: Tokens.text,
-            fontSize: 34,
-            height: 1.05,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -1,
-          ),
-        ),
-        const SizedBox(width: Tokens.s3),
-        // ⚠️ `Flexible` + 省略号（v1.53）：系统字号调大时（1.5×），
-        // "今天"(34pt) 与这行日期会一起变宽，把右上角的铃铛挤出屏幕 ——
-        // 而铃铛是通知中心的唯一入口，挤没了等于那个功能消失。
-        // 宁可日期结尾省略，也不能挤掉入口（测试在 `today_plan_test` 的大字号那条）。
-        Flexible(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              '${now.month} 月 ${now.day} 日 · 周${weekdays[now.weekday - 1]}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Tokens.text3, fontSize: 13),
-            ),
-          ),
-        ),
-        const SizedBox(width: Tokens.s2),
-        // 铃铛（2026-10-05，新 VI 的首页右上角）。有未读才带那个点 ——
-        // 永远亮着的红点等于没有点。
-        if (onOpenNotifications != null)
-          GestureDetector(
-            key: const Key('open-notifications'),
-            behavior: HitTestBehavior.opaque,
-            onTap: onOpenNotifications,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  const Icon(Icons.notifications_none, color: Tokens.text2, size: 22),
-                  if (unreadNotifications > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        key: const Key('notifications-unread-dot'),
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                            color: Tokens.accent, shape: BoxShape.circle),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 
   /// 打卡卡（新 VI）。**0 天不写"0 天"** —— 那读起来像"你什么都没有"，
   /// 而事实是"今天练一次就开始记了"（文案在 `streakCopy()` 里，有测试钉着）。

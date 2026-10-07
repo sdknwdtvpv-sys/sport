@@ -25,7 +25,7 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/features/profile/collection_list_screen.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -167,7 +167,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(store: store, repository: repo, profile: profile),
+          body: SettingsHomeScreen(store: store, repository: repo, profile: profile),
         ),
       ));
       await settle(1200);

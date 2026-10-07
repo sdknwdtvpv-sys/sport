@@ -25,7 +25,7 @@ import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/profile/backup.dart';
 import 'package:lianleme/features/profile/backup_exporter.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 import 'package:lianleme/features/progress/progress_data.dart';
 
 const int _day = Duration.millisecondsPerDay;
@@ -347,7 +347,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: store,
             repository: repo,
             profile: profile,

@@ -56,14 +56,26 @@ class AppTabBar extends StatelessWidget {
   static double reservedSpaceFor(BuildContext context) =>
       GlassSurface.isSupportedPlatform ? height + floatMargin + 8 : 0;
 
+  /// **顺序**：`进步 / 数据 / 训练 / 计划 / 我的`（2026-10-07，v1.60.0）。
+  ///
+  /// 用户 10.7 清单第 2 条：「下面导航栏五个，**训练放在最中间**，并且最好跟其他四个
+  /// 做区别展示」。所以「训练」从最左挪到正中，并做成一颗**凸起的圆**（见
+  /// [_centerIndex] 与 `_centerAction`）—— 它本来就是"这个 App 的主按钮"。
+  ///
+  /// ⚠️ **下标语义跟着变了**：`main.dart` 的 `_bodyFor` 与初始 tab（2）必须与这一份
+  /// **逐条对齐**，错一条就是"点训练进了数据"。两处都有注释互相指着。
   static const List<({IconData icon, String label})> tabs =
       <({IconData icon, String label})>[
-    (icon: Icons.fitness_center, label: '训练'),
     (icon: Icons.show_chart, label: '进步'),
     (icon: Icons.bar_chart, label: '数据'),
+    (icon: Icons.fitness_center, label: '训练'),
     (icon: Icons.event_note, label: '计划'),
     (icon: Icons.person_outline, label: '我的'),
   ];
+
+  /// 凸起的那一格（正中）。它的图标由 Flutter 画在一颗圆里，**不画文字标签**
+  /// （Apple 那套"中间是动作、不是格子"的做法：有了文字反而像第二个 tab）。
+  static const int _centerIndex = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +94,12 @@ class AppTabBar extends StatelessWidget {
       child: Row(
         children: <Widget>[
           for (int i = 0; i < tabs.length; i++)
+            // ⚠️ 正中那一格**留空**：它由浮在底栏之上的那颗凸起圆顶替
+            // （见下面的 `_centerAction`）。留一格空的，是为了**五格仍然等宽** ——
+            // 直接少一格会让"计划/我的"整体左移，一眼就不齐。
+            if (i == _centerIndex)
+              const Expanded(child: SizedBox.shrink())
+            else
             Expanded(
               child: InkWell(
                 key: Key('tab-${tabs[i].label}'),
@@ -117,7 +135,7 @@ class AppTabBar extends StatelessWidget {
       ),
     );
 
-    if (!floating) return bar;
+    if (!floating) return _withCenterAction(bar, floating: false);
 
     // ⚠️ 这里不再垫 backdrop（2026-10-06 改）：外壳已把**内容铺满、底栏浮在它上面**
     // （`main.dart` 的 Stack），滚动时真实内容从玻璃后面经过 —— 这才是那个观感的来源。
@@ -132,7 +150,8 @@ class AppTabBar extends StatelessWidget {
     //
     // 材质：底托 `.regular`；选中胶囊同样 `.regular` + **一点白（12%）**，
     // 因为玻璃底托本身就比屏幕亮，选中那块要再亮一档才读得出来（苹果也是这么做的）。
-    return GlassSegmented(
+    return _withCenterAction(
+      GlassSegmented(
       key: const Key('glass-tab-bar'),
       count: tabs.length,
       index: current,
@@ -141,12 +160,16 @@ class AppTabBar extends StatelessWidget {
       // 胶囊往里缩 5pt：这条缝就是"凸起来的那块"与底托的分界
       pillInset: 5,
       dragIndex: dragIndex,
-      // 字与图标交给原生画（玻璃**里面**）：Flutter 那份在玻璃背后，会被折射出第二份虚影
-      labels: <String>[for (final ({IconData icon, String label}) t in tabs) t.label],
+      // 字与图标交给原生画（玻璃**里面**）：Flutter 那份在玻璃背后，会被折射出第二份虚影。
+      // ⚠️ 正中那一格（`_centerIndex`）**故意传空串**：它由 Flutter 画成一颗凸起的圆
+      // （见 `_centerAction`）—— 原生的 SF Symbol 与文字若照画，圆里会叠出一份虚影。
+      labels: <String>[
+        for (int i = 0; i < tabs.length; i++) i == _centerIndex ? '' : tabs[i].label,
+      ],
       icons: const <String>[
-        'dumbbell.fill',
         'chart.line.uptrend.xyaxis',
         'chart.bar.fill',
+        '',
         'calendar',
         'person',
       ],
@@ -157,6 +180,86 @@ class AppTabBar extends StatelessWidget {
       // 按住不放、横向拖到别格再松手 = 换 tab（`changes` 幂等，与点击那条路不冲突）
       onDragSelect: onChanged,
       child: bar,
+      ),
+      floating: true,
     );
   }
+
+  /// 底栏之上那颗**凸起的圆**（正中那一格，2026-10-07 v1.60.0）。
+  ///
+  /// 为什么是"浮在上面"而不是"画在格子里"：底栏只有 58pt 高，一格还要放图标 + 文字；
+  /// 要让中间那颗"看起来是**动作**而不是格子"，就得**顶出底栏的上沿**。
+  /// 于是它不进 `Row`，而是 `Stack` 里的一层 —— 五格仍然等宽（正中那格留空），
+  /// 圆浮在正中那一格的上方。
+  ///
+  /// 两端都套这一层（Android 通栏 / iOS 玻璃胶囊），**只有玻璃的底子不同** ——
+  /// 用户的原话里没有"只在 iOS 上区别展示"这层意思。
+  Widget _withCenterAction(Widget content, {required bool floating}) => Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          content,
+          Positioned(
+            top: -10,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Semantics(
+                button: true,
+                label: tabs[_centerIndex].label,
+                child: Tooltip(
+                  message: tabs[_centerIndex].label,
+                  child: GestureDetector(
+                    // ⚠️ key 与另外四格**同一套命名**（`tab-<label>`）：正中那格就是
+                    // 「训练」那一格，只是长得不一样。这样所有"点某个 tab"的测试与
+                    // 截图脚本（`Key('tab-我')` 那种）都不用改。
+                    key: Key('tab-${tabs[_centerIndex].label}'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onChanged(_centerIndex),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        // ⚠️ 这一格**必须有字**（「训练」）：底栏少了它，五个 tab 里就有一个
+                        // 光看图标的格子 —— 而且 `widget_test` 那条"5 个 Tab"的断言
+                        // 找的就是这五个字（它当场抓到了我第一版"中间不写字"的做法）。
+                        Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: Tokens.accent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Tokens.bg, width: 3),
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color: Tokens.accent.withValues(alpha: 0.35),
+                            blurRadius: 14,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                          child: Icon(
+                            tabs[_centerIndex].icon,
+                            size: 22,
+                            // 深墨字压在强调色上（与主按钮同一套：`Tokens.bg` 当"墨"用）
+                            color: Tokens.bg,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          tabs[_centerIndex].label,
+                          key: const Key('tab-center-label'),
+                          style: TextStyle(
+                            color: current == _centerIndex ? Tokens.accent : Tokens.text3,
+                            fontSize: 11,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
 }

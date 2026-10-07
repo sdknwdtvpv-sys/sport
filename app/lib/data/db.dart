@@ -207,6 +207,18 @@ class UserProfile extends Table {
   /// 它同样是身体数据（敏感个人信息），与体重共享那一道单独同意门。
   RealColumn get heightCm => real().nullable()();
 
+  /// **昵称**（2026-10-07，v24，10.7 清单第 7 条）。可空 = 没设过。
+  ///
+  /// 用户原话："现在账户只展示【我】，没办法有用户的名字，很难有身份感。能不能昵称+ID？"
+  ///
+  /// ⚠️ 三条边界写在列上，免得以后有人拿它当"账号"用：
+  ///   * **纯本地**：它不进云备份的合并键、不上报（埋点不带身份，见 privacy-facts）、
+  ///     也没打算做"分享名片"那类东西；
+  ///   * **可空**：没设过就是 null，界面如实写"还没设昵称"，**不编一个默认名**；
+  ///   * 与 `auth_session.email` 无关 —— 昵称不是身份，ID 才是（ID 取账号密钥哈希前缀，
+  ///     没登录就不显示 ID，见 `profile_screen.dart` 的身份块）。
+  TextColumn get nickname => text().nullable()();
+
   /// 「帮助改进产品」开关。关掉后除崩溃外一律不上报（见 analytics-sdk.md §10）。
   ///
   /// **默认开启**（2026-10-07，v23 —— 用户在原话里问"帮助改进产品能不能默认打开？"
@@ -565,12 +577,14 @@ class AppDatabase extends _$AppDatabase {
   /// 「先看库里真实的形状再决定加不加」——见迁移链尾那段的说明。
   /// v21（2026-10-06）：新增 `streak_protection`（连续打卡保护 / 补签）。**只加表**。
   /// v22（2026-10-06）：新增 `auth_session`（登录会话，账号体系 P1-3）。**只加表**。
+  /// v24（2026-10-07）：`user_profile` +`nickname`（昵称，10.7 清单第 7 条）。
+  /// **加列**，老库升上来是 null = 没设过（界面如实写"还没设昵称"）。
   /// v23（2026-10-07）：**只改一处列默认值** —— `user_profile.analytics_enabled`
   /// 的默认 0 → 1（「帮助改进产品」默认开，用户拍板）。
   /// ⚠️ **这一版不搬任何数据、也不重建任何表**：那个默认值只对"还没有那一行"的机器
   /// （= 新装）生效；**存量机器那一位原样不动**（迁移链尾那段写明了为什么）。
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -795,6 +809,15 @@ class AppDatabase extends _$AppDatabase {
           //     这条语义由 `app/test/migration_test.dart` 里"v22 库升到 v23"那条钉住。
           if (from < 23) {
             // 有意留空：只改列默认值，不搬数据、不重建表。
+          }
+
+          // v23 → v24：`user_profile` 加一列「昵称」。**只加列**，老库升上来是 null
+          // （= 没设过，界面如实写"还没设昵称"，不编一个默认名）。
+          // ⚠️ 与 v20 那几列同一个纪律：`onCreate` 建的新库已经带着这一列，
+          // 所以迁移里要**先看库里有没有它**再决定加不加（无条件 addColumn 会
+          // `duplicate column name`）。
+          if (from < 24) {
+            await addIfMissing(userProfile, userProfile.nickname);
           }
         },
       );

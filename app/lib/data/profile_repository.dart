@@ -58,6 +58,9 @@ class ProfileRepository {
             defaultRestSec: existing?.defaultRestSec ?? 90,
             // 同样：带 withDefault 的列在 Dart 数据类里仍必填，且必须保留已有值
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -91,6 +94,56 @@ class ProfileRepository {
     return row?.analyticsEnabled ?? analyticsDefaultOn;
   }
 
+  /// **昵称**（2026-10-07，v24，10.7 清单第 7 条）。null = 没设过。
+  ///
+  /// ⚠️ 它**不是身份**：纯本地、不上报、不进云备份的合并键。身份那件事由账号 ID 承担
+  /// （`auth_session.account_id` 的前 8 位；没登录就不显示，见身份块）。
+  Future<String?> nickname() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    final String? n = row?.nickname?.trim();
+    return (n == null || n.isEmpty) ? null : n;
+  }
+
+  /// 写昵称。**空白等于没设**（存 null，而不是存空串 —— 否则界面上会有两种"空"）。
+  ///
+  /// ⚠️ **不能用 `insertOnConflictUpdate`**：实测它**不会把已存在的值写成 NULL**
+  /// （先设"李松"、再传 null 走那条路，库里读回来还是"李松"；这条测试当场抓到）。
+  /// 而"清空昵称"是用户明确做的动作，所以这一格单独用一条 `update` 精确写两列 ——
+  /// 顺带也就不会碰别的设置（可空列那一堆坑在这里一次性绕开）。
+  Future<void> setNickname(String? name, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final String? n = name?.trim();
+    final String? value = (n == null || n.isEmpty) ? null : n;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    if (existing == null) {
+      // 还没有那一行：建一行（其余列按默认值落上）
+      await _db.into(_db.userProfile).insert(UserProfileData(
+            userId: kLocalUserId,
+            progressionMode: 'double',
+            unitPref: 'kg',
+            bodyWeightUnit: 'kg',
+            defaultRestSec: 90,
+            analyticsEnabled: analyticsDefaultOn,
+            nickname: value,
+            createdAt: now,
+            updatedAt: now,
+          ));
+      return;
+    }
+
+    await (_db.update(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .write(UserProfileCompanion(
+      nickname: Value<String?>(value),
+      updatedAt: Value<int>(now),
+    ));
+  }
+
   /// 写入隐私开关。
   /// 关掉之后 `main.dart` 会换成 NoopAnalytics —— 功能不受任何影响。
   Future<void> setAnalyticsEnabled(bool enabled, {int? nowMs}) async {
@@ -107,6 +160,7 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: enabled,
+            nickname: existing?.nickname,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -159,6 +213,9 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: sec ?? kRestFollowExercise,
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -214,6 +271,9 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? kRestFollowExercise,
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -255,6 +315,9 @@ class ProfileRepository {
             defaultRestSec: existing?.defaultRestSec ?? 90,
             progressionMode: existing?.progressionMode ?? 'double',
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -299,6 +362,9 @@ class ProfileRepository {
             bodyWeightUnit: unit.wire,
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -340,6 +406,9 @@ class ProfileRepository {
             bodyWeightUnit: bodyFollowsGlobal ? unit.wire : oldBody,
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -377,6 +446,9 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             privacyConsentAtMs: existing?.privacyConsentAtMs ?? now,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -416,6 +488,9 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs ?? now,
@@ -483,6 +558,9 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
+            // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
+            nickname: existing?.nickname,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs ?? now,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,

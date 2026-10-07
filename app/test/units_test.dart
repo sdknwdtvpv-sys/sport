@@ -17,7 +17,7 @@ import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/features/body/body_metric_screen.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
+import 'package:lianleme/features/profile/settings_home_screen.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/workout/workout_controller.dart';
 import 'package:lianleme/analytics/analytics.dart';
@@ -189,7 +189,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: store,
             repository: repo,
             profile: profile,
@@ -225,7 +225,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: store,
             repository: repo,
             profile: profile,
@@ -348,7 +348,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: ProfileScreen(
+          body: SettingsHomeScreen(
             store: DriftLocalStore(db),
             repository: ExerciseRepository(db),
             profile: profile,

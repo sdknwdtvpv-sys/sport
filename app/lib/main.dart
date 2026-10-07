@@ -19,6 +19,7 @@ import 'analytics/outbox.dart';
 import 'analytics/outbox_analytics.dart';
 import 'analytics/transport.dart';
 import 'core/app_tab_bar.dart';
+import 'core/app_top_bar.dart';
 import 'core/glass_surface.dart';
 import 'core/labels.dart';
 import 'core/theme.dart';
@@ -53,6 +54,7 @@ import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
 import 'features/routine/plan_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/profile/settings_home_screen.dart';
 import 'features/body/body_metric_screen.dart';
 import 'features/notifications/notification_center_screen.dart';
 import 'features/notifications/notification_rules.dart';
@@ -219,11 +221,16 @@ class _HomeShellState extends State<HomeShell> {
   late final ProfileRepository _profile = ProfileRepository(_db);
 
   /// 当前 Tab。五个（训练 / 进步 / 数据 / 计划 / 我的，见 docs/screens.md）。
-  int _tab = 0;
+  /// 当前 tab。**2026-10-07（v1.60.0）起「训练」在正中**（用户 10.7 清单第 2 条），
+  /// 所以首页那个下标从 0 变成了 2 —— `_bodyFor` 的映射也跟着改了。
+  int _tab = 2;
 
   /// iOS 的外壳用 `PageView`（**可以左右拖着换 tab**）+ 这个控制器。
   /// Android 不用它（那边仍然是"直接换一屏"，见 `build` 里那条平台判据）。
-  final PageController _pages = PageController();
+  /// ⚠️ `initialPage` **必须与 `_tab` 的初值一致**（现在都是 2 = 「训练」）。
+  /// 不一致的后果很隐蔽：安卓那条路读 `_tab`（对），iOS 那条路读 PageView（错），
+  /// 于是"iOS 冷启动落在进步页、安卓落在训练页"—— 而且两边的底栏高亮都是对的。
+  final PageController _pages = PageController(initialPage: 2);
 
   /// 手指拖到哪儿了（小数页号）—— 底栏那颗玻璃**跟着手指滑**就是靠它喂。
   /// `-1` = 没人在拖（胶囊停在整格上）。
@@ -1408,49 +1415,140 @@ class _HomeShellState extends State<HomeShell> {
       onChanged: _selectTab,
       dragIndex: GlassSurface.isSupportedPlatform ? _glassDrag : null,
     );
+    // **统一顶栏**（2026-10-07，v1.60.0；用户 10.7 清单第 1、6 条）：
+    // 左标题 + 右上角 [齿轮][铃铛]，五个 tab 共用一条 —— 之前是五屏各画各的标题，
+    // 于是铃铛只活在首页、设置只活在「我」页，而它们本来都是**全局**的东西。
+    final Widget topBar = AppTopBar(
+      title: _topBarTitle,
+      subtitle: _topBarSubtitle,
+      unread: _unreadNotifications,
+      onOpenSettings: _openSettings,
+      onOpenNotifications: _openNotifications,
+    );
     return Scaffold(
       backgroundColor: Tokens.bg,
       body: SafeArea(
-        child: !GlassSurface.isSupportedPlatform
-            ? Column(
-                children: <Widget>[
-                  Expanded(child: _bodyFor(_tab)),
-                  tabBar,
-                ],
-              )
-            : Stack(
-                children: <Widget>[
-                  Positioned.fill(
-                    // **可以左右拖着换 tab**（用户 2026-10-06 要的"丝滑 + 左右拖动的感觉"）。
-                    // 拖动时每帧把小数页号喂给底栏那颗玻璃 → 它跟着手指滑；
-                    // 松手后 `onPageChanged` 落到整页，玻璃再交回"整格"轨道（原生 setIndex）。
-                    // 点 tab 走 `_selectTab`（图标立刻变色 + `animateToPage`）。
-                    child: PageView(
-                      controller: _pages,
-                      onPageChanged: (int i) {
-                        if (i != _tab) setState(() => _tab = i);
-                        _glassDrag.value = -1;
-                      },
+        child: Column(
+          children: <Widget>[
+            // 统一顶栏（v1.60.0）：左标题 + 右上角 [齿轮][铃铛]，五个 tab 共用
+            topBar,
+            Expanded(
+              child: !GlassSurface.isSupportedPlatform
+                  // Android：底栏仍然贴在内容**下面**（通栏、贴底）。
+                  ? Column(
                       children: <Widget>[
-                        for (int i = 0; i < AppTabBar.tabs.length; i++) _bodyFor(i),
+                        Expanded(child: _bodyFor(_tab)),
+                        tabBar,
+                      ],
+                    )
+                  // iOS：内容铺满整屏、底栏浮在它上面；**可以左右拖着换 tab**
+                  // （用户 2026-10-06 要的"丝滑 + 左右拖动的感觉"）。
+                  // 拖动时每帧把小数页号喂给底栏那颗玻璃 → 它跟着手指滑；
+                  // 松手后 `onPageChanged` 落到整页，玻璃再交回"整格"轨道（原生 setIndex）。
+                  : Stack(
+                      children: <Widget>[
+                        Positioned.fill(
+                          child: PageView(
+                            controller: _pages,
+                            onPageChanged: (int i) {
+                              if (i != _tab) setState(() => _tab = i);
+                              _glassDrag.value = -1;
+                            },
+                            children: <Widget>[
+                              for (int i = 0; i < AppTabBar.tabs.length; i++)
+                                _bodyFor(i),
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          left: AppTabBar.floatMargin,
+                          right: AppTabBar.floatMargin,
+                          bottom: AppTabBar.floatMargin,
+                          child: tabBar,
+                        ),
                       ],
                     ),
-                  ),
-                  Positioned(
-                    left: AppTabBar.floatMargin,
-                    right: AppTabBar.floatMargin,
-                    bottom: AppTabBar.floatMargin,
-                    child: tabBar,
-                  ),
-                ],
-              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  /// 顶栏标题：就是当前 tab 的名字；**「训练」那一屏写"今天"**
+  /// （那一屏回答的是"今天练什么"，tab 名字叫训练，进了门就是今天）。
+  String get _topBarTitle => switch (_tab) {
+        0 => '进步',
+        1 => '数据',
+        2 => '今天',
+        3 => '计划',
+        _ => '我的',
+      };
+
+  /// 顶栏副标题：只有「今天」那一屏给日期（原来它挤在首页标题旁边，
+  /// 与 34pt 大字、40×40 铃铛三种高度混在一行 —— 那正是用户说的"布局不协调"）。
+  String? get _topBarSubtitle {
+    if (_tab != 2) return null;
+    const List<String> weekdays = <String>['一', '二', '三', '四', '五', '六', '日'];
+    final DateTime now = DateTime.now();
+    return '${now.month} 月 ${now.day} 日 · 周${weekdays[now.weekday - 1]}';
+  }
+
+  /// 齿轮 → 「设置」那一屏（三组设置从「我」页搬过去了）。
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => SettingsHomeScreen(
+        store: _store,
+        repository: _repo,
+        profile: _profile,
+        analytics: _analytics,
+        bodyMetrics: _bodyMetrics,
+        unit: _unit,
+        bodyUnit: _bodyUnit,
+        onUnitChanged: (WeightUnit u) => setState(() => _unit = u),
+        onBodyUnitChanged: (BodyWeightUnit u) => setState(() => _bodyUnit = u),
+        restOverrideSec: _restOverrideSec,
+        onRestOverrideChanged: (int? sec) => setState(() => _restOverrideSec = sec),
+        loadEvents: _outbox.peekAll,
+        onDataChanged: () => unawaited(_refreshHome()),
+        cloudBackupAvailable: null,
+        cloud: null,
+        // 会话交给这一屏按需读（`ProfileRepository.authSessionStore()`），
+        // 与「我」页同一个来源 —— 不在这里多存一份状态
+        sets: _allSets,
+        reminder: _reminder,
+        reminderHint: _reminderHint,
+        onReminderChanged: _setReminder,
+      ),
+    ));
+    if (mounted) await _refreshHome();
+  }
+
+  /// 按 **tab 下标** 取那一屏。⚠️ 2026-10-07（v1.60.0）起顺序是
+  /// `进步 / 数据 / 训练 / 计划 / 我的`（「训练」在正中，用户 10.7 清单第 2 条），
+  /// 所以这里的映射与 `AppTabBar.tabs` **必须逐条对齐** —— 两处错位就是"点训练进了数据"。
   Widget _bodyFor(int tab) {
-    switch (tab) {
-      case 0:
+    switch (tab) {      case 0:
+        return ProgressScreen(
+            store: _store,
+            repository: _repo,
+            bodyMetrics: _bodyMetrics,
+            profile: _profile,
+            analytics: _analytics,
+            unit: _unit,
+            bodyUnit: _bodyUnit,
+            // 身体数据页里切了体重单位 → 整棵树按新单位重建
+            onBodyUnitChanged: (BodyWeightUnit u) {
+              setState(() => _bodyUnit = u);
+            },
+          );      case 1:
+        // 「数据」= 原来的「全部数据」二级页（v1.45.0 起提到一级）。
+        // VI 里这一页还要重做（四张统计卡 + 容量趋势面积图），那属于 v1.46.0 的组件层。
+        return AllDataScreen(
+          store: _store,
+          repository: _repo,
+          unit: _unit,
+        );      case 2:
         return TodayScreen(
             // 大按钮一跳直开练；想先看看的人走下面那个入口
             onStart: _startNow,
@@ -1477,8 +1575,8 @@ class _HomeShellState extends State<HomeShell> {
             onOpenLibrary: _openLibrary,
             onLogWeight: _openBodyMetric,
             onOpenAchievements: _openAchievements,
-            onOpenNotifications: _openNotifications,
-            unreadNotifications: _unreadNotifications,
+            // 铃铛与未读点**搬去外壳顶栏**了（v1.60.0）：通知中心是全局的，
+            // 不该只在首页点得到。`_openNotifications` 现在挂在顶栏上。
             // 周报（第二部分第 1 条）：**只在周一 / 周二 + 上周练过**才给看。
             // 判据是纯函数（`shouldShowWeeklyReport`），所以"周三不给看"这件事有测试钉着。
             weeklyReport: shouldShowWeeklyReport(_allSets, DateTime.now())
@@ -1495,30 +1593,7 @@ class _HomeShellState extends State<HomeShell> {
                 weeklyChallengeLine(weeklyChallenge(_allSets, DateTime.now())),
             onProtectStreak:
                 _protectionOffer == null ? null : _protectStreak,
-          );
-      case 1:
-        return ProgressScreen(
-            store: _store,
-            repository: _repo,
-            bodyMetrics: _bodyMetrics,
-            profile: _profile,
-            analytics: _analytics,
-            unit: _unit,
-            bodyUnit: _bodyUnit,
-            // 身体数据页里切了体重单位 → 整棵树按新单位重建
-            onBodyUnitChanged: (BodyWeightUnit u) {
-              setState(() => _bodyUnit = u);
-            },
-          );
-      case 2:
-        // 「数据」= 原来的「全部数据」二级页（v1.45.0 起提到一级）。
-        // VI 里这一页还要重做（四张统计卡 + 容量趋势面积图），那属于 v1.46.0 的组件层。
-        return AllDataScreen(
-          store: _store,
-          repository: _repo,
-          unit: _unit,
-        );
-      case 3:
+          );      case 3:
         // 「计划」= 原来的计划模板列表（v1.45.0 起提到一级）。
         // VI 里它还要加周历与历史两个视图，同样属于 v1.46.0。
         // 2026-10-05（v1.51）：这一栏从"只有模板列表"变成**三个视图**
@@ -1531,8 +1606,7 @@ class _HomeShellState extends State<HomeShell> {
           todayPlan: _todayPlan,
           todayLabel: _todayDay?.label,
           onResume: _activeSession == null ? null : _resumeSession,
-        );
-      default:
+        );      default:
         return ProfileScreen(
           store: _store,
           repository: _repo,

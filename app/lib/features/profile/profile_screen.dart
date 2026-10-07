@@ -28,7 +28,6 @@ import '../progress/achievements_screen.dart';
 import '../progress/badges.dart';
 import '../progress/experience.dart';
 import '../progress/streak_protection.dart';
-import 'training_time.dart';
 import '../progress/level.dart';
 import '../progress/streak.dart';
 import '../../core/units.dart';
@@ -43,11 +42,9 @@ import '../../backup/login_session.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/models.dart';
 import 'backup_exporter.dart';
-import 'data_tools_screen.dart';
-import 'privacy_about_screen.dart';
 import 'profile_widgets.dart';
 import 'reminder.dart';
-import 'settings_screen.dart';
+import 'identity_screen.dart';
 import 'training_stats.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -166,6 +163,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   TrainingStats? _stats;
   bool _loading = true;
 
+  /// 昵称 / 账号 ID（null = 没设过 / 没登录）。身份块用，见 `_identityCard()`。
+  String? _nickname;
+  String? _accountId;
+  String? _email;
+
   /// 连续打卡天数（2026-10-05，新 VI 的「我」页要）。**算出来的**，见
   /// `features/progress/streak.dart` —— 存一份就会和训练记录不一致。
   int _streak = 0;
@@ -207,8 +209,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // 界面与"到底记不记"必须是同一个事实。开关本身在「隐私与关于」里。
     final bool enabled = await widget.profile.analyticsEnabled();
     widget.analytics?.setEnabled(enabled);
+    // 身份那两行（昵称 / 账号 ID）。ID 只在**登录之后**才有 —— 从会话里读，
+    // 读不到就显示"还没登录"（**不编一个号**，见 identity_screen.dart 的文件头）。
+    final String? nickname = await widget.profile.nickname();
+    final StoredSession? session = await widget.profile.authSessionStore().read();
     if (!mounted) return;
     setState(() {
+      _nickname = nickname;
+      _accountId = session?.accountId;
+      _email = session?.email;
       _stats = TrainingStats.fromSets(sets, unit: widget.unit);
       // **认补签**的连续天数（与首页同一个函数、同一份 protectedDays）——
       // 用 `streak.dart` 的 `currentStreak` 就会在补过签之后和首页对不上。
@@ -228,63 +237,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  /// 进二级页、回来刷新统计（删光 / 导入 / 云端恢复都会改统计）。
-  Future<void> _open(Widget page) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (BuildContext ctx) => page),
-    );
-    if (!mounted) return;
-    await _load();
-  }
+  /// 身份块：**昵称 + 账号 ID**（10.7 清单第 7 条）。
+  ///
+  /// 这里只**显示**，点一下进「身份」那一屏改 —— 「我」页要一眼看出"这是谁的记录"，
+  /// 而不是变成一个表单。
+  ///
+  /// ⚠️ 两行字的口气不一样，是因为两件事的性质不一样：
+  ///   * 昵称没设过 → 如实写「还没设昵称」（**不编默认名**）；
+  ///   * 没登录 → 写「还没登录」，**不显示 ID**（凭空编号 = 假身份）。
+  Widget _identityCard() => ViCard(
+        key: const Key('profile-identity'),
+        onTap: _openIdentity,
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    _nickname ?? '还没设昵称',
+                    key: const Key('profile-nickname'),
+                    style: TextStyle(
+                      color: _nickname == null ? Tokens.text3 : Tokens.text,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _accountId == null
+                        ? '还没登录 · 点一下设昵称'
+                        : 'ID ${IdentityScreen.shortId(_accountId!)} · 点一下改昵称',
+                    key: const Key('profile-id-line'),
+                    style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+          ],
+        ),
+      );
 
-  Future<void> _openPreferences() {
-    // 固定训练时段建议（第二部分第 6 条）：从**全部记录**里算"你多数几点开练"。
-    // 算在这里（点进偏好设置那一刻）而不是 `_load()`：它只在那一屏用得上，
-    // 没必要每次进「我」页都算一遍。
-    final ({int hour, int count})? dominant = dominantWorkoutHour(_sets);
-    return _open(PreferencesScreen(
-      profile: widget.profile,
-      unit: widget.unit,
-      onUnitChanged: widget.onUnitChanged,
-      restOverrideSec: widget.restOverrideSec,
-      onRestOverrideChanged: widget.onRestOverrideChanged,
-      reminder: widget.reminder,
-      reminderHint: widget.reminderHint,
-      onReminderChanged: widget.onReminderChanged,
-      trainingTimeSuggestion: trainingTimeSuggestion(_sets),
-      suggestedReminderMinutes:
-          dominant == null ? null : suggestedReminderMinutes(dominant.hour),
+  Future<void> _openIdentity() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => IdentityScreen(
+        profile: widget.profile,
+        accountId: _accountId,
+        email: _email,
+      ),
     ));
-  }
-
-  Future<void> _openDataTools() => _open(DataToolsScreen(
-        store: widget.store,
-        repository: widget.repository,
-        profile: widget.profile,
-        analytics: widget.analytics,
-        bodyMetrics: widget.bodyMetrics,
-        unit: widget.unit,
-        bodyUnit: widget.bodyUnit,
-        onBodyUnitChanged: widget.onBodyUnitChanged,
-        backupExporter: widget.backupExporter,
-        onDataChanged: widget.onDataChanged,
-        cloudBackupAvailable: widget.cloudBackupAvailable,
-        cloud: widget.cloud,
-        account: widget.account,
-      ));
-
-  Future<void> _openPrivacyAbout() => _open(PrivacyAboutScreen(
-        profile: widget.profile,
-        analytics: widget.analytics,
-        loadEvents: widget.loadEvents,
-        backupExporter: widget.backupExporter,
-      ));
-
-  /// 底下一行：入口的"当前值"直接写在副标题里（少进一次页面就能看到现状）。
-  String get _prefsSubtitle {
-    final String rest =
-        widget.restOverrideSec == null ? '休息跟随动作' : '休息 ${widget.restOverrideSec} 秒';
-    return '$rest · 单位 ${widget.unit.wire} · 渐进建议';
+    if (mounted) await _load(); // 昵称可能改了
   }
 
   /// 打开「我的成就」。徽章与进度都在那一屏现算（数据由这一页带过去）。
@@ -308,15 +311,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
-        const Text(
-          '我',
-          style: TextStyle(
-            color: Tokens.text,
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
-          ),
-        ),
+        // 身份块（2026-10-07，10.7 清单第 7 条）：昵称 + 账号 ID。
+        // ⚠️ 页面的标题（「我的」）不在这里了 —— v1.60.0 起它在外壳顶栏上
+        // （`core/app_top_bar.dart`），五个 tab 共用一条；这一页从身份开始。
+        _identityCard(),
         const SizedBox(height: Tokens.s5),
         // 「我的进度」（2026-10-06，A 档重排）：**等级 / 段位 / 经验收成一张卡三行**。
         // 起因是用户看完训记「我的」页拆解之后说"我们这一屏太乱了"，诊断见
@@ -426,30 +424,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onTap: _openAchievements,
           ),
         ]),
-        const SizedBox(height: Tokens.s5),
-        profileSectionTitle('设置'),
-        settingsCard(<Widget>[
-          navTile(
-            key: const Key('open-preferences'),
-            title: '偏好设置',
-            subtitle: _prefsSubtitle,
-            onTap: _openPreferences,
-          ),
-          const Divider(height: 1, color: Tokens.line),
-          navTile(
-            key: const Key('open-data-tools'),
-            title: '数据与备份',
-            subtitle: '身体数据 · 导出 / 导入 · 删除全部数据',
-            onTap: _openDataTools,
-          ),
-          const Divider(height: 1, color: Tokens.line),
-          navTile(
-            key: const Key('open-privacy-about'),
-            title: '隐私与关于',
-            subtitle: '统计开关 · 隐私政策 · 收集清单 · 开源许可',
-            onTap: _openPrivacyAbout,
-          ),
-        ]),
+        // ⚠️ 这里原来有三组设置入口（偏好设置 / 数据与备份 / 隐私与关于）。
+        // 2026-10-07（v1.60.0）按用户的要求搬进了**独立设置页**（`settings_home_screen.dart`），
+        // 入口是外壳顶栏右上角那枚齿轮 —— 与你在哪一屏无关，五个 tab 都点得到。
+        // 三个入口的 key 一个都没改。
         const SizedBox(height: Tokens.s5),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Tokens.s1),
