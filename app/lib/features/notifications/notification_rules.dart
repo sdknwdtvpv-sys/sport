@@ -23,19 +23,28 @@ import '../progress/badges.dart';
 import '../progress/weekly_challenge.dart';
 
 /// 徽章解锁 → 站内消息。返回**这次新发了几条**（已发过的不会重复发）。
+///
+/// 文案口径（2026-10-07 用户："这个消息通知里的内容有点无聊"）：
+/// **事实 + 你自己的数字 + 一句去路**。老文案只有"怎么拿到"那一句，
+/// 读完不知道自己走到哪儿了；现在补上"已拿到 N / M 枚"——那个数字是现算的，
+/// 不是编的（`badgeTally`），它同时也回答了"还差多少"。
 Future<int> syncAchievementMessages({
   required NotificationRepository repo,
   required List<SetRecord> sets,
   DateTime? now,
 }) async {
   final DateTime today = now ?? DateTime.now();
+  final List<BadgeStatus> statuses = badgeStatuses(sets, now: today);
+  // 整批只算一次：解放一枚徽章时，"目前 N / M 枚"里的 N 是**这一轮**的口径，
+  // 逐枚重算会让同一次同步里几条消息的数字互相矛盾。
+  final ({int unlocked, int total}) tally = badgeTally(statuses);
   int sent = 0;
-  for (final BadgeStatus b in badgeStatuses(sets, now: today)) {
+  for (final BadgeStatus b in statuses) {
     if (!b.unlocked) continue;
     final bool ok = await repo.add(
       kind: NotificationKind.achievement,
       title: '解锁「${b.name}」',
-      body: b.how,
+      body: '${b.how}。已拿到 ${tally.unlocked} / ${tally.total} 枚。',
       refKey: b.id, // ← 同一个徽章只发一次
       nowMs: today.millisecondsSinceEpoch,
     );
@@ -65,7 +74,7 @@ Future<bool> maybeWeeklyChallengeDone({
   return repo.add(
     kind: NotificationKind.achievement,
     title: '本周挑战完成：${c.spec.name}',
-    body: '${c.spec.how}。下周会换一枚新的。',
+    body: '${c.spec.how}。这一周还剩 ${c.daysLeft} 天（含今天），下周换一枚新的。',
     refKey: 'weekly-${weekIndex(today)}-${c.spec.id}',
     nowMs: today.millisecondsSinceEpoch,
   );
@@ -97,10 +106,47 @@ Future<bool> maybeRemindMissed({
   return repo.add(
     kind: NotificationKind.reminder,
     title: '今天还没练',
-    body: '${settings.label} 该提醒你的时候，你还没开始。现在开始也来得及。',
+    // 文案（2026-10-07）：提醒那条最容易写成"催"，而催是没用的 ——
+    // 有用的是**你自己的数字**（昨天练了几组 / 上次是几天前），
+    // 它把"接上"从一句口号变成一件具体的事。三种局面按真记录分，不随机换句。
+    body: '${settings.label} 的提醒到点了。${_reminderTail(sets, t)}',
     refKey: day,
     nowMs: t.millisecondsSinceEpoch,
   );
+}
+
+/// 提醒那条消息的**下半句**：用这台设备上真实的记录说一句"接着练"的话。
+///
+/// 三种局面（按数据分，不是按心情）：
+///   * **昨天练过** → 写昨天练了几组。"接上"这件事要有具体的样子才做得出来；
+///   * **更早练过** → 写上次是几天前。间隔本身就是最有用的一条事实；
+///   * **一次都没练过** → **不许提连续天数**（0 天没有链可接，说"别断了"是拿不存在的东西
+///     压人），只写"练一组就开始记"。
+///
+/// ⚠️ 只算**正式组**（与 `streak.dart` 同一口径：热身不算"练过了"）。
+String _reminderTail(List<SetRecord> sets, DateTime now) {
+  final DateTime day0 = DateTime(now.year, now.month, now.day);
+  DateTime? lastDay;
+  int lastGroups = 0;
+  for (final SetRecord s in sets) {
+    if (s.setType != SetType.normal) continue;
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+    final DateTime d = DateTime(t.year, t.month, t.day);
+    if (lastDay == null || d.isAfter(lastDay)) {
+      lastDay = d;
+      lastGroups = 1;
+    } else if (d.isAtSameMomentAs(lastDay)) {
+      lastGroups++;
+    }
+  }
+  if (lastDay == null) {
+    return '今天练一组就开始记连续天数 —— 第一次是最容易接上的那次。';
+  }
+  final int daysAgo = day0.difference(lastDay).inDays;
+  if (daysAgo <= 1) {
+    return '昨天练了 $lastGroups 组，今天做一组也算接上。';
+  }
+  return '上次训练是 $daysAgo 天前，今天做一组也算接上。';
 }
 
 /// 云备份结果 → 站内消息（成功 / 失败各一条）。

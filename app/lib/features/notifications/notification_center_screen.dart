@@ -15,6 +15,8 @@ import '../../core/pills.dart';
 import '../../core/vi_cards.dart';
 import '../../data/db.dart' show AppNotificationData;
 import '../../data/notification_repository.dart';
+import 'notification_detail_screen.dart';
+import 'notification_visuals.dart';
 
 class NotificationCenterScreen extends StatefulWidget {
   const NotificationCenterScreen({super.key, required this.repository});
@@ -155,11 +157,12 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         ),
       );
 
-  /// 点一条 → **详情弹层**（用户 2026-10-06 的备忘条第 5 条："消息通知没办法点进去看详情"）。
+  /// 点一条 → **整屏详情页**（v1.58.0；用户 2026-10-07："点进去，下面弹出的形式不明显"）。
   ///
-  /// 列表里只放得下一行正文，而"解锁了哪个成就 / 备份成没成 / 提醒是什么时候"这些
-  /// 恰恰是用户点进来想看的。弹层里给：完整正文 + 分类 + **绝对时间**（列表里只有相对时间，
-  /// 想核对"到底哪天"时相对时间是不够的）+ 一条"知道了"。
+  /// 老实现是 `showModalBottomSheet` + `mainAxisSize.min`：一条贴着底边的矮纸，
+  /// 内容多高它就多高 —— "点进去了"这件事几乎看不出来。现在与 App 里其它二级页
+  /// （账号／备份／成就／隐私与关于）走同一套导航语汇：整屏 + 左上角返回。
+  ///
   /// 顺手把这条标为已读（点开就是读过 —— 这条消息的意义已经被读到了）。
   Future<void> _openDetail(AppNotificationData n) async {
     if (n.readAtMs == null) {
@@ -167,78 +170,12 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       if (mounted) await _load();
     }
     if (!mounted) return;
-    final DateTime at = DateTime.fromMillisecondsSinceEpoch(n.createdAtMs);
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Tokens.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.rCard)),
-      ),
-      builder: (BuildContext ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s5, Tokens.s5, Tokens.s4),
-          child: Column(
-            key: const Key('notification-detail'),
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: Tokens.elevated,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(_iconFor(n.kind), color: _colorFor(n.kind), size: 18),
-                  ),
-                  const SizedBox(width: Tokens.s3),
-                  Expanded(
-                    child: Text(
-                      NotificationKind.label(n.kind),
-                      style: const TextStyle(color: Tokens.text3, fontSize: 12),
-                    ),
-                  ),
-                  Text(
-                    '${at.year}-${_two(at.month)}-${_two(at.day)} ${_two(at.hour)}:${_two(at.minute)}',
-                    key: const Key('notification-detail-time'),
-                    style: const TextStyle(color: Tokens.text3, fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Tokens.s4),
-              Text(n.title,
-                  style: const TextStyle(
-                      color: Tokens.text, fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: Tokens.s2),
-              Text(n.body,
-                  style: const TextStyle(color: Tokens.text2, fontSize: 14, height: 1.6)),
-              const SizedBox(height: Tokens.s5),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: FilledButton(
-                  key: const Key('notification-detail-close'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Tokens.elevated,
-                    foregroundColor: Tokens.text,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Tokens.rPill),
-                    ),
-                  ),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('知道了'),
-                ),
-              ),
-            ],
-          ),
-        ),
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NotificationDetailScreen(notification: n),
       ),
     );
   }
-
-  static String _two(int v) => v.toString().padLeft(2, '0');
 
   /// 底部那颗「全部已读」胶囊（与主按钮同一套语言：主色实心 + 深墨字）。
   Widget _markAllCapsule() => GestureDetector(
@@ -288,7 +225,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               color: Tokens.elevated,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(_iconFor(n.kind), color: _colorFor(n.kind), size: 18),
+            child: Icon(iconForKind(n.kind), color: colorForKind(n.kind), size: 18),
           ),
           const SizedBox(width: Tokens.s3),
           Expanded(
@@ -331,18 +268,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       ),
     );
   }
-
-  static IconData _iconFor(String kind) => switch (kind) {
-        NotificationKind.achievement => Icons.emoji_events_outlined,
-        NotificationKind.reminder => Icons.alarm,
-        _ => Icons.cloud_outlined,
-      };
-
-  static Color _colorFor(String kind) => switch (kind) {
-        NotificationKind.achievement => Tokens.pr,
-        NotificationKind.reminder => Tokens.accent,
-        _ => Tokens.success,
-      };
 }
 
 /// 「3 分钟前 / 昨天 / 10月5日」。

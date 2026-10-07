@@ -11,6 +11,7 @@ import 'package:lianleme/data/notification_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/notifications/notification_rules.dart';
 import 'package:lianleme/features/profile/reminder.dart';
+import 'package:lianleme/features/progress/badges.dart';
 import 'package:lianleme/features/progress/weekly_challenge.dart';
 
 SetRecord _set(String workout, DateTime at) => SetRecord(
@@ -59,6 +60,19 @@ void main() {
       expect(first.title, contains('解锁'));
       expect(first.body, isNotEmpty);
     });
+
+    test('★ 文案带**你自己的数字**："已拿到 N / M 枚"（2026-10-07：内容有点无聊）', () async {
+      // 老文案只有"怎么拿到"那一句（`b.how`），读完不知道自己走到哪儿了。
+      // 现在补上现算的进度 —— 数字必须**真的从记录里算出来**，不是写死的模板句：
+      // 这条测试自己先算一遍（badgeTally），再要求消息里那一串是同一个。
+      final List<SetRecord> sets = <SetRecord>[_set('w1', DateTime(2026, 10, 5, 9))];
+      final ({int unlocked, int total}) tally =
+          badgeTally(badgeStatuses(sets, now: today));
+      await syncAchievementMessages(repo: repo, sets: sets, now: today);
+      final AppNotificationData first = (await repo.list()).first;
+      expect(first.body, contains('已拿到 ${tally.unlocked} / ${tally.total} 枚'),
+          reason: '数字要跟着记录走：换一批记录这个数就该变');
+    });
   });
 
   group('A3 每周挑战完成（2026-10-06）', () {
@@ -101,6 +115,8 @@ void main() {
       expect(all.first.kind, NotificationKind.achievement,
           reason: '复用成就那一类，不新增枚举值');
       expect(all.first.title, contains('本周挑战完成'));
+      expect(all.first.body, contains('还剩'),
+          reason: '文案要带上"这一周还剩几天"这个真事实，而不是只有一句"下周会换"');
     });
 
     test('没做完 → 一条都不发（不许"参与即得"）', () async {
@@ -194,6 +210,36 @@ void main() {
         now: today,
       );
       expect(sent, isFalse);
+    });
+
+    test('★ 文案说的是**你自己的记录**，不是一句干巴巴的"该练了"（三种局面各一句）',
+        () async {
+      // 2026-10-07 用户："这个消息通知里的内容有点无聊。"
+      // 提醒那条最容易写成"催"，而催是没用的 —— 有用的是**你自己的数字**。
+      // 三种局面按真记录分（不是随机换句），所以三种都要钉住：
+      //   ① 一次都没练过 → 不许提"别断了"（0 天没有链可接），只说"练一组就开始记"；
+      //   ② 昨天练过 → 写昨天练了几组；
+      //   ③ 更早练过 → 写上次是几天前。
+      final DateTime d1 = DateTime(2026, 10, 6, 21, 30);
+      final DateTime d6 = DateTime(2026, 10, 10, 21, 30);
+
+      // ① 一次都没练（today = 10-05 21:30）
+      await maybeRemindMissed(
+          repo: repo, settings: on2000, sets: <SetRecord>[], now: today);
+      expect((await repo.list()).first.body, contains('第一次是最容易接上的那次'));
+      expect((await repo.list()).first.body, contains('20:00'),
+          reason: '还得说清是哪一次提醒到点了');
+
+      // ② 昨天练了 3 组（记录在 10-05，now = 10-06）
+      final List<SetRecord> y3 = <SetRecord>[
+        for (int i = 0; i < 3; i++) _set('y$i', DateTime(2026, 10, 5, 9, i)),
+      ];
+      await maybeRemindMissed(repo: repo, settings: on2000, sets: y3, now: d1);
+      expect((await repo.list()).first.body, contains('昨天练了 3 组'));
+
+      // ③ 上次训练是 5 天前（记录在 10-05，now = 10-10）
+      await maybeRemindMissed(repo: repo, settings: on2000, sets: y3, now: d6);
+      expect((await repo.list()).first.body, contains('上次训练是 5 天前'));
     });
   });
 

@@ -52,6 +52,42 @@ Future<void> _expandAll(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('★ 徽章一排**占满整行**（写死宽度会让整排偏左 —— 2026-10-07 修）',
+      (WidgetTester tester) async {
+    // 用户看截图问"这一页的布局太怪了，为什么没有设计成居中"。
+    // 根因是 `_BadgeTile` 写死 100 宽 + `Wrap`：一排三枚 = 3×100 + 2×12 = 324，
+    // 而内容宽度是"屏宽 − 左右各 20" —— 右边永远剩一截空档，整排看着往左偏。
+    // 现在每一枚的宽度由**可用宽度反算**。
+    //
+    // 这条测试量的是**几何**（宽度 / 边缘），不是"能不能画出来"：
+    // 布局类修复不留一条量尺寸的测试就等于没修 —— 下一次谁再写死一个宽度，
+    // 界面上仍然什么错都不报。
+    await _pump(tester, <SetRecord>[]);
+    final Finder wrap = find.byType(Wrap).first;
+    final Finder tiles = find.descendant(
+      of: wrap,
+      matching: find.byWidgetPredicate((Widget w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith('badge-tile-')),
+    );
+    expect(tiles, findsWidgets, reason: '一格都没找到 = 这条测试自己失效了');
+
+    final double rowWidth = tester.getSize(wrap).width;
+    final double tile = tester.getSize(tiles.first).width;
+    expect(tile * 3 + Tokens.s3 * 2, closeTo(rowWidth, 0.5),
+        reason: '三枚 + 两条间隙必须**正好**是一整行（差出来的就是右边那段空档）');
+    expect(tester.getTopLeft(tiles.first).dx,
+        closeTo(tester.getTopLeft(wrap).dx, 0.5),
+        reason: '最左边那一枚要贴着内容区左边缘');
+    expect(tester.getTopRight(tiles.at(2)).dx,
+        closeTo(tester.getTopRight(wrap).dx, 0.5),
+        reason: '第一排最右边那一枚要顶到内容区右边缘 —— 这就是"居中"');
+    // 一排里的三枚必须等宽（宽度是算出来的，不是各自碰运气）
+    for (int i = 1; i < 3; i++) {
+      expect(tester.getSize(tiles.at(i)).width, closeTo(tile, 0.01));
+    }
+  });
+
   testWidgets('顶部那行"已解锁 N / M"与数据层算出来的一致', (WidgetTester tester) async {
     final List<SetRecord> sets = <SetRecord>[
       _set('w1', DateTime(2026, 10, 5, 9)),

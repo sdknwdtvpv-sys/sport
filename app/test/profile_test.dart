@@ -398,6 +398,65 @@ void main() {
       );
     });
 
+    testWidgets('★ 统计格子同排**等高**（v1.57.0 的回归：补签那句曾把「连续天数」撑高）',
+        (WidgetTester tester) async {
+      // 用户看完 v1.57.0 的截图指出"两个格子不一样高"。原因是"其中 N 天是补签"
+      // 那句披露被塞进了「连续天数」那张卡里，于是它比同排的「训练次数」多一行。
+      // 现在那句话是**网格下面独立的一行**。
+      //
+      // 这条测试量的是**渲染高度**，不是文案在不在 —— 文案还在、高度不等，那个 bug
+      // 就仍然在（上一版"只断言文案"的测试就是这么漏掉它的）。
+      final DateTime now = DateTime.now();
+      final DateTime d0 = DateTime(now.year, now.month, now.day);
+      final DateTime yesterday = d0.subtract(const Duration(days: 1));
+      String key(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+      await store.saveSet(_set(
+          id: 'y2', workoutId: 'wy2', atMs: yesterday.millisecondsSinceEpoch));
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: ProfileScreen(
+            store: store,
+            repository: repo,
+            profile: profile,
+            protectedDays: <String>{
+              key(yesterday.subtract(const Duration(days: 1))),
+            },
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, find.byKey(const Key('profile-stat-streak')));
+
+      expect(find.byKey(const Key('profile-streak-label')), findsOneWidget,
+          reason: '这句披露必须还在（只是换了位置），不能为了排版把它删掉');
+      final Finder workoutsCard = find
+          .ancestor(
+              of: find.byKey(const Key('profile-stat-workouts')),
+              matching: find.byType(ViCard))
+          .first;
+      final Finder streakCard = find
+          .ancestor(
+              of: find.byKey(const Key('profile-stat-streak')),
+              matching: find.byType(ViCard))
+          .first;
+      expect(tester.getSize(streakCard).height,
+          tester.getSize(workoutsCard).height,
+          reason: '同排两张格子必须等高：差出来的那十几像素就是用户说的"没排好"');
+      // 而且那句话得落在**两张格子下面**（不在任何一张格子里面）——
+      // 否则"等高"两个字就得靠"披露被裁掉"来换，那是更坏的修法。
+      expect(
+          find.descendant(
+              of: workoutsCard, matching: find.byKey(const Key('profile-streak-label'))),
+          findsNothing);
+      expect(
+          find.descendant(
+              of: streakCard, matching: find.byKey(const Key('profile-streak-label'))),
+          findsNothing);
+    });
+
     testWidgets('★ 经验卡（第二部分第 7 条）：按累计组数给等级与进度',
         (WidgetTester tester) async {
       // 三组 → 经验等级还是「起步」，进度 3/100

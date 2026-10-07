@@ -167,12 +167,28 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Wrap(
-          spacing: Tokens.s3,
-          runSpacing: Tokens.s3,
-          children: <Widget>[
-            for (final BadgeStatus b in shown) _BadgeTile(badge: b),
-          ],
+        // **每一排都必须占满整行**（2026-10-07 用户看截图问"为什么没有设计成居中"）：
+        // 原来是"写死 100 宽 + Wrap" —— 一排三枚 = 3×100 + 2×12 = 324，而内容宽度是
+        // "屏宽 − 左右各 20"（Redmi 上 ≈ 353），于是**右边永远剩下二十几像素的空档**，
+        // 整排看着往左偏。根因是那个写死的 100：换一台手机（更窄的、宽屏的、
+        // 系统大字号下的）剩多剩少又不一样。
+        // 现在按**可用宽度反算**每一枚的宽：三枚 + 两条间隙 = 正好一整行，
+        // 左右只剩页面自己的留白 —— 这才是"居中"（不是把整排往中间挪一点点）。
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints cts) {
+            final double tile = cts.maxWidth.isFinite
+                ? (cts.maxWidth - Tokens.s3 * (_perRow - 1)) / _perRow
+                : 100;
+            return Wrap(
+              spacing: Tokens.s3,
+              runSpacing: Tokens.s3,
+              children: <Widget>[
+                for (final BadgeStatus b in shown)
+                  _BadgeTile(
+                      key: Key('badge-tile-${b.id}'), badge: b, width: tile),
+              ],
+            );
+          },
         ),
         if (foldable) ...<Widget>[
           const SizedBox(height: Tokens.s3),
@@ -397,9 +413,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 /// 2. **进度**：未解锁的外圈按 `current / target` 画到哪算哪，"还差多少"不用读字也看得出；
 /// 3. **颜色**：三档稀有度（[badgeTierColor]）只说"这枚值多少"，不说"拿没拿到"。
 class _BadgeTile extends StatelessWidget {
-  const _BadgeTile({required this.badge});
+  const _BadgeTile({super.key, required this.badge, required this.width});
 
   final BadgeStatus badge;
+
+  /// 这一格占多宽 —— **由可用宽度反算**（见 `_sectionBody`），不是写死的常数。
+  /// 写死宽度正是"三枚一排、右边空一截"的根因（2026-10-07 修）。
+  final double width;
 
   /// 勋章外圈直径（环形进度线画在这一圈上）。
   static const double _ring = 64;
@@ -413,7 +433,7 @@ class _BadgeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 100,
+      width: width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[

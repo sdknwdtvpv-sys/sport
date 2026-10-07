@@ -72,10 +72,14 @@ void main() {
     expect(find.text('提醒'), findsOneWidget);
   });
 
-  testWidgets('★ 点一条 → 详情弹层；且**只把这一条**标为已读', (WidgetTester tester) async {
-    // 2026-10-06 用户备忘条第 5 条："消息通知没办法点进去看详情"。
-    // 这一条钉两件事：① 点得进去（弹层里给完整正文与绝对时间）；
-    // ② 读一条只读这一条 —— 不许顺手把别的未读也变成已读（那是替用户做决定）。
+  testWidgets('★ 点一条 → **整屏详情页**（不再是那张贴底边的矮纸）；且只把这一条标为已读',
+      (WidgetTester tester) async {
+    // 2026-10-06 用户："消息通知没办法点进去看详情" → 当版做成了底部弹层；
+    // 2026-10-07 用户："点进去，下面弹出的形式不明显。优化一下。"
+    // → 改成整屏页（与账号/备份/成就/隐私与关于同一套导航语汇）。
+    //
+    // 这一条钉三件事：① 进得去、而且是**整屏页**（弹层已经不在了）；
+    // ② 详情里有完整正文与绝对时间；③ 读一条只读这一条 —— 不许顺手把别的未读也变成已读。
     await repo.add(kind: NotificationKind.achievement, title: '解锁「首训」', body: '完成第 1 次训练', nowMs: 1000);
     await repo.add(kind: NotificationKind.reminder, title: '该练了', body: '今天还没练', nowMs: 2000);
     await _pump(tester, repo);
@@ -90,9 +94,17 @@ void main() {
     expect(find.byKey(const Key('notification-detail-time')), findsOneWidget,
         reason: '列表只有相对时间，详情里要给绝对时间（"到底哪天"）');
     expect(find.text('今天还没练'), findsWidgets, reason: '完整正文');
+    // 整屏页的两条特征：左上角那枚返回键在、底部弹层不在
+    expect(find.byKey(const Key('subpage-back')), findsOneWidget,
+        reason: '整屏页要有明确的返回（弹层靠下滑/点遮罩关，那正是"不明显"的来源）');
+    expect(find.byType(BottomSheet), findsNothing, reason: '这一版已经不用弹层了');
+    expect(find.byKey(const Key('notification-detail-local-note')), findsOneWidget,
+        reason: '一句实话：这些消息都在本机生成');
 
-    await tester.tap(find.byKey(const Key('notification-detail-close')));
+    await tester.tap(find.byKey(const Key('subpage-back')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('notification-detail')), findsNothing,
+        reason: '返回之后回到列表');
 
     // 只剩**另一条**是未读（这一条被读过）
     final Iterable<Element> dots = find

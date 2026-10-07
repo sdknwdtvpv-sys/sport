@@ -355,33 +355,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(width: Tokens.s3),
               Expanded(
                 child: ViCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      StatTile(
-                        label: '连续天数',
-                        value: '$_streak 天',
-                        valueKey: const Key('profile-stat-streak'),
-                      ),
-                      // **含补签时必须写出来**（与首页同一句文案，见 streak_protection.dart）——
-                      // 只写"连续 12 天"而其中 1 天是补的，那就是一句假话。
-                      // 原来这句话在下面那张打卡卡里；A 档重排把打卡卡撤了（它复述的就是这一格），
-                      // 但**这句披露不能跟着没**，所以搬到这里。
-                      if (_protectedInStreak > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Tokens.s1),
-                          child: Text(
-                            streakProtectionSuffix(_protectedInStreak),
-                            key: const Key('profile-streak-label'),
-                            style: const TextStyle(color: Tokens.text3, fontSize: 11),
-                          ),
-                        ),
-                    ],
+                  child: StatTile(
+                    label: '连续天数',
+                    value: '$_streak 天',
+                    valueKey: const Key('profile-stat-streak'),
                   ),
                 ),
               ),
             ],
           ),
+
+          // **含补签时必须写出来**（与首页同一句文案，见 streak_protection.dart）——
+          // 只写"连续 12 天"而其中 1 天是补的，那就是一句假话。
+          //
+          // 这句话的位置改过两次，第二次是**回归修复**（用户看完 v1.57.0 截图指出
+          // "两个格子不一样高"）：A 档重排把打卡卡撤了（它复述的就是这一格），
+          // 这句披露不能跟着没，于是我先把它塞进了「连续天数」那张卡里 ——
+          // 结果那张卡比同排的「训练次数」高出一行。
+          // 现在它是**网格下面独立的一行**：格子只放数字，披露不占格子的高度；
+          // 靠右对齐，是为了让它在视觉上仍然归属右边那格（连续天数）。
+          if (_protectedInStreak > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: Tokens.s1),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  streakProtectionSuffix(_protectedInStreak),
+                  key: const Key('profile-streak-label'),
+                  style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                ),
+              ),
+            ),
           const SizedBox(height: Tokens.s3),
           Row(
             children: <Widget>[
