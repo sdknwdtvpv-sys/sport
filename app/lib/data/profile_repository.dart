@@ -57,7 +57,7 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             // 同样：带 withDefault 的列在 Dart 数据类里仍必填，且必须保留已有值
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -70,12 +70,25 @@ class ProfileRepository {
         );
   }
 
+  /// 「帮助改进产品」的**产品默认值**：**开**（2026-10-07 用户拍板）。
+  ///
+  /// ⚠️ 读这一段之前先看 `docs/plan-ux-2026-10-07.md` §三·9 那张施工单：
+  /// 这个默认值在 2026-09-30 被审计改成过"关"（理由是"默认同意站不住"），
+  /// 2026-10-07 用户在原话里问"帮助改进产品能不能默认打开？"并明确选了"真改成开"。
+  /// 所以这不是谁手滑翻的 —— 是一个**知情的反转**，政策中英、同意屏、商店文本
+  /// 与 `tool/privacy-audit.mjs` 的判据方向都跟着一起翻（那几条都必须同时改）。
+  ///
+  /// ⚠️ **它只对"还没有那一行"的机器生效**（= 新装）。存量机器库里有那一行，
+  /// 读出来的就是它自己的值 —— **我们不静默翻转存量用户的选择**：
+  /// 他们当初看到的是"默认关闭"，把那个值改成 true 等于对着一份旧承诺收集数据。
+  static const bool analyticsDefaultOn = true;
+
   /// 「帮助改进产品」开关，默认开
   Future<bool> analyticsEnabled() async {
     final row = await (_db.select(_db.userProfile)
           ..where((t) => t.userId.equals(kLocalUserId)))
         .getSingleOrNull();
-    return row?.analyticsEnabled ?? false;
+    return row?.analyticsEnabled ?? analyticsDefaultOn;
   }
 
   /// 写入隐私开关。
@@ -145,7 +158,7 @@ class ProfileRepository {
             unitPref: existing?.unitPref ?? 'kg',
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: sec ?? kRestFollowExercise,
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -200,7 +213,7 @@ class ProfileRepository {
             unitPref: existing?.unitPref ?? 'kg',
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? kRestFollowExercise,
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -241,7 +254,7 @@ class ProfileRepository {
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
             progressionMode: existing?.progressionMode ?? 'double',
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -285,7 +298,7 @@ class ProfileRepository {
             unitPref: existing?.unitPref ?? 'kg',
             bodyWeightUnit: unit.wire,
             defaultRestSec: existing?.defaultRestSec ?? 90,
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -326,7 +339,7 @@ class ProfileRepository {
             // 默认跟随：跟随状态下换全局单位，体重单位一起换（见上面那段注释）。
             bodyWeightUnit: bodyFollowsGlobal ? unit.wire : oldBody,
             defaultRestSec: existing?.defaultRestSec ?? 90,
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -363,7 +376,7 @@ class ProfileRepository {
             unitPref: existing?.unitPref ?? 'kg',
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             privacyConsentAtMs: existing?.privacyConsentAtMs ?? now,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -402,7 +415,7 @@ class ProfileRepository {
             unitPref: existing?.unitPref ?? 'kg',
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs ?? now,
@@ -469,7 +482,7 @@ class ProfileRepository {
             unitPref: existing?.unitPref ?? 'kg',
             bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
             defaultRestSec: existing?.defaultRestSec ?? 90,
-            analyticsEnabled: existing?.analyticsEnabled ?? false,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs ?? now,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,

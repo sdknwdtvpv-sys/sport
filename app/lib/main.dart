@@ -518,8 +518,10 @@ class _HomeShellState extends State<HomeShell> {
 
   Future<void> _initAnalytics() async {
     // ⚠️ **先问用户的选择，再做任何记录**（2026-09-30，审计 A 的后半段）。
-    // 库里那一列的默认值改成"关"了，但这个对象在内存里的默认值未必跟着变 ——
-    // 而"开关显示关着、实际上还在收集"是所有失败方式里最坏的一种。
+    // 库里那一列的默认值 2026-10-07 起是"开"（用户拍板），但这个对象在内存里的
+    // 默认值未必跟着变 —— 而"开关显示开着、实际却没记"或反过来，都是最坏的失败方式。
+    // 另外：这个方法**只在 `_onPrivacyAgreed` 里调** —— 首启同意门之前它根本没被启用，
+    // 所以"同意之前一条事件都不许入队"是结构上成立的，不是碰巧。
     // 所以这一步在 `_trackAppOpen()` 与任何 flush 之前，顺序就是它的意义。
     _analytics.setEnabled(await _profile.analyticsEnabled());
     await _purgeLegacyOutboxOnce(); // ★ B 方案：配了地址的包，第一次冷启动先丢掉历史积压

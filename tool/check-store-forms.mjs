@@ -160,14 +160,32 @@ function inspect(root) {
       + '两张表必须一致');
   }
 
-  // ── 4. 默认关：事实源说了，两张表都得写出来
-  if (data.analyticsOptIn?.defaultOn === false) {
-    if (!/默认关/.test(play)) {
-      problems.push('事实源里匿名统计是**默认关**的，但 store-listing.md 没写这一点 —— '
-        + '"可选"这个词必须配一句"默认关"才站得住');
-    }
-    if (!/默认关闭|默认关/.test(ios)) {
-      problems.push('事实源里匿名统计是**默认关**的，但 store-listing-ios.md 没写这一点');
+  // ── 4. 统计开关的默认值：事实源说了，两张表都得写出来
+  //
+  // ⚠️ 方向**不写死**（2026-10-07）：默认值翻过一次（v1.28.0 关 → v23 开），
+  // 写死"默认关"的那一版在翻向当天就会变成一条**永远为真、因此永远不报**的空规则。
+  // 现在两个方向都判 —— 表里写的必须与事实源一致，而不是"必须写关"。
+  //
+  // ⚠️ 判据必须落在**提到统计开关的那些行**上，不能拿整篇文档去 grep：
+  // 2026-10-07 自检当场抓到过——iOS 那篇里还有一句"云备份默认关闭"，
+  // 于是"整篇里有没有'默认关'"永远为真，这条规则就成了一句永远不报的空话
+  // （而它当时正好要判"统计开关是不是默认关"）。两份文档、两个方向都按行判。
+  if (typeof data.analyticsOptIn?.defaultOn === 'boolean') {
+    const wantOn = data.analyticsOptIn.defaultOn === true;
+    const word = wantOn ? /默认开/ : /默认关/;
+    const other = wantOn ? /默认关/ : /默认开/;
+    // ⚠️ 两份文档都是**中文正文 + 英文表单标签**的混排（`store-listing-ios.md` 也一样），
+    // 所以"提到统计开关"那一步必须中英一起认：只认英文词的话，iOS 那篇的中文句子
+    // 一条都匹配不上 → 当场变成假阳性（这条也是自检抓到的）。
+    const switchRe = /(统计|帮助改进产品|analytics|statistics|help improve)/i;
+    const saysIt = (text) => text.split('\n').some((line) => switchRe.test(line)
+      && word.test(line) && !other.test(line));
+    for (const [label, text] of [['store-listing.md', play],
+      ['store-listing-ios.md', ios]]) {
+      if (saysIt(text)) continue;
+      problems.push(`事实源里匿名统计是**默认${wantOn ? '开' : '关'}**的，但 ${label} 里`
+        + `提到统计开关的那一行都没写这一点 —— 商店表单读到的必须是"默认开着，`
+        + '还是用户得自己去打开"');
     }
   }
 
@@ -426,12 +444,14 @@ function selftest() {
     ['把变体 A 的"不收集"抄进了变体 B', (r) => swap(r, 'store-listing.md',
       '另外三个必须如实勾选的项：', '另外三个必须如实勾选的项（数据只存在设备本地）：'), false,
       '变体 B 小节里出现了绝对化'],
-    ['事实源改成默认开统计，两张表还写着默认关', (r) => {
+    // ⚠️ 2026-10-07：事实源**现在**就是"默认开"，所以这条夹具反过来用 ——
+    // 把事实源改成"默认关"而两张表还写着"默认开"，必须判红（两个方向都要有夹具）。
+    ['事实源改成默认关统计，两张表还写着默认开', (r) => {
       const p = join(r, 'docs/privacy-facts.json');
       const d = JSON.parse(readFileSync(p, 'utf8'));
-      d.analyticsOptIn.defaultOn = true;
+      d.analyticsOptIn.defaultOn = false;
       writeFileSync(p, JSON.stringify(d, null, 2));
-    }, true, null],
+    }, false, '是**默认关**的'],
     ['Play 表漏了 device_id 这一行', (r) => swap(r, 'store-listing.md',
       '| **设备或其他 ID** | `device_id`', '| **设备或其他 ID** |'), false, '没提「device_id」'],
     ['App Store 表漏了 Device ID 那一行', (r) => swap(r, 'store-listing-ios.md',
@@ -519,5 +539,5 @@ if (process.argv.includes('--selftest')) {
     process.exit(1);
   }
   console.log('\n✓ 两张表都与事实源一致：变体结构在、"不收集"没被抄进 B、'
-    + '敏感字段都披露了、默认关与不追踪都写了依据');
+    + '敏感字段都披露了、统计默认值与不追踪都写了依据');
 }

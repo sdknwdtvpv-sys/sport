@@ -336,7 +336,7 @@ systemd 无限重启，而云备份、埋点跟着一起挂。现在改成**大�
 | 起收集端 | `node server/collector.mjs --port 8787 --out server/data-live` | `{"ok":true,"events":0}` |
 | 打通真机 | `adb reverse tcp:8787 tcp:8787`（不用同一 Wi-Fi） | `UsbFfs tcp:8787 tcp:8787` |
 | 带地址构建 | `flutter build apk --release --dart-define=LIANLEME_ANALYTICS_URL=http://127.0.0.1:8787/v1/events` | 装真机（`75caf509`） |
-| 打开开关 | 「我 → 隐私与关于 → 帮助改进产品」（**默认是关的**，不打开就一条都不发 —— 这是设计，不是 bug） | — |
+| 打开开关 | 「我 → 隐私与关于 → 帮助改进产品」（2026-10-07 起**默认是开的**；关掉就一条都不发 —— 这是设计，不是 bug。⚠️ 这一步的历史记录写在 v1.28.0～v1.58.0 那几版里，那时默认是关的） | — |
 | 真实操作 | 冷启动 → 开始训练 → 记一组 | — |
 | **结果** | `GET /stats` | **7 条真实事件 / 1 台设备**：`app_open`×2 · `workout_started` · `suggestion_shown` · `suggestion_accepted` · `set_logged` · `rest_started` |
 | 看板 | `node tool/workbench.mjs --data server/data-live` | 来源标签 **「真实数据」**；`tap_count` 有了第一个真实数（n=1，中位数 2） |

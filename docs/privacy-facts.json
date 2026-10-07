@@ -229,21 +229,21 @@
     }
   ],
   "analyticsOptIn": {
-    "_why": "匿名统计是「非必需」的那一项，所以它必须由用户**主动**开启（默认关）。这个字段是机器可核的那一半：tool/privacy-audit.mjs 会拿 defaultOn 去对app/lib/data/db.dart 里那一列的默认值，并要求中英政策正文出现下面的说法。2026-09-30 之前它是默认开的 —— 审计判定「默认同意」站不住，这一版改成默认关（审计 A 的后半段）。",
-    "defaultOn": false,
-    "codeDefault": "app/lib/data/db.dart：analyticsEnabled 列 withDefault(const Constant(false))",
+    "_why": "匿名统计是「非必需」的那一项，所以它的默认值必须被显式声明、并对外说得一样。这个字段是机器可核的那一半：tool/privacy-audit.mjs 会拿 defaultOn 去对 app/lib/data/db.dart 里那一列的默认值（现在是 withDefault(const Constant(true))），要求中英政策正文出现下面的说法，并且**把方向反过来查**对外文档（写反了就是假话）。⚠️ 这一格翻过两次，历史要连着读：① 很久以前默认开；② 2026-09-30（v13）审计判定「默认同意站不住」→ 改成默认关，并有一条迁移把老库的 true 翻成 0；③ **2026-10-07 用户拍板改回默认开**（原话：帮助改进产品能不能默认打开？→ 明确选了「真改成开」，见 docs/plan-ux-2026-10-07.md §三·9）。⚠️ v23 **只改默认值、不搬数据**：存量机器那一位原样不动（他们当年看到的是「默认关闭」，静默翻转等于对着旧承诺收集数据）。",
+    "defaultOn": true,
+    "codeDefault": "app/lib/data/db.dart：analyticsEnabled 列 withDefault(const Constant(true))；存量机器读自己那一行（app/lib/data/profile_repository.dart 的 analyticsDefaultOn）",
     "switchPath": {
-      "zh": "「我」→「帮助改进产品」",
-      "en": "Profile → \"Help improve the product\""
+      "zh": "「我」→「隐私与关于」→「帮助改进产品」",
+      "en": "Profile → \"Privacy & About\" → \"Help improve the product\""
     },
     "policyPhrases": {
       "zh": [
-        "默认关闭",
-        "主动"
+        "默认开启",
+        "随时可以关掉"
       ],
       "en": [
-        "off by default",
-        "turn it on yourself"
+        "on by default",
+        "turn it off"
       ]
     }
   },

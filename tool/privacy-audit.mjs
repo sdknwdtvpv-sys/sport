@@ -21,6 +21,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { findAapt2, sdkRoots as sdkRootsList } from './lib/android-sdk.mjs';
+import { isHistorical } from './lib/docs.mjs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -94,6 +95,52 @@ export function scanManifestPermissions(xml) {
  * @param {{fields?: object, policy: string, enText: string, dbSrc: string}} input
  * @returns {string[]} 错误（空数组 = 通过）
  */
+/**
+ * 对外文档里"统计开关默认值"的说法有没有写反。
+ *
+ * 为什么抽成纯函数：这一条**以前没有自检**（而且只在 `defaultOn === false` 时才跑）——
+ * "只在某一个方向上生效的守卫"静默失效起来毫无痕迹。2026-10-07 默认值翻向时顺手补上：
+ * 判据本体不再依赖事实源的方向，两个方向各有自检用例。
+ *
+ * 判据：
+ *   * 只有**提到统计开关**的行才看（中英各一套词）；
+ *   * `defaultOn=true` 时"默认关闭/默认关着"是写反了；`defaultOn=false` 时反过来；
+ *   * 一行里若同时给出了正确说法（"（由「默认关闭」改来）"这种注记），一律放过；
+ *   * 本来就是历史叙述的行放过（`isHistorical`，与另外两个 check-doc-* 共用一份判据）；
+ *   * **"默认开关"这个说法不算表态**（它说的是那个开关本身）—— 用负向断言排掉。
+ */
+export function checkAnalyticsDefaultDocs({ defaultOn, docs }) {
+  const errors = [];
+  const switchZh = /(统计|帮助改进产品)/;
+  const saysOnZh = /默认\s*(?:是|为)?\s*(?:开启|打开|开着|开(?!关))/;
+  const saysOffZh = /默认\s*(?:是|为)?\s*(?:关闭|关着|关(?!闭))/;
+  const switchEn = /(analytics|statistics|help improve)/i;
+  const saysOnEn = /(on by default|enabled by default|default on\b)/i;
+  const saysOffEn = /(off by default|default off|disabled by default)/i;
+  for (const { rel, text } of docs) {
+    const isEn = rel.endsWith('.en.md');
+    text.split('\n').forEach((line, i) => {
+      const mentions = isEn ? switchEn.test(line) : switchZh.test(line);
+      if (!mentions) return;
+      const onM = (isEn ? saysOnEn : saysOnZh).exec(line);
+      const offM = (isEn ? saysOffEn : saysOffZh).exec(line);
+      // 写反了的那个说法，就是判红的位置（也是"历史窗口"要看的那一处）
+      const wrongM = defaultOn ? offM : onM;
+      const rightM = defaultOn ? onM : offM;
+      if (!wrongM || rightM) return;
+      // ⚠️ 窗口判据，不是整行判据：`isHistorical` 看的是**这处说法前后 40 字**。
+      // 这里踩过一次（自检当场抓到）：your-todo 里那行很长，"（当时是 schema v13…）"
+      // 离"默认关闭"好几十字远 —— 按整行判会把当期说法一起放过（那正是 2026-09-30
+      // 在 check-doc-versions 里踩过的同一个坑，两份守卫共用这一份判据）。
+      if (isHistorical(line, wrongM.index, wrongM[0].length)) return;
+      errors.push(`${rel}:${i + 1} 把统计开关说成"默认${defaultOn ? '关' : '开'}"了，`
+        + `而事实源里 \`analyticsOptIn.defaultOn\` 是 ${defaultOn} —— `
+        + '这行是对外的事实陈述，说反了就是假话');
+    });
+  }
+  return errors;
+}
+
 export function checkSensitiveFields({ fields, policy, enText, dbSrc }) {
   const errors = [];
   if (!fields) {
@@ -590,54 +637,45 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
 
   // ⑩之四 事实源说的默认值，**对外文档一个字都不许写反**
   //
-  // 为什么单列一条：`analyticsOptIn.defaultOn` 是 `false`（v1.28.0 起，审计 A 的后半段），
-  // 而 2026-09-30 一查，**三份对外文档里都还写着"默认开启"** —— 其中最要命的是
-  // App Store 的**审核备注**（那段话是逐字粘给审核员的），以及软著说明书。
-  // 这三处都不是"措辞不美"：它们是对苹果/对版权局/对用户的**事实陈述**，说反了就是假话。
+  // 为什么单列一条：`analyticsOptIn.defaultOn` 是"对外那一半"的锚，与 `db.dart` 那一列的
+  // 默认值、政策正文三方对账。2026-09-30 一查（当时事实是"关"），**三份对外文档里都还写着
+  // "默认开启"** —— 其中最要命的是 App Store 的**审核备注**（那段话是逐字粘给审核员的），
+  // 以及软著说明书。这三处都不是"措辞不美"：它们是对苹果/对版权局/对用户的**事实陈述**。
   //
-  // 判据写得能区分"历史注记"与"写反了"：一行同时提到统计开关、又出现"默认开"，
-  // **且这一行里没有"默认关"** → 判红。于是"（2026-09-30 由「默认开」改来）"这种注记不会误报，
-  // "如果哪天把云备份默认打开"这种假设句也不会（它不提统计开关）。
+  // ⚠️ **2026-10-07：这个默认值翻成了"开"**（用户拍板，见 `docs/plan-ux-2026-10-07.md` §三·9），
+  // 于是这条判据**也翻了个方向** —— 谁再把对外文本写成"默认关闭"就要判红。
+  // 方向只有一个来源（`analyticsOptIn.defaultOn`），所以下次再翻也不会两边打架。
+  //
+  // 判据本体抽成了纯函数（`checkAnalyticsDefaultDocs`）：**这一条以前没有自检**，
+  // 而"只在某一个方向上才跑"的守卫最容易静默失效 —— 现在两个方向都有自检用例。
   {
-    const defaultOn = facts.analyticsOptIn?.defaultOn === false;
-    if (defaultOn) {
-      // ⚠️ **your-todo 与 README 也在名单里**：它们同样对外（一个是你的决策入口，
-      // 一个是仓库首页），2026-09-30 就在 your-todo 的"审计当时的实现"那段里
-      // 读到"匿名使用统计默认是开的（默认 true）"—— 而那段早已被 v1.28.0 改掉。
-      const docs = [
-        'docs/privacy-policy.md',
-        'docs/privacy-policy.en.md',
-        'docs/store-listing.md',
-        'docs/store-listing-ios.md',
-        'docs/copyright-manual.md',
-        'docs/copyright-application.md',
-        'docs/your-todo.md',
-        'README.md',
-      ];
-      const switchZh = /(统计|帮助改进产品)/;
-      const wrongZh = /默认\s*(?:是|为)?\s*(?:开启|打开|开着|开)/;
-      const rightZh = /默认\s*(?:关闭|关|false)/;
-      const switchEn = /(analytics|statistics|help improve)/i;
-      const wrongEn = /(on by default|enabled by default|default on\b)/i;
-      const rightEn = /(off by default|default off|disabled by default)/i;
-      for (const rel of docs) {
-        const p = join(ROOT, rel);
-        if (!existsSync(p)) continue;
-        const lines = readFileSync(p, 'utf8').split('\n');
-        lines.forEach((line, i) => {
-          const isEn = rel.endsWith('.en.md');
-          const mentionsSwitch = isEn ? switchEn.test(line) : switchZh.test(line);
-          if (!mentionsSwitch) return;
-          const wrong = isEn ? wrongEn.test(line) : wrongZh.test(line);
-          const right = isEn ? rightEn.test(line) : rightZh.test(line);
-          // "默认开" 这三个字也出现在"默认开关"这种词里 —— 那一行只要同时有"默认关"就放过
-          if (wrong && !right) {
-            errors.push(`${rel}:${i + 1} 把统计开关说成"默认开"了，而事实源里 `
-              + '`analyticsOptIn.defaultOn` 是 false —— 这行是对外的事实陈述，说反了就是假话');
-          }
-        });
-      }
+    // ⚠️ **your-todo 与 README 也在名单里**：它们同样对外（一个是决策入口，
+    // 一个是仓库首页），2026-09-30 就在 your-todo 的"审计当时的实现"那段里
+    // 读到过与事实相反的说法。
+    const docs = [
+      'docs/privacy-policy.md',
+      'docs/privacy-policy.en.md',
+      'docs/store-listing.md',
+      'docs/store-listing-ios.md',
+      'docs/copyright-manual.md',
+      'docs/copyright-application.md',
+      'docs/your-todo.md',
+      'README.md',
+      // ⚠️ 2026-10-07 补进来的两份：它们同样在"陈述现状"（release-checklist 是交付核验表、
+      // analytics-sdk 是给未来的自己看的口径），却一直没人核这两处的默认值说法 ——
+      // 翻默认值这一趟，正好在它们里面各读到一句过期的"默认关"。
+      'docs/release-checklist.md',
+      'docs/analytics-sdk.md',
+    ];
+    const loaded = [];
+    for (const rel of docs) {
+      const p = join(ROOT, rel);
+      if (existsSync(p)) loaded.push({ rel, text: readFileSync(p, 'utf8') });
     }
+    errors.push(...checkAnalyticsDefaultDocs({
+      defaultOn: facts.analyticsOptIn?.defaultOn === true,
+      docs: loaded,
+    }));
   }
 
   // ⑪ 中英两版政策的**结构**必须一一对应（2026-09-30 补）
@@ -779,11 +817,50 @@ function selftest() {
     console.log(`${ok ? '✓' : '✗'} ${name}（错 ${got.length} 条，期望 ${want === 0 ? '0' : '≥1'}）`);
     if (!ok) for (const e of got) console.log(`    · ${e}`);
   }
-  if (bad) {
-    console.error(`\n✗ 隐私政策对账自检失败：${bad}/${cases.length} 条没抓住`);
+
+  // ⚠️ ⑩之四（对外文档里的默认值说法）**以前没有自检** —— 2026-10-07 补上。
+  // 它以前只在 `defaultOn === false` 那个方向上跑，而"只在某个方向生效的守卫"
+  // 一旦方向翻过来就会静默变成一条空规则（那正是它最危险的失败方式）。
+  // 所以下面**两个方向都有用例**，外加三条"不该误报"的（历史注记 / 正确说法 / "默认开关"）。
+  const d = (defaultOn, text, rel = 'docs/x.md') =>
+    checkAnalyticsDefaultDocs({ defaultOn, docs: [{ rel, text }] });
+  // ⚠️ 窗口宽度是 40 字：**远处的"当时"不算历史标记**（自检里当场抓到过一次），
+  // 所以这里造一件真事：把"当时"用 60 个字的填充推开，它必须**照报**。
+  const farAway = '匿名统计默认关闭。' + '填充'.repeat(31) + '当时是另一套规定。';
+  const docCases = [
+    ['默认开 + 文档写"默认关闭" → 抓得住',
+      d(true, '匿名统计开关**默认关闭**，只有你主动打开才会收集'), 1],
+    ['默认开 + 文档写"默认开启，随时能关" → 不该误报',
+      d(true, '它默认开启，不要的话随时可以关掉'), 0],
+    ['默认开 + 历史注记（"由「默认关闭」改来"）→ 不该误报',
+      d(true, '（2026-10-07 由「默认关闭」改来，当时是审计判定）'), 0],
+    ['默认关 + 文档写"默认开启" → 抓得住（老方向不能丢）',
+      d(false, '匿名统计默认开启'), 1],
+    ['默认关 + 文档写"默认关闭" → 不该误报',
+      d(false, '这个开关默认关闭，要用户自己去打开'), 0],
+    ['"默认开关"这个说法不算表态 → 不该误报',
+      d(true, '隐私开关默认开关状态见设置页'), 0],
+    ['英文版写 on by default 而事实是关 → 抓得住',
+      d(false, 'Usage analytics is on by default.', 'docs/x.en.md'), 1],
+    ['英文版写 off by default 而事实是开 → 抓得住',
+      d(true, 'Usage analytics is off by default.', 'docs/x.en.md'), 1],
+    ['"当时"离得太远（>40 字窗口）→ 仍然要报（窗口判据的回归用例）',
+      d(true, farAway), 1],
+  ];
+  let bad2 = 0;
+  for (const [name, got, want] of docCases) {
+    const ok = want === 0 ? got.length === 0 : got.length >= 1;
+    if (!ok) bad2 += 1;
+    console.log(`${ok ? '✓' : '✗'} ${name}（错 ${got.length} 条，期望 ${want === 0 ? '0' : '≥1'}）`);
+    if (!ok) for (const e of got) console.log(`    · ${e}`);
+  }
+
+  if (bad || bad2) {
+    console.error(`\n✗ 隐私政策对账自检失败：${bad + bad2}/${cases.length + docCases.length} 条没抓住`);
     process.exit(1);
   }
-  console.log(`隐私政策对账自检通过（${cases.length} 条：政策漏字段 / 英文版漏 / 库没列 / fields 丢了 / 身高未点名都抓得住）`);
+  console.log(`隐私政策对账自检通过（${cases.length + docCases.length} 条：政策漏字段 / 英文版漏 / `
+    + '库没列 / fields 丢了 / 身高未点名 / **统计默认值两个方向 + 三条不该误报** 都抓得住）');
   process.exit(0);
 }
 

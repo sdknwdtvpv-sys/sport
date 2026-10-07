@@ -185,9 +185,10 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
               style: TextStyle(color: Tokens.text, fontSize: 15),
             ),
             subtitle: const Text(
-              // 默认是**关**的（v1.28.0），所以这句话要从"打开会怎样"写起 ——
-              // 旧文案「关掉后不再上报」是给"默认开"写的，对新装用户是错的。
-              '打开后会匿名上报使用数据；关闭时一条都不发，功能完全不受影响',
+              // 默认是**开**的（2026-10-07 拍板，v23；此前 v1.28.0～v1.58.0 是关），
+              // 所以这句话要从"关掉会怎样"写起 —— 复述开关当前状态是废话，
+              // 用户此刻想知道的是"关掉有什么后果"（`docs/copy.md` 的判据）。
+              '关掉后一条都不发；功能完全不受影响，随时可以再打开',
               style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
             ),
           ),

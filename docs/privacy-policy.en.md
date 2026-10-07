@@ -44,8 +44,8 @@ shipped with the policy.) -->
 **LianLeMe is an offline-first workout logging tool. Your training data stays on your own phone.
 There is no sign-up requirement, no phone number, no location, no contacts.
 Only three things can ever reach the network, and none of them carries plaintext training data:
-anonymous usage statistics (**off by default** — you have to **turn it on yourself**, and you can
-turn it off again at any time), the cloud backup you enable yourself (the server only ever receives
+anonymous usage statistics (**on by default** — turn it off in Profile → Privacy & About at any time,
+and once off not a single byte is sent), the cloud backup you enable yourself (the server only ever receives
 ciphertext), and an **optional account** (you can use every feature without signing up).**
 
 ---
@@ -102,11 +102,11 @@ yourself**: that copy is encrypted on your phone before it leaves, and only ciph
 > (withdrawing consent and deleting data are two different things — delete data yourself
 > under "All data").
 
-### 2.2 Collected only when "Help improve the product" is ON
+### 2.2 Collected while "Help improve the product" is ON
 
-This is a **switch that is off by default**: nothing below is produced unless you
-**turn it on yourself** (Profile → Privacy & About → "Help improve the product");
-once on, you can turn it off again at any time, effective immediately. It produces exactly **22 event types** with a
+This is a **switch that is on by default**: if you do not want it, turn it off in
+Profile → Privacy & About → "Help improve the product" and nothing below is produced;
+turning it off takes effect immediately, and you can turn it back on at any time. It produces exactly **22 event types** with a
 **fixed, limited** set of fields (the full list lives in `docs/privacy-facts.json` and is
 checked against the code by `tool/privacy-audit.mjs`):
 
@@ -174,13 +174,14 @@ A few clarifications:
 
 ### 3.1 Three things can reach the network — none without your action
 
-**Nothing is uploaded unless you do something yourself.** Two of the three are switches that are
-**off by default**; the third only happens if you choose to sign up:
+**Only the first one is on by default, and you can turn it off at any time — then not a single byte
+is sent.** The three differ in their defaults, stated honestly below: statistics are **on by default**,
+cloud backup is **off by default**, and the account only exists if you choose to sign up:
 
-- **Anonymous usage statistics** (off by default). When you turn it on, the events in 2.2 are sent
-  over HTTPS to a receiver we operate. **When the switch is off, not a single event is sent** —
-  and you can verify that yourself: install the app, watch it with any packet capture tool for a
-  full day, and with the switch off you should see **zero** requests to us (this is exactly how we
+- **Anonymous usage statistics** (**on by default**; turn it off at any time). While the switch is
+  on, the events in 2.2 are sent over HTTPS to a receiver we operate. **When the switch is off, not a
+  single event is sent** — and you can verify that yourself: turn the switch off, watch the app with
+  any packet capture tool for a full day, and you should see **zero** requests to us (this is how we
   verify it during development).
   ⚠️ **The first release that reports anything does not send events accumulated by earlier
   versions**: that backlog is cleared the first time a reporting build starts ("whoever recorded
@@ -396,7 +397,7 @@ background permissions.
 
 | Right | How |
 |---|---|
-| **Turn usage statistics on or off** | **It is off by default** (nobody is counted). To take part, **turn it on yourself** in Profile → Privacy & About → "Help improve the product". Both directions take effect immediately; no feature is affected |
+| **Turn usage statistics on or off** | **It is on by default.** To opt out, turn it off in Profile → Privacy & About → "Help improve the product"; turning it off stops every event immediately. Both directions take effect immediately; no feature is affected |
 | **Export the usage events** | Once that switch is on, Profile → Privacy & About also shows "Export statistics events": it exports the anonymous events stored on this device into a file (one JSON object per line) that you can keep or send to us. **While the switch is off, this entry does not appear** — nothing is being collected then |
 | **Export all your data** | Profile → Data & Backup → "Export all records" — generates a CSV copied to your clipboard |
 | **Delete all data** | Profile → Data & Backup → "Delete all data". After a confirmation prompt, local records and settings are wiped immediately |

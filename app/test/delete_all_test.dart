@@ -181,9 +181,10 @@ void main() {
     await store.deleteAllUserData();
 
     final ProfileRepository profile = ProfileRepository(db);
-    // v1.28.0 起匿名统计默认**关** —— 删完数据后回落到的就是这个默认值
-    expect(await profile.analyticsEnabled(), isFalse,
-        reason: '删完全部数据后开关要回落到默认值，而现在的默认值是"关"');
+    // 2026-10-07（v23）起匿名统计默认**开** —— 删完数据后回落到的就是这个默认值
+    // （v1.28.0～v1.58.0 之间它是"关"，那是审计 A 的后半段；这一版是用户知情拍板翻回来的）
+    expect(await profile.analyticsEnabled(), isTrue,
+        reason: '删完全部数据后开关要回落到默认值，而现在的默认值是"开"');
     expect(await profile.unit(), WeightUnit.kg, reason: '单位回落默认 kg');
     expect(await profile.progressionMode(), ProgressionMode.doubleProgression,
         reason: '渐进建议回落默认');

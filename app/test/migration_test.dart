@@ -571,4 +571,51 @@ void main() {
 
     await legacy.close();
   });
+
+  test('v22 的库升到 v23：**存量那一行不许被翻转**（只有新装才是默认开）', () async {
+    // v23 是**唯一一次"只改列默认值"的迁移**，而且它**有意什么都不做**。
+    // 这条测试守的就是那个"什么都不做"——三种机器各验一遍：
+    //   ① 存量机器写着 0（当年在同意屏与政策里被告知的是"默认关闭"）→ 升级后**仍然是 0**。
+    //      把它静默翻成 1 就是对着旧承诺收集数据 —— 2026-10-07 拍板时专门交代过（
+    //      `docs/plan-ux-2026-10-07.md` §三·9）。
+    //   ② 存量机器写着 1（用户自己开的）→ 同样一格都不动。
+    //   ③ **没有那一行**的新装机器 → 读到的才是新默认值（开）。这一条才是这一版真正要改的东西。
+    Future<({int? stored, bool read})> upgrade(int? seed) async {
+      final AppDatabase legacy = AppDatabase(
+        NativeDatabase.memory(setup: (dynamic raw) {
+          legacySetup(raw, version: 22);
+          if (seed != null) {
+            raw.execute('INSERT INTO user_profile '
+                '(user_id, goal, weekly_frequency, unit_pref, default_rest_sec, '
+                'progression_mode, analytics_enabled, created_at, updated_at) '
+                "VALUES ('local', 'hypertrophy', 5, 'kg', 90, 'double', $seed, 1000, 1000)");
+          }
+        }),
+      );
+      // 打开即触发 onUpgrade（v22 → v23）
+      final bool read = await ProfileRepository(legacy).analyticsEnabled();
+      // 直接读库里那一格 —— 不只信读出来的布尔（"没被搬动"必须有原始证据）
+      // 类型由 `.get()` 推出来（`QueryRow` 不必写出来 —— 写出来还得额外 import）
+      final rows = await legacy
+          .customSelect('SELECT analytics_enabled AS v FROM user_profile')
+          .get();
+      final int? stored = rows.isEmpty ? null : rows.first.read<int>('v');
+      await legacy.close();
+      return (stored: stored, read: read);
+    }
+
+    final ({int? stored, bool read}) off = await upgrade(0);
+    expect(off.stored, 0, reason: '存量机器写着 0 → 升级后一格都不许动');
+    expect(off.read, isFalse,
+        reason: '读到的是它自己那一行（关），不是新默认值 —— 静默翻转是我们明确不做的事');
+
+    final ({int? stored, bool read}) on = await upgrade(1);
+    expect(on.stored, 1, reason: '用户自己开过的，当然也不动');
+    expect(on.read, isTrue);
+
+    final ({int? stored, bool read}) fresh = await upgrade(null);
+    expect(fresh.stored, isNull, reason: '新装机器在第一次写设置之前根本没有那一行');
+    expect(fresh.read, isTrue,
+        reason: '没有那一行 → 读到的就是这一版改的默认值（开）');
+  });
 }

@@ -49,8 +49,9 @@ void main() {
       expect(text, contains('与第三方共享个人信息清单'));
       // 结论句（审核员第一眼要找的就是这句）
       expect(text, contains('不向任何第三方出售、出租或共享'));
-      // 「默认关闭」也要写在清单里 —— v1.28.0 之后的事实
-      expect(text, contains('默认关闭'));
+      // 统计开关的默认值也要写在清单里 —— 2026-10-07（v23）起的事实是**默认开启**
+      // （v1.28.0～v1.58.0 之间是"默认关闭"；用户拍板翻回来后，政策/清单/商店表一起改）
+      expect(text, contains('默认开启'));
       // 收集清单要逐条列出事件（抽查两个，防止整段被换成一句空话）
       expect(text, contains('app_open'));
       expect(text, contains('set_logged'));
