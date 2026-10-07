@@ -18,6 +18,7 @@ import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/progress/badges.dart';
+import 'package:lianleme/core/vi_cards.dart';
 import 'package:lianleme/features/profile/profile_screen.dart';
 import 'package:lianleme/features/profile/training_stats.dart';
 
@@ -382,12 +383,18 @@ void main() {
         ),
       ));
       await tester.pumpAndSettle();
-      await scrollTo(tester, find.byKey(const Key('profile-streak-label')));
+      await scrollTo(tester, find.byKey(const Key('profile-stat-streak')));
 
+      // 2026-10-06（A 档重排）：那句话的渲染点从"下面那张打卡卡"搬到了
+      // **连续天数格子底下**（打卡卡复述的就是这一格，撤掉它页面才不重复），
+      // 于是文案也从整句「已连续打卡 2 天（其中 1 天是补签）」变成下半句。
+      // **整句仍由 `streak_protection_test.dart` 钉着**（首页那张卡用的是它）。
+      expect(tester.widget<Text>(find.byKey(const Key('profile-stat-streak'))).data, '2 天',
+          reason: '昨天练了 + 前天被补签保护 = 连续 2 天');
       expect(
         tester.widget<Text>(find.byKey(const Key('profile-streak-label'))).data,
-        '已连续打卡 2 天（其中 1 天是补签）',
-        reason: '昨天练了 + 前天被补签保护 = 2 天，而且必须写明其中 1 天是补签',
+        '其中 1 天是补签',
+        reason: '含补签就必须写出来 —— 只写"2 天"而其中 1 天是补的，那是假话',
       );
     });
 
@@ -398,13 +405,44 @@ void main() {
         await store.saveSet(_set(id: 'e$i', setIndex: i + 1));
       }
       await pumpProfile(tester);
-      await scrollTo(tester, find.byKey(const Key('experience-card')));
+      // 2026-10-06（A 档重排）：经验不再是独立一张卡，而是「我的进度」里的第三行
+      // —— 滚动目标换成那一行的标题（`experience-card` 那个 key 已经没有了）
+      await scrollTo(tester, find.byKey(const Key('experience-title')));
 
       expect(tester.widget<Text>(find.byKey(const Key('experience-sets'))).data, '3 组');
       expect(tester.widget<Text>(find.byKey(const Key('experience-title'))).data,
           '经验 · 起步');
       expect(tester.widget<Text>(find.byKey(const Key('experience-hint'))).data,
           contains('还差 97 组'));
+    });
+
+    testWidgets('★ A 档重排：「我的进度」一张卡装下等级 / 段位 / 经验三行',
+        (WidgetTester tester) async {
+      await pumpProfile(tester);
+
+      // 分组标题在（它是"这三行是同一件事"的唯一提示）
+      expect(find.text('我的进度'), findsOneWidget, reason: '三行必须有一个共同的分组标题');
+
+      // 三行都在，而且**同一张卡**里 —— 判据：从等级那行往上找，找到的最近一张卡
+      // 里同时含段位与经验（这比"数卡片张数"稳，也不依赖具体像素）
+      await scrollTo(tester, find.byKey(const Key('profile-level-label')));
+      expect(find.byKey(const Key('profile-level-label')), findsOneWidget);
+      expect(find.byKey(const Key('rank-name')), findsOneWidget);
+      expect(find.byKey(const Key('experience-title')), findsOneWidget);
+
+      // 三行必须在**同一张卡**里：各自最近的 ViCard 祖先应当是同一个 Element。
+      // （这比"数卡片张数"稳 —— 统计四宫格用的也是 ViCard。）
+      Finder cardOf(Key k) => find.ancestor(of: find.byKey(k), matching: find.byType(ViCard));
+      final Finder lvCard = cardOf(const Key('profile-level-label'));
+      final Finder rankCard = cardOf(const Key('rank-name'));
+      final Finder expCard = cardOf(const Key('experience-title'));
+      expect(lvCard, findsOneWidget);
+      expect(rankCard, findsOneWidget);
+      expect(expCard, findsOneWidget);
+      expect(identical(lvCard.evaluate().single, rankCard.evaluate().single), isTrue,
+          reason: '等级与段位不该各占一张卡（收成一张是这次改动的全部意义）');
+      expect(identical(lvCard.evaluate().single, expCard.evaluate().single), isTrue,
+          reason: '经验也不该另占一张卡');
     });
 
     testWidgets('开关默认开着，关掉之后写进库', (WidgetTester tester) async {

@@ -196,5 +196,13 @@ String offerCopy(DateTime missed, DateTime today) {
 String streakLabelWithProtection(int streak, int protectedInStreak) {
   if (streak <= 0) return '今天练一次，就开始记连续天数';
   if (protectedInStreak <= 0) return '已连续打卡 $streak 天';
-  return '已连续打卡 $streak 天（其中 $protectedInStreak 天是补签）';
+  return '已连续打卡 $streak 天（${streakProtectionSuffix(protectedInStreak)}）';
 }
+
+/// 补签那句的**下半句**（"其中 N 天是补签"）。
+///
+/// 抽出来是因为它现在有**两个渲染点**：首页/卡片里那句完整的话，与「我」页统计格子
+/// 底下那行小字（2026-10-06 的 A 档重排把打卡卡撤了，但"如实交代"这句不能跟着没）。
+/// 两处必须**一字不差** —— 不然同一个事实有了两种写法，早晚对不上。
+String streakProtectionSuffix(int protectedInStreak) =>
+    protectedInStreak <= 0 ? '' : '其中 $protectedInStreak 天是补签';
