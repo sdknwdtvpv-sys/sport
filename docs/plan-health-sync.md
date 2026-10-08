@@ -67,7 +67,26 @@
    ⚠️ 仍然要先解决的问题是**本机 Xcode 的 Apple ID 掉线了**（`No Accounts` +
    证书 `may have been revoked or expired`）—— 那是 iPhone 装不上包的原因，
    Xcode → Settings（⌘,）→ Accounts → 重新登录即可（与 HealthKit 无关，但必须先做掉）。
-   ⚠️ 加能力的**正确入口**（我们试过一次找错地方）：左栏点**最上面那个蓝色的项目图标**
+   ✅ **2026-10-08 把这一步从"要用户手点"改成了"工程里已经挂好"**
+   （**这次没有切版**：一行 Dart / Swift / Kotlin 代码都没改，按 `CHANGELOG.md` 开头那条
+   "版本号只跟随 `app/` 下的**代码**改动"，纯工程配置的改动跟下一次改代码的发布一起走；`dist/` 里
+   也仍然是 v1.64.0 的 Android 产物，没动 —— 它们本来就不含 iOS 的东西）：
+   用户按上面那条入口找了两遍都没找到 `Health` —— 原因不在他：**Xcode 那个
+   `+ Capability` 列表要从 Apple ID 在线拉，账号掉线时它是空的/搜不出东西**，
+   而账号恰好正掉线（见上一条）。
+   所以改成**直接写进工程**，三处一起：
+   * `app/ios/Runner/Runner.entitlements`（新建）→ `com.apple.developer.healthkit = true`；
+   * `project.pbxproj` 的 Runner 三个配置（Debug/Release/Profile）各加一行
+     `CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;`
+     —— 打开工程时 **Signing & Capabilities 面板会直接显示 HealthKit 能力卡**，
+     **不用再去 `+ Capability` 里搜**；
+   * 同一个 target 的 `TargetAttributes` 里登记 `SystemCapabilities = { com.apple.HealthKit = { enabled = 1; }; }`
+     （Xcode 的 UI 是照这里显示卡片的，只挂 entitlements 文件时卡片有时不出现）。
+   ⚠️ **只挂了能力，没写任何功能代码**：`Info.plist` 里**故意没有**
+   `NSHealthShareUsageDescription` —— 那一句是功能上线那一版的事（与政策/商店表单同期）。
+   验过的部分：`flutter build ios --simulator --debug` 通过、`xcodebuild -showBuildSettings`
+   读到 `CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements`、两份 plist/工程文件 `plutil -lint` OK。
+   ⚠️ 想手点也行（**先把账号登回来**，否则列表还是空的）：左栏点**最上面那个蓝色的项目图标**
    （不是黄色文件夹）→ 编辑器左侧 TARGETS 选 **Runner** → 顶栏切到 **Signing & Capabilities**
    → 右上角 **`+ Capability`** → 搜 `Health` → 选 **HealthKit**（不是右键菜单里找）。
 2. **乐刻到底往不往系统健康库里写体成分**。

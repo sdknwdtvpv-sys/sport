@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  练了么 · HealthKit 能力（2026-10-08，为"从系统健康库读体成分"做准备）
+
+	  为什么先接能力、不动功能：
+	    ① 用户那天问"HealthKit 在 Xcode 里怎么找不到" —— Xcode 的 Signing & Capabilities
+	       面板是按**这份 entitlements 文件**显示能力卡片的；文件接上，卡片就出现，
+	       不用去 `+ Capability` 列表里翻（而且账号没登录时那个列表是空的）；
+	    ② 与 `docs/plan-health-sync.md` 的施工顺序一致：**能力与合规先就位，功能后上**。
+
+	  ⚠️ **免费 Apple ID 可以用 HealthKit**（Apple 官方《支持的能力（iOS）》表里，
+	     HealthKit 这一行在 ADP / ADEP / Apple Developer 三列都是勾）。
+	     ⚠️ 但 `HealthKit Estimate Recalibration` 那一行**免费档是空的** ——
+	     那是"估算校准"类子能力，我们只读体重/体脂/身高，用不到，不要加进来。
+
+	  ⚠️ 现在**还没有**任何代码调用 HealthKit，Info.plist 里也**故意没写**
+	     `NSHealthShareUsageDescription` —— 那是功能上线那一版的事（与政策/商店表单同期）。
+	     这一份只是把能力挂在工程上，让它在 Xcode 里可见、可签。
+	-->
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+</dict>
+</plist>
