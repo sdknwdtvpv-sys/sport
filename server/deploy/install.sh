@@ -217,7 +217,7 @@ if [ -f "$MAIL_ENV" ]; then
   say "已存在，**不覆盖**：$MAIL_ENV"
 else
   if [ "$DRY_RUN" = 1 ]; then
-    say "[dry-run] 会写入空模板：$MAIL_ENV（0600，root:root）"
+    say "[dry-run] 会写入空模板：${MAIL_ENV}（0600，root:root）"
     MAIL_ENV_CREATED=0
   else
     cat > "$MAIL_ENV" <<'MAILENV'

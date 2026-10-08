@@ -75,7 +75,7 @@ restore() {
       echo "↩︎ 已把 iOS 工程改回原来的 bundle id + Team"
     fi
   elif [ -n "$PATCHED" ]; then
-    red "✗ 备份文件是空的（$BAK）—— 工程可能已经被改过，**请手动核对**："
+    red "✗ 备份文件是空的（${BAK}）—— 工程可能已经被改过，**请手动核对**："
     echo "    git -C \"$REPO\" diff --stat app/ios/Runner.xcodeproj/project.pbxproj"
     echo "    要恢复： git -C \"$REPO\" checkout -- app/ios/Runner.xcodeproj/project.pbxproj"
   fi
@@ -142,7 +142,7 @@ echo "→ 临时把 bundle id 换成 ${DEV_ID}（主 App 与扩展一起）、�
 cp "$PBX" "$BAK"
 # 闸门 2：备份与原件都必须有内容才往下走（这里是那次事故的正前方）
 [ -s "$BAK" ] || { red "✗ 备份没成功（$BAK 是空的）—— 不动工程，直接退出"; exit 1; }
-[ -s "$PBX" ] || { red "✗ 工程文件是空的（$PBX）—— 先跑：git -C \"$REPO\" checkout -- app/ios/Runner.xcodeproj/project.pbxproj"; exit 1; }
+[ -s "$PBX" ] || { red "✗ 工程文件是空的（${PBX}）—— 先跑：git -C \"$REPO\" checkout -- app/ios/Runner.xcodeproj/project.pbxproj"; exit 1; }
 PATCHED=1
 python3 - "$PBX" "$DEV_ID" "$TEAM_ID" <<'PY'
 import sys
@@ -176,8 +176,8 @@ assert os.path.getsize(tmp) > 1000, 'patch 之后文件太小，肯定是写坏�
 os.replace(tmp, path)
 PY
 
-[ -s "$PBX" ] || { red "✗ patch 之后工程文件是空的 —— 立刻停手（备份在 $BAK）"; exit 1; }
-grep -q "DEVELOPMENT_TEAM = ${TEAM_ID}" "$PBX" || { red "✗ patch 没生效（工程里找不到 Team $TEAM_ID）"; exit 1; }
+[ -s "$PBX" ] || { red "✗ patch 之后工程文件是空的 —— 立刻停手（备份在 ${BAK}）"; exit 1; }
+grep -q "DEVELOPMENT_TEAM = ${TEAM_ID}" "$PBX" || { red "✗ patch 没生效（工程里找不到 Team ${TEAM_ID}）"; exit 1; }
 
 echo "→ 编 + 签（release；自动签名，Xcode 会自动建描述文件）"
 #

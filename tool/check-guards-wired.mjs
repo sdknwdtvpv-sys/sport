@@ -42,6 +42,13 @@ const DELEGATED = {
  */
 const ON_DEMAND = {
   'tool/analytics-report.mjs': '看板报表：要真实的埋点数据才有意义',
+  // ⚠️ 2026-10-09 补这两条：它们此前**只有自检在跑**，而这边的判据把 `selfcheck` 也算
+  // 成"在跑"，所以没人发现。收窄判据之后它们被正确地抓出来了 —— 它们是**真的跑不了**，
+  // 所以写进这份名单（理由要具体，不能写"暂时跳过"）。
+  'tool/check-ciphertext.mjs': '要一个**服务端 sqlite 的路径**（核的是"落盘的密文里有没有明文残留"），'
+    + '干净克隆/CI 上没有那个库 —— 空跑等于没有对象可核',
+  'tool/check-ios-app.mjs': '要一份**刚构建出来的** Runner.app（干净克隆/CI 上根本没有 iOS 产物）；'
+    + '而且它按修改时间自动挑产物，本机留着旧包时会拿旧包核新源码 —— 所以只在真要核包时手动跑',
   'tool/content-report.mjs': '内容报表：给"要不要加动作"做参考',
   'tool/usability-report.mjs': '可用性报告：要人做完测试、填了记录表才跑',
   'tool/copyright-export.mjs': '导出软著材料：只在要做提交材料时跑',
@@ -75,11 +82,27 @@ function inspect(root) {
   // （见 `verify.sh`），调用形式变成 `selfcheck tool/x.mjs "…" "…"` —— 于是
   // 这条判据**当场就把两个守卫报成"从不跑"**（它只认 `node <路径>`）。
   // 判据跟着扩展：`node <路径>` 与 `selfcheck <路径>` 都算"在门禁里直接跑"。
+  //
+  // ⚠️ **2026-10-09 把这个扩展收窄了 —— 因为它本身就是个洞**：`selfcheck <路径>` 跑的是
+  // **工具自己的 `--selftest`**，而 `--selftest` 只证明"这个工具坏了自己知道"，
+  // **不证明它被真的跑过一次**。于是真出了这种事：`tool/check-doc-facts.mjs` 与
+  // `tool/check-shell-locale.mjs` 在门禁里**只有自检**，真实扫描从来没跑过；而这边的判据
+  // 又把 `selfcheck` 认成"在跑" —— 两边互相印证成一片绿。直到 2026-10-09 手动跑了一次
+  // 真实扫描，当场抓到 `docs/release-checklist.md` 里一句过期的 schema 说法
+  // 和 `tool/ios-device-run.sh` 里 5 处 bash 3.2 下会炸的写法。
+  // 所以现在：**`check-*` 类工具必须有一次真实运行**（`node <路径>`，且那一行不带
+  // `--selftest`）；确实跑不了的，写进 DELEGATED / ON_DEMAND 并给出具体理由。
   const runsDirectly = (g) => {
     if (g.endsWith('.dart')) {
       return new RegExp(`(?:dart|DART_BIN"?)\\s+${g.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(verify);
     }
-    return verify.includes(`node ${g}`) || verify.includes(`selfcheck ${g}`);
+    const real = verify.split('\n')
+      .some((line) => line.includes(`node ${g}`) && !line.includes('--selftest'));
+    if (real) return true;
+    // 非 `check-*` 的（`tool/usability-selftest.mjs` / `tool/mutation.mjs` /
+    // `server/*.selftest.mjs`）**本身就是自检**，没有"真实运行"这一说 ——
+    // 它们照旧只要求"被调用过"。
+    return !g.startsWith('tool/check-') && verify.includes(`selfcheck ${g}`);
   };
 
   for (const g of guards) {
@@ -97,8 +120,15 @@ function inspect(root) {
       continue;
     }
     if (ON_DEMAND[g]) continue;                                   // ③ 按需（有理由）
+    // 诊断要能分清"压根没接线"和"只接了自检" —— 这两种的修法不一样，
+    // 而后者正是 2026-10-09 抓到的那个洞（看着有守卫，真实扫描从没跑过）。
+    const onlySelftest = g.startsWith('tool/check-') && verify.includes(g);
     problems.push(`${g} 既没在 verify.sh 里直接跑，也没写"由谁代跑"或"为什么按需" —— `
-      + '不跑的守卫等于没有守卫，而它还会让人以为这块有人守着');
+      + (onlySelftest
+        ? '⚠️ 它**只有 `selfcheck`（跑的是它自己的 `--selftest`）**，'
+          + '真实扫描从没在门禁里跑过：`--selftest` 只证明"工具坏了自己知道"，'
+          + '不证明它被真的跑过一次。补一行 `node <路径>` 的真实运行，或写进 DELEGATED / ON_DEMAND'
+        : '不跑的守卫等于没有守卫，而它还会让人以为这块有人守着'));
   }
   return { problems, facts, guards: guards.length };
 }
@@ -122,8 +152,14 @@ function selftest() {
   };
   const cases = [
     ['直接跑的守卫 → 绿', 'node tool/check-a.mjs\n', ['tool/check-a.mjs'], true, null],
-    // 门禁把"跑自检"抽成 selfcheck 之后，这条写法也必须算"在跑"（2026-10-01）
-    ['用 selfcheck 跑的守卫 → 也算直接跑', 'selfcheck tool/check-a.mjs "过了" "红了"\n', ['tool/check-a.mjs'], true, null],
+    // ⚠️ 2026-10-01 这条用例原本是"用 selfcheck 跑也算直接跑 → 绿"。2026-10-09 反过来了：
+    // `selfcheck` 跑的是工具自己的 `--selftest`，**不证明它被真的跑过** ——
+    // 这个洞让 `check-doc-facts` / `check-shell-locale` 的真实扫描常年没跑而门禁全绿。
+    // 现在只有 selfcheck 的 `check-*` 必须报出来。
+    ['只有 selfcheck（= 真实扫描从没跑过）→ 必须报，且说清是这一种',
+      'selfcheck tool/check-a.mjs "过了" "红了"\n', ['tool/check-a.mjs'], false, '真实扫描从没在门禁里跑过'],
+    ['自检里带 --selftest 的那次 `node` 不算真实运行 → 必须报',
+      'node tool/check-a.mjs --selftest\n', ['tool/check-a.mjs'], false, '真实扫描从没在门禁里跑过'],
     ['存在但从不跑 → 必须报', 'echo hi\n', ['tool/check-a.mjs'], false, '不跑的守卫'],
     ['代跑关系成立 → 绿', 'node tool/delegator.mjs\n', ['tool/check-b.mjs', 'tool/delegator.mjs'],
       true, null],

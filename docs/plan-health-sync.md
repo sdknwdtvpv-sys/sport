@@ -58,15 +58,28 @@
 
 ## 四、两件只能真机验证的事（**这也是"准备"的第一批动作**）
 
-1. ~~免费 Apple ID 能不能给 Runner 勾上 HealthKit 能力~~ → ✅ **已查实：可以**。
+1. ~~免费 Apple ID 能不能给 Runner 勾上 HealthKit 能力~~ → ✅ **已查实：可以，而且 2026-10-09 在真机上验过了**。
    Apple 官方的《支持的能力（iOS）》表里，**HealthKit 这一行在 ADP / ADEP / Apple Developer
    （免费档）三列都是勾**（[开发者账号帮助 · Supported capabilities (iOS)](https://developer.apple.com/help/account/reference/supported-capabilities-ios)），
    所以**不需要 99 美元的会员**就能加这个能力。
+   ✅ **真机证据（这一条比文档硬）**：2026-10-09 00:47 用 `tool/ios-device-run.sh` 把包
+   装进 iPhone 17 Pro 时，Xcode **当场新下了一份描述文件**
+   （`cb6aa92e-6eed-492e-b2e0-66d642aa0ef5`，到期 2026-10-15），它的能力清单里**真的带
+   `com.apple.developer.healthkit`**（连同 `healthkit.access` / `healthkit.background-delivery`）；
+   装进手机那个包的签名里也读得到 `com.apple.developer.healthkit = True`。
+   ⚠️ 免费个人团队**只能签 `com.sdknwdtvpv.lianleme.dev`** 这个后缀 id
+   （`com.sdknwdtvpv.lianleme` 已被另一个团队占用，bundle id 全局唯一）——
+   这就是那个脚本要临时换 id 的原因，不是它多此一举。
    ⚠️ 但注意同一张表里的 **`HealthKit Estimate Recalibration` 那一行免费档是空的** ——
    那是"估算校准"这类子能力，**我们用不到**（我们只读体重/体脂/身高），别把它和 HealthKit 本体搞混。
-   ⚠️ 仍然要先解决的问题是**本机 Xcode 的 Apple ID 掉线了**（`No Accounts` +
-   证书 `may have been revoked or expired`）—— 那是 iPhone 装不上包的原因，
-   Xcode → Settings（⌘,）→ Accounts → 重新登录即可（与 HealthKit 无关，但必须先做掉）。
+   ⚠️ **"本机 Xcode 的 Apple ID 掉线了"这个判断是错的（2026-10-09 查清）**：
+   `IDEProvisioningTeamByIdentifier` 里一直有 `LSBQAS2A45`「Elliot LI (Personal Team)」，
+   钥匙串里那张 `Apple Development: 919500973@qq.com` 证书**有效期到 2027-10-04**，
+   `security find-identity -v -p codesigning` 报 `1 valid identities found`。
+   所以**不要去 `Settings → Accounts` 折腾**（用户当时找不到它是对的 —— 那一步本来就不需要）。
+   Xcode 里点 ▶️ 报的那句 `Signing for "Runner" requires a development team` 的真正原因是
+   **工程里刻意没写 `DEVELOPMENT_TEAM`**（脚本装真机时临时写、退出改回；写进仓库会把免费签名的
+   Team 钉死）。**要真机装包就走那条脚本**，不要在 Xcode 界面里修。
    ✅ **2026-10-08 把这一步从"要用户手点"改成了"工程里已经挂好"**
    （**这次没有切版**：一行 Dart / Swift / Kotlin 代码都没改，按 `CHANGELOG.md` 开头那条
    "版本号只跟随 `app/` 下的**代码**改动"，纯工程配置的改动跟下一次改代码的发布一起走；`dist/` 里

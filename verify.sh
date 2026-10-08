@@ -589,6 +589,35 @@ else
 fi
 echo
 
+# 文档里的**事实数字**：`schema vN` / 内置动作数 / 埋点事件数 / 公共字段数，必须等于仓库里
+# 算得出来的真源（`db.dart` 的 schemaVersion、动作库、埋点清单……）。
+#
+# ⚠️ **2026-10-09 才补上这一跑 —— 这条守卫此前是"假的"**：它只有上面那段 `selfcheck`
+# （跑的是工具自己的 `--selftest`），**真实的扫描一次都没在门禁里跑过**；
+# 而 `check-guards-wired.mjs` 判"守卫有没有在跑"时，把 `selfcheck <路径>` 也算成"直接跑"，
+# 于是两边都以为这块有人守着。实际上 `docs/release-checklist.md` 里那句
+# 「中间夹着 schema v22→v24 两步迁移」早就过期了（真源是 24），漂了不知多少天没人红 ——
+# 是 2026-10-09 查 HealthKit 那件事时手动跑了一次真实扫描才发现的。
+if node tool/check-doc-facts.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 文档里的事实数字（schema/动作数/事件数/公共字段）都与真源一致"
+else
+  strip "$LOG"; echo "${RED}✗ 有文档的事实数字与仓库对不上（它们要能用仓库算出来）${OFF}"; fail=1
+fi
+echo
+
+# 脚本里 `$VAR` 后面**紧邻非 ASCII 字符**：macOS 自带 bash 3.2 在 UTF-8 locale 下会把那个
+# 字符的字节吞进变量名，`set -u` 当场 `unbound variable` —— 而这类脚本多半是在"已经改完工程、
+# 正在装包"的中途炸掉（最难受的位置）。修法永远只是补一对花括号（`$VAR（` → `${VAR}（`）。
+#
+# ⚠️ 与上面那条同一个毛病：2026-10-09 之前它**也只有自检在跑**，真实扫描从没跑过。
+# 补上之后当场抓到 `tool/ios-device-run.sh` 里 5 处 —— 那正是装真机用的那个脚本。
+if node tool/check-shell-locale.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} shell 脚本里没有 \$VAR 紧邻中文的坑（bash 3.2 会吞字节）"
+else
+  strip "$LOG"; echo "${RED}✗ 有 shell 脚本的 \$VAR 后面紧邻非 ASCII 字符（补一对花括号）${OFF}"; fail=1
+fi
+echo
+
 # 文档路径：README 与 docs/*.md 里带斜杠的路径引用必须真的存在
 # （裸文件名、构建产物、URL、占位符、以及"不在仓库里"的名单都跳过 —— 名单要写理由）。
 if node tool/check-doc-paths.mjs >"$LOG" 2>&1; then
