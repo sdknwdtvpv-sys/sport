@@ -1,4 +1,4 @@
-/// 练了么 · 「从系统健康同步」这个入口**在真设备上出不出现**
+/// 练了么 · 「从系统健康同步」这个入口**在真设备上出不出现**（由平台自己回答）
 ///
 /// **它补的是哪一段**（缺了它，这条链子中间是断的）：
 ///   * `test/health_sync_test.dart` 证明的是**规则**（合并、同意门、桥的降级），
@@ -7,10 +7,13 @@
 ///   * 「真实 App 跑在真的 iOS / 真的安卓上时，那个入口到底出不出来」——
 ///     也就是 `defaultTargetPlatform` 那一个判断 + 整条导航路径 —— 只有这里能证明。
 ///
-/// 断言写成"与平台一致"，所以**同一份测试在两种设备上都该过**：
-///   * iOS（HealthKit 已接）→ 入口**出现**；
-///   * 安卓（Health Connect 还没接，见 `docs/plan-health-sync.md` §七）→ 入口**不出现**。
-/// 这正是 `docs/privacy-facts.json` 里 `healthSync._platforms` 那句承诺的现场证据。
+/// 断言写成"**与平台自己的回答一致**"，所以同一份测试在两种设备上都成立：
+/// 期望值不是按机型猜的，而是先问一次 `HealthBridge.isAvailable()`
+///   * iOS → HealthKit（iPhone 上恒为 true）→ 入口**出现**；
+///   * 安卓 → **只有 14+ 且系统里真有 Health Connect 模块**才是 true → 那才出现，
+///     13 及以下**不出现**（见 `docs/plan-health-sync.md` §七）。
+/// 这正是 `docs/privacy-facts.json` 里 `healthSync._platforms` 那句承诺的现场证据，
+/// 而且它验的是"界面说的"与"平台说的"一致 —— 比按机型猜期望值强。
 ///
 /// ⚠️ **这条测试故意不去点那个入口。** 点下去的第一个平台副作用是
 /// `requestAuthorization` → **系统级的健康授权弹窗** —— 那是系统 UI，测试框架既点不到、
@@ -31,12 +34,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:lianleme/health/health_bridge.dart';
 import 'package:lianleme/main.dart' as app;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('「从系统健康同步」入口：iPhone 上出现、安卓上不出现',
+  testWidgets('「从系统健康同步」入口：出不出现由平台自己回答（与它一致）',
       (WidgetTester tester) async {
     /// ⚠️ 不能用 `pumpAndSettle`：App 里有常驻的休息计时器与埋点刷写，永远等不到"静止"
     /// （与端到端那份同一个理由）。
@@ -48,9 +52,6 @@ void main() {
     }
 
     void mark(String s) => debugPrint('LIANLEME-HEALTH-GATE $s');
-
-    final bool expectEntry = defaultTargetPlatform == TargetPlatform.iOS;
-    mark('platform=$defaultTargetPlatform → 期望入口=${expectEntry ? '出现' : '不出现'}');
 
     app.main();
     await settle(6000); // 冷启动：建库 / 导入动作库 / 读设置
@@ -94,6 +95,17 @@ void main() {
       mark('body-consent-agreed');
     }
 
+    // **期望值由平台自己回答**（这一条才是这个文件真正要验的东西）：
+    //   * iOS → HealthKit（`isHealthDataAvailable`，iPhone 上恒为 true）；
+    //   * Android → **只有 14+ 且系统里真有 Health Connect 模块才是 true**。
+    // 所以同一份测试在两种设备上都成立，而且验的是"界面说的"与"平台说的"一致 ——
+    // 比"按机型猜一个期望值"强，因为猜错的那一半用户会看到一个点下去读不到的入口。
+    final bool platformSaysYes =
+        await const MethodChannelHealthBridge().isAvailable();
+    final bool expectEntry = platformSaysYes;
+    mark('platform=$defaultTargetPlatform · 平台说能读=$platformSaysYes → '
+        '期望入口=${expectEntry ? '出现' : '不出现'}');
+
     // 入口在列表顶部，但页面本身可能停在别处 —— 先试着把它拖进视口
     final Finder entry = find.byKey(const Key('health-sync-entry'));
     for (int i = 0; i < 6 && entry.evaluate().isEmpty; i++) {
@@ -105,10 +117,10 @@ void main() {
       entry,
       expectEntry ? findsOneWidget : findsNothing,
       reason: expectEntry
-          ? 'iPhone 上这个入口该出现（HealthKit 已经接了），却没找到 —— '
-              '要么平台判断被改坏了，要么它被挡在视口外'
-          : '安卓上这个入口**不该**出现（Health Connect 还没接）—— '
-              '出现就是给了一个点下去什么都读不到的承诺，而政策里也没写安卓能读',
+          ? '平台说这台设备能读系统健康库，入口却没出现 —— 要么平台判断被改坏了，'
+              '要么它被挡在视口外'
+          : '平台说这台设备读不到（安卓 13 及以下、或系统没有 Health Connect 模块），'
+              '入口**不该**出现 —— 出现就是给了一个点下去什么都读不到的承诺',
     );
 
     // 第二个独立信号：副标题那句（万一有人只改了入口那一处）

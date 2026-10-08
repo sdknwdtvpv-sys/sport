@@ -128,7 +128,7 @@
 <li><strong>What we read</strong>: body weight, body fat percentage, height. Heart rate, sleep, workouts and steps are <strong>never read</strong> and never requested;</li>
 <li><strong>Read-only — we never write back</strong>: we request read access only and place nothing into your health store;</li>
 <li>These values are <strong>sensitive personal information</strong>, so this needs your <strong>separate consent</strong> — and it is a <strong>different</strong> consent from the body-metrics one: that one covers &quot;we record your weight on this phone&quot;, this one covers &quot;we read what other apps wrote into the system health store&quot;. Two gates, each of which you can withdraw on its own;</li>
-<li><strong>Without that consent we do not read a single byte</strong>: before you agree we do not even check whether your health store holds anything;</li>
+<li><strong>Without that consent we do not read a single byte</strong>: before you agree we do not even check whether your health store holds anything. We do ask once whether <strong>this device</strong> has a health store at all, so that we know whether to show the entry — that is a device capability, it touches none of your data and needs no permission;</li>
 <li>What we read <strong>stays on this phone</strong> and is <strong>never uploaded</strong> (the only path off the device is still the cloud backup you enable yourself; it is end-to-end encrypted, see 3.3). Imported days are marked with a note saying &quot;from system health&quot;;</li>
 <li>You can <strong>withdraw your consent at any time</strong>. After that we stop reading; the days already merged in are <strong>not deleted</strong> — you withdraw consent, not data (delete data under &quot;All data&quot;).</li>
 </ul>
@@ -209,13 +209,16 @@
 <li><strong>The table above lists direct dependencies only.</strong> They pull in further transitive libraries (the Flutter framework, Skia, ICU, …). The complete list is available <strong>inside the app</strong> at &quot;Me → Open-source licences&quot; (Flutter's licence page enumerates every component shipped in the package). The per-library &quot;does it collect anything&quot; notes are hand-written for the libraries we chose; the authoritative answer for &quot;what is in the package&quot; is that page, not this table.</li>
 </ul>
 <h2 id="4-permissions">4. Permissions</h2>
-<p>The app declares three permissions; the second <strong>only takes effect on old systems</strong>, and the third is <strong>off by default</strong> — it is only ever requested if you turn it on yourself:</p>
+<p>The app declares six permissions; the second <strong>only takes effect on old systems</strong>, the third is <strong>off by default</strong> — it is only ever requested if you turn it on yourself — and the last three (<code>android.permission.health.*</code>) are used for <strong>reading body composition from the system health store</strong> (see 2.4): <strong>only on Android 14 and above, and read-only</strong>:</p>
 <table>
 <thead><tr><th>Permission</th><th>Why</th><th>Applies to</th></tr></thead>
 <tbody>
 <tr><td><code>android.permission.INTERNET</code></td><td>Solely for the anonymous usage statistics in 2.2 (when the switch is ON)</td><td>All versions</td></tr>
 <tr><td><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td><td>Saving the &quot;share card&quot; image to the system gallery</td><td><strong>Android 9 and below only</strong> (declared with <code>maxSdkVersion=&quot;29&quot;</code>)</td></tr>
 <tr><td><code>android.permission.POST_NOTIFICATIONS</code></td><td>Three <strong>local</strong> notifications: (1) the &quot;training reminder&quot; if you have not trained by your chosen time; (2) &quot;rest finished&quot;, a cue when the rest between sets ends (since v1.53); (3) on the evening after a workout, (1) is replaced by a more specific &quot;tomorrow: back day&quot; (since 2026-10-05)</td><td><strong>Android 13 and above</strong>; (1) is <strong>off by default</strong>, (2) only appears if you have already granted the permission, (3) can only appear while (1) is on</td></tr>
+<tr><td><code>android.permission.health.READ_WEIGHT</code></td><td>Reading <strong>body weight</strong> from the system health store (the Health Connect built into Android 14+) into the on-device body-data page (see 2.4)</td><td><strong>Android 14 and above only</strong>; never read by default, needs your <strong>separate consent</strong>; <strong>read-only</strong></td></tr>
+<tr><td><code>android.permission.health.READ_BODY_FAT</code></td><td>Same, for <strong>body fat percentage</strong></td><td>Same</td></tr>
+<tr><td><code>android.permission.health.READ_HEIGHT</code></td><td>Same, for <strong>height</strong> (used only to compute BMI)</td><td>Same</td></tr>
 </tbody>
 </table>
 <p>Six notes on the third one (the notification permission):</p>

@@ -65,6 +65,11 @@ class MainActivity : FlutterActivity() {
         }
       }
 
+    // ── 从系统健康库读体成分（2026-10-09）────────────────────────────────
+    // Android 14+ 的 Health Connect 是**系统内置**的，平台 API 直接用，不加任何依赖
+    // （Jetpack 那个库要求 minSdk 26，见 HealthConnectApi34 顶部那段）。
+    HealthBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
+
     MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
       .setMethodCallHandler { call, result ->
         when (call.method) {
@@ -127,6 +132,8 @@ class MainActivity : FlutterActivity() {
     grantResults: IntArray,
   ) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    // 健康库那条通道先认领它自己的 REQUEST_CODE（4711），认领了就到此为止
+    if (HealthBridge.onPermissionResult(requestCode, grantResults)) return
     if (requestCode != REQUEST_CODE) return
     val granted = grantResults.isNotEmpty() &&
       grantResults[0] == PackageManager.PERMISSION_GRANTED

@@ -372,8 +372,8 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
 | **训练提醒（本地通知）** | ✅ 2026-10-04（用户拍板"探针 + ① + ② 全做"） | **自己写原生、不引通知插件**：需要的只是"排一个闹钟 + 弹一条本地通知"，而 `flutter_local_notifications` 会带进 `timezone`（还得初始化时区数据）、Android 的 desugaring 配置与一整套用不到的能力 —— 本项目的规矩是"依赖只允许必要"，而且每多一个第三方 SDK，政策依赖表 + 两张商店表单 + 隐私事实表就多一条要维护的东西。Android 用**非精确**闹钟（`setAndAllowWhileIdle`），因此**不需要** `SCHEDULE_EXACT_ALARM` 那个特殊权限；iOS 用 `UNCalendarNotificationTrigger`。开关**默认关**，通知权限只在用户打开开关时请求 |
 | **组间休息的 Live Activity（iOS）** | ✅ 2026-10-04（用户拍板"探针 + 做"） | 只碰 iOS、**不碰权限、不碰数据落库**（`docs/plan-scene-and-return.md` ①）；最低 **iOS 16.2**；扩展在 `app/ios/RestWidget/`，门禁第 ⑪ 条守"它真的在产物里"。⚠️ **视觉尚未验收**（本机没有 `Simulator.app`，锁不了屏）—— 见该方案页的「验证到了哪一步」 |
 | Apple Watch 原生 Swift 扩展 | ⏸ MVP 就不做 | — |
-| **HealthKit 读写** | ⏸ **明确不做（后续版本）** —— 2026-09-30 用户拍板 | `your-todo.md` 第 5 条已结；上线材料里**不再出现"MVP 只做 HealthKit"**这种没实现的话 |
-| **Android 对接 Health Connect** | ⏸ 同上，同一版节奏 | 同上 |
+| **HealthKit 读写** | ✅ **2026-10-09 做了「只读」那一半**（体重/体脂率/身高 → 按天并进本机；**不写回**）。当年 2026-09-30 拍板推后，2026-10-08 用户说"准备做"，施工单在 `docs/plan-health-sync.md` | `your-todo.md` 第 5 条已结；上线材料里**不再出现"MVP 只做 HealthKit"**这种没实现的话 |
+| **Android 对接 Health Connect** | ✅ **同一版做了**（2026-10-09）—— 走**平台自带的** Health Connect（`android.health.connect.*`），**只有 Android 14+ 能读**；Jetpack 那个库要求 minSdk 26（= 放弃 Android 7 用户），所以没用它。见 `docs/plan-health-sync.md` §七 | 同上；`app/integration_test/health_entry_gate_test.dart` 在真安卓上验过入口的出现条件 |
 | 服务端只做三件事 | ✅（**增量同步一期有意不做**） | `backend-design.md` §五、§八 |
 | Postgres + REST | ⚠️ 实现是 `node:sqlite` + 零依赖 HTTP | 见本节上方那处改动与 `backend-design.md` §七之五 |
 | 规则引擎跑在客户端 | ✅ | `engine/progression.mjs`；向量 + 场景级 eval + 变异测试都在门禁里 |

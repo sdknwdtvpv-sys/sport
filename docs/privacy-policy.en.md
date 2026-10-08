@@ -182,7 +182,9 @@ merge them in, by day, **read-only**, so you do not have to copy the numbers acr
   this one covers "we read what other apps wrote into the system health store". Two gates, each of which
   you can withdraw on its own;
 - **Without that consent we do not read a single byte**: before you agree we do not even check whether
-  your health store holds anything;
+  your health store holds anything. We do ask once whether **this device** has a health store at all,
+  so that we know whether to show the entry — that is a device capability, it touches none of your
+  data and needs no permission;
 - What we read **stays on this phone** and is **never uploaded** (the only path off the device is still
   the cloud backup you enable yourself; it is end-to-end encrypted, see 3.3). Imported days are marked
   with a note saying "from system health";
@@ -337,14 +339,19 @@ Three notes:
 
 ## 4. Permissions
 
-The app declares three permissions; the second **only takes effect on old systems**, and the
-third is **off by default** — it is only ever requested if you turn it on yourself:
+The app declares six permissions; the second **only takes effect on old systems**, the third is
+**off by default** — it is only ever requested if you turn it on yourself — and the last three
+(`android.permission.health.*`) are used for **reading body composition from the system health
+store** (see 2.4): **only on Android 14 and above, and read-only**:
 
 | Permission | Why | Applies to |
 |---|---|---|
 | `android.permission.INTERNET` | Solely for the anonymous usage statistics in 2.2 (when the switch is ON) | All versions |
 | `android.permission.WRITE_EXTERNAL_STORAGE` | Saving the "share card" image to the system gallery | **Android 9 and below only** (declared with `maxSdkVersion="29"`) |
 | `android.permission.POST_NOTIFICATIONS` | Three **local** notifications: (1) the "training reminder" if you have not trained by your chosen time; (2) "rest finished", a cue when the rest between sets ends (since v1.53); (3) on the evening after a workout, (1) is replaced by a more specific "tomorrow: back day" (since 2026-10-05) | **Android 13 and above**; (1) is **off by default**, (2) only appears if you have already granted the permission, (3) can only appear while (1) is on |
+| `android.permission.health.READ_WEIGHT` | Reading **body weight** from the system health store (the Health Connect built into Android 14+) into the on-device body-data page (see 2.4) | **Android 14 and above only**; never read by default, needs your **separate consent**; **read-only** |
+| `android.permission.health.READ_BODY_FAT` | Same, for **body fat percentage** | Same |
+| `android.permission.health.READ_HEIGHT` | Same, for **height** (used only to compute BMI) | Same |
 
 Six notes on the third one (the notification permission):
 

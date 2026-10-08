@@ -29,6 +29,16 @@
          内容在排程时就算好塞进 Intent 里，服务端不知道你几点该练。 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 从系统健康库读体成分（2026-10-09，Android 14+ 的 Health Connect）。
+         ⚠️ **只有读权限，没有 WRITE_\***：政策里承诺的是"只读、不写回"，
+         代码里也没有任何写入路径（判据见 tool/privacy-audit.mjs 的 ⑩之六）。
+         ⚠️ 权限名是 READ_BODY_FAT（不是 READ_BODY_FAT_PERCENTAGE ——
+         平台上根本没有后一个名字，施工单里那处写错了，2026-10-09 从 android-36 的
+         HealthPermissions 里读出来改的）。 -->
+    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
+    <uses-permission android:name="android.permission.health.READ_HEIGHT" />
+
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

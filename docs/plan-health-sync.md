@@ -161,23 +161,43 @@
 再在设置里放第二个撤回按钮，等于同一个动作有两个入口、两处文案要同步（而 PIPL 要的是"提供撤回方式"，
 它已经提供了）。**如果以后觉得设置页也该有**，加的是"状态 + 跳转"，不该再加一个能直接撤回的按钮。
 
-**还没做的（Android / Health Connect）—— 不是忘了，是三个具体障碍**：
+**Android 那一半：2026-10-09 也做完了 —— 但方式和当初计划的**不一样**，这里要说清楚。**
 
-1. **要动 `minSdk`**：`androidx.health.connect:connect-client` 要求 minSdk **26**，
-   而我们现在是 24（Android 7.0）。这是**产品决定**（等于放弃 Android 7 的用户），
-   得先拍板，不能顺手改；
-2. **要新增一个 Gradle 依赖**：`app/android/app/build.gradle.kts` 现在**连
-   `dependencies {}` 块都没有**；而 2026-10-09 试了一下，`maven.google.com` 这台机器上
-   拉不动（超时）—— 装不上依赖就没法编、更没法验；
-3. **没有可验的对象**：Health Connect 里得有体成分数据才有得读，而我们还没有
-   能往系统健康库写体成分的 App（乐刻到底写不写，见 §四·2，还没查）。
+计划里写的是"抬 `minSdk` 24→26 + 加 `androidx.health.connect:connect-client`"。真去做的时候查了两件事，
+换了另一条路：
 
-**所以这一版的行为是**：Android 上**这个入口根本不出现**（`defaultTargetPlatform` 判断，
-`app/test/health_sync_test.dart` 有一条专门钉着）—— 宁可没有，也不给一个点下去什么都读不到的入口。
-接 Android 时要做的事：抬 minSdk → 加依赖 → 写 `HealthBridge.kt` →
-manifest 加 `android.permission.health.READ_WEIGHT` / `READ_BODY_FAT_PERCENTAGE` / `READ_HEIGHT` →
-填 Play 的**健康数据申报**（入口与要求在 `docs/store-listing.md` §五那一节里）→
-权限说明里带上隐私政策 URL。
+* **那个 Jetpack 库确实要求 minSdk 26**：把 `connect-client-1.1.0.aar` 下下来解开看，
+  它的 `AndroidManifest.xml` 里就一行 `android:minSdkVersion="26"`（这不是猜的，是读出来的）。
+  用它就得放弃 Android 7 的用户 —— **那是产品承诺，不是顺手能改的数字**。
+* **而 Android 14+ 的 Health Connect 是系统内置的**：平台自己就有
+  `android.health.connect.HealthConnectManager`（`readRecords` 等）与
+  `android.permission.health.READ_WEIGHT` / `READ_BODY_FAT` / `READ_HEIGHT` 三个运行时权限
+  （2026-10-09 从 `android.jar`（`$ANDROID_SDK_ROOT/platforms/android-36/` 那一份） 里逐个读出来的）。
+  **一行依赖都不用加**，也就没有"新 SDK → 政策依赖表 + 两张商店表单各加一条"那笔连带账 ——
+  与这个仓库"依赖越少越好"的一贯做法一致。
+
+所以落地的是：`app/android/app/src/main/kotlin/com/sdknwdtvpv/lianleme/HealthConnectApi34.kt`（整份标 `@RequiresApi(34)`，
+只有真走上 34+ 那条分支时才会被加载，老设备上连类都不解析）+ `HealthBridge.kt`（通道与权限请求）
++ manifest 里三条**只读**权限。
+
+**代价说清楚**：**Android 13 及以下读不到**（那一档要靠 Jetpack 库 + 抬 minSdk 才能覆盖）。
+所以那一档上 **`isAvailable` 返回 false，界面上那个入口根本不出现** ——
+宁可没有，也不给一个点下去什么都读不到的入口。要不要为 Android 8–13 再走那条路（抬 minSdk + 加依赖），
+是**产品决定**，挂在 `docs/your-todo.md` 第 16 条。
+
+⚠️ 顺带改掉施工单里的一处**错**：§三② 原来写的权限名是 `READ_BODY_FAT_PERCENTAGE`，
+而平台上**根本没有这个名字**（真名是 `READ_BODY_FAT`）—— 照它写会永远拿不到授权。已就地改掉。
+
+**还没做的（Android 提交侧，不影响功能）**：Play 的**健康数据申报**（入口与要求在
+`docs/store-listing.md` §五那节里）与**权限说明里要能点进的隐私政策 URL** ——
+后者要等公网政策页的地址定下来（`docs/release-admin.md` §四），所以先不建那个说明页，
+免得挂一个打不开的链接。
+
+**验到什么程度**（与 iOS 那半边同一个标准）：编得过（APK 构建）、
+`app/integration_test/health_entry_gate_test.dart` 在**真的 Android 16 模拟器**上跑过 ——
+`平台说能读=true → 入口出现`（那一台系统里确实有 Health Connect 模块
+`com.google.android.healthconnect.controller`）；**没验的**是"真的读到数"，
+那要有数据可读（见下一段）。
 
 **还没验的那一件事**（真机上）：从 iPhone「健康」里真的读到数、并进来、显示出来。
 代码与构建都验过了（模拟器编译 + 真机安装），但"健康库里有数据 → 并进本机"这一步

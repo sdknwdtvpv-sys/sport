@@ -662,6 +662,29 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
         errors.push('Info.plist 里出现了 NSHealthUpdateUsageDescription（写回健康库的用法说明）—— '
           + '政策承诺的是"只读、不写回"，写了这一条就是在向用户申请一件我们不做的事');
       }
+      // **Android 那半边同一句话**：只读。两条都查 ——
+      // Kotlin 里不许出现 `WRITE_`（写入权限/写入路径），manifest 里也不许声明写权限。
+      // 2026-10-09 加：Android 走的是**平台自带的 Health Connect**（不用 Jetpack 那个库，
+      // 它要求 minSdk 26），所以这里核的是 `HealthConnectApi34.kt` 与 `AndroidManifest.xml`。
+      const ktPath = join(ROOT, 'app/android/app/src/main/kotlin/com/sdknwdtvpv/lianleme/HealthConnectApi34.kt');
+      const ktSrc = existsSync(ktPath) ? readFileSync(ktPath, 'utf8') : '';
+      if (!ktSrc) {
+        errors.push('这一版两端都接了系统健康库，但 app/android/.../HealthConnectApi34.kt 不存在');
+      } else if (/"android\.permission\.health\.WRITE_|permission\.health\.WRITE_/.test(ktSrc)) {
+        errors.push('HealthConnectApi34.kt 里出现了 WRITE_ 权限 —— 政策写的是"只读不写回"');
+      }
+      const androidManifest = join(ROOT, 'app/android/app/src/main/AndroidManifest.xml');
+      const manifestSrc = existsSync(androidManifest) ? readFileSync(androidManifest, 'utf8') : '';
+      if (/android\.permission\.health\.WRITE_/.test(manifestSrc)) {
+        errors.push('AndroidManifest.xml 里声明了 android.permission.health.WRITE_* —— '
+          + '政策承诺的是"只读、不写回"');
+      }
+      for (const perm of ['READ_WEIGHT', 'READ_BODY_FAT', 'READ_HEIGHT']) {
+        if (!manifestSrc.includes(`android.permission.health.${perm}`)) {
+          errors.push(`AndroidManifest.xml 里没有声明 android.permission.health.${perm} —— `
+            + '没声明就拿不到那个读权限（而政策说我们会读）');
+        }
+      }
       if (!/<key>\s*NSHealthShareUsageDescription\s*<\/key>/.test(plistSrc)) {
         errors.push('Info.plist 里没有 NSHealthShareUsageDescription —— '
           + '没有它，iOS 上请求读健康数据会直接失败（而政策说我们会读）');

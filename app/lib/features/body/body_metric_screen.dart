@@ -14,7 +14,6 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -136,6 +135,14 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
 
   /// 正在读健康库（入口那一行显示转圈，避免连点两次）。
   bool _healthBusy = false;
+
+  /// **这台设备现在能不能读到系统健康库**（`_load()` 里问平台，见 [_healthBridge]）。
+  ///
+  /// ⚠️ 为什么不能只看"是不是 iPhone"：安卓那半边**只有 Android 14+ 能读**
+  /// （平台自带的 Health Connect；13 及以下要抬 minSdk 26 走 Jetpack 库，那是产品决定，
+  /// 见 `docs/plan-health-sync.md` §七）。所以入口出现与否**由平台自己回答**，
+  /// 不由我们按机型猜 —— 猜错的那一半用户会看到一个点下去什么都读不到的入口。
+  bool _healthAvailable = false;
 
   DateTime get _now => (widget.clock ?? DateTime.now)();
 
@@ -271,13 +278,13 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   // 目的不同、种类不同、撤回也该各撤各的（PIPL 第 29 条要的就是逐项同意）。
   // 判据在 `docs/privacy-facts.json` 的 `healthSync`，由 tool/privacy-audit.mjs 每次对账。
 
-  /// 这一版接了系统健康库的平台。安卓那边还没接（见 [HealthBridge] 的注释）。
-  HealthBridge? get _healthBridge {
-    if (widget.healthBridge != null) return widget.healthBridge;
-    return defaultTargetPlatform == TargetPlatform.iOS
-        ? const MethodChannelHealthBridge()
-        : null;
-  }
+  /// 系统健康库那座桥。两端都接了：iOS 走 HealthKit，Android 14+ 走平台自带的
+  /// Health Connect（见 `HealthConnectApi34.kt`）。**能不能读由平台回答**
+  /// （`isAvailable()`），入口只在它说"能"的时候出现。
+  ///
+  /// 测试可以显式传一个假桥（`widget.healthBridge`），那就完全按假的来。
+  HealthBridge get _healthBridge =>
+      widget.healthBridge ?? const MethodChannelHealthBridge();
 
   /// 过"读系统健康库"这道门。返回 true = 可以往下读。
   Future<bool> _ensureHealthConsent() async {
@@ -332,9 +339,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
 
   /// 点那一行的完整流程：过门 → 读 → 合并 → 如实报数。
   Future<void> _healthSync() async {
-    final HealthBridge? bridge = _healthBridge;
+    final HealthBridge bridge = _healthBridge;
     final ProfileRepository? profile = widget.profile;
-    if (bridge == null || profile == null || _healthBusy) return;
+    if (profile == null || _healthBusy) return;
 
     if (!await _ensureHealthConsent()) return;
     if (!mounted) return;
@@ -519,12 +526,16 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     final double? height = await widget.profile?.heightCm();
     final bool healthConsented =
         await widget.profile?.healthConsentAtMs() != null;
+    // 平台自己回答"能不能读"。桥内部对 MissingPluginException / PlatformException 都是
+    // 静默降级成 false（见 health_bridge.dart），所以这里不需要再包一层 try。
+    final bool healthAvailable = await _healthBridge.isAvailable();
     final List<BodyMetricData> recent = await widget.repository.recent();
     if (!mounted) return;
     setState(() {
       _recent = recent;
       _heightCm = height;
       _healthConsented = healthConsented;
+      _healthAvailable = healthAvailable;
       // 摘要块看的是**最近一条有体重的记录**（`recent` 已按日期倒序）
       _latest = recent.isEmpty ? null : recent.first;
       if (height != null) _height.text = trimNumber(round1(height));
@@ -966,8 +977,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                     // 从系统健康库同步（2026-10-09，可选）。
                     // 放在摘要下面、正式录入之前 —— 它是"把别处已有的数拿过来"，
                     // 与"现在记一组"是两件事，所以单独一张卡，不混进输入区。
-                    // ⚠️ 别的平台（安卓）还没有这一端，入口**根本不出现**。
-                    if (_healthBridge != null && widget.profile != null) ...<Widget>[
+                    // ⚠️ **能不能读由平台回答**（iOS 走 HealthKit；安卓只有 14+ 能读平台自带的
+                    // Health Connect）—— 平台说不能，入口根本不出现，不给做不到的承诺。
+                    if (_healthAvailable && widget.profile != null) ...<Widget>[
                       _healthSyncCard(),
                       const SizedBox(height: Tokens.s5),
                     ],

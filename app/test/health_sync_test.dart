@@ -8,7 +8,6 @@
 library;
 
 import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -410,17 +409,38 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('安卓上这个入口**根本不出现**（那一端还没接，不给做不到的承诺）',
+    testWidgets('平台说读不到 → 入口**根本不出现**（不给做不到的承诺）',
         (WidgetTester tester) async {
-      // 测试环境默认就是 android。⚠️ **故意不传桥** —— 这条测的就是
-      // "没传桥时按平台决定"，传了假桥就把被测的那段绕过去了。
-      await pumpPage(tester);
+      // iOS 上只有 iPad 那种没有"健康"App 的设备会走到这里；安卓上则是
+      // **13 及以下**（14+ 才有平台自带的 Health Connect，见 docs/plan-health-sync.md §七）。
+      bridge.available = false;
+      await pumpPage(tester, bridge: bridge);
       expect(find.byKey(const Key('health-sync-entry')), findsNothing);
+      expect(bridge.reads, 0, reason: '入口都不出现，更不该去读');
     });
 
-    testWidgets('iPhone 上出现入口；点它先弹单独同意，拒绝就一个字节都不读',
+    testWidgets('平台没实现（老包 / 没接这一端）→ 入口不出现，页面照常可用',
         (WidgetTester tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      // ⚠️ 这条**必须把通道 mock 成抛 MissingPluginException**，不能什么都不做：
+      // 在 flutter_test 里，一个**没有 handler** 的通道调用是**永远不返回**的
+      // （平台那端不存在），于是页面会停在转圈上、`pumpAndSettle` 超时 ——
+      // 我第一版就是那么写的，红得莫名其妙。真机上不存在这种状态：
+      // 引擎一定会回一个"没实现"，也就是下面这个异常。
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        MethodChannelHealthBridge.channel,
+        (MethodCall call) async => throw MissingPluginException('没有实现'),
+      );
+      addTearDown(() => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(MethodChannelHealthBridge.channel, null));
+
+      await pumpPage(tester); // 不传桥 → 用真通道（就是上面那个会被 mock 的）
+      expect(find.byKey(const Key('health-sync-entry')), findsNothing);
+      expect(find.byKey(const Key('body-scroll')), findsOneWidget,
+          reason: '答"读不到"之后这一页必须照常能用（不能卡在转圈上）');
+    });
+
+    testWidgets('平台说能读 → 出现入口；点它先弹单独同意，拒绝就一个字节都不读',
+        (WidgetTester tester) async {
       await pumpPage(tester, bridge: bridge);
 
       expect(find.byKey(const Key('health-sync-entry')), findsOneWidget);
@@ -441,20 +461,22 @@ void main() {
       await tester.tap(find.byKey(const Key('health-consent-decline')));
       await tester.pumpAndSettle();
 
-      expect(bridge.availabilityChecks, 0, reason: '拒绝之前不该碰平台');
-      expect(bridge.reads, 0);
+      // ⚠️ 这里**不能**断言 `availabilityChecks == 0`（原来就是那么写的，改坏了才发现）：
+      // 页面为了决定"要不要显示这个入口"，必须先问一次**这台设备有没有健康库**
+      // （iOS 是 `HKHealthStore.isHealthDataAvailable()`、安卓是"系统里有没有 Health Connect 模块"）——
+      // 那是设备能力，不碰用户数据、也不需要授权，与政策里那句"不同意就一个字节都不读"
+      // （不查**你的健康库里有没有数据**）不冲突。
+      // 真正要钉住的是"一次都没读"，而"完全不经手平台"那条由**服务层**钉着：
+      // 上面「没有单独同意 → 一个字节都不读（桥一次都没被调用）」那条断言的就是它。
+      expect(bridge.reads, 0, reason: '拒绝之前一次都不许读');
       expect(await profile.healthConsentAtMs(), isNull);
 
       // 撤回入口也不该出现（没什么可撤回的）
       expect(find.byKey(const Key('health-revoke')), findsNothing);
-      // ⚠️ 必须在**用例体里**改回 null：框架在用例体结束时就校验，
-      // 放 tearDown 里已经太晚（会报 "foundation debug variable was changed"）。
-      debugDefaultTargetPlatformOverride = null;
     });
 
     testWidgets('同意之后：读一次、并进来、如实报数，并出现撤回入口',
         (WidgetTester tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       bridge.samples = <HealthSample>[
         HealthSample(atMs: atMs(2026, 9, 20), weightKg: 73.0, bodyFatPct: 19.5),
       ];
@@ -479,11 +501,9 @@ void main() {
       final BodyMetricData row = (await body.forDate('2026-09-20'))!;
       expect(row.weightKg, 73.0);
       expect(row.note, kHealthNote);
-      debugDefaultTargetPlatformOverride = null;
     });
 
     testWidgets('撤回：清掉同意、不再读，数据一条不删', (WidgetTester tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       await profile.setHealthConsent(nowMs: 5);
       await body.save(date: '2026-09-19', weightKg: 74.0, nowMs: 1);
       await pumpPage(tester, bridge: bridge);
@@ -505,7 +525,6 @@ void main() {
       expect(await profile.healthConsentAtMs(), isNull);
       expect(await body.count(), 1, reason: '撤回的是同意，不是数据');
       expect(find.byKey(const Key('health-revoke')), findsNothing);
-      debugDefaultTargetPlatformOverride = null;
     });
   });
 }

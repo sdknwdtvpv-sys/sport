@@ -227,7 +227,7 @@ platform view 有整屏合成代价，package 文档与 Apple 文档都这么说
   旧接口语义一个字节没改（老客户端不受影响）。**B 期起是客户端**（密码学 / 闸门 / 五屏 / 政策改写），
   见那份方案的 §七。⚠️ **Apple 5.1.1(v)**（核心功能与社交无关时"必须允许不登录使用"）
   正是把形态从"必须"改成"可选"的原因，记在方案 §二-3；
-* **HealthKit / Health Connect** —— 用户本轮说"现在能做了"，要从"明确不做"挪到已排期；
+* **HealthKit / Health Connect** —— ✅ 已做完（2026-10-09，见下表最后一行；Android 8–13 那一档待拍板）；
 * **会员页（S14）** —— 用户说"先出方案"，未出。
 
 ## 〇之二、**账号体系：推迟到有盈利之后**（2026-10-06 用户拍板）
@@ -363,7 +363,7 @@ App Privacy 表的 Device ID 那行）、`store-assets/privacy/` 两个 HTML（�
 
 | 事项 | 状态 / 出处 |
 |---|---|
-| **HealthKit / Health Connect** | ⏸ 你 2026-09-30 拍板推到后续版本（`tech-decisions.md`） |
+| **HealthKit / Health Connect** | ✅ **2026-10-09 做完了只读那一半**（iOS 走 HealthKit、Android 14+ 走平台自带的 Health Connect）：单独同意门 + 政策 §2.4 + 按天合并 + 入口只在平台说能读时出现。**剩下的是 Android 8–13 那一档**（要抬 minSdk 26 + 加 Jetpack 依赖，等拍板，见 `docs/your-todo.md` 第 16 条） |
 | **账号体系：登录 / 注册**（VI 里的手机号+验证码 + 三方登录） | ⏸ **2026-10-05 用户拍板：放待办**（不删不做）。原方案与代价见 `wechat-login-feasibility.md`：P1，13–17 人日 + 资质，Apple 4.8 要求微信与 Apple 登录成对出现；新 VI 给了完整的登录/注册界面（`vi/auth-setup.html`），落地时对齐 |
 | **商业化 P1 云备份订阅 / P2 AI 建议** | ⏸ `monetization-plan.md`：P1 要服务端收据校验，P2 要算力（会碰"数据不出设备"） |
 | **增量同步（多端同一份数据）** | ⏸ 一期只有**快照式**备份；`backend-design.md` §五：「增量留到真的有人两台设备时」 |

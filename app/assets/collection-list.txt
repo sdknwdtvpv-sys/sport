@@ -114,6 +114,9 @@
     · android.permission.INTERNET（全部版本）—— 上报「帮助改进产品」事件的开关打开时才用；训练过程中不发任何请求
     · android.permission.WRITE_EXTERNAL_STORAGE（仅 API ≤ 29）—— 把训练分享卡存进相册。API 30+ 走 MediaStore 不需要权限，所以这条只对 API ≤ 29 的老设备生效
     · android.permission.POST_NOTIFICATIONS（全部版本）—— 三条本地通知都用它：① 训练提醒（到点还没练时提醒一次）；② 组间休息结束（v1.53 起，Android 上锁屏看不到倒计时，休息到点时发一条）；③ 训练结束当晚把 ① 换成更具体的「明天该练背了」（2026-10-05 起，同一条排程、同一个渠道，不多要权限也不多排一条）。API 33+ 是运行时权限：只在用户主动打开「训练提醒」开关时向他请求，不在启动时要，训练中途也不弹框（没授权时第 ② 条静默不出现）；提醒由系统在本机到点触发（用非精确闹钟，因此不需要 SCHEDULE_EXACT_ALARM 那个特殊权限），内容在排程时就在设备上算好 —— 三条都不联网
+    · android.permission.health.READ_WEIGHT（全部版本）—— 从系统健康库（Android 14+ 自带的 Health Connect）读体重，按天并进本机「身体数据」。只读：没有任何 WRITE_* 权限、也没有写入路径；只在用户点「从系统健康同步」并单独同意之后才读
+    · android.permission.health.READ_BODY_FAT（全部版本）—— 同上，读的是体脂率。⚠️ 平台上这个权限叫 READ_BODY_FAT，不是 READ_BODY_FAT_PERCENTAGE —— 施工单 §三② 那处写错了，2026-10-09 从 android-36 的 HealthPermissions 里读出来改的
+    · android.permission.health.READ_HEIGHT（全部版本）—— 同上，读的是身高（只用来算 BMI）
     · android.permission.READ_EXTERNAL_STORAGE（系统因上一条隐含授予，仅 API ≤ 29）—— 系统因 WRITE 隐含授予；我们从不读用户文件
 
 二、与第三方共享个人信息清单

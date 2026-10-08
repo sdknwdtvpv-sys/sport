@@ -1,5 +1,9 @@
 /// 练了么 · **系统健康库**的桥（iOS HealthKit / Android Health Connect）
 ///
+/// 两端都接了：iOS 走 HealthKit（`ios/Runner/HealthBridge.swift`），
+/// **Android 走平台自带的 Health Connect，只有 14+ 能用**
+/// （`android/.../HealthConnectApi34.kt`；为什么不用 Jetpack 那个库，那份文件头写了）。
+///
 /// 这个文件只做一件事：把"从系统健康库读体成分"变成三个 Dart 方法。
 /// 具体怎么读由平台那两份实现负责（`ios/Runner/HealthBridge.swift`、
 /// `android/app/src/main/kotlin/.../HealthBridge.kt`），形状照仓库里已有的桥
@@ -13,6 +17,8 @@
 ///      只有"请求一次"和"读到什么就是什么"；
 ///   3. 空列表是**正常结果**（健康库里就是没数据、或者用户没允许读），不是错误。
 library;
+
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -40,7 +46,14 @@ class HealthSample {
 
 /// 系统健康库的读接口。
 abstract class HealthBridge {
-  /// 这台设备有没有健康库（iPad 上没有"健康"App；老安卓没有 Health Connect）。
+  /// 这台设备现在能不能**读**系统健康库。
+  ///
+  /// 两端的答案不一样，而且都是真的：
+  ///   * iOS：`HKHealthStore.isHealthDataAvailable()`（iPad 上没有"健康"App → false）；
+  ///   * Android：**只有 14+ 且系统里真有 Health Connect 模块才是 true** ——
+  ///     13 及以下要装那个独立 App、还得抬 minSdk 到 26 走 Jetpack 库，那是产品决定，
+  ///     见 `docs/plan-health-sync.md` §七。
+  /// 界面上那个入口**只在它为 true 时出现**（`body_metric_screen.dart` 的 `_healthAvailable`）。
   Future<bool> isAvailable();
 
   /// 拉起系统授权弹窗。返回值 = "弹窗走完了、可以试着读"，**不是**"读权限拿到了"
@@ -75,10 +88,25 @@ class MethodChannelHealthBridge implements HealthBridge {
 
   static const MethodChannel channel = MethodChannel('lianleme/health');
 
+  /// "这台设备有没有健康库"最多等这么久。
+  ///
+  /// ⚠️ 为什么需要它：这一问是在**页面加载时**发的，而它前面挂着一个转圈 ——
+  /// 平台那端要是永远不回话（引擎卡住、通道名对不上又没抛异常这类），
+  /// 用户看到的就是**永远转下去的身体数据页**。宁可 5 秒后答"读不到"（入口不出现），
+  /// 也不要赌平台一定会回话。
+  /// ⚠️ `requestPermission` **故意没有超时**：那一步是在等用户点系统弹窗，
+  /// 用户想看多久就看多久，替它设超时反而是错的。
+  static const Duration _probeTimeout = Duration(seconds: 5);
+
   @override
   Future<bool> isAvailable() async {
     try {
-      return await channel.invokeMethod<bool>('isAvailable') ?? false;
+      return await channel
+              .invokeMethod<bool>('isAvailable')
+              .timeout(_probeTimeout) ??
+          false;
+    } on TimeoutException {
+      return false;
     } on MissingPluginException {
       // 平台没实现（单元测试、还没接这一端的旧包）：当成"没有健康库"
       return false;
@@ -103,10 +131,13 @@ class MethodChannelHealthBridge implements HealthBridge {
   @override
   Future<List<HealthSample>> readBodyComposition({int days = 180}) async {
     try {
-      final List<Object?>? raw = await channel.invokeMethod<List<Object?>>(
-        'readBodyComposition',
-        <String, Object?>{'days': days},
-      );
+      final List<Object?>? raw = await channel
+          .invokeMethod<List<Object?>>(
+            'readBodyComposition',
+            <String, Object?>{'days': days},
+          )
+          // 读本身可能慢（上百条样本），但也不该无限等 —— 半分钟还没回来就如实说"没读到"
+          .timeout(const Duration(seconds: 30));
       if (raw == null) return const <HealthSample>[];
       final List<HealthSample> out = <HealthSample>[];
       for (final Object? item in raw) {
@@ -121,6 +152,8 @@ class MethodChannelHealthBridge implements HealthBridge {
         ));
       }
       return out;
+    } on TimeoutException {
+      return const <HealthSample>[];
     } on MissingPluginException {
       return const <HealthSample>[];
     } on PlatformException catch (e) {

@@ -293,6 +293,24 @@
       "name": "android.permission.POST_NOTIFICATIONS",
       "maxSdkVersion": null,
       "why": "三条**本地**通知都用它：① 训练提醒（到点还没练时提醒一次）；② 组间休息结束（v1.53 起，Android 上锁屏看不到倒计时，休息到点时发一条）；③ 训练结束当晚把 ① 换成更具体的「明天该练背了」（2026-10-05 起，**同一条排程、同一个渠道**，不多要权限也不多排一条）。API 33+ 是**运行时**权限：只在用户主动打开「训练提醒」开关时向他请求，**不在启动时要**，训练中途也**不弹框**（没授权时第 ② 条静默不出现）；提醒由系统在本机到点触发（用非精确闹钟，因此不需要 SCHEDULE_EXACT_ALARM 那个特殊权限），内容在排程时就在设备上算好 —— **三条都不联网**"
+    },
+    {
+      "name": "android.permission.health.READ_WEIGHT",
+      "maxSdkVersion": null,
+      "why": "从系统健康库（Android 14+ 自带的 Health Connect）读**体重**，按天并进本机「身体数据」。**只读**：没有任何 WRITE_* 权限、也没有写入路径；只在用户点「从系统健康同步」并单独同意之后才读",
+      "policyPhrase": "android.permission.health.READ_WEIGHT"
+    },
+    {
+      "name": "android.permission.health.READ_BODY_FAT",
+      "maxSdkVersion": null,
+      "why": "同上，读的是**体脂率**。⚠️ 平台上这个权限叫 READ_BODY_FAT，**不是** READ_BODY_FAT_PERCENTAGE —— 施工单 §三② 那处写错了，2026-10-09 从 android-36 的 HealthPermissions 里读出来改的",
+      "policyPhrase": "android.permission.health.READ_BODY_FAT"
+    },
+    {
+      "name": "android.permission.health.READ_HEIGHT",
+      "maxSdkVersion": null,
+      "why": "同上，读的是**身高**（只用来算 BMI）",
+      "policyPhrase": "android.permission.health.READ_HEIGHT"
     }
   ],
   "injectedPermissions": [
@@ -424,7 +442,7 @@
     "enabledInDistributedBuild": true,
     "_why": "2026-10-09 起，正式包在 iPhone 上多了一条**可选**的数据来源：从系统健康库（HealthKit）读体重 / 体脂率 / 身高，按天并进本机「身体数据」。它与其他来源都不同的一点：**数据不是用户给我们的，是我们去别的 App 写下的地方读**（可能是体脂秤 App、可能是医院那份），所以 PIPL 第 29 条要求**单独同意**，而且必须说清读的是哪几样、用来干什么、会不会传出去。开关默认关：不同意就一个字节都不读（这条由 app/test/health_sync_test.dart 的「没同意时桥一次都没被调用」钉着）。tool/privacy-audit.mjs 会按这个块双向核对：中英政策必须出现 policyPhrases，代码里必须有那道同意（schema v25 的 user_profile.health_consent_at_ms）与那条撤回入口，而且**政策说只读、代码里就不许出现写的授权**（Info.plist 里出现 NSHealthUpdateUsageDescription 就判红）。",
     "_endpoint": "无 —— 这一版**没有任何服务端**：读进来只落在本机的 body_metric 表里（要离开设备只有一种方式：用户自己开的云备份，且那份是密文）",
-    "_platforms": "iOS（HealthKit）已接；**Android（Health Connect）还没接** —— 那一版要动 minSdk 并新增一个 Gradle 依赖，见 docs/plan-health-sync.md §七。没接的那一端入口不出现，不给做不到的承诺。",
+    "_platforms": "**两端都接了**（2026-10-09）：iOS 走 HealthKit；Android 走**平台自带的 Health Connect，只有 Android 14+ 能读**（那里不需要任何第三方依赖；13 及以下要抬 minSdk 到 26 才能用 Jetpack 那个库 —— 那是产品决定，见 docs/plan-health-sync.md §七）。**能不能读由平台自己回答**（`HealthBridge.isAvailable`），平台说读不到时界面上那个入口根本不出现，不给做不到的承诺。",
     "disabledStatement": {
       "zh": "本版本还没有从系统健康库读取",
       "en": "This version does not read from the system health store"

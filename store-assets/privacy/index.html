@@ -129,7 +129,7 @@
 <li><strong>读的就三样</strong>：体重、体脂率、身高。心率、睡眠、运动记录、步数<strong>一次都不读</strong>，也不申请；</li>
 <li><strong>只读，不写回</strong>：我们不会往你的健康库里写任何东西（申请的就是&quot;读取&quot;这一项授权）；</li>
 <li>这几样属于<strong>敏感个人信息</strong>，所以要你<strong>单独同意</strong> —— 而它与「身体数据」那道门是<strong>两件事</strong>： 那一道同意的是&quot;我们把你的体重记在这台手机上&quot;，这一道同意的是&quot;我们去读系统健康库里 别人写下来的记录&quot;。两道门各自一道、各自可以单独撤回；</li>
-<li><strong>不同意就一个字节都不读</strong>：没点过同意之前，我们连&quot;你的健康库里有没有数据&quot;都不查；</li>
+<li><strong>不同意就一个字节都不读</strong>：没点过同意之前，我们连&quot;你的健康库里有没有数据&quot;都不查。 只问一次&quot;<strong>这台设备</strong>上有没有健康库&quot;来决定要不要显示那个入口 —— 那是设备能力， 不碰你的数据、也不需要任何授权；</li>
 <li>读进来的数值<strong>只落在这台手机上、不上传</strong>（唯一会离开设备的路径仍然是你自己开启的云备份， 那份是端到端加密的密文，见 §3.3）。并进来的那些天会带上一条备注「来自系统健康」；</li>
 <li><strong>随时可以撤回</strong>：撤回之后不再读；已经并进来的那些天<strong>不会被删掉</strong> —— 撤回的是同意，不是数据（要删数据请去「全部数据」）。</li>
 </ul>
@@ -210,13 +210,16 @@
 <li><strong>上表只是&quot;直接依赖&quot;</strong>。它们还会带入一堆传递依赖（Flutter 框架、Skia、ICU…）。 完整清单在应用内可查：<strong>「我 → 隐私与关于 → 开源许可」</strong>（Flutter 的许可页会列出随包分发的全部组件 及其许可）。&quot;某个库会不会收集信息&quot;这种说明是逐个人工写的，所以只覆盖我们自己挑的那几个； 传递依赖没有一条会收集信息（整个包不上报），但<strong>&quot;完整清单&quot;的准确答案在那个页面</strong>， 不是这张表 —— 这一点此前写成&quot;全部第三方代码&quot;，与事实不符，2026-09-30 改。</li>
 </ul>
 <h2 id="四-权限">四、权限</h2>
-<p>应用声明<strong>三项</strong>系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项<strong>只在老系统上生效</strong>，第三项<strong>默认关闭、只有你主动打开才会被请求</strong>：</p>
+<p>应用声明<strong>六项</strong>系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项<strong>只在老系统上生效</strong>，第三项<strong>默认关闭、只有你主动打开才会被请求</strong>，最后三项（<code>android.permission.health.*</code>）是<strong>从系统健康库读体成分</strong>用的 —— 见 2.4，<strong>只有 Android 14 及以上才会用到，而且只读</strong>：</p>
 <table>
 <thead><tr><th>权限</th><th>为什么</th><th>适用范围</th></tr></thead>
 <tbody>
 <tr><td><code>android.permission.INTERNET</code></td><td>仅用于 2.2 的匿名使用统计（开关打开时）</td><td>全部</td></tr>
 <tr><td><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td><td>把「分享训练卡」的图片存进系统相册</td><td><strong>仅 Android 9 及以下</strong>（带 <code>maxSdkVersion=&quot;29&quot;</code>）</td></tr>
 <tr><td><code>android.permission.POST_NOTIFICATIONS</code></td><td>三条<strong>本地</strong>通知：①「训练提醒」到点还没练时提醒一次；② 组间休息结束时提示一下（v1.53 起）；③ 训练结束当晚，把 ① 换成更具体的「明天该练背了」（2026-10-05 起）</td><td><strong>Android 13 及以上</strong>；①的开关<strong>默认关闭</strong>，②只在已经给过权限时才会出现，③只在 ① 开着时才可能出现</td></tr>
+<tr><td><code>android.permission.health.READ_WEIGHT</code></td><td>从系统健康库（Android 14+ 自带的 Health Connect）读<strong>体重</strong>，按天并进本机「身体数据」（见 2.4）</td><td><strong>仅 Android 14 及以上</strong>；默认不读，<strong>要你先单独同意</strong>；<strong>只读</strong></td></tr>
+<tr><td><code>android.permission.health.READ_BODY_FAT</code></td><td>同上，读<strong>体脂率</strong></td><td>同上</td></tr>
+<tr><td><code>android.permission.health.READ_HEIGHT</code></td><td>同上，读<strong>身高</strong>（只用来算 BMI）</td><td>同上</td></tr>
 </tbody>
 </table>
 <p><strong>关于第三项（通知权限）</strong>，说明六点：</p>
