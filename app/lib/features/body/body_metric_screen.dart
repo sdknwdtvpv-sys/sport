@@ -693,15 +693,30 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                   padding: const EdgeInsets.fromLTRB(
                       Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s6),
                   children: <Widget>[
-                    // 摘要在最上面（2026-10-05）：进来第一眼该看到"现在是多少"，
-                    // 而不是先看到一排输入框。没有记录时整块不出现。
+                    // 摘要在最上面（2026-10-05）：进来第一眼该看到"现在是多少"。
+                    // 没有记录时整块不出现。
                     if (_latest != null) ...<Widget>[
                       _summaryCard(_latest!),
                       const SizedBox(height: Tokens.s5),
                     ],
-                    // 趋势卡：两个点以上才出现（一个点画不出趋势，见 body_trend.dart）
-                    _trendCard(),
-                    _label('日期'),
+
+                    // ══ 记这一天的 ═════════════════════════════════════════
+                    //
+                    // ⚠️ **2026-10-08（10.8 第二批第 3 条）重排**：用户原话是
+                    // 「这一页的版式太乱了，重新设计下」。诊断：这一屏有 9 块东西
+                    // **平铺**（摘要 / 趋势 / 日期 / 单位 / 体重 / 腰围+肌肉量 / 身高 /
+                    // 备注 / 最近记录），块与块之间只有 3–5pt 的缝，**没有分组**，
+                    // 于是"我要记今天的数"这件事被趋势卡与历史记录冲散了。
+                    //
+                    // 新结构只有三组，按**使用频次**排：
+                    //   ① 记这一天的（日期 → 体重 → 更多指标 → 备注）—— 每天用
+                    //   ② 看趋势（趋势卡）—— 每周看
+                    //   ③ 最近记录（历史）—— 偶尔翻
+                    // 摘要在最上面**只做一件事**：一眼看到现在的数。
+                    _sectionTitle('记这一天的'),
+                    const SizedBox(height: Tokens.s3),
+                    // **在记哪一天**是上下文，不是输入项 —— 所以它紧跟标题，而不是
+                    // 夹在"体重"与"腰围"之间（原来就在那个位置）。
                     SizedBox(
                       height: 36,
                       child: ListView(
@@ -711,59 +726,27 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         ],
                       ),
                     ),
-                    // ⚠️ 单位那一行上面要留出间距：它紧贴着日期胶囊时，两行几乎叠在一起
-                    //（用户 2026-10-06 的备忘条第 4 条："身体数据这一屏明显的间距有 bug"）。
-                    const SizedBox(height: Tokens.s3),
-                    // 标签本身带一个**行内实时开关**：称体重的时候才想起来要按斤看，
-                    // 那时不该退出去到「我」页翻设置。
-                    _weightUnitRow(),
-                    TextField(
-                      key: const Key('body-weight'),
-                      controller: _weight,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                      ],
-                      onChanged: (_) => setState(() {}),
-                      style: const TextStyle(color: Tokens.text, fontSize: 24,
-                          fontWeight: FontWeight.w700),
-                      decoration: InputDecoration(
-                        hintText: '例如 72.5',
-                        hintStyle: const TextStyle(color: Tokens.text3, fontSize: 20),
-                        filled: true,
-                        fillColor: Tokens.surface,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: Tokens.s5,
-                          vertical: Tokens.s4,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(Tokens.rCard),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                    const SizedBox(height: Tokens.s2),
+                    Text(
+                      _selectedDayLabel,
+                      key: const Key('body-day-label'),
+                      style: const TextStyle(color: Tokens.text3, fontSize: 12),
                     ),
-                    // 体重输入框与下面那排之间也要留缝：不留的话两张卡是**贴在一起**的，
-                    // 看起来像一张卡被劈成了两半（同一条备忘）。
+                    const SizedBox(height: Tokens.s4),
+                    // 体重与单位**同一张卡**：标签那一行右侧就是单位开关
+                    //（原来单位单独占一行、上面还压着一个"体重"标签，重复了一遍）。
+                    _weightCard(),
+                    const SizedBox(height: Tokens.s4),
+                    // 更多指标（都可选）：从属于"今天这一条记录"，所以在一张卡里
+                    _moreMetricsCard(),
                     const SizedBox(height: Tokens.s3),
-                    // 腰围与肌肉量并排（都是可选的）—— 一次录完，不用翻两页
-                    Row(
-                      children: <Widget>[
-                        Expanded(child: _smallField('腰围 cm', 'body-waist', _waist)),
-                        const SizedBox(width: Tokens.s3),
-                        Expanded(child: _smallField('肌肉量 kg', 'body-muscle', _muscle)),
-                      ],
-                    ),
-                    _label('身高 cm（只用来算 BMI）'),
-                    _smallField('例如 175', 'body-height', _height),
-                    _label('备注（可选）'),
                     TextField(
                       key: const Key('body-note'),
                       controller: _note,
                       maxLines: 2,
                       style: const TextStyle(color: Tokens.text, fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: '例如：空腹、练后',
+                        hintText: '备注（可选）例如：空腹、练后',
                         hintStyle: const TextStyle(color: Tokens.text3, fontSize: 15),
                         filled: true,
                         fillColor: Tokens.surface,
@@ -774,11 +757,24 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         ),
                       ),
                     ),
+
+                    // ══ 看趋势 ═════════════════════════════════════════════
+                    if (trendMetrics(_recent).isNotEmpty) ...<Widget>[
+                      const SizedBox(height: Tokens.s5),
+                      _sectionTitle('看趋势'),
+                      // `_trendCard` 自己带 top padding（原来它上面就是摘要卡）
+                      _trendCard(),
+                    ],
+
+                    // ══ 最近记录 ═══════════════════════════════════════════
                     if (_recent.isNotEmpty) ...<Widget>[
-                      _label('最近记录'),
+                      const SizedBox(height: Tokens.s4),
+                      _sectionTitle('最近记录 · ${_recent.length} 条'),
+                      const SizedBox(height: Tokens.s2),
                       for (final BodyMetricData r in _recent.take(10))
                         _historyRow(r),
                     ],
+
                     // ── 撤回同意（PIPL 第 15 条：同意不是一次性的）──────────
                     // 放在这一页，因为**收集发生在哪儿，撤回入口就该在哪儿**。
                     // 没有 profile（嵌入/测试场景）时不显示 —— 那种场景没有落库的地方。
@@ -921,16 +917,16 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   ///
   /// ⚠️ 材质用 `.clear` + 一点点白：这一行在**卡片的平底**上，背后没有内容经过，
   /// `.regular` 在这里只会变成一块灰板（这条规矩是 2026-10-06 试出来的）。
+  /// 体重的单位开关（kg / lb / 斤）。
+  ///
+  /// ⚠️ 它**自己不带"体重"标签、也不带 `Spacer`**（2026-10-08 重排改的）：
+  /// 现在它贴在「体重」那张卡的标题行右侧，而**Row 的非弹性子项拿到的宽度约束是无界的** ——
+  /// 里面再放 `Spacer`/`Expanded` 会当场抛
+  /// `RenderFlex children have non-zero flex but incoming width constraints are unbounded`
+  /// （重排时被 body_consent_test 那批测试抓到，14 条一起红）。
+  /// 标签与右对齐现在由外层那个 Row（`_weightCard`）负责。
   Widget _weightUnitRow() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Tokens.s2),
-      child: Row(
-        children: <Widget>[
-          const Text('体重',
-              style: TextStyle(
-                  color: Tokens.text2, fontSize: 13, fontWeight: FontWeight.w600)),
-          const Spacer(),
-          GlassSegmentedRow(
+    return GlassSegmentedRow(
             count: BodyWeightUnit.values.length,
             index: BodyWeightUnit.values.indexOf(_unit),
             itemWidth: 52,
@@ -986,23 +982,123 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                   ),
                 ),
               );
-            },
-          ),
-        ],
-      ),
-    );
+          },
+        );
   }
 
-  Widget _label(String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(0, Tokens.s5, 0, Tokens.s2),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Tokens.text3,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
+  /// 分组标题（2026-10-08 重排新增）：这一页现在只有三组
+  /// ——「记这一天的」「看趋势」「最近记录」。
+  ///
+  /// 与 `_label` 的区别：`_label` 是**块内**的小标签（"身高 cm"），
+  /// 这个是**分组**标题 —— 所以字号更大、上面留白更多，而且下面带一条分隔线。
+  Widget _sectionTitle(String text) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            text,
+            style: const TextStyle(
+              color: Tokens.text,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
           ),
+          const SizedBox(height: Tokens.s2),
+          const Divider(height: 1, color: Tokens.line),
+        ],
+      );
+
+  /// 「正在记哪一天」那行字：**把日期念成人话**（今天 / 昨天 / 10 月 5 日）。
+  ///
+  /// 为什么要有它：日期胶囊只写"10/5"，选中之后没有任何地方念一遍完整的那一天 ——
+  /// 补录时最容易记错的就是"我到底在改哪一天"。
+  String get _selectedDayLabel {
+    final DateTime today = DateTime(_now.year, _now.month, _now.day);
+    final int diff = today.difference(_selected).inDays;
+    final String when = switch (diff) {
+      0 => '今天',
+      1 => '昨天',
+      2 => '前天',
+      _ => '${_selected.month} 月 ${_selected.day} 日',
+    };
+    return '正在记：$when（${_selected.month} 月 ${_selected.day} 日）';
+  }
+
+  /// 体重那一张卡：**标签 + 单位开关在同一行**，下面是大号输入框。
+  ///
+  /// 全页唯一的必填项 —— 所以它占满宽度、字号最大（24pt），单位开关就贴在它右边。
+  Widget _weightCard() => ViCard(
+        key: const Key('body-weight-card'),
+        padding: const EdgeInsets.fromLTRB(Tokens.s4, Tokens.s3, Tokens.s4, Tokens.s4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Text('体重',
+                    style: TextStyle(
+                        color: Tokens.text,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600)),
+                const Spacer(),
+                _weightUnitRow(),
+              ],
+            ),
+            const SizedBox(height: Tokens.s2),
+            TextField(
+              key: const Key('body-weight'),
+              controller: _weight,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(
+                  color: Tokens.text, fontSize: 24, fontWeight: FontWeight.w700),
+              decoration: InputDecoration(
+                hintText: '例如 72.5',
+                hintStyle: const TextStyle(color: Tokens.text3, fontSize: 20),
+                filled: true,
+                fillColor: Tokens.bg,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: Tokens.s4, vertical: Tokens.s3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(Tokens.rCard),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
         ),
       );
+
+  /// 更多指标（都可选）：腰围 / 肌肉量 / 身高。
+  ///
+  /// 它们与体重是**同一天同一条记录**的几个字段 —— 所以在一张卡里，
+  /// 而且明确写着"可选"：不填也能保存（可保存性由体重决定）。
+  Widget _moreMetricsCard() => ViCard(
+        key: const Key('body-more-metrics'),
+        padding: const EdgeInsets.fromLTRB(Tokens.s4, Tokens.s3, Tokens.s4, Tokens.s4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text('更多指标（可选）',
+                style: TextStyle(
+                    color: Tokens.text2,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: Tokens.s3),
+            Row(
+              children: <Widget>[
+                Expanded(child: _smallField('腰围 cm', 'body-waist', _waist)),
+                const SizedBox(width: Tokens.s3),
+                Expanded(child: _smallField('肌肉量 kg', 'body-muscle', _muscle)),
+              ],
+            ),
+            const SizedBox(height: Tokens.s3),
+            // 身高只用来算 BMI，说清楚（不然用户以为它也是"今天的体重数据"）
+            _smallField('身高 cm（只用来算 BMI）', 'body-height', _height),
+          ],
+        ),
+      );
+
 }

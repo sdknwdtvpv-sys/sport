@@ -678,7 +678,11 @@ class _HomeShellState extends State<HomeShell> {
     try {
       final TrainingDay day = await _planner.nextTrainingDay();
       final List<PlannedExercise> plan =
-          await _planner.planToday(day: day, unit: _unit);
+          await _planner.planToday(
+              day: day,
+              unit: _unit,
+              // 10.8 清单第 8 条（用户选 A）：每周 ≤3 天 → 每个动作 4 组，≥4 天 → 3 组
+              weeklyFrequency: await _profile.weeklyFrequency());
       if (!mounted) return;
       setState(() {
         _todayDay = day;
@@ -1143,7 +1147,10 @@ class _HomeShellState extends State<HomeShell> {
     List<PlannedExercise> plan = _todayPlan;
     if (plan.isEmpty) {
       _todayDay = await _planner.nextTrainingDay();
-      plan = await _planner.planToday(day: _todayDay, unit: _unit);
+      plan = await _planner.planToday(
+          day: _todayDay,
+          unit: _unit,
+          weeklyFrequency: await _profile.weeklyFrequency());
       if (!mounted) return;
     }
 

@@ -165,7 +165,27 @@ PlanTarget distancePlanFor(ExerciseData e) => PlanTarget(
     );
 
 /// 按动作类型给默认处方。有计划模板（S11）时以模板里的为准。
-PlanTarget defaultPlanFor(ExerciseData e) =>
+/// **每个动作开几组**（2026-10-08，用户拍板选 A）。
+///
+/// 用户原话是：「初始组数 3 组是怎么来的？**感觉有点少了**」。
+/// 查下来它来自一个全局常量（`kDefaultPlan`），所有力量动作一律 3 组 ——
+/// 既不按动作也不按训练频率算。A 档按**每周练几天**给：
+///
+///   * **每周 ≤ 3 天** → 每个动作 **4 组**：一周总量少，那几次就该多给一点；
+///   * **每周 ≥ 4 天** → 每个动作 **3 组**：总量摊开，单次不必堆太多。
+///
+/// 依据是"同一块肌肉的**周**总量才是关键"（每块肌肉每周 12–20 组，
+/// 见 `docs/screens.md` 里那条循证区间）—— 一周只练 3 次的人，
+/// 两次之间隔得久，每次多一组比"每次 3 组、一周 9 组"更容易进区间。
+/// ⚠️ 它是**处方默认值**，不是硬限制：训练屏从来不拦用户加组。
+const int kSetsForFewDays = 4;
+const int kSetsForManyDays = 3;
+
+/// 按每周训练天数算默认组数。`null`（还没答过引导）= 按"练得不多"那一档给。
+int defaultSetsFor(int? weeklyFrequency) =>
+    (weeklyFrequency != null && weeklyFrequency >= 4) ? kSetsForManyDays : kSetsForFewDays;
+
+PlanTarget defaultPlanFor(ExerciseData e, {int? weeklyFrequency}) =>
     // 热身单独一档：1 组，别让它变成"训练量"（见 kDefaultWarmupPlan）
     e.category == 'warmup'
         ? kDefaultWarmupPlan
@@ -173,7 +193,11 @@ PlanTarget defaultPlanFor(ExerciseData e) =>
             ? distancePlanFor(e)
             : isTimeTrack(e.trackType)
                 ? kDefaultTimePlan
-                : kDefaultPlan;
+                : PlanTarget(
+                    targetSets: defaultSetsFor(weeklyFrequency),
+                    targetRepsLow: kDefaultPlan.targetRepsLow,
+                    targetRepsHigh: kDefaultPlan.targetRepsHigh,
+                  );
 
 /// 从"这次练了什么"里挑出该拉伸的部位。
 ///
@@ -360,6 +384,8 @@ class TodayPlanner {
     int? count,
     WeightUnit unit = WeightUnit.kg,
     bool? firstTime,
+    /// 用户每周练几天（引导里问过）—— 决定每个动作开几组，见 [defaultSetsFor]。
+    int? weeklyFrequency,
   }) async {
     final TrainingDay d = day ?? await nextTrainingDay();
     final bool first = firstTime ?? (await _store.allSets()).isEmpty;
@@ -373,7 +399,11 @@ class TodayPlanner {
       if (left <= 0) break;
       final int take = slot.count < left ? slot.count : left;
       final List<PlannedExercise> picked =
-          await planForGroup(muscleGroup: slot.group, count: take, unit: unit);
+          await planForGroup(
+              muscleGroup: slot.group,
+              count: take,
+              unit: unit,
+              weeklyFrequency: weeklyFrequency);
       out.addAll(picked);
       // 取不到就少一点（种子换过也不崩），但不把余量让给下一个部位 ——
       // 那会让"胸 3 个"变成"胸 5 个"，构图就没了。
@@ -393,6 +423,8 @@ class TodayPlanner {
     int count = 3,
     WeightUnit unit = WeightUnit.kg,
     Set<String> exclude = const <String>{},
+    /// 用户每周练几天 → 每个动作开几组（见 [defaultSetsFor]，10.8 清单第 8 条）
+    int? weeklyFrequency,
   }) async {
     final List<ExerciseData> rows = await _repo.search(
       muscleGroup: muscleGroup,
@@ -403,16 +435,16 @@ class TodayPlanner {
         .where((ExerciseData e) => !exclude.contains(e.id))
         .take(count)
         .toList();
-    return _build(picked, unit: unit);
+    return _build(picked, unit: unit, weeklyFrequency: weeklyFrequency);
   }
 
   /// 把一批动作包成 `PlannedExercise`（逐动作查历史 + 交给引擎算建议）。
   Future<List<PlannedExercise>> _build(List<ExerciseData> rows,
-      {required WeightUnit unit}) async {
+      {required WeightUnit unit, int? weeklyFrequency}) async {
     final List<PlannedExercise> out = <PlannedExercise>[];
     for (final ExerciseData e in rows) {
       final LastSession? last = await _store.lastSessionFor(e.id);
-      final PlanTarget plan = defaultPlanFor(e);
+      final PlanTarget plan = defaultPlanFor(e, weeklyFrequency: weeklyFrequency);
       out.add(PlannedExercise(
         exercise: e,
         plan: plan,

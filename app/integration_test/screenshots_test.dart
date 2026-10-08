@@ -202,9 +202,21 @@ void main() {
     });
 
     await step('07-summary', () async {
-      // 返回 = 结束这次训练 → 主壳接着弹总结屏
+      // 返回 = 结束这次训练。
       await tester.tap(find.byKey(const Key('back-button')));
-      await settle(3000);
+      await settle(1500);
+
+      // ⚠️ **2026-10-08（10.8 第二批第 6 条）**：这一场用了**杠铃** →
+      // 退出训练屏时会弹一次「杠铃归位了吗」（卸片/复位提醒）。
+      // 它是**用户真实路径上的一步**，所以脚本也要按真实路径点掉它 ——
+      // 不点的话后面每一步都会"找不到控件"（这一趟失败了 6 步才发现）。
+      if (find.byKey(const Key('unload-plates-ok')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('unload-plates-ok')));
+        await settle(600);
+      }
+
+      // 主壳接着弹总结屏
+      await settle(2000);
       await capture('07-summary');
     });
 

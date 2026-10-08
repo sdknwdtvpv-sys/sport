@@ -146,9 +146,11 @@ void main() {
       }
     });
 
-    test('有历史时建议会推进：3 组达标 → 加重', () async {
+    test('有历史时建议会推进：4 组达标 → 加重（10.8 清单第 8 条：A 档默认 4 组）', () async {
+      // ⚠️ 2026-10-08：默认处方从"一律 3 组"改成"每周 ≤3 天 → 4 组"（用户拍板选 A），
+      // 所以引擎判"达标"要看**处方里的组数** —— 这里就得给满 4 组。
       await train('w_old', 'ex_bb_bench_press',
-          reps: <int>[10, 10, 10], weight: 60, at: 1000);
+          reps: <int>[10, 10, 10, 10], weight: 60, at: 1000);
 
       final List<PlannedExercise> plan =
           await planner.planForGroup(muscleGroup: 'chest');
@@ -207,17 +209,43 @@ void main() {
     });
   });
 
+  group('默认组数按每周天数（10.8 清单第 8 条，用户选 A）', () {
+    test('★ 每周 ≤3 天 → 每个动作 4 组；≥4 天 → 3 组；没答过 → 4 组', () {
+      // 用户原话：「初始组数 3 组是怎么来的？感觉有点少了」。
+      // 查下来它来自全局常量（所有力量动作一律 3 组）—— 现在按**每周练几天**给：
+      // 一周总量才是关键，练得少的那几档单次该多给一点。
+      expect(defaultSetsFor(2), kSetsForFewDays);
+      expect(defaultSetsFor(3), kSetsForFewDays);
+      expect(defaultSetsFor(4), kSetsForManyDays);
+      expect(defaultSetsFor(6), kSetsForManyDays);
+      expect(defaultSetsFor(null), kSetsForFewDays, reason: '还没答过引导 → 按练得不多那一档');
+      expect(kSetsForFewDays, 4);
+      expect(kSetsForManyDays, 3);
+    });
+
+    test('★ 处方真的跟着走：同一个动作，两种频率开出不同组数', () async {
+      final List<PlannedExercise> few =
+          await planner.planForGroup(muscleGroup: 'chest', weeklyFrequency: 3);
+      final List<PlannedExercise> many =
+          await planner.planForGroup(muscleGroup: 'chest', weeklyFrequency: 5);
+      expect(few.first.plan.targetSets, 4);
+      expect(many.first.plan.targetSets, 3);
+      // ⚠️ 次数区间**不跟着变**：A 档只动组数（次数区间由引擎按历史给建议）
+      expect(few.first.plan.targetRepsLow, many.first.plan.targetRepsLow);
+    });
+  });
+
   group('证据链：建议卡要能看见「上次」', () {
     test('有历史时给出上次的事实（组数 · 重量 × 次数）', () async {
       await train('w_old', 'ex_bb_bench_press',
-          reps: <int>[10, 10, 10], weight: 60);
+          reps: <int>[10, 10, 10, 10], weight: 60);
 
       final List<PlannedExercise> plan =
           await planner.planForGroup(muscleGroup: 'chest');
       final PlannedExercise bench = plan
           .firstWhere((PlannedExercise p) => p.exercise.id == 'ex_bb_bench_press');
 
-      expect(bench.historyLabel, '上次 3 组 · 60 kg × 10 次');
+      expect(bench.historyLabel, '上次 4 组 · 60 kg × 10 次');
       expect(bench.suggestion!.reasonCode, ReasonCode.linearProgress);
     });
 
