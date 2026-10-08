@@ -144,7 +144,16 @@
 * 同意门：`user_profile.health_consent_at_ms`（schema **v25**），
   页面上的入口 `Key('health-sync-entry')`、同意框 `health-consent`、撤回 `health-revoke`；
 * 测试：`app/test/health_sync_test.dart` 22 条（含"**没同意时桥一次都没被调用**"、
-  "两道门互不干扰"、"安卓上这个入口根本不出现"）。
+  "两道门互不干扰"、"安卓上这个入口根本不出现"）；
+* **真机/真运行时验过的两件事**（不只是单测）：
+  1. `app/integration_test/health_entry_gate_test.dart` —— 同一份测试**在真的 iOS 与真的安卓上各跑一遍**：
+     iOS 模拟器上 `entry=shown`、安卓模拟器上 `entry=hidden`，两次都过。它补的正是单测补不上的那一段：
+     单测里平台是 `debugDefaultTargetPlatformOverride` **伪装**的，而这条走的是真 App + 真平台判断 + 真导航路径。
+     ⚠️ 它**故意不去点那个入口** —— 点下去第一个副作用是系统级健康授权弹窗，那是测试框架既点不到也关不掉的 UI，
+     整条测试会永远卡住（与"Mac 锁屏时钥匙串弹窗卡住 `codesign`"同一类问题）；点进去之后的流程由假桥那 22 条覆盖；
+  2. 那张卡在真 iOS 运行时里的样子：`docs/images/v165-health-sync-card-ios.png`
+     （模拟器实拍：标题 + 「只读体重、体脂率、身高 · 可选」+ 右侧箭头，位置在摘要卡下面、「记这一天的」上面；
+     同时那一趟 `overflowed` / `RenderFlex` 计数为 **0**，没有布局溢出）。
 
 **还没做的（Android / Health Connect）—— 不是忘了，是三个具体障碍**：
 
