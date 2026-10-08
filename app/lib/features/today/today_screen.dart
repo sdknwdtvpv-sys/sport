@@ -50,6 +50,7 @@ class TodayScreen extends StatelessWidget {
     this.streak = 0,
     this.streakCopy,
     this.recent = const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[],
+    this.unit = WeightUnit.kg,
     this.onOpenLibrary,
     this.onLogWeight,
     this.onOpenAchievements,
@@ -215,6 +216,12 @@ class TodayScreen extends StatelessWidget {
 
   /// 最近几次训练（日期 / 动作数 / 容量）。空列表时整块不显示。
   final List<({String workoutId, DateTime day, int exercises, int sets, double volume})> recent;
+
+  /// **重量显示单位**（kg / lb）。容量那几处必须用它 —— 2026-10-08 用户真机反馈
+  /// （10.8 清单第 7 条）："最近训练列表的单位跟上面的实际的单位不一致"。
+  /// 原因就是 `_recentBlock` 里写死了 `WeightUnit.kg`：上面「今天的安排」按用户单位显示，
+  /// 而「最近训练」那三行永远是 kg —— 同一个屏幕上两种单位，看着就像数据错了。
+  final WeightUnit unit;
 
   /// 快速入口：动作库（按动作看历史）。
   final VoidCallback? onOpenLibrary;
@@ -569,7 +576,7 @@ class TodayScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${formatVolume(r.volume, WeightUnit.kg)} · ${when(r.day)}',
+                    '${formatVolume(r.volume, unit)} · ${when(r.day)}',
                     style: const TextStyle(color: Tokens.text3, fontSize: 12),
                   ),
                 ],

@@ -538,6 +538,17 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
+          // 口径（10.8 清单第 6 条）：杠铃填总重（含杆）、哑铃填单只 ——
+          // 用户就是在这一屏问"这一个还是两个"的，所以答案要印在**数字旁边**。
+          // 器械/绳索/自重没有这个歧义，`weightBasisLabel` 返回空串、这里不占位。
+          if (!bodyweight && weightBasisLabel(e.equipment).isNotEmpty) ...<Widget>[
+            const SizedBox(width: 4),
+            Text(
+              weightBasisLabel(e.equipment),
+              key: Key('basis-${e.id}'),
+              style: const TextStyle(color: Tokens.text3, fontSize: 11),
+            ),
+          ],
         ],
       ),
     );

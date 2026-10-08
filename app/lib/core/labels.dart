@@ -97,3 +97,35 @@ String muscleLabel(String key) => kMuscleLabels[key] ?? key;
 String equipmentLabel(String key) => kEquipmentLabels[key] ?? key;
 
 String categoryLabel(String key) => kCategoryLabels[key] ?? key;
+
+/// **重量的口径**（2026-10-08 用户问出来的约定）。
+///
+/// 原话：「杠铃动作的重量是一个的还是两个的？计算容量的时候怎么算？」
+/// —— 这是一个**从没在界面上写清过**的约定，只有种子数据里能推出来：
+///
+///   * **杠铃**：填**总重**（含杠铃杆）。证据：`杠铃卧推` 的起始建议是 40 kg
+///     （= 20 kg 杆 + 两侧各 10 kg），**不是**"每边 40"（那相当于 100 kg，新手不可能）；
+///   * **哑铃 / 壶铃**：填**单只**重量。证据：`哑铃卧推` 的起始建议是 12 kg/只；
+///   * **容量**（`docs/data-model.md` 的算法）：`Σ 重量 × 次数`，用的就是**你填的那个数** ——
+///     所以杠铃是"总重 × 次数"，哑铃是"单只 × 次数"（**没有乘 2**）。
+///
+/// ⚠️ 哑铃那一半是**已知口径**：两只一起举时真实负荷是两倍，容量因此偏小。
+/// 这一条写在 `docs/data-model.md` 里，改它属于"改数据口径"（会动到历史 PR 与图表），
+/// 要单独拍板 —— 见 `docs/plan-ux-2026-10-08.md` §二。
+///
+/// 返回空串表示"这个器械没有单边/总重的歧义"（器械 / 绳索 / 自重 / 弹力带）。
+String weightBasisLabel(String equipment) => switch (equipment) {
+      'barbell' => '总重（含杠铃杆）',
+      'dumbbell' || 'kettlebell' => '单只',
+      _ => '',
+    };
+
+/// 容量那句口径（只在"有歧义"的器械上显示）。
+///
+/// ⚠️ 这一句是**给用户看的**，所以里面不许出现 markdown 记号（`**` 那种）——
+/// `tool/check-user-text.mjs` 会当场判红。文档里那句可以带格式，界面这句不行。
+String volumeBasisLabel(String equipment) {
+  final String basis = weightBasisLabel(equipment);
+  if (basis.isEmpty) return '';
+  return '容量 = 重量 × 次数，按$basis算';
+}

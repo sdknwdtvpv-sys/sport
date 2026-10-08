@@ -316,24 +316,84 @@ void main() {
     await _teardown(tester, h);
   });
 
-  testWidgets('达到计划组数后不禁用按钮，只提示', (WidgetTester tester) async {
+  testWidgets('★ 做满计划组数之后：底部换成两个明确的出口（10.8 清单第 3 条）',
+      (WidgetTester tester) async {
+    // 用户原话："推荐的四组，四组做完后给选项：跳转到下个动作或者加一组挑战下自己。"
+    // 之前只有一行小字（隐式出口），现在是一颗按钮（动作）+ 一条去路。
     final _Harness h = _Harness();
     await _pump(tester, h);
+
+    // 还没做满：底部还是那行解释大按钮的小字
+    expect(find.byKey(const Key('planned-done-row')), findsNothing);
 
     for (int i = 0; i < 3; i++) {
       await tester.tap(find.byKey(const Key('big-log-button')));
       await tester.pump();
     }
-    expect(h.controller.loggedSets.length, 3);
+    expect(h.controller.loggedSets.length, 3, reason: '计划的 3 组做满了');
 
+    // 做满的那一刻：两个出口出现，那行小字让位
+    expect(find.byKey(const Key('planned-done-row')), findsOneWidget);
+    expect(find.byKey(const Key('add-extra-set')), findsOneWidget);
+    expect(find.byKey(const Key('planned-done-next')), findsOneWidget);
+    expect(find.byKey(const Key('workout-hint')), findsNothing,
+        reason: '做满之后那行小字说不清"还能干什么"，换成按钮');
+
+    // 「再加一组」= 立刻再记一组（**计划是建议不是牢笼** 这条不许退化）
+    await tester.tap(find.byKey(const Key('add-extra-set')));
+    await tester.pump();
+    expect(h.controller.loggedSets.length, 4,
+        reason: '禁止加组会逼用户回备忘录 —— 计划是建议不是牢笼');
+
+    // 单动作会话 → 右侧那颗是「结束训练」
+    expect(
+      tester.widget<Text>(find.descendant(
+        of: find.byKey(const Key('planned-done-next')),
+        matching: find.byType(Text),
+      )).data,
+      '结束训练',
+      reason: '没有下一个动作时（单动作）这里就是结束训练',
+    );
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 休息时长跟着你实际歇的节奏（10.8 清单第 2 条）',
+      (WidgetTester tester) async {
+    // 用户原话："根据过往训练中的休息时长动态调整后面同一个动作的休息时间"。
+    // 判据是**确定的**：本场同动作已歇 ≥ 2 次 → 取中位数（5 秒取整），
+    // 夹在动作自带值的 0.5×～2× 之间。杠铃卧推自带 120 秒 → 夹在 [60, 240]。
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(h.controller.plannedRestSec, 120);
+    expect(h.controller.observedRestCount, 0);
+    expect(h.controller.restIsAdaptive, isFalse, reason: '还没有数据就不许"自适应"');
+    expect(h.controller.nextRestSec, 120, reason: '没有数据时就是计划值');
+
+    // 第 1 组 → 实际歇 150 秒 → 第 2 组 → 实际歇 170 秒 → 第 3 组
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    h.advance(150 * 1000);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    h.advance(170 * 1000);
+    await tester.pump();
     await tester.tap(find.byKey(const Key('big-log-button')));
     await tester.pump();
 
-    expect(h.controller.loggedSets.length, 4, reason: '计划是建议不是牢笼，禁止加组会逼用户回备忘录');
-    expect(
-      tester.widget<Text>(find.byKey(const Key('workout-hint'))).data,
-      contains('已达到计划组数'),
-    );
+    expect(h.controller.observedRestCount, 2, reason: '三条记录之间有两次间隔');
+    // 中位数 = 170（偶数个取上中位）→ 170 → 落在 [60,240] 内
+    expect(h.controller.nextRestSec, 170);
+    expect(h.controller.restIsAdaptive, isTrue);
+
+    // 界面上要说出来（否则用户以为 App 偷偷改了休息时间）
+    expect(find.textContaining('按你的节奏'), findsOneWidget);
+
+    // ⚠️ 它**不改设置**：动作自带值与"这一场"的计划值一个字节都不动
+    expect(h.controller.plannedRestSec, 120,
+        reason: '自适应只影响这一场接下来的默认值，不写回任何设置');
 
     await _teardown(tester, h);
   });

@@ -148,6 +148,22 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
   private var itemIcons: [UIImageView] = []
   private var iconNames: [String] = []
   private var selectedColor: UIColor = .white
+
+  // ── 正中那颗"凸起"（2026-10-08，v1.61.0）────────────────────────────────
+  //
+  // 起因是用户 10.8 清单第 1 条：「tab 栏的训练 玻璃效果 bug」——
+  // v1.60.0 我把那颗圆画在 **Flutter 层**（底栏的 `Stack` 顶部），而 iOS 的平台视图
+  // **永远盖在 Flutter 内容之上**（上面那段注释已经写死了这条），于是圆落在玻璃**背后**，
+  // 被折射成一层发灰的虚影（截图里圆是半透明的、下面还浮着一层淡淡的「训练」）。
+  //
+  // 修法：这一层是"玻璃**之上**"的那一层（`labelsBox`），把圆画在这里就不会被折射。
+  // 它在玻璃**里面**、不能超出平台视图的边界（iOS 平台视图是一张按 bounds 裁好的纹理），
+  // 所以 iOS 上它是"实心强调圆"，而不是 Android 那种"凸出上沿 10pt"——
+  // 两者是**同一个意图、各自贴合本端材质**的做法，差异写在 `docs/screens.md`。
+  private var emphasisIndex: Int = -1
+  private var emphasisColor: UIColor?
+  private var emphasisIconColor: UIColor?
+  private let emphasisCircle = UIView()
   private var unselectedColor: UIColor = .gray
   private var labelFontSize: CGFloat = 12
   private var iconSize: CGFloat = 22
@@ -275,6 +291,11 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
       .flatMap { GlassPlatformView.color($0) } ?? .white
     unselectedColor = (args["unselectedColor"] as? String)
       .flatMap { GlassPlatformView.color($0) } ?? .gray
+    emphasisIndex = (args["emphasisIndex"] as? NSNumber)?.intValue ?? -1
+    emphasisColor = (args["emphasisColor"] as? String)
+      .flatMap { GlassPlatformView.color($0) }
+    emphasisIconColor = (args["emphasisIconColor"] as? String)
+      .flatMap { GlassPlatformView.color($0) }
     labelFontSize = CGFloat((args["labelFontSize"] as? NSNumber)?.doubleValue ?? 12)
     iconSize = CGFloat((args["iconSize"] as? NSNumber)?.doubleValue ?? 22)
     labelsBox.frame = frame
@@ -282,6 +303,16 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
     labelsBox.isUserInteractionEnabled = false
     if !labelStrings.isEmpty || !iconNames.isEmpty {
       buildItems(labelStrings)
+      // 正中那颗圆：**先插进 labelsBox**（所以它在图标/文字下面），
+      // 而 labelsBox 整层在玻璃之上 —— 两件事缺一不可。
+      if emphasisIndex >= 0, emphasisIndex < count, emphasisColor != nil {
+        let d = iconSize + 20
+        emphasisCircle.frame = CGRect(x: 0, y: 0, width: d, height: d)
+        emphasisCircle.backgroundColor = emphasisColor
+        emphasisCircle.layer.cornerRadius = d / 2
+        emphasisCircle.isUserInteractionEnabled = false
+        labelsBox.insertSubview(emphasisCircle, at: 0)
+      }
       host.addSubview(labelsBox)   // 加在玻璃**之上**
     }
 
@@ -376,8 +407,22 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
         let fit = stack.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
         stack.bounds = CGRect(origin: .zero, size: fit)
         stack.center = CGPoint(x: cell.midX, y: cell.midY)
+
+        // 正中那颗圆：**用几何算出来**，不要读 `itemIcons[i].center` ——
+        // ⚠️ 第一次就是这么写的，结果圆被画到了图标**上方**、底部还被切掉一截：
+        // UIStackView 里的子视图由 Auto Layout 落位，而这一行跑的时候它**还没布局完**，
+        // 读到的 center 接近 (0,0)。换成"格子中心 − 半个 stack 高 + 半个图标高"就与
+        // 图标中心严格重合（栈是竖直的：图标在上、文字在下，间距 4）。
+        if i == emphasisIndex, emphasisCircle.superview != nil {
+          emphasisCircle.center = CGPoint(
+            x: cell.midX,
+            y: cell.midY - fit.height / 2 + iconSize / 2)
+        }
       } else {
         v.frame = cell
+        if i == emphasisIndex, emphasisCircle.superview != nil {
+          emphasisCircle.center = CGPoint(x: cell.midX, y: cell.midY)
+        }
       }
     }
   }
@@ -393,7 +438,10 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
         itemIcons[i].image = symbol(iconNames[safe: i], selected: on)
         // ⚠️ SF Symbol 是**模板图**：不显式给 tintColor 它会用系统蓝（默认 tint），
         // 于是底栏图标是蓝的而字是橙的 —— 2026-10-06 实拍抓到。
-        itemIcons[i].tintColor = on ? selectedColor : unselectedColor
+        var tint = on ? selectedColor : unselectedColor
+        // 正中那颗：深墨压在强调色圆上（与主按钮同一套），否则橙底橙图标看不清
+        if i == emphasisIndex, let ink = emphasisIconColor { tint = ink }
+        itemIcons[i].tintColor = tint
       }
     }
   }

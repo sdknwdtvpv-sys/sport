@@ -215,12 +215,18 @@ void main() {
     expect(seg.labels!.length, 5);
     expect(seg.icons, isNotNull);
     expect(seg.icons!.length, 5);
-    // ⚠️ 2026-10-07（v1.60.0）：图标顺序跟着 tab 顺序变了（「训练」挪到正中），
-    // 而且**正中那一格传的是空串** —— 它由 Flutter 画成一颗凸起的圆
-    // （`AppTabBar._withCenterAction`），原生再画一份就会叠出虚影。
+    // ⚠️ 2026-10-07（v1.60.0）：图标顺序跟着 tab 顺序变了（「训练」挪到正中）。
+    // ⚠️ **2026-10-08（v1.61.0）又改了正中那一格的画法**：v1.60.0 我把它交给
+    // Flutter 画（传空串），结果那颗圆落在**玻璃背后**、被折射成一层发灰的虚影 ——
+    // 用户 10.8 清单第 1 条「tab 栏的训练 玻璃效果 bug」说的就是它。
+    // 现在正中也交给原生画（`emphasisIndex`），圆与另外四格的字在**同一层**（玻璃之上）。
     expect(seg.icons, contains('chart.line.uptrend.xyaxis'));
-    expect(seg.icons![2], isEmpty, reason: '正中那格交给 Flutter 画，原生留空');
-    expect(seg.labels![2], isEmpty, reason: '同上：原生不画正中那格的文字');
+    expect(seg.icons![2], 'dumbbell.fill', reason: '正中那格也要原生画图标');
+    expect(seg.labels![2], '训练', reason: '正中那格也要原生画文字（否则底栏少一个词）');
+    expect(seg.emphasisIndex, 2, reason: '正中被点亮的那一格 = 训练（下标 2）');
+    expect(seg.emphasisColor, isNotNull, reason: '圆的填充色（强调色）必须传给原生');
+    expect(seg.emphasisIconColor, isNotNull,
+        reason: '圆里图标的颜色（深墨）也要传 —— 橙底橙图标看不清');
     // 拖动信号必须**一路传到玻璃组件**（外壳 → AppTabBar → GlassSegmented）：
     // 断了的话页面照样能拖，但底下那颗玻璃会跳格 —— 看起来就是"不跟手"。
     expect(seg.dragIndex, same(drag), reason: '那条"跟手"的线就靠它');

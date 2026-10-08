@@ -533,3 +533,35 @@ class TodayPlanner {
     return out;
   }
 }
+
+
+/// **手动换进来的动作与"今天这场"协不协同**（2026-10-08，10.8 清单第 5 条）。
+///
+/// 用户原话："如果在同一天的计划里，我手动改了一个完全没有协同作用的肌群动作，
+/// 能否进行提示"。
+///
+/// 判据（纯函数，所以"什么算不协同"能被单测钉住）：
+///   * 把"今天这场已经在练的肌群"（每个动作的主肌群 + 辅助肌群）合成一个集合；
+///   * 把要换进来的动作的**主肌群**拿来比 —— **主肌群不在那个集合里**就算不协同；
+///   * ⚠️ 只看**主肌群**：辅助肌群几乎每个动作都有两三个，用它比会把"腿 + 核心"
+///     这种正常搭配也判成协同（那就等于这条提示永远不响）。
+///
+/// 返回 `null` = 没事（协同，或今天这场还没有别的动作可比）；否则返回**一句人话**：
+/// 事实 + 一句去路，不说教、不带感叹号（与 `copy.md` 的口径一致）。
+String? muscleSynergyWarning({
+  required String pickedId,
+  required String pickedMuscle,
+  required List<({String id, String muscle, List<String> secondary})> session,
+  Map<String, String> muscleNames = const <String, String>{},
+}) {
+  final List<({String id, String muscle, List<String> secondary})> others =
+      session.where((({String id, String muscle, List<String> secondary}) e) => e.id != pickedId).toList();
+  if (others.isEmpty || pickedMuscle.isEmpty) return null;
+  final Set<String> today = <String>{
+    for (final ({String id, String muscle, List<String> secondary}) e in others) e.muscle,
+  };
+  if (today.contains(pickedMuscle)) return null;
+  final String Function(String) name = (String m) => muscleNames[m] ?? m;
+  final String todayText = today.map(name).join('、');
+  return '这个动作主要练${name(pickedMuscle)}，而今天这一场安排的是$todayText。';
+}

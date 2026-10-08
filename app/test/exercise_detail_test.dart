@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/labels.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/db.dart'
     hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
@@ -22,6 +23,22 @@ import 'package:lianleme/features/exercise/exercise_detail_screen.dart';
 import 'package:lianleme/features/progress/all_data.dart';
 
 void main() {
+  test('★ 重量口径：杠铃=总重（含杆）、哑铃/壶铃=单只、其余无歧义（10.8 清单第 6 条）',
+      () {
+    // 用户原话："杠铃动作的重量是一个的还是两个的？计算容量的时候怎么算？"
+    // —— 这个约定以前只藏在种子数据里（杠铃卧推建议 40 kg = 20 杆 + 两侧各 10），
+    // 界面上一个字都没写。现在它是一行代码 + 两处渲染 + 文档。
+    expect(weightBasisLabel('barbell'), '总重（含杠铃杆）');
+    expect(weightBasisLabel('dumbbell'), '单只');
+    expect(weightBasisLabel('kettlebell'), '单只');
+    for (final String eq in <String>['machine', 'cable', 'bodyweight', 'band']) {
+      expect(weightBasisLabel(eq), isEmpty, reason: '$eq 没有"单边还是总重"这个问题');
+      expect(volumeBasisLabel(eq), isEmpty);
+    }
+    // 给用户看的句子**不许带 markdown 记号**（check-user-text 会判红）
+    expect(volumeBasisLabel('barbell'), isNot(contains('*')));
+  });
+
   // ─────────────────────────────────────── 纯逻辑
 
   group('按天归并（详情页的"最近几次"）', () {

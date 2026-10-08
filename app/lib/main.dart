@@ -34,6 +34,7 @@ import 'data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutIte
 // 都有自己的入口，不经过 main.dart 的这个名字）。
 import 'data/body_metric_repository.dart' hide dayKey;
 import 'data/drift_local_store.dart';
+import 'data/exercise_data_ext.dart';
 import 'data/exercise_repository.dart';
 import 'data/local_store.dart';
 import 'data/notification_repository.dart';
@@ -867,6 +868,53 @@ class _HomeShellState extends State<HomeShell> {
       if (picked == null || !mounted) return;
       if (picked.id == old.exercise.id) return; // 选了同一个 = 什么都没发生
 
+      // ★ 协同性提示（2026-10-08，10.8 清单第 5 条）：手动换进来的动作若与
+      // "今天这一场已经在练的肌群"**完全没交集**（只看主肌群），先问一声。
+      // 非阻断：用户点「仍然换」就照换 —— 提示只是把"你可能没注意"这件事说出来。
+      final String? warning = muscleSynergyWarning(
+        pickedId: picked.id,
+        pickedMuscle: picked.muscleGroup,
+        session: <({String id, String muscle, List<String> secondary})>[
+          for (final SessionEntry e in entries)
+            (
+              id: e.exercise.id,
+              muscle: e.exercise.muscleGroup,
+              secondary: e.exercise.secondaryMuscleList,
+            ),
+        ],
+        muscleNames: kMuscleLabels,
+      );
+      if (warning != null) {
+        if (!mounted) return;
+        final bool go = await showDialog<bool>(
+              context: context,
+              builder: (BuildContext ctx) => AlertDialog(
+                backgroundColor: Tokens.surface,
+                title: const Text('这个动作和今天不太搭',
+                    style: TextStyle(color: Tokens.text)),
+                content: Text(
+                  '$warning\n\n计划是建议，不是牢笼 —— 想换就换。',
+                  key: const Key('synergy-note'),
+                  style: const TextStyle(color: Tokens.text2, height: 1.6),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    key: const Key('synergy-cancel'),
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text('算了', style: TextStyle(color: Tokens.text2)),
+                  ),
+                  TextButton(
+                    key: const Key('synergy-continue'),
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text('仍然换', style: TextStyle(color: Tokens.accent)),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+        if (!go) return;
+      }
+
       // 新动作的"上次"要**排除本次训练**：否则会把这次刚记的组当成上次
       final WorkoutController next = WorkoutController(
         workoutId: workoutId,
@@ -1572,6 +1620,9 @@ class _HomeShellState extends State<HomeShell> {
             streak: _streak,
             streakCopy: streakCopy(_streak),
             recent: _recent,
+            // 同一个屏幕上**只能有一种单位**：上面「今天的安排」用 `_unit`，
+            // 「最近训练」那三行也必须用它（10.8 清单第 7 条：单位不一致）
+            unit: _unit,
             onOpenLibrary: _openLibrary,
             onLogWeight: _openBodyMetric,
             onOpenAchievements: _openAchievements,

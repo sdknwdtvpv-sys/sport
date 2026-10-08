@@ -179,6 +179,16 @@ class WorkoutController extends ChangeNotifier {
   /// **正式组**数。计划进度与「第 N 组」都由它算。
   int _normalSets = 0;
 
+  /// **这一场里，同一个动作逐组之间实际歇了多久**（秒，2026-10-08，10.8 清单第 2 条）。
+  ///
+  /// 用户原话："根据过往训练中的休息时长动态调整后面同一个动作的休息时间"。
+  /// 现在收的是**本场**的数据（跨场的数据没地方存 —— 库里从来没记过"实际休息"，
+  /// 只有埋点里那两个事件名）。第一条组没有"上一次"，所以它不参与。
+  final List<int> _observedRestsSec = <int>[];
+
+  /// 上一组**写下**的时刻（毫秒）。相邻两组的差就是"实际休息"。
+  int? _lastLoggedAtMs;
+
   /// **全部组**数（含热身）。只用来生成不重复的 `setIndex` 与记录 id。
   ///
   /// 必须和 `_normalSets` 分开：热身组要占一个组序（否则两条热身会撞 id，
@@ -240,6 +250,29 @@ class WorkoutController extends ChangeNotifier {
   /// 代价是首次记有氧要设两个值 —— 两个值各一次步进，而假记录会跟着用户一辈子。
   /// 其余动作恒为 true：力量动作的默认值来自引擎建议，点一下就是一组。
   bool get canLog => !isDistance || (_distanceM > 0 && _reps > 0);
+  /// **下一组该歇多久**（2026-10-08，10.8 清单第 2 条）。
+  ///
+  /// 本场已经歇过 **≥ 2 次**时，取**实际休息的中位数**（5 秒取整），
+  /// 并夹在动作自带值的 **0.5× ～ 2×** 之间 —— 上下界是为了不让某一次
+  /// "接了个电话"把后面全带跑。看上去这一条会改设置，其实**不会**：
+  /// 它只影响**这一场**接下来的默认值（动作自带值与用户覆盖值一个字节都不动）。
+  int get nextRestSec {
+    if (_observedRestsSec.length < 2) return plannedRestSec;
+    final List<int> sorted = <int>[..._observedRestsSec]..sort();
+    final int median = sorted[sorted.length ~/ 2];
+    final int rounded = (median / 5).round() * 5;
+    final int lo = (plannedRestSec * 0.5).round().clamp(5, 3600);
+    final int hi = (plannedRestSec * 2).clamp(lo, 3600);
+    return rounded.clamp(lo, hi);
+  }
+
+  /// 这一次休息是不是**跟着你的节奏**来的 —— 界面据此说一句实话（"按你的节奏"）。
+  bool get restIsAdaptive =>
+      _observedRestsSec.length >= 2 && nextRestSec != plannedRestSec;
+
+  /// 本场实际休息的采样次数（测试与埋点诊断用；界面不显示这个数）。
+  int get observedRestCount => _observedRestsSec.length;
+
   int get restRemainingSec => _restRemaining;
   bool get restRunning => _restRunning;
 
@@ -250,6 +283,10 @@ class WorkoutController extends ChangeNotifier {
   bool get sheetOpen => _sheetOpen;
   bool get isOffline => syncQueue.offline;
   bool get isBodyweight => exercise.isBodyweight;
+  /// 已经记下的**正式组**数（热身不算）。界面用它判"做满计划组数没有"
+  /// （10.8 清单第 3 条：做满之后底部换成「再加一组 / 下一个动作」两个按钮）。
+  int get normalSets => _normalSets;
+
   int get setNumber => _normalSets + 1;
   int get plannedSets => plan.targetSets;
   String? get hint => _hint;
@@ -683,16 +720,31 @@ class WorkoutController extends ChangeNotifier {
 
     // 组数达标后不禁用，只提示。计划是建议不是牢笼。
     if (_normalSets >= plan.targetSets) {
-      _hint = '已达到计划组数，再点会继续记录（不加限制）';
+      // ⚠️ 2026-10-08（10.8 清单第 3 条）：这句话下面现在会长出**两个按钮**
+      // （「再加一组」/「下一个动作」），所以这里不再用一整句解释 ——
+      // 文案与按钮都由界面给，控制器只留一句短提示（测试与锁屏也还在用它）。
+      _hint = '已达到计划组数';
     }
+
+    // 实际休息：相邻两组的间隔（10.8 清单第 2 条）。只收"像休息"的间隔 ——
+    // 0 秒（同一秒连点两下）与超过 30 分钟（多半是中途去干别的了）都不算。
+    final int nowMs = _clock();
+    final int? prevMs = _lastLoggedAtMs;
+    if (prevMs != null) {
+      final int gapSec = ((nowMs - prevMs) / 1000).round();
+      if (gapSec > 0 && gapSec <= 30 * 60) _observedRestsSec.add(gapSec);
+    }
+    _lastLoggedAtMs = nowMs;
 
     _startRest();
     analytics.beginSetInteraction(); // 开启下一组的交互周期
     _notify();
   }
 
-  void _startRest() => _beginRest(plannedRestSec,
-      endsAtMs: _clock() + plannedRestSec * 1000, announce: true);
+  void _startRest() {
+    final int sec = nextRestSec;
+    _beginRest(sec, endsAtMs: _clock() + sec * 1000, announce: true);
+  }
 
   /// 开始（或**接着**）倒数。
   ///

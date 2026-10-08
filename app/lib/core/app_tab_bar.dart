@@ -94,11 +94,26 @@ class AppTabBar extends StatelessWidget {
       child: Row(
         children: <Widget>[
           for (int i = 0; i < tabs.length; i++)
-            // ⚠️ 正中那一格**留空**：它由浮在底栏之上的那颗凸起圆顶替
-            // （见下面的 `_centerAction`）。留一格空的，是为了**五格仍然等宽** ——
-            // 直接少一格会让"计划/我的"整体左移，一眼就不齐。
+            // ⚠️ 正中那一格**不画图标与文字**（它们由 `_centerAction` 或原生那层画），
+            // 但**两种平台都要占满一格** —— 五格等宽全靠它：少一格会让"计划/我的"
+            // 整体左移，一眼就不齐。
             if (i == _centerIndex)
-              const Expanded(child: SizedBox.shrink())
+              Expanded(
+                child: floating
+                    // iOS：圆与图标由**原生**画在玻璃之上（见 `emphasisIndex`），
+                    // 但**点击仍然由 Flutter 这一层接**（`UiKitView` 的
+                    // `gestureRecognizers` 是空集合，所以触摸穿透到 Flutter）。
+                    // 所以这里要留一个**透明但可点**的热区，key 与另外四格同一套命名 ——
+                    // 少了它，iOS 上"点正中那颗训练"就点不动，按 key 找它的测试也会红。
+                    ? GestureDetector(
+                        key: Key('tab-${tabs[i].label}'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onChanged(i),
+                        child: const SizedBox.expand(),
+                      )
+                    // Android：圆是 Flutter 画的（`_centerAction`），热区在圆自己身上
+                    : const SizedBox.shrink(),
+              )
             else
             Expanded(
               child: InkWell(
@@ -135,6 +150,8 @@ class AppTabBar extends StatelessWidget {
       ),
     );
 
+    // Android（通栏、没有玻璃）：正中那颗由 **Flutter** 画成"凸出上沿 10pt"的圆 ——
+    // 这里没有玻璃，Flutter 画的东西不会被折射。
     if (!floating) return _withCenterAction(bar, floating: false);
 
     // ⚠️ 这里不再垫 backdrop（2026-10-06 改）：外壳已把**内容铺满、底栏浮在它上面**
@@ -150,8 +167,7 @@ class AppTabBar extends StatelessWidget {
     //
     // 材质：底托 `.regular`；选中胶囊同样 `.regular` + **一点白（12%）**，
     // 因为玻璃底托本身就比屏幕亮，选中那块要再亮一档才读得出来（苹果也是这么做的）。
-    return _withCenterAction(
-      GlassSegmented(
+    return GlassSegmented(
       key: const Key('glass-tab-bar'),
       count: tabs.length,
       index: current,
@@ -161,18 +177,25 @@ class AppTabBar extends StatelessWidget {
       pillInset: 5,
       dragIndex: dragIndex,
       // 字与图标交给原生画（玻璃**里面**）：Flutter 那份在玻璃背后，会被折射出第二份虚影。
-      // ⚠️ 正中那一格（`_centerIndex`）**故意传空串**：它由 Flutter 画成一颗凸起的圆
-      // （见 `_centerAction`）—— 原生的 SF Symbol 与文字若照画，圆里会叠出一份虚影。
-      labels: <String>[
-        for (int i = 0; i < tabs.length; i++) i == _centerIndex ? '' : tabs[i].label,
-      ],
+      // ⚠️ 2026-10-08（v1.61.0）改：正中那一格**不再传空串** ——
+      // 它的圆也交给原生画（`emphasisIndex`），理由是同一个：
+      // Flutter 画的圆会落在玻璃**背后**，被折射成一层发灰的虚影
+      // （用户 10.8 清单第 1 条「tab 栏的训练 玻璃效果 bug」就是这么来的）。
+      labels: <String>[for (final ({IconData icon, String label}) t in tabs) t.label],
       icons: const <String>[
         'chart.line.uptrend.xyaxis',
         'chart.bar.fill',
-        '',
+        'dumbbell.fill',
         'calendar',
         'person',
       ],
+      // 正中那颗：原生在这一层（玻璃**之上**）画一颗实心强调圆 + 深墨图标。
+      // ⚠️ iOS 上它**不凸出**平台视图的边界（平台视图是一张按 bounds 裁好的纹理）——
+      // 所以 iOS 是"实心强调圆"、Android 是"凸出上沿 10pt 的圆"：
+      // 同一个意图，各自贴合本端材质（差异记在 `docs/screens.md`）。
+      emphasisIndex: _centerIndex,
+      emphasisColor: _hexOf(Tokens.accent),
+      emphasisIconColor: _hexOf(Tokens.bg),
       selectedColor: _hexOf(Tokens.accent),
       unselectedColor: _hexOf(Tokens.text3),
       labelFontSize: 11,
@@ -180,8 +203,6 @@ class AppTabBar extends StatelessWidget {
       // 按住不放、横向拖到别格再松手 = 换 tab（`changes` 幂等，与点击那条路不冲突）
       onDragSelect: onChanged,
       child: bar,
-      ),
-      floating: true,
     );
   }
 

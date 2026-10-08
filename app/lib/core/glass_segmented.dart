@@ -63,6 +63,9 @@ class GlassSegmented extends StatefulWidget {
     this.unselectedColor,
     this.labelFontSize = 12,
     this.iconSize = 22,
+    this.emphasisIndex = -1,
+    this.emphasisColor,
+    this.emphasisIconColor,
   });
 
   /// 盖在玻璃上面的内容（标签/图标 —— 仍然是 Flutter 画的，也仍然由 Flutter 收点击）。
@@ -136,6 +139,20 @@ class GlassSegmented extends StatefulWidget {
 
   final double labelFontSize;
   final double iconSize;
+
+  /// **正中被点亮的那一格**（2026-10-08，v1.61.0）。-1 = 没有。
+  ///
+  /// ⚠️ 为什么它必须由**原生**画（而不是 Flutter 在底栏上叠一层圆）：
+  /// iOS 的平台视图**永远盖在 Flutter 内容之上**，Flutter 画的圆会落在玻璃**背后**，
+  /// 被折射成一层发灰的虚影 —— 那正是用户 10.8 清单第 1 条「tab 栏的训练 玻璃效果 bug」。
+  /// 这一层（`labelsBox`）是"玻璃之上"的那一层，画在这里就不会被折射。
+  final int emphasisIndex;
+
+  /// 那颗圆的填充色（一般是强调色）。
+  final String? emphasisColor;
+
+  /// 圆里图标的颜色（一般是"深墨"：强调色圆上要压一个深色图标才看得清）。
+  final String? emphasisIconColor;
 
   @override
   State<GlassSegmented> createState() => _GlassSegmentedState();
@@ -286,6 +303,11 @@ class _GlassSegmentedState extends State<GlassSegmented> {
                 'unselectedColor': widget.unselectedColor ?? _hex(Tokens.text3),
               if (widget.labels != null) 'labelFontSize': widget.labelFontSize,
               if (widget.labels != null) 'iconSize': widget.iconSize,
+              // 正中那颗（可缺省）：键名要与 `GlassBridge.swift` 逐字一致
+              if (widget.emphasisIndex >= 0) 'emphasisIndex': widget.emphasisIndex,
+              if (widget.emphasisColor != null) 'emphasisColor': widget.emphasisColor,
+              if (widget.emphasisIconColor != null)
+                'emphasisIconColor': widget.emphasisIconColor,
               if (widget.baseTint != null) 'baseTint': widget.baseTint,
               if (widget.pillTint != null) 'pillTint': widget.pillTint,
             },

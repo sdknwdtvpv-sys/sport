@@ -765,7 +765,13 @@ class AppDatabase extends _$AppDatabase {
           //   ② 判据不是版本号，是**"这一列现在有没有"** —— 新库走 `onCreate` 时
           //      这两张表已经带着新列建好了，再 addColumn 会 `duplicate column name`。
           // 用一个小工具把这三列统一处理，免得三处各写一遍判断。
-          Future<void> addIfMissing(TableInfo table, GeneratedColumn<Object> col) async {
+          // ⚠️ 形参要写成**泛型**（`GeneratedColumn<T>`）：写死 `GeneratedColumn<Object>`
+          // 时 `Column<String>` / `RealColumn` 传不进来 —— 而 `dart analyze` **会放过**
+          // （它做了隐式下调），只有真正编译（`flutter build`）时才报
+          // "The argument type 'Column<String>' can't be assigned to ..."。
+          // 2026-10-08 出 v1.61.0 的包时当场撞上：门禁全绿、analyze 干净，出包失败。
+          Future<void> addIfMissing<T extends Object>(
+              TableInfo table, GeneratedColumn<T> col) async {
             final String name = table.actualTableName;
             final List<QueryRow> exists = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table' AND name='$name'",

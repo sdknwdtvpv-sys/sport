@@ -368,11 +368,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     );
                   },
                 ),
-                const Spacer(),
-                const Text(
-                  '只影响显示',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12),
-                ),
+                // ⚠️ 这里原来右边还有一句「只影响显示」（12pt 灰字）。
+                // 2026-10-08 用户真机反馈（10.8 清单第 4 条）："**只影响显示这五个字
+                // 有什么显示的必要吗**" —— 而且它**挤在 kg/lb 分段控件上**（截图里
+                // 两层文字叠在一起，那不是文案问题、是布局事故）。
+                // 删掉它是两头都对的做法：`docs/copy.md` 早就定了"别写解释性语言"，
+                // 而这一句正是那类（"单位只影响显示"是**我们内部的实现约定**，
+                // 用户不需要知道底层存的是 kg）。约定仍然写在代码注释与
+                // `docs/data-model.md` §单位里，只是不再印到界面上。
               ],
             ),
           ),

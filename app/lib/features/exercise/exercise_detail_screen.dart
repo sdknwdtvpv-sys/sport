@@ -246,6 +246,17 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
               _chip('辅助：${e.secondaryMuscleList.map(muscleLabel).join('、')}'),
           ],
         ),
+        // 重量口径（10.8 清单第 6 条）：这一句是**答案**，不是解释性废话 ——
+        // 用户原话是"杠铃动作的重量是一个的还是两个的？计算容量的时候怎么算？"。
+        // 只对"有歧义"的器械显示（器械/绳索/自重没有单边还是总重这个问题）。
+        if (weightBasisLabel(e.equipment).isNotEmpty) ...<Widget>[
+          const SizedBox(height: Tokens.s3),
+          Text(
+            '重量填${weightBasisLabel(e.equipment)} · ${volumeBasisLabel(e.equipment)}',
+            key: const Key('detail-weight-basis'),
+            style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+          ),
+        ],
       ],
     );
   }

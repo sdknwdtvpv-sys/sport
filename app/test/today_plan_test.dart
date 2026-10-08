@@ -16,6 +16,9 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/labels.dart';
+import 'package:lianleme/core/theme.dart';
+import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart' show PlanTarget;
@@ -276,6 +279,87 @@ void main() {
 
       await teardown(tester);
     });
+  });
+
+  testWidgets('★「最近训练」的单位跟着设置走（10.8 清单第 7 条：曾经写死 kg）',
+      (WidgetTester tester) async {
+    // 起因：真机上「今天的安排」按用户在设置里选的下单位显示（lb），
+    // 而「最近训练」那三行永远显示 kg —— 同一个屏幕两种单位，看着就像数据错了。
+    // 判据：同一个 `volumeKg` 在两个单位下渲染出来的字符串**必须不同**，
+    // 而且各自与 `formatVolume` 的结果逐字相同（不自己拼字符串）。
+    final DateTime day = DateTime(2026, 10, 5);
+    Future<void> pumpWith(WeightUnit unit) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: TodayScreen(
+            onStart: () {},
+            onSeePlan: () {},
+            unit: unit,
+            recent: <({String workoutId, DateTime day, int exercises, int sets, double volume})>[
+              (workoutId: 'w1', day: day, exercises: 2, sets: 5, volume: 430),
+            ],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    await pumpWith(WeightUnit.kg);
+    expect(find.textContaining('430 kg'), findsOneWidget);
+    expect(find.textContaining('948 lb'), findsNothing);
+
+    await pumpWith(WeightUnit.lb);
+    expect(find.textContaining('${withThousands(toDisplayWeight(430, WeightUnit.lb).round())} lb'),
+        findsOneWidget,
+        reason: '430 kg = 948 lb —— 列表要跟设置里的单位一致');
+    expect(find.textContaining('430 kg'), findsNothing,
+        reason: '切到 lb 之后不该还有 kg 那一行');
+  });
+
+  test('★ 手动换动作：与今天这场完全不协同时给一句人话（10.8 清单第 5 条）', () {
+    // 用户原话："如果在同一天的计划里，我手动改了一个完全没有协同作用的肌群动作，
+    // 能否进行提示"。判据只比**主肌群**（辅助肌群几乎人人都有两三个，
+    // 拿它比这条提示就永远不会响）。
+    const List<({String id, String muscle, List<String> secondary})> upper = <({String id, String muscle, List<String> secondary})>[
+      (id: 'ex_bb_bench_press', muscle: 'chest', secondary: <String>['triceps', 'shoulders']),
+      (id: 'ex_bb_row', muscle: 'back', secondary: <String>['biceps']),
+    ];
+
+    // 换进来一个练腿的 → 要提示，且句子是"事实 + 不协同在哪"
+    final String? warn = muscleSynergyWarning(
+      pickedId: 'ex_bb_squat',
+      pickedMuscle: 'legs',
+      session: upper,
+      muscleNames: kMuscleLabels,
+    );
+    expect(warn, isNotNull);
+    expect(warn, contains('腿'));
+    expect(warn, contains('胸'));
+    expect(warn, isNot(contains('!')), reason: '不说教、不带感叹号');
+
+    // 换进来一个练胸的（同一肌群）→ 不提示
+    expect(
+      muscleSynergyWarning(
+        pickedId: 'ex_db_fly',
+        pickedMuscle: 'chest',
+        session: upper,
+        muscleNames: kMuscleLabels,
+      ),
+      isNull,
+    );
+
+    // 今天这场只有它自己（或空）→ 无可比，不提示（第一次选动作不该被拦）
+    expect(
+      muscleSynergyWarning(
+        pickedId: 'ex_bb_squat',
+        pickedMuscle: 'legs',
+        session: <({String id, String muscle, List<String> secondary})>[
+          (id: 'ex_bb_squat', muscle: 'legs', secondary: <String>[]),
+        ],
+      ),
+      isNull,
+    );
   });
 
   _weeklyReportUiTests();
