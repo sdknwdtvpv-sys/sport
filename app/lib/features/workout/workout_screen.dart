@@ -68,6 +68,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   /// 所以下面所有 `c.xxx` 都自动跟着走，不需要各自处理切换。
   WorkoutController get c => widget.session.current;
 
+  /// 已经为哪个"动作 + 计划组数"弹过"做满计划了"那个选择（10.8 清单第 7 条）。
+  ///
+  /// 为什么要记：`_onChange` 会因为**任何**状态变化被叫到（记组、休息倒数、切动作…），
+  /// 不记的话那一次弹窗会被反复弹出来。key 用 `exerciseId@plannedSets` ——
+  /// 换了动作或组数变了就是另一次选择，该重新问。
+  final Set<String> _askedPlanDone = <String>{};
+  String get _planDoneKey => '${c.exercise.id}@${c.plannedSets}';
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +109,67 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   void _onChange() {
     if (mounted) setState(() {});
+    _maybeAskPlanDone();
+  }
+
+  /// 做满计划组数的那一刻，弹一次「再加一组 / 下一个动作」（10.8 清单第 7 条）。
+  ///
+  /// 用户原话：「这个界面重新设计：**加一组和下一组应该是弹窗的形式更好一些吧**？
+  /// 在下面太鸡肋了」（上一版我按他上一轮的"给两条明确的路"做成了底部两颗按钮）。
+  ///
+  /// ⚠️ 三个纪律：
+  ///   1. **只在"刚好做满"的那一次弹** —— 弹窗是用来做选择的，不是常驻的路标；
+  ///   2. 每个「动作 + 计划组数」只弹一次（`_askedPlanDone`）—— 否则记一组弹一次；
+  ///   3. 弹窗里两个按钮就是**动作**（再加一组 = 立刻记一组）与**去路**（下一个/结束），
+  ///      点遮罩关掉 = 什么都不做（用户可以继续按大按钮）。
+  void _maybeAskPlanDone() {
+    if (!mounted) return;
+    if (c.normalSets < c.plannedSets) return;
+    if (c.holding || c.sheetOpen) return; // 正在计时/改重量时不打扰
+    if (_askedPlanDone.contains(_planDoneKey)) return;
+    _askedPlanDone.add(_planDoneKey);
+    final bool last = !widget.session.canGoNext;
+    // 记完这一组正好在 setState/build 的尾巴上 —— 推到下一帧再弹，避免"build 期间弹窗"
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final bool again = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext ctx) => AlertDialog(
+              backgroundColor: Tokens.surface,
+              title: const Text('计划组数做完了',
+                  style: TextStyle(color: Tokens.text)),
+              content: Text(
+                last
+                    ? '这是最后一个动作。加一组接着练，或者收工。'
+                    : '加一组接着练，或者去下一个：${widget.session.nextName ?? '下一个动作'}。',
+                key: const Key('plan-done-note'),
+                style: const TextStyle(color: Tokens.text2, height: 1.6),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  key: const Key('plan-done-more'),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('再加一组', style: TextStyle(color: Tokens.accent)),
+                ),
+                TextButton(
+                  key: const Key('plan-done-next'),
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(last ? '结束训练' : '下一个',
+                      style: const TextStyle(color: Tokens.accent)),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+      if (!mounted) return;
+      if (again) {
+        c.onBigButtonTap(); // 立刻再记一组（与点大按钮同一个动作）
+      } else if (last) {
+        Navigator.of(context).maybePop();
+      } else {
+        widget.session.next();
+      }
+    });
   }
 
   @override
@@ -464,11 +533,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               alignment: Alignment.centerLeft,
               child: Row(
                 children: <Widget>[
-                  // 2026-10-08（10.8 清单第 2 条）：休息时长可能**跟着你刚才的节奏**
-                  // （同动作已歇 ≥ 2 次 → 取中位数）。这件事必须说出来 ——
-                  // 否则用户会以为"App 把休息时间改短了"。整组在 FittedBox 里，不会挤。
-                  Text(c.restIsAdaptive ? '休息 · 按你的节奏' : '休息',
-                      style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                  // ⚠️ 这里曾经写过「休息 · 按你的节奏」（提示"这次是按你实际节奏算的"）。
+                  // 10.8 清单第 9 条，用户原话：「**【休息 按你的节奏】这几个字有什么存在的
+                  // 必要吗**? 或者能不能集成到设置里的休息时间里」—— 说得对：训练屏上那几个字
+                  // 既占地方、又是在解释我们内部的算法。**自适应行为照旧保留**，
+                  // 解释挪到「设置 → 休息时长」那一行的副标题里（用户自己提的那个去处）。
+                  const Text('休息',
+                      style: TextStyle(color: Tokens.text3, fontSize: 13)),
                   const SizedBox(width: Tokens.s3),
                   Text(
                     _restText(),
@@ -596,69 +667,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
-  /// 做满计划组数之后那两个明确的出口（2026-10-08，10.8 清单第 3 条）。
-  ///
-  /// 用户原话："推荐的四组，四组做完后给选项：跳转到下个动作或者加一组挑战下自己。"
-  /// 之前只有一行小字「已达到计划组数，再点会继续记录（不加限制）」——
-  /// 那是个**隐式**出口：用户得自己想到"还能加"。现在摆成两个按钮，
-  /// 一个**动作**（再加一组 = 用当前值立刻记一组）与一个**去路**（下一个 / 结束）。
-  ///
-  /// ⚠️ 只在**做满**之后出现，没做满时下面还是那行解释大按钮的小字。
-  Widget _plannedDoneRow() {
-    final bool last = !widget.session.canGoNext;
-    return Padding(
-      key: const Key('planned-done-row'),
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, Tokens.s4),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: OutlinedButton(
-              key: const Key('add-extra-set'),
-              // 「再加一组」= 用当前值**立刻记一组**（与点大按钮同一个动作）
-              onPressed: c.canLog ? c.onBigButtonTap : null,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Tokens.text,
-                side: const BorderSide(color: Tokens.line),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Tokens.rPill),
-                ),
-              ),
-              child: const Text('再加一组'),
-            ),
-          ),
-          const SizedBox(width: Tokens.s3),
-          Expanded(
-            child: FilledButton(
-              key: const Key('planned-done-next'),
-              // 最后一个动作时是「结束训练」：**退出这一屏**就回到总结页
-              // （外壳在 `push` 返回之后接总结，见 `main.dart` 那段注释）
-              onPressed: last
-                  ? () => Navigator.of(context).maybePop()
-                  : widget.session.next,
-              style: FilledButton.styleFrom(
-                backgroundColor: Tokens.accent,
-                foregroundColor: Tokens.bg,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Tokens.rPill),
-                ),
-              ),
-              child: Text(last
-                  ? '结束训练'
-                  : '下一个：${widget.session.nextName ?? '下一个动作'}'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _hintBar() {
-    // 做满计划组数 → 换成两个按钮（那行小字此刻说不清"还能干什么"）
-    if (c.normalSets >= c.plannedSets && !c.holding) {
-      return _plannedDoneRow();
-    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, Tokens.s4),
       child: Text(

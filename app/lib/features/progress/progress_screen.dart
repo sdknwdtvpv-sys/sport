@@ -303,7 +303,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
         // 「还没记录过体重」+ 点不动的「记录」按钮（测试抓出来的）
         if (widget.bodyMetrics != null) ...<Widget>[
           const SizedBox(height: Tokens.s5),
-          _sectionTitle('体重'),
+          // 10.8 清单第 2 条：用户原话「体重这里改成身体数据」——
+          // 这一屏早就不只记体重了（体脂率 / 腰围 / 肌肉量 / 身高都在里面），
+          // 标题还叫「体重」既漏了内容，也让人以为点进去只能称重。
+          _sectionTitle('身体数据'),
           _weightCard(),
         ],
       ],

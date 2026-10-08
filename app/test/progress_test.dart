@@ -393,7 +393,8 @@ void main() {
         (WidgetTester tester) async {
       await pumpProgress(tester, body: BodyMetricRepository(db));
 
-      expect(find.text('体重'), findsOneWidget);
+      // 10.8 清单第 2 条：标题从「体重」改成「身体数据」（里面还有体脂/腰围/肌肉量/身高）
+      expect(find.text('身体数据'), findsOneWidget);
       expect(find.text('还没记录过体重'), findsOneWidget);
       expect(find.text('记录'), findsOneWidget, reason: '给一个入口');
     });

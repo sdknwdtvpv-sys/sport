@@ -302,7 +302,11 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             // 原来那句还带了个「（核心 45 秒、深蹲 180 秒……）」的例子，属于"顺便科普"，一并去掉。
             subtitle: _rest == null
                 ? const Text(
-                    '每个动作用它自带的休息时长',
+                    // 10.8 清单第 9 条：训练屏上那句「休息 · 按你的节奏」被删掉了
+                    // （用户原话：「这几个字有什么存在的必要吗？或者能不能集成到设置里的
+                    // 休息时间里」）—— 解释挪到这里：休息时长**是**会跟着你实际节奏微调的，
+                    // 而这件事属于"设置"的话题，不该占用训练屏。
+                    '每个动作用它自带的休息时长；练起来之后会按你实际歇的节奏微调',
                     style: TextStyle(color: Tokens.text3, fontSize: 12.5, height: 1.4),
                   )
                 : null,

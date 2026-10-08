@@ -962,6 +962,17 @@ class _HomeShellState extends State<HomeShell> {
     );
 
     session.removeListener(onSessionChanged);
+
+    // ★ 器械复位提醒（10.8 清单第 6 条）。用户原话：
+    //   「做完当天计划中，**带杠铃片器械**的训练之后，弹窗提醒使用完器械一定要记得
+    //   卸片，主动复位。」
+    // ⚠️ 三个判据都写在这里：① 只在**真的用了杠铃**时才提醒（器械/绳索/自重不提醒 ——
+    // 那些本来就没有片子可卸）；② 一次训练只弹一次（就在退出训练屏这一刻）；
+    // ③ 用户自己中途退出也会弹 —— 他同样把杠铃留在架子上了。
+    if (mounted && entries.any((SessionEntry e) => e.exercise.equipment == 'barbell')) {
+      await _remindUnloadPlates();
+    }
+
     // 训练结束了（正常结束或用户自己退出）—— 未结束的会话到此为止。
     // 不清的话，下次冷启动会把用户送回一个早就结束的训练。
     await _store.clearActiveSession();
@@ -1180,6 +1191,33 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 打开消息通知（首页右上角铃铛）。回来时刷新未读数 ——
   /// 用户在里面点了「全部已读」，首页那个点要跟着消失（否则他会以为没生效）。
+  /// **练完带杠铃片的动作之后**：提醒卸片与复位（10.8 清单第 6 条）。
+  ///
+  /// 为什么值得弹一次：这条提醒**在健身房里是刚需**（不卸片是安全事故，也是礼仪），
+  /// 而 App 是那个"知道你今天用了杠铃"的唯一角色。文案只讲事实与动作，不说教。
+  Future<void> _remindUnloadPlates() async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('杠铃归位了吗', style: TextStyle(color: Tokens.text)),
+        content: const Text(
+          '今天用了杠铃 —— 走之前记得卸片、把杠铃放回架子上。'
+          '下一个人可能会直接用，留着片子既危险也不礼貌。',
+          key: Key('unload-plates-note'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('unload-plates-ok'),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('已归位', style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openNotifications() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(

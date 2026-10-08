@@ -532,6 +532,56 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     );
   }
 
+  /// 最近 7 天里**带体重**的记录有几条（用来判断"是不是称得太勤"）。
+  ///
+  /// ⚠️ 只数 `weightKg != null` 的：`body_metric` 里也可能只记腰围/肌肉量，
+  /// 而"称体重"这件事问的是体重那一列。
+  int _weighInsInLastWeek(List<BodyMetricData> rows) {
+    // ⚠️ 用**这一页的钟**（`widget.clock`），不是 `DateTime.now()` ——
+    // 这一页所有"今天"都由它决定（日期 chips、默认选中那一天），
+    // 提醒的 7 天窗口要是自己另取一个"现在"，就会算出与页面对不上的结论
+    // （测试里当场抓到：页面停在夹具那天、窗口却按真机时间算 → 一条都没数进去）。
+    final DateTime now = _now;
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final DateTime from = today.subtract(const Duration(days: 6));
+    return rows.where((BodyMetricData r) {
+      if (r.weightKg == null) return false;
+      final DateTime? d = DateTime.tryParse(r.date);
+      if (d == null) return false;
+      return !d.isBefore(from) && !d.isAfter(today);
+    }).length;
+  }
+
+  /// 一周内称第二次了 —— 说一句事实，别让人以为"每天称"是我们希望的。
+  ///
+  /// 用户原话：「每天称体重意义不大」+「弹出**友情**提醒」——所以：
+  ///   * 不是错误提示（没有红色、没有"禁止"），就一句"看趋势比看单天更有意义"；
+  ///   * 结论来自真实身体数据：一天内的波动主要是水分与吃的东西，**不是脂肪**；
+  ///   * 一个按钮「知道了」，点掉就走（不拦保存、不改数据）。
+  Future<void> _maybeWarnWeighFrequency(int count) async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: Text('这周已经称过 $count 次了',
+            style: const TextStyle(color: Tokens.text)),
+        content: const Text(
+          '一周称两次就够 —— 一天之内的波动主要是水分和刚吃的东西，不是脂肪。'
+          '看一周、一个月的趋势比看单天更有意义。',
+          key: Key('weigh-frequency-note'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('weigh-frequency-ok'),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('知道了', style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (!_canSave) return;
     setState(() => _saving = true);
@@ -560,6 +610,12 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     });
 
     final List<BodyMetricData> recent = await widget.repository.recent();
+    // ★ 一周称两次就够（10.8 清单第 1 / 4 条）：用户原话是
+    //   「每天称体重意义不大，如果用户在一周内更新体重两次，弹出友情提醒」+
+    //   「按照上面讲的，不建议每天称体重」。
+    // 判据：这次保存之后，**最近 7 天里有 ≥ 2 条带体重的记录** → 说一声。
+    // ⚠️ 只提醒、不拦、不改数据；语气是"说个事实"，不说教（见 `docs/copy.md`）。
+    final int weekCount = _weighInsInLastWeek(recent);
     if (!mounted) return;
     setState(() {
       _recent = recent;
@@ -567,6 +623,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       _latest = recent.isEmpty ? null : recent.first;
       _saving = false;
     });
+    if (weekCount >= 2) await _maybeWarnWeighFrequency(weekCount);
     widget.onSaved?.call();
 
     ScaffoldMessenger.of(context).showSnackBar(

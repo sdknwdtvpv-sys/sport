@@ -113,6 +113,14 @@ void main() {
     await tester.tap(find.byKey(const Key('back-button')));
     await tester.pumpAndSettle();
 
+    // ⚠️ 2026-10-08（10.8 清单第 6 条）：这一场用了杠铃 → 退出训练屏时会弹一次
+    // 「杠铃归位了吗」（卸片提醒）。**先把它点掉**，主壳才会接着推总结页 ——
+    // 那条链路（总结页发 `workout_finished`）才是这条测试要验的东西。
+    if (find.byKey(const Key('unload-plates-ok')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const Key('unload-plates-ok')));
+      await tester.pumpAndSettle();
+    }
+
     final List<AnalyticsOutboxData> rows = await _rows(db);
     final AnalyticsOutboxData finished =
         rows.lastWhere((AnalyticsOutboxData r) => r.name == 'workout_finished');

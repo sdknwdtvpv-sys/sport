@@ -166,6 +166,44 @@ void main() {
         .controller!
         .text;
 
+    testWidgets('★ 一周内称第二次 → 友情提醒"一周两次就够"（10.8 清单第 1/4 条）',
+        (WidgetTester tester) async {
+      // 用户原话：「每天称体重意义不大，如果用户在一周内更新体重两次，弹出友情提醒」
+      // + 「按照上面讲的，不建议每天称体重」。
+      // 判据：最近 7 天里（含这一次）已经有 ≥ 2 条带体重的记录 → 说一声。
+      final DateTime now = fixedNow();
+      // 三天前已经称过一次（带上 profile 才会走同意门那套；这里不需要）
+      await repo.save(
+        date: dayKey(now.subtract(const Duration(days: 3))),
+        weightKg: 87.2,
+        nowMs: 1000,
+      );
+      await pump(tester);
+      await tester.enterText(find.byKey(const Key('body-weight')), '86.5');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('body-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('weigh-frequency-note')), findsOneWidget,
+          reason: '一周里的第二次称重该提醒一句');
+      expect(find.textContaining('一周称两次就够'), findsOneWidget);
+      // 点掉就走（不拦保存、不改数据）
+      await tester.tap(find.byKey(const Key('weigh-frequency-ok')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('weigh-frequency-note')), findsNothing);
+      expect(await repo.forDate(dayKey(now)), isNotNull, reason: '这一条照样存进去了');
+    });
+
+    testWidgets('★ 一周里只称一次 → 不打扰', (WidgetTester tester) async {
+      await pump(tester);
+      await tester.enterText(find.byKey(const Key('body-weight')), '86.5');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('body-save')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('weigh-frequency-note')), findsNothing,
+          reason: '第一次称重不该被说教');
+    });
+
     testWidgets('单位开关在**本页**，切换后数字实时变（85.5 → 171）',
         (WidgetTester tester) async {
       // 用户的要求："体重的单位切换只能在身体数据里边出现，实时切换、实时数据变动"。
