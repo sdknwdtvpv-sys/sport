@@ -306,7 +306,12 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
       // 正中那颗圆：**先插进 labelsBox**（所以它在图标/文字下面），
       // 而 labelsBox 整层在玻璃之上 —— 两件事缺一不可。
       if emphasisIndex >= 0, emphasisIndex < count, emphasisColor != nil {
-        let d = iconSize + 20
+        // 直径与 Android 那颗对齐（`AppTabBar.centerCircleSize = 36` = iconSize + 14）——
+        // 两端是同一颗圆，只有"谁来画"不同。2026-10-08 第二遍：底栏加高到 68，
+        // 圆不再顶出上沿（用户原话："不要让中间突出去一截了"）；
+        // ⚠️ 一开始给的是 iconSize + 18（40），而胶囊上沿离栏顶还有 5pt 内缩 ——
+        // 40 那颗正好**贴着胶囊上沿**，看着像被切了一刀。36 给两端都留出呼吸。
+        let d = iconSize + 14
         emphasisCircle.frame = CGRect(x: 0, y: 0, width: d, height: d)
         emphasisCircle.backgroundColor = emphasisColor
         emphasisCircle.layer.cornerRadius = d / 2

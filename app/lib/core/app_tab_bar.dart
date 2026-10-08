@@ -40,13 +40,24 @@ class AppTabBar extends StatelessWidget {
   final ValueListenable<double>? dragIndex;
 
   /// 胶囊高度（2026-10-06 从通栏 56 改成浮动胶囊 58 —— 苹果 iOS 26 的底栏是浮起来的一块）。
-  static const double height = 58;
+  /// 底栏高度（2026-10-08 从 58 加到 **68**）。
+  ///
+  /// 用户原话（真机反馈第二遍）：「Tab 栏中间那个玻璃效果还是有问题，**直接把 Tab 栏
+  /// 变宽一点，所有的内容都包进来吧，不要让中间突出去一截了**，只在中间的图标做点文章就行」。
+  /// 所以这一版把"正中那颗凸起"整个收进底栏里：栏加高 10pt（正中那格的强调圆 + 图标 +
+  /// 文字全都落在栏内）、左右留白 12 → 8（"变宽一点"）、正中只在**图标**上做文章。
+  static const double height = 68;
 
   /// 圆角＝高度的一半 → 胶囊。iOS 26 原生的 tab bar 就是这个形状。
   static const double radius = height / 2;
 
   /// 左右与离底的留白（浮起来之后，屏幕边缘能看到内容在它两侧继续）。
-  static const double floatMargin = 12;
+  static const double floatMargin = 8;
+
+  /// 正中那颗圆的直径（只垫在**图标**下面，**完全在栏内** —— 不再有"突出去一截"）。
+  /// 直径 36：40 那颗在 iOS 的胶囊里会**贴着上沿**（胶囊上沿离栏顶还有 5pt 的内缩），
+  /// 看着像被切了一刀 —— 36 给两端都留出 2pt 以上的呼吸。两端同一个数。
+  static const double centerCircleSize = 36;
 
   /// **每屏的滚动内容底部要留出的空间**（否则最后一项会被压在玻璃下面）。
   ///
@@ -76,6 +87,36 @@ class AppTabBar extends StatelessWidget {
   /// 凸起的那一格（正中）。它的图标由 Flutter 画在一颗圆里，**不画文字标签**
   /// （Apple 那套"中间是动作、不是格子"的做法：有了文字反而像第二个 tab）。
   static const int _centerIndex = 2;
+
+  /// 正中那一格（**完全在栏内**）：强调色实心圆垫在图标下 + 深墨图标 + 文字。
+  ///
+  /// 用户原话（真机反馈第二遍）：「只在**中间的图标**做点文章就行」——
+  /// 区别只在这颗圆；文字与另外四格同一个字号、同一个位置（五格仍然等宽）。
+  Widget _centerCell(int i) => Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Container(
+            key: const Key('tab-center-icon'),
+            width: centerCircleSize,
+            height: centerCircleSize,
+            decoration: const BoxDecoration(
+              color: Tokens.accent,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(tabs[i].icon, size: 20, color: Tokens.bg),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            tabs[i].label,
+            key: const Key('tab-center-label'),
+            style: TextStyle(
+              color: i == current ? Tokens.accent : Tokens.text3,
+              fontSize: 11,
+              height: 1.2,
+            ),
+          ),
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -111,8 +152,13 @@ class AppTabBar extends StatelessWidget {
                         onTap: () => onChanged(i),
                         child: const SizedBox.expand(),
                       )
-                    // Android：圆是 Flutter 画的（`_centerAction`），热区在圆自己身上
-                    : const SizedBox.shrink(),
+                    // Android：整个格子由 Flutter 画在栏内（见 `_centerCell`）
+                    : GestureDetector(
+                        key: Key('tab-${tabs[i].label}'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onChanged(i),
+                        child: _centerCell(i),
+                      ),
               )
             else
             Expanded(
@@ -150,9 +196,9 @@ class AppTabBar extends StatelessWidget {
       ),
     );
 
-    // Android（通栏、没有玻璃）：正中那颗由 **Flutter** 画成"凸出上沿 10pt"的圆 ——
-    // 这里没有玻璃，Flutter 画的东西不会被折射。
-    if (!floating) return _withCenterAction(bar, floating: false);
+    // Android（通栏、没有玻璃）：正中那格由 **Flutter** 画，但**完全画在栏内**
+    // （那颗强调圆垫在图标下，与 iOS 原生那颗同一个意图）—— 不再"顶出上沿"。
+    if (!floating) return bar;
 
     // ⚠️ 这里不再垫 backdrop（2026-10-06 改）：外壳已把**内容铺满、底栏浮在它上面**
     // （`main.dart` 的 Stack），滚动时真实内容从玻璃后面经过 —— 这才是那个观感的来源。
@@ -206,81 +252,4 @@ class AppTabBar extends StatelessWidget {
     );
   }
 
-  /// 底栏之上那颗**凸起的圆**（正中那一格，2026-10-07 v1.60.0）。
-  ///
-  /// 为什么是"浮在上面"而不是"画在格子里"：底栏只有 58pt 高，一格还要放图标 + 文字；
-  /// 要让中间那颗"看起来是**动作**而不是格子"，就得**顶出底栏的上沿**。
-  /// 于是它不进 `Row`，而是 `Stack` 里的一层 —— 五格仍然等宽（正中那格留空），
-  /// 圆浮在正中那一格的上方。
-  ///
-  /// 两端都套这一层（Android 通栏 / iOS 玻璃胶囊），**只有玻璃的底子不同** ——
-  /// 用户的原话里没有"只在 iOS 上区别展示"这层意思。
-  Widget _withCenterAction(Widget content, {required bool floating}) => Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          content,
-          Positioned(
-            top: -10,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Semantics(
-                button: true,
-                label: tabs[_centerIndex].label,
-                child: Tooltip(
-                  message: tabs[_centerIndex].label,
-                  child: GestureDetector(
-                    // ⚠️ key 与另外四格**同一套命名**（`tab-<label>`）：正中那格就是
-                    // 「训练」那一格，只是长得不一样。这样所有"点某个 tab"的测试与
-                    // 截图脚本（`Key('tab-我')` 那种）都不用改。
-                    key: Key('tab-${tabs[_centerIndex].label}'),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onChanged(_centerIndex),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        // ⚠️ 这一格**必须有字**（「训练」）：底栏少了它，五个 tab 里就有一个
-                        // 光看图标的格子 —— 而且 `widget_test` 那条"5 个 Tab"的断言
-                        // 找的就是这五个字（它当场抓到了我第一版"中间不写字"的做法）。
-                        Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: Tokens.accent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Tokens.bg, width: 3),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: Tokens.accent.withValues(alpha: 0.35),
-                            blurRadius: 14,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                          child: Icon(
-                            tabs[_centerIndex].icon,
-                            size: 22,
-                            // 深墨字压在强调色上（与主按钮同一套：`Tokens.bg` 当"墨"用）
-                            color: Tokens.bg,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          tabs[_centerIndex].label,
-                          key: const Key('tab-center-label'),
-                          style: TextStyle(
-                            color: current == _centerIndex ? Tokens.accent : Tokens.text3,
-                            fontSize: 11,
-                            height: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
 }
