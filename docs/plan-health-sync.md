@@ -58,17 +58,18 @@
 
 ## 四、两件只能真机验证的事（**这也是"准备"的第一批动作**）
 
-1. **免费 Apple ID 能不能给 Runner 勾上 HealthKit 能力**。
-   我们现在的 iPhone 流程靠**免费签名**（7 天有效，见 `docs/ios-free-provisioning-guide.md`），
-   而 HealthKit 是一个要在 Xcode 的 Signing & Capabilities 里勾的能力。
-   我**没有**找到"免费账号可以用 HealthKit"的权威依据 —— 所以这一条**不猜**：
-   请在你那边试一次（Xcode 打开工程 → Runner → Signing & Capabilities → `+ Capability` → HealthKit），
-   看它是否能加成功、Build 是否过。
-   * 能加 → 按 §三 推进；
-   * 报权限/证书错 → 这条路要**Apple Developer Program（99 美元/年）**，
-     那就先只做 Android 侧（Health Connect 那边不需要付费）。
-   ⚠️ 顺带：现在这台机器的 Xcode **Apple ID 账号已经掉了**（免费证书也失效了），
-   这件事本来就要你先去 Xcode → Settings → Accounts 重新登录 —— 两件事可以一起做。
+1. ~~免费 Apple ID 能不能给 Runner 勾上 HealthKit 能力~~ → ✅ **已查实：可以**。
+   Apple 官方的《支持的能力（iOS）》表里，**HealthKit 这一行在 ADP / ADEP / Apple Developer
+   （免费档）三列都是勾**（[开发者账号帮助 · Supported capabilities (iOS)](https://developer.apple.com/help/account/reference/supported-capabilities-ios)），
+   所以**不需要 99 美元的会员**就能加这个能力。
+   ⚠️ 但注意同一张表里的 **`HealthKit Estimate Recalibration` 那一行免费档是空的** ——
+   那是"估算校准"这类子能力，**我们用不到**（我们只读体重/体脂/身高），别把它和 HealthKit 本体搞混。
+   ⚠️ 仍然要先解决的问题是**本机 Xcode 的 Apple ID 掉线了**（`No Accounts` +
+   证书 `may have been revoked or expired`）—— 那是 iPhone 装不上包的原因，
+   Xcode → Settings（⌘,）→ Accounts → 重新登录即可（与 HealthKit 无关，但必须先做掉）。
+   ⚠️ 加能力的**正确入口**（我们试过一次找错地方）：左栏点**最上面那个蓝色的项目图标**
+   （不是黄色文件夹）→ 编辑器左侧 TARGETS 选 **Runner** → 顶栏切到 **Signing & Capabilities**
+   → 右上角 **`+ Capability`** → 搜 `Health` → 选 **HealthKit**（不是右键菜单里找）。
 2. **乐刻到底往不往系统健康库里写体成分**。
    在 iPhone「健康」App → 右上角头像 →「隐私与安全」→「App」里找乐刻，
    看它有没有"写入"体重/体脂率这类权限。**有** → 我们读健康库就等于读到了乐刻的体测；
