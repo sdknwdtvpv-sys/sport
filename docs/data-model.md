@@ -342,7 +342,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
-**当前 `schemaVersion = 24`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+**当前 `schemaVersion = 25`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
 `tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红 —— 包括这种 `schemaVersion = 20`
 的写法，2026-10-05 之前它只认 `schema v20`，而本文档恰好用的是前者，于是**只有这份文档
 逃过了检查**：规则补上 `=` 之后当场抓到它写着 15）。
@@ -371,6 +371,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v20 | 身体数据扩展：`body_metric` 新增 `waist_cm` / `muscle_mass_kg`，`user_profile` 新增 `height_cm` | **第三次给既有表加列**（v18 之后）。老库这三列都是 **null = 没记过**（不是 0）—— 腰围 0 cm 是个有意义的值，不能拿来当"没填"。同样排在链尾、同样按"这一列有没有"判断（新库 `onCreate` 已经带着这三列，无条件 `addColumn` 会 `duplicate column name`） |
 | v21 | 新增 `streak_protection`（连续保护 / 补签，第二部分第 2 条） | 只加表。老库升上来是空的 —— **准确的历史**：这个功能出现之前谁也没补签过（也就是说，他们的连续天数从来没被补签撑过）。⚠️ 这是**唯一一张「关于历史」的用户声明**（其余一切都是训练记录的推导结果）——所以它只能新开一张表，绝不能去改 `set_record`/`workout`：**记录就是事实**。删表清单（`test/delete_all_test.dart` 的表清单守门）里它是**删** |
 | v22 | 新增 `auth_session`（登录会话，账号体系 P1-3） | 只加表。老库升上来是空的 —— **准确的历史**：升级之前这台设备没有登录过任何账号。⚠️ 里面存着账号密钥（16 字节）与**还有效的会话令牌**，所以「删除全部数据」**必须清它**（`drift_local_store.deleteAllUserData` + `delete_all_test.dart` 的表清单与种子两处都接上了）|
+| v25 | `user_profile` +`health_consent_at_ms`（**从系统健康库读取体成分**的单独同意时刻） | **加列**。老库升上来是 **null = 从没同意过 = 一次都没读过** —— 那正是准确的历史。⚠️ 它与 `body_metric_consent_at_ms` **不是同一件事**：那一列同意的是"把体重记在本机"，这一列同意的是"去读系统健康库里别人写进去的记录"（可能是体脂秤 App，也可能是医院那份）。PIPL 第 29 条要对处理目的逐项单独同意，拿一个勾盖两件事、撤回时就会连带撤回另一件 —— 所以各自一列、各自一道门、各自一条撤回路径（`ProfileRepository.setHealthConsent` / `clearHealthConsent`，互不干扰由 `app/test/health_sync_test.dart` 钉着）|
 | v24 | `user_profile` +`nickname`（昵称，10.7 清单第 7 条） | **加列**。老库升上来是 **null = 没设过**（界面如实写"还没设昵称"，不编默认名）。⚠️ 三条边界：① **纯本地** —— 不进云备份的合并键、不上报、没有分享名片；② **不是身份** —— 身份由账号 ID 承担（`account_id` 前 8 位，没登录就不显示）；③ 写入**不走 `insertOnConflictUpdate`** —— 实测那条路不会把已存在的值清成 NULL（设过"李松"再传 null，库里还是"李松"），所以"清空昵称"单独走一条精确 `update`（`ProfileRepository.setNickname`，有测试钉着） |
 | v23 | `user_profile.analytics_enabled` 的**列默认值** `0 → 1`（「帮助改进产品」默认开，2026-10-07 用户拍板） | ⚠️ **这是唯一一次"只改默认值"的迁移，而且它有意什么都不做**。三件事要连着读：① 这个默认值只在建表或缺省插入时起作用，而 drift 的 Dart 数据类把这一列当必填、每次写都显式传值 —— 老库根本用不到它；② **不搬数据**：存量机器那一位原样不动（他们当年在同意屏与政策里看到的是"默认关闭"，静默翻转等于对着旧承诺收集数据）；③ 于是语义是"**新装 = 开，存量 = 它自己那一行**"，由 `migration_test.dart` 的 v22→v23 用例钉住。判据链的另一半在 `docs/privacy-facts.json` 的 `analyticsOptIn`（事实源 ↔ `db.dart` 默认值 ↔ 中英政策正文，`privacy-audit` 每次三方对账）|
 
@@ -563,6 +564,7 @@ CREATE TABLE user_profile (
   privacy_consent_at_ms   INTEGER,              -- 政策同意的时刻（v11 加）；null = 还没同意过
   privacy_declined_at_ms  INTEGER,              -- 明确拒绝过的时刻（v12 加）；拒绝 ≠ 同意
   body_metric_consent_at_ms INTEGER,            -- 身体数据的**单独同意**（v14 加）；null = 还没问过
+  health_consent_at_ms    INTEGER,              -- **从系统健康库读取**的单独同意（v25 加）；null = 从没同意过（= 一次都没读过）
   created_at              INTEGER NOT NULL,
   updated_at              INTEGER NOT NULL
 );

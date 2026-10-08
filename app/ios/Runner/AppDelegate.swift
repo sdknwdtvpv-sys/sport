@@ -35,5 +35,11 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "GlassBridge") {
       GlassBridge.register(registrar: registrar)
     }
+    // 从系统健康库读体成分（2026-10-09）：Dart → MethodChannel → HealthKit。
+    // ⚠️ **只读不写**（`requestAuthorization(toShare: [], read: ...)`）——
+    // 政策里承诺的就是这一条，别再顺手把"写"的授权也申请上。
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HealthBridge") {
+      HealthBridge.register(messenger: registrar.messenger())
+    }
   }
 }

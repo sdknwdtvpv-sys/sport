@@ -168,6 +168,27 @@ A few clarifications:
   them**. The only path off the device is the cloud backup you enable yourself (see 2.1 and 3.3)
 - ❌ **Free text** such as workout notes or custom exercise names
 
+### 2.4 Reading from the system health store (optional, off by default)
+
+Your iPhone's Health app may already hold your body weight, body-fat percentage and height — written
+there by a smart-scale app, or by a clinic report. An optional entry on the "Body data" screen can
+merge them in, by day, **read-only**, so you do not have to copy the numbers across by hand.
+
+- **What we read**: body weight, body fat percentage, height. Heart rate, sleep, workouts and steps are
+  **never read** and never requested;
+- **Read-only — we never write back**: we request read access only and place nothing into your health store;
+- These values are **sensitive personal information**, so this needs your **separate consent** — and it is
+  a **different** consent from the body-metrics one: that one covers "we record your weight on this phone",
+  this one covers "we read what other apps wrote into the system health store". Two gates, each of which
+  you can withdraw on its own;
+- **Without that consent we do not read a single byte**: before you agree we do not even check whether
+  your health store holds anything;
+- What we read **stays on this phone** and is **never uploaded** (the only path off the device is still
+  the cloud backup you enable yourself; it is end-to-end encrypted, see 3.3). Imported days are marked
+  with a note saying "from system health";
+- You can **withdraw your consent at any time**. After that we stop reading; the days already merged in
+  are **not deleted** — you withdraw consent, not data (delete data under "All data").
+
 ---
 
 ## 3. Where the data lives and who receives it

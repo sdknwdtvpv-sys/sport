@@ -559,6 +559,127 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
     }
   }
 
+  // ⑩之六 「从系统健康库读取」（2026-10-09）：政策说法 ↔ 代码里那道门 ↔ **只读不写**。
+  //
+  // 这一条与上面那条⑩是**两道不同的门**（见 privacy-facts.json 的 healthSync._why）：
+  // ⑩管的是"把体重记在本机"，这条管的是"去读系统健康库里别人写下的记录"。
+  // 它比⑩还多一层风险：**政策说只读，代码却申请了写**——那种不一致用户看不出来，
+  // 审核也未必抓，但它让政策正文变成一句假话。所以两头都查，包括"不该出现的东西不许出现"。
+  {
+    const hs = facts.healthSync;
+    if (!hs) {
+      errors.push('privacy-facts.json 少了 healthSync —— '
+        + '这一版开始会去读系统健康库，那就必须在事实源里显式声明（读哪些、默认关、单独同意）');
+    } else if (hs.enabledInDistributedBuild) {
+      if (!policy.includes('系统健康库') && !POLICY_EN.includes('health')) {
+        errors.push('这一版接了系统健康库，但中英政策里一个字都没提 —— 收集了没说是最不能接受的一种');
+      }
+      const enLower = (existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '').toLowerCase();
+      for (const phrase of hs.enabledPhrases?.zh ?? []) {
+        if (!policy.includes(phrase)) {
+          errors.push(`健康库同步：政策正文里没有「${phrase}」`);
+        }
+      }
+      for (const phrase of hs.enabledPhrases?.en ?? []) {
+        if (!enLower.includes(phrase.toLowerCase())) {
+          errors.push(`健康库同步：英文政策里没有「${phrase}」`);
+        }
+      }
+      for (const phrase of hs.policyPhrases?.zh ?? []) {
+        if (!policy.includes(phrase)) {
+          errors.push(`健康库同步（单独同意）：政策正文里没有「${phrase}」`);
+        }
+      }
+      for (const phrase of hs.policyPhrases?.en ?? []) {
+        if (!enLower.includes(phrase.toLowerCase())) {
+          errors.push(`健康库同步（单独同意）：英文政策里没有「${phrase}」`);
+        }
+      }
+      // 逐项点名"读的是哪三样"（"收集了没说"的另一种形式：读的类型比政策写的多）
+      for (const t of hs.reads?.zh ?? []) {
+        if (!policy.includes(t)) errors.push(`健康库同步：政策正文里没有点名读「${t}」`);
+      }
+      for (const t of hs.reads?.en ?? []) {
+        if (!enLower.includes(t.toLowerCase())) {
+          errors.push(`健康库同步：英文政策里没有点名读「${t}」`);
+        }
+      }
+
+      // 代码那一半：那道同意、那条撤回、那个桥、以及"读之前先看同意"
+      const dbSrc = readFileSync(join(ROOT, 'app/lib/data/db.dart'), 'utf8');
+      if (!/IntColumn get healthConsentAtMs\b/.test(dbSrc)) {
+        errors.push('政策声明了"读系统健康库要单独同意"，但 db.dart 里找不到那条记录'
+          + '（healthConsentAtMs）—— 这条跨文件检查已经失效，别当成通过');
+      }
+      const screenPath = join(ROOT, 'app/lib/features/body/body_metric_screen.dart');
+      const screenSrc = existsSync(screenPath) ? readFileSync(screenPath, 'utf8') : '';
+      if (!/Key\('health-consent-agree'\)/.test(screenSrc)) {
+        errors.push('「身体数据」页里找不到健康库那道单独同意（health-consent-agree）—— '
+          + '政策承诺了要单独征求同意，代码里就必须有它');
+      }
+      if (!/Key\('health-revoke'\)/.test(screenSrc)) {
+        errors.push('政策里承诺了"随时可以撤回同意"，但页面上找不到健康库那条撤回入口'
+          + "（Key('health-revoke')）—— 撤回权不能只写在政策里");
+      }
+      const repoPath = join(ROOT, 'app/lib/data/profile_repository.dart');
+      const repoSrc = existsSync(repoPath) ? readFileSync(repoPath, 'utf8') : '';
+      if (!/Future<void> clearHealthConsent\(/.test(repoSrc)) {
+        errors.push('找不到 clearHealthConsent —— 撤回入口必须真的能把同意清掉');
+      } else if (!/UserProfileCompanion\(/.test(repoSrc)) {
+        errors.push('clearHealthConsent 没有用 Companion 写 null —— drift 对 DataClass 是 '
+          + 'nullToAbsent，那样写出来是"点了撤回，同意还在"');
+      }
+      const bridgePath = join(ROOT, 'app/lib/health/health_bridge.dart');
+      if (!existsSync(bridgePath)) {
+        errors.push('政策说会从系统健康库读，但 app/lib/health/health_bridge.dart 不存在');
+      } else if (!/MethodChannel\('lianleme\/health'\)/.test(readFileSync(bridgePath, 'utf8'))) {
+        errors.push("health_bridge.dart 里的通道名不是 'lianleme/health' —— "
+          + '平台那一端的实现会对不上（通道名对不上时是**静默**降级成"没有健康库"，最难查）');
+      }
+      const servicePath = join(ROOT, 'app/lib/health/health_sync.dart');
+      const serviceSrc = existsSync(servicePath) ? readFileSync(servicePath, 'utf8') : '';
+      if (!/healthConsentAtMs\(\)/.test(serviceSrc)) {
+        errors.push('health_sync.dart 里没有"先把那道同意读出来再决定读不读"这一步 —— '
+          + '政策承诺的是"不同意就一个字节都不读"，这句承诺由这里兑现');
+      }
+
+      // **只读不写**：政策这么写，代码就不许申请写权限。两头都查 ——
+      // iOS 侧 toShare 必须是空数组，Info.plist 里不许出现"写"的用法说明。
+      const swiftPath = join(ROOT, 'app/ios/Runner/HealthBridge.swift');
+      const swiftSrc = existsSync(swiftPath) ? readFileSync(swiftPath, 'utf8') : '';
+      if (!swiftSrc) {
+        errors.push('docs 说 iPhone 上能读系统健康库，但 app/ios/Runner/HealthBridge.swift 不存在');
+      } else if (!/toShare:\s*\[\]/.test(swiftSrc)) {
+        errors.push('HealthBridge.swift 的 requestAuthorization 没有把 toShare 写成空数组 —— '
+          + '政策写的是"只读不写"，代码里申请写权限就是另一回事了');
+      }
+      const plistPath = join(ROOT, 'app/ios/Runner/Info.plist');
+      const plistSrc = existsSync(plistPath) ? readFileSync(plistPath, 'utf8') : '';
+      // ⚠️ 判据要认**真的 plist 键**，不是"这个字符串出现过" ——
+      // Info.plist 里那段注释正是在解释"为什么我们**不**写这一条"，
+      // 用纯字符串匹配会把那条解释本身判成违规（第一次跑就踩了）。
+      if (/<key>\s*NSHealthUpdateUsageDescription\s*<\/key>/.test(plistSrc)) {
+        errors.push('Info.plist 里出现了 NSHealthUpdateUsageDescription（写回健康库的用法说明）—— '
+          + '政策承诺的是"只读、不写回"，写了这一条就是在向用户申请一件我们不做的事');
+      }
+      if (!/<key>\s*NSHealthShareUsageDescription\s*<\/key>/.test(plistSrc)) {
+        errors.push('Info.plist 里没有 NSHealthShareUsageDescription —— '
+          + '没有它，iOS 上请求读健康数据会直接失败（而政策说我们会读）');
+      }
+    } else if (hs.disabledStatement) {
+      // 没接这一版的包：政策必须写明"本版本没有从系统健康库读取"，
+      // 否则用户会以为"没看到入口"是自己没找到。
+      if (!policy.includes(hs.disabledStatement.zh)) {
+        errors.push(`政策里没有写明「${hs.disabledStatement.zh}」`
+          + '（这一版的包并没有从系统健康库读取的能力）');
+      }
+      const enLower = (existsSync(POLICY_EN) ? readFileSync(POLICY_EN, 'utf8') : '').toLowerCase();
+      if (!enLower.includes(String(hs.disabledStatement.en).toLowerCase())) {
+        errors.push(`英文政策里没有写明「${hs.disabledStatement.en}」`);
+      }
+    }
+  }
+
   // ⑪ 「导出统计事件」：政策说法 ↔ 代码里真的有那个出口，两头都要在。
   //
   // 为什么单列一条：这个入口把**埋点事件原样交给用户**，是唯一能把 `tap_count`

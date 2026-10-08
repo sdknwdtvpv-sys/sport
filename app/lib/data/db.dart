@@ -263,6 +263,18 @@ class UserProfile extends Table {
   /// 政策里对应的说法由 `docs/privacy-facts.json` 的 `sensitiveLocal` 与硬门禁对账。
   IntColumn get bodyMetricConsentAtMs => integer().nullable()();
 
+  /// **从系统健康库（HealthKit / Health Connect）读取体成分的单独同意时刻**。
+  /// null = 还没单独同意过 —— 也就是**一次都没读过**。
+  ///
+  /// 为什么不复用上面那一列（2026-10-09）：两者同意的是**两件不同的事**。
+  /// 前者的范围是"我们把你的身体数据**记在本机**（并按你自己的选择随加密备份离开设备）"；
+  /// 后者是"我们**去读系统健康库里别人写进去的记录**"（可能是体脂秤 App 写的，
+  /// 也可能是医院那份）。PIPL 第 29 条要求对**处理目的、方式、种类**逐项单独同意 ——
+  /// 拿一个勾盖住两件事，撤回时就会连带撤回另一件，两道门都成了空话。
+  /// 所以各自一列、各自一道门、各自一条撤回路径。
+  /// 政策里对应的说法由 `docs/privacy-facts.json` 的 `healthSync` 与硬门禁对账。
+  IntColumn get healthConsentAtMs => integer().nullable()();
+
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
 
@@ -583,8 +595,11 @@ class AppDatabase extends _$AppDatabase {
   /// 的默认 0 → 1（「帮助改进产品」默认开，用户拍板）。
   /// ⚠️ **这一版不搬任何数据、也不重建任何表**：那个默认值只对"还没有那一行"的机器
   /// （= 新装）生效；**存量机器那一位原样不动**（迁移链尾那段写明了为什么）。
+  /// v25（2026-10-09）：`user_profile` +`health_consent_at_ms`（**从系统健康库读取体成分**
+  /// 的单独同意时刻）。**加列**，老库升上来是 null = 从没同意过 = 一次都没读过 ——
+  /// 那正是准确的历史：这个功能出现之前，这台设备没读过任何健康库里的东西。
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -824,6 +839,14 @@ class AppDatabase extends _$AppDatabase {
           // `duplicate column name`）。
           if (from < 24) {
             await addIfMissing(userProfile, userProfile.nickname);
+          }
+
+          // v24 → v25：`user_profile` 加一列「从系统健康库读取体成分的单独同意时刻」。
+          // **只加列**，老库升上来是 null = 从没同意过 = 一次都没读过。
+          // ⚠️ 与 v20 / v24 同一个纪律：新库由 `onCreate` 建表时已经带着这一列，
+          // 所以迁移里要先看库里有没有它（无条件 addColumn 会 `duplicate column name`）。
+          if (from < 25) {
+            await addIfMissing(userProfile, userProfile.healthConsentAtMs);
           }
         },
       );

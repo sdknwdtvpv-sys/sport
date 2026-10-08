@@ -110,6 +110,24 @@ Apple 对 "collect" 的定义是"把数据传出设备、且你能在实时服�
 3. **没有追踪**：没有广告 SDK、没有 IDFA、不做跨 App 关联 → "Used for Tracking" 全部选**否**，
    因此**不需要** App Tracking Transparency 弹窗。
 
+### HealthKit（从系统健康库读体成分）该怎么申报（2026-10-09 加）
+
+**结论：App Privacy 表里它不进"收集"，但审核备注与政策必须写清楚。** 三条要连着看：
+
+1. **读进来的东西不出设备**：体重 / 体脂率 / 身高从 HealthKit 读进本机数据库，
+   **一条都不发给我们的服务器**（唯一会离开设备的路径是用户自己开的云备份，那份是密文）。
+   Apple 的定义里"不离开设备的数据不算收集"，所以 App Privacy 表**不新增"收集"行**；
+2. **但它必须在隐私政策里写清楚** —— 我们的政策 §2.4 就是这么写的
+   （只读哪三样、只读不写回、单独同意、不上传、随时可撤）。
+   `tool/privacy-audit.mjs` 每次对账"政策说法 ↔ 代码里那道门 ↔ Info.plist 的用法说明"；
+3. **审核备注里要主动说清用途**（见 §五）：HealthKit 只用于把体重/体脂率/身高并进本机记录，
+   **不用于广告、不用于营销、不出售、不与第三方共享** —— 这是 Apple 对 HealthKit 的硬要求，
+   少说一句就可能被追问。⚠️ 也别在审核备注里承诺"我们会写回健康库"：我们只读
+   （`requestAuthorization(toShare: [])`），Info.plist 里**故意没有** `NSHealthUpdateUsageDescription`。
+
+⚠️ **Android 那端（Health Connect）还没接**（见 `docs/plan-health-sync.md` §七）：
+那边要多填一张 Play 的**健康数据申报**表，等真接上再填，别提前勾。
+
 ### 出口合规（App Store Connect 会问，而且这是**法律声明**）
 
 **先说清性质**：这一栏不是技术填空，是**出口合规声明**，责任在开发者/公司（exporter）身上 ——

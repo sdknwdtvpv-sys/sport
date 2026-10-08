@@ -219,6 +219,11 @@ function collectionList() {
       + '共享清单会变成空的，宁可报错也不写出一个空清单');
   }
 
+  // 章节编号用**计数器**（2026-10-09 改）。原来是 `【${facts.account?.collectsEmail ? 3 : 2}】`
+  // 这种三元表达式散在各处 —— 中间插一节就要把后面每一处都改一遍，漏一处就是"编号重复"。
+  let sectionNo = 0;
+  const nextSection = () => ++sectionNo;
+
   const L = [];
   L.push('练了么 · 个人信息收集清单 与 第三方共享清单');
   L.push('');
@@ -233,7 +238,7 @@ function collectionList() {
   // 现在标题就是标题：层级由 `collection_list_screen.dart` 按行样式给（它是唯一读者）。
   L.push('一、个人信息收集清单');
   L.push('');
-  L.push('【1】本应用的核心功能不收集任何个人信息');
+  L.push(`【${nextSection()}】本应用的核心功能不收集任何个人信息`);
   L.push('');
   L.push('  记训练、看进步、算渐进建议 —— 全部在本机完成，离线可用，**不需要注册**、');
   L.push('  不需要联网、不需要任何权限。这些数据只存在你手机的私有数据库里，');
@@ -244,7 +249,7 @@ function collectionList() {
   // 才会给我们。文里那几句与政策 §3.4 同源，facts.account 里也钉着对应的说法
   // （`tool/privacy-audit.mjs` 会核）。
   if (facts.account?.collectsEmail) {
-    L.push('【2】账号（可选）：只有你自己注册时，才会收集邮箱');
+    L.push(`【${nextSection()}】账号（可选）：只有你自己注册时，才会收集邮箱`);
     L.push('');
     L.push('  不注册也能用全部功能。账号的用途只有一个：换手机时用邮箱与口令登回来，');
     L.push('  取回你自己开启的那份加密备份。');
@@ -261,7 +266,7 @@ function collectionList() {
   // v23 开），写死的那一版当场就变成了假话。现在它跟着事实源渲染 ——
   // 事实源改一处，这份清单与应用内政策一起跟着走（`--check` 会拦住没重新生成的那次）。
   const analyticsOn = facts.analyticsOptIn?.defaultOn === true;
-  L.push(`【${facts.account?.collectsEmail ? 3 : 2}】唯一可能收集的其余信息：匿名使用统计`
+  L.push(`【${nextSection()}】唯一可能收集的其余信息：匿名使用统计`
     + `（默认${analyticsOn ? '开启' : '关闭'}）`);
   L.push('');
   L.push('  开关位置：「我 → 隐私与关于 → 帮助改进产品」。');
@@ -288,11 +293,27 @@ function collectionList() {
   L.push('  收集频率：与你的操作同步；本机队列上限 10000 条，超出按优先级丢弃。');
   L.push('  保存期限：见《隐私政策》§六（我们只保留聚合后的统计结果）。');
   L.push('');
-  L.push(`【${facts.account?.collectsEmail ? 4 : 3}】我们不收集的东西`);
+  // 从系统健康库读取（2026-10-09）。它放在"不收集的东西"之前，因为它是**会拿到数据**的一节 ——
+  // 审核员与用户读这份清单时要能一眼看到"从哪来的、读什么、去哪了"。
+  // ⚠️ 文案与政策 §2.4 同源；`privacy-facts.json` 的 healthSync 是那一半事实源。
+  if (facts.healthSync?.enabledInDistributedBuild === true) {
+    L.push(`【${nextSection()}】从系统健康库读取（可选，默认关）`);
+    L.push('');
+    L.push('  这是一个**可选**的数据来源：从系统健康库（iPhone 的「健康」）读体重、体脂率、身高，');
+    L.push('  按天并进「身体数据」，省得你两头抄。');
+    L.push('  读取范围：**只读**体重、体脂率、身高三样。心率、睡眠、运动记录、步数一次都不读，也不申请。');
+    L.push('  只读不写：我们不会往你的健康库里写任何东西。');
+    L.push('  用途：给你自己看长期变化（身高只用来算 BMI）。');
+    L.push('  保存位置：只落在这台手机的私有数据库里，**不上传**（唯一会离开设备的路径是你自己开启的云备份，那份是密文）。');
+    L.push('  单独同意：这几样属于敏感个人信息，需要你**单独同意**；不同意就一个字节都不读。');
+    L.push('  删除与撤回：随时可以撤回同意（撤回后不再读，已经并进来的那些天不会被删掉）；要删数据请去「全部数据」。');
+    L.push('');
+  }
+  L.push(`【${nextSection()}】我们不收集的东西`);
   L.push('');
   for (const n of facts.neverCollected ?? []) L.push(`    · 不收集：${n}`);
   L.push('');
-  L.push(`【${facts.account?.collectsEmail ? 5 : 4}】设备权限`);
+  L.push(`【${nextSection()}】设备权限`);
   L.push('');
   for (const perm of facts.permissions ?? []) {
     const scope = perm.maxSdkVersion ? `仅 API ≤ ${perm.maxSdkVersion}` : '全部版本';

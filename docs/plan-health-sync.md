@@ -122,3 +122,48 @@
 * ❌ 后台/定时同步
 * ❌ 心率、睡眠、运动记录（训练记录我们自己有，Apple 那边是 Workout 类型，语义对不上）
 * ❌ 与乐刻做任何"账号级对接"（它没有公开 API，见 `docs/plan-ux-2026-10-08-b.md` §三·5）
+
+## 七、落地情况（2026-10-09 更新：**iOS 做完了，Android 还没做**）
+
+**做完了的（iPhone）**：
+
+* 合规先落地：`docs/privacy-facts.json` 新增 `healthSync` 块；中英政策各新增 §2.4
+  「从系统健康库读取（可选）」；`tool/privacy-audit.mjs` 新增 ⑩之六 把三头对起来
+  （政策说法 ↔ 代码里那道单独同意与撤回入口 ↔ **只读不写**：Swift 里 `toShare` 必须是空数组、
+  Info.plist 里不许出现写回用的用法说明）；应用内「个人信息收集清单」多一节；
+  两张商店表单各加一行/一节；
+* 权限：`NSHealthShareUsageDescription`（**故意不写** `NSHealthUpdateUsageDescription`）；
+  HealthKit 能力早在 v1.65 前那一版就挂进工程了（`Runner.entitlements`），
+  免费 Apple ID 也签过（见 §四·1 的真机证据）；
+* 代码：`app/lib/health/health_bridge.dart`（通道 `lianleme/health`）、
+  `app/lib/health/health_sync.dart`（**先看同意、再碰平台**；按本地日分组，每个字段取那天最新值）、
+  `app/ios/Runner/HealthBridge.swift`（HealthKit 只读三样）；
+  合并规则落在 `BodyMetricRepository.mergeHealthDays`（同一个事务；
+  **我们的字段不覆盖**，只补缺的；那天只有系统有就新建并写备注「来自系统健康」；
+  **用户删过的那天不复活**）；
+* 同意门：`user_profile.health_consent_at_ms`（schema **v25**），
+  页面上的入口 `Key('health-sync-entry')`、同意框 `health-consent`、撤回 `health-revoke`；
+* 测试：`app/test/health_sync_test.dart` 22 条（含"**没同意时桥一次都没被调用**"、
+  "两道门互不干扰"、"安卓上这个入口根本不出现"）。
+
+**还没做的（Android / Health Connect）—— 不是忘了，是三个具体障碍**：
+
+1. **要动 `minSdk`**：`androidx.health.connect:connect-client` 要求 minSdk **26**，
+   而我们现在是 24（Android 7.0）。这是**产品决定**（等于放弃 Android 7 的用户），
+   得先拍板，不能顺手改；
+2. **要新增一个 Gradle 依赖**：`app/android/app/build.gradle.kts` 现在**连
+   `dependencies {}` 块都没有**；而 2026-10-09 试了一下，`maven.google.com` 这台机器上
+   拉不动（超时）—— 装不上依赖就没法编、更没法验；
+3. **没有可验的对象**：Health Connect 里得有体成分数据才有得读，而我们还没有
+   能往系统健康库写体成分的 App（乐刻到底写不写，见 §四·2，还没查）。
+
+**所以这一版的行为是**：Android 上**这个入口根本不出现**（`defaultTargetPlatform` 判断，
+`app/test/health_sync_test.dart` 有一条专门钉着）—— 宁可没有，也不给一个点下去什么都读不到的入口。
+接 Android 时要做的事：抬 minSdk → 加依赖 → 写 `HealthBridge.kt` →
+manifest 加 `android.permission.health.READ_WEIGHT` / `READ_BODY_FAT_PERCENTAGE` / `READ_HEIGHT` →
+填 Play 的**健康数据申报**（入口与要求在 `docs/store-listing.md` §五那一节里）→
+权限说明里带上隐私政策 URL。
+
+**还没验的那一件事**（真机上）：从 iPhone「健康」里真的读到数、并进来、显示出来。
+代码与构建都验过了（模拟器编译 + 真机安装），但"健康库里有数据 → 并进本机"这一步
+需要健康库里**真的躺着**体成分记录（§四·2 那件事查完才知道有没有）。

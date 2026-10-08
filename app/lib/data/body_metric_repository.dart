@@ -21,6 +21,61 @@ String dayKey(DateTime d) {
   return '${d.year}-$m-$day';
 }
 
+/// 从系统健康库写进 `note` 的那句话 —— **来源必须留痕**。
+///
+/// 为什么非留不可：用户哪天把权限撤了、或者过半年回头看，得能一眼分辨
+/// "这个 72.5 是我自己称的，还是体脂秤 App 写进健康库、我们抄过来的"。
+/// 写进 `note` 而不是单开一列（2026-10-09 的取舍）：`body_metric` 加一列要动
+/// schema、动备份格式（`kBackupFormat` 是长期稳定的形状），而 `note` 本来就会
+/// 跟着备份走、本来就会在「最近记录」里显示。**代价说清楚**：这一句话占的是
+/// 用户自己的备注栏，他改掉或删掉之后这个痕迹就没了 —— 所以合并**从不覆盖**
+/// 用户已有的备注（见 [BodyMetricRepository.mergeHealthDays]）。
+const String kHealthNote = '来自系统健康';
+
+/// 健康库给**某一天**的体成分值（导入的输入）。身高不在这里 ——
+/// 它不是每日指标，存在档案里，由 `ProfileRepository.setHeightCm` 单独处理。
+class HealthDayValues {
+  const HealthDayValues({required this.date, this.weightKg, this.bodyFatPct});
+
+  /// `YYYY-MM-DD`（本地日），与库里的业务键同一个口径（[dayKey]）。
+  final String date;
+  final double? weightKg;
+  final double? bodyFatPct;
+
+  /// 至少有一个值才算"有内容"：只有日期的空壳不该被写进库。
+  bool get hasContent => weightKg != null || bodyFatPct != null;
+}
+
+/// 一次导入的**逐日结果**。界面照它如实报数：
+/// 不许把"跳过 N 天"说成"没有那天"，也不许把"补了一个字段"说成"新记了一天"。
+class HealthMergeReport {
+  const HealthMergeReport({
+    this.days = 0,
+    this.created = 0,
+    this.filled = 0,
+    this.unchanged = 0,
+    this.skipped = 0,
+  });
+
+  /// 一共处理了几天。
+  final int days;
+
+  /// 我们原本**没有**那天 → 新建了一条。
+  final int created;
+
+  /// 那天已经有记录，我们**缺的字段**被补上了（"我们的字段不覆盖"）。
+  final int filled;
+
+  /// 那天已经有记录，系统里有的我们都有 → 一个字没动。
+  final int unchanged;
+
+  /// 看了但没动的其它情况：系统那天没值、或者那条记录**被用户删过**（不复活）。
+  final int skipped;
+
+  /// 真正被这次导入改动的天数（新建 + 补齐）。
+  int get touched => created + filled;
+}
+
 class BodyMetricRepository {
   BodyMetricRepository(this._db);
 
@@ -113,6 +168,100 @@ class BodyMetricRepository {
         );
 
     return (await forDate(date))!;
+  }
+
+  /// 把系统健康库的值**按天合并**进来（`docs/plan-health-sync.md` §三④）。
+  ///
+  /// 三条规则，每条都有理由：
+  ///
+  ///  1. **那天我们自己记过 → 我们的字段一个都不覆盖**，只补"我们缺的"。
+  ///     体重与体脂**分开看**（只缺体脂就只补体脂）。`note` **永远不动**：
+  ///     那是用户自己写的东西，我们凭什么替他改。
+  ///  2. **那天只有系统有 → 新建一条，`note` 写 [kHealthNote]**（来源留痕，见那个常量）。
+  ///  3. **整批在同一个事务里** —— 中途失败就整批回滚，不留"一半进来一半没进来"
+  ///     （那会让用户对着一个说不清来源的库）。
+  ///
+  /// ⚠️ **不用 [save]**：它把每个字段都写成显式的 `Value(x)`，传 null 就是**擦掉**旧值
+  /// （`note` 与 `deletedAt` 也会被一起重写）—— 那是"覆盖"，不是"合并"。
+  ///
+  /// ⚠️ **被用户软删除过的那天不复活**：`forDate` 会把它查出来（那是给"重新录入同一天"
+  /// 用的），但我们不在用户删过的东西上做手脚 —— 记进 `skipped`，界面上会如实说
+  /// "有 N 天没动"。
+  Future<HealthMergeReport> mergeHealthDays(
+    List<HealthDayValues> days, {
+    int? nowMs,
+  }) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    int created = 0;
+    int filled = 0;
+    int unchanged = 0;
+    int skipped = 0;
+
+    await _db.transaction(() async {
+      for (int i = 0; i < days.length; i++) {
+        final HealthDayValues d = days[i];
+        if (!d.hasContent) {
+          skipped++;
+          continue;
+        }
+        final BodyMetricData? existing = await forDate(d.date);
+
+        if (existing == null) {
+          // id 里带上日期：一批里 now 是同一个值，只用 `bm_$now` 会撞成一模一样。
+          await _db.into(_db.bodyMetric).insertOnConflictUpdate(
+                BodyMetricCompanion(
+                  id: Value<String>('bm_${now}_${i}_${d.date}'),
+                  date: Value<String>(d.date),
+                  weightKg: Value<double?>(d.weightKg),
+                  bodyFatPct: Value<double?>(d.bodyFatPct),
+                  waistCm: const Value<double?>(null),
+                  muscleMassKg: const Value<double?>(null),
+                  note: const Value<String?>(kHealthNote),
+                  updatedAt: Value<int>(now),
+                  deletedAt: const Value<int?>(null),
+                ),
+              );
+          created++;
+          continue;
+        }
+
+        if (existing.deletedAt != null) {
+          skipped++;
+          continue;
+        }
+
+        final double? weight = existing.weightKg ?? d.weightKg;
+        final double? bodyFat = existing.bodyFatPct ?? d.bodyFatPct;
+        if (weight == existing.weightKg && bodyFat == existing.bodyFatPct) {
+          unchanged++;
+          continue;
+        }
+
+        await _db.into(_db.bodyMetric).insertOnConflictUpdate(
+              BodyMetricCompanion(
+                id: Value<String>(existing.id),
+                date: Value<String>(existing.date),
+                weightKg: Value<double?>(weight),
+                bodyFatPct: Value<double?>(bodyFat),
+                waistCm: Value<double?>(existing.waistCm),
+                muscleMassKg: Value<double?>(existing.muscleMassKg),
+                // 用户的备注原样带回去 —— 合并**从不**碰它
+                note: Value<String?>(existing.note),
+                updatedAt: Value<int>(now),
+                deletedAt: Value<int?>(existing.deletedAt),
+              ),
+            );
+        filled++;
+      }
+    });
+
+    return HealthMergeReport(
+      days: days.length,
+      created: created,
+      filled: filled,
+      unchanged: unchanged,
+      skipped: skipped,
+    );
   }
 
   /// 软删除某一天。训练数据不留白，身体数据同理 —— 误删还能查回来。

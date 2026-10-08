@@ -87,6 +87,14 @@
 	     把 album: kShareAlbumName 写回代码，门禁就红。 -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>把训练总结卡片存进你的相册。我们只写入这一张图，不会读取你相册里的任何内容。</string>
+	<!-- 从系统健康库读体成分（2026-10-09）。
+	     ⚠️ 只有"读"这一句 —— **故意不写 NSHealthUpdateUsageDescription**：
+	     我们一个字都不写回健康库（代码里是 requestAuthorization(toShare: [])），
+	     写了那一句等于向用户申请一件我们不做的事。
+	     这句话会在系统授权弹窗里原样显示给用户，所以它必须与政策正文同一个口径：
+	     只读体重/体脂率/身高、只在本机、默认关、随时可撤（见 docs/privacy-policy.md 那一节）。 -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>读取你健康里的体重、体脂率和身高，用来给「身体数据」页补上你自己没记的那些天。只读不写，数据只留在这台手机上，随时可以关掉。</string>
 	<!-- App Store 的加密合规问题：只用了系统标准的 HTTPS，属于豁免范围，声明 false
 	     即可，否则每次提审都要回答出口合规问卷。 -->
 	<key>ITSAppUsesNonExemptEncryption</key>

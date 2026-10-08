@@ -420,6 +420,78 @@
       "test": "app/test/body_consent_test.dart（撤回清空同意 / 历史一条不删 / 点「算了」不动 / 撤回后重新问）"
     }
   },
+  "healthSync": {
+    "enabledInDistributedBuild": true,
+    "_why": "2026-10-09 起，正式包在 iPhone 上多了一条**可选**的数据来源：从系统健康库（HealthKit）读体重 / 体脂率 / 身高，按天并进本机「身体数据」。它与其他来源都不同的一点：**数据不是用户给我们的，是我们去别的 App 写下的地方读**（可能是体脂秤 App、可能是医院那份），所以 PIPL 第 29 条要求**单独同意**，而且必须说清读的是哪几样、用来干什么、会不会传出去。开关默认关：不同意就一个字节都不读（这条由 app/test/health_sync_test.dart 的「没同意时桥一次都没被调用」钉着）。tool/privacy-audit.mjs 会按这个块双向核对：中英政策必须出现 policyPhrases，代码里必须有那道同意（schema v25 的 user_profile.health_consent_at_ms）与那条撤回入口，而且**政策说只读、代码里就不许出现写的授权**（Info.plist 里出现 NSHealthUpdateUsageDescription 就判红）。",
+    "_endpoint": "无 —— 这一版**没有任何服务端**：读进来只落在本机的 body_metric 表里（要离开设备只有一种方式：用户自己开的云备份，且那份是密文）",
+    "_platforms": "iOS（HealthKit）已接；**Android（Health Connect）还没接** —— 那一版要动 minSdk 并新增一个 Gradle 依赖，见 docs/plan-health-sync.md §七。没接的那一端入口不出现，不给做不到的承诺。",
+    "disabledStatement": {
+      "zh": "本版本还没有从系统健康库读取",
+      "en": "This version does not read from the system health store"
+    },
+    "enabledPhrases": {
+      "zh": [
+        "系统健康库",
+        "只读",
+        "单独同意",
+        "随时可以撤回",
+        "不上传"
+      ],
+      "en": [
+        "system health store",
+        "read-only",
+        "separate consent",
+        "withdraw your consent at any time",
+        "never uploaded"
+      ]
+    },
+    "reads": {
+      "_why": "读的就这三样，多一样都不申请。**心率 / 睡眠 / 运动记录一律不读** —— 那是另一个目的，要另一次同意。这一段由 privacy-audit.mjs 检查：政策正文必须逐项点名，而 iOS 那份 Swift 里必须真的只 forIdentifier 了这三个类型。",
+      "zh": [
+        "体重",
+        "体脂率",
+        "身高"
+      ],
+      "en": [
+        "body weight",
+        "body fat percentage",
+        "height"
+      ]
+    },
+    "neverReads": {
+      "zh": "心率、睡眠、运动记录、步数，以及健康库里任何与体成分无关的东西 —— 一次都不读，也不申请",
+      "en": "heart rate, sleep, workouts, steps, and anything else in the health store that is not body composition — never read, never requested"
+    },
+    "gate": {
+      "where": "app/lib/features/body/body_metric_screen.dart::_ensureHealthConsent",
+      "storedAt": "user_profile.health_consent_at_ms（schema v25）",
+      "test": "app/test/health_sync_test.dart"
+    },
+    "policyPhrases": {
+      "_why": "政策正文里必须出现的说法。中英各一份，由 privacy-audit.mjs 逐条查。",
+      "zh": [
+        "敏感个人信息",
+        "单独同意",
+        "只读",
+        "撤回",
+        "不写回"
+      ],
+      "en": [
+        "sensitive personal information",
+        "separate consent",
+        "read-only",
+        "withdraw",
+        "we never write"
+      ]
+    },
+    "revoke": {
+      "where": "app/lib/features/body/body_metric_screen.dart::_revokeHealthConsent（入口 Key('health-revoke')）",
+      "whatItDoes": "清空 user_profile.health_consent_at_ms（撤回同意），**不删任何已经读进来的数据** —— 撤回的是同意，不是数据",
+      "repository": "ProfileRepository.clearHealthConsent（必须用 Companion + Value(null)：drift 对 DataClass 是 nullToAbsent）",
+      "test": "app/test/health_sync_test.dart（撤回后不再读 / 两道门互不干扰）"
+    },
+    "_readOnlyWhy": "**只读不写**不只是产品选择，也是合规口径：政策里写「只读」，代码里就不能申请写权限。所以 iOS 侧 `requestAuthorization(toShare: [], read: ...)` 的 toShare 必须是空数组，Info.plist 里也不许出现 NSHealthUpdateUsageDescription —— 两条都由 privacy-audit.mjs 核。"
+  },
   "account": {
     "_why": "账号体系（2026-10-06，P1-3）。形态是**可选**：不注册也能用全部功能，注册只是\"想要云备份 / 换手机能找回\"的人主动走的那条路。这一块是机器可核的那一半：tool/privacy-audit.mjs 会要求两版政策出现下面的说法，tool/check-store-forms.mjs 会拿它去核两张商店表单里\"邮箱\"那一行有没有如实填，tool/gen-privacy-page.mjs 会把它写进应用内的收集清单。改这里之前先想清楚代价。",
     "optional": true,

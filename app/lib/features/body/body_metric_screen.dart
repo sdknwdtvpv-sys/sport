@@ -14,6 +14,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,6 +31,8 @@ import '../../analytics/analytics.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/db.dart';
 import '../../data/profile_repository.dart';
+import '../../health/health_bridge.dart';
+import '../../health/health_sync.dart';
 
 /// `Color` → `#RRGGBB`（原生按这个解析；`GlassSegmented` 的原生字色用它）
 String _hexOf(Color c) {
@@ -48,6 +51,7 @@ class BodyMetricScreen extends StatefulWidget {
     this.clock,
     this.onSaved,
     this.onUnitChanged,
+    this.healthBridge,
   });
 
   final BodyMetricRepository repository;
@@ -74,6 +78,16 @@ class BodyMetricScreen extends StatefulWidget {
 
   /// 保存后回调，让上一页刷新（「我」和「进步」都要显示体重）
   final VoidCallback? onSaved;
+
+  /// **从系统健康库读体成分**那座桥（2026-10-09）。
+  ///
+  /// ⚠️ 只有 **iPhone** 这一版接了（HealthKit）。安卓那一端还没接
+  /// （Health Connect 要动 minSdk 并新增一个 Gradle 依赖，见 `docs/plan-health-sync.md` §七），
+  /// 所以别的平台上**这个入口根本不出现** —— 不给一个做不到的承诺。
+  ///
+  /// 传值规则：显式传了就用传进来的（测试用假桥）；没传时按平台决定 ——
+  /// iPhone 上自动建一座真桥，其它平台没有入口。
+  final HealthBridge? healthBridge;
 
   @override
   State<BodyMetricScreen> createState() => _BodyMetricScreenState();
@@ -113,6 +127,15 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   /// 用户那边表现为"提示框后面卡住了"。所以这段时间渲染一块**静态**占位。
   bool _consentPending = false;
   bool _saving = false;
+
+  /// 「从系统健康库读取」那道**单独同意**在不在（2026-10-09）。
+  ///
+  /// 与 `_consentPending` 是两件事：那一道管"记在本机"，这一道管"去读系统里别人写下的记录"。
+  /// 只有同意过才显示那条撤回入口 —— 没同意过就没什么可撤回的。
+  bool _healthConsented = false;
+
+  /// 正在读健康库（入口那一行显示转圈，避免连点两次）。
+  bool _healthBusy = false;
 
   DateTime get _now => (widget.clock ?? DateTime.now)();
 
@@ -240,6 +263,243 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     Navigator.of(context).maybePop();
   }
 
+  // ══ 从系统健康库读体成分（2026-10-09）════════════════════════════════════
+  //
+  // 这一整块与上面那道"身体数据"的单独同意是**两道不同的门**，别把它们合成一道：
+  //   * bodyMetricConsent  → "我们把你的体重记在这台手机上"
+  //   * healthConsent      → "我们去读系统健康库里别人写下的记录"
+  // 目的不同、种类不同、撤回也该各撤各的（PIPL 第 29 条要的就是逐项同意）。
+  // 判据在 `docs/privacy-facts.json` 的 `healthSync`，由 tool/privacy-audit.mjs 每次对账。
+
+  /// 这一版接了系统健康库的平台。安卓那边还没接（见 [HealthBridge] 的注释）。
+  HealthBridge? get _healthBridge {
+    if (widget.healthBridge != null) return widget.healthBridge;
+    return defaultTargetPlatform == TargetPlatform.iOS
+        ? const MethodChannelHealthBridge()
+        : null;
+  }
+
+  /// 过"读系统健康库"这道门。返回 true = 可以往下读。
+  Future<bool> _ensureHealthConsent() async {
+    final ProfileRepository? profile = widget.profile;
+    if (profile == null) return false;
+    if (await profile.healthConsentAtMs() != null) {
+      if (mounted) setState(() => _healthConsented = true);
+      return true;
+    }
+    if (!mounted) return false;
+    final bool? agree = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('读系统健康库要单独征得你同意',
+            style: TextStyle(color: Tokens.text)),
+        content: const Text(
+          // ⚠️ 这里同样**不能**写 markdown 的星号：`Text` 不渲染 markdown。
+          '「系统健康库」就是 iPhone 上那个「健康」App。这里读的只有'
+          '体重、体脂率、身高三样 —— 心率、睡眠、运动记录一次都不读，也不申请。\n\n'
+          '· 只读，不写回：我们一个字都不会写进你的健康库；\n'
+          '· 按《个人信息保护法》，这几样属于敏感个人信息，要单独征求你的同意 —— '
+          '它与「身体数据」那道门是两件事：那一道管"记在这台手机上"，'
+          '这一道管"去读系统里别人写下的记录"；\n'
+          '· 不同意就一个字节都不读；\n'
+          '· 读进来的数只落在这台手机上，不上传（只有你自己开的云备份会带走它们，'
+          '那份是端到端加密的密文）；\n'
+          '· 随时可以撤回：撤回之后不再读，已经并进来的那些天不会被删掉。',
+          key: Key('health-consent'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('health-consent-decline'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('先不用', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('health-consent-agree'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('同意并读取',
+                style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+    if (agree != true) return false;
+    await profile.setHealthConsent();
+    if (mounted) setState(() => _healthConsented = true);
+    return true;
+  }
+
+  /// 点那一行的完整流程：过门 → 读 → 合并 → 如实报数。
+  Future<void> _healthSync() async {
+    final HealthBridge? bridge = _healthBridge;
+    final ProfileRepository? profile = widget.profile;
+    if (bridge == null || profile == null || _healthBusy) return;
+
+    if (!await _ensureHealthConsent()) return;
+    if (!mounted) return;
+    setState(() => _healthBusy = true);
+
+    final HealthSyncOutcome out = await HealthSyncService(
+      bridge: bridge,
+      bodyMetrics: widget.repository,
+      profile: profile,
+      clock: widget.clock,
+    ).sync();
+
+    if (!mounted) return;
+    setState(() => _healthBusy = false);
+    // 并进来的天要立刻看得见（摘要、最近记录、趋势都靠 _load 刷新）
+    await _load();
+    if (!mounted) return;
+    widget.onSaved?.call();
+    await _showHealthResult(out);
+  }
+
+  /// 如实报数：新增几天 / 补了几天 / 几天没动 / 几天跳过。
+  Future<void> _showHealthResult(HealthSyncOutcome out) async {
+    final HealthMergeReport? r = out.report;
+    final String body;
+    switch (out.status) {
+      case HealthSyncStatus.imported:
+        final StringBuffer b = StringBuffer();
+        b.write('从系统健康读到 ${out.samples} 条记录。\n\n');
+        b.write('· 新记了 ${r?.created ?? 0} 天；\n');
+        b.write('· 补上了 ${r?.filled ?? 0} 天缺的项；\n');
+        b.write('· ${r?.unchanged ?? 0} 天本来就有，没动；\n');
+        // ⚠️ 只说"没动"不说为什么，用户会以为失败 —— 所以把两种原因都写出来
+        b.write('· ${r?.skipped ?? 0} 天没动'
+            '（你删过的那天不会复活，系统里没数的天也不会凭空记一条）。\n');
+        if (out.heightFilledCm != null) {
+          b.write('\n身高补上了 ${trimNumber(round1(out.heightFilledCm!))} cm。');
+        }
+        final int touched = r?.touched ?? 0;
+        if (touched == 0) {
+          b.write('\n\n你自己记的那些天一个都没被改动。');
+        } else {
+          b.write('\n\n你自己记过的字段一个都没被覆盖，只补了缺的那些。');
+        }
+        body = b.toString();
+      case HealthSyncStatus.empty:
+        body = '健康库里没有找到体重、体脂率或身高。\n\n'
+            '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
+            '可以去iPhone 的「健康」App 里看看有没有数据。';
+      case HealthSyncStatus.denied:
+        body = '没有拿到读取健康数据的许可。\n\n'
+            '你可以在系统「设置 → 隐私与安全性 → 健康 → 练了么」里打开，再回来试一次。';
+      case HealthSyncStatus.unavailable:
+        body = '这台设备上没有可用的系统健康库。';
+      case HealthSyncStatus.noConsent:
+        body = '还没有同意读取系统健康库。';
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('同步结果', style: TextStyle(color: Tokens.text)),
+        content: Text(
+          body,
+          key: const Key('health-result'),
+          style: const TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('health-result-ok'),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('知道了', style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 撤回"读系统健康库"的同意。
+  ///
+  /// 与「身体数据」那条撤回**不一样的一点**：这里撤回之后**不退页** ——
+  /// 这一页本身不是为健康库读而存在的，退了反而让人以为数据也没了。
+  Future<void> _revokeHealthConsent() async {
+    final ProfileRepository? profile = widget.profile;
+    if (profile == null) return;
+    final bool? yes = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('撤回后不再读系统健康库',
+            style: TextStyle(color: Tokens.text)),
+        content: const Text(
+          '撤回的是「同意」，不是数据：\n\n'
+          '· 之后再点「从系统健康同步」会重新问你一次；\n'
+          '· 你不同意之前，不会再从健康库读任何东西；\n'
+          '· 已经并进来的那些天不会被删掉 —— 要删请去「全部数据」。',
+          key: Key('health-revoke-note'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('health-revoke-no'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('算了', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('health-revoke-yes'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('撤回', style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await profile.clearHealthConsent();
+    if (!mounted) return;
+    setState(() => _healthConsented = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已撤回：下次点「从系统健康同步」会重新问你')),
+    );
+  }
+
+  /// 入口那一行。**只有同意过才显示撤回入口**（没同意过就没什么可撤回的）。
+  Widget _healthSyncCard() {
+    return ViCard(
+      child: InkWell(
+        key: const Key('health-sync-entry'),
+        onTap: _healthBusy ? null : _healthSync,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: Tokens.s4, vertical: Tokens.s3),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.favorite_outline, size: 20, color: Tokens.accent),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text('从系统健康同步',
+                        style: TextStyle(color: Tokens.text, fontSize: 15)),
+                    const SizedBox(height: 2),
+                    Text(
+                      '只读体重、体脂率、身高 · 可选',
+                      style: TextStyle(color: Tokens.text3, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              _healthBusy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _weight.dispose();
@@ -257,11 +517,14 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
 
   Future<void> _load() async {
     final double? height = await widget.profile?.heightCm();
+    final bool healthConsented =
+        await widget.profile?.healthConsentAtMs() != null;
     final List<BodyMetricData> recent = await widget.repository.recent();
     if (!mounted) return;
     setState(() {
       _recent = recent;
       _heightCm = height;
+      _healthConsented = healthConsented;
       // 摘要块看的是**最近一条有体重的记录**（`recent` 已按日期倒序）
       _latest = recent.isEmpty ? null : recent.first;
       if (height != null) _height.text = trimNumber(round1(height));
@@ -700,6 +963,15 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                       const SizedBox(height: Tokens.s5),
                     ],
 
+                    // 从系统健康库同步（2026-10-09，可选）。
+                    // 放在摘要下面、正式录入之前 —— 它是"把别处已有的数拿过来"，
+                    // 与"现在记一组"是两件事，所以单独一张卡，不混进输入区。
+                    // ⚠️ 别的平台（安卓）还没有这一端，入口**根本不出现**。
+                    if (_healthBridge != null && widget.profile != null) ...<Widget>[
+                      _healthSyncCard(),
+                      const SizedBox(height: Tokens.s5),
+                    ],
+
                     // ══ 记这一天的 ═════════════════════════════════════════
                     //
                     // ⚠️ **2026-10-08（10.8 第二批第 3 条）重排**：用户原话是
@@ -813,6 +1085,40 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                                 height: 1.6,
                               ),
                             ),
+                            // 健康库那道同意单独一条（只在他真的同意过之后才出现）：
+                            // 两道门各自撤回 —— 把它们并成一个按钮，用户就分不清
+                            // 自己撤掉的到底是哪一件事。
+                            if (_healthConsented) ...<Widget>[
+                              const SizedBox(height: Tokens.s3),
+                              TextButton(
+                                key: const Key('health-revoke'),
+                                onPressed: _revokeHealthConsent,
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 32),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  foregroundColor: Tokens.text2,
+                                ),
+                                child: const Text(
+                                  '撤回「读系统健康」的同意',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: Tokens.s1),
+                              const Text(
+                                key: Key('health-revoke-caption'),
+                                '撤回后不再从系统健康库读取，下次点「从系统健康同步」会重新问你；'
+                                '已经并进来的那些天不会被删掉。',
+                                style: TextStyle(
+                                  color: Tokens.text3,
+                                  fontSize: 12,
+                                  height: 1.6,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

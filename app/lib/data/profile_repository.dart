@@ -61,6 +61,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -161,6 +163,8 @@ class ProfileRepository {
             defaultRestSec: existing?.defaultRestSec ?? 90,
             analyticsEnabled: enabled,
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -216,6 +220,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -274,6 +280,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -318,6 +326,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -365,6 +375,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -409,6 +421,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -449,6 +463,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             privacyConsentAtMs: existing?.privacyConsentAtMs ?? now,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -491,6 +507,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs ?? now,
@@ -539,6 +557,75 @@ class ProfileRepository {
     return row?.privacyDeclinedAtMs;
   }
 
+  // ── 「从系统健康库读取体成分」那道单独同意（v25，2026-10-09）──────────────────
+  //
+  // 三件事与身体数据那道门同构，但**是另一道门**：同意的是"去读系统健康库里
+  // 别人写进去的记录"，不是"把体重记在本机"。详见 `db.dart` 里
+  // `healthConsentAtMs` 的注释与 `docs/plan-health-sync.md`。
+
+  /// 读那道同意的时刻；null = 从没同意过（= 一次都没读过健康库）。
+  Future<int?> healthConsentAtMs() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.healthConsentAtMs;
+  }
+
+  /// 记下"他单独同意过去读系统健康库"。
+  ///
+  /// 形状照抄 [setBodyMetricConsent]：**每个 setter 都必须把已有字段原样带回去**，
+  /// 否则 `insertOnConflictUpdate` 会把整行覆盖掉、把别的设置抹了。
+  Future<void> setHealthConsent({int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileData(
+            userId: kLocalUserId,
+            progressionMode: existing?.progressionMode ?? 'double',
+            unitPref: existing?.unitPref ?? 'kg',
+            bodyWeightUnit: existing?.bodyWeightUnit ?? 'kg',
+            defaultRestSec: existing?.defaultRestSec ?? 90,
+            analyticsEnabled: existing?.analyticsEnabled ?? analyticsDefaultOn,
+            nickname: existing?.nickname,
+            privacyConsentAtMs: existing?.privacyConsentAtMs,
+            privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
+            bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
+            healthConsentAtMs: existing?.healthConsentAtMs ?? now,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// **撤回**"去读系统健康库"的同意（PIPL 第 15 条给的是撤回权，不只是删除权）。
+  ///
+  /// 撤回只做一件事：把那条同意记录清成 null —— 于是下次点「从系统健康同步」时
+  /// **重新弹那道门**（不再读），而**已经拉进来的体重数据一个字都不动**：
+  /// 删数据是另一件事，由用户在「全部数据」里单独决定。
+  ///
+  /// ⚠️ **必须用 Companion + `Value(null)`**（理由与 [clearBodyMetricConsent] 那段完全一样：
+  /// drift 对 `UserProfileData` 是 `nullToAbsent: true`，写 null 会被当成"这次没提供"
+  /// 而跳过这一列 —— 效果是"点了撤回，同意还在"）。
+  Future<void> clearHealthConsent({int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    if (existing == null) return;
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileCompanion(
+            userId: Value<String>(kLocalUserId),
+            healthConsentAtMs: const Value<int?>(null),
+            createdAt: Value<int>(existing.createdAt),
+            updatedAt: Value<int>(now),
+          ),
+        );
+  }
+
   /// 记下"用户选择了不同意"。
   ///
   /// ⚠️ **这不是同意**，两列各自为真：同意过就写 [setPrivacyConsent]，拒绝过就写这里。
@@ -561,6 +648,8 @@ class ProfileRepository {
             // 可空列在 insertOnConflictUpdate 里会被写成 null —— 昵称必须原样带回来，
             // 否则「改一下单位，昵称就没了」（与上面那几列同一个坑，v24 新加的列也要接上）
             nickname: existing?.nickname,
+            // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
+            healthConsentAtMs: existing?.healthConsentAtMs,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs ?? now,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,

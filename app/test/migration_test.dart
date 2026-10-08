@@ -618,4 +618,51 @@ void main() {
     expect(fresh.read, isTrue,
         reason: '没有那一行 → 读到的就是这一版改的默认值（开）');
   });
+
+  test('v24 的库升到 v25：多出"从系统健康库读取"那道同意列，老库是 null（所以要再问一次）',
+      () async {
+    // 这一列与"身体数据那道单独同意"**不是同一件事**：它同意的是"去读系统健康库里
+    // 别人写进去的记录"。老库升上来必须是 null —— 那正是准确的历史：
+    // 这个功能出现之前，这台设备没有读过任何健康库里的东西。
+    // 于是老用户第一次点「从系统健康同步」时会被单独问一次。
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 24);
+        raw.execute(legacySeedProfileSql); // 里面 unit_pref = 'lb'
+      }),
+    );
+    expect(await ProfileRepository(legacy).healthConsentAtMs(), isNull,
+        reason: '老库没读过健康库，这一列必须是 null，不能替他默认同意');
+
+    await ProfileRepository(legacy).setHealthConsent(nowMs: 777);
+    expect(await ProfileRepository(legacy).healthConsentAtMs(), 777);
+    expect(await ProfileRepository(legacy).unit(), WeightUnit.lb,
+        reason: '迁移与写入都不能把已有的设置抹掉');
+
+    final cols = await legacy
+        .customSelect("SELECT name FROM pragma_table_info('user_profile')")
+        .get();
+    expect(cols.map((r) => r.read<String>('name')),
+        contains('health_consent_at_ms'));
+
+    await legacy.close();
+  });
+
+  test('老库里**没有** health_consent_at_ms —— fixture 本身也要守着', () async {
+    // 防"有人把 fixture 改成当前 schema"，那样上面那条迁移测试就变成空转。
+    late List<String> colsBefore;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 24);
+        colsBefore = raw
+            .select("SELECT name FROM pragma_table_info('user_profile')")
+            .map<String>((row) => row['name'] as String)
+            .toList();
+      }),
+    );
+    await ProfileRepository(legacy).healthConsentAtMs(); // 打开库（setup 是懒执行的）
+    expect(colsBefore, isNot(contains('health_consent_at_ms')),
+        reason: 'v24 的老库不该有这一列，否则上面那条迁移测试是空转');
+    await legacy.close();
+  });
 }
