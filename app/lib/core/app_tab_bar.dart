@@ -11,17 +11,10 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:flutter/foundation.dart';
 
-import 'glass_segmented.dart';
 import 'glass_surface.dart';
+import 'native_tab_bar.dart';
 import 'theme.dart';
-
-/// `Color` → `#RRGGBB`（原生按这个解析；不写死十六进制，免得与调色板漂）
-String _hexOf(Color c) {
-  final int v = c.toARGB32() & 0xFFFFFF;
-  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
-}
 
 
 class AppTabBar extends StatelessWidget {
@@ -29,15 +22,10 @@ class AppTabBar extends StatelessWidget {
     super.key,
     required this.current,
     required this.onChanged,
-    this.dragIndex,
   });
 
   final int current;
   final ValueChanged<int> onChanged;
-
-  /// 手指左右拖页面时的**连续位置**（小数页号）；`null` = 没人在拖。
-  /// 传进玻璃里，那颗胶囊就**跟着手指滑**而不是跳格（见 `GlassSegmented.dragIndex`）。
-  final ValueListenable<double>? dragIndex;
 
   /// 胶囊高度（2026-10-06 从通栏 56 改成浮动胶囊 58 —— 苹果 iOS 26 的底栏是浮起来的一块）。
   /// 底栏高度（2026-10-08 从 58 加到 **68**）。
@@ -96,6 +84,18 @@ class AppTabBar extends StatelessWidget {
   /// （Apple 那套"中间是动作、不是格子"的做法：有了文字反而像第二个 tab）。
   static const int _centerIndex = 2;
 
+  /// 五个 Tab 的 SF Symbol（**只有 iOS 的原生底栏用**）。
+  ///
+  /// 为什么用 SF Symbol 而不是 Material 图标：那是系统底栏的语汇，
+  /// VoiceOver、选中态的字重变化、可选的字形都与系统一致（v1.61 起就这么做了）。
+  static const List<String> _sfSymbols = <String>[
+    'chart.line.uptrend.xyaxis',
+    'chart.bar.fill',
+    'dumbbell.fill',
+    'calendar',
+    'person',
+  ];
+
   /// 正中那一格（**完全在栏内**）：一个**大一号的强调色图标** + 文字。
   ///
   /// 用户原话（真机反馈第二遍）：「只在**中间的图标**做点文章就行」；
@@ -124,138 +124,89 @@ class AppTabBar extends StatelessWidget {
         ],
       );
 
+  /// **苹果原生的 `UITabBar`**（2026-10-09，用户：「我想要苹果原生的 uitabbar」）。
+  ///
+  /// iOS 上底栏从"自己画一块 `UIGlassEffect`"换成系统那个真的 `UITabBar` ——
+  /// 外观走 `UITabBarAppearance`、触摸/无障碍/长按自定义都由系统负责。
+  /// 代价如实写在这里（细节见 `core/native_tab_bar.dart` 的文件头）：
+  ///   * 五格**一视同仁** —— 原生的 `UITabBarItem` 没有"某一格更大"，
+  ///     所以 v1.66.0 第 2b 条那颗"正中放大 + 强调色"在 iOS 上没有了；
+  ///   * **离散选中**：原来"手指拖页面时胶囊跟手滑"（`dragIndex`）没有对应 API
+  ///     —— 那个参数已经删掉了，页面照样能拖（Flutter 的 `PageView`），底栏松手后跳过去；
+  ///   * 它只是 `UITabBar`、不是 `UITabBarController`，所以 iOS 26 那套"浮动胶囊 +
+  ///     滚动自动收起"还拿不到（那要换整个外壳，见 `native_tab_bar.dart` §1）。
+  Widget _nativeBar() => NativeTabBar(
+        height: height,
+        spec: nativeTabBarSpec(
+          labels: <String>[for (final ({IconData icon, String label}) t in tabs) t.label],
+          icons: _sfSymbols,
+          selectedIndex: current,
+        ),
+        // ⚠️ 选中由**原生**回给这里，然后交给外壳（`onChanged`）——
+        // 不要在本地自己改 `current`：真源在外壳的 `_tab`。
+        onSelected: onChanged,
+      );
+
   @override
   Widget build(BuildContext context) {
-    // **只给 iOS 浮动 + 玻璃**（2026-10-06 用户拍板：A 路线、仅 iOS）。
-    // Android 走 else 那一支：通栏、贴底、保留 1px 顶边线 —— 与以前**一个像素都不差**。
-    final bool floating = GlassSurface.isSupportedPlatform;
+    // **iOS：苹果原生的 `UITabBar`**（2026-10-09 用户点名要的）。
+    // Android 走下面那一支 Flutter 画法：通栏、贴底、保留 1px 顶边线 ——
+    // **一个像素都不动**（这一条从 v1.61 起就没变过）。
+    //
+    // ⚠️ iOS 那一支换掉之后，这一支里**所有** iOS 分支（浮动、玻璃、跟手胶囊、
+    // 正中那颗强调圆）都成了死代码 —— 一并删掉，别留着让人以为还在用。
+    // 想看"以前 iOS 长什么样"：`git show v1.66.0:app/lib/core/app_tab_bar.dart`
+    // 与 `docs/images/glass-probe-segment-variants.png`。
+    if (GlassSurface.isSupportedPlatform) return _nativeBar();
 
-    final Widget bar = Container(
+    return Container(
       key: const Key('tab-bar'),
       height: height,
-      decoration: BoxDecoration(
-        // iOS：胶囊、无线（玻璃自己的边缘高光就是分隔）；Android：保持原样
-        borderRadius: floating ? BorderRadius.circular(radius) : null,
-        border: floating ? null : const Border(top: BorderSide(color: Tokens.line)),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Tokens.line)),
       ),
       child: Row(
         children: <Widget>[
           for (int i = 0; i < tabs.length; i++)
-            // ⚠️ 正中那一格**不画图标与文字**（它们由 `_centerAction` 或原生那层画），
-            // 但**两种平台都要占满一格** —— 五格等宽全靠它：少一格会让"计划/我的"
-            // 整体左移，一眼就不齐。
+            // 正中那一格由 Flutter 画（`_centerCell`），五格仍然等宽 ——
+            // 少一格会让"计划/我的"整体左移，一眼就不齐。
             if (i == _centerIndex)
               Expanded(
-                child: floating
-                    // iOS：圆与图标由**原生**画在玻璃之上（见 `emphasisIndex`），
-                    // 但**点击仍然由 Flutter 这一层接**（`UiKitView` 的
-                    // `gestureRecognizers` 是空集合，所以触摸穿透到 Flutter）。
-                    // 所以这里要留一个**透明但可点**的热区，key 与另外四格同一套命名 ——
-                    // 少了它，iOS 上"点正中那颗训练"就点不动，按 key 找它的测试也会红。
-                    ? GestureDetector(
-                        key: Key('tab-${tabs[i].label}'),
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => onChanged(i),
-                        child: const SizedBox.expand(),
-                      )
-                    // Android：整个格子由 Flutter 画在栏内（见 `_centerCell`）
-                    : GestureDetector(
-                        key: Key('tab-${tabs[i].label}'),
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => onChanged(i),
-                        child: _centerCell(i),
-                      ),
+                child: GestureDetector(
+                  key: Key('tab-${tabs[i].label}'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onChanged(i),
+                  child: _centerCell(i),
+                ),
               )
             else
-            Expanded(
-              child: InkWell(
-                key: Key('tab-${tabs[i].label}'),
-                onTap: () => onChanged(i),
-                // iOS：**不要 Material 的水波纹/高亮** —— 那里的按压反馈是
-                // "那块玻璃鼓起来、亮一档"（原生的手感，见 `GlassSegmented`）。
-                // 一层涟漪盖在玻璃上，既不是苹果的样子，也会把玻璃的形变糊掉。
-                // Android 保持原样（水波纹是那边的语言）。
-                splashFactory: floating ? NoSplash.splashFactory : null,
-                highlightColor: floating ? Colors.transparent : null,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Icon(
-                      tabs[i].icon,
-                      size: iconsize,
-                      color: i == current ? Tokens.accent : Tokens.text3,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      tabs[i].label,
-                      style: TextStyle(
+              Expanded(
+                child: InkWell(
+                  key: Key('tab-${tabs[i].label}'),
+                  onTap: () => onChanged(i),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                        tabs[i].icon,
+                        size: iconsize,
                         color: i == current ? Tokens.accent : Tokens.text3,
-                        fontSize: 11,
-                        height: 1.2,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        tabs[i].label,
+                        style: TextStyle(
+                          color: i == current ? Tokens.accent : Tokens.text3,
+                          fontSize: 11,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
         ],
       ),
     );
-
-    // Android（通栏、没有玻璃）：正中那格由 **Flutter** 画，但**完全画在栏内**
-    // （那颗强调圆垫在图标下，与 iOS 原生那颗同一个意图）—— 不再"顶出上沿"。
-    if (!floating) return bar;
-
-    // ⚠️ 这里不再垫 backdrop（2026-10-06 改）：外壳已把**内容铺满、底栏浮在它上面**
-    // （`main.dart` 的 Stack），滚动时真实内容从玻璃后面经过 —— 这才是那个观感的来源。
-    //
-    // 用 **`GlassSegmented` 而不是 `GlassSurface`**：底栏要的是
-    // **"底托 + 选中那一格的胶囊"两块玻璃**（用户 2026-10-06 拍板要这个）。
-    // 底栏的 5 格本来就是 `Expanded`（等分），正好符合"条目必须等宽"这个前提。
-    //
-    // ⚠️ 这两块是**各自独立**的玻璃，**故意不进 `UIGlassContainerEffect`**：
-    // 那个容器会把叠在一起的两块抹平成一块 —— 真机上就变成了"切 tab 完全没有玻璃的感觉"
-    // （2026-10-06 你的原话）。逐行对比见 `docs/images/glass-probe-segment-variants.png`。
-    //
-    // 材质：底托 `.regular`；选中胶囊同样 `.regular` + **一点白（12%）**，
-    // 因为玻璃底托本身就比屏幕亮，选中那块要再亮一档才读得出来（苹果也是这么做的）。
-    return GlassSegmented(
-      key: const Key('glass-tab-bar'),
-      count: tabs.length,
-      index: current,
-      radius: radius,
-      style: GlassStyle.regular,
-      // 胶囊往里缩 5pt：这条缝就是"凸起来的那块"与底托的分界
-      pillInset: 5,
-      dragIndex: dragIndex,
-      // 字与图标交给原生画（玻璃**里面**）：Flutter 那份在玻璃背后，会被折射出第二份虚影。
-      // ⚠️ 2026-10-08（v1.61.0）改：正中那一格**不再传空串** ——
-      // 它的圆也交给原生画（`emphasisIndex`），理由是同一个：
-      // Flutter 画的圆会落在玻璃**背后**，被折射成一层发灰的虚影
-      // （用户 10.8 清单第 1 条「tab 栏的训练 玻璃效果 bug」就是这么来的）。
-      labels: <String>[for (final ({IconData icon, String label}) t in tabs) t.label],
-      icons: const <String>[
-        'chart.line.uptrend.xyaxis',
-        'chart.bar.fill',
-        'dumbbell.fill',
-        'calendar',
-        'person',
-      ],
-      // 正中那一格：**不再画圆**（2026-10-09，10.9 清单第 2b 条）——
-      // 只把它的图标交给原生画成"大一号 + 强调色"。两端现在是**同一个意图**：
-      // 中间与其余四格同一种线性图标，只差大小与一点颜色。
-      // ⚠️ `emphasisColor` 特意**不传**：传了原生就会插一颗实心圆（见 `GlassBridge.swift`）。
-      emphasisIndex: _centerIndex,
-      emphasisIconSize: centerIconSize,
-      emphasisIconColor: _hexOf(Tokens.accent),
-      selectedColor: _hexOf(Tokens.accent),
-      unselectedColor: _hexOf(Tokens.text3),
-      labelFontSize: 11,
-      iconSize: iconsize,
-      // 按住不放、横向拖到别格再松手 = 换 tab（`changes` 幂等，与点击那条路不冲突）
-      onDragSelect: onChanged,
-      child: bar,
-    );
   }
-
 }

@@ -35,6 +35,12 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "GlassBridge") {
       GlassBridge.register(registrar: registrar)
     }
+    // **苹果原生的 `UITabBar`**（2026-10-09，用户：「我想要苹果原生的 uitabbar」）：
+    // Dart → UiKitView → 系统那个真的 UITabBar（外观走 UITabBarAppearance）。
+    // ⚠️ 与 GlassBridge 一样，platform view 的 factory 只能通过 registrar 注册。
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "NativeTabBarBridge") {
+      NativeTabBarBridge.register(registrar: registrar)
+    }
     // 从系统健康库读体成分（2026-10-09）：Dart → MethodChannel → HealthKit。
     // ⚠️ **只读不写**（`requestAuthorization(toShare: [], read: ...)`）——
     // 政策里承诺的就是这一条，别再顺手把"写"的授权也申请上。

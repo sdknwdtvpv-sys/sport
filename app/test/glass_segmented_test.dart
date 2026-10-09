@@ -18,7 +18,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/app_tab_bar.dart';
 import 'package:lianleme/core/glass_segmented.dart';
-import 'package:lianleme/core/glass_surface.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/core/vi_cards.dart';
 
@@ -187,63 +186,35 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets('★ 底栏：iOS 走"底托 + 独立选中胶囊"，五格就是 count=5、圆角=高度的一半',
+  testWidgets('★ 底栏：iOS 走**苹果原生的 UITabBar**（2026-10-09 起，不再自己画玻璃）',
       (WidgetTester tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    // 手指拖页面时喂进来的"小数页号"（外壳的 PageController 持有它）
-    final ValueNotifier<double> drag = ValueNotifier<double>(-1);
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-        body: AppTabBar(current: 2, onChanged: (int _) {}, dragIndex: drag),
+        body: AppTabBar(current: 2, onChanged: (int _) {}),
       ),
     ));
 
-    final GlassSegmented seg =
-        tester.widget<GlassSegmented>(find.byType(GlassSegmented));
-    expect(seg.count, AppTabBar.tabs.length);
-    expect(seg.count, 5);
-    expect(seg.index, 2);
-    expect(seg.radius, AppTabBar.height / 2, reason: '胶囊 = 高度的一半');
-    expect(seg.style, GlassStyle.regular);
-    expect(seg.pillInset, 5, reason: '底栏的选中胶囊也要缩进去一点才看得出是凸的一块');
-    expect(seg.pillTint, isNull, reason: '底栏那颗默认全透明（靠着图标颜色与边缘高光读形状）');
-    expect(seg.pillStyle, GlassStyle.clear, reason: '鼓起来那颗必须透得过去');
-    expect(seg.pressBulge, 14, reason: '按下去的幅度 —— 小了就没有 Q 弹的手感');
-    // ★ 底栏的字与图标必须**交给原生画**（否则会在玻璃上出现折射重影），
-    // 且图标是 SF Symbol 那一组
-    expect(seg.labels, isNotNull);
-    expect(seg.labels!.length, 5);
-    expect(seg.icons, isNotNull);
-    expect(seg.icons!.length, 5);
-    // ⚠️ 2026-10-07（v1.60.0）：图标顺序跟着 tab 顺序变了（「训练」挪到正中）。
-    // ⚠️ **2026-10-08（v1.61.0）又改了正中那一格的画法**：v1.60.0 我把它交给
-    // Flutter 画（传空串），结果那颗圆落在**玻璃背后**、被折射成一层发灰的虚影 ——
-    // 用户 10.8 清单第 1 条「tab 栏的训练 玻璃效果 bug」说的就是它。
-    // 现在正中也交给原生画（`emphasisIndex`），圆与另外四格的字在**同一层**（玻璃之上）。
-    expect(seg.icons, contains('chart.line.uptrend.xyaxis'));
-    expect(seg.icons![2], 'dumbbell.fill', reason: '正中那格也要原生画图标');
-    expect(seg.labels![2], '训练', reason: '正中那格也要原生画文字（否则底栏少一个词）');
-    expect(seg.emphasisIndex, 2, reason: '正中被点亮的那一格 = 训练（下标 2）');
-    // ⚠️ 2026-10-09（10.9 清单第 2b 条）：**不再传 `emphasisColor`** ——
-    // 传了原生会插一颗实心圆，而那正是用户说"太割裂"的东西。
-    // 现在正中只靠"大一号 + 强调色"，两个数都要真的传下去。
-    expect(seg.emphasisColor, isNull, reason: '不许再画实心圆');
-    expect(seg.emphasisIconSize, AppTabBar.centerIconSize,
-        reason: '正中那颗要更大一号 —— 这是去掉圆之后仅剩的区分手段');
-    expect(seg.emphasisIconColor, isNotNull, reason: '一点强调色：正中那颗永远用强调色');
-    // 拖动信号必须**一路传到玻璃组件**（外壳 → AppTabBar → GlassSegmented）：
-    // 断了的话页面照样能拖，但底下那颗玻璃会跳格 —— 看起来就是"不跟手"。
-    expect(seg.dragIndex, same(drag), reason: '那条"跟手"的线就靠它');
-    // 五个格子仍然各是各的热区（原生的胶囊只是"画"在下面）
-    for (final String label in <String>['训练', '进步', '数据', '计划', '我的']) {
-      expect(find.byKey(Key('tab-$label')), findsOneWidget);
-    }
-    // ⚠️ 尺寸也要有：玻璃那层外面是个 Stack，而 Stack 的尺寸靠**非定位子项**决定 ——
-    // 若哪天把内容也包成 `Positioned.fill`，Stack 会算不出自己的大小（真机上直接抛断言，
-    // 而"能找到 key"的断言照样全绿）。这条是 2026-10-06 真机 integration test 抓到的。
-    final Size bar = tester.getSize(find.byKey(const Key('glass-tab-bar')));
-    expect(bar.height, AppTabBar.height);
-    expect(bar.width, greaterThan(0));
+    // ⚠️ 这条用例原来钉的是"底栏走 GlassSegmented（底托 + 独立选中胶囊）"——
+    // 2026-10-09 用户点名要「苹果原生的 uitabbar」，底栏换成真的 `UITabBar`
+    // （`NativeTabBar` → 平台视图 `lianleme/native_tab_bar`）。
+    // 所以判据也换了：**不许再有 GlassSegmented**，而平台视图的创建参数要对得上
+    // （原生按这些名字取值，写错了界面上就是一条空底栏、而且不报错 ——
+    // 与 `GlassSegmented` 那几条同一个道理）。
+    expect(find.byType(GlassSegmented), findsNothing,
+        reason: '底栏不再自己画玻璃了（那颗"正中放大 + 强调色"也随之没有了）');
+
+    final UiKitView view = tester.widget<UiKitView>(find.byType(UiKitView));
+    expect(view.viewType, 'lianleme/native_tab_bar');
+    final Map<Object?, Object?> args = view.creationParams! as Map<Object?, Object?>;
+    expect((args['labels']! as List<Object?>).length, AppTabBar.tabs.length);
+    expect((args['icons']! as List<Object?>).length, AppTabBar.tabs.length);
+    expect(args['selectedIndex'], 2, reason: '当前那一格 = 训练（下标 2）');
+    // 颜色走 `#RRGGBB`（原生按这个解析），两端同一套 Tokens
+    expect(args['selectedColor'], isA<String>());
+    expect((args['selectedColor']! as String).startsWith('#'), isTrue);
+    expect(args['unselectedColor'], isA<String>());
+
     debugDefaultTargetPlatformOverride = null;
   });
 

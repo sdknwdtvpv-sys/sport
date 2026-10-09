@@ -243,19 +243,10 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 手指拖到哪儿了（小数页号）—— 底栏那颗玻璃**跟着手指滑**就是靠它喂。
   /// `-1` = 没人在拖（胶囊停在整格上）。
-  final ValueNotifier<double> _glassDrag = ValueNotifier<double>(-1);
-
-  /// 正在跑"点 tab 换页"的动画。**这段时间里不喂拖动位置** ——
-  /// 那趟动画由原生弹簧自己走（见 `GlassSegmented`），两边同时驱动会打架、看起来是抖。
-  bool _tapPaging = false;
-
-  void _onPageScrolled() {
-    if (_tapPaging || !_pages.hasClients) return;
-    final double? p = _pages.page;
-    if (p == null) return;
-    _glassDrag.value = p;
-  }
-
+  // ⚠️ 2026-10-09：`_glassDrag`（喂给"跟手滑的玻璃胶囊"的连续页号）**已删** ——
+  // 底栏换成苹果原生的 `UITabBar` 之后，那个胶囊不存在了，原生控件也不支持
+  // "选中态跟着手指连续移动"（见 `core/native_tab_bar.dart` §3）。
+  // 页面照样能左右拖（那是 `PageView`），只是底栏松手后跳过去。
   /// 点底栏换 tab：图标颜色**立刻**变（不然要等动画跑完，手感会钝），
   /// 页面滑过去，玻璃由原生弹簧接管。
   void _selectTab(int i) {
@@ -263,16 +254,10 @@ class _HomeShellState extends State<HomeShell> {
     final int from = _tab;
     setState(() => _tab = i);
     if (!GlassSurface.isSupportedPlatform) return;
-    _tapPaging = true;
     // 远的 tab 给长一点的时间（不然四页在 300ms 里一闪而过）
-    _pages
-        .animateToPage(i,
-            duration: Duration(milliseconds: 260 + 90 * (i - from).abs()),
-            curve: Curves.easeOutCubic)
-        .whenComplete(() {
-      _tapPaging = false;
-      _glassDrag.value = -1;
-    });
+    _pages.animateToPage(i,
+        duration: Duration(milliseconds: 260 + 90 * (i - from).abs()),
+        curve: Curves.easeOutCubic);
   }
 
   /// 有没有同意过隐私政策。**null = 还没从库里读出来**（读出来之前什么都不做）。
@@ -404,7 +389,6 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     // 手指拖页面时，每帧把"当前停在第几页"（小数）推给底栏那颗玻璃
-    _pages.addListener(_onPageScrolled);
     super.initState();
     _refreshHome();
     unawaited(_loadUnit());
@@ -844,7 +828,6 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void dispose() {
     _pages.dispose();
-    _glassDrag.dispose();
     // 两个定时器都要取消：不然 widget 测试会因 pending timer 直接判失败
     _coldStartTimer?.cancel();
     _flushTimer?.cancel();
@@ -1793,7 +1776,6 @@ class _HomeShellState extends State<HomeShell> {
     final Widget tabBar = AppTabBar(
       current: _tab,
       onChanged: _selectTab,
-      dragIndex: GlassSurface.isSupportedPlatform ? _glassDrag : null,
     );
     // **统一顶栏**（2026-10-07，v1.60.0；用户 10.7 清单第 1、6 条）：
     // 左标题 + 右上角 [齿轮][铃铛]，五个 tab 共用一条 —— 之前是五屏各画各的标题，
@@ -1833,9 +1815,11 @@ class _HomeShellState extends State<HomeShell> {
                         Positioned.fill(
                           child: PageView(
                             controller: _pages,
+                            // 松手后落到整页 → 通知底栏（原生那条路是
+                            // `NativeTabBar.didUpdateWidget` 里的 `setSelected`，
+                            // 所以这里只要把 `_tab` 改掉就够了）
                             onPageChanged: (int i) {
                               if (i != _tab) setState(() => _tab = i);
-                              _glassDrag.value = -1;
                             },
                             children: <Widget>[
                               for (int i = 0; i < AppTabBar.tabs.length; i++)
