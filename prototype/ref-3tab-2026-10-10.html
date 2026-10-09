@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>练了么 · 改版参考图 v1（3 tab + 训练主屏重排）</title>
+<style>
+  /* ⚠️ 这是**参考图**（给人看的静态稿），不是 App 代码，也不参与构建。
+     颜色/圆角/间距全部照 app/lib/core/theme.dart 的 Tokens 抄，别在这里发明新色。
+     渲染命令见 docs/plan-ux-2026-10-10.md §四。 */
+  :root{
+    --bg:#0E0C0A; --surface:#1A1714; --elev:#24201C;
+    --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
+    --t1:#F5F3F1; --t2:#ABA49A; --t3:#6B6157;
+    --accent:#FF5C26; --ink:#141210; --ok:#0CAC78; --pr:#FBBF24;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#08080A; color:#CFC9C0; padding:34px 30px 40px;
+    font:400 13px/1.55 -apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{color:#fff;font-size:21px;font-weight:700;letter-spacing:.2px}
+  .sub{color:#7E776D;font-size:12.5px;margin:6px 0 26px}
+  .sub b{color:#B9B1A6;font-weight:600}
+  .sheet{display:flex;gap:26px;align-items:flex-start}
+  .col{width:393px;flex:0 0 393px}
+
+  /* ── 手机壳 ───────────────────────────────────────────── */
+  .phone{
+    width:393px;height:852px;background:var(--bg);border-radius:46px;overflow:hidden;
+    position:relative;border:1px solid rgba(255,255,255,.13);
+    box-shadow:0 20px 50px rgba(0,0,0,.55);
+  }
+  .sb{height:52px;display:flex;align-items:center;justify-content:space-between;
+      padding:0 30px 0 34px;color:var(--t1);font-size:14px;font-weight:600;letter-spacing:.3px}
+  .sb .right{display:flex;align-items:center;gap:6px}
+  .bars{display:flex;align-items:flex-end;gap:2px;height:11px}
+  .bars i{width:3px;background:var(--t1);border-radius:1px;display:block}
+  .batt{width:23px;height:11px;border:1.4px solid rgba(255,255,255,.5);border-radius:3.5px;
+        position:relative;display:inline-block;margin-left:3px}
+  .batt::after{content:"";position:absolute;inset:1.6px;width:12px;background:var(--t1);border-radius:1.5px}
+  .body{position:absolute;top:52px;left:0;right:0;bottom:0;padding:0 20px;
+        display:flex;flex-direction:column}
+
+  .h1{font-size:28px;font-weight:700;color:var(--t1);letter-spacing:-.4px}
+  .hsub{font-size:13px;color:var(--t3);margin-left:10px}
+  .toprow{display:flex;align-items:center;justify-content:space-between;height:44px;flex:0 0 auto}
+  .ico{width:22px;height:22px;stroke:var(--t2);fill:none;stroke-width:1.8;
+       stroke-linecap:round;stroke-linejoin:round}
+
+  /* ── 通用块 ───────────────────────────────────────────── */
+  .card{background:var(--surface);border-radius:12px;padding:16px}
+  .band{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .hr{height:1px;background:var(--line)}
+  .vr{width:1px;background:var(--line);align-self:stretch}
+  .muted{color:var(--t3)}
+  .t2{color:var(--t2)}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* 底栏（苹果原生 UITabBar 的观感：浮起的玻璃胶囊） */
+  .tabbar{
+    position:absolute;left:20px;right:20px;bottom:16px;height:66px;border-radius:33px;
+    background:rgba(38,34,30,.72);border:1px solid rgba(255,255,255,.09);
+    backdrop-filter:blur(24px);display:flex;align-items:center;justify-content:space-around;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;
+       color:var(--t3);font-size:10.5px;font-weight:500}
+  .tab svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;
+           stroke-linecap:round;stroke-linejoin:round}
+  .tab.on{color:var(--accent);font-weight:700}
+  .tab.on svg{width:26px;height:26px;stroke-width:2.1}
+
+  /* 说明文字（每张图下面） */
+  .cap{margin-top:14px}
+  .cap h2{font-size:14px;color:#fff;font-weight:700;margin-bottom:7px}
+  .cap h2 span{color:#7E776D;font-weight:500;font-size:12px;margin-left:6px}
+  .cap ul{list-style:none}
+  .cap li{position:relative;padding-left:14px;margin-bottom:5px;color:#A9A29A;font-size:12.5px;line-height:1.5}
+  .cap li::before{content:"";position:absolute;left:2px;top:6.5px;width:4px;height:4px;
+                  border-radius:2px;background:#4A443C}
+  .cap li b{color:#E8E4DF;font-weight:600}
+  .cap li.del::before{background:#7A3B2C}
+  .cap li.del{color:#8C8177}
+  .foot{margin-top:26px;padding-top:16px;border-top:1px solid #1C1A18;color:#8A8378;font-size:12.5px}
+  .foot b{color:#E8E4DF}
+  .pill{display:inline-block;padding:1px 7px;border-radius:99px;background:#221F1C;
+        color:#B9B1A6;font-size:11px;margin-right:5px}
+</style>
+</head>
+<body>
+
+<h1>练了么 · 改版参考图 v1</h1>
+<div class="sub">
+  2026-10-10 · <b>信息架构回 3 个 tab</b>（练 / 进步 / 我）+ <b>训练主屏重排</b> + 激励系统收敛成一套
+  ｜配色、间距、圆角<b>没有动</b>（全部照现有 VI 令牌），这一版只改结构与信息取舍
+  ｜配套：<b>docs/plan-ux-2026-10-10.md</b>
+</div>
+
+<div class="sheet">
+
+  <!-- ══════════════ ① 首页「练」 ══════════════ -->
+  <div class="col">
+    <div class="phone">
+      <div class="sb">
+        <div>9:41</div>
+        <div class="right">
+          <div class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></div>
+          <span style="font-size:11px;margin-left:4px">5G</span>
+          <span class="batt"></span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="toprow">
+          <div><span class="h1">今天</span><span class="hsub">10 月 10 日 · 周六</span></div>
+          <svg class="ico" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 9h16c0-2-2-2-2-9"/><path d="M10.5 21a2 2 0 0 0 3 0"/></svg>
+        </div>
+
+        <!-- 一行事实：把「打卡卡 + 本周挑战」合成一句（进度系统整套搬进「我的」） -->
+        <div class="row" style="margin:2px 0 18px">
+          <div style="font-size:13px;color:var(--t2)">
+            <span style="color:var(--accent);font-weight:700">连续 2 天</span>
+            <span class="muted"> · 本周已练 3 次</span>
+          </div>
+        </div>
+
+        <!-- 今天练什么：全屏唯一答案 -->
+        <div class="card" style="padding:14px 16px 8px">
+          <div class="row" style="margin-bottom:10px">
+            <div style="font-size:16px;font-weight:700;color:var(--t1)">今天练 <span style="color:var(--accent)">上肢</span></div>
+            <div style="font-size:12.5px;color:var(--t3)">换一批 · 计划 ›</div>
+          </div>
+          <div class="hr"></div>
+          <div class="row" style="padding:11px 0 10px"><span style="color:var(--t1);font-size:15px">杠铃卧推</span><span class="num t2" style="font-size:14px">40 kg × 8</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:11px 0 10px"><span style="color:var(--t1);font-size:15px">哑铃卧推</span><span class="num t2" style="font-size:14px">12 kg × 8</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:11px 0 10px"><span style="color:var(--t1);font-size:15px">上斜哑铃卧推</span><span class="num t2" style="font-size:14px">10 kg × 8</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:11px 0 10px"><span style="color:var(--t1);font-size:15px">引体向上</span><span class="num t2" style="font-size:14px">自重 × 8</span></div>
+        </div>
+
+        <div style="height:22px"></div>
+        <div style="height:60px;border-radius:99px;background:var(--accent);color:var(--ink);
+                    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700">
+          开始今天的训练
+        </div>
+        <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--t3)">
+          动作库 · 记录体重 · 5 分钟活动
+        </div>
+      </div>
+
+      <div class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-7 4 4"/></svg>进步</div>
+        <div class="tab on"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>练</div>
+        <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div>
+      </div>
+    </div>
+
+    <div class="cap">
+      <h2>① 首页「练」<span>今天该做什么，只回答一次</span></h2>
+      <ul>
+        <li><b>删掉</b>那张「打卡」大卡与紧跟的「本周挑战」灰字 —— 两张讲"坚持"的块合成<b>一行事实</b></li>
+        <li class="del"><b>删掉</b>四个同权重工具磁贴（5 分钟活动 / 动作库 / 记录体重 / 成就）→ 一行文字入口；<b>成就</b>收进「我」</li>
+        <li class="del"><b>删掉</b>主按钮下那句「不知道怎么练？帮我定个计划」——"今天练什么"原来有 3 个入口，现在卡片右上两个（换一批 / 计划 ›）</li>
+        <li class="del"><b>删掉</b>孤零零挂在下面的「还没有训练记录」</li>
+        <li>顶部<b>齿轮只在「我」</b>出现；铃铛（通知中心）5 个页面都保留</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════ ② 训练中 ══════════════ -->
+  <div class="col">
+    <div class="phone">
+      <div class="sb">
+        <div>9:41</div>
+        <div class="right">
+          <div class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></div>
+          <span style="font-size:11px;margin-left:4px">5G</span>
+          <span class="batt"></span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="toprow">
+          <div style="display:flex;align-items:center;gap:8px">
+            <svg class="ico" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+            <span style="font-size:17px;font-weight:700;color:var(--t1)">杠铃卧推</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:12.5px;color:var(--t3)" class="num">动作 1 / 4</span>
+            <span style="font-size:12.5px;color:var(--t2);border:1px solid var(--line2);
+                         padding:3px 9px;border-radius:99px">换动作</span>
+          </div>
+        </div>
+
+        <!-- 上次 / 最佳：产品最值钱的信息（"默认胜过输入"），原来只有一行灰字 -->
+        <div class="band" style="margin-top:2px;padding:14px 0;display:flex">
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--t3)">上次</div>
+            <div class="num" style="font-size:17px;font-weight:700;color:var(--t1);margin-top:3px">40<span style="font-size:13px;font-weight:600"> kg</span> × 8</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:2px">× 3 组 · 10 月 7 日</div>
+          </div>
+          <div class="vr"></div>
+          <div style="flex:1;padding-left:18px">
+            <div style="font-size:12px;color:var(--t3)">历史最佳</div>
+            <div class="num" style="font-size:17px;font-weight:700;color:var(--pr);margin-top:3px">45<span style="font-size:13px;font-weight:600"> kg</span> × 8</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:2px">1RM 预估 56 kg</div>
+          </div>
+        </div>
+
+        <!-- 本次：原本这一大块是纯黑死区 -->
+        <div style="flex:1;padding-top:16px">
+          <div class="row" style="font-size:12.5px;color:var(--t3);padding-bottom:8px">
+            <span>本次 · 3 组</span><span>长按任意一行可撤销</span>
+          </div>
+          <div class="row" style="padding:13px 0"><span class="num" style="color:var(--t3);width:22px">1</span>
+            <span class="num" style="flex:1;color:var(--t2);font-size:16px">40 kg × 8</span>
+            <span style="color:var(--ok);font-size:15px">✓</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:13px 0"><span class="num" style="color:var(--t3);width:22px">2</span>
+            <span class="num" style="flex:1;color:var(--t2);font-size:16px">40 kg × 8</span>
+            <span style="color:var(--ok);font-size:15px">✓</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:13px 0"><span class="num" style="color:var(--t3);width:22px">3</span>
+            <span style="flex:1;color:var(--t3);font-size:16px">下一组 · 40 kg × 8</span></div>
+        </div>
+
+        <!-- 休息 = 主按钮上方一条细进度（原来是一只方盒子 + 一个数字，看不出还剩多少比例） -->
+        <div style="padding:12px 0 10px">
+          <div class="row" style="font-size:12.5px;color:var(--t3);margin-bottom:7px">
+            <span><span class="num" style="color:var(--t2);font-weight:600">休息 0:42</span> · 还剩 58%</span>
+            <span style="color:var(--t2)">跳过</span>
+          </div>
+          <div style="height:3px;border-radius:2px;background:rgba(255,255,255,.09)">
+            <div style="width:58%;height:3px;border-radius:2px;background:var(--accent)"></div>
+          </div>
+        </div>
+
+        <!-- 主操作：回到屏幕下 1/3 -->
+        <div style="height:88px;border-radius:99px;background:var(--accent);color:var(--ink);
+                    display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700"
+             class="num">
+          40 kg × 8 ✓
+        </div>
+        <div class="row" style="padding:12px 0 0;font-size:12.5px;color:var(--t3)">
+          <span>改重量</span>
+          <span class="t2">点大按钮记录一组</span>
+        </div>
+        <div class="hr" style="margin-top:12px"></div>
+        <div class="row" style="padding:12px 0 8px;font-size:13.5px;color:var(--t2)">
+          <span>‹ 上一个</span><span style="color:var(--t1);font-weight:600">上斜哑铃卧推 ›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cap">
+      <h2>② 训练中<span>组间那 60 秒</span></h2>
+      <ul>
+        <li><b>主按钮回到屏幕下 1/3</b>：原来它在中部，下 1/3 被"计时器 + 已完成 + 上一个/下一个"占着（和 spec §5 那条硬约束是反的）</li>
+        <li><b>上半屏的死区</b>（原来近 40% 纯黑）换成 <b>上次 / 历史最佳</b> 对照 —— 这是产品最值钱的信息，原来只有一行 11pt 灰字</li>
+        <li><b>休息</b>从"一只方盒子 + 01:59"变成 <b>主按钮上方一条细进度</b>，能看出还剩多少比例</li>
+        <li>两个 x/y 不再打架：<b>组数</b>收进顶部「动作 1 / 4」，底部只留上一个 / 下一个</li>
+        <li><b>「改重量」从长按（看不见）变成一行看得见的入口</b>；主按钮仍然是唯一"记录"目标（1 次点击 = 1 组没变）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════ ③ 进步 ══════════════ -->
+  <div class="col">
+    <div class="phone">
+      <div class="sb">
+        <div>9:41</div>
+        <div class="right">
+          <div class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></div>
+          <span style="font-size:11px;margin-left:4px">5G</span>
+          <span class="batt"></span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="toprow">
+          <span class="h1">进步</span>
+          <svg class="ico" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 9h16c0-2-2-2-2-9"/><path d="M10.5 21a2 2 0 0 0 3 0"/></svg>
+        </div>
+        <!-- 「数据」不再是 tab：它回到这里当二级页 -->
+        <div class="row" style="justify-content:flex-end;margin:2px 0 10px">
+          <span style="font-size:13.5px;color:var(--accent);font-weight:600">全部数据 ›</span>
+        </div>
+
+        <div class="band">
+          <div style="display:flex">
+            <div style="flex:1;padding:16px 0">
+              <div style="font-size:12.5px;color:var(--t2)">本周容量</div>
+              <div class="num" style="font-size:27px;font-weight:700;color:var(--t1);letter-spacing:-.5px;margin-top:6px">49,375 <span style="font-size:15px">lb</span></div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px">上期没练</div>
+            </div>
+            <div class="vr"></div>
+            <div style="flex:1;padding:16px 0 16px 18px">
+              <div style="font-size:12.5px;color:var(--t2)">本周训练</div>
+              <div class="num" style="font-size:27px;font-weight:700;color:var(--t1);letter-spacing:-.5px;margin-top:6px">7 <span style="font-size:15px">次</span></div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px">上期没练</div>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div style="display:flex">
+            <div style="flex:1;padding:16px 0">
+              <div style="font-size:12.5px;color:var(--t2)">本周组数</div>
+              <div class="num" style="font-size:27px;font-weight:700;color:var(--t1);letter-spacing:-.5px;margin-top:6px">102 <span style="font-size:15px">组</span></div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px">上期没练</div>
+            </div>
+            <div class="vr"></div>
+            <div style="flex:1;padding:16px 0 16px 18px">
+              <div style="font-size:12.5px;color:var(--t2)">个人纪录</div>
+              <div class="num" style="font-size:27px;font-weight:700;color:var(--t1);letter-spacing:-.5px;margin-top:6px">12 <span style="font-size:15px">项</span></div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px">全部历史</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+        <div class="card">
+          <div class="row" style="margin-bottom:10px">
+            <span style="font-size:15px;font-weight:600;color:var(--t1)">训练容量趋势</span>
+            <!-- 原生 UISegmentedControl（选中 = 强调橙），也就是现在 app 里的样子 -->
+            <span style="display:flex;background:rgba(255,255,255,.07);border-radius:8px;padding:2px;font-size:12px">
+              <span style="padding:3px 11px;border-radius:6px;color:var(--t2)">周</span>
+              <span style="padding:3px 11px;border-radius:6px;color:var(--t2)">月</span>
+              <span style="padding:3px 11px;border-radius:6px;background:var(--accent);color:var(--ink);font-weight:600">年</span>
+            </span>
+          </div>
+          <svg viewBox="0 0 340 96" style="width:100%;height:96px;display:block">
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#FF5C26" stop-opacity=".34"/><stop offset="1" stop-color="#FF5C26" stop-opacity="0"/>
+            </linearGradient></defs>
+            <path d="M0 78 L60 46 L120 74 L180 70 L240 22 L300 66 L340 84 L340 96 L0 96 Z" fill="url(#g1)"/>
+            <path d="M0 78 L60 46 L120 74 L180 70 L240 22 L300 66 L340 84" fill="none" stroke="#FF5C26" stroke-width="2"/>
+            <circle cx="340" cy="84" r="3.4" fill="#FF5C26"/>
+          </svg>
+          <div class="row" style="font-size:11px;color:var(--t3);margin-top:8px">
+            <span>10/11</span><span>最近 12 个月</span><span>10/10</span>
+          </div>
+          <!-- 「各部位组数」并进这张卡：不再单独占一张大方块 -->
+          <div class="hr" style="margin:14px 0 12px"></div>
+          <div class="row" style="font-size:12.5px;color:var(--t3);margin-bottom:9px">
+            <span>本周各部位</span><span>循证区间 12–20 组</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:14px;height:42px">
+            <div style="text-align:center;flex:1"><div style="height:30px;border-radius:3px;background:var(--accent)"></div><div style="font-size:11px;color:var(--t2);margin-top:5px">胸 12</div></div>
+            <div style="text-align:center;flex:1"><div style="height:23px;border-radius:3px;background:rgba(255,92,38,.55)"></div><div style="font-size:11px;color:var(--t2);margin-top:5px">背 9</div></div>
+            <div style="text-align:center;flex:1"><div style="height:4px;border-radius:3px;background:rgba(255,255,255,.14)"></div><div style="font-size:11px;color:var(--t3);margin-top:5px">腿 0</div></div>
+            <div style="text-align:center;flex:1"><div style="height:16px;border-radius:3px;background:rgba(255,92,38,.55)"></div><div style="font-size:11px;color:var(--t2);margin-top:5px">肩 6</div></div>
+            <div style="text-align:center;flex:1"><div style="height:9px;border-radius:3px;background:rgba(255,255,255,.2)"></div><div style="font-size:11px;color:var(--t2);margin-top:5px">臂 3</div></div>
+            <div style="text-align:center;flex:1"><div style="height:9px;border-radius:3px;background:rgba(255,255,255,.2)"></div><div style="font-size:11px;color:var(--t2);margin-top:5px">核心 3</div></div>
+          </div>
+        </div>
+
+        <div style="height:22px"></div>
+        <div style="font-size:12.5px;color:var(--t3);font-weight:600;letter-spacing:.3px">PR 墙</div>
+        <div class="band" style="margin-top:8px">
+          <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:15px">杠铃卧推</span><span class="num" style="color:var(--t1);font-size:16px;font-weight:600">80 kg</span></div>
+        </div>
+        <div style="font-size:12px;color:var(--t3);padding:10px 0 0">全部 12 项 ›</div>
+      </div>
+
+      <div class="tabbar">
+        <div class="tab on"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-7 4 4"/></svg>进步</div>
+        <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>练</div>
+        <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div>
+      </div>
+    </div>
+
+    <div class="cap">
+      <h2>③ 进步<span>回到产品自己定的"封顶 3 块"</span></h2>
+      <ul>
+        <li>内容收成 <b>三块</b>：数字带 / 趋势（含各部位）/ PR 墙 —— <span class="muted">`interaction-spec` §11 写着"禁止在进步页加第 4 块"，现在是 5 块</span></li>
+        <li><b>「本周各部位组数」并进趋势卡</b>：原来它单独占一张卡，现在是一排小柱（0 组的腿是灰的，一眼看见）</li>
+        <li class="del"><b>身体数据整块移进「我」</b>：它和"看趋势"不是一回事</li>
+        <li><b>「数据」不再是 tab</b>，回到这里当二级页（「全部数据 ›」）—— 同一屏原来既在底栏又在进步页里</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════ ④ 我的 ══════════════ -->
+  <div class="col">
+    <div class="phone">
+      <div class="sb">
+        <div>9:41</div>
+        <div class="right">
+          <div class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></div>
+          <span style="font-size:11px;margin-left:4px">5G</span>
+          <span class="batt"></span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="toprow">
+          <span class="h1">我的</span>
+          <!-- 齿轮只在这里出现 -->
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14.6H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.4 3H9.5a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 17 4.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1h.1a2 2 0 1 1 0 4H21a1.6 1.6 0 0 0-1.5 1z"/></svg>
+        </div>
+
+        <div class="band" style="padding:14px 0">
+          <div class="row">
+            <div>
+              <div style="font-size:16px;font-weight:600;color:var(--t1)">还没设昵称</div>
+              <div style="font-size:12.5px;color:var(--t3);margin-top:3px">点一下设昵称 · 不登录也能用</div>
+            </div>
+            <span style="color:var(--t3)">›</span>
+          </div>
+        </div>
+
+        <!-- 四套激励（打卡 / 本周挑战 / 勋章 / 等级经验）收敛成这一条 -->
+        <div style="padding:18px 0 16px">
+          <div class="row">
+            <span style="font-size:15px;font-weight:700;color:var(--t1)">Lv.1 新手上路</span>
+            <span class="num" style="font-size:14px;color:var(--t2)">连续 <b style="color:var(--t1);font-size:16px">2</b> 天</span>
+          </div>
+          <div style="height:3px;border-radius:2px;background:rgba(255,255,255,.09);margin:11px 0 8px">
+            <div style="width:22%;height:3px;border-radius:2px;background:var(--accent)"></div>
+          </div>
+          <div class="row" style="font-size:12px;color:var(--t3)">
+            <span>还差 4 次训练升到 Lv.2</span><span>勋章 3 / 73 ›</span>
+          </div>
+        </div>
+
+        <div class="band">
+          <div style="display:flex">
+            <div style="flex:1;padding:14px 0">
+              <div style="font-size:12.5px;color:var(--t2)">训练次数</div>
+              <div class="num" style="font-size:23px;font-weight:700;color:var(--t1);margin-top:5px">18 <span style="font-size:13px">次</span></div>
+            </div>
+            <div class="vr"></div>
+            <div style="flex:1;padding:14px 0 14px 18px">
+              <div style="font-size:12.5px;color:var(--t2)">总容量</div>
+              <div class="num" style="font-size:23px;font-weight:700;color:var(--t1);margin-top:5px">128.4 <span style="font-size:13px">t</span></div>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div style="display:flex">
+            <div style="flex:1;padding:14px 0">
+              <div style="font-size:12.5px;color:var(--t2)">总组数</div>
+              <div class="num" style="font-size:23px;font-weight:700;color:var(--t1);margin-top:5px">642 <span style="font-size:13px">组</span></div>
+            </div>
+            <div class="vr"></div>
+            <div style="flex:1;padding:14px 0 14px 18px">
+              <div style="font-size:12.5px;color:var(--t2)">个人纪录</div>
+              <div class="num" style="font-size:23px;font-weight:700;color:var(--t1);margin-top:5px">12 <span style="font-size:13px">项</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+        <div class="band">
+          <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">身体数据</span><span style="color:var(--t3)">›</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">成就</span><span style="color:var(--t3)">12 / 73 ›</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">数据与备份</span><span style="color:var(--t3)">›</span></div>
+          <div class="hr"></div>
+          <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">隐私与关于</span><span style="color:var(--t3)">›</span></div>
+        </div>
+      </div>
+
+      <div class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-7 4 4"/></svg>进步</div>
+        <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>练</div>
+        <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div>
+      </div>
+    </div>
+
+    <div class="cap">
+      <h2>④ 我的<span>激励只留一套，设置只有一个 hub</span></h2>
+      <ul>
+        <li><b>四套激励收敛成一条</b>：等级（Lv.1 → Lv.2）+ 连续天数；<span class="muted">原来这里是三条进度条（等级 / 勋章 / 经验），首页还另有一套打卡 + 本周挑战</span></li>
+        <li><b>训练统计的大方块 → 细线带</b>（与「进步」同一条规矩：只有图表配卡片底）</li>
+        <li><b>身体数据从「进步」搬到这里</b>；<b>成就</b>收成一行入口</li>
+        <li><b>齿轮只在这个页面出现</b>：原来 5 个 tab 顶栏一模一样，而"我的"本身就是设置集散地</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <b>待你拍的两件事：</b>
+  <span class="pill">A</span>底栏三个的顺序 —— 图里是 <b>进步 / 练 / 我</b>（保留 10.7 那条"训练在正中"的意图）；
+  另一种是 <b>练 / 进步 / 我</b>（练在最左，落地页就是第一个）。
+  <span class="pill">B</span>激励留哪一套 —— 图里是 <b>等级 + 连续天数</b>；勋章整个删掉，还是保留成「成就」那一行？
+  <br><br>
+  <b>这一版没动的：</b>配色 / 字阶 / 间距 / 圆角 / 图标风格（沿用现有 VI）；训练中"1 次点击 = 1 组"、
+  撤销而非确认、离线优先这些硬约束也都没动。
+</div>
+
+</body>
+</html>
