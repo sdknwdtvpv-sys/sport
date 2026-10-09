@@ -54,6 +54,7 @@ import 'features/onboarding/intro_carousel_screen.dart';
 import 'features/onboarding/privacy_consent_screen.dart';
 import 'features/today/day_plan_editor.dart';
 import 'features/today/today_screen.dart';
+import 'features/today/training_scenario.dart';
 import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
 import 'features/routine/plan_screen.dart';
@@ -304,6 +305,9 @@ class _HomeShellState extends State<HomeShell> {
   /// 用户定过的加重步进（kg，10.9 清单第 8a 条）。null = 没设过。
   double? _defaultStepKg;
 
+  /// **在哪儿练**（2026-10-09 第二份 docx 第 4 条）。默认健身房。
+  TrainingScenario _scenario = TrainingScenario.gym;
+
   /// 冷启动时刻，用来给事件算 `ms_since_launch`（"从打开到记下第一组用了多久"）。
   final int _launchedAtMs = DateTime.now().millisecondsSinceEpoch;
 
@@ -524,6 +528,8 @@ class _HomeShellState extends State<HomeShell> {
     final BodyWeightUnit b = await _profile.bodyWeightUnit();
     final int? rest = await _profile.restOverrideSec();
     final double? step = await _profile.defaultWeightIncrement();
+    final TrainingScenario scenario =
+        TrainingScenario.fromWire(await _profile.trainingScenario());
     final String? goal = await _profile.goalWire();
     // 训练提醒的设置也在这里读一次（设置页要显示它）。
     // 注意**不在这里请求权限** —— 那是用户主动打开开关时才做的事。
@@ -536,6 +542,7 @@ class _HomeShellState extends State<HomeShell> {
       _bodyUnit = b;
       _restOverrideSec = rest;
       _defaultStepKg = step;
+      _scenario = scenario;
       _goalWire = goal;
       _reminder = reminder;
       _reminderHint = hint;
@@ -726,7 +733,9 @@ class _HomeShellState extends State<HomeShell> {
           day: day,
           unit: _unit,
           // 10.8 清单第 8 条（用户选 A）：每周 ≤3 天 → 每个动作 4 组，≥4 天 → 3 组
-          weeklyFrequency: await _profile.weeklyFrequency());
+          weeklyFrequency: await _profile.weeklyFrequency(),
+          // 在哪儿练（第二份 docx 第 4 条）
+          equipment: _scenario.equipment);
       // ⚠️ **空清单不落库**（2026-10-09 真机冒烟抓到）：冷启动那一刻动作库可能还没导入完
       // （`_importSeedQuietly` 与这一趟是并行的），于是 `planToday` 返回空 ——
       // 而"空"一旦被记成"今天排过了"，首页就永远停在「今天还没有排动作」，
@@ -790,6 +799,7 @@ class _HomeShellState extends State<HomeShell> {
       final List<PlannedExercise> next = await _planner.reroll(
         current: _todayPlan,
         unit: _unit,
+        equipment: _scenario.equipment,
       );
       if (!mounted) return;
       setState(() => _todayPlan = next);
@@ -797,6 +807,17 @@ class _HomeShellState extends State<HomeShell> {
     } catch (_) {
       // 同上：换不动就保持原来那份，不弹错
     }
+  }
+
+  /// 换「在哪儿练」（2026-10-09 第二份 docx 第 4 条）。
+  ///
+  /// 三件事一起做，顺序要紧：**先落库**（这样即便重排失败，下次打开也是新场景），
+  /// 再按新场景**重排今天的安排**（并覆盖当天那份 `day_plan`），最后刷新首页。
+  Future<void> _setScenario(TrainingScenario s) async {
+    if (s == _scenario) return;
+    setState(() => _scenario = s);
+    await _profile.setTrainingScenario(s.wire);
+    await _regenerateTodayPlan();
   }
 
   /// 重新按分化排一份（**忽略库里那份**）并落库。
@@ -807,6 +828,7 @@ class _HomeShellState extends State<HomeShell> {
         day: day,
         unit: _unit,
         weeklyFrequency: await _profile.weeklyFrequency(),
+        equipment: _scenario.equipment,
       );
       if (!mounted) return;
       setState(() {
@@ -1789,10 +1811,10 @@ class _HomeShellState extends State<HomeShell> {
         child: Column(
           children: <Widget>[
             // 统一顶栏（v1.60.0）：左标题 + 右上角 [齿轮][铃铛]，五个 tab 共用。
-            // ⚠️ 2026-10-09（10.9 清单第 2a 条）：**iOS 上顶栏不再占位** ——
-            // 它挪进下面的 Stack 变成"浮在内容之上的玻璃"，内容从它后面滚过去。
-            // Android 保持 `Column` 里的原位（一个像素都不动）。
-            if (!GlassSurface.isSupportedPlatform) topBar,
+            // ⚠️ v1.66.0 曾让它"浮在内容之上 + 一块通栏玻璃"，**上线后被用户回退**
+            // （2026-10-09 第二份 docx 第 5 条：真机上叠影/重影）。
+            // 现在**两种平台都回到 Column 里的原位** —— 顶栏各占各的位置。
+            topBar,
             Expanded(
               child: !GlassSurface.isSupportedPlatform
                   // Android：底栏仍然贴在内容**下面**（通栏、贴底）。
@@ -1826,14 +1848,6 @@ class _HomeShellState extends State<HomeShell> {
                           right: AppTabBar.floatMargin,
                           bottom: AppTabBar.floatMargin,
                           child: tabBar,
-                        ),
-                        // ⚠️ 顶栏必须排在**最后**：Stack 里后画的在上面，
-                        // 放在 `PageView` 之前会被页面内容整个盖住（两边都试过）。
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: topBar,
                         ),
                       ],
                     ),
@@ -1942,7 +1956,11 @@ class _HomeShellState extends State<HomeShell> {
                 : null,
             // 首页中间那一块：今天的安排（2026-10-04 替掉原来那个 Spacer）
             todayPlan: _todayPlan,
-            todayLabel: _todayDay?.label,
+            // 「今天练 上肢 · 家里」—— 场景要写在卡片上，
+            // 否则用户会奇怪"我明明选了家里，怎么还推这个"（第 4 条）
+            todayLabel: _todayDay == null
+                ? null
+                : '${_todayDay!.label} · ${_scenario.label}',
             // ⚠️ 空清单时「换一批」要**留着**（2026-10-09）：用户可能刚把今天的动作
             // 全删掉，那个按钮就是他"重新给我排一份"的出路。
             onReroll: _rerollTodayPlan,
@@ -1985,6 +2003,9 @@ class _HomeShellState extends State<HomeShell> {
           exercises: _repo,
           store: _store,
           unit: _unit,
+          // 在哪儿练（第二份 docx 第 4 条）：计划页顶部那一行 chips
+          scenario: _scenario,
+          onScenarioChanged: _setScenario,
           todayPlan: _todayPlan,
           todayLabel: _todayDay?.label,
           onResume: _activeSession == null ? null : _resumeOrAsk,

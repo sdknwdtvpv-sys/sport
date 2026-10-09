@@ -386,6 +386,9 @@ class TodayPlanner {
     bool? firstTime,
     /// 用户每周练几天（引导里问过）—— 决定每个动作开几组，见 [defaultSetsFor]。
     int? weeklyFrequency,
+    /// **在哪儿练**（2026-10-09 第二份 docx 第 4 条）：只从这些器械里挑动作。
+    /// 不传 = 全部器械（与这一版之前一致）。
+    Set<String>? equipment,
   }) async {
     final TrainingDay d = day ?? await nextTrainingDay();
     final bool first = firstTime ?? (await _store.allSets()).isEmpty;
@@ -403,7 +406,8 @@ class TodayPlanner {
               muscleGroup: slot.group,
               count: take,
               unit: unit,
-              weeklyFrequency: weeklyFrequency);
+              weeklyFrequency: weeklyFrequency,
+              equipment: equipment);
       out.addAll(picked);
       // 取不到就少一点（种子换过也不崩），但不把余量让给下一个部位 ——
       // 那会让"胸 3 个"变成"胸 5 个"，构图就没了。
@@ -425,11 +429,15 @@ class TodayPlanner {
     Set<String> exclude = const <String>{},
     /// 用户每周练几天 → 每个动作开几组（见 [defaultSetsFor]，10.8 清单第 8 条）
     int? weeklyFrequency,
+    /// 在哪儿练：只从这些器械里挑（null = 全部器械）
+    Set<String>? equipment,
   }) async {
     final List<ExerciseData> rows = await _repo.search(
       muscleGroup: muscleGroup,
       category: 'strength',
-      limit: count + exclude.length,
+      equipmentIn: equipment,
+      // ⚠️ 多要一些：`exclude` 与场景筛都会把行剔掉，只按 count 要会不够
+      limit: count + exclude.length + 40,
     );
     final List<ExerciseData> picked = rows
         .where((ExerciseData e) => !exclude.contains(e.id))
@@ -525,6 +533,8 @@ class TodayPlanner {
   Future<List<PlannedExercise>> reroll({
     required List<PlannedExercise> current,
     WeightUnit unit = WeightUnit.kg,
+    /// 在哪儿练：换一批也要守住场景，否则"家里"换两下又换出器械动作
+    Set<String>? equipment,
   }) async {
     if (current.isEmpty) return current;
     final Set<String> already =
@@ -554,6 +564,7 @@ class TodayPlanner {
         count: n,
         unit: unit,
         exclude: already,
+        equipment: equipment,
       );
       out.addAll(picked);
       already.addAll(picked.map((PlannedExercise p) => p.exercise.id));

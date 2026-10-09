@@ -83,10 +83,19 @@ class ProfileSubPage extends StatelessWidget {
     super.key,
     required this.title,
     required this.children,
+    this.action,
   });
 
   final String title;
   final List<Widget> children;
+
+  /// 标题行**最右边**的一个动作（可为空）。
+  ///
+  /// 2026-10-09 加：身体数据页要一个**看得见的「完成」**来收键盘 ——
+  /// iOS 的数字键盘没有回车键，而"点空白处收起"这件事用户并不知道
+  /// （第二份 docx 第 3 条：「这个页面的输入按键，没办法退出」）。
+  /// 放在标题行右侧，与返回箭头一左一右，是二级页最自然的位置。
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -106,15 +115,18 @@ class ProfileSubPage extends StatelessWidget {
                       child: Icon(Icons.chevron_left, color: Tokens.text2, size: 26),
                     ),
                   ),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Tokens.text,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Tokens.text,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
                     ),
                   ),
+                  if (action != null) action!,
                 ],
               ),
               const SizedBox(height: Tokens.s5),

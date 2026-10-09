@@ -64,6 +64,10 @@ class ExerciseRepository {
     String query = '',
     String? muscleGroup,
     String? equipment,
+    /// **一组**器械（"在哪儿练"那种场景筛，2026-10-09 第二份 docx 第 4 条）。
+    /// 与 [equipment] 的关系：那个是"只看这一个器械"，这个是"这几个器械都算" ——
+    /// 两个都给时取交集（调用方不会那么干，但语义要说得清）。
+    Set<String>? equipmentIn,
     String? category,
     String? subTag,
     int limit = 50,
@@ -77,6 +81,9 @@ class ExerciseRepository {
       }
       if (equipment != null) {
         cond = cond & t.equipment.equals(equipment);
+      }
+      if (equipmentIn != null && equipmentIn.isNotEmpty) {
+        cond = cond & t.equipment.isIn(equipmentIn.toList());
       }
       if (category != null) {
         cond = cond & t.category.equals(category);

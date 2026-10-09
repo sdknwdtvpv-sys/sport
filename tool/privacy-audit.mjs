@@ -523,9 +523,19 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
       }
       // PIPL 第 15 条：给了同意就得给**撤回**的路。政策里现在写了"随时可以撤回"，
       // 所以这一条是"政策说法 ↔ 代码有没有那个入口"的对账 —— 少一个就是空承诺。
-      if (!/Key\('body-revoke'\)/.test(screenSrc)) {
-        errors.push('政策里承诺了"随时可以撤回同意"，但「身体数据」页里找不到撤回入口'
-          + "（Key('body-revoke')）—— 撤回权不能只写在政策里");
+      //
+      // ⚠️ 2026-10-09（第二份 docx 第 2 条）：用户要求「撤回同意这种设置类的入口
+      // 全部收纳到设置里，这里不展示」—— 入口从「身体数据」页搬到了
+      // 「设置 → 隐私与关于」。**这条检查跟着入口走**（它守的是"撤回权有一个真的
+      // 能点到的入口"，而不是"它必须长在某一页上"）；两页都扫，任一处有就算数 ——
+      // 这样将来再搬家也不会静默失效。
+      const privacyPath =
+          join(ROOT, 'app/lib/features/profile/privacy_about_screen.dart');
+      const privacySrc = existsSync(privacyPath) ? readFileSync(privacyPath, 'utf8') : '';
+      if (!/Key\('body-revoke'\)/.test(screenSrc + privacySrc)) {
+        errors.push('政策里承诺了"随时可以撤回同意"，但在「身体数据」页与'
+          + '「隐私与关于」页里都找不到撤回入口（Key(\'body-revoke\')）—— '
+          + '撤回权不能只写在政策里');
       }
       const repoPath = join(ROOT, 'app/lib/data/profile_repository.dart');
       const repoSrc = existsSync(repoPath) ? readFileSync(repoPath, 'utf8') : '';
@@ -617,9 +627,16 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
         errors.push('「身体数据」页里找不到健康库那道单独同意（health-consent-agree）—— '
           + '政策承诺了要单独征求同意，代码里就必须有它');
       }
-      if (!/Key\('health-revoke'\)/.test(screenSrc)) {
-        errors.push('政策里承诺了"随时可以撤回同意"，但页面上找不到健康库那条撤回入口'
-          + "（Key('health-revoke')）—— 撤回权不能只写在政策里");
+      // ⚠️ 同上（第二份 docx 第 2 条）：健康库那条撤回也搬到了「隐私与关于」——
+      // 两页都扫，任一处有就算数。
+      const privacyPath2 =
+          join(ROOT, 'app/lib/features/profile/privacy_about_screen.dart');
+      const privacySrc2 =
+          existsSync(privacyPath2) ? readFileSync(privacyPath2, 'utf8') : '';
+      if (!/Key\('health-revoke'\)/.test(screenSrc + privacySrc2)) {
+        errors.push('政策里承诺了"随时可以撤回同意"，但在「身体数据」页与'
+          + '「隐私与关于」页里都找不到健康库那条撤回入口（Key(\'health-revoke\')）'
+          + '—— 撤回权不能只写在政策里');
       }
       const repoPath = join(ROOT, 'app/lib/data/profile_repository.dart');
       const repoSrc = existsSync(repoPath) ? readFileSync(repoPath, 'utf8') : '';

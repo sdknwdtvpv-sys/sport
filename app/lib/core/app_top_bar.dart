@@ -18,7 +18,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'glass_surface.dart';
 import 'theme.dart';
 
 class AppTopBar extends StatelessWidget {
@@ -46,41 +45,14 @@ class AppTopBar extends StatelessWidget {
   /// 一排动作的触区（与首页原来那枚铃铛同规格：40×40，好按）。
   static const double actionSize = 40;
 
-  /// 顶栏在**标准字号**下的高度（标题 28pt×1.1 ≈ 31 + 上下各 8 的留白）。
-  static const double baseHeight = 48;
-
-  /// **每屏的滚动内容顶部要留出的空间**（2026-10-09，10.9 清单第 2a 条）。
-  ///
-  /// 只在 iOS 上非零：那边顶栏是**浮在内容之上**的玻璃（内容滚动时从它后面经过 ——
-  /// 那正是玻璃要折射的东西），所以第一行内容得往下让出这条高度；
-  /// Android 还是"顶栏在内容之上、各占各的位置"（`Column`），**不需要留** ——
-  /// 与 `AppTabBar.reservedSpaceFor` 是同一套判据、同一个理由，两处必须一致。
-  ///
-  /// ⚠️ 跟着**系统字号**缩放：1.5× 时标题 42pt，顶栏自己也长高了 ——
-  /// 只按标准字号留空间，大字号下第一行内容会被压在玻璃下面。
-  static double reservedSpaceFor(BuildContext context) {
-    if (!GlassSurface.isSupportedPlatform) return 0;
-    return MediaQuery.textScalerOf(context).scale(baseHeight);
-  }
-
+  /// ⚠️ **顶栏这块玻璃在 v1.66.0 上线后被用户回退了**（2026-10-09 第二份 docx 第 5 条：
+  /// 「看最上面 玻璃质感完全 bug了 回退吧」）—— 真机上标题与页面内容互相叠影、出重影。
+  /// 原因与 `glass_surface.dart` 文件头那条前提是同一个：玻璃背后得有东西可折射，
+  /// 而顶栏把页面内容盖住之后，平台视图与 Flutter 内容的层叠关系在真机上坏了
+  /// （**模拟器看不出来** —— 这也是它当初能过审的原因）。
+  /// **底栏与浮层的玻璃不受影响**：它们下面真的在滚内容 / 背后是被压暗的页面。
   @override
   Widget build(BuildContext context) {
-    final Widget bar = _bar(context);
-    // 非 iOS：原样（通栏、无玻璃）—— **一个像素都不动**。
-    if (!GlassSurface.isSupportedPlatform) return bar;
-    // iOS：顶栏是一块**通栏玻璃**（10.9 清单第 2a 条：顶栏 + 底栏 + 浮层）。
-    // ⚠️ 与底栏不同，这里**不垫 backdrop**：顶栏背后是滚动中的页面内容
-    // （外壳把内容铺满、顶栏浮在它上面），真实内容从玻璃后面经过才有那个观感。
-    return GlassSurface(
-      key: const Key('glass-top-bar'),
-      radius: 0,
-      style: GlassStyle.clear,
-      tint: '#10101466',
-      child: bar,
-    );
-  }
-
-  Widget _bar(BuildContext context) {
     return Padding(
       key: const Key('app-top-bar'),
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s3, Tokens.s2),

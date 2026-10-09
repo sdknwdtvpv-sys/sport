@@ -64,6 +64,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -167,6 +168,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -225,6 +227,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -286,6 +289,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -333,6 +337,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -383,6 +388,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -430,6 +436,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             // 可空列在 drift 的 data class 里是**可选参数**，但 `insertOnConflictUpdate`
             // 会把整行写一遍 —— 不显式带上就会写成 null，把"已同意隐私政策"抹掉，
             // 于是下次冷启动又弹一次。所以每个 setter 都必须原样带回来。
@@ -473,6 +480,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             privacyConsentAtMs: existing?.privacyConsentAtMs ?? now,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,
@@ -518,6 +526,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs ?? now,
@@ -592,6 +601,34 @@ class ProfileRepository {
           UserProfileCompanion(
             userId: Value<String>(kLocalUserId),
             defaultWeightIncrement: Value<double?>(kg),
+            createdAt: Value<int>(existing?.createdAt ?? now),
+            updatedAt: Value<int>(now),
+          ),
+        );
+  }
+
+  /// **在哪儿练**（2026-10-09 第二份 docx 第 4 条）。null = 没选过（按健身房算）。
+  Future<String?> trainingScenario() async {
+    final row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+    return row?.trainingScenario;
+  }
+
+  /// 记下"在哪儿练"。`null` = 恢复成"没选过"（按健身房算）。
+  ///
+  /// ⚠️ 与 `setDefaultWeightIncrement` 同一条纪律：用 **Companion + `Value<String?>`**，
+  /// 不能用 DataClass（drift 对 DataClass 是 `nullToAbsent`，"清回默认"会静默失效）。
+  Future<void> setTrainingScenario(String? wire, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final existing = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(kLocalUserId)))
+        .getSingleOrNull();
+
+    await _db.into(_db.userProfile).insertOnConflictUpdate(
+          UserProfileCompanion(
+            userId: Value<String>(kLocalUserId),
+            trainingScenario: Value<String?>(wire),
             createdAt: Value<int>(existing?.createdAt ?? now),
             updatedAt: Value<int>(now),
           ),
@@ -699,6 +736,7 @@ class ProfileRepository {
             // v25 新加的可空列同样要原样带回来，否则「改个昵称，健康库那道同意就没了」
             healthConsentAtMs: existing?.healthConsentAtMs,
             defaultWeightIncrement: existing?.defaultWeightIncrement,
+          trainingScenario: existing?.trainingScenario,
             privacyConsentAtMs: existing?.privacyConsentAtMs,
             privacyDeclinedAtMs: existing?.privacyDeclinedAtMs ?? now,
             bodyMetricConsentAtMs: existing?.bodyMetricConsentAtMs,

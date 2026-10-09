@@ -23,7 +23,6 @@ import 'package:flutter/material.dart';
 import '../../core/app_info.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
-import '../../core/app_top_bar.dart';
 import '../../core/vi_cards.dart';
 import '../progress/achievements_screen.dart';
 import '../progress/badges.dart';
@@ -313,10 +312,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // 还在用它决定那句实话怎么写，而它的入口就在设置页上。
 
     return ListView(
-      // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
-      padding: EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
           Tokens.s5,
-          Tokens.s4 + AppTopBar.reservedSpaceFor(context),
+          Tokens.s4,
           Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[

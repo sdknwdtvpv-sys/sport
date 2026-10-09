@@ -15,7 +15,6 @@ import 'package:flutter/services.dart';
 import '../../core/sparkline.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
-import '../../core/app_top_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
@@ -258,10 +257,9 @@ class _AllDataScreenState extends State<AllDataScreen> {
   Widget _byExercise() {
     final ExerciseStats? s = _stats;
     return ListView(
-      // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
-      padding: EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
           Tokens.s5,
-          Tokens.s4 + AppTopBar.reservedSpaceFor(context),
+          Tokens.s4,
           Tokens.s5,
           Tokens.s6 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
@@ -414,10 +412,9 @@ class _AllDataScreenState extends State<AllDataScreen> {
     final PeriodReport? w = _week;
     final PeriodReport? m = _month;
     return ListView(
-      // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
-      padding: EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
           Tokens.s5,
-          Tokens.s4 + AppTopBar.reservedSpaceFor(context),
+          Tokens.s4,
           Tokens.s5,
           Tokens.s6 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[

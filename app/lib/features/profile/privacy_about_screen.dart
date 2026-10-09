@@ -16,6 +16,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/app_info.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/glass_switch.dart';
 import '../../core/theme.dart';
 import '../../analytics/analytics.dart';
@@ -63,6 +64,14 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
   bool _analyticsEnabled = false; // 默认关（见 db.dart 那一列的注释）
   bool _loading = true;
 
+  /// 两道同意的现状（决定「撤回」入口出不出现）。
+  ///
+  /// 2026-10-09（第二份 docx 第 2 条）：用户原话「撤回同意这种设置类的入口全部收纳到
+  /// 设置里，这里不展示」—— 于是这两条从「身体数据」页搬到了这一屏。
+  /// 为什么必须**按现状显示**：从没同意过的人看到"撤回我的同意"会以为我们偷偷收过。
+  bool _bodyConsent = false;
+  bool _healthConsent = false;
+
   @override
   void initState() {
     super.initState();
@@ -71,14 +80,101 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
 
   Future<void> _load() async {
     final bool enabled = await widget.profile.analyticsEnabled();
+    final bool body = await widget.profile.bodyMetricConsentAtMs() != null;
+    final bool health = await widget.profile.healthConsentAtMs() != null;
     // 页面读到的值也同步给 analytics：用户可能在别处改过（或刚启动），
     // 界面与"到底记不记"必须是同一个事实。
     widget.analytics?.setEnabled(enabled);
     if (!mounted) return;
     setState(() {
       _analyticsEnabled = enabled;
+      _bodyConsent = body;
+      _healthConsent = health;
       _loading = false;
     });
+  }
+
+  /// 撤回「处理身体数据」的同意（从身体数据页搬过来的，文案一个字没改）。
+  ///
+  /// ⚠️ 与原来在身体数据页上的那版**只差一件事**：那边撤回之后会把那一页退掉
+  /// （"刚撤回还在处理"看着矛盾）；这里是设置页，没有这个问题，所以**留在原地**、
+  /// 只把入口收起来（`_bodyConsent = false`）。
+  Future<void> _revokeBodyConsent() async {
+    final bool? yes = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('撤回后不再收集身体数据',
+            style: TextStyle(color: Tokens.text)),
+        content: const Text(
+          '撤回的是「同意」，不是数据：\n\n'
+          '· 「身体数据」那一页下次进去会重新问你一次；\n'
+          '· 你不同意之前，不会再读、也不会再写体重、体脂率、腰围、肌肉量和身高；\n'
+          '· 之后的备份（本机导出与云备份）里也不会再带上它们；\n'
+          '· 已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
+          key: Key('body-revoke-note'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('body-revoke-no'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('算了', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('body-revoke-yes'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('撤回', style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await widget.profile.clearBodyMetricConsent();
+    if (!mounted) return;
+    setState(() => _bodyConsent = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已撤回：下次进「身体数据」会重新问你')),
+    );
+  }
+
+  /// 撤回「读系统健康库」的同意（同样从身体数据页搬过来）。
+  Future<void> _revokeHealthConsent() async {
+    final bool? yes = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('撤回后不再读系统健康库',
+            style: TextStyle(color: Tokens.text)),
+        content: const Text(
+          '撤回的是「同意」，不是数据：\n\n'
+          '· 之后再点「从系统健康同步」会重新问你一次；\n'
+          '· 你不同意之前，不会再从健康库读任何东西；\n'
+          '· 已经并进来的那些天不会被删掉 —— 要删请去「全部数据」。',
+          key: Key('health-revoke-note'),
+          style: TextStyle(color: Tokens.text2, height: 1.6),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('health-revoke-no'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('算了', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('health-revoke-yes'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('撤回', style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await widget.profile.clearHealthConsent();
+    if (!mounted) return;
+    setState(() => _healthConsent = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已撤回：下次点「从系统健康同步」会重新问你')),
+    );
   }
 
   /// 关掉隐私开关：立刻生效 + 落库。
@@ -204,6 +300,74 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
             ),
           ],
         ]),
+        // ── 撤回同意（PIPL 第 15 条：同意不是一次性的）──────────────
+        //
+        // 2026-10-09（第二份 docx 第 2 条）：用户原话「撤回同意这种设置类的入口
+        // 全部收纳到设置里，这里不展示」—— 两条从「身体数据」页搬到这里。
+        // ⚠️ **只搬位置，文案一个字不改**（"撤回的是同意、不是数据"是 PIPL 口径）。
+        // ⚠️ **按现状显示**：没同意过就不摆"撤回"（否则像在暗示我们偷偷收过）。
+        if (_bodyConsent || _healthConsent) ...<Widget>[
+          const SizedBox(height: Tokens.s5),
+          profileSectionTitle('撤回同意'),
+          settingsCard(<Widget>[
+            if (_bodyConsent) ...<Widget>[
+              TextButton(
+                key: const Key('body-revoke'),
+                onPressed: _revokeBodyConsent,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+                  minimumSize: const Size(0, 44),
+                  alignment: Alignment.centerLeft,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: Tokens.text2,
+                ),
+                child: const Text('撤回我的同意',
+                    style: TextStyle(
+                        fontSize: 14, decoration: TextDecoration.underline)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    Tokens.s4, 0, Tokens.s4, Tokens.s3),
+                child: const Text(
+                  // ⚠️ 这里同样不能出现 markdown 的星号（Text 不渲染 markdown）
+                  key: Key('body-revoke-caption'),
+                  '撤回后不再收集新的身体数据，「身体数据」那一页会重新问你一次；'
+                  '已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
+                  style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.6),
+                ),
+              ),
+            ],
+            // 两道门各自撤回 —— 并成一个按钮，用户就分不清自己撤的是哪一件事
+            if (_bodyConsent && _healthConsent)
+              const Divider(height: 1, color: Tokens.line),
+            if (_healthConsent) ...<Widget>[
+              TextButton(
+                key: const Key('health-revoke'),
+                onPressed: _revokeHealthConsent,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+                  minimumSize: const Size(0, 44),
+                  alignment: Alignment.centerLeft,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: Tokens.text2,
+                ),
+                child: const Text('撤回「读系统健康」的同意',
+                    style: TextStyle(
+                        fontSize: 14, decoration: TextDecoration.underline)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    Tokens.s4, 0, Tokens.s4, Tokens.s3),
+                child: const Text(
+                  key: Key('health-revoke-caption'),
+                  '撤回后不再从系统健康库读取，下次点「从系统健康同步」会重新问你；'
+                  '已经并进来的那些天不会被删掉。',
+                  style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.6),
+                ),
+              ),
+            ],
+          ]),
+        ],
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('对外文本'),
         settingsCard(<Widget>[

@@ -146,7 +146,7 @@
   合并规则落在 `BodyMetricRepository.mergeHealthDays`（同一个事务；
   **我们的字段不覆盖**，只补缺的；那天只有系统有就新建并写备注「来自系统健康」；
   **用户删过的那天不复活**）；
-* 同意门：`user_profile.health_consent_at_ms`（**这一版加的**，是 v25 那次迁移；库现在到 v28），
+* 同意门：`user_profile.health_consent_at_ms`（**这一版加的**，是 v25 那次迁移；库现在到 v29），
   页面上的入口 `Key('health-sync-entry')`、同意框 `health-consent`、撤回 `health-revoke`；
 * 测试：`app/test/health_sync_test.dart` 22 条（含"**没同意时桥一次都没被调用**"、
   "两道门互不干扰"、"安卓上这个入口根本不出现"）；

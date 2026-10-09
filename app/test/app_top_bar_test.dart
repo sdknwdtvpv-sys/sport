@@ -159,78 +159,41 @@ void main() {
     expect(find.byKey(const Key('top-bar-settings')), findsNothing);
   });
 
-  // ── 顶栏玻璃与"浮动顶栏"留给内容的高度（10.9 清单第 2a 条）──────────────────
-  group('顶栏：iOS 玻璃 + 内容要让出多少', () {
-    testWidgets('非 iOS：顶栏原样（无玻璃、保留空间为 0）', (WidgetTester tester) async {
-      late double reserved;
+  // ── 顶栏**不许**再包玻璃（v1.66.0 上线后被用户回退）────────────────────────
+  //
+  // 用户原话（2026-10-09 第二份 docx 第 5 条）：「看最上面 玻璃质感完全 bug了 回退吧」——
+  // 真机上标题与页面内容互相叠影。这条组的作用就是**把它钉住**：
+  // 顶栏两种平台都只是一个普通的 `Padding`，不许出现 `glass-top-bar`、
+  // 也不许再有"给浮动顶栏让位"那种 API（`reservedSpaceFor` 已经删掉了 ——
+  // 留着它，下次有人会以为顶栏还是浮的）。
+  group('顶栏：回退到无玻璃、不浮动', () {
+    testWidgets('iOS：顶栏没有玻璃、也不浮动（回归：用户回退过的那一条）',
+        (WidgetTester tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
-        home: Builder(
-          builder: (BuildContext ctx) {
-            reserved = AppTopBar.reservedSpaceFor(ctx);
-            return const Scaffold(body: AppTopBar(title: '今天'));
-          },
-        ),
+        home: const Scaffold(body: AppTopBar(title: '今天')),
       ));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('glass-top-bar')), findsNothing,
-          reason: 'Android/桌面不画玻璃 —— 顶栏仍是 `Column` 里的原位');
-      expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
-      expect(reserved, 0, reason: '那边顶栏各占各的位置，内容不需要让');
+          reason: '顶栏那块玻璃被用户回退了 —— 真机上会叠影');
+      expect(find.byKey(const Key('app-top-bar')), findsOneWidget,
+          reason: '顶栏本身当然还在（回退的是它的玻璃，不是它）');
+
+      debugDefaultTargetPlatformOverride = null;
     });
 
-    testWidgets('★ iOS：顶栏是一块通栏玻璃，且内容要让出一条高度',
+    testWidgets('非 iOS：同样没有玻璃（两端同一条判据：都没有）',
         (WidgetTester tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      late double reserved;
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
-        home: Builder(
-          builder: (BuildContext ctx) {
-            reserved = AppTopBar.reservedSpaceFor(ctx);
-            return const Scaffold(body: AppTopBar(title: '今天'));
-          },
-        ),
+        home: const Scaffold(body: AppTopBar(title: '今天')),
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('glass-top-bar')), findsOneWidget);
-      expect(reserved, greaterThan(0),
-          reason: 'iOS 上顶栏浮在内容之上，第一行内容必须让出这条高度');
-
-      debugDefaultTargetPlatformOverride = null;
-    });
-
-    testWidgets('★ 大字号时那条高度跟着长（1.5× 下标题自己也变高了）',
-        (WidgetTester tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      double at100 = 0;
-      double at150 = 0;
-      for (final double scale in <double>[1.0, 1.5]) {
-        await tester.pumpWidget(MaterialApp(
-          theme: buildAppTheme(),
-          home: MediaQuery(
-            data: MediaQueryData(textScaler: TextScaler.linear(scale)),
-            child: Builder(
-              builder: (BuildContext ctx) {
-                if (scale == 1.0) {
-                  at100 = AppTopBar.reservedSpaceFor(ctx);
-                } else {
-                  at150 = AppTopBar.reservedSpaceFor(ctx);
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ));
-        await tester.pumpAndSettle();
-      }
-
-      expect(at150, greaterThan(at100),
-          reason: '只按标准字号留空间的话，1.5× 下第一行内容会被压在玻璃下面');
-
-      debugDefaultTargetPlatformOverride = null;
+      expect(find.byKey(const Key('glass-top-bar')), findsNothing);
+      expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
     });
   });
 }

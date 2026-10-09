@@ -21,6 +21,7 @@ import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/features/body/body_metric_screen.dart';
+import 'package:lianleme/features/profile/privacy_about_screen.dart';
 
 import 'legacy_db.dart';
 
@@ -147,16 +148,24 @@ void main() {
     // 这三条守的是"撤回权"与"删除权"**不被合成一件事** ——
     // 那种把用户历史一起抹掉的做法是这类功能最常见的错。
 
-    /// 「撤回我的同意」在这一页的**最下面**（表单 + 历史记录之后），
-    /// 懒构建的 ListView 不滚过去就根本不存在 —— 已经栽过一次，先滚再点。
+    /// 打开「设置 → 隐私与关于」那一屏（**撤回入口 2026-10-09 搬到了这里**）。
     ///
-    /// 拖哪个滚动体要指名道姓：这一页 v1.52 起有两个 ListView（整页纵向 +
-    /// 日期那排横向 chips），`find.byType(ListView)` 会同时命中两个，
-    /// `getCenter` 直接抛 `Found 2 widgets`。页面那边给了 `body-scroll`。
+    /// 用户原话（第二份 docx 第 2 条）：「撤回同意这种设置类的入口全部收纳到设置里，
+    /// 这里不展示」。所以这几条测试改成直接 pump 那一屏 ——
+    /// 断言与 key 一个都没改（搬的是位置，不是行为）。
+    Future<void> pumpPrivacy(WidgetTester tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: PrivacyAboutScreen(profile: profile),
+      ));
+      await tester.pumpAndSettle();
+    }
+
     Future<void> tapRevoke(WidgetTester tester) async {
+      await pumpPrivacy(tester);
       await tester.dragUntilVisible(
         find.byKey(const Key('body-revoke')),
-        find.byKey(const Key('body-scroll')),
+        find.byType(ListView),
         const Offset(0, -200),
       );
       await tester.pumpAndSettle();
@@ -198,8 +207,8 @@ void main() {
           reason: '同意必须真的被清掉，否则下次进来不会再问');
       expect(await repo.count(), 1,
           reason: '撤回的是同意，不是数据 —— 历史体重必须还在');
-      expect(find.byKey(const Key('body-consent')), findsNothing,
-          reason: '撤回之后这一页已经退出去了');
+      expect(find.byKey(const Key('body-revoke')), findsNothing,
+          reason: '撤回之后这条入口自己就该消失（没同意过就没什么可撤回的）');
     });
 
     testWidgets('撤回确认框点「算了」：同意记录与数据都不动',
@@ -215,7 +224,7 @@ void main() {
       expect(await profile.bodyMetricConsentAtMs(), 2000, reason: '没确认就不该撤回');
       expect(await repo.count(), 1);
       expect(find.byKey(const Key('body-revoke')), findsOneWidget,
-          reason: '取消之后还留在这一页');
+          reason: '取消之后入口还在（他随时可以再来一次）');
     });
 
     testWidgets('撤回之后再进来：那道门重新出现，且拒绝之前不读不写',
@@ -271,8 +280,10 @@ void main() {
         const Offset(0, -200),
       );
       await tester.pumpAndSettle();
+      // ⚠️ 2026-10-09 起这一页上**任何情况下**都没有撤回入口（搬去设置了）——
+      // 这条顺便把"它不许偷偷回来"钉住。
       expect(find.byKey(const Key('body-revoke')), findsNothing,
-          reason: '没有落库的地方就不该给一个按了没用的入口');
+          reason: '撤回入口已经收进「设置 → 隐私与关于」，这一页不许再出现');
     });
   });
 

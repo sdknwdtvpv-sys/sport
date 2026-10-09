@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
-import '../../core/app_top_bar.dart';
+import '../../core/pills.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/exercise_repository.dart';
@@ -24,6 +24,7 @@ import '../../domain/models.dart' show SetRecord;
 import '../progress/progress_data.dart';
 import '../routine/routine_screen.dart';
 import '../today/today_planner.dart';
+import '../today/training_scenario.dart';
 
 /// 三个视图的枚举（界面上的那排 chip 就是它）。
 enum PlanView { week, templates, history }
@@ -39,6 +40,8 @@ class PlanScreen extends StatefulWidget {
     this.todayLabel,
     this.onResume,
     this.resumeLabel,
+    this.scenario = TrainingScenario.gym,
+    this.onScenarioChanged,
     this.now,
   });
 
@@ -52,6 +55,15 @@ class PlanScreen extends StatefulWidget {
 
   /// 「上肢 / 下肢」那一行。
   final String? todayLabel;
+
+  /// **在哪儿练**（2026-10-09 第二份 docx 第 4 条）。
+  ///
+  /// 用户原话：「计划里面，有些不在健身房练的。能否前置选择下在什么场景练，
+  /// 然后匹配对应的动作和计划」—— 这一行 chips 就是那个"前置选择"。
+  final TrainingScenario scenario;
+
+  /// 换了场景（外壳负责落库 + 按新场景重排今天的安排）。
+  final ValueChanged<TrainingScenario>? onScenarioChanged;
 
   /// 上次没练完 → 「继续训练」。
   final VoidCallback? onResume;
@@ -146,13 +158,14 @@ class _PlanScreenState extends State<PlanScreen> {
     const List<String> names = <String>['一', '二', '三', '四', '五', '六', '日'];
 
     return ListView(
-      // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
-      padding: EdgeInsets.fromLTRB(
-          Tokens.s5,
-          AppTopBar.reservedSpaceFor(context),
-          Tokens.s5,
+      padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
+        // ── 在哪儿练（第二份 docx 第 4 条）──
+        if (widget.onScenarioChanged != null) ...<Widget>[
+          _scenarioRow(),
+          const SizedBox(height: Tokens.s3),
+        ],
         ViCard(
           child: Row(
             children: <Widget>[
@@ -247,6 +260,48 @@ class _PlanScreenState extends State<PlanScreen> {
   ///
   /// **只显示"事实"**：练了就是几组，没练就是一条短横 —— 不画"计划中的训练"，
   /// 因为 App 里并没有"未来的计划"这个数据（计划的只有今天）。
+  /// 「在哪儿练」那一行（第二份 docx 第 4 条）。
+  ///
+  /// 三个场景各一枚胶囊，当前那个高亮；点另一个 = 换场景（外壳落库 + 重排今天的安排）。
+  /// ⚠️ 刻意**不做成二级页**：换场景是"今天在哪儿练"这种临时决定，
+  /// 多一跳就多一次放弃；这一行就在计划页最上面，抬眼可见。
+  Widget _scenarioRow() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Text('在哪儿练',
+                  style: TextStyle(
+                      color: Tokens.text2,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
+              const SizedBox(width: Tokens.s2),
+              Expanded(
+                child: Text(
+                  widget.scenario.hint,
+                  key: const Key('scenario-hint'),
+                  style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          Wrap(
+            spacing: Tokens.s2,
+            runSpacing: Tokens.s2,
+            children: <Widget>[
+              for (final TrainingScenario sc in TrainingScenario.values)
+                choicePill(
+                  key: Key('scenario-${sc.wire}'),
+                  label: sc.label,
+                  active: widget.scenario == sc,
+                  onTap: () => widget.onScenarioChanged?.call(sc),
+                ),
+            ],
+          ),
+        ],
+      );
+
   Widget _dayCell({required DateTime day, required String label, required bool isToday}) {
     int sets = 0;
     for (final SetRecord s in _sets) {
@@ -318,11 +373,7 @@ class _PlanScreenState extends State<PlanScreen> {
     }
 
     return ListView(
-      // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
-      padding: EdgeInsets.fromLTRB(
-          Tokens.s5,
-          AppTopBar.reservedSpaceFor(context),
-          Tokens.s5,
+      padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         for (final ({String title, List<({String workoutId, DateTime day, int exercises, int sets, double volume})> rows}) g in groups) ...<Widget>[

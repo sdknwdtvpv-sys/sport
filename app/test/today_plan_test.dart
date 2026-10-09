@@ -81,8 +81,14 @@ void main() {
           reason: '首页中间现在该摆今天的安排（以前是一个 Spacer）');
 
       final List<String> texts = cardTexts(tester);
-      expect(texts, contains('今天练 上肢'),
-          reason: '从没练过 → 上肢；2026-10-04 起不再是"今天练 胸"');
+      // ⚠️ 2026-10-09（第二份 docx 第 4 条）起表头还带着**在哪儿练**：
+      // 用户不看着"健身房/家里/徒手"这三个字，就会奇怪"我明明选了家里怎么还推这个"。
+      expect(texts.any((String s) => s.startsWith('今天练 上肢')),
+          isTrue,
+          reason: '从没练过 → 上肢；2026-10-04 起不再是"今天练 胸"；'
+              '第 4 条起后面还会带 · 场景');
+      expect(texts.any((String s) => s.contains('健身房')), isTrue,
+          reason: '没选过场景 = 健身房（与这一版之前的行为一致）');
       expect(texts, contains('换一批'));
       // 上肢日第一个动作是常用度最高的胸部动作
       expect(texts, contains('杠铃卧推'));

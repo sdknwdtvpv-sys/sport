@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
-import '../../core/app_top_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../progress/streak.dart';
@@ -265,8 +264,7 @@ class TodayScreen extends StatelessWidget {
       // 底部多留出浮动底栏的位置（Android 上那一项是 0 —— 底栏在内容下面）
       padding: EdgeInsets.fromLTRB(
           Tokens.s5,
-          // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
-          Tokens.s4 + AppTopBar.reservedSpaceFor(context),
+                    Tokens.s4,
           Tokens.s5,
           Tokens.s4 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[

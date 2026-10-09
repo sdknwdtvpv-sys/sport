@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/features/body/body_metric_screen.dart';
+import 'package:lianleme/features/profile/privacy_about_screen.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/profile_repository.dart';
@@ -585,25 +586,43 @@ void main() {
       await tester.tap(find.byKey(const Key('health-result-ok')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('health-revoke')), findsOneWidget);
+      // ⚠️ 2026-10-09（第二份 docx 第 2 条）：撤回入口**不再在这一页**，
+      // 搬去了「设置 → 隐私与关于」（那条链由下面那条用例与 `body_consent_test` 钉着）
+      expect(find.byKey(const Key('health-revoke')), findsNothing,
+          reason: '身体数据页上不许再有撤回入口（用户要求收进设置）');
       final BodyMetricData row = (await body.forDate('2026-09-20'))!;
       expect(row.weightKg, 73.0);
       expect(row.note, kHealthNote);
     });
 
-    testWidgets('撤回：清掉同意、不再读，数据一条不删', (WidgetTester tester) async {
+    testWidgets('撤回：清掉同意、不再读，数据一条不删（入口在设置里）',
+        (WidgetTester tester) async {
       await profile.setHealthConsent(nowMs: 5);
       await body.save(date: '2026-09-19', weightKg: 74.0, nowMs: 1);
-      await pumpPage(tester, bridge: bridge);
+
+      // ⚠️ 2026-10-09（第二份 docx 第 2 条）：撤回入口搬到了「设置 → 隐私与关于」，
+      // 所以这条直接从那一屏开始（断言与 key 一个都没改 —— 搬的是位置，不是行为）。
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: PrivacyAboutScreen(profile: profile),
+      ));
+      await tester.pumpAndSettle();
 
       await tester.dragUntilVisible(
         find.byKey(const Key('health-revoke')),
-        find.byKey(const Key('body-scroll')),
+        find.byType(ListView),
         const Offset(0, -200),
       );
+      await tester.pumpAndSettle();
+      // 说明必须说清"撤回的是同意、不是数据"，且不许出现 markdown 记号
+      final String caption = tester
+          .widget<Text>(find.byKey(const Key('health-revoke-caption')))
+          .data!;
+      expect(caption.contains('**'), isFalse);
+      expect(caption.contains('不会被删掉'), isTrue);
+
       await tester.tap(find.byKey(const Key('health-revoke')));
       await tester.pumpAndSettle();
-
       final Text note = tester.widget<Text>(find.byKey(const Key('health-revoke-note')));
       expect(note.data, contains('不会被删掉'));
 
@@ -612,7 +631,8 @@ void main() {
 
       expect(await profile.healthConsentAtMs(), isNull);
       expect(await body.count(), 1, reason: '撤回的是同意，不是数据');
-      expect(find.byKey(const Key('health-revoke')), findsNothing);
+      expect(find.byKey(const Key('health-revoke')), findsNothing,
+          reason: '撤回之后这条入口自己就该消失');
     });
   });
 }

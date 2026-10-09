@@ -293,6 +293,13 @@ class UserProfile extends Table {
   /// 所以：设一次全局默认 → 用它铺到所有动作上；单个动作仍可在训练屏里单独改（那个更优先）。
   RealColumn get defaultWeightIncrement => real().nullable()();
 
+  /// **在哪儿练**（`gym` / `home` / `bodyweight`，2026-10-09 第二份 docx 第 4 条）。
+  ///
+  /// null = 从没选过 → 按**健身房**（全部器械）算。那正是这个功能出现之前的行为，
+  /// 所以老库升上来时"没选过"与"当时的样子"是同一件事。
+  /// 词表与"每个场景允许哪些器械"在 `features/today/training_scenario.dart`。
+  TextColumn get trainingScenario => text().nullable()();
+
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
 
@@ -670,8 +677,11 @@ class AppDatabase extends _$AppDatabase {
   /// v28（2026-10-09）：`exercise` +`sub_tags`（细分标签：上胸/中缝/后束…，
   /// 10.9 清单第 7 条）。**加列**，老库升上来是 `[]` = 没标过 ——
   /// 而动作库会在下次启动时按种子重新导入（`importSeed` 是 upsert），标签跟着到位。
+  /// v29（2026-10-09 第二份 docx）：`user_profile` +`training_scenario`
+  /// （在哪儿练：健身房 / 家里 / 徒手，第 4 条）。**加列**，老库升上来是 null
+  /// = 没选过 → 按健身房算 —— 那正是这一版之前的行为。
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -939,6 +949,11 @@ class AppDatabase extends _$AppDatabase {
           // 下一次启动导入种子时这些标签会补上（内置动作按 id upsert）。
           if (from < 28) {
             await addIfMissing(exercise, exercise.subTags);
+          }
+          // v28 → v29：`user_profile` 加一列「在哪儿练」。**只加列**，
+          // 老库升上来是 null = 没选过 → 按健身房（全部器械）算。
+          if (from < 29) {
+            await addIfMissing(userProfile, userProfile.trainingScenario);
           }
         },
       );
