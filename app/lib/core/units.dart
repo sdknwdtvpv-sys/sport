@@ -126,6 +126,17 @@ String formatWeight(double? kg, WeightUnit unit, {String nullText = '—'}) {
   return '${trimNumber(round1(toDisplayWeight(kg, unit)))} ${unit.wire}';
 }
 
+/// 加重步进的数字（不带单位）：`kg` 下**原样**念，`lb` 下换算后保留一位。
+///
+/// ⚠️ 为什么不像别处那样统一 `round1`：步进是**用户自己输进去的数**，
+/// 而它可以是 1.25（一对 1.25 kg 的小片子）。统一舍到一位小数会把它念成 1.3 ——
+/// 用户看到的数与他刚输入的不一样（写 8a 时被测试当场抓到：
+/// `find.text('+1.25')` 找不到，界面上写着 +1.3）。
+/// kg 是存储单位，没有换算误差，所以直接用；lb 是换算出来的，才必须舍。
+String formatStep(double kg, WeightUnit unit) => unit == WeightUnit.kg
+    ? trimNumber(kg)
+    : trimNumber(round1(toDisplayWeight(kg, unit)));
+
 /// 距离（**米**，存储单位）→「5.00 公里」/「800 米」。
 ///
 /// 为什么小于 1 公里时改口说米：跑步机上"0.80 公里"和"800 米"是同一件事，

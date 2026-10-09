@@ -21,6 +21,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/theme.dart';
+import 'package:lianleme/core/units.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 SetRecord，预先 hide。
 import 'package:lianleme/data/db.dart' hide SetRecord, Workout, Exercise, WorkoutItem;
 import 'package:lianleme/domain/models.dart';
@@ -243,5 +244,77 @@ void main() {
     expect(find.byKey(const Key('privacy-policy')), findsOneWidget);
     expect(find.byKey(const Key('collection-list')), findsOneWidget);
     expect(find.byKey(const Key('open-source-licenses')), findsOneWidget);
+  });
+
+  // ── 偏好设置里的「加重量」（2026-10-09，10.9 清单第 8a 条）──────────────────
+  //
+  // 训练屏上那一处改的是"手上这个动作"，而有些健身房的片子**只有 5 kg 一档** ——
+  // 那种地方要的是"我这儿的档就是这个"，那是设置的话题，不是训练中的话题。
+  group('偏好设置 · 加重步进', () {
+    Future<void> pumpPrefs(WidgetTester tester,
+        {required List<double> written,
+        WeightUnit unit = WeightUnit.kg,
+        double? current}) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Scaffold(
+          body: PreferencesScreen(
+            profile: profile,
+            unit: unit,
+            defaultStepKg: current,
+            onStepAllChanged: (double kg) async => written.add(kg),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('没设过时写「跟随动作」，改一次就是"铺到所有动作"',
+        (WidgetTester tester) async {
+      final List<double> written = <double>[];
+      await pumpPrefs(tester, written: written);
+
+      // 没设过 = 跟随动作（副标题解释这是什么）
+      expect(find.byKey(const Key('step-row')), findsOneWidget);
+      expect(tester.widget<Text>(find.byKey(const Key('step-current'))).data, '跟随动作');
+
+      await tester.tap(find.byKey(const Key('step-row')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('step-preset-5')));
+      await tester.pumpAndSettle();
+      // ⚠️ 设置页里**没有**「只改这个动作」：那件事只影响以后新建的动作，
+      // 摆在设置里就是让人猜（训练屏那一处才有）
+      expect(find.byKey(const Key('step-apply-one')), findsNothing,
+          reason: '设置页只有"所有动作都改"这一种范围');
+      await tester.tap(find.byKey(const Key('step-apply-all')));
+      await tester.pumpAndSettle();
+
+      expect(written, <double>[5.0]);
+      expect(tester.widget<Text>(find.byKey(const Key('step-current'))).data, '5 kg',
+          reason: '选完这一行要立刻显示新值');
+    });
+
+    testWidgets('lb 单位下档位念的是磅，落库折回 kg（不许把 1 lb 存成 1 kg）',
+        (WidgetTester tester) async {
+      final List<double> written = <double>[];
+      await pumpPrefs(tester,
+          written: written, unit: WeightUnit.lb, current: 5 * 0.45359237);
+
+      // 存的是 kg（2.27），念出来还是 5 lb（不是 2.3 这种换算尾巴）
+      expect(tester.widget<Text>(find.byKey(const Key('step-current'))).data, '5 lb');
+
+      await tester.tap(find.byKey(const Key('step-row')));
+      await tester.pumpAndSettle();
+      // lb 下的档位是 1/2.5/5/10（kg 下才是 0.5/1/2/2.5/5）
+      expect(find.byKey(const Key('step-preset-0.5')), findsNothing);
+      await tester.tap(find.byKey(const Key('step-preset-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('step-apply-all')));
+      await tester.pumpAndSettle();
+
+      expect(written.single, closeTo(0.45359237, 1e-9),
+          reason: '1 lb 要折成 0.4536 kg —— 直接存 1 的话 lb 用户点"1"会得到 2.2 lb 的一步');
+      expect(tester.widget<Text>(find.byKey(const Key('step-current'))).data, '1 lb');
+    });
   });
 }

@@ -53,11 +53,31 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
   int _restSec = 90;
   bool _saving = false;
 
+  /// 用户在设置里设过的**库级默认步进**（10.9 清单第 8a 条）。
+  ///
+  /// 语义：设过就以它为准（那代表"我这儿的片子就是这个档"），没设过才按器械猜。
+  /// ⚠️ 自重动作除外 —— 它的 0 是"没有重量"的标记（`ExerciseSpec.isBodyweight`），
+  /// 铺一个 5 上去会把它变成"能加 5 kg 的动作"。
+  double? _defaultInc;
+
   @override
   void initState() {
     super.initState();
     // 名称决定保存按钮能否点，所以要跟着重建
     _name.addListener(() => setState(() {}));
+    _loadDefaultIncrement();
+  }
+
+  Future<void> _loadDefaultIncrement() async {
+    final double? inc = await widget.repository.profileDefaultIncrement();
+    if (!mounted || inc == null) return;
+    setState(() => _defaultInc = inc);
+  }
+
+  /// 这次保存要写的步进。
+  double get _increment {
+    if (_equipment == 'bodyweight') return 0;
+    return _defaultInc ?? kIncrementForEquipment[_equipment] ?? 2.5;
   }
 
   @override
@@ -76,7 +96,7 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
       name: _name.text.trim(),
       muscleGroup: _muscle,
       equipment: _equipment,
-      weightIncrement: kIncrementForEquipment[_equipment] ?? 2.5,
+      weightIncrement: _increment,
       defaultRestSec: _restSec,
     );
 

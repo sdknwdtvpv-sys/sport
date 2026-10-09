@@ -46,6 +46,8 @@ class SettingsHomeScreen extends StatelessWidget {
     this.bodyUnit = BodyWeightUnit.kg,
     this.onUnitChanged,
     this.onBodyUnitChanged,
+    this.defaultStepKg,
+    this.onStepChanged,
     this.restOverrideSec,
     this.onRestOverrideChanged,
     this.backupExporter = const PluginBackupExporter(),
@@ -69,6 +71,13 @@ class SettingsHomeScreen extends StatelessWidget {
   final BodyWeightUnit bodyUnit;
   final ValueChanged<WeightUnit>? onUnitChanged;
   final ValueChanged<BodyWeightUnit>? onBodyUnitChanged;
+
+  /// 用户定过的加重步进（kg）。null = 没设过（10.9 清单第 8a 条）。
+  final double? defaultStepKg;
+
+  /// 步进改了之后通知上层留一份（否则退出设置再进来看到的还是旧值 ——
+  /// 这一屏是 push 上来的，上层的 state 不会自己知道）。
+  final ValueChanged<double>? onStepChanged;
   final int? restOverrideSec;
   final ValueChanged<int?>? onRestOverrideChanged;
   final BackupExporter backupExporter;
@@ -144,6 +153,14 @@ class SettingsHomeScreen extends StatelessWidget {
         profile: profile,
         unit: unit,
         onUnitChanged: onUnitChanged,
+        defaultStepKg: defaultStepKg,
+        // 「所有动作都改」的落库在这里：这一屏手里有动作仓库（偏好那一页只拿到
+        // ProfileRepository）。选完**立刻**铺开，不等返回 —— 设置页没有"刷新"这一步。
+        onStepAllChanged: (double kg) async {
+          await repository.setAllWeightIncrements(kg);
+          await profile.setDefaultWeightIncrement(kg);
+          onStepChanged?.call(kg);
+        },
         restOverrideSec: restOverrideSec,
         onRestOverrideChanged: onRestOverrideChanged,
         reminder: reminder,

@@ -11,6 +11,7 @@ import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, Workou
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/local_store.dart';
+import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
 
@@ -455,6 +456,100 @@ void main() {
     expect(picked?.isBuiltin, isFalse);
     expect(picked?.defaultWeightKg, isNotNull,
         reason: '步长 > 0 必须有起始重量，否则会被当成自重动作');
+  });
+
+  testWidgets('用户在设置里定过步进时：新建动作按**用户那个值**开场（10.9 清单第 8a 条）',
+      (WidgetTester tester) async {
+    // 场景：这家的片子只有 5 kg 一档，用户在设置里把步进定成了 5。
+    // 那么新建的哑铃动作该是 5，而不是器械表里那个 2 —— 用户刚说过的偏好更可信。
+    await ProfileRepository(db).setDefaultWeightIncrement(5);
+
+    ExerciseData? picked;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext ctx) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  picked = await Navigator.of(ctx).push<ExerciseData>(
+                    MaterialPageRoute<ExerciseData>(
+                      builder: (_) => ExercisePickerScreen(repository: repo),
+                    ),
+                  );
+                },
+                child: const Text('开始'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('开始'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('picker-new-custom')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('custom-name')), '片子五公斤');
+    await tester.pumpAndSettle();
+
+    final Finder dumbbell = find.byKey(const Key('custom-equipment-dumbbell'));
+    await tester.ensureVisible(dumbbell);
+    await tester.pumpAndSettle();
+    await tester.tap(dumbbell);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('custom-save')));
+    await tester.pumpAndSettle();
+
+    expect(picked?.weightIncrement, 5, reason: '设置里定过的步进优先于器械默认值');
+  });
+
+  testWidgets('自重动作不许被那个"默认步进"污染（0 是"没有重量"的标记）',
+      (WidgetTester tester) async {
+    await ProfileRepository(db).setDefaultWeightIncrement(5);
+
+    ExerciseData? picked;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext ctx) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  picked = await Navigator.of(ctx).push<ExerciseData>(
+                    MaterialPageRoute<ExerciseData>(
+                      builder: (_) => ExercisePickerScreen(repository: repo),
+                    ),
+                  );
+                },
+                child: const Text('开始'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('开始'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('picker-new-custom')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('custom-name')), '徒手深蹲');
+    await tester.pumpAndSettle();
+
+    final Finder bw = find.byKey(const Key('custom-equipment-bodyweight'));
+    await tester.ensureVisible(bw);
+    await tester.pumpAndSettle();
+    await tester.tap(bw);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('custom-save')));
+    await tester.pumpAndSettle();
+
+    expect(picked?.weightIncrement, 0,
+        reason: '自重动作的 0 不能被默认步进盖掉（否则引体向上会变成"能加 5 kg"）');
+    expect(picked?.defaultWeightKg, isNull);
   });
 
   testWidgets('名称为空时保存按钮不可用（不让用户建出无名动作）',

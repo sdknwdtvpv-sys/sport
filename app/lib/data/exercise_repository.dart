@@ -17,6 +17,8 @@ import '../domain/models.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，
 // 同时裸 import 两个库时，一用到同名类就 ambiguity_import。这里预先 hide 掉。
 import 'db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+// 只借一个常量（`kLocalUserId`）——单行表的 id 只该有一处定义
+import 'profile_repository.dart' show ProfileRepository;
 
 class ExerciseRepository {
   ExerciseRepository(this._db);
@@ -99,6 +101,20 @@ class ExerciseRepository {
   //
   // 步进本来是**种子数据**的一部分（哑铃 2、器械 5、杠铃 2.5…），用户改不动 ——
   // 而有些健身房的片子只有 5 kg 一档，那种地方每个动作都要能用同一个步进。
+
+  /// 用户设的**库级默认步进**（kg）。null = 没设过（各动作用自己的）。
+  ///
+  /// ⚠️ 这一列长在 `userProfile` 表上（它是"人的偏好"，写入口在
+  /// `ProfileRepository.setDefaultWeightIncrement`），但**用它的地方全在动作这一层**
+  /// —— 新建自定义动作要按它开场。与其把 `ProfileRepository` 一路透传到
+  /// 动作选择器（那条链上有 5 个构造点，多带一个参数就是多 5 处可能传漏），
+  /// 不如在这里开一个**只读**的口：同一个库、同一列，来源仍然只有一个。
+  Future<double?> profileDefaultIncrement() async {
+    final UserProfileData? row = await (_db.select(_db.userProfile)
+          ..where((t) => t.userId.equals(ProfileRepository.kLocalUserId)))
+        .getSingleOrNull();
+    return row?.defaultWeightIncrement;
+  }
 
   /// 改**某一个动作**的加重步进（kg）。`0` 表示自重动作（界面不会给自重动作开这个入口）。
   ///

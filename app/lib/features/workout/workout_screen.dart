@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../core/weight_step_dialog.dart';
 import '../../data/db.dart' show ExerciseData;
 import '../../data/local_store.dart';
 import '../../domain/models.dart';
@@ -741,7 +742,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     _stepperRow(
                       value: trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
                       unit: c.unit.wire,
-                      step: trimNumber(c.weightStep),
+                      // ⚠️ 步进按显示单位念，但**不许舍成一位小数**：
+                      // 用户输进去的 1.25 要原样写在这个按钮上（`formatStep`）
+                      step: formatStep(c.weightStep, c.unit),
                       keyMinus: 'step-weight-down',
                       keyPlus: 'step-weight-up',
                       // 步进可点改（10.9 清单第 8a 条）：有些健身房的片子只有 5 kg 一档，
@@ -774,7 +777,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       unit: c.isBodyweight
                           ? ''
                           : (c.isAssisted ? '${c.unit.wire} 助力' : c.unit.wire),
-                      step: trimNumber(c.weightStep),
+                      // ⚠️ 步进按显示单位念，但**不许舍成一位小数**：
+                      // 用户输进去的 1.25 要原样写在这个按钮上（`formatStep`）
+                      step: formatStep(c.weightStep, c.unit),
                       keyMinus: 'step-weight-down',
                       keyPlus: 'step-weight-up',
                       // 步进可点改（10.9 清单第 8a 条）：有些健身房的片子只有 5 kg 一档，
@@ -920,90 +925,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   /// 改加重步进（10.9 清单第 8a 条「加重量的选项能不能自定义」）。
   ///
-  /// 档位随**当前重量单位**给（kg 下 0.5/1/2/2.5/5；lb 下 1/2.5/5/10），另有"自定义"输入 ——
-  /// 真实健身房里的片子五花八门（1 kg、2.5 kg、5 kg 一对最常见）。
+  /// 对话框本身在 `core/weight_step_dialog.dart`：设置里的「加重步进」走的是**同一个**
+  /// （两处要问的东西一模一样，两份实现迟早长歪）。
+  /// 这一处多给一个"只改这个动作"（训练中当场要能只动手上这一个）。
   ///
-  /// 对话框里**一次问清范围**（比事后再弹一个"要不要铺到所有动作"顺）：
-  ///   * **只改这个动作** → 写在这个动作自己身上（下次进来还是它，别的动作不受影响）；
-  ///   * **所有动作都改** → 铺到整个动作库 + 记成"你设的默认值"
-  ///     （有些健身房的片子只有 5 kg 一档，那种地方就是要一次铺开）。
+  /// 写库**不在这里**：训练屏只有瘦身过的控制器，仓库在外壳手里（两个回调）。
   Future<void> _pickWeightStep(WorkoutController c) async {
-    final bool lb = c.unit == WeightUnit.lb;
-    final List<double> presets = lb
-        ? <double>[1, 2.5, 5, 10]
-        : <double>[0.5, 1, 2, 2.5, 5];
-    double selected = c.weightStep;
-    // ⚠️ 这里**不用 TextEditingController**：对话框 pop 之后路由还要播完退场动画，
-    // 而那时候 `TextField` 仍会重建一次 —— 一 dispose 就撞
-    // "A TextEditingController was used after being disposed"（写这一条时当场踩到，
-    // 而且是**跨用例污染**：崩在下一个用例里，看起来像别人坏了）。
-    // 自定义那一格直接改 `selected`，连局部字符串都不用留。
-
-    final _StepPick? pick = await showDialog<_StepPick>(
-      context: context,
-      builder: (BuildContext ctx) => StatefulBuilder(
-        builder: (BuildContext ctx, void Function(void Function()) setState) => AlertDialog(
-          backgroundColor: Tokens.surface,
-          title: Text('加重步进 · ${c.exercise.name.isEmpty ? '这个动作' : c.exercise.name}',
-              style: const TextStyle(color: Tokens.text, fontSize: 17)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Wrap(
-                spacing: Tokens.s2,
-                runSpacing: Tokens.s2,
-                children: <Widget>[
-                  for (final double v in presets)
-                    ChoiceChip(
-                      key: Key('step-preset-${trimNumber(v)}'),
-                      label: Text('${trimNumber(v)} ${c.unit.wire}'),
-                      selected: (v - selected).abs() < 0.001,
-                      onSelected: (_) => setState(() => selected = v),
-                    ),
-                ],
-              ),
-              const SizedBox(height: Tokens.s4),
-              TextField(
-                key: const Key('step-custom'),
-                onChanged: (String v) {
-                  final double? d = double.tryParse(v.trim());
-                  if (d != null && d > 0) setState(() => selected = d);
-                },
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: Tokens.text),
-                decoration: const InputDecoration(
-                  labelText: '自定义',
-                  hintText: '例如 1.25',
-                ),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              key: const Key('step-cancel'),
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('取消', style: TextStyle(color: Tokens.text2)),
-            ),
-            TextButton(
-              key: const Key('step-apply-one'),
-              onPressed: () =>
-                  Navigator.of(ctx).pop(_StepPick(selected, all: false)),
-              child: const Text('只改这个动作', style: TextStyle(color: Tokens.accent)),
-            ),
-            TextButton(
-              key: const Key('step-apply-all'),
-              onPressed: () => Navigator.of(ctx).pop(_StepPick(selected, all: true)),
-              child: const Text('所有动作都改', style: TextStyle(color: Tokens.accent)),
-            ),
-          ],
-        ),
-      ),
+    final WeightStepPick? pick = await pickWeightStep(
+      context,
+      unit: c.unit,
+      current: c.weightStep,
+      exerciseName: c.exercise.name,
     );
-    if (pick == null || pick.kg <= 0) return;
+    if (pick == null || pick.kg <= 0) return; // 关掉弹层 / 空值 = 没改
     // ① 内存：这一趟训练立刻按新步进加减（不用退出重进）
     c.setWeightStep(pick.kg);
-    // ② 库：由外壳写（仓库在外壳手里，训练屏只有瘦身过的控制器）
+    // ② 库：由外壳写
     if (pick.all) {
       await widget.onWeightStepAll?.call(pick.kg);
     } else {
@@ -1013,8 +950,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(pick.all
-            ? '所有动作的加重步进都改成 ±${trimNumber(pick.kg)} ${c.unit.wire}'
-            : '加重步进改成 ±${trimNumber(pick.kg)} ${c.unit.wire}'),
+            ? '所有动作的加重步进都改成 ±${formatWeight(pick.kg, c.unit)}'
+            : '加重步进改成 ±${formatWeight(pick.kg, c.unit)}'),
       ),
     );
   }
@@ -1098,11 +1035,4 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       ),
     );
   }
-}
-
-/// 步进对话框的结果：改成多少 + 范围（只这一个动作 / 所有动作）。
-class _StepPick {
-  const _StepPick(this.kg, {required this.all});
-  final double kg;
-  final bool all;
 }

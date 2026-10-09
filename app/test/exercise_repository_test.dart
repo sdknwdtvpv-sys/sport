@@ -12,6 +12,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+import 'package:lianleme/data/profile_repository.dart';
 // db.dart（drift）与 models.dart 都定义了 Workout / SetRecord ——
 // 这里只需要 isDistanceTrack，所以用 as 带前缀（verify.sh 有检查守这条）
 import 'package:lianleme/domain/models.dart' as domain;
@@ -404,6 +405,89 @@ void main() {
     test('不传 equipment 时行为与以前完全一致（全都要）', () async {
       final List<ExerciseData> all = await repo.search(limit: 500);
       expect(all.length, await _seedCount());
+    });
+  });
+
+  // ── 加重步进（2026-10-09，10.9 清单第 8a 条「加重量的选项能不能自定义」）──────
+  //
+  // 三条要守的东西：**改一个动作只动它**、**铺全库时跳过自重与回收站**、
+  // **用户设的默认值读得回来**。前两条各对应一个真实后果 ——
+  // 自重动作被铺上 5 就会从"引体向上"变成"能加 5 kg 的动作"（`isBodyweight` 认 0）。
+  group('加重步进', () {
+    setUp(() async {
+      await repo.importSeed(loadJson: _readAsset);
+    });
+
+    test('只改一个动作：改的那个变了，别的一个都没碰', () async {
+      final List<ExerciseData> all = await repo.search(limit: 500);
+      final ExerciseData one =
+          all.firstWhere((ExerciseData e) => e.weightIncrement == 2.5);
+      final ExerciseData other = all.firstWhere(
+          (ExerciseData e) => e.id != one.id && e.weightIncrement == 2.5);
+
+      await repo.setWeightIncrement(one.id, 5);
+
+      expect((await repo.byId(one.id))!.weightIncrement, 5);
+      expect((await repo.byId(other.id))!.weightIncrement, 2.5,
+          reason: '改一个动作不该顺手把别人也改了');
+    });
+
+    test('铺到全库：所有"有重量"的动作都变成同一个步进', () async {
+      final List<ExerciseData> before = await repo.search(limit: 500);
+      final int weighted =
+          before.where((ExerciseData e) => e.weightIncrement > 0).length;
+
+      final int n = await repo.setAllWeightIncrements(5);
+      expect(n, weighted, reason: '受影响的行数 = 有重量的动作数（自重的那些不算）');
+
+      final List<ExerciseData> after = await repo.search(limit: 500);
+      for (final ExerciseData e in after) {
+        // ⚠️ 这里用 `weightIncrement == 0` 判断自重，而不是 `isBodyweight`
+        // —— 那是 `exercise_data_ext.dart` 给界面用的扩展，drift 行上没有
+        expect(e.weightIncrement, e.weightIncrement == 0 ? 0 : 5,
+            reason: '${e.name} 的步进不对');
+      }
+    });
+
+    test('自重动作的 0 不许被铺掉（引体向上不会变成"能加 5 kg"）', () async {
+      final ExerciseData pullup = (await repo.search(limit: 500)).firstWhere(
+          (ExerciseData e) => e.weightIncrement == 0,
+          orElse: () => throw StateError('种子里应该有自重动作'));
+
+      await repo.setAllWeightIncrements(5);
+
+      expect((await repo.byId(pullup.id))!.weightIncrement, 0,
+          reason: '0 是"没有重量"的标记（ExerciseSpec.isBodyweight 就认它）');
+    });
+
+    test('回收站里的动作也跳过（那是删掉的东西，不该跟着改）', () async {
+      final ExerciseData one = (await repo.search(limit: 500))
+          .firstWhere((ExerciseData e) => e.weightIncrement > 0);
+      await (db.update(db.exercise)..where((t) => t.id.equals(one.id)))
+          .write(ExerciseCompanion(deletedAt: Value<int>(1)));
+
+      await repo.setAllWeightIncrements(5);
+
+      final ExerciseData raw = await (db.select(db.exercise)
+            ..where((t) => t.id.equals(one.id)))
+          .getSingle();
+      expect(raw.weightIncrement, isNot(5), reason: '回收站里的不该被铺');
+      // 而且它确实是被软删的（否则这条测试可能因为别的原因碰巧通过）
+      expect(raw.deletedAt, 1);
+    });
+
+    test('用户设的默认步进：没设过是 null，设了读得回来，也能清回 null', () async {
+      final ProfileRepository profile = ProfileRepository(db);
+
+      expect(await repo.profileDefaultIncrement(), isNull,
+          reason: '没设过 = 各动作用自己的（默认 null，不是 2.5）');
+
+      await profile.setDefaultWeightIncrement(5);
+      expect(await repo.profileDefaultIncrement(), 5);
+
+      await profile.setDefaultWeightIncrement(null);
+      expect(await repo.profileDefaultIncrement(), isNull,
+          reason: 'null 是一个有意义的值，不能被"当成没提供"而跳过（drift 的 nullToAbsent 坑）');
     });
   });
 }

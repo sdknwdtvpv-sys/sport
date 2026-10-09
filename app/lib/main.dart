@@ -294,6 +294,9 @@ class _HomeShellState extends State<HomeShell> {
   /// 休息时长偏好。**null = 跟随动作自带的值**，这是默认。
   int? _restOverrideSec;
 
+  /// 用户定过的加重步进（kg，10.9 清单第 8a 条）。null = 没设过。
+  double? _defaultStepKg;
+
   /// 冷启动时刻，用来给事件算 `ms_since_launch`（"从打开到记下第一组用了多久"）。
   final int _launchedAtMs = DateTime.now().millisecondsSinceEpoch;
 
@@ -507,6 +510,7 @@ class _HomeShellState extends State<HomeShell> {
     final WeightUnit u = await _profile.unit();
     final BodyWeightUnit b = await _profile.bodyWeightUnit();
     final int? rest = await _profile.restOverrideSec();
+    final double? step = await _profile.defaultWeightIncrement();
     final String? goal = await _profile.goalWire();
     // 训练提醒的设置也在这里读一次（设置页要显示它）。
     // 注意**不在这里请求权限** —— 那是用户主动打开开关时才做的事。
@@ -518,6 +522,7 @@ class _HomeShellState extends State<HomeShell> {
       _unit = u;
       _bodyUnit = b;
       _restOverrideSec = rest;
+      _defaultStepKg = step;
       _goalWire = goal;
       _reminder = reminder;
       _reminderHint = hint;
@@ -1610,6 +1615,8 @@ class _HomeShellState extends State<HomeShell> {
         bodyUnit: _bodyUnit,
         onUnitChanged: (WeightUnit u) => setState(() => _unit = u),
         onBodyUnitChanged: (BodyWeightUnit u) => setState(() => _bodyUnit = u),
+        defaultStepKg: _defaultStepKg,
+        onStepChanged: (double kg) => setState(() => _defaultStepKg = kg),
         restOverrideSec: _restOverrideSec,
         onRestOverrideChanged: (int? sec) => setState(() => _restOverrideSec = sec),
         loadEvents: _outbox.peekAll,

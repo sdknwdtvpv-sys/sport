@@ -19,6 +19,7 @@ import '../../core/glass_switch.dart';
 import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../core/weight_step_dialog.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/models.dart';
 import 'profile_widgets.dart';
@@ -41,6 +42,8 @@ class PreferencesScreen extends StatefulWidget {
     required this.profile,
     required this.unit,
     this.onUnitChanged,
+    this.defaultStepKg,
+    this.onStepAllChanged,
     this.restOverrideSec,
     this.onRestOverrideChanged,
     this.reminder = ReminderSettings.off,
@@ -57,6 +60,16 @@ class PreferencesScreen extends StatefulWidget {
 
   /// 用户切了单位之后通知上层重建（否则别的 Tab 还按旧单位显示）。
   final ValueChanged<WeightUnit>? onUnitChanged;
+
+  /// 用户自己定过的**加重步进**（kg）。null = 还没设过 → 各动作按器械给
+  /// （10.9 清单第 8a 条）。
+  final double? defaultStepKg;
+
+  /// 用户把步进改成「所有动作都改」（kg）。
+  ///
+  /// ⚠️ 落库**不在这里**：这一页不认识动作仓库（它只拿到 `ProfileRepository`）。
+  /// 与训练屏同一条边界 —— 界面负责问，写由外壳做（否则就是两个真相）。
+  final Future<void> Function(double kg)? onStepAllChanged;
 
   /// 休息时长偏好。**null = 跟随动作自带的值**，这是默认。
   final int? restOverrideSec;
@@ -106,6 +119,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   // （值存进库了，但看起来像没生效）。
   late WeightUnit _unit = widget.unit;
   late int? _rest = widget.restOverrideSec;
+
+  /// 加重步进同样在本页留一份（同上的理由）—— 选完胶囊界面要立刻变，
+  /// 而这一页是 push 上来的路由，上层 setState 不会重建它。
+  late double? _step = widget.defaultStepKg;
 
   @override
   void initState() {
@@ -252,6 +269,37 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   /// 当前休息时长怎么念（页面上那一行的标题）。
   String get _restLabel => _rest == null ? '跟随动作' : '$_rest 秒';
 
+  /// 当前加重步进怎么念。⚠️ 库里的值**永远是 kg**，这里按显示单位念
+  /// （lb 用户看到的是 「5 lb」而不是 2.3 这种换算尾巴）。
+  String get _stepLabel => _step == null
+      ? '跟随动作'
+      : '${formatStep(_step!, _unit)} ${_unit.wire}';
+
+  /// 改加重步进（10.9 清单第 8a 条）。
+  ///
+  /// 与训练屏里那一处是**同一个弹层**（`core/weight_step_dialog.dart`），
+  /// 只是这里不问范围 —— 设置页里"只改默认值"是件用户看不见效果的事
+  /// （它只影响以后新建的自定义动作），摆出来就是让人猜。
+  ///
+  /// 语义与训练屏的「所有动作都改」完全一致：铺到整个动作库 + 记成默认值。
+  /// 有些健身房的片子只有 5 kg 一档，那种地方就是要一次铺开。
+  Future<void> _pickStep() async {
+    final WeightStepPick? pick = await pickWeightStep(
+      context,
+      unit: _unit,
+      // 没设过时拿 2.5 开场（那是引擎的兜底步进，见 `workout_controller.dart`）
+      current: _step ?? 2.5,
+      allowSingleScope: false,
+    );
+    if (pick == null || !mounted) return;
+    await widget.onStepAllChanged?.call(pick.kg);
+    if (!mounted) return;
+    setState(() => _step = pick.kg);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('所有动作的加重步进都改成 ±${formatStep(pick.kg, _unit)} ${_unit.wire}'),
+    ));
+  }
+
   Future<void> _setRest(int? sec) async {
     if (sec == _rest) return;
     await widget.profile.setRestOverrideSec(sec);
@@ -382,6 +430,33 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 // `docs/data-model.md` §单位里，只是不再印到界面上。
               ],
             ),
+          ),
+        ]),
+        const SizedBox(height: Tokens.s5),
+        // 加重步进（10.9 清单第 8a 条）：与「休息时长」同一套交互 ——
+        // 一行写当前值，选择收进弹层。
+        profileSectionTitle('加重量'),
+        settingsCard(<Widget>[
+          ListTile(
+            key: const Key('step-row'),
+            onTap: _pickStep,
+            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
+            title: Text(
+              _stepLabel,
+              key: const Key('step-current'),
+              style: const TextStyle(
+                  color: Tokens.accent, fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            // 副标题只在**真的需要解释**的时候出现（同「休息时长」那条规矩）：
+            // 「跟随动作」四个字看不出是什么意思，所以要一句；选了具体数值时
+            // 标题已经写着 `5 kg`，再说一遍就是复述。
+            subtitle: _step == null
+                ? const Text(
+                    '每个动作按器械给一个合适的档；改一次可以铺到所有动作',
+                    style: TextStyle(color: Tokens.text3, fontSize: 12.5, height: 1.4),
+                  )
+                : null,
+            trailing: const Icon(Icons.chevron_right, size: 18, color: Tokens.text3),
           ),
         ]),
         const SizedBox(height: Tokens.s5),
