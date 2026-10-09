@@ -14,6 +14,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -32,6 +33,28 @@ import '../../data/db.dart';
 import '../../data/profile_repository.dart';
 import '../../health/health_bridge.dart';
 import '../../health/health_sync.dart';
+
+/// 「健康库里没找到」该去哪儿看 —— **两端不一样**。
+///
+/// ⚠️ 为什么做成函数：原来的写法写死了「iPhone 的「健康」App」，
+/// 而 2026-10-09 之后**安卓 14+ 也会出现这个入口**（平台自带的 Health Connect）——
+/// 那种时候告诉安卓用户"去 iPhone 的健康 App 里看看"就是一句**假话**。
+/// 抽成纯函数还顺带能被单测直接钉住两个分支，不用去伪装平台。
+String healthEmptyHint(TargetPlatform platform) => platform == TargetPlatform.iOS
+    ? '健康库里没有找到体重、体脂率或身高。\n\n'
+        '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
+        '可以去 iPhone 的「健康」App 里看看有没有数据。'
+    : '健康库里没有找到体重、体脂率或身高。\n\n'
+        '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
+        '可以到系统里的「健康连接 / Health Connect」里看看有没有数据。';
+
+/// 「没拿到许可」该去哪儿打开 —— 同上，两端的设置路径根本不是同一条。
+String healthDeniedHint(TargetPlatform platform) => platform == TargetPlatform.iOS
+    ? '没有拿到读取健康数据的许可。\n\n'
+        '你可以在系统「设置 → 隐私与安全性 → 健康 → 练了么」里打开，再回来试一次。'
+    : '没有拿到读取健康数据的许可。\n\n'
+        '你可以在系统「设置 → 应用 → 健康连接 / Health Connect → 应用权限」里'
+        '给「练了么」打开读权限，再回来试一次。';
 
 /// `Color` → `#RRGGBB`（原生按这个解析；`GlassSegmented` 的原生字色用它）
 String _hexOf(Color c) {
@@ -388,12 +411,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
         }
         body = b.toString();
       case HealthSyncStatus.empty:
-        body = '健康库里没有找到体重、体脂率或身高。\n\n'
-            '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
-            '可以去iPhone 的「健康」App 里看看有没有数据。';
+        body = healthEmptyHint(defaultTargetPlatform);
       case HealthSyncStatus.denied:
-        body = '没有拿到读取健康数据的许可。\n\n'
-            '你可以在系统「设置 → 隐私与安全性 → 健康 → 练了么」里打开，再回来试一次。';
+        body = healthDeniedHint(defaultTargetPlatform);
       case HealthSyncStatus.unavailable:
         body = '这台设备上没有可用的系统健康库。';
       case HealthSyncStatus.noConsent:

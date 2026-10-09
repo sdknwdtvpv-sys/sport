@@ -344,6 +344,41 @@ void main() {
     });
   });
 
+  // ───────────────────────────────────────────────────────────── 文案
+  group('失败/空结果该去哪儿看（两端不是同一条路）', () {
+    // ⚠️ 原来这两句写死了「iPhone 的「健康」App」与 iOS 的设置路径，
+    // 而 2026-10-09 起**安卓 14+ 也会出现这个入口** —— 那种时候那句就是假话。
+    // 抽成纯函数之后可以在这里把两个分支都钉住（不用去伪装平台）。
+    test('iOS：指向「健康」App 与「隐私与安全性」那条路', () {
+      expect(healthEmptyHint(TargetPlatform.iOS), contains('iPhone 的「健康」App'));
+      expect(healthEmptyHint(TargetPlatform.iOS), isNot(contains('Health Connect')));
+      expect(healthDeniedHint(TargetPlatform.iOS),
+          contains('设置 → 隐私与安全性 → 健康'));
+      expect(healthEmptyHint(TargetPlatform.iOS), isNot(contains('*')),
+          reason: 'Text 不渲染 markdown，用户会看到星号');
+    });
+
+    test('安卓：指向「健康连接 / Health Connect」，**不许**再提 iPhone', () {
+      for (final TargetPlatform p in <TargetPlatform>[
+        TargetPlatform.android,
+        // 其它平台上也走这一支（万一以后接了别的端，至少不会说错话）
+        TargetPlatform.macOS,
+      ]) {
+        expect(healthEmptyHint(p), contains('Health Connect'));
+        expect(healthEmptyHint(p), isNot(contains('iPhone')));
+        expect(healthDeniedHint(p), contains('健康连接 / Health Connect'));
+        expect(healthDeniedHint(p), isNot(contains('iPhone')));
+      }
+    });
+
+    test('两端都说清了"下一步"（判据 4：空/失败状态要告诉用户干什么）', () {
+      for (final TargetPlatform p in TargetPlatform.values) {
+        expect(healthEmptyHint(p), contains('看看'));
+        expect(healthDeniedHint(p), contains('再回来试一次'));
+      }
+    });
+  });
+
   // ───────────────────────────────────────────────────────────── 平台桥
   group('平台桥', () {
     test('平台没实现（MissingPluginException）→ 安静地当"没有健康库"', () async {
