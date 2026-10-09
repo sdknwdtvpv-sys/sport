@@ -3,11 +3,12 @@
 /// 两条用户原话各自的判据：
 ///   * 「小铃铛放在右上角，**注意下布局协调性**」+「所有的设置相关的能不能集成到右上角，
 ///     一个小齿轮图标」→ 顶栏（`AppTopBar`，见 `widget_test.dart` 那条端到端）；
-///   * 「下面导航栏五个，**训练放在最中间**，并且最好跟其他四个**做区别展示**」→ 底栏。
+///   * 「下面导航栏五个，**训练放在最中间**，并且最好跟其他四个**做区别展示**」→ 底栏
+///     （⚠️ 2026-10-10 收回成三个：中间那格叫「**开练**」，见 `docs/screens.md` S0）。
 ///
 /// 这个文件钉的是**几何与顺序**（"看起来对不对"这件事只有尺寸与下标能验）：
 /// 正中那颗必须真的**顶出底栏上沿**，五个格必须仍然等宽，tab 顺序必须与
-/// `main.dart` 的 `_bodyFor` 对得上 —— 错一条就是"点训练进了数据"。
+/// `main.dart` 的 `_bodyFor` 对得上 —— 错一条就是"点开练进了进步"。
 library;
 
 import 'package:flutter/foundation.dart';
@@ -18,13 +19,16 @@ import 'package:lianleme/core/app_top_bar.dart';
 import 'package:lianleme/core/theme.dart';
 
 void main() {
-  test('★ tab 顺序：训练在**正中**（下标 2），其余四个各就各位',
-      () {
+  test('★ tab 顺序：三个（进步 / 开练 / 我），「开练」在正中', () {
+    // ⚠️ 2026-10-10：从五个收回三个（用户 10.10 的设计评审 + 规划 §一/§五-A）。
+    // `PRODUCT.md` §4 一直写着「3 个 Tab，上限」；「数据」降回「进步」的二级页、
+    // 「计划」从首页那张卡片进。中间那格从「训练」改名「**开练**」（动词）。
+    // 用户 10.7 那条"训练在正中"的意图继续成立。
     expect(AppTabBar.tabs.map((({IconData icon, String label}) t) => t.label),
-        <String>['进步', '数据', '训练', '计划', '我的']);
+        <String>['进步', '开练', '我']);
   });
 
-  testWidgets('★ 正中那格**完全在栏内**：只有图标垫一颗强调圆，五格仍等宽',
+  testWidgets('★ 正中那格**完全在栏内**：只有图标垫一颗强调圆，三格仍等宽',
       (WidgetTester tester) async {
     // 2026-10-08 第二遍（用户真机反馈）：「Tab 栏中间那个玻璃效果还是有问题，
     // 直接把 Tab 栏变宽一点，所有的内容都包进来吧，**不要让中间突出去一截了**，
@@ -36,15 +40,15 @@ void main() {
       home: Scaffold(
         body: Align(
           alignment: Alignment.bottomCenter,
-          child: AppTabBar(current: 2, onChanged: (int i) => tapped = i),
+          child: AppTabBar(current: 1, onChanged: (int i) => tapped = i),
         ),
       ),
     ));
     await tester.pumpAndSettle();
 
     final Rect bar = tester.getRect(find.byKey(const Key('tab-bar')));
-    final Finder center = find.byKey(const Key('tab-训练'));
-    expect(center, findsOneWidget, reason: '正中那格仍叫 tab-训练（key 与另外四格同一套）');
+    final Finder center = find.byKey(const Key('tab-开练'));
+    expect(center, findsOneWidget, reason: '正中那格叫 tab-开练（key 与另外两格同一套）');
 
     // ① 整格都在栏内 —— 上沿不许高过底栏上沿（这条就是"不要突出去"）
     final Rect centerRect = tester.getRect(center);
@@ -67,7 +71,7 @@ void main() {
         reason: '图标也要在栏内 —— 这才是"所有内容都包进来"');
     expect(
       find.descendant(
-        of: find.byKey(const Key('tab-训练')),
+        of: find.byKey(const Key('tab-开练')),
         matching: find.byType(Container),
       ),
       findsNothing,
@@ -75,20 +79,20 @@ void main() {
     );
     // 文字照旧（底栏不许少一个词）
     expect(find.byKey(const Key('tab-center-label')), findsOneWidget);
-    expect(find.text('训练'), findsOneWidget);
+    expect(find.text('开练'), findsOneWidget);
 
-    // ③ 五格仍然等宽（留空/换画法都不许改变等分）
+    // ③ **三格**仍然等宽（留空/换画法都不许改变等分）
     final double slot = tester.getSize(find.byKey(const Key('tab-进步'))).width;
-    for (final String label in <String>['数据', '计划', '我的']) {
+    for (final String label in <String>['我']) {
       expect(tester.getSize(find.byKey(Key('tab-$label'))).width,
           moreOrLessEquals(slot, epsilon: 0.5));
     }
-    expect(slot, moreOrLessEquals(bar.width / 5, epsilon: 0.5));
+    expect(slot, moreOrLessEquals(bar.width / 3, epsilon: 0.5));
 
     // ④ 点它 = 切到正中那一格
     await tester.tap(center);
     await tester.pumpAndSettle();
-    expect(tapped, 2, reason: '正中那颗就是「训练」（下标 2）');
+    expect(tapped, 1, reason: '正中那颗就是「开练」（下标 1）');
   });
 
   test('★ 底栏高度：装得下正中那颗（大一号的）图标 + 文字（68pt，不再是 58）', () {

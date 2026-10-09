@@ -75,7 +75,7 @@ void main() {
       await tester.tap(find.text('完成'));
       await settle(1800);
     }
-    await switchTab(tester, 4, '我的');
+    await switchTab(tester, 2, '我');
     await settle(2000);
     await capture('p01-02-profile');
 

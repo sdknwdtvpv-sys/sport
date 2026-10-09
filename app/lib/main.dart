@@ -65,7 +65,6 @@ import 'features/notifications/notification_rules.dart';
 import 'features/progress/achievements_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/progress/streak.dart';
-import 'features/progress/all_data_screen.dart';
 import 'features/progress/badges.dart';
 import 'features/progress/progress_data.dart';
 import 'features/progress/progress_screen.dart';
@@ -241,17 +240,23 @@ class _HomeShellState extends State<HomeShell> {
   /// 「今天的安排」落库（10.9 清单第 6 条：长按拖动 / 删除 / 替换）。
   late final DayPlanRepository _dayPlan = DayPlanRepository(_db);
 
-  /// 当前 Tab。五个（训练 / 进步 / 数据 / 计划 / 我的，见 docs/screens.md）。
-  /// 当前 tab。**2026-10-07（v1.60.0）起「训练」在正中**（用户 10.7 清单第 2 条），
-  /// 所以首页那个下标从 0 变成了 2 —— `_bodyFor` 的映射也跟着改了。
-  int _tab = 2;
+  /// 当前 Tab。**2026-10-10 起只有三个**（进步 / 开练 / 我，见 docs/screens.md）：
+  /// 「数据」降回「进步」的二级页、「计划」从首页那颗卡片进 —— `PRODUCT.md` §4 一直
+  /// 写着"3 个 Tab，上限"。初始落在正中那格（开练 = 今天）。
+  int _tab = 1;
 
   /// iOS 的外壳用 `PageView`（**可以左右拖着换 tab**）+ 这个控制器。
   /// Android 不用它（那边仍然是"直接换一屏"，见 `build` 里那条平台判据）。
-  /// ⚠️ `initialPage` **必须与 `_tab` 的初值一致**（现在都是 2 = 「训练」）。
+  /// ⚠️ `initialPage` **必须与 `_tab` 的初值一致**（现在都是 1 = 「开练」）。
   /// 不一致的后果很隐蔽：安卓那条路读 `_tab`（对），iOS 那条路读 PageView（错），
-  /// 于是"iOS 冷启动落在进步页、安卓落在训练页"—— 而且两边的底栏高亮都是对的。
-  final PageController _pages = PageController(initialPage: 2);
+  /// 于是"iOS 冷启动落在某一页、安卓落在另一页"—— 而且两边的底栏高亮都是对的。
+  ///
+  /// ⚠️ **2026-10-10 真踩了一次**：底栏从五格收回三格时改了 `_tab = 1`，
+  /// 忘了改这里，于是 iOS 冷启动直接落在**「我」**那一页（3 格的下标 2）——
+  /// 而且底栏高亮是对的，`flutter test` 全绿（测试走的是安卓那条路）。
+  /// **证据图当场抓到的**：跑 `home_evidence_test` 拍出来的"首页"是「我」。
+  /// 对应的判据见 `test/widget_test.dart` 里那条"冷启动落在开练"。
+  final PageController _pages = PageController(initialPage: 1);
 
   /// 手指拖到哪儿了（小数页号）—— 底栏那颗玻璃**跟着手指滑**就是靠它喂。
   /// `-1` = 没人在拖（胶囊停在整格上）。
@@ -1553,6 +1558,37 @@ class _HomeShellState extends State<HomeShell> {
   /// ⚠️ 2026-10-10：这个向导的入口**从首页搬到了「计划」页**的最下面一行
   /// （`PlanScreen.onPlanWizard`，只在还没定过计划时出现）—— 首页原来有三处
   /// "今天练什么"，设计评审收成一个。这一屏本身一个像素都没动。
+  /// 打开「计划」页（本周 / 模板库 / 历史）—— **2026-10-10 起它不再是一格 tab**。
+  ///
+  /// 入口在首页那张「今天练 上肢」卡的右上角（`换一批 · 计划 ›`）。
+  /// 这一屏原来是 tab body（没有返回键），所以推上来时给它一个 `onBack`。
+  Future<void> _openPlanPage() async {
+    await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (BuildContext ctx) => Scaffold(
+        backgroundColor: Tokens.bg,
+        body: SafeArea(
+          child: PlanScreen(
+            repository: _routines,
+            exercises: _repo,
+            store: _store,
+            unit: _unit,
+            scenario: _scenario,
+            onScenarioChanged: _setScenario,
+            todayPlan: _todayPlan,
+            todayLabel: _todayDay?.label,
+            onResume: _activeSession == null ? null : _resumeOrAsk,
+            onPlanWizard: _goalWire == null ? _openFirstPlan : null,
+            resumeLabel: _activeSession == null
+                ? null
+                : staleSessionResumeLabel(_activeSession!, _nowForSession),
+            onBack: () => Navigator.of(ctx).maybePop(),
+          ),
+        ),
+      ),
+    ));
+    if (mounted) await _refreshHome();
+  }
+
   Future<void> _openFirstPlan() async {
     final OnboardingResult? r = await Navigator.of(context).push<OnboardingResult>(
       MaterialPageRoute<OnboardingResult>(
@@ -1889,20 +1925,18 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  /// 顶栏标题：就是当前 tab 的名字；**「训练」那一屏写"今天"**
-  /// （那一屏回答的是"今天练什么"，tab 名字叫训练，进了门就是今天）。
+  /// 顶栏标题：就是当前 tab 的名字；**「开练」那一屏写"今天"**
+  /// （那一屏回答的是"今天练什么"，tab 名字叫开练，进了门就是今天）。
   String get _topBarTitle => switch (_tab) {
         0 => '进步',
-        1 => '数据',
-        2 => '今天',
-        3 => '计划',
+        1 => '今天',
         _ => '我的',
       };
 
   /// 顶栏副标题：只有「今天」那一屏给日期（原来它挤在首页标题旁边，
   /// 与 34pt 大字、40×40 铃铛三种高度混在一行 —— 那正是用户说的"布局不协调"）。
   String? get _topBarSubtitle {
-    if (_tab != 2) return null;
+    if (_tab != 1) return null;
     const List<String> weekdays = <String>['一', '二', '三', '四', '五', '六', '日'];
     final DateTime now = DateTime.now();
     return '${now.month} 月 ${now.day} 日 · 周${weekdays[now.weekday - 1]}';
@@ -1940,9 +1974,12 @@ class _HomeShellState extends State<HomeShell> {
     if (mounted) await _refreshHome();
   }
 
-  /// 按 **tab 下标** 取那一屏。⚠️ 2026-10-07（v1.60.0）起顺序是
-  /// `进步 / 数据 / 训练 / 计划 / 我的`（「训练」在正中，用户 10.7 清单第 2 条），
-  /// 所以这里的映射与 `AppTabBar.tabs` **必须逐条对齐** —— 两处错位就是"点训练进了数据"。
+  /// 按 **tab 下标** 取那一屏。⚠️ 2026-10-10 起顺序是 **`进步 / 开练 / 我`**
+  /// （中间那格是"开练"，用户 10.10 的设计评审：回 3 个 tab），
+  /// 所以这里的映射与 `AppTabBar.tabs` **必须逐条对齐** —— 两处错位就是"点开练进了进步"。
+  ///
+  /// 「数据」与「计划」**不在这里了**：它们不再是 tab（数据从「进步」页的
+  /// 「全部数据 ›」进，计划从首页那张卡进）。
   Widget _bodyFor(int tab) {
     switch (tab) {      case 0:
         return ProgressScreen(
@@ -1958,20 +1995,12 @@ class _HomeShellState extends State<HomeShell> {
               setState(() => _bodyUnit = u);
             },
           );      case 1:
-        // 「数据」= 原来的「全部数据」二级页（v1.45.0 起提到一级）。
-        // VI 里这一页还要重做（四张统计卡 + 容量趋势面积图），那属于 v1.46.0 的组件层。
-        return AllDataScreen(
-          store: _store,
-          repository: _repo,
-          unit: _unit,
-          // 一级 tab 角色：外壳顶栏已经写着「数据」，这一页**不要再画自己的标题与返回箭头**
-          // （用户 10.9 清单第 3 条：截图里「数据」下面又出现一行「‹ 全部数据」）。
-          asTab: true,
-        );      case 2:
         return TodayScreen(
             // 大按钮一跳直开练；想先看看的人走下面那个入口
             onStart: _startNow,
             onSeePlan: _openSuggestion,
+            // 「计划 ›」：计划页（本周 / 模板库 / 历史）。2026-10-10 起它不再是一格 tab
+            onOpenPlan: _openPlanPage,
             lastWeekSessions: _weekSessions,
             // 「今天不想练」的轻量出口：4 个按时长的活动，1 组就走完
             onLightWorkout: _startLight,
@@ -2022,30 +2051,7 @@ class _HomeShellState extends State<HomeShell> {
             weeklyFact: _weekWorkoutFact(),
             onProtectStreak:
                 _protectionOffer == null ? null : _protectStreak,
-          );      case 3:
-        // 「计划」= 原来的计划模板列表（v1.45.0 起提到一级）。
-        // VI 里它还要加周历与历史两个视图，同样属于 v1.46.0。
-        // 2026-10-05（v1.51）：这一栏从"只有模板列表"变成**三个视图**
-        // （本周 / 模板库 / 历史）—— 模板库那一栏嵌的就是原来这一屏。
-        return PlanScreen(
-          repository: _routines,
-          exercises: _repo,
-          store: _store,
-          unit: _unit,
-          // 在哪儿练（第二份 docx 第 4 条）：计划页顶部那一行 chips
-          scenario: _scenario,
-          onScenarioChanged: _setScenario,
-          todayPlan: _todayPlan,
-          todayLabel: _todayDay?.label,
-          onResume: _activeSession == null ? null : _resumeOrAsk,
-          // 从头定个计划（2026-10-10 从首页搬来）：只在还没定过计划时出现
-          onPlanWizard: _goalWire == null ? _openFirstPlan : null,
-          // 「上次练到第 2/3 个动作 · 3 天前」——与首页那行由**同一个函数**拼出来
-          // （两处各拼一遍就会出现"首页说第 2/3、这里说 3/3"那种错位）
-          resumeLabel: _activeSession == null
-              ? null
-              : staleSessionResumeLabel(_activeSession!, _nowForSession),
-        );      default:
+          );      default:
         return ProfileScreen(
           store: _store,
           repository: _repo,

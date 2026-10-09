@@ -107,7 +107,10 @@ void main() {
 
     // ── v1.51 计划屏的三个视图 ────────────────────────────────────────────
     await step('plan-week', () async {
-      await switchTab(tester, 3, '计划');
+      // ⚠️ 2026-10-10：计划不再是底栏的一格 —— 从首页那张卡右上角进
+      await switchTab(tester, 1, '开练');
+      await settle(1500);
+      await tester.tap(find.byKey(const Key('today-open-plan')));
       await settle(1800);
       await capture('v152-05-plan-week');
     });

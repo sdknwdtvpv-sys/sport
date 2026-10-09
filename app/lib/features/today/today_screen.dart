@@ -39,6 +39,7 @@ class TodayScreen extends StatelessWidget {
     required this.onStart,
     this.lastWeekSessions = 0,
     this.onSeePlan,
+    this.onOpenPlan,
     this.onLightWorkout,
     this.onResume,
     this.resumeLabel,
@@ -240,6 +241,12 @@ class TodayScreen extends StatelessWidget {
   /// 右上角铃铛（通知中心）。为 null 时不显示。
 
 
+  /// 进「计划」页（本周 / 模板库 / 历史）。为 null 时不显示那个入口。
+  ///
+  /// ⚠️ 2026-10-10：这一格原来是**底栏的一格**（回 3 个 tab 之后撤了），
+  /// 所以入口搬到首页这张卡的右上角（`换一批 · 计划 ›`）。
+  final VoidCallback? onOpenPlan;
+
   /// 「今天不想练？做 5 分钟活动 ›」（2026-10-01 加）。
   ///
   /// 习惯养成的敌人是"全有或全无"：今天没力气做 5 组深蹲，不等于该断掉。
@@ -282,6 +289,7 @@ class TodayScreen extends StatelessWidget {
           onReroll: onReroll,
           onOpen: onSeePlan,
           onEdit: onEditPlan,
+          onOpenPlan: onOpenPlan,
         ),
         // 主按钮是**卡外**的一颗大胶囊（用户 2026-10-06 的备忘条第 1 条：
         // "开始今天的训练是一个大胶囊 放在训练计划的方框外"）。
@@ -657,7 +665,8 @@ class _TodayPlanCard extends StatelessWidget {
       this.label,
       this.onReroll,
       this.onOpen,
-      this.onEdit});
+      this.onEdit,
+      this.onOpenPlan});
 
   final List<PlannedExercise> plan;
   final String? label;
@@ -669,6 +678,14 @@ class _TodayPlanCard extends StatelessWidget {
   /// 点整块卡片 → 进建议卡。为 null 时卡片**不可点**（老调用方 / 测试），
   /// 也不摆那个 `›` —— 摆一个点不动的箭头比没有更糟。
   final VoidCallback? onOpen;
+
+  /// 「计划 ›」—— 进「计划」页（本周 / 模板库 / 历史）。
+  ///
+  /// ⚠️ 2026-10-10：**「计划」不再是底栏的一格**（回 3 个 tab），所以它需要一个新入口，
+  /// 就是这一行 —— 原来首页有三处"今天练什么"（换一批 / 帮我定个计划 / 计划 tab），
+  /// 现在收成卡片右上的两个（`换一批 · 计划 ›`），而"计划"这一格管的是
+  /// **模板与历史**，不再是"今天练什么"的第三个答案。
+  final VoidCallback? onOpenPlan;
 
   /// 卡片里最多列几个 —— 再多会把主按钮挤出屏幕（那正是这个改动要避免的）
   static const int _maxRows = 6;
@@ -717,8 +734,22 @@ class _TodayPlanCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (onOpenPlan != null)
+                GestureDetector(
+                  key: const Key('today-open-plan'),
+                  onTap: onOpenPlan,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: Tokens.s2, vertical: Tokens.s1),
+                    child: Text('计划 ›',
+                        style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                  ),
+                ),
               // 「整块可点」必须**看得出来** —— 不然它就是一个装饰。
-              if (onOpen != null)
+              // ⚠️ 有「计划 ›」那个入口时**不再画这枚箭头**：两个箭头挨在一起
+              // 会读成"计划 ››"（2026-10-10 证据图里就是这么出来的）。
+              if (onOpen != null && onOpenPlan == null)
                 const Icon(Icons.chevron_right, size: 18, color: Tokens.text3),
             ],
           ),

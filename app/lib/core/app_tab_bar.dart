@@ -63,36 +63,38 @@ class AppTabBar extends StatelessWidget {
   static double reservedSpaceFor(BuildContext context) =>
       GlassSurface.isSupportedPlatform ? height + floatMargin + 8 : 0;
 
-  /// **顺序**：`进步 / 数据 / 训练 / 计划 / 我的`（2026-10-07，v1.60.0）。
+  /// **顺序**：`进步 / 开练 / 我`（2026-10-10，回 3 个 tab）。
   ///
-  /// 用户 10.7 清单第 2 条：「下面导航栏五个，**训练放在最中间**，并且最好跟其他四个
-  /// 做区别展示」。所以「训练」从最左挪到正中，并做成一颗**凸起的圆**（见
-  /// [_centerIndex] 与 `_centerAction`）—— 它本来就是"这个 App 的主按钮"。
+  /// ⚠️ **2026-10-10 从 5 个收回 3 个**（用户 10.10 的设计评审 + `docs/plan-ux-2026-10-10.md`
+  /// §一/§五-A）：`PRODUCT.md` §4 一直写着「**3 个 Tab，上限**」，而这两年长成了五个 ——
+  /// 其中「数据」**就是**「进步」页里「全部数据 ›」推开的同一屏（靠 `asTab` 分叉），
+  /// 「计划」在首页也有入口，而且「数据」的默认落地几乎是一张空页（真机实拍：
+  /// 一行"选一个动作" + 一句"这个动作还没有记录"）。
   ///
-  /// ⚠️ **下标语义跟着变了**：`main.dart` 的 `_bodyFor` 与初始 tab（2）必须与这一份
-  /// **逐条对齐**，错一条就是"点训练进了数据"。两处都有注释互相指着。
+  /// * **进步 / 我** 不变；
+  /// * 中间那格从「训练」改名「**开练**」（动词）—— 它是"我要开始练"的入口，
+  ///   不是叫"训练"的分类；首页那颗大按钮叫「开始训练」。
+  /// * 用户 10.7 那条「训练放在最中间」的意图**继续成立**（仍然居中 + 强调色）。
+  ///
+  /// ⚠️ **下标语义**：`main.dart` 的 `_bodyFor` 与初始 tab（1）必须与这一份
+  /// **逐条对齐**，错一条就是"点开练进了进步"。两处都有注释互相指着。
   static const List<({IconData icon, String label})> tabs =
       <({IconData icon, String label})>[
     (icon: Icons.show_chart, label: '进步'),
-    (icon: Icons.bar_chart, label: '数据'),
-    (icon: Icons.fitness_center, label: '训练'),
-    (icon: Icons.event_note, label: '计划'),
-    (icon: Icons.person_outline, label: '我的'),
+    (icon: Icons.fitness_center, label: '开练'),
+    (icon: Icons.person_outline, label: '我'),
   ];
 
-  /// 凸起的那一格（正中）。它的图标由 Flutter 画在一颗圆里，**不画文字标签**
-  /// （Apple 那套"中间是动作、不是格子"的做法：有了文字反而像第二个 tab）。
-  static const int _centerIndex = 2;
+  /// 正中那一格（Flutter 那一支会把它画得大一号 + 强调色）。
+  static const int _centerIndex = 1;
 
-  /// 五个 Tab 的 SF Symbol（**只有 iOS 的原生底栏用**）。
+  /// 三个 Tab 的 SF Symbol（**只有 iOS 的原生底栏用**）。
   ///
   /// 为什么用 SF Symbol 而不是 Material 图标：那是系统底栏的语汇，
   /// VoiceOver、选中态的字重变化、可选的字形都与系统一致（v1.61 起就这么做了）。
   static const List<String> _sfSymbols = <String>[
     'chart.line.uptrend.xyaxis',
-    'chart.bar.fill',
     'dumbbell.fill',
-    'calendar',
     'person',
   ];
 

@@ -15,7 +15,7 @@ import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/main.dart';
 
 void main() {
-  testWidgets('App 能启动，显示训练空态（含 5 个 Tab）', (WidgetTester tester) async {
+  testWidgets('App 能启动，显示训练空态（含 3 个 Tab）', (WidgetTester tester) async {
     // 注入内存库：widget 测试里没有 path_provider 的平台通道，
     // 让 App 自己去 openAppDatabase() 会直接抛错。
     final AppDatabase db = AppDatabase(NativeDatabase.memory());
@@ -31,12 +31,11 @@ void main() {
     expect(find.text('开始今天的训练'), findsOneWidget);
     expect(find.byKey(const Key('start-workout')), findsOneWidget);
 
-    // 五个 Tab（2026-10-05 按新 VI 从"三个封顶"改成五个，见 docs/screens.md）
-    expect(find.text('训练'), findsOneWidget);
+    // **三个 Tab**（2026-10-10 从五个收回来 —— `PRODUCT.md` §4 一直写着"3 个，上限"）。
+    // 「数据」降回「进步」的二级页、「计划」从首页那张卡片进（见 docs/screens.md S0）。
+    expect(find.text('开练'), findsOneWidget);
     expect(find.text('进步'), findsOneWidget);
-    expect(find.text('数据'), findsOneWidget);
-    expect(find.text('计划'), findsOneWidget);
-    expect(find.text('我的'), findsOneWidget);
+    expect(find.text('我'), findsOneWidget);
 
     // 必须销毁页面：外壳里有两个埋点上报定时器（冷启动 5 秒 + 前台每 60 秒），
     // 不销毁的话 testWidgets 会因 pending timer 直接判失败。
@@ -46,7 +45,7 @@ void main() {
   /// 顶栏那两枚动作（2026-10-07，v1.60.0；用户 10.7 清单第 1、6 条）：
   /// 「小铃铛放在右上角，注意下布局协调性」+「所有的设置相关的能不能集成到右上角，
   /// 一个小齿轮图标」。这条测试钉的是**它们真的到了顶栏上、而且点得开**。
-  testWidgets('★ 右上角：齿轮进设置页、铃铛进通知中心（五个 tab 都点得到）',
+  testWidgets('★ 右上角：齿轮进设置页、铃铛进通知中心（三个 tab 都点得到）',
       (WidgetTester tester) async {
     final AppDatabase db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
@@ -56,7 +55,7 @@ void main() {
 
     // 顶栏：标题 + 那两枚动作
     expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
-    expect(find.text('今天'), findsWidgets, reason: '「训练」那一屏的顶栏标题是"今天"');
+    expect(find.text('今天'), findsWidgets, reason: '「开练」那一屏的顶栏标题是"今天"');
     expect(find.byKey(const Key('top-bar-settings')), findsOneWidget);
     expect(find.byKey(const Key('open-notifications')), findsOneWidget);
     // ⚠️ 铃铛**只有一枚**：它从首页挪到了顶栏，两处都画就会出现两个入口
@@ -72,8 +71,8 @@ void main() {
     await tester.tap(find.byKey(const Key('subpage-back')));
     await tester.pumpAndSettle();
 
-    // 换到「我的」那一格（tab 顺序变了：进步/数据/训练/计划/我的），顶栏还在、还点得到
-    await tester.tap(find.byKey(const Key('tab-我的')));
+    // 换到「我」那一格（三个 tab：进步 / 开练 / 我），顶栏还在、还点得到
+    await tester.tap(find.byKey(const Key('tab-我')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
     expect(find.text('我的'), findsWidgets, reason: '顶栏标题跟着当前 tab 走');
@@ -104,5 +103,26 @@ void main() {
     expect(find.textContaining('注册'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink()); // 同上：销毁定时器
+  });
+
+  testWidgets('★ 冷启动落在「开练」那一格（iOS 走 PageView，别只改 _tab）',
+      (WidgetTester tester) async {
+    // ⚠️ 这条是**真踩过的坑**（2026-10-10）：底栏从五格收回三格时改了 `_tab = 1`，
+    // 却忘了改 `PageController(initialPage: 2)` —— iOS 那条路（PageView）冷启动
+    // 直接落在「我」，而安卓那条路（读 `_tab`）是对的，底栏高亮两边都对。
+    // `flutter test` 走的是安卓那条路，所以全绿；**是证据图抓到的**。
+    // 判据：首页那两块（主按钮 + 快捷入口）在，且底栏高亮落在「开练」。
+    final AppDatabase db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await ProfileRepository(db).setPrivacyConsent(nowMs: 1);
+    await tester.pumpWidget(LianLeMeApp(database: db));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('start-workout')), findsOneWidget,
+        reason: '冷启动就该在「开练」（= 今天）那一屏');
+    expect(find.byKey(const Key('open-achievements')), findsNothing,
+        reason: '不该落在「我」');
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

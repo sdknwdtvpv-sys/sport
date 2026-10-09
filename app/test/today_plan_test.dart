@@ -557,5 +557,51 @@ void _weeklyReportUiTests() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('comeback-nudge')), findsNothing);
   });
+
+  testWidgets('★ 「计划 ›」是计划页的入口（2026-10-10：它不再是一格 tab）',
+      (WidgetTester tester) async {
+    // ⚠️ 回 3 个 tab 之后「计划」没有底栏入口了，就靠首页这张卡右上角这一个
+    // （`换一批 · 计划 ›`）。这条钉两件事：**传了才出现**、**点的就是它**。
+    int opened = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(
+        onStart: () {},
+        todayPlan: <PlannedExercise>[
+          PlannedExercise(
+            exercise: ExerciseData(
+              id: 'ex_bench',
+              name: '杠铃卧推',
+              aliases: '[]',
+              muscleGroup: 'chest',
+              secondaryMuscles: '[]',
+              subTags: '[]',
+              equipment: 'barbell',
+              category: 'strength',
+              trackType: 'weight_reps',
+              defaultRestSec: 90,
+              weightIncrement: 2.5,
+              isBuiltin: true,
+              popularity: 100,
+              createdAt: 0,
+              updatedAt: 0,
+            ),
+            plan: PlanTarget(targetSets: 3, targetRepsLow: 8, targetRepsHigh: 12),
+          ),
+        ],
+        onOpenPlan: () => opened++,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('today-open-plan')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('today-open-plan')));
+    await tester.pumpAndSettle();
+    expect(opened, 1);
+
+    // 没传就不摆那个入口（摆一个点不动的字比没有更糟）
+    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('today-open-plan')), findsNothing);
+  });
 }
 

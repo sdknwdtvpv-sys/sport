@@ -135,7 +135,7 @@ void main() {
     mark('snapshot-before=${before.join(' ／ ')}');
 
     // ---------------------------------------------------------------- 2. 开启云备份
-    await switchTab(tester, 4, '我的');
+    await switchTab(tester, 2, '我');
     await settle(1800);
     await scrollToInProfile(find.byKey(const Key('cloud-backup')));
     await tester.tap(find.byKey(const Key('cloud-backup')));

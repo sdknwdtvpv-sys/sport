@@ -44,6 +44,7 @@ class PlanScreen extends StatefulWidget {
     this.onScenarioChanged,
     this.now,
     this.onPlanWizard,
+    this.onBack,
   });
 
   final RoutineRepository repository;
@@ -64,6 +65,12 @@ class PlanScreen extends StatefulWidget {
   /// 那一屏是唯一能按"目标 / 每周几次"生成计划的路径。新家在这里：
   /// 「计划」页的最下面一行，而且**只在还没定过计划时出现**（外壳传 null 就是不显示）。
   final VoidCallback? onPlanWizard;
+
+  /// **从别处推进来时的返回箭头**（2026-10-10）。
+  ///
+  /// 这一屏原来是**底栏的一格**（没有返回键）；回 3 个 tab 之后它变成从首页那张卡
+  /// 推上来的页面，所以需要一个返回入口。传 null = 不画（老调用方 / 测试）。
+  final VoidCallback? onBack;
 
   /// **在哪儿练**（2026-10-09 第二份 docx 第 4 条）。
   ///
@@ -170,6 +177,17 @@ class _PlanScreenState extends State<PlanScreen> {
       padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
+        // ── 返回（2026-10-10：这一屏从"底栏一格"变成"推进来的页面"）──
+        if (widget.onBack != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              key: const Key('plan-back'),
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.chevron_left, color: Tokens.text2),
+              onPressed: widget.onBack,
+            ),
+          ),
         // ── 从头定个计划（2026-10-10 从首页搬来的）──
         if (widget.onPlanWizard != null) ...<Widget>[
           ViCard(

@@ -67,12 +67,19 @@ void main() {
     await capture('native-01-progress-segmented');
 
     // ② 「数据」页：按动作看 / 按时间看
-    await switchTab(tester, 1, '数据');
+    // ⚠️ 2026-10-10：**「数据」不再是底栏的一格**（回 3 个 tab）—— 它回到「进步」页里
+    // 那个「全部数据 ›」二级页入口（`open-all-data`），走的是用户真实路径。
+    await tester.tap(find.byKey(const Key('open-all-data')));
     await settle(2000);
     await capture('native-02-all-data-segmented');
+    await tester.tap(find.byKey(const Key('all-data-back')));
+    await settle(1200);
 
     // ③ 「计划」页：本周 / 模板库 / 历史
-    await switchTab(tester, 3, '计划');
+    // ⚠️ 同上：计划现在从**首页那张卡右上角**进（`today-open-plan`）。
+    await switchTab(tester, 1, '开练');
+    await settle(1500);
+    await tester.tap(find.byKey(const Key('today-open-plan')));
     await settle(2000);
     await capture('native-03-plan-segmented');
 

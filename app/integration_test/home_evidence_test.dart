@@ -59,14 +59,9 @@ void main() {
   });
 }
 
-/// 切到「计划」那一格。⚠️ iOS 上底栏是**平台视图**（真的 `UITabBar`），
-/// `tester.tap(Key('tab-计划'))` 不存在 —— 只能走外壳交出来的那个钩子
-/// （这条坑在 `docs/screens.md` 的 S0 里记着）。
+/// 打开「计划」页。⚠️ 2026-10-10 起**计划不再是底栏的一格**（回 3 个 tab）——
+/// 入口是首页那张卡右上角的「计划 ›」（`today-open-plan`）。
+/// （底栏那三个格子仍然点不到：iOS 上是平台视图，见 `docs/screens.md` S0。）
 Future<void> switchTabToPlan(WidgetTester tester) async {
-  final Finder tab = find.byKey(const Key('tab-计划'));
-  if (tab.evaluate().isNotEmpty) {
-    await tester.tap(tab);
-    return;
-  }
-  app.debugSwitchTab?.call(3);
+  await tester.tap(find.byKey(const Key('today-open-plan')));
 }

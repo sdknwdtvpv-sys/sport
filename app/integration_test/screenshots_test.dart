@@ -244,7 +244,7 @@ void main() {
     });
 
     await step('10-profile', () async {
-      await switchTab(tester, 4, '我的');
+      await switchTab(tester, 2, '我');
       await settle(1800);
       await capture('10-profile');
     });

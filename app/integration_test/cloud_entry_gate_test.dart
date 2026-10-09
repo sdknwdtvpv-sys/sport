@@ -77,7 +77,7 @@ void main() {
       mark('consent-agreed');
     }
 
-    await switchTab(tester, 4, '我的');
+    await switchTab(tester, 2, '我');
     await settle(1200);
     // ⚠️ 2026-10-09 改：设置那三组入口 v1.60.0 起搬进了独立设置页（顶栏右上角那枚齿轮），
     // 云备份入口也跟着搬到了「设置 → 数据与备份」。原来这一份还在「我的」页里翻
