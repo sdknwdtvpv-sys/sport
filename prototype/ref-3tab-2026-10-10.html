@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>练了么 · 改版参考图 v2（3 tab + 训练主屏重排 + 勋章收进收藏册）</title>
+<title>练了么 · 改版参考图 v3（3 tab + 训练主屏重排 + 勋章收进收藏册）</title>
 <style>
   /* ⚠️ 这是**参考图**（给人看的静态稿），不是 App 代码，也不参与构建。
      颜色/圆角/间距全部照 app/lib/core/theme.dart 的 Tokens 抄，别在这里发明新色。
@@ -91,9 +91,9 @@
 </head>
 <body>
 
-<h1>练了么 · 改版参考图 v2</h1>
+<h1>练了么 · 改版参考图 v3</h1>
 <div class="sub">
-  2026-10-10 · <b>三个 tab：进步 / 开练 / 我</b>（已按你的选择定序）｜<b>训练主屏重排</b>｜
+  2026-10-10 · <b>三个 tab：进步 / 开练 / 我</b>（tab 名 = 开练 / 主按钮 = 开始训练）｜<b>训练主屏重排</b>｜
   <b>激励收敛成"一条进度 + 一本收藏册"</b>（勋章保留，方案见第 ⑤ 屏）
   ｜配色、间距、圆角<b>没有动</b>（全部照现有 VI 令牌），这一版只改结构与信息取舍
   ｜六屏：首页 / 训练中 / 进步 / 我的 / 成就 / 训练完成｜配套：<b>docs/plan-ux-2026-10-10.md</b>
@@ -143,12 +143,25 @@
         </div>
 
         <div style="height:22px"></div>
-        <div style="height:60px;border-radius:99px;background:var(--accent);color:var(--ink);
-                    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700">
-          开练
+        <div style="height:62px;border-radius:99px;background:var(--accent);color:var(--ink);
+                    display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">
+          开始训练
         </div>
-        <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--t3)">
-          动作库 · 记录体重 · 5 分钟活动
+        <div class="card" style="margin-top:16px;padding:0;height:78px;display:flex">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px">
+            <svg class="ico" style="width:23px;height:23px" viewBox="0 0 24 24"><path d="M4 5.5A2 2 0 0 1 6 4h13v16H6a2 2 0 0 0-2 2z"/><path d="M8.5 8.5h6M8.5 12.5h6"/></svg>
+            <span style="font-size:14px;color:var(--t1)">动作库</span>
+          </div>
+          <div class="vr"></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px">
+            <svg class="ico" style="width:23px;height:23px" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13.5" rx="3"/><path d="M8.6 11.6a4 4 0 0 1 6.8 0"/><path d="M12 11.6V9.3"/></svg>
+            <span style="font-size:14px;color:var(--t1)">记录体重</span>
+          </div>
+          <div class="vr"></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px">
+            <svg class="ico" style="width:23px;height:23px" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="6.8"/><path d="M12 10.5v3.4l2.4 1.4"/><path d="M9.2 3.4h5.6"/></svg>
+            <span style="font-size:14px;color:var(--t1)">5 分钟活动</span>
+          </div>
         </div>
       </div>
 
@@ -655,7 +668,8 @@
   <b>已按你的两个选择定下来：</b>
   <span class="pill">A</span>底栏 = <b>进步 / 开练 / 我</b>（tab 名从"训练"改成"开练"，与主按钮同一个词）；
   <span class="pill">B</span>勋章<b>保留</b>，解法是"<b>一条进度 + 一本收藏册</b>"：
-  进度只有等级一条，勋章是一本册子（12 / 73），只在训练完成时主动露面一次。
+  进度只有等级一条，勋章是一本册子（12 / 73），只在训练完成时主动露面一次；
+  <span class="pill">C</span>首页主按钮 = <b>开始训练</b>，下面三个快捷入口改成<b>一只卡里的三格</b>（原来一行小灰字没存在感）。
   <br><br>
   <b>这一版没动的：</b>配色 / 字阶 / 间距 / 圆角 / 图标风格（沿用现有 VI）；"1 次点击 = 1 组"、
   撤销而非确认、离线优先这些硬约束也都没动。
