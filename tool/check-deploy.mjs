@@ -57,6 +57,8 @@ function installDefaults(src) {
     SVC_USER: pick('SVC_USER', 'lianleme'),
     BACKEND_PORT: pick('BACKEND_PORT', '8790'),
     COLLECTOR_PORT: pick('COLLECTOR_PORT', '8787'),
+    // 静态页的根（2026-10-09 加：反代多了一条 /privacy* 路由指向它）
+    WEB_ROOT: pick('WEB_ROOT', '/var/www/lianleme'),
   };
 }
 
@@ -71,7 +73,8 @@ function render(tpl, vars) {
     .replaceAll('__DOMAIN__', 'api.example.com')
     .replaceAll('__NODE__', vars.NODE ?? '/usr/bin/node')
     // 邮件口令那个 EnvironmentFile 的路径（install.sh 里定的，单元里是 `EnvironmentFile=-…`）
-    .replaceAll('__MAIL_ENV__', '/etc/lianleme/mail.env');
+    .replaceAll('__MAIL_ENV__', '/etc/lianleme/mail.env')
+    .replaceAll('__WEB_ROOT__', vars.WEB_ROOT ?? '/var/www/lianleme');
 }
 
 const HARDENING = [
@@ -124,7 +127,7 @@ function inspect(root) {
   // ── 1. 端口一致：渲染出来再比
   const d = installDefaults(install);
   const renderVars = { APP_DIR: d.APP_DIR, DATA_DIR: d.DATA_DIR, SVC_USER: d.SVC_USER,
-    BACKEND_PORT: d.BACKEND_PORT, COLLECTOR_PORT: d.COLLECTOR_PORT };
+    BACKEND_PORT: d.BACKEND_PORT, COLLECTOR_PORT: d.COLLECTOR_PORT, WEB_ROOT: d.WEB_ROOT };
   const bUnit = render(backendUnit, renderVars);
   const cUnit = render(collectorUnit, renderVars);
   const caddyR = render(caddy, renderVars);

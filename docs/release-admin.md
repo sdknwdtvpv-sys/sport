@@ -510,6 +510,46 @@ cocoapods.dart:307-310
 
 同一份 URL 也会填进 Google Play / 华为 / 小米等各商店的表单（`docs/release-checklist.md` §7）。
 
+### 怎么落地（2026-10-09：**这条路已经铺好了，只剩上传**）
+
+反代那一侧我已经写进仓库了（`server/deploy/Caddyfile` 与 `nginx-lianleme.conf` 都多了一条
+`/privacy*` 路由，落在 `WEB_ROOT`（默认 `/var/www/lianleme`）下的 `privacy/` 目录），
+`install.sh` 也多了「5.5/7 放隐私政策的公开页」这一步 —— 所以**你只要把两份 HTML 传上去**：
+
+**A. 服务器上有整个仓库**（比如部署就是把仓库拉过去）→ 重跑一次安装脚本即可：
+
+```bash
+sudo WEB_ROOT=/var/www/lianleme server/deploy/install.sh   # 其余参数照你上次那套
+```
+
+它会建目录、把 `store-assets/privacy/{index,en}.html` 拷进去，并把验收命令打出来。
+
+**B. 只上传了 `server/` 这一个目录**（更常见的做法）→ 在本机跑这一条就完事：
+
+```bash
+scp store-assets/privacy/index.html store-assets/privacy/en.html \
+    root@<你的机器>:/var/www/lianleme/privacy/
+```
+
+传完**不用重启任何东西**（Caddy/Nginx 直接读目录）。**验收**：
+
+```bash
+curl -s https://<你的域名>/privacy | head -20     # 应当看到政策正文
+curl -s https://<你的域名>/privacy/en | head -5   # 英文版
+```
+
+⚠️ **别跳过验收**：现在（路由还没生效时）`https://api.elliotli.work/privacy` 返回的是
+**8 个字节的 `lianleme`**（那条 catch-all 的问候语）——如果你看到的是它，说明路由还没生效，
+而商店审核打开的就是这个 URL。
+
+**为什么这条路由必须写进仓库的模板**（而不是让你手工加一次）：`install.sh` 在
+`PROXY_MODE=caddy` 下会**整体覆盖** `/etc/caddy/Caddyfile`（我们自己的那份带
+`# managed-by: lianleme-install` 标记时）——手工加的 /privacy 路由会在下一次部署时消失，
+而那种失败只在审核当天才看得见。
+
+**填进商店表单的 URL**：中文 `https://<你的域名>/privacy`、英文 `https://<你的域名>/privacy/en`
+（`docs/release-checklist.md` §7 那张表里逐条对应）。
+
 ---
 
 ## 五、商店材料（清单）

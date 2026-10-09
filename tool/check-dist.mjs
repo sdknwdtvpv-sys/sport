@@ -191,7 +191,11 @@ function inspect(root, { aapt2 = findAapt2() } = {}) {
       }
     };
     for (const rel of ['app/lib', 'app/android']) walk(join(root, rel));
-    for (const rel of ['app/pubspec.yaml', 'app/pubspec.lock']) {
+    // ⚠️ **不把 `pubspec.lock` 算进来**：`flutter pub get` 每次都会重写它，
+    // 而门禁第 3 层就跑 pub get —— 比 mtime 会每跑一次红一次（这是这条守卫的**第三个**
+    // 同类假阳性，前两个是 seed 生成的 assets 与 flutter 生成的 GeneratedPluginRegistrant）。
+    // 依赖真的变了的话，`pubspec.yaml` 一定也跟着变，那一头看着就够了。
+    for (const rel of ['app/pubspec.yaml']) {
       const full = join(root, rel);
       if (existsSync(full) && statSync(full).mtimeMs > newest.mtime) {
         newest.file = full;

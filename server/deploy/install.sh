@@ -34,6 +34,10 @@ SVC_USER="${SVC_USER:-lianleme}"
 BACKEND_PORT="${BACKEND_PORT:-8790}"
 COLLECTOR_PORT="${COLLECTOR_PORT:-8787}"
 PROXY_MODE="${PROXY_MODE:-caddy}"     # caddy | existing | none
+# 静态页的根目录（目前只有一份：隐私政策的公开页，商店审核会实际打开它）。
+# 页面是生成物：`store-assets/privacy/{index,en}.html`，由 `node tool/gen-privacy-page.mjs` 渲染。
+WEB_ROOT="${WEB_ROOT:-/var/www/lianleme}"
+PRIVACY_SRC="${PRIVACY_SRC:-$HERE/../../store-assets/privacy}"
 NODE_BIN="${NODE_BIN:-}"              # 留空 = 用 PATH 里的 node
 DRY_RUN=0
 PROBE=0
@@ -204,6 +208,9 @@ step "2/7 建目录（数据目录是唯一可写的地方）"
 run "install -d -o root -g root -m 755 '$APP_DIR'"
 run "install -d -o '$SVC_USER' -g '$SVC_USER' -m 750 '$DATA_DIR'"
 run "install -d -o root -g root -m 755 '$APP_DIR/server'"
+# 隐私政策公开页要放在这里（反代的 /privacy* 路由指向它）。**空目录也建** ——
+# 页面是生成物、不在部署包里，所以要留一个明确的落点 + 下面把"怎么放"打出来。
+run "install -d -o root -g root -m 755 '$WEB_ROOT/privacy'"
 
 step "2.5/7 建邮件的密钥文件（**空模板**，你手工填）"
 # ⚠️ 为什么不让安装脚本替你写这些值：`render()` 用的是 `sed -e "s#__X__#$VAL#g"`，
@@ -286,6 +293,7 @@ render_proxy_snippet() {
   sed -e "s#__DOMAIN__#$DOMAIN#g" \
       -e "s#__BACKEND_PORT__#$BACKEND_PORT#g" \
       -e "s#__COLLECTOR_PORT__#$COLLECTOR_PORT#g" \
+      -e "s#__WEB_ROOT__#$WEB_ROOT#g" \
       "$1"
 }
 
@@ -363,6 +371,26 @@ else
   fi
   run "systemctl reload caddy || systemctl restart caddy"
 fi
+
+step "5.5/7 放隐私政策的公开页（/privacy 那条路由要它）"
+# ⚠️ 页面**不在部署包里**（它是生成物，跟着政策正文走），所以这里只负责"搬过去"：
+#   * 整个仓库都在这台机器上（PRIVACY_SRC 存在）→ 直接拷；
+#   * 只上传了 server/ 这一个目录（常见做法）→ 把那条 `scp` 命令原样打出来。
+if [ -f "$PRIVACY_SRC/index.html" ]; then
+  run "install -m 644 '$PRIVACY_SRC/index.html' '$WEB_ROOT/privacy/index.html'"
+  if [ -f "$PRIVACY_SRC/en.html" ]; then
+    run "install -m 644 '$PRIVACY_SRC/en.html' '$WEB_ROOT/privacy/en.html'"
+  fi
+  say "已放入：$WEB_ROOT/privacy/{index,en}.html"
+else
+  say "⚠️ 没找到页面源（${PRIVACY_SRC}）—— 这台机器上没有整个仓库。"
+  say "   在**本机**跑这一条把它传上来（页面是自包含的，没有别的依赖）："
+  say "     scp store-assets/privacy/index.html store-assets/privacy/en.html \\"
+  say "         root@<这台机器>:$WEB_ROOT/privacy/"
+  say "   传完不用重启任何东西 —— 反代的 /privacy 路由直接读目录。"
+fi
+say "验收（应当看到政策正文，而不是 8 个字节的 lianleme）："
+say "  curl -s https://$DOMAIN/privacy | head -20"
 
 step "6/7 自检：两个服务都得应答 /healthz"
 if [ "$DRY_RUN" = 1 ]; then

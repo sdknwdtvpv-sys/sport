@@ -29,6 +29,17 @@ __DOMAIN__ {
 		reverse_proxy 127.0.0.1:__BACKEND_PORT__
 	}
 
+	# 隐私政策公开页（**商店审核会实际打开这个 URL**，见 docs/release-admin.md §四）。
+	# 页面是生成物：`store-assets/privacy/index.html`（中文）+ `en.html`（英文），
+	# 由 `node tool/gen-privacy-page.mjs` 从政策正文渲染 —— 与随包那份同源。
+	# ⚠️ 这条必须**排在下面那个 catch-all 之前**：Caddy 的 handle 是互斥的，先匹配到的赢。
+	# URL：`https://<域名>/privacy`（中文）、`/privacy/en`（英文）。
+	handle /privacy* {
+		root * __WEB_ROOT__
+		try_files {path} {path}.html {path}/index.html
+		file_server
+	}
+
 	# 别的一律不代理（不给自己留一个"顺手加接口"的口子）
 	handle {
 		respond "lianleme" 200
