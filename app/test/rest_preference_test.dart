@@ -246,7 +246,9 @@ void main() {
       await openPreferences(tester);
       await tapRest(tester, 'rest-follow'); // 先滚到这一区
 
-      expect(find.text('跟随动作'), findsOneWidget);
+      // ⚠️ 按 key 断言，不用 `find.text('跟随动作')`：10.9 清单第 8a 条之后
+      // 「加重量」那一行也是这个词（两行都是"跟随动作"），松散 finder 会撞两个。
+      expect(tester.widget<Text>(find.byKey(const Key('rest-current'))).data, '跟随动作');
       expect(find.textContaining('每个动作用它自带的休息时长'), findsOneWidget);
     });
 
@@ -267,7 +269,7 @@ void main() {
         tester.widget<Text>(find.byKey(const Key('rest-current'))).data,
         '60 秒',
       );
-      expect(find.textContaining('每个动作'), findsNothing,
+      expect(find.textContaining('每个动作用它自带的休息时长'), findsNothing,
           reason: '选了具体秒数后，那句解释就不适用了，必须消失');
     });
 

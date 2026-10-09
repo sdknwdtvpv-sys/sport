@@ -80,6 +80,7 @@ import 'features/workout/rest_activity.dart';
 import 'features/workout/rest_cue.dart';
 import 'features/workout/workout_controller.dart';
 import 'features/workout/workout_screen.dart';
+import 'features/workout/stale_session.dart';
 import 'features/workout/workout_session.dart';
 
 void main() {
@@ -359,6 +360,12 @@ class _HomeShellState extends State<HomeShell> {
   /// 首页会显示「继续上次的训练」（2026-10-01）。
   ActiveSession? _activeSession;
 
+  /// 跨天那条三选一**只问一次**（10.9 清单第 1 条）。
+  ///
+  /// 之后用户自己从首页/计划页点那条入口时仍然能处理它（`_resumeOrAsk`），
+  /// 但不会每次回到这一屏都再弹一次 —— 那是骚扰。
+  bool _staleAsked = false;
+
   /// 上报地址。还没有后端，所以返回一个「什么都不做但永远失败」的传输实现 ——
   /// 事件会留在本地 outbox 里，等真地址接上再一起送出去（不会丢）。
   /// 上报地址：**编译期可配**，不改代码就能接上真后端。
@@ -527,6 +534,10 @@ class _HomeShellState extends State<HomeShell> {
       _reminder = reminder;
       _reminderHint = hint;
     });
+    // 跨天还没结束的那次训练：冷启动问一次（10.9 清单第 1 条）。
+    // ⚠️ 放在 setState 之后、**不 await**：弹层要等这一帧画完才推得上去，
+    // 而且它是"顺手问一句"，绝不能挡住首屏。
+    unawaited(_askStaleSessionOnLaunch());
   }
 
   Future<void> _initAnalytics() async {
@@ -1022,6 +1033,154 @@ class _HomeShellState extends State<HomeShell> {
     // 在真机上就是"点了返回，界面卡在训练屏"。提醒是"顺手做的事"，
     // 排不上/排得慢都绝不该挡住总结页 —— 与 `persistSession()` 同一条纪律。
     unawaited(_syncReminder());
+  }
+
+  /// 现在（可注入的时钟）。弹层与那行小字都按它算"几天前"。
+  DateTime get _nowForSession =>
+      DateTime.fromMillisecondsSinceEpoch(_clock());
+
+  /// 首页那条「接着练」要不要摆：有会话、**且没超过 7 天**。
+  ///
+  /// 超过 7 天的只在「计划」页留入口（用户 10.9 拍板）——首页是"今天该做什么"的地方。
+  bool get _showHomeResume {
+    final ActiveSession? a = _activeSession;
+    if (a == null) return false;
+    return staleSessionKind(a, _nowForSession) != StaleSessionKind.expired;
+  }
+
+  /// 冷启动时那一次：**只有跨天、且还在 7 天内**才问（10.9 清单第 1 条）。  ///
+  /// 今天开始的不问（用户可能只是切出去接了个电话）；超过 7 天也不问
+  /// —— 那条会话只在「计划」页留一个入口，不再顶在首页喊"接着练"。
+  Future<void> _askStaleSessionOnLaunch() async {
+    if (_staleAsked) return;
+    final ActiveSession? a = _activeSession;
+    if (a == null) return;
+    if (staleSessionKind(a, DateTime.fromMillisecondsSinceEpoch(_clock())) !=
+        StaleSessionKind.crossDay) {
+      return;
+    }
+    _staleAsked = true;
+    await _askStaleSession(a);
+  }
+
+  /// 用户自己点了那条入口时的分流：
+  /// **今天开始的一路照旧**（点进去就接着练，别多问一句），
+  /// 跨天的才弹三选一 —— 他点这个入口本来就是要处理这件事。
+  Future<void> _resumeOrAsk() async {
+    final ActiveSession? a = _activeSession;
+    if (a == null) return;
+    if (staleSessionKind(a, DateTime.fromMillisecondsSinceEpoch(_clock())) ==
+        StaleSessionKind.sameDay) {
+      await _resumeSession();
+      return;
+    }
+    _staleAsked = true;
+    await _askStaleSession(a);
+  }
+
+  /// 跨天没结束的那次训练：**继续 / 结束并保存 / 丢弃**（10.9 清单第 1 条）。
+  ///
+  /// 三个选项各自会发生什么，先说清（用户是在"要不要留着那次训练"上做决定，
+  /// 而其中一个是删数据）：
+  ///   * **继续** → 走原来的恢复路径（同一批动作、原处方的原进度）；
+  ///   * **结束并保存** → 把这次训练**收尾**（写结束时间 = 最后一组的时刻，
+  ///     时长不会变成"跨了 8 天"），组一条不删 —— 与正常练完是同一件事；
+  ///   * **丢弃** → 这次记下的组**软删除**（进回收站，能找回），会话清掉。
+  ///
+  /// ⚠️ 关掉弹层（点外面）**什么都不做**：那条入口还留在首页/计划页上，
+  /// 用户想处理随时能处理 —— 不替他做决定，也不假装问题已经解决。
+  Future<void> _askStaleSession(ActiveSession a) async {
+    final List<SetRecord> sets = await _store.setsFor(a.workoutId);
+    if (!mounted) return;
+    final DateTime now = DateTime.fromMillisecondsSinceEpoch(_clock());
+    final _StaleChoice? choice = await showDialog<_StaleChoice>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: const Text('上次的训练还没结束',
+            style: TextStyle(color: Tokens.text)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              '${staleSessionResumeLabel(a, now)}',
+              key: const Key('stale-when'),
+              style: const TextStyle(color: Tokens.text2, height: 1.6),
+            ),
+            const SizedBox(height: Tokens.s3),
+            Text(
+              sets.isEmpty
+                  ? '还没有记下任何一组。'
+                  : '已经记下 ${sets.length} 组。',
+              key: const Key('stale-count'),
+              style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+            ),
+            if (sets.isNotEmpty) ...<Widget>[
+              const SizedBox(height: Tokens.s2),
+              const Text(
+                '「丢弃」= 删掉这次记的组（回收站里能找回）',
+                style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.5),
+              ),
+            ],
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('stale-discard'),
+            onPressed: () => Navigator.of(ctx).pop(_StaleChoice.discard),
+            child: const Text('丢弃', style: TextStyle(color: Tokens.danger)),
+          ),
+          TextButton(
+            key: const Key('stale-finish'),
+            onPressed: () => Navigator.of(ctx).pop(_StaleChoice.finish),
+            child: const Text('结束并保存', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('stale-resume'),
+            onPressed: () => Navigator.of(ctx).pop(_StaleChoice.resume),
+            child: const Text('继续', style: TextStyle(color: Tokens.accent)),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || choice == null) return;
+
+    switch (choice) {
+      case _StaleChoice.resume:
+        await _resumeSession();
+      case _StaleChoice.finish:
+        // 收尾 = 写下结束时间（`build()` 里那句 `endedAtMs = 最后一组的时刻`），
+        // 组一条不动 —— 这就是"这次训练算数"。
+        await _summaryService.build(a.workoutId);
+        await _store.clearActiveSession();
+        if (!mounted) return;
+        setState(() => _activeSession = null);
+        await _refreshHome();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(sets.isEmpty
+              ? '上次的训练已结束（没有记下任何一组）'
+              : '上次的训练已保存：${sets.length} 组'),
+          key: const Key('stale-saved-toast'),
+        ));
+      case _StaleChoice.discard:
+        // 软删除：进回收站，不是物理删除（`docs/PRODUCT.md` §10.5 那条纪律）
+        for (final SetRecord s in sets) {
+          await _store.deleteSet(s.id);
+        }
+        await _store.clearActiveSession();
+        if (!mounted) return;
+        setState(() => _activeSession = null);
+        await _refreshHome();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(sets.isEmpty
+              ? '已丢弃上次没结束的训练'
+              : '已丢弃上次没结束的训练：${sets.length} 组移进了回收站'),
+          key: const Key('stale-discarded-toast'),
+        ));
+    }
   }
 
   /// 继续上次没结束的训练（2026-10-01）。
@@ -1672,11 +1831,13 @@ class _HomeShellState extends State<HomeShell> {
             // 「今天不想练」的轻量出口：4 个按时长的活动，1 组就走完
             onLightWorkout: _startLight,
             // 上次没练完 → 先把这条摆在最上面（"接着练"是此刻唯一该做的事）
-            onResume: _activeSession == null ? null : _resumeSession,
-            resumeLabel: _activeSession == null
-                ? null
-                : '上次练到第 ${(_activeSession!.index + 1).clamp(1, _activeSession!.length)}'
-                    '/${_activeSession!.length} 个动作',
+            //
+            // ⚠️ **超过 7 天的那条不上首页**（10.9 清单第 1 条，用户拍板"只在计划页留入口"）：
+            // 一条两周前的半截训练顶在首屏喊"接着练"，正是他截图抱怨的那个东西。
+            onResume: _showHomeResume ? _resumeOrAsk : null,
+            resumeLabel: _showHomeResume
+                ? staleSessionResumeLabel(_activeSession!, _nowForSession)
+                : null,
             // 首页中间那一块：今天的安排（2026-10-04 替掉原来那个 Spacer）
             todayPlan: _todayPlan,
             todayLabel: _todayDay?.label,
@@ -1721,7 +1882,12 @@ class _HomeShellState extends State<HomeShell> {
           unit: _unit,
           todayPlan: _todayPlan,
           todayLabel: _todayDay?.label,
-          onResume: _activeSession == null ? null : _resumeSession,
+          onResume: _activeSession == null ? null : _resumeOrAsk,
+          // 「上次练到第 2/3 个动作 · 3 天前」——与首页那行由**同一个函数**拼出来
+          // （两处各拼一遍就会出现"首页说第 2/3、这里说 3/3"那种错位）
+          resumeLabel: _activeSession == null
+              ? null
+              : staleSessionResumeLabel(_activeSession!, _nowForSession),
         );      default:
         return ProfileScreen(
           store: _store,
@@ -1759,3 +1925,8 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
+/// 跨天那次训练的三个选择（10.9 清单第 1 条）。
+///
+/// 为什么单独一个枚举而不是三个 bool / 直接 pop 一个字符串：
+/// 弹层的三个出口**互斥**，字符串写错一个字母就是"默默什么都不做"。
+enum _StaleChoice { resume, finish, discard }

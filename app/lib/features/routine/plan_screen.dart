@@ -37,6 +37,7 @@ class PlanScreen extends StatefulWidget {
     this.todayPlan = const <PlannedExercise>[],
     this.todayLabel,
     this.onResume,
+    this.resumeLabel,
     this.now,
   });
 
@@ -53,6 +54,13 @@ class PlanScreen extends StatefulWidget {
 
   /// 上次没练完 → 「继续训练」。
   final VoidCallback? onResume;
+
+  /// 那条入口下面的小字（「上次练到第 2/3 个动作 · 3 天前」）。
+  ///
+  /// ⚠️ 10.9 清单第 1 条起**必须带上"几天前"**：这条入口是"超过 7 天不再弹"之后
+  /// 唯一能处理那次训练的地方，而"几天前"正是用户决定"继续还是丢掉"的依据。
+  /// 文案由 `stale_session.dart` 的 `staleSessionResumeLabel` 统一给（与首页同一份）。
+  final String? resumeLabel;
 
   /// 可注入的"今天"，测试用。
   final DateTime? now;
@@ -161,15 +169,30 @@ class _PlanScreenState extends State<PlanScreen> {
           ViCard(
             key: const Key('plan-resume'),
             onTap: widget.onResume,
-            child: const Row(
+            child: Row(
               children: <Widget>[
-                Icon(Icons.play_circle_outline, color: Tokens.accent, size: 20),
-                SizedBox(width: Tokens.s3),
+                const Icon(Icons.play_circle_outline, color: Tokens.accent, size: 20),
+                const SizedBox(width: Tokens.s3),
                 Expanded(
-                  child: Text('上次的训练还没结束 —— 接着练',
-                      style: TextStyle(color: Tokens.text, fontSize: 14)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text('上次的训练还没结束 —— 接着练',
+                          style: TextStyle(color: Tokens.text, fontSize: 14)),
+                      if (widget.resumeLabel != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            widget.resumeLabel!,
+                            key: const Key('plan-resume-when'),
+                            style: const TextStyle(
+                                color: Tokens.text3, fontSize: 12, height: 1.4),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+                const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
               ],
             ),
           ),
