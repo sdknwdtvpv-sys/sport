@@ -426,22 +426,38 @@ void main() {
     expect(find.byKey(const Key('protect-streak')), findsNothing);
   });
 
-  testWidgets('★ 本周挑战那一行（第二部分第 3 条）：传了就画，没传就不出现',
+  testWidgets('★ 连续天数 + 本周次数是**一行事实**（2026-10-10 收成一行）',
       (WidgetTester tester) async {
+    // 原来这里是两块：一张带进度条的「打卡」卡 + 一行「本周挑战」文案。
+    // 收成一行之后：**没有进度条**（全 app 唯一的进度条是「我」里的等级），
+    // 两个数字拼在同一行里。
     await tester.pumpWidget(MaterialApp(
       home: TodayScreen(
         onStart: () {},
-        weeklyChallengeLine: '本周挑战：本周练 3 次 · 1 / 3次（还剩 5 天）',
+        streak: 3,
+        weeklyFact: '本周已练 1 次',
       ),
     ));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('weekly-challenge-line')), findsOneWidget);
-    expect(find.textContaining('本周挑战'), findsOneWidget);
-
-    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
-    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('streak-line')), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
+      '已连续打卡 3 天 · 本周已练 1 次',
+    );
+    expect(find.byKey(const Key('streak-card')), findsNothing,
+        reason: '那张带进度条的「打卡」卡没有了');
     expect(find.byKey(const Key('weekly-challenge-line')), findsNothing,
-        reason: '没传就不该出现（判据在 weekly_challenge.dart 的纯函数里）');
+        reason: '那行「本周挑战」并进了这一行事实');
+
+    // 没传本周次数就不出现那半句
+    await tester.pumpWidget(MaterialApp(
+      home: TodayScreen(onStart: () {}, streak: 3),
+    ));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
+      '已连续打卡 3 天',
+    );
   });
 }
 

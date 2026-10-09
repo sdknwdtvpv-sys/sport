@@ -13,7 +13,6 @@ import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
-import '../progress/streak.dart';
 import '../progress/weekly_report.dart';
 import '../progress/streak_protection.dart';
 import 'today_planner.dart';
@@ -40,7 +39,6 @@ class TodayScreen extends StatelessWidget {
     required this.onStart,
     this.lastWeekSessions = 0,
     this.onSeePlan,
-    this.onPlanHelp,
     this.onLightWorkout,
     this.onResume,
     this.resumeLabel,
@@ -61,7 +59,7 @@ class TodayScreen extends StatelessWidget {
     this.comebackNudge,
     this.protectedInStreak = 0,
     this.protectionOffer,
-    this.weeklyChallengeLine,
+    this.weeklyFact,
     this.debugToday,
     this.onProtectStreak,
   });
@@ -117,14 +115,16 @@ class TodayScreen extends StatelessWidget {
   /// 判据与文案都在 `muscle_balance.dart`（纯函数）；外壳把动作表查好传进来。
   final String? muscleBalance;
 
-  /// 首页那一行**本周挑战**（A3 / 第二部分第 3 条"一处实现两处用"）。
+  /// **本周已经练了几次**（2026-10-10 改成"事实"）。
   ///
-  /// 与成就页那块卡**同一份实现**（`weekly_challenge.dart` 的纯函数）：
-  /// 成就页给完整的一块（怎么做、还剩几天、进度条），首页只给一行 ——
-  /// 首页是"今天要做什么"的地方，挑战是"这周顺便做到什么"，给一行就够。
+  /// ⚠️ 这一格原来是「本周挑战」——一整行带目标的挑战文案（"本周练 3 次 · 1 / 3 次 · 还剩 5 天"），
+  /// 与上面那张打卡卡一起，让首页同时摆着**两套"坚持"的进度**。
+  /// 现在它是**事实**（`本周已练 3 次`），与连续天数拼成同一行 ——
+  /// 判据在 `docs/plan-ux-2026-10-10.md` §五-B：全 app **只有一条进度条**（「我」里的等级），
+  /// 其余都是数字本身。挑战本身没消失：完整的那块（怎么做 / 进度 / 还剩几天）在成就页。
   ///
-  /// null = 不显示（由外壳按纯函数决定，见 `weeklyChallengeLine()`）。
-  final String? weeklyChallengeLine;
+  /// null = 不显示（由外壳按纯函数决定）。
+  final String? weeklyFact;
 
   /// **测试/证据图专用**：把"今天"固定成这一天（null = 真的今天）。
   ///
@@ -200,9 +200,6 @@ class TodayScreen extends StatelessWidget {
   ///     因此不违反 `product-review-2026-10-01.md` ➖2 的结论（那条否的是"随状态收成一条"）。
   final VoidCallback? onSeePlan;
 
-  /// S13 的可选入口。**为 null 时不显示** —— 已经定过计划的人不需要它，
-  /// 而放一个点不动的链接比没有更糟。
-  final VoidCallback? onPlanHelp;
 
   /// 继续上次没结束的训练（2026-10-01 加）。为 null 时不显示。
   ///
@@ -277,12 +274,7 @@ class TodayScreen extends StatelessWidget {
           _comebackCard(comebackNudge!),
         ],
         const SizedBox(height: Tokens.s4),
-        _streakCard(),
-        if (weeklyChallengeLine != null) ...<Widget>[
-          const SizedBox(height: Tokens.s3),
-          _weeklyChallengeLine(weeklyChallengeLine!),
-        ],
-        const SizedBox(height: Tokens.s3),
+        _streakFactLine(),
         // 今日训练：**卡里只有清单与「换一批」**
         _TodayPlanCard(
           plan: todayPlan,
@@ -297,17 +289,7 @@ class TodayScreen extends StatelessWidget {
         // 反倒是"它像清单的一部分"——`docs/screens.md` 当初就写了"觉得别扭就挪回来"。
         const SizedBox(height: Tokens.s4),
         _startButton(),
-        if (onPlanHelp != null) ...<Widget>[
-          const SizedBox(height: Tokens.s2),
-          Center(
-            child: TextButton(
-              key: const Key('plan-help'),
-              onPressed: onPlanHelp,
-              child: const Text('不知道怎么练？帮我定个计划 ›',
-                  style: TextStyle(color: Tokens.text2, fontSize: 14)),
-            ),
-          ),
-        ],
+
         const SizedBox(height: Tokens.s4),
         _quickEntries(),
         // 周报（第二部分第 1 条，2026-10-06）：**只在周一 / 周二**出现，
@@ -340,86 +322,79 @@ class TodayScreen extends StatelessWidget {
   }
 
 
-  /// 打卡卡（新 VI）。**0 天不写"0 天"** —— 那读起来像"你什么都没有"，
-  /// 而事实是"今天练一次就开始记了"（文案在 `streakCopy()` 里，有测试钉着）。
-  Widget _streakCard() {
-    final int? next = nextStreakMilestone(streak);
-    final double progress = next == null ? 1 : (streak / next).clamp(0.0, 1.0);
-    // 连续天数里若含补签，**必须写出来**（"其中 N 天是补签"）——
-    // 不写就等于告诉用户"这些天我天天都练了"。判据与文案都在 streak_protection.dart，
-    // 数由外壳用**同一份记录**一起算好传进来（这一屏不碰数据层）。
-    final String label = streak > 0
+  /// **一行事实**：连续多少天 + 这周练了几次（2026-10-10）。
+  ///
+  /// 用户 10.10 的设计评审之后，这一屏从"两块讲坚持的东西"（一张带进度条、带补签按钮的
+  /// **打卡卡** + 一行**本周挑战**）收成**一行**。为什么这不是"把激励删了"：
+  ///   * **连续天数与本周次数是事实** —— 一个数字，不带进度条。全 app 唯一的进度条
+  ///     是「我」里那条等级（`docs/plan-ux-2026-10-10.md` §五-B）；
+  ///   * 挑战的完整那块（怎么做 / 进度 / 还剩几天）在成就页；
+  ///   * **补签保护仍然留在这里**（`protection-offer` / `protect-streak`）——
+  ///     它只在"昨天恰好断了 + 这周练过 + 这周还没补过"时出现，是要用户**动手**的一件事，
+  ///     不是一条进度；藏起来等于把功能删了。
+  Widget _streakFactLine() {
+    // ⚠️ `streakLabelWithProtection` 里那句"其中 N 天是补签"**必须留着** ——
+    // 只写"连续 12 天"而其中 2 天是补的，就是一句假话（有测试钉着）。
+    final String streakText = streak > 0
         ? streakLabelWithProtection(streak, protectedInStreak)
-        : '打卡';
-    return ViCard(
-      key: const Key('streak-card'),
-      glow: streak > 0,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Icon(Icons.local_fire_department, color: Tokens.accent, size: 18),
-              const SizedBox(width: Tokens.s2),
-              Expanded(
-                child: Text(label,
-                    key: const Key('streak-label'),
-                    style: const TextStyle(
-                        color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-          if (streakCopy != null) ...<Widget>[
-            const SizedBox(height: Tokens.s2),
-            Text(streakCopy!,
-                style: const TextStyle(color: Tokens.text2, fontSize: 12, height: 1.4)),
-          ],
-          // 补签保护（第二部分第 2 条）：**只在"恰好断了一天 + 本周练过 + 本周没补过"
-          // 时才出现**，而且用一句话说清代价与"每周一次"。
-          if (protectionOffer != null && onProtectStreak != null) ...<Widget>[
-            const SizedBox(height: Tokens.s3),
-            Text(protectionOffer!.label,
-                key: const Key('protection-offer'),
-                style: const TextStyle(color: Tokens.text2, fontSize: 12, height: 1.4)),
-            const SizedBox(height: Tokens.s2),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                key: const Key('protect-streak'),
-                onPressed: onProtectStreak,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Tokens.text2,
-                  side: const BorderSide(color: Tokens.line),
-                  padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+        : (streakCopy ?? '今天练一次，就开始记连续天数');
+    final String text =
+        weeklyFact == null ? streakText : '$streakText · $weeklyFact';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          key: const Key('streak-line'),
+          children: <Widget>[
+            Icon(
+              streak > 0
+                  ? Icons.local_fire_department
+                  : Icons.local_fire_department_outlined,
+              color: streak > 0 ? Tokens.accent : Tokens.text3,
+              size: 16,
+            ),
+            const SizedBox(width: Tokens.s2),
+            Expanded(
+              child: Text(
+                text,
+                key: const Key('streak-label'),
+                style: TextStyle(
+                  color: streak > 0 ? Tokens.text2 : Tokens.text3,
+                  fontSize: 13,
+                  height: 1.4,
                 ),
-                child: const Text('补签保护这一天', style: TextStyle(fontSize: 13)),
               ),
             ),
           ],
-          if (next != null) ...<Widget>[
-            const SizedBox(height: Tokens.s3),
-            ViProgressBar(value: progress),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// **本周挑战那一行**（A3 的首页入口 / 第二部分第 3 条"一处实现两处用"）。
-  ///
-  /// 刻意只给**一行**（图标 + 文案）：成就页那块卡已经把事情说全了，
-  /// 首页再多一块卡只会把"今天的安排"往下挤 —— 而那一块才是这一屏的主角。
-  Widget _weeklyChallengeLine(String text) => Row(
-        key: const Key('weekly-challenge-line'),
-        children: <Widget>[
-          const Icon(Icons.flag_outlined, color: Tokens.text3, size: 16),
-          const SizedBox(width: Tokens.s2),
-          Expanded(
-            child: Text(text,
-                style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+        ),
+        if (protectionOffer != null && onProtectStreak != null) ...<Widget>[
+          const SizedBox(height: Tokens.s2),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(protectionOffer!.label,
+                    key: const Key('protection-offer'),
+                    style: const TextStyle(
+                        color: Tokens.text2, fontSize: 12, height: 1.4)),
+              ),
+              const SizedBox(width: Tokens.s2),
+              TextButton(
+                key: const Key('protect-streak'),
+                onPressed: onProtectStreak,
+                style: TextButton.styleFrom(
+                  foregroundColor: Tokens.accent,
+                  padding: const EdgeInsets.symmetric(horizontal: Tokens.s2),
+                  minimumSize: const Size(0, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('补签这一天', style: TextStyle(fontSize: 13)),
+              ),
+            ],
           ),
         ],
-      );
+      ],
+    );
+  }
 
   /// **周报卡**（第二部分第 1 条，2026-10-06 拍板）。
   ///
@@ -504,53 +479,63 @@ class TodayScreen extends StatelessWidget {
         ],
       );
 
-  /// 快速入口四宫格（新 VI）。
+  /// **三个快捷入口**（2026-10-10 从四个大方块改过来的）。
   ///
-  /// ⚠️ **与 VI 有一处刻意的不同**：VI 给的是「自由训练 / 动作库 / 训练计划 / 成就」，
-  /// 而"训练计划"与"成就"在我们这儿分别是**一级 Tab** 与**还没做的功能**。
-  /// 所以这里放的是四个"不是 Tab、但你会想直接点进去"的动作，避免同一件事两个入口。
+  /// 两处改动：
+  ///   1. **去掉「成就」那一格** —— 它搬去了「我」（那是"我拿到了什么"，
+  ///      与"现在要做什么"不是一类；首页不该有它的位置）；
+  ///   2. 从四个各自为政的方块收成**一只卡里的三格**（图标 + 字 + 细线分隔）：
+  ///      上一版缩成一行小灰字，用户反馈「太不显眼、完全没存在感」，所以保留存在感，
+  ///      但不再是四个等权重的方块（`docs/plan-ux-2026-10-10.md` P1-5 记着这次返工）。
   Widget _quickEntries() {
     final List<({IconData icon, String label, VoidCallback? onTap, Key key})> items =
         <({IconData icon, String label, VoidCallback? onTap, Key key})>[
-      // ⚠️ 这个 Key 原来是屏幕底部那条「今天不想练？做 5 分钟活动 ›」的。
-      // 2026-10-05 改成信息流时删掉了那条 —— 快速入口里已经有同一个动作，
-      // 同一件事留两个入口正是这一轮一直在清的那种毛病。
-      (icon: Icons.timer_outlined, label: '5 分钟活动', onTap: onLightWorkout, key: const Key('light-workout')),
       (icon: Icons.menu_book_outlined, label: '动作库', onTap: onOpenLibrary, key: const Key('quick-library')),
       (icon: Icons.monitor_weight_outlined, label: '记录体重', onTap: onLogWeight, key: const Key('quick-weight')),
-      // 2026-10-05：这一格原来是「我的计划」—— 但计划已经是一级 Tab，
-      // 同一件事留两个入口正是这一轮在清的毛病，所以换成「成就」（新功能，没有 Tab）。
-      (icon: Icons.emoji_events_outlined, label: '成就', onTap: onOpenAchievements, key: const Key('quick-achievements')),
+      // ⚠️ 这个 Key 原来是屏幕底部那条「今天不想练？做 5 分钟活动 ›」的
+      // （2026-10-05 改成信息流时删掉了那条，快速入口里已经有同一个动作）。
+      (icon: Icons.timer_outlined, label: '5 分钟活动', onTap: onLightWorkout, key: const Key('light-workout')),
     ];
-    return Row(
-      children: <Widget>[
-        for (int i = 0; i < items.length; i++) ...<Widget>[
-          if (i > 0) const SizedBox(width: Tokens.s3),
-          Expanded(
-            child: GestureDetector(
-              key: items[i].key,
-              behavior: HitTestBehavior.opaque,
-              onTap: items[i].onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
-                decoration: BoxDecoration(
-                  color: Tokens.surface,
-                  borderRadius: BorderRadius.circular(Tokens.rCard),
-                  border: Border.all(color: Tokens.line),
-                ),
-                child: Column(
-                  children: <Widget>[
-                    Icon(items[i].icon, color: Tokens.accent, size: 20),
-                    const SizedBox(height: Tokens.s2),
-                    Text(items[i].label,
-                        style: const TextStyle(color: Tokens.text2, fontSize: 11)),
-                  ],
+    // ⚠️ 高度**不写死**：写死 78 在 1.5× 系统字号下会溢出 15px
+    // （today_plan_test 那条大字号用例当场抓到的）。用 `IntrinsicHeight` +
+    // 格子自己的上下留白撑开，同时让中间那两道细线长满整行。
+    return IntrinsicHeight(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Tokens.surface,
+          borderRadius: BorderRadius.circular(Tokens.rCard),
+          border: Border.all(color: Tokens.line),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (int i = 0; i < items.length; i++) ...<Widget>[
+              if (i > 0) Container(width: 1, color: Tokens.line),
+              Expanded(
+                child: GestureDetector(
+                  key: items[i].key,
+                  behavior: HitTestBehavior.opaque,
+                  onTap: items[i].onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Icon(items[i].icon, color: Tokens.text2, size: 23),
+                        const SizedBox(height: Tokens.s2),
+                        Text(items[i].label,
+                            style: const TextStyle(
+                                color: Tokens.text, fontSize: 14)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
-      ],
+            ],
+          ],
+        ),
+      ),
     );
   }
 

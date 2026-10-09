@@ -49,7 +49,6 @@ import 'domain/tap_meter.dart';
 import 'features/exercise/exercise_library_screen.dart';
 import 'features/exercise/exercise_picker_screen.dart';
 import 'features/today/today_planner.dart';
-import 'features/onboarding/onboarding_screen.dart';
 import 'features/onboarding/intro_carousel_screen.dart';
 import 'features/onboarding/privacy_consent_screen.dart';
 import 'features/today/day_plan_editor.dart';
@@ -64,6 +63,7 @@ import 'features/body/body_metric_screen.dart';
 import 'features/notifications/notification_center_screen.dart';
 import 'features/notifications/notification_rules.dart';
 import 'features/progress/achievements_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'features/progress/streak.dart';
 import 'features/progress/all_data_screen.dart';
 import 'features/progress/progress_data.dart';
@@ -1366,51 +1366,6 @@ class _HomeShellState extends State<HomeShell> {
         source: 'picker',
       );
 
-  /// S13：可选的「帮我定个计划」。**不在启动路径上** ——
-  /// 只有用户主动点 S1 上那个链接才会进。
-  ///
-  /// 引导以"开始训练"收尾：计划已经落库（S11 的计划模板），
-  /// 用户点「就用这个，开始练」时直接进训练会话。
-  Future<void> _openFirstPlan() async {
-    final OnboardingResult? r = await Navigator.of(context).push<OnboardingResult>(
-      MaterialPageRoute<OnboardingResult>(
-        builder: (_) => OnboardingScreen(
-          planner: _planner,
-          profile: _profile,
-          routines: _routines,
-          exercises: _repo,
-          unit: _unit,
-          analytics: _analytics,
-        ),
-      ),
-    );
-    if (r == null || !mounted) return;
-
-    // 入口该收起来了
-    final String? goal = await _profile.goalWire();
-    if (mounted) setState(() => _goalWire = goal);
-
-    if (!r.startNow) {
-      await _refreshHome();
-      return;
-    }
-    final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
-    // 引导最后那下「就用这个，开始练」也是导航点击，且此时控制器还没被构造。
-    // 引导中间选目标/频率的那几步**不计** —— 那是搭计划，不是记这一组。
-    _analytics.beginSetInteraction();
-    _analytics.countTap(TapKind.nav);
-    await _trainSession(
-      workoutId,
-      r.plan
-          .map((PlannedExercise p) =>
-              SessionEntry(exercise: p.exercise, plan: p.plan))
-          .toList(),
-      source: 'onboarding',
-    );
-    await _showSummary(workoutId);
-    await _refreshHome();
-  }
-
   /// S1 的大按钮：**一跳直接开练**。
   ///
   /// 原来的路径是「今日页 → 建议卡 → 大按钮」= 端到端 3 次点击才记下第一组，
@@ -1574,6 +1529,67 @@ class _HomeShellState extends State<HomeShell> {
         ),
       ),
     );
+  }
+
+  /// 「本周已练 N 次」—— 首页那行事实的右半边（2026-10-10）。
+  ///
+  /// 用**训练次数**（`workoutCountIn`），不是当周挑战的进度：挑战的口径每周不同
+  /// （可能是"练过 4 个不同动作"），拿它当"本周练了几次"会算错。
+  /// 一次都没练时返回 null —— 那半句就不出现（不写"本周已练 0 次"）。
+  String? _weekWorkoutFact() {
+    if (_allSets.isEmpty) return null;
+    final ({DateTime start, DateTime end}) w = weekBounds(DateTime.now());
+    final int n = workoutCountIn(_allSets, w.start, w.end);
+    return n <= 0 ? null : '本周已练 $n 次';
+  }
+
+
+  /// S13：可选的「帮我定个计划」。**不在启动路径上** ——
+  /// 只有用户主动点 S1 上那个链接才会进。
+  ///
+  /// 引导以"开始训练"收尾：计划已经落库（S11 的计划模板），
+  /// 用户点「就用这个，开始练」时直接进训练会话。
+  /// ⚠️ 2026-10-10：这个向导的入口**从首页搬到了「计划」页**的最下面一行
+  /// （`PlanScreen.onPlanWizard`，只在还没定过计划时出现）—— 首页原来有三处
+  /// "今天练什么"，设计评审收成一个。这一屏本身一个像素都没动。
+  Future<void> _openFirstPlan() async {
+    final OnboardingResult? r = await Navigator.of(context).push<OnboardingResult>(
+      MaterialPageRoute<OnboardingResult>(
+        builder: (_) => OnboardingScreen(
+          planner: _planner,
+          profile: _profile,
+          routines: _routines,
+          exercises: _repo,
+          unit: _unit,
+          analytics: _analytics,
+        ),
+      ),
+    );
+    if (r == null || !mounted) return;
+
+    // 入口该收起来了
+    final String? goal = await _profile.goalWire();
+    if (mounted) setState(() => _goalWire = goal);
+
+    if (!r.startNow) {
+      await _refreshHome();
+      return;
+    }
+    final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
+    // 引导最后那下「就用这个，开始练」也是导航点击，且此时控制器还没被构造。
+    // 引导中间选目标/频率的那几步**不计** —— 那是搭计划，不是记这一组。
+    _analytics.beginSetInteraction();
+    _analytics.countTap(TapKind.nav);
+    await _trainSession(
+      workoutId,
+      r.plan
+          .map((PlannedExercise p) =>
+              SessionEntry(exercise: p.exercise, plan: p.plan))
+          .toList(),
+      source: 'onboarding',
+    );
+    await _showSummary(workoutId);
+    await _refreshHome();
   }
 
   Future<void> _openAchievements() async {
@@ -1942,8 +1958,6 @@ class _HomeShellState extends State<HomeShell> {
             onStart: _startNow,
             onSeePlan: _openSuggestion,
             lastWeekSessions: _weekSessions,
-            // 还没定过计划才显示入口
-            onPlanHelp: _goalWire == null ? _openFirstPlan : null,
             // 「今天不想练」的轻量出口：4 个按时长的活动，1 组就走完
             onLightWorkout: _startLight,
             // 上次没练完 → 先把这条摆在最上面（"接着练"是此刻唯一该做的事）
@@ -1987,10 +2001,10 @@ class _HomeShellState extends State<HomeShell> {
             comebackNudge: _comebackNudge,
             protectedInStreak: _protectedInStreak,
             protectionOffer: _protectionOffer,
-            // 首页那一行本周挑战（A3 的第二处落点）：与成就页共用同一份纯函数，
-            // "什么时候不显示"也写在那里面（做完了 / 只剩今天都不显示）。
-            weeklyChallengeLine:
-                weeklyChallengeLine(weeklyChallenge(_allSets, DateTime.now())),
+            // 首页那行事实的右半边（2026-10-10）：**本周已练几次**。
+            // ⚠️ 刻意**不用** `WeeklyChallenge.current` —— 那是"当周那条挑战做到多少"，
+            // 口径跟着挑战走（可能是"练过 4 个不同动作"），拿来当"本周练了几次"是错的。
+            weeklyFact: _weekWorkoutFact(),
             onProtectStreak:
                 _protectionOffer == null ? null : _protectStreak,
           );      case 3:
@@ -2009,6 +2023,8 @@ class _HomeShellState extends State<HomeShell> {
           todayPlan: _todayPlan,
           todayLabel: _todayDay?.label,
           onResume: _activeSession == null ? null : _resumeOrAsk,
+          // 从头定个计划（2026-10-10 从首页搬来）：只在还没定过计划时出现
+          onPlanWizard: _goalWire == null ? _openFirstPlan : null,
           // 「上次练到第 2/3 个动作 · 3 天前」——与首页那行由**同一个函数**拼出来
           // （两处各拼一遍就会出现"首页说第 2/3、这里说 3/3"那种错位）
           resumeLabel: _activeSession == null

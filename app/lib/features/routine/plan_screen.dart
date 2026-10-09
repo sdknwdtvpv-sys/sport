@@ -43,6 +43,7 @@ class PlanScreen extends StatefulWidget {
     this.scenario = TrainingScenario.gym,
     this.onScenarioChanged,
     this.now,
+    this.onPlanWizard,
   });
 
   final RoutineRepository repository;
@@ -55,6 +56,14 @@ class PlanScreen extends StatefulWidget {
 
   /// 「上肢 / 下肢」那一行。
   final String? todayLabel;
+
+  /// **从头定个计划**（S13 那个以目标为起点的向导）。
+  ///
+  /// ⚠️ 2026-10-10：这个入口原来在**首页**（主按钮下面那行「不知道怎么练？帮我定个计划 ›」），
+  /// 设计评审把它从首页拿掉了（首页原来有三处"今天练什么"），但它**不能就这么没家** ——
+  /// 那一屏是唯一能按"目标 / 每周几次"生成计划的路径。新家在这里：
+  /// 「计划」页的最下面一行，而且**只在还没定过计划时出现**（外壳传 null 就是不显示）。
+  final VoidCallback? onPlanWizard;
 
   /// **在哪儿练**（2026-10-09 第二份 docx 第 4 条）。
   ///
@@ -161,6 +170,25 @@ class _PlanScreenState extends State<PlanScreen> {
       padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
+        // ── 从头定个计划（2026-10-10 从首页搬来的）──
+        if (widget.onPlanWizard != null) ...<Widget>[
+          ViCard(
+            key: const Key('plan-wizard'),
+            onTap: widget.onPlanWizard,
+            child: Row(
+              children: <Widget>[
+                const Icon(Icons.auto_awesome, color: Tokens.accent, size: 18),
+                const SizedBox(width: Tokens.s3),
+                const Expanded(
+                  child: Text('不知道从哪开始？帮我定个计划',
+                      style: TextStyle(color: Tokens.text, fontSize: 14.5)),
+                ),
+                const Text('›', style: TextStyle(color: Tokens.text3, fontSize: 16)),
+              ],
+            ),
+          ),
+          const SizedBox(height: Tokens.s3),
+        ],
         // ── 在哪儿练（第二份 docx 第 4 条）──
         if (widget.onScenarioChanged != null) ...<Widget>[
           _scenarioRow(),

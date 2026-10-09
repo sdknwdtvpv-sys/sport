@@ -254,31 +254,22 @@ void main() {
   });
 
   group('S1 的入口是可选、非阻塞的', () {
-    testWidgets('没传 onPlanHelp 时不显示（已定过计划的人不需要它）',
+    testWidgets('首页不再有第三处"今天练什么"的入口（2026-10-10 收成一个）',
         (WidgetTester tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(body: TodayScreen(onStart: () {})),
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('plan-help')), findsNothing);
-      // 主按钮该在还在：点一下就能开始训练
-      expect(find.byKey(const Key('start-workout')), findsOneWidget);
-    });
-
-    testWidgets('传了才显示，且不会挤掉主按钮', (WidgetTester tester) async {
-      int helped = 0;
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: TodayScreen(onStart: () {}, onPlanHelp: () => helped++),
-        ),
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('start-workout')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('plan-help')));
-      await tester.pumpAndSettle();
-      expect(helped, 1);
+      // ⚠️ 这一组原来有两条用例，钉的是主按钮下面那行「不知道怎么练？帮我定个计划 ›」
+      // （`plan-help`）。2026-10-10 的设计评审把它删了 —— 首页原来有**三处**
+      // "今天练什么"（换一批 / 帮我定个计划 / 计划 tab），而"一屏一个决策"是
+      // `PRODUCT.md` §2 第 4 条。计划的两个入口现在都在计划卡自己的标题行上
+      // （「换一批」+ 打开计划），所以这组改成钉"那一行不再存在、主按钮仍在"。
+      expect(find.byKey(const Key('plan-help')), findsNothing,
+          reason: '第三处入口已经删掉');
+      expect(find.byKey(const Key('start-workout')), findsOneWidget,
+          reason: '主按钮该在还在 —— 点一下就能开始训练');
     });
   });
 }
