@@ -462,18 +462,30 @@ void main() {
   });
 
   group('通知不新增权限（第 6 条施工清单的最后一条）', () {
-    test('源码 manifest 里仍然只有三项 uses-permission，且没有精确闹钟那两条', () {
+    test('源码 manifest 的权限是**已知的那几条**，且没有精确闹钟那两条', () {
       final String xml =
           File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
       final List<String> perms = RegExp(r'<uses-permission\s+android:name="([^"]+)"')
           .allMatches(xml)
           .map((RegExpMatch m) => m.group(1)!)
           .toList();
+      // ⚠️ 2026-10-09：这一条原来写的是"**只有**三项"。（~~三项~~）
+      // 那一版的事实是对的，但断言的形式太脆：**任何**一次正当的加权限都会把它撞红，
+      // 而它想守的其实是"**没有多要**"—— 也就是"清单是穷举的、且加进去的每一条都有理由"。
+      // 现在写成"必须恰好等于这份已知清单"：加了权限就必须**在这一行里显式补上**，
+      // 于是"新权限"仍然过不去，但理由写在了 diff 里（而不是靠一个数字）。
       expect(perms, <String>[
         'android.permission.INTERNET',
         'android.permission.WRITE_EXTERNAL_STORAGE',
         'android.permission.POST_NOTIFICATIONS',
-      ], reason: '加一条"训练结束预告"不该多要任何权限 —— 它复用通知权限');
+        // 从系统健康库读体成分（Android 14+ 平台自带的 Health Connect）。
+        // ⚠️ **只有读**，一个 WRITE_ 都没有 —— 政策承诺的是"只读、不写回"，
+        // 那一条由 tool/privacy-audit.mjs 的 ⑩之六 再核一遍（Kotlin 里也不许出现 WRITE_）。
+        'android.permission.health.READ_WEIGHT',
+        'android.permission.health.READ_BODY_FAT',
+        'android.permission.health.READ_HEIGHT',
+      ], reason: '加一条"训练结束预告"不该多要任何权限 —— 它复用通知权限；'
+          '加别的权限可以，但必须在这里显式登记（这几条就是穷举清单）');
 
       // ⚠️ 要先把注释剥掉再看：这份 manifest 的注释里**故意提到了** SCHEDULE_EXACT_ALARM
       // （解释"为什么不需要它"），直接 contains 会把自己的说明当成权限命中。

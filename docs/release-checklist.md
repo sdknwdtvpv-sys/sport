@@ -16,13 +16,13 @@
 ## 1. ⛔ 真机验证（安装已完成，交互验收待做）
 
 - [x] ✅ 手机开启「USB 安装」权限（小米/HyperOS 必须单独开，否则 `INSTALL_FAILED_USER_RESTRICTED`）
-- [x] ✅ **App 已装进真机**：`com.sdknwdtvpv.lianleme`。**两个真机上现在都是 v1.64.0（versionCode 79）** ——
+- [x] ✅ **App 已装进真机**：`com.sdknwdtvpv.lianleme`。**两个真机上现在都是 v1.65.0（versionCode 80）** ——
       iPhone 17 Pro（`00008150-000949CA0108401C`）走 `tool/ios-device-run.sh`
-      （2026-10-09 00:47 `BUILD SUCCEEDED` → `App installed` → 拉起成功，
-      `devicectl device info apps` 当场读到 **`1.64.0 / 79`**；这一趟还顺带把
-      `HealthKit` 能力签进了包 —— 见下面「iOS 工程」那行）；
-      Redmi `75caf509` 走 `adb -s 75caf509 install -r dist/练了么-v1.64.0.apk`（覆盖安装、数据保留，
-      `dumpsys package` 读到 `versionName=1.64.0 / versionCode=79`，冷启动 `E/flutter` 0 条 / `overflowed` 0 条）。
+      （2026-10-09 03:5x `BUILD SUCCEEDED` → `App installed` → 拉起成功，
+      `devicectl device info apps` 当场读到 **`1.65.0 / 80`**；这一趟顺带把 `HealthKit` 能力签进了包，
+      见下面「iOS 工程」那行）；
+      Redmi `75caf509` 走 `adb -s 75caf509 install -r dist/练了么-v1.65.0.apk`（覆盖安装、数据保留，
+      `dumpsys package` 读到 `versionName=1.65.0 / versionCode=80`，冷启动 `E/flutter` 0 条 / `overflowed` 0 条）。
       **历史**：第一次装上真机是 v1.0.0 / versionCode 1（那是当时）；
       Redmi 是从 v1.56.0 一路跳上来的（v1.57～v1.60 那几版它没连着，中间夹着**两次 schema 迁移（v22 → v24）**，
       冷启动干净说明迁移链在老库上跑通了）。详见下面「终局核验」，
@@ -342,7 +342,7 @@ done          # 每个 ABI 都应该是 2（备份地址 + 统计地址/v1/event
 | 权限 | ✅ 源码 manifest **三项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29 + `POST_NOTIFICATIONS` —— 最后这条是 v1.42 的训练提醒带来的，API 33+ 走**运行时**请求、只在用户主动打开开关时问）。打包后多一条**隐含**的 `READ_EXTERNAL_STORAGE`（≤29，系统因 WRITE 授予，不是谁声明的）—— **已在政策与 `privacy-facts.json` 里逐条披露**（`privacy-audit --apk` 每次对账）。⚠️ 这三条这个数字以前一直写着「两项/2 条」—— 加 `POST_NOTIFICATIONS` 那次**没同步改这里**，而 `privacy-audit` 只核「有没有披露」、不核「文档里数的是几条」，所以红不了。2026-10-05 对产物数出来才改 |
 | 隐私政策 | 🚧 中英文已成文、占位符已填；**待法务审核 + 公网 URL + 填生效日**。⚠️ 云备份一旦上线，§3.1/§3.2 必须重写（数据**会**离机） |
 | 删除数据入口 | ✅ 已实现并测试。v1.22.0 补上了**条件式的云端删除**：有云备份账号时，弹层多问一句「同时删除云端备份并注销」（默认勾选），先删云端、失败则整个中止。**v1.30.0 起另有逐表核对 + 表清单守门**（`app/test/delete_all_test.dart`）：删除后除动作库外**每张表都必须是 0 行**（负向验证：把 `body_metric` 的删除拆掉 → 立刻红，报 `body_metric=1`）；库里新增/改名一张表而没更新那份清单 → 也红。这条正是删除权的失败方式：**新表忘了接，界面上看不出任何异常** |
-| 真机验证 | ✅ **Redmi `75caf509` 上跑的是 **v1.64.0**（`versionCode 79`，2026-10-08 `adb install -r dist/练了么-v1.64.0.apk` → `Success`、`dumpsys` 读到 `1.64.0 / 79`、冷启动 `E/flutter` 0 条 / `overflowed` 0 条；2026-10-09 复读仍是 `1.64.0 / 79`）**。✅ **iPhone 17 Pro 上现在也是 v1.64.0（79）** —— 2026-10-09 00:47 重跑 `tool/ios-device-run.sh`：`BUILD SUCCEEDED` → `App installed` → 拉起成功，`devicectl` 当场读到 `1.64.0 / 79`（这一趟顺带验掉了"免费账号能不能签 HealthKit"，见「iOS 工程」那行）。⚠️ 之前卡住的原因是那次它不可连/锁着，**不是账号问题**（账号一直在，证书有效期到 2027-10-04）。⚠️ iPhone 那次拉起成功（2026-10-07 装 v1.59.0 时曾被锁屏挡住过：`FBSOpenApplicationErrorDomain error 7 / Locked` —— 装上没问题，解锁后手动点开即可）。**历史**：v1.60.0 / v1.59.0 / v1.58.0 / v1.57.0 都在 iPhone 上装过并在 `devicectl` 里核过版本；Redmi 上此前是 v1.56.0（2026-10-06 `adb install -r dist/练了么-v1.56.0.apk` → Success；账号入口的证据图 `docs/images/v156-account-page-redmi.png`）。**更早的实测**（真机走查与它抓到的 bug）逐条记在 `CHANGELOG.md` 与 `docs/screenshots.md` 里，不在这张表里堆了 |
+| 真机验证 | ✅ **Redmi `75caf509` 上跑的是 **v1.65.0**（`versionCode 80`，2026-10-09 `adb install -r dist/练了么-v1.65.0.apk` → `Success`、`dumpsys` 读到 `1.65.0 / 80`、冷启动 `E/flutter` 0 条 / `overflowed` 0 条）**。✅ **iPhone 17 Pro 上也是 v1.65.0（80）** —— 2026-10-09 `tool/ios-device-run.sh`：`BUILD SUCCEEDED` → `App installed` → 拉起成功，`devicectl device info apps` 当场读到 **`1.65.0 / 80`**（免费个人团队签的 `.dev` bundle id；这一趟把 `HealthKit` 能力也签进去了，见「iOS 工程」那行）。⚠️ 中间卡了几轮的原因**不是账号也不是证书**（那两样都验过：账号一直在、证书有效期到 2027-10-04）——是 **Mac 锁屏时登录钥匙串锁着，`codesign` 会拉一个等人点的授权框**（实测 `codesign --sign <证书>` 在锁屏状态下 20 秒超时、超时后 `SecurityAgent` 仍挂着）。解锁即通。**历史**：v1.64.0 / v1.60.0 / v1.59.0 / v1.58.0 / v1.57.0 都在两台机器上装过并在 `devicectl` / `dumpsys` 里核过版本 |
 | **体检数据的单独同意** | ✅ v1.31.0：体重属**敏感个人信息**（医疗健康类），按 PIPL 第 29 条**单独**征求同意 —— 第一次进「身体数据」页时单独弹一次说明（只存本机/不上传/可改可删），点了才记录，点「先不用」就不进那一页；同意时刻单独落库（当时是 schema **v14**，那一列就是那一版加的）。中英政策与 `privacy-facts.json` 的 `sensitiveLocal` 同步，硬门禁**两处横查**（政策说法 ↔ 代码里那道门）|
 | 匿名统计的默认值 | ✅ **默认开启**（**2026-10-07 用户拍板**，v1.59.0 / schema v23；此前 v1.28.0～v1.58.0 是"默认关闭"，再之前是"默认开" —— 翻过两次，施工单在 `docs/plan-ux-2026-10-07.md` §三·9）。⚠️ **只改默认值、不搬数据**：存量机器读它自己那一行（当年看到的是"默认关闭"，静默翻转等于对着旧承诺收集数据），这条由 `app/test/migration_test.dart` 的 v22→v23 用例钉着。关掉后连队列里没发出去的也停发；硬门禁三处对账（`privacy-facts.json` ↔ 代码默认值 ↔ 中英政策正文），并且**方向反过来**查对外文档写没写反（`privacy-audit` ⑩之四，两个方向各有自检）。**历史实测（2026-09-30，当时默认值是"关"）**：默认跑完整轮训练，应用真实库里 `pending=0`；同一流程预置成开则 `pending=11` —— 证明测量本身没坏（`integration_test/analytics_outbox_e2e_test.dart`）。⚠️ 默认值 2026-10-07 翻成"开"之后，这两跑该重做一遍（口径不变、只是默认那一路的期望值反过来）。**iOS 上同样两跑一致**（2026-09-30，模拟器 iOS 27.0）。⚠️ 这条与下面「积压事件」那条一起，决定"配了上报地址的包"能不能发 |
 | 个人信息收集清单（164 号文） | ✅ 应用内二级菜单「我 → 关于 → 个人信息收集清单」（v1.29.0）。两份清单都是**生成物**：收集清单 ← `privacy-facts.json`，共享清单 ← 政策里的第三方 SDK 表；与应用内隐私政策共用一套生成与防漂守卫（`gen-privacy-page.mjs --check`） |
