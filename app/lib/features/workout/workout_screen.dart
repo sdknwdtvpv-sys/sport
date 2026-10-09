@@ -518,7 +518,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   '长按某一行可撤销',
                   key: const Key('done-list-hint'),
                   style: const TextStyle(
-                      color: Tokens.text3, fontSize: 11, height: 1.2),
+                      color: Tokens.text3, fontSize: 12, height: 1.2),
                 ),
             ],
           ),
@@ -745,8 +745,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               key: const Key('workout-hint'),
               textAlign: TextAlign.right,
               maxLines: 2,
+              // ⚠️ 2026-10-10（P2）：11 → 12.5pt。健身房是"单手、屏幕有汗、
+              // 器械上"的场景，11pt 的提示等于没写（`docs/plan-ux-2026-10-10.md` §四）。
               style: const TextStyle(
-                  color: Tokens.text3, fontSize: 11, height: 1.3),
+                  color: Tokens.text3, fontSize: 12.5, height: 1.3),
             ),
           ),
         ],

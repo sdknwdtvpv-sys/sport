@@ -621,7 +621,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               width: 30,
               child: Text(label,
                   key: Key('filter-label-$label'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 11.5)),
+                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
             ),
             Expanded(
               child: ListView(
