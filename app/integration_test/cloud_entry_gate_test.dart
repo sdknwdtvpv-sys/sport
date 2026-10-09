@@ -78,8 +78,25 @@ void main() {
 
     await tester.tap(find.byKey(const Key('tab-我的')));
     await settle(1200);
+    // ⚠️ 2026-10-09 改：设置那三组入口 v1.60.0 起搬进了独立设置页（顶栏右上角那枚齿轮），
+    // 云备份入口也跟着搬到了「设置 → 数据与备份」。原来这一份还在「我的」页里翻
+    // `cloud-backup` / `delete-all`，那些 key 已经不在那一页了（这条测试只有人手动跑，
+    // 所以一直没人发现它过期 —— 顺手一起修掉）。
+    await tester.tap(find.byKey(const Key('top-bar-settings')));
+    await settle(1200);
 
-    // 先滚到底，把「关于」那一整块（云备份入口 + 版本行）都带进视口
+    // ①② 先看设置首页那句实话（它由同一个编译期开关分叉）
+    final Finder honesty = expectEntry
+        ? find.textContaining('你自己开的云备份')
+        : find.textContaining('不上传任何人');
+    expect(honesty, findsOneWidget,
+        reason: expectEntry
+            ? '配了地址的包，设置页那句实话应当承认"云备份会联网"'
+            : '没配地址的包，设置首页应当说"不上传任何人"');
+
+    // 进「数据与备份」，那里才是云备份入口的所在
+    await tester.tap(find.byKey(const Key('open-data-tools')));
+    await settle(1500);
     await scrollProfile(find.byKey(const Key('delete-all')));
     await scrollProfile(find.byKey(const Key('cloud-backup')));
 
@@ -93,8 +110,10 @@ void main() {
               '那样的包会出现"界面有入口、政策却说本版本未提供"的自相矛盾',
     );
 
-    // ② 版本行那句也由同一个开关决定（第二个独立信号：万一有人只改了入口那一处）
-    final Finder blurb = find.textContaining('云备份要你手动开启');
+    // ② 第二个独立信号：入口与那句实话必须同进同退
+    // （原来这里是「我的」页脚那句"云备份要你手动开启"—— 2026-10-09 按 10.9 清单第 5 条删掉了，
+    //  现在这个信号由上面设置首页那句顶着）
+    final Finder blurb = find.byKey(const Key('cloud-backup'));
     expect(
       blurb,
       expectEntry ? findsOneWidget : findsNothing,

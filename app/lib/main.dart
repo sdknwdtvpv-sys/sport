@@ -1641,6 +1641,9 @@ class _HomeShellState extends State<HomeShell> {
           store: _store,
           repository: _repo,
           unit: _unit,
+          // 一级 tab 角色：外壳顶栏已经写着「数据」，这一页**不要再画自己的标题与返回箭头**
+          // （用户 10.9 清单第 3 条：截图里「数据」下面又出现一行「‹ 全部数据」）。
+          asTab: true,
         );      case 2:
         return TodayScreen(
             // 大按钮一跳直开练；想先看看的人走下面那个入口

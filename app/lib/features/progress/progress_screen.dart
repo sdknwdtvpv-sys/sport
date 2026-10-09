@@ -252,30 +252,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
       padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            const Expanded(
-              child: Text(
-                '进步',
-                style: TextStyle(
-                  color: Tokens.text,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
+        // ⚠️ 这里原来还画了一个 28pt 的「进步」大字 —— 与外壳顶栏那个标题**完全重复**
+        // （用户 10.9 清单第 3 条截图抓的就是它）。页内不再写自己的名字，
+        // 只留右边那个二级页入口（它才是"动作"）。
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            key: const Key('open-all-data'),
             // S9 的入口。二级页：这一屏回答"最近怎么样"，
             // 那一屏回答"某个动作/某段时间到底怎么样"。
-            TextButton(
-              key: const Key('open-all-data'),
-              style: TextButton.styleFrom(foregroundColor: Tokens.accent),
-              onPressed: _openAllData,
-              child: const Text('全部数据 ›', style: TextStyle(fontSize: 14)),
-            ),
-          ],
+            style: TextButton.styleFrom(foregroundColor: Tokens.accent),
+            onPressed: _openAllData,
+            child: const Text('全部数据 ›', style: TextStyle(fontSize: 14)),
+          ),
         ),
-        const SizedBox(height: Tokens.s5),
+        const SizedBox(height: Tokens.s3),
         // 空态**不再提前 return** —— 否则"只记了体重、还没练过"的人
         // 看不到自己刚记的体重。体重和训练是两件独立的事。
         if (d.isEmpty)

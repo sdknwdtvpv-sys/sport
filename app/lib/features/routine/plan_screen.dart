@@ -98,11 +98,10 @@ class _PlanScreenState extends State<PlanScreen> {
             padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, 0),
             child: Row(
               children: <Widget>[
-                const Expanded(
-                  child: Text('训练计划',
-                      style: TextStyle(
-                          color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
-                ),
+                // ⚠️ 这里原来写着「训练计划」—— 与顶栏的「计划」是同一个标题
+                // （用户 10.9 清单第 3 条）。一级页不再自报名字，把那行文字删掉，
+                // 只留右边的视图切换。
+                const Spacer(),
                 ViSegmented(
                   labels: const <String>['本周', '模板库', '历史'],
                   current: _view.index,

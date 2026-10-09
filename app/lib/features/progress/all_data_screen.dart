@@ -30,6 +30,7 @@ enum _Mode { byExercise, byTime }
 class AllDataScreen extends StatefulWidget {
   const AllDataScreen({
     super.key,
+    this.asTab = false,
     required this.store,
     required this.repository,
     this.unit = WeightUnit.kg,
@@ -37,6 +38,17 @@ class AllDataScreen extends StatefulWidget {
   });
 
   final LocalStore store;
+
+  /// **它是不是被当成一级 tab 在用**（2026-10-09 加）。
+  ///
+  /// 同一个屏有两种角色，而它们对"页头"的要求正好相反：
+  ///   * **二级页**（从「进步」点进来）：整屏盖住了外壳顶栏，所以它**必须**自己画
+  ///     「‹ 全部数据」那一行 —— 不然没有返回入口；
+  ///   * **一级 tab**（v1.45.0 起「数据」这一栏就是它）：外壳顶栏已经写着「数据」，
+  ///     再画一遍就是**同一个标题出现两次**，而且那个 `‹` 在一级页里点下去是
+  ///     "退回上一个 tab"，语义根本不对（用户 10.9 清单第 3 条抓的就是这个）。
+  /// 所以由调用方明说角色，别让这一页去猜。
+  final bool asTab;
   final ExerciseRepository repository;
   final WeightUnit unit;
 
@@ -151,7 +163,9 @@ class _AllDataScreenState extends State<AllDataScreen> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            _header(),
+            // 一级 tab 里不画页头（顶栏已经有「数据」了）—— 那个标题与返回箭头
+            // 只对"二级页"角色有意义，见 asTab 的注释。
+            if (!widget.asTab) _header(),
             if (_loading)
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else ...<Widget>[
@@ -213,16 +227,27 @@ class _AllDataScreenState extends State<AllDataScreen> {
   Widget _modeBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: ViSegmented(
-          key: const Key('all-data-mode'),
-          // 四个汉字的标签，格子要比默认宽一点（否则要紧贴边框）
-          itemWidth: 80,
-          labels: const <String>['按动作看', '按时间看'],
-          current: _mode.index,
-          onChanged: (int i) => setState(() => _mode = _Mode.values[i]),
-        ),
+      child: Row(
+        children: <Widget>[
+          ViSegmented(
+            key: const Key('all-data-mode'),
+            // 四个汉字的标签，格子要比默认宽一点（否则要紧贴边框）
+            itemWidth: 80,
+            labels: const <String>['按动作看', '按时间看'],
+            current: _mode.index,
+            onChanged: (int i) => setState(() => _mode = _Mode.values[i]),
+          ),
+          // 一级 tab 没有页头了，「导出 CSV」搬到这里 —— 它原来的位置就是和标题同一行
+          if (widget.asTab) ...<Widget>[
+            const Spacer(),
+            TextButton(
+              key: const Key('all-data-export'),
+              style: TextButton.styleFrom(foregroundColor: Tokens.accent),
+              onPressed: _export,
+              child: const Text('导出 CSV', style: TextStyle(fontSize: 14)),
+            ),
+          ],
+        ],
       ),
     );
   }

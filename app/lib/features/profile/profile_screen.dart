@@ -36,7 +36,6 @@ import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../analytics/analytics.dart';
 import '../../analytics/outbox.dart';
-import '../../backup/backup_config.dart';
 import '../../backup/cloud_backup.dart';
 import '../../backup/login_session.dart';
 import '../../data/profile_repository.dart';
@@ -138,7 +137,8 @@ class ProfileScreen extends StatefulWidget {
   final LoginSession? account;
 
   /// 要不要显示「云备份」入口。**null = 按编译期配置判断**
-  /// （`isCloudBackupConfigured`：没配服务器地址就不显示 —— 详见 lib/backup/backup_config.dart）。
+  /// （现在只有设置页 `SettingsHomeScreen` 在用这个值：没配服务器地址时，
+  /// 那句实话写成"不上传任何人"。见 lib/backup/backup_config.dart。）
   ///
   /// 做成可覆盖的参数是为了**能测**：编译期常量在测试里改不了，
   /// 于是"配了地址会怎样"这条路径就会永远没人验证过。
@@ -305,7 +305,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     final TrainingStats s = _stats!;
-    final bool cloudOn = widget.cloudBackupAvailable ?? isCloudBackupConfigured;
+    // ⚠️ 这里原来还有一行 `final bool cloudOn = …`，只给页脚那句隐私说明用；
+    // 那句话 2026-10-09 删掉了（10.9 清单第 5 条），所以这个局部变量也一并删 ——
+    // 留着就是一个"算出来没人用"的值，而 `dart analyze --fatal-infos` 会红。
+    // ⚠️ 但 `cloudBackupAvailable` 这个**构造参数要保留**：设置页（SettingsHomeScreen）
+    // 还在用它决定那句实话怎么写，而它的入口就在设置页上。
 
     return ListView(
       padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
@@ -432,15 +436,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Tokens.s1),
           child: Text(
-            // 版本号来自 core/app_info.dart，由 app_version_test 与 pubspec 对齐。
-            // 以前这里写死 '1.0.0'，两次切版后界面上的版本号就错了两个版本。
+            // ⚠️ **只剩版本号了**（2026-10-09，用户 10.9 清单第 5 条）：
+            // 这里原来还跟着一句"数据默认只在本机 / 不上传任何人"——用户问"真的有必要吗"，
+            // 结论是**不必要**：那是**去向**承诺，而它已经在三处说得更正式
+            // （「我 → 隐私与关于」、两道单独同意门、隐私政策正文）；写在页脚像小字免责声明。
             //
-            // ⚠️ 后半句**必须跟着配置走**：这个包一旦配了备份服务器，
-            // 再写"不上传任何人"就是界面在撒谎（而隐私政策那边是硬门禁，
-            // 界面这边只能靠这条注释 + 测试守着）。
-            cloudOn
-                ? '版本 $kAppVersion · 数据默认只在本机；云备份要你手动开启，且内容端到端加密。'
-                : '版本 $kAppVersion · 数据只存在这台设备上，不上传任何人。',
+            // ⚠️ 删掉它顺带**取消了那条"跟着配置走"的规则**（`cloudOn` 曾在这里分叉：
+            // 配了备份服务器就不能说"不上传"）。那句话不在了，这条规则也就没有对象 ——
+            // 所以守着它的测试一并删掉，别留一条永远为真的空规则。
+            // 版本号仍然来自 core/app_info.dart，由 app_version_test 与 pubspec 对齐
+            // （以前这里写死 '1.0.0'，两次切版后界面上的版本号就错了两个版本）。
+            '版本 $kAppVersion',
             style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
           ),
         ),

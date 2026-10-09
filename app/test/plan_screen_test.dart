@@ -97,7 +97,7 @@ void main() {
     expect(find.text('—'), findsNWidgets(5), reason: '另外五天没练');
   });
 
-  testWidgets('切到「模板库」：嵌的是同一个 RoutineListScreen，而且只有一行标题',
+  testWidgets('切到「模板库」：嵌的是同一个 RoutineListScreen，**一行标题都不印**',
       (WidgetTester tester) async {
     await _pump(tester);
     expect(find.byType(RoutineListScreen), findsNothing);
@@ -106,7 +106,12 @@ void main() {
     expect(find.byType(RoutineListScreen), findsOneWidget);
     // 嵌入模式不该再印自己的返回箭头与标题（两个箭头会让人以为要退两层）
     expect(find.byKey(const Key('routine-back')), findsNothing);
-    expect(find.text('训练计划'), findsOneWidget, reason: '标题只有外层这一个');
+    // ⚠️ 2026-10-09（用户 10.9 清单第 3 条）：这一页原来自己印一个「训练计划」，
+    // 而它在外壳里是「计划」这个一级 tab —— 顶栏已经写了名字，页内再写一遍就是**同一个标题两次**
+    // （用户截图抓的就是它）。所以现在断言反过来：**页内不许再出现这个标题**，
+    // 名字只由外壳顶栏那一处给。
+    expect(find.text('训练计划'), findsNothing,
+        reason: '一级页不再自报名字 —— 标题只由外壳顶栏给一次');
   });
 
   testWidgets('切到「历史」：按周分桶，本周/上周的数字对得上', (WidgetTester tester) async {
