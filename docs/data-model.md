@@ -69,6 +69,7 @@ CREATE TABLE exercise (
   default_weight_kg REAL,                       -- 首次使用时的起始建议
   default_target_distance_m REAL,               -- 距离处方：每组多少米（distance_time 专用）
   instructions      TEXT,                       -- 动作说明（怎么做 + 最常见的一个错），null = 还没写
+  sub_tags          TEXT DEFAULT '[]',          -- 细分标签（JSON 数组）：上胸/中缝/后束…，见下方那节
   weight_increment  REAL NOT NULL DEFAULT 2.5,  -- 规则引擎加重步长
   is_builtin        INTEGER NOT NULL DEFAULT 0,
   popularity        INTEGER NOT NULL DEFAULT 0, -- 用于"常用动作"排序
@@ -318,6 +319,39 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 内容由人撰写（`seed/parts/` 下的 `01-chest-back.json` / `02-legs-shoulders.json` / `03-arms-core.json`，与 `seed/upstream-zh-names.json`），
 **不由脚本推导** —— 动作要点写错的代价比不写大得多。
 
+### 细分标签（`sub_tags`，v28 / 2026-10-09）
+
+**问题**：主部位只有 6 个（chest / back / legs / shoulders / arms / core），
+而用户嘴里说的是「**今天练上胸**」—— 选择器按部位筛只能筛到"胸"，35 个胸部动作一起铺出来。
+
+**做法**：给力量动作打**细分标签**，参与搜索与筛选。
+
+| 主部位 | 词表 |
+|---|---|
+| `chest` | 上胸 / 下胸 / 中缝 |
+| `back` | 背阔 / 上背 / 下背 / 斜方 |
+| `shoulders` | 前束 / 中束 / 后束 |
+| `arms` | 肱二头 / 肱三头 / 前臂 |
+| `legs` | 股四头 / 腘绳 / 臀 / 小腿 / 内收 |
+| `core` | 上腹 / 下腹 / 侧腹 |
+
+三条规矩（都在 `seed/build.mjs` 里校验，写错直接构建失败）：
+
+1. **标签必须属于它自己的主部位** —— "上胸"出现在背部动作上，筛出来的东西是错的，
+   比没有标签更糟；
+2. **只给 `category = strength` 的动作打** —— 热身/拉伸谈"上胸"没有意义；
+3. **允许为空** —— 标签是内容债，**宁可没有也不要猜**。当前 **230/318 个力量动作有标签**
+   （构建时打印这个数）。没有标签的动作照旧只能在"部位"那一层被筛到。
+
+⚠️ **词表有两份，而且必须一致**：种子校验那份在 `seed/build.mjs` 的 `SUB_TAGS`，
+客户端画 chip 那份在 `app/lib/core/labels.dart` 的 `kSubTagsByMuscle`。
+两边不一致的后果是"chip 点下去筛不到任何动作，而门禁全绿"—— 所以 `seed/build.mjs`
+会拿 Dart 那份做**交叉检查**（缺一个标签就报错；这条检查自己也被反向验证过：
+把 Dart 里某个标签改坏一个字，种子构建当场红）。
+
+存储是 **JSON 数组文本**（与 `aliases` / `secondary_muscles` 同一性质：一串短词、
+只整体读写、从不按它 join）。搜索用 `LIKE '%"上胸"%'`（带引号，避免"胸"命中"上胸"之外的词）。
+
 ### 距离处方（`default_target_distance_m`，2026-09-29 补齐）
 
 **处方现在有三种形态**，由动作的 `track_type` 决定：
@@ -342,7 +376,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
-**当前 `schemaVersion = 25`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+**当前 `schemaVersion = 28`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
 `tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红 —— 包括这种 `schemaVersion = 20`
 的写法，2026-10-05 之前它只认 `schema v20`，而本文档恰好用的是前者，于是**只有这份文档
 逃过了检查**：规则补上 `=` 之后当场抓到它写着 15）。
@@ -371,6 +405,9 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v20 | 身体数据扩展：`body_metric` 新增 `waist_cm` / `muscle_mass_kg`，`user_profile` 新增 `height_cm` | **第三次给既有表加列**（v18 之后）。老库这三列都是 **null = 没记过**（不是 0）—— 腰围 0 cm 是个有意义的值，不能拿来当"没填"。同样排在链尾、同样按"这一列有没有"判断（新库 `onCreate` 已经带着这三列，无条件 `addColumn` 会 `duplicate column name`） |
 | v21 | 新增 `streak_protection`（连续保护 / 补签，第二部分第 2 条） | 只加表。老库升上来是空的 —— **准确的历史**：这个功能出现之前谁也没补签过（也就是说，他们的连续天数从来没被补签撑过）。⚠️ 这是**唯一一张「关于历史」的用户声明**（其余一切都是训练记录的推导结果）——所以它只能新开一张表，绝不能去改 `set_record`/`workout`：**记录就是事实**。删表清单（`test/delete_all_test.dart` 的表清单守门）里它是**删** |
 | v22 | 新增 `auth_session`（登录会话，账号体系 P1-3） | 只加表。老库升上来是空的 —— **准确的历史**：升级之前这台设备没有登录过任何账号。⚠️ 里面存着账号密钥（16 字节）与**还有效的会话令牌**，所以「删除全部数据」**必须清它**（`drift_local_store.deleteAllUserData` + `delete_all_test.dart` 的表清单与种子两处都接上了）|
+| v28 | `exercise` +`sub_tags`（细分标签：上胸 / 中缝 / 后束…，10.9 清单第 7 条） | **加列**。老库升上来是 `[]` = 没标过 —— 那是准确的历史：在这之前动作库里没有这个粒度。⚠️ 而动作库**下次启动会按种子重新导入**（`importSeed` 按 id upsert），标签随之到位；用户自建的动作永远是 `[]`（我们不为他猜"这动作练的是上胸"）。词表与种子校验在 `seed/build.mjs`，客户端那一份在 `core/labels.dart`，两处不一致会让构建失败（交叉检查） |
+| v27 | 新增 `day_plan_item` / `day_plan_day`（**今天的安排**落库，10.9 清单第 6 条） | 只加表。老库升上来是空的 = "这一天还没排过" → 下次打开照旧按分化现算一份并落库。⚠️ 两张表是一件事的两半：`item` 存"练哪几个"（date + position + 动作 + 处方），`day` 存"这一天排过了" —— 因为用户可以把动作**全删光**，而"我删光了"必须存得住（只看有没有行的话，那批动作下次又冒出来，他会以为删除按钮是坏的） |
+| v26 | `user_profile` +`default_weight_increment`（用户自己设的默认加重步进，10.9 清单第 8a 条） | **加列**。老库升上来是 **null = 没设过** → 各动作仍用自己的步长（现状不变）。⚠️ 它只影响**以后新建的自定义动作**（与"铺到所有动作"那个动作分开：铺开写的是 `exercise.weight_increment`）—— 语义写在 `ProfileRepository.setDefaultWeightIncrement` 的注释里 |
 | v25 | `user_profile` +`health_consent_at_ms`（**从系统健康库读取体成分**的单独同意时刻） | **加列**。老库升上来是 **null = 从没同意过 = 一次都没读过** —— 那正是准确的历史。⚠️ 它与 `body_metric_consent_at_ms` **不是同一件事**：那一列同意的是"把体重记在本机"，这一列同意的是"去读系统健康库里别人写进去的记录"（可能是体脂秤 App，也可能是医院那份）。PIPL 第 29 条要对处理目的逐项单独同意，拿一个勾盖两件事、撤回时就会连带撤回另一件 —— 所以各自一列、各自一道门、各自一条撤回路径（`ProfileRepository.setHealthConsent` / `clearHealthConsent`，互不干扰由 `app/test/health_sync_test.dart` 钉着）|
 | v24 | `user_profile` +`nickname`（昵称，10.7 清单第 7 条） | **加列**。老库升上来是 **null = 没设过**（界面如实写"还没设昵称"，不编默认名）。⚠️ 三条边界：① **纯本地** —— 不进云备份的合并键、不上报、没有分享名片；② **不是身份** —— 身份由账号 ID 承担（`account_id` 前 8 位，没登录就不显示）；③ 写入**不走 `insertOnConflictUpdate`** —— 实测那条路不会把已存在的值清成 NULL（设过"李松"再传 null，库里还是"李松"），所以"清空昵称"单独走一条精确 `update`（`ProfileRepository.setNickname`，有测试钉着） |
 | v23 | `user_profile.analytics_enabled` 的**列默认值** `0 → 1`（「帮助改进产品」默认开，2026-10-07 用户拍板） | ⚠️ **这是唯一一次"只改默认值"的迁移，而且它有意什么都不做**。三件事要连着读：① 这个默认值只在建表或缺省插入时起作用，而 drift 的 Dart 数据类把这一列当必填、每次写都显式传值 —— 老库根本用不到它；② **不搬数据**：存量机器那一位原样不动（他们当年在同意屏与政策里看到的是"默认关闭"，静默翻转等于对着旧承诺收集数据）；③ 于是语义是"**新装 = 开，存量 = 它自己那一行**"，由 `migration_test.dart` 的 v22→v23 用例钉住。判据链的另一半在 `docs/privacy-facts.json` 的 `analyticsOptIn`（事实源 ↔ `db.dart` 默认值 ↔ 中英政策正文，`privacy-audit` 每次三方对账）|

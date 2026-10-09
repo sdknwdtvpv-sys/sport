@@ -55,6 +55,22 @@ const CATEGORIES = ['strength', 'warmup', 'cardio', 'stretch'];
 const TRACK_TYPES = [
   'weight_reps', 'reps_only', 'time', 'weight_time', 'distance_time', 'assisted_reps',
 ];
+// **细分标签**（2026-10-09，10.9 清单第 7 条「按肌群细分搜动作（上胸、中缝…）」）。
+//
+// 主部位只有 6 个（chest/back/…），而用户嘴里的"今天练上胸"落不到任何一个筛选上 ——
+// 选择器只能按"胸"筛。这一列是**用户能说出口的那个粒度**：
+//   * 只给 strength 类动作打（热身/拉伸谈"上胸"没有意义）；
+//   * 每个标签**必须属于它自己的主部位**（"上胸"不能出现在背的动作上）——
+//     否则筛选出来的东西是错的，比没有标签更糟；
+//   * 允许为空：标签是**内容债**，宁可没有也不要猜（`tool/content-report.mjs` 会算覆盖率）。
+const SUB_TAGS = {
+  chest: ['上胸', '下胸', '中缝'],
+  back: ['背阔', '上背', '下背', '斜方'],
+  shoulders: ['前束', '中束', '后束'],
+  arms: ['肱二头', '肱三头', '前臂'],
+  legs: ['股四头', '腘绳', '臀', '小腿', '内收'],
+  core: ['上腹', '下腹', '侧腹'],
+};
 const REST_MIN = 30;
 const REST_MAX = 300;
 
@@ -164,6 +180,26 @@ for (const [i, e] of exercises.entries()) {
     if (!SECONDARY_OK.has(m)) errors.push(`${at}：secondary_muscles 非法「${m}」`);
     if (m === e.muscle_group) warnings.push(`${at}：次要部位与主部位重复（${m}）`);
   }
+  // 细分标签：数组、非空、**必须属于这个动作的主部位**、不重复。
+  const subTags = e.sub_tags;
+  if (subTags !== undefined && subTags !== null) {
+    if (!Array.isArray(subTags)) {
+      errors.push(`${at}：sub_tags 必须是数组`);
+    } else {
+      const allowed = SUB_TAGS[e.muscle_group] ?? [];
+      for (const t of subTags) {
+        if (typeof t !== 'string' || !t.trim()) errors.push(`${at}：sub_tags 里有空值`);
+        else if (!allowed.includes(t)) {
+          errors.push(`${at}：sub_tags 里的「${t}」不属于 ${e.muscle_group}`
+            + `（该部位的词表：${allowed.join(' / ')}）`);
+        }
+      }
+      if (new Set(subTags).size !== subTags.length) errors.push(`${at}：sub_tags 有重复`);
+      if (subTags.length > 0 && e.category !== 'strength') {
+        errors.push(`${at}：${e.category} 类动作不该有 sub_tags（细分标签只给力量动作）`);
+      }
+    }
+  }
   if (typeof e.name_en !== 'string' || !e.name_en) errors.push(`${at}：缺少 name_en`);
   if (!Array.isArray(e.aliases)) errors.push(`${at}：aliases 必须是数组`);
 
@@ -188,6 +224,32 @@ for (const [i, e] of exercises.entries()) {
   if (!bodyweightMode && e.default_weight_kg <= 0) errors.push(`${at}：default_weight_kg 必须为正数或 null`);
 }
 
+// ---------- 2.5 交叉检查：选择器那一行 chip 的词表要和这里一致 ----------
+//
+// 客户端把同一份词表写在 `app/lib/core/labels.dart` 的 `kSubTagsByMuscle` 里
+// （选择器要用它画 chip）。两边不一致的后果很具体：chip 点下去**筛不到任何动作**，
+// 而门禁全绿 —— 所以在这里当场把它抓住。
+{
+  const labelsPath = join(ROOT, '..', 'app', 'lib', 'core', 'labels.dart');
+  let dart = '';
+  try {
+    dart = readFileSync(labelsPath, 'utf8');
+  } catch (e) {
+    warnings.push(`读不到 ${labelsPath}，跳过了细分标签的交叉检查`);
+  }
+  if (dart) {
+    for (const [group, tags] of Object.entries(SUB_TAGS)) {
+      for (const t of tags) {
+        if (!dart.includes(`'${t}'`)) {
+          errors.push(`细分标签「${t}」（${group}）在 seed/build.mjs 里有，`
+            + `但 app/lib/core/labels.dart 的 kSubTagsByMuscle 里没有 —— `
+            + '选择器会画不出这个 chip（两处必须一致）');
+        }
+      }
+    }
+  }
+}
+
 if (errors.length) {
   console.error(`✗ 校验失败，共 ${errors.length} 处错误：\n` + errors.map((s) => '  · ' + s).join('\n'));
   process.exit(1);
@@ -209,7 +271,7 @@ const qn = (v) => (v === null || v === undefined ? 'NULL' : String(v));
 const COLS = [
   'id', 'name', 'name_en', 'aliases', 'muscle_group', 'secondary_muscles', 'equipment',
   'category', 'track_type', 'default_rest_sec', 'default_weight_kg', 'weight_increment',
-  'default_target_distance_m', 'instructions', 'is_builtin', 'popularity', 'created_at',
+  'default_target_distance_m', 'instructions', 'sub_tags', 'is_builtin', 'popularity', 'created_at',
   'updated_at', 'deleted_at',
 ];
 
@@ -222,7 +284,8 @@ const rowOf = (e) =>
     q(JSON.stringify(e.secondary_muscles ?? [])),
     q(e.equipment), q(e.category), q(e.track_type),
     qn(e.default_rest_sec), qn(e.default_weight_kg), qn(e.weight_increment),
-    qn(e.default_target_distance_m ?? null), q(e.instructions ?? null), qn(e.is_builtin ?? 1),
+    qn(e.default_target_distance_m ?? null), q(e.instructions ?? null),
+    q(JSON.stringify(e.sub_tags ?? [])), qn(e.is_builtin ?? 1),
     qn(e.popularity), qn(SEED_TS), qn(SEED_TS), 'NULL',
   ].join(', ') +
   ')';
@@ -282,6 +345,10 @@ const byCat = {};
 for (const e of exercises) byCat[e.category] = (byCat[e.category] ?? 0) + 1;
 console.log('  按类别：' + CATEGORIES.map((c) => `${c} ${byCat[c] ?? 0}`).join(' · ')
   + '（只有 strength 会进「今天练什么」）');
+const strength = exercises.filter((e) => e.category === 'strength');
+const tagged = strength.filter((e) => Array.isArray(e.sub_tags) && e.sub_tags.length > 0);
+console.log(`  细分标签（上胸/中缝…）：${tagged.length}/${strength.length} 个力量动作有标签`
+  + `（没有标签的动作只能在「部位」那一层被筛到）`);
 if (warnings.length) {
   console.log(`\n⚠ ${warnings.length} 条提示：\n` + warnings.map((s) => '  · ' + s).join('\n'));
 }

@@ -85,13 +85,20 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   /// 混在 500 条「全部动作」里排到最后等于没有。所以给它一行自己的 chip。
   String? _category;
 
+  /// **细分标签**筛选（上胸 / 中缝 / 后束…，10.9 清单第 7 条）。
+  ///
+  /// 只在**选了某个主部位**时才有意义（"上胸"挂在胸下面）——所以那一行 chip 也是
+  /// 选了部位才出现。换部位时它会跟着清掉（否则会出现"腿 + 上胸"这种筛不出东西的组合）。
+  String? _subTag;
+
   /// 浏览态 = 没搜索、没筛部位、没筛器械、没筛类别。只有这个状态下才分区
   /// （分区是"我还不知道要练什么"时的陈列；筛过之后用户已经知道要找什么了）。
   bool get _browsing =>
       _query.text.trim().isEmpty &&
       _muscleGroup == null &&
       _equipment == null &&
-      _category == null;
+      _category == null &&
+      _subTag == null;
 
   @override
   void initState() {
@@ -112,6 +119,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       muscleGroup: _muscleGroup,
       equipment: _equipment,
       category: _category,
+      subTag: _subTag,
       // 浏览态要把「全部」也铺出来，所以多要一些；搜索态 60 条足够
       limit: browsing ? 500 : 60,
     );
@@ -304,17 +312,44 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                   children: <Widget>[
                     _chip('全部', _muscleGroup == null, () {
                       _muscleGroup = null;
+                      // 部位清掉了，挂在它下面的细分标签也必须跟着清
+                      _subTag = null;
                       _load();
                     }),
                     for (final String k in kPrimaryMuscleGroups)
                       _chip(muscleLabel(k), _muscleGroup == k, () {
                         _muscleGroup = k;
+                        _subTag = null;
                         _load();
                       }, key: 'muscle-$k'),
                   ],
                 ),
               ),
             ),
+            // **细分标签这一行**（2026-10-09，10.9 清单第 7 条）：选了部位才出现 ——
+            // 用户点「胸」之后最想问的下一句就是"上胸还是中缝"。
+            // 不选部位时这一行不存在（6 个部位的标签混在一起会长到看不懂）。
+            if (_muscleGroup != null && subTagsFor(_muscleGroup!).isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+                child: SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: <Widget>[
+                      _chip('全部', _subTag == null, () {
+                        _subTag = null;
+                        _load();
+                      }, key: 'subtag-all'),
+                      for (final String t in subTagsFor(_muscleGroup!))
+                        _chip(t, _subTag == t, () {
+                          _subTag = t;
+                          _load();
+                        }, key: 'subtag-$t'),
+                    ],
+                  ),
+                ),
+              ),
             // 器械这一行：给"家里只有哑铃 / 只有自重"的人一条能走通的路。
             Padding(
               padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
@@ -506,6 +541,9 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
           e.category == 'strength'
               ? muscleLabel(e.muscleGroup)
               : '${categoryLabel(e.category)} · ${muscleLabel(e.muscleGroup)}',
+          // 细分标签**接在部位后面**（"胸 · 上胸"）：搜「上胸」时得看得见
+          // 它为什么被搜出来，否则那是一条无法解释的结果
+          ...decodeSubTags(e.subTags),
           equipmentLabel(e.equipment),
           if (e.instructions != null && e.instructions!.isNotEmpty)
             e.instructions!,

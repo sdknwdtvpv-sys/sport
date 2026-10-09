@@ -19,7 +19,10 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 90
+    "popularity": 90,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_ez_bar_curl",
@@ -41,7 +44,10 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 68
+    "popularity": 68,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_reverse_bb_curl",
@@ -63,7 +69,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 50,
-    "instructions": "掌心朝下握杠，这个角度更练前臂；重量比正握小很多是正常的。"
+    "instructions": "掌心朝下握杠，这个角度更练前臂；重量比正握小很多是正常的。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_db_curl",
@@ -84,7 +93,10 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 88
+    "popularity": 88,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_db_alternating_curl",
@@ -105,7 +117,10 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 70
+    "popularity": 70,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_hammer_curl",
@@ -127,7 +142,10 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 82
+    "popularity": 82,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_incline_hammer_curl",
@@ -147,7 +165,10 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 36,
-    "instructions": "靠着斜凳、掌心相对，肘别往前跑；这个角度更吃二头长头。"
+    "instructions": "靠着斜凳、掌心相对，肘别往前跑；这个角度更吃二头长头。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_cable_hammer_curl",
@@ -169,7 +190,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "掌心相对握绳，肘固定在身侧；绳索全程有张力，别放太快。"
+    "instructions": "掌心相对握绳，肘固定在身侧；绳索全程有张力，别放太快。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_concentration_curl",
@@ -189,7 +213,10 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 58,
-    "instructions": "肘内侧顶住大腿内侧，只动小臂；追求顶点那一下的收缩。"
+    "instructions": "肘内侧顶住大腿内侧，只动小臂；追求顶点那一下的收缩。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_preacher_curl",
@@ -212,7 +239,10 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 65
+    "popularity": 65,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_incline_db_curl",
@@ -234,7 +264,10 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_zottman_curl",
@@ -254,7 +287,10 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 34,
-    "instructions": "弯起时掌心朝上，放下时转成朝下；一个动作练到两边手臂。"
+    "instructions": "弯起时掌心朝上，放下时转成朝下；一个动作练到两边手臂。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_cable_curl",
@@ -274,7 +310,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "肘固定在身侧，顶峰用力收紧；下放时慢一些，别直接放回。"
+    "instructions": "肘固定在身侧，顶峰用力收紧；下放时慢一些，别直接放回。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_cable_reverse_curl",
@@ -294,7 +333,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 32,
-    "instructions": "反握把手、掌心朝下，肘固定住；前臂先累是正常的。"
+    "instructions": "反握把手、掌心朝下，肘固定住；前臂先累是正常的。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_machine_curl",
@@ -313,7 +355,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 58,
-    "instructions": "肘固定在垫上，只让前臂动；靠身体后仰把重量拽上来是借力。"
+    "instructions": "肘固定在垫上，只让前臂动；靠身体后仰把重量拽上来是借力。",
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_cable_pushdown",
@@ -335,7 +380,10 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 92
+    "popularity": 92,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_straight_bar_pushdown",
@@ -357,7 +405,10 @@
     "default_weight_kg": 20,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_reverse_grip_pushdown",
@@ -377,7 +428,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "反握把手、肘固定，往下压到手臂伸直；这个角度更练内侧头。"
+    "instructions": "反握把手、肘固定，往下压到手臂伸直；这个角度更练内侧头。",
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_single_arm_pushdown",
@@ -396,7 +450,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "肘固定在身侧，单手往下压到伸直；单边做能纠正两侧不对称。"
+    "instructions": "肘固定在身侧，单手往下压到伸直；单边做能纠正两侧不对称。",
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_close_grip_bench",
@@ -420,7 +477,10 @@
     "default_weight_kg": 30,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 72
+    "popularity": 72,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_close_grip_smith",
@@ -463,7 +523,10 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 70
+    "popularity": 70,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_overhead_db_extension",
@@ -485,7 +548,10 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 68
+    "popularity": 68,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_overhead_cable_extension",
@@ -507,7 +573,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "背对绳索、肘朝前上方，只让前臂伸；肘往外张开就是跑偏了。"
+    "instructions": "背对绳索、肘朝前上方，只让前臂伸；肘往外张开就是跑偏了。",
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_single_arm_overhead_cable",
@@ -526,7 +595,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 38,
-    "instructions": "背对绳索、肘朝前上方，只伸小臂；肘别往外张开。"
+    "instructions": "背对绳索、肘朝前上方，只伸小臂；肘别往外张开。",
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_machine_triceps_extension",
@@ -545,7 +617,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 48,
-    "instructions": "肘固定在垫上，只伸小臂；别耸肩也别让肘离开垫面。"
+    "instructions": "肘固定在垫上，只伸小臂；别耸肩也别让肘离开垫面。",
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_triceps_kickback",
@@ -567,7 +642,10 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 42,
-    "instructions": "俯身让大臂与地面平行并固定住，只伸小臂；重量小一点，甩起来就没意义。"
+    "instructions": "俯身让大臂与地面平行并固定住，只伸小臂；重量小一点，甩起来就没意义。",
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_diamond_push_up",
@@ -612,7 +690,11 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "前臂搁在凳上、掌心朝上，只动手腕；轻重量多次数更合适。"
+    "instructions": "前臂搁在凳上、掌心朝上，只动手腕；轻重量多次数更合适。",
+    "sub_tags": [
+      "肱二头",
+      "前臂"
+    ]
   },
   {
     "id": "ex_reverse_wrist_curl",
@@ -631,7 +713,11 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 35,
-    "instructions": "掌心朝下，只动手腕向上屈；练的是前臂伸肌，重量要轻。"
+    "instructions": "掌心朝下，只动手腕向上屈；练的是前臂伸肌，重量要轻。",
+    "sub_tags": [
+      "肱二头",
+      "前臂"
+    ]
   },
   {
     "id": "ex_crunch",
@@ -652,7 +738,10 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 82
+    "popularity": 82,
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_sit_up",
@@ -672,7 +761,10 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 65
+    "popularity": 65,
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_reverse_crunch",
@@ -691,7 +783,11 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "用腹肌把骨盆卷向胸口，不是抬腿；动作小而慢才有效。"
+    "instructions": "用腹肌把骨盆卷向胸口，不是抬腿；动作小而慢才有效。",
+    "sub_tags": [
+      "上腹",
+      "下腹"
+    ]
   },
   {
     "id": "ex_side_crunch",
@@ -712,7 +808,10 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "一侧手扶头，用侧腹把肩胛卷离地面；不要用手拽脖子。"
+    "instructions": "一侧手扶头，用侧腹把肩胛卷离地面；不要用手拽脖子。",
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_heel_touch",
@@ -756,7 +855,10 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 72
+    "popularity": 72,
+    "sub_tags": [
+      "下腹"
+    ]
   },
   {
     "id": "ex_hanging_knee_raise",
@@ -779,7 +881,10 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 58,
-    "instructions": "先沉肩挂稳，再把膝盖收到胸口；身体摆荡说明核心没在控制。"
+    "instructions": "先沉肩挂稳，再把膝盖收到胸口；身体摆荡说明核心没在控制。",
+    "sub_tags": [
+      "下腹"
+    ]
   },
   {
     "id": "ex_hanging_side_leg_raise",
@@ -799,7 +904,10 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 30,
-    "instructions": "挂稳之后把腿往一侧抬；身体摆荡说明核心没控制住。"
+    "instructions": "挂稳之后把腿往一侧抬；身体摆荡说明核心没控制住。",
+    "sub_tags": [
+      "下腹"
+    ]
   },
   {
     "id": "ex_lying_leg_raise",
@@ -820,7 +928,10 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 60,
-    "instructions": "腰要压住地面，腿下放到腰开始离地就是你的极限；靠惯性甩腿没意义。"
+    "instructions": "腰要压住地面，腿下放到腰开始离地就是你的极限；靠惯性甩腿没意义。",
+    "sub_tags": [
+      "下腹"
+    ]
   },
   {
     "id": "ex_plank",
@@ -885,7 +996,10 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "肘在肩正下方，髋顶起来成一条线；撑不住就先屈膝做。"
+    "instructions": "肘在肩正下方，髋顶起来成一条线；撑不住就先屈膝做。",
+    "sub_tags": [
+      "侧腹"
+    ]
   },
   {
     "id": "ex_russian_twist",
@@ -907,7 +1021,10 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "侧腹"
+    ]
   },
   {
     "id": "ex_cable_side_bend",
@@ -928,7 +1045,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 34,
-    "instructions": "绳索在体侧，只往一边弯；重量小，靠幅度不靠拽。"
+    "instructions": "绳索在体侧，只往一边弯；重量小，靠幅度不靠拽。",
+    "sub_tags": [
+      "侧腹"
+    ]
   },
   {
     "id": "ex_ab_wheel",
@@ -973,7 +1093,10 @@
     "default_weight_kg": 25,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 66
+    "popularity": 66,
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_machine_crunch",
@@ -992,7 +1115,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "背贴垫、用腹肌把胸口卷向骨盆；靠手臂拉把手是借力。"
+    "instructions": "背贴垫、用腹肌把胸口卷向骨盆；靠手臂拉把手是借力。",
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_dead_bug",
@@ -1106,6 +1232,9 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 60,
-    "instructions": "髋在垫边、背保持一条线，起身到大腿与躯干成直线就停；起太高会压腰椎。"
+    "instructions": "髋在垫边、背保持一条线，起身到大腿与躯干成直线就停；起太高会压腰椎。",
+    "sub_tags": [
+      "下背"
+    ]
   }
 ]

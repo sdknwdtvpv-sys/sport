@@ -56,6 +56,16 @@ class Exercise extends Table {
   /// 为什么写在种子里而不是代码里推导：5 公里跑与 20 米农夫行走差两个数量级，
   /// 任何"默认 3000 米"都是编数据。见 `seed/upstream-zh-names.json` 的约定。
   RealColumn get defaultTargetDistanceM => real().nullable()();
+  /// **细分标签**（JSON 数组，如 `["上胸"]`）—— 2026-10-09，10.9 清单第 7 条。
+  ///
+  /// 主部位只有 6 个（胸/背/腿/肩/手臂/核心），而用户嘴里的"今天练上胸"落不到任何筛选上。
+  /// 这一列是**用户能说出口的那个粒度**，参与搜索与筛选（词表与校验在 `seed/build.mjs`）。
+  ///
+  /// 为什么是 JSON 文本而不是关联表：它与 `aliases` / `secondary_muscles` 同一性质
+  /// —— 一串短词、只整体读写、从不需要按它 join。多一张表只会多一处要维护的读写。
+  /// 缺省 `[]`：老库（v27 及以前）升上来就是"没标过"，那是准确的历史。
+  TextColumn get subTags => text().withDefault(const Constant('[]'))();
+
   RealColumn get weightIncrement => real().withDefault(const Constant(2.5))();
   BoolColumn get isBuiltin => boolean().withDefault(const Constant(false))();
   IntColumn get popularity => integer().withDefault(const Constant(0))();
@@ -657,8 +667,11 @@ class AppDatabase extends _$AppDatabase {
   /// v27（2026-10-09）：新增 `day_plan_item` / `day_plan_day`（今天的安排落库，
   /// 10.9 清单第 6 条：长按拖动 / 删除 / 替换）。**只加表** ——
   /// 老库升上来是空的 = "这一天还没排过" → 下次打开照旧按分化现算一份并落库。
+  /// v28（2026-10-09）：`exercise` +`sub_tags`（细分标签：上胸/中缝/后束…，
+  /// 10.9 清单第 7 条）。**加列**，老库升上来是 `[]` = 没标过 ——
+  /// 而动作库会在下次启动时按种子重新导入（`importSeed` 是 upsert），标签跟着到位。
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -920,6 +933,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 27) {
             await m.createTable(dayPlanItem);
             await m.createTable(dayPlanDay);
+          }
+          // v27 → v28：动作库加一列「细分标签」。**只加列**，老库升上来是 `[]`
+          // —— 那是准确的：在这之前，动作库里没有"上胸/中缝"这种粒度。
+          // 下一次启动导入种子时这些标签会补上（内置动作按 id upsert）。
+          if (from < 28) {
+            await addIfMissing(exercise, exercise.subTags);
           }
         },
       );

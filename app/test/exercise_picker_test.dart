@@ -196,6 +196,75 @@ void main() {
     });
   });
 
+  // ── 细分标签（2026-10-09，10.9 清单第 7 条）────────────────────────────────
+  group('细分标签', () {
+    testWidgets('没选部位时**不出现**那一行（6 个部位的标签混在一起看不懂）',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+      expect(find.byKey(const Key('subtag-all')), findsNothing);
+      expect(find.byKey(const Key('subtag-上胸')), findsNothing);
+    });
+
+    testWidgets('选了「胸」→ 出现上胸/下胸/中缝三个 chip；换到「背」→ 换成背的词表',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+      await tester.tap(find.byKey(const Key('muscle-chest')));
+      await tester.pumpAndSettle();
+
+      for (final String t in <String>['上胸', '下胸', '中缝']) {
+        expect(find.byKey(Key('subtag-$t')), findsOneWidget, reason: '$t 应该在');
+      }
+      expect(find.byKey(const Key('subtag-背阔')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('muscle-back')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('subtag-背阔')), findsOneWidget);
+      expect(find.byKey(const Key('subtag-上胸')), findsNothing,
+          reason: '换了部位，上一个部位的标签必须跟着清掉（否则"背 + 上胸"筛不出东西）');
+    });
+
+    testWidgets('★ 点「上胸」→ 只剩上胸的动作，且行里写着"上胸"',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+      await tester.tap(find.byKey(const Key('muscle-chest')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('subtag-上胸')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('exercise-ex_bb_incline_bench_press')), findsOneWidget,
+          reason: '上斜卧推是上胸');
+      expect(find.byKey(const Key('exercise-ex_bb_bench_press')), findsNothing,
+          reason: '平板卧推没被标上胸 —— 它不该出现在这个筛选里');
+      // 那一行的副标题里看得见"上胸"（为什么被搜出来的，要说得清）
+      expect(find.textContaining('胸 · 上胸'), findsWidgets);
+    });
+
+    testWidgets('「全部」能把细分标签退回去（还在"胸"里，不是回到全部动作）',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+      await tester.tap(find.byKey(const Key('muscle-chest')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('subtag-上胸')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('exercise-ex_bb_bench_press')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('subtag-all')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('exercise-ex_bb_bench_press')), findsOneWidget,
+          reason: '退回"这个部位的全部"');
+    });
+
+    testWidgets('打「上胸」两个字也能搜到（名字里没有这三个字也算）',
+        (WidgetTester tester) async {
+      await pumpPicker(tester);
+      await tester.enterText(find.byKey(const Key('exercise-search')), '上胸');
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('exercise-ex_bb_incline_bench_press')), findsOneWidget);
+      expect(find.byKey(const Key('exercise-ex_bb_bench_press')), findsNothing);
+    });
+  });
+
   testWidgets('默认按常用度列出动作', (WidgetTester tester) async {
     await pumpPicker(tester);
 

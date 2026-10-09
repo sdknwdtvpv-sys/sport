@@ -11,6 +11,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart';
+import 'package:lianleme/core/labels.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 // db.dart（drift）与 models.dart 都定义了 Workout / SetRecord ——
@@ -488,6 +489,71 @@ void main() {
       await profile.setDefaultWeightIncrement(null);
       expect(await repo.profileDefaultIncrement(), isNull,
           reason: 'null 是一个有意义的值，不能被"当成没提供"而跳过（drift 的 nullToAbsent 坑）');
+    });
+  });
+
+  // ── 细分标签（2026-10-09，10.9 清单第 7 条）────────────────────────────────
+  group('细分标签', () {
+    setUp(() async {
+      await repo.importSeed(loadJson: _readAsset);
+    });
+
+    test('种子里的标签读得进来（上斜杠铃卧推是上胸）', () async {
+      final ExerciseData e = (await repo.byId('ex_bb_incline_bench_press'))!;
+      expect(decodeSubTags(e.subTags), contains('上胸'));
+    });
+
+    test('按标签筛：上胸只出胸部动作，且都真的带这个标签', () async {
+      final List<ExerciseData> rows =
+          await repo.search(subTag: '上胸', limit: 500);
+
+      expect(rows, isNotEmpty);
+      for (final ExerciseData e in rows) {
+        expect(e.muscleGroup, 'chest', reason: '${e.name} 不是胸的动作');
+        expect(decodeSubTags(e.subTags), contains('上胸'), reason: e.name);
+      }
+      expect(rows.map((ExerciseData e) => e.id), contains('ex_bb_incline_bench_press'));
+    });
+
+    test('按标签筛：下斜卧推不出现在"上胸"里（两个标签不能互相污染）', () async {
+      final List<ExerciseData> up = await repo.search(subTag: '上胸', limit: 500);
+      final List<ExerciseData> down = await repo.search(subTag: '下胸', limit: 500);
+      expect(up.map((ExerciseData e) => e.id).toSet()
+          .intersection(down.map((ExerciseData e) => e.id).toSet()), isEmpty);
+    });
+
+    test('搜「上胸」也能搜到（不只是筛）—— 名字里没有这三个字的也算', () async {
+      final List<ExerciseData> rows =
+          await repo.search(query: '上胸', limit: 500);
+
+      expect(rows, isNotEmpty);
+      // 上斜卧推的名字里没有"上胸"，它靠标签被搜到
+      expect(rows.map((ExerciseData e) => e.id), contains('ex_bb_incline_bench_press'));
+      expect(rows.every((ExerciseData e) => e.name.contains('上胸')
+          || decodeSubTags(e.subTags).contains('上胸')), isTrue);
+    });
+
+    test('标签与部位/器械可以叠加（"胸 · 上胸 · 哑铃"）', () async {
+      final List<ExerciseData> rows = await repo.search(
+          muscleGroup: 'chest', subTag: '上胸', equipment: 'dumbbell', limit: 500);
+      for (final ExerciseData e in rows) {
+        expect(e.muscleGroup, 'chest');
+        expect(e.equipment, 'dumbbell');
+        expect(decodeSubTags(e.subTags), contains('上胸'));
+      }
+    });
+
+    test('没标过的动作不会被"上胸"筛出来（宁可没有，也不猜）', () async {
+      final List<ExerciseData> rows = await repo.search(subTag: '上胸', limit: 500);
+      expect(rows.map((ExerciseData e) => e.id), isNot(contains('ex_bb_bench_press')),
+          reason: '平板卧推没有被标上胸 —— 猜一个比不标更糟');
+    });
+
+    test('新建的自定义动作标签是空的（我们不为他猜）', () async {
+      final ExerciseData created = await repo.createCustom(
+          name: '我的自建动作', muscleGroup: 'chest', equipment: 'dumbbell',
+          weightIncrement: 2);
+      expect(decodeSubTags(created.subTags), isEmpty);
     });
   });
 }

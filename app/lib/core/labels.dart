@@ -6,6 +6,8 @@
 /// 真源仍然是 `seed/parts/00-header.json`。
 library;
 
+import 'dart:convert';
+
 /// 部位标签。
 ///
 /// 前 6 个是**主部位**（动作库的 `muscle_group` 只取这 6 个），
@@ -91,6 +93,44 @@ const List<String> kPrimaryMuscleGroups = <String>[
   'arms',
   'core',
 ];
+
+/// **细分标签的词表**（2026-10-09，10.9 清单第 7 条）。
+///
+/// 主部位只有 6 个，而用户嘴里说的是"今天练上胸"——选择器按部位筛只能筛到"胸"。
+/// 这一张表是**选择器里那一行细分 chip 的数据源**（动作上存的是标签文本本身，
+/// 见 `db.dart` 的 `exercise.sub_tags`）。
+///
+/// ⚠️ **它与 `seed/build.mjs` 里的 `SUB_TAGS` 必须一致**（那边是种子的校验词表，
+/// 写进去的标签只要不属于自己主部位就会让构建失败）。两边不一致的后果是
+/// "chip 点下去筛不到任何动作" —— 所以 `seed/build.mjs` 会拿这张表当参照做一次交叉检查。
+const Map<String, List<String>> kSubTagsByMuscle = <String, List<String>>{
+  'chest': <String>['上胸', '下胸', '中缝'],
+  'back': <String>['背阔', '上背', '下背', '斜方'],
+  'shoulders': <String>['前束', '中束', '后束'],
+  'arms': <String>['肱二头', '肱三头', '前臂'],
+  'legs': <String>['股四头', '腘绳', '臀', '小腿', '内收'],
+  'core': <String>['上腹', '下腹', '侧腹'],
+};
+
+/// 某个主部位有哪些细分标签（没有就空列表）。
+List<String> subTagsFor(String muscleGroup) =>
+    kSubTagsByMuscle[muscleGroup] ?? const <String>[];
+
+/// 把动作上那一列（JSON 数组文本）解成标签列表。坏数据一律当"没标过"。
+List<String> decodeSubTags(String? raw) {
+  if (raw == null || raw.isEmpty || raw == '[]') return const <String>[];
+  try {
+    final Object? decoded = jsonDecode(raw);
+    if (decoded is! List) return const <String>[];
+    return <String>[
+      for (final Object? x in decoded)
+        if (x is String && x.isNotEmpty) x,
+    ];
+  } catch (_) {
+    // 手改过的库 / 半截数据：不要因为一个字段把整页搜动作搞崩
+    return const <String>[];
+  }
+}
 
 String muscleLabel(String key) => kMuscleLabels[key] ?? key;
 

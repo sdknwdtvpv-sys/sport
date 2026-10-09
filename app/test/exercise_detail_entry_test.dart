@@ -38,6 +38,7 @@ ExerciseData fullRow({
       name: name,
       aliases: '["蹲"]',
       muscleGroup: 'legs',
+      subTags: '[]',
       secondaryMuscles: '["glutes"]',
       equipment: 'barbell',
       category: 'strength',

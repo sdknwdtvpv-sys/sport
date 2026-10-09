@@ -45,7 +45,10 @@
     "default_weight_kg": 35,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 88
+    "popularity": 88,
+    "sub_tags": [
+      "上胸"
+    ]
   },
   {
     "id": "ex_bb_decline_bench_press",
@@ -67,7 +70,10 @@
     "default_weight_kg": 35,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "下胸"
+    ]
   },
   {
     "id": "ex_smith_bench_press",
@@ -109,7 +115,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 48,
-    "instructions": "凳角 30°、杠铃落在锁骨下方；全程肩胛后收别松。"
+    "instructions": "凳角 30°、杠铃落在锁骨下方；全程肩胛后收别松。",
+    "sub_tags": [
+      "上胸"
+    ]
   },
   {
     "id": "ex_bb_floor_press",
@@ -175,7 +184,10 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 90
+    "popularity": 90,
+    "sub_tags": [
+      "上胸"
+    ]
   },
   {
     "id": "ex_db_decline_press",
@@ -195,7 +207,10 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 50,
-    "instructions": "下斜 15–30° 就够，哑铃落在下胸两侧；头低于心容易头晕。"
+    "instructions": "下斜 15–30° 就够，哑铃落在下胸两侧；头低于心容易头晕。",
+    "sub_tags": [
+      "下胸"
+    ]
   },
   {
     "id": "ex_db_close_grip_press",
@@ -260,7 +275,10 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 85
+    "popularity": 85,
+    "sub_tags": [
+      "中缝"
+    ]
   },
   {
     "id": "ex_db_incline_fly",
@@ -281,7 +299,11 @@
     "default_weight_kg": 6,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 70
+    "popularity": 70,
+    "sub_tags": [
+      "上胸",
+      "中缝"
+    ]
   },
   {
     "id": "ex_cable_crossover",
@@ -304,7 +326,10 @@
     "default_weight_kg": 10,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 82
+    "popularity": 82,
+    "sub_tags": [
+      "中缝"
+    ]
   },
   {
     "id": "ex_cable_low_fly",
@@ -324,7 +349,11 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "从下往上夹到胸前，像抱住一棵树；手肘保持微屈的固定角度。"
+    "instructions": "从下往上夹到胸前，像抱住一棵树；手肘保持微屈的固定角度。",
+    "sub_tags": [
+      "下胸",
+      "中缝"
+    ]
   },
   {
     "id": "ex_cable_high_fly",
@@ -344,7 +373,11 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 52,
-    "instructions": "从上往下夹到大腿前侧，肘保持微屈；靠身体前倾借力是常见错。"
+    "instructions": "从上往下夹到大腿前侧，肘保持微屈；靠身体前倾借力是常见错。",
+    "sub_tags": [
+      "上胸",
+      "中缝"
+    ]
   },
   {
     "id": "ex_machine_pec_deck",
@@ -366,7 +399,10 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 80
+    "popularity": 80,
+    "sub_tags": [
+      "中缝"
+    ]
   },
   {
     "id": "ex_machine_chest_press",
@@ -408,7 +444,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 52,
-    "instructions": "凳角 30°、肩胛后收贴板，推到手接近伸直；别让肩往前送。"
+    "instructions": "凳角 30°、肩胛后收贴板，推到手接近伸直；别让肩往前送。",
+    "sub_tags": [
+      "上胸"
+    ]
   },
   {
     "id": "ex_machine_single_chest_press",
@@ -521,7 +560,10 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "手撑高台面，越高越轻松；新手先用它练标准俯卧撑的姿态。"
+    "instructions": "手撑高台面，越高越轻松；新手先用它练标准俯卧撑的姿态。",
+    "sub_tags": [
+      "上胸"
+    ]
   },
   {
     "id": "ex_decline_push_up",
@@ -544,7 +586,10 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 42,
-    "instructions": "脚垫高，胸口往地面走；手撑得越低越难，先保证身体是一条线。"
+    "instructions": "脚垫高，胸口往地面走；手撑得越低越难，先保证身体是一条线。",
+    "sub_tags": [
+      "下胸"
+    ]
   },
   {
     "id": "ex_db_pullover",
@@ -591,7 +636,10 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 95
+    "popularity": 95,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_weighted_pull_up",
@@ -613,7 +661,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 60,
-    "instructions": "先能自重做满 8 次再加负重；每次下放到底再拉，别靠摆荡借力。"
+    "instructions": "先能自重做满 8 次再加负重；每次下放到底再拉，别靠摆荡借力。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_chin_up",
@@ -636,7 +687,10 @@
     "default_weight_kg": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 72
+    "popularity": 72,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_assisted_pull_up",
@@ -659,7 +713,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "助力越大越省力，进步就是把助力调小；记录时填的是助力值。"
+    "instructions": "助力越大越省力，进步就是把助力调小；记录时填的是助力值。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_lat_pulldown",
@@ -682,7 +739,10 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 92
+    "popularity": 92,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_close_grip_pulldown",
@@ -705,7 +765,10 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 64
+    "popularity": 64,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_reverse_grip_pulldown",
@@ -727,7 +790,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 50,
-    "instructions": "反握与肩同宽，先沉肩再拉到锁骨；二头先累属于正常。"
+    "instructions": "反握与肩同宽，先沉肩再拉到锁骨；二头先累属于正常。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_single_arm_pulldown",
@@ -747,7 +813,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 42,
-    "instructions": "单手往下拉，躯干别歪；单边做能看出哪一侧背更弱。"
+    "instructions": "单手往下拉，躯干别歪；单边做能看出哪一侧背更弱。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_seated_cable_row",
@@ -772,7 +841,10 @@
     "default_weight_kg": 35,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 90
+    "popularity": 90,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_single_arm_cable_row",
@@ -795,7 +867,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "躯干别跟着转，拉到腰侧；单边做能明显感觉出哪边弱。"
+    "instructions": "躯干别跟着转，拉到腰侧；单边做能明显感觉出哪边弱。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_wide_cable_row",
@@ -818,7 +893,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 48,
-    "instructions": "宽握更吃上背，把肘往身体两侧拉；身体别前后晃。"
+    "instructions": "宽握更吃上背，把肘往身体两侧拉；身体别前后晃。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_bb_row",
@@ -844,7 +922,11 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 92
+    "popularity": 92,
+    "sub_tags": [
+      "背阔",
+      "下背"
+    ]
   },
   {
     "id": "ex_reverse_grip_bb_row",
@@ -867,7 +949,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 46,
-    "instructions": "反握稍窄，拉到下腹；这个握法更容易找到背的收缩。"
+    "instructions": "反握稍窄，拉到下腹；这个握法更容易找到背的收缩。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_pendlay_row",
@@ -892,7 +977,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "每次从地面重新起，背保持水平，爆发拉到下腹；腰不好别做。"
+    "instructions": "每次从地面重新起，背保持水平，爆发拉到下腹；腰不好别做。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_t_bar_row",
@@ -916,7 +1004,10 @@
     "default_weight_kg": 30,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 68
+    "popularity": 68,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_wide_t_bar_row",
@@ -935,7 +1026,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 38,
-    "instructions": "宽握更吃上背，拉到下胸；身体别前后晃。"
+    "instructions": "宽握更吃上背，拉到下胸；身体别前后晃。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_one_arm_db_row",
@@ -958,7 +1052,10 @@
     "default_weight_kg": 12,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 85
+    "popularity": 85,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_two_arm_db_row",
@@ -979,7 +1076,11 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 50,
-    "instructions": "背放平、髋向后推，两只哑铃同时拉到腰侧；别用腰把人拽起来。"
+    "instructions": "背放平、髋向后推，两只哑铃同时拉到腰侧；别用腰把人拽起来。",
+    "sub_tags": [
+      "背阔",
+      "下背"
+    ]
   },
   {
     "id": "ex_chest_supported_row",
@@ -1004,7 +1105,10 @@
     "default_weight_kg": 30,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_machine_row",
@@ -1026,7 +1130,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 60,
-    "instructions": "胸垫顶住、先沉肩再拉，肘往身后走；耸肩用斜方肌代偿是最常见的错。"
+    "instructions": "胸垫顶住、先沉肩再拉，肘往身后走；耸肩用斜方肌代偿是最常见的错。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_single_arm_machine_row",
@@ -1045,7 +1152,10 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 34,
-    "instructions": "单手拉、躯干贴着垫子别转；单边做能补两侧差距。"
+    "instructions": "单手拉、躯干贴着垫子别转；单边做能补两侧差距。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_inverted_row",
@@ -1070,7 +1180,11 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 48,
-    "instructions": "身体绷直成一条线，胸口去碰杠；脚越靠前越难。"
+    "instructions": "身体绷直成一条线，胸口去碰杠；脚越靠前越难。",
+    "sub_tags": [
+      "背阔",
+      "上背"
+    ]
   },
   {
     "id": "ex_deadlift",
@@ -1145,7 +1259,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 42,
-    "instructions": "把杠放在膝盖高度起，练的是锁定那一段；重量可以比硬拉大一些。"
+    "instructions": "把杠放在膝盖高度起，练的是锁定那一段；重量可以比硬拉大一些。",
+    "sub_tags": [
+      "下背"
+    ]
   },
   {
     "id": "ex_straight_arm_pulldown",
@@ -1168,7 +1285,10 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 58,
-    "instructions": "手臂基本伸直，把杆从头上压到大腿前；用背发力，别变成三头下压。"
+    "instructions": "手臂基本伸直，把杆从头上压到大腿前；用背发力，别变成三头下压。",
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_face_pull",
@@ -1191,7 +1311,10 @@
     "default_weight_kg": 15,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 66
+    "popularity": 66,
+    "sub_tags": [
+      "上背"
+    ]
   },
   {
     "id": "ex_bb_shrug",
@@ -1213,7 +1336,10 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "斜方"
+    ]
   },
   {
     "id": "ex_db_shrug",
@@ -1233,7 +1359,10 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 52,
-    "instructions": "只让肩上下走，别转圈；顶端停一下，重量大时可以用助力带。"
+    "instructions": "只让肩上下走，别转圈；顶端停一下，重量大时可以用助力带。",
+    "sub_tags": [
+      "斜方"
+    ]
   },
   {
     "id": "ex_farmer_walk",

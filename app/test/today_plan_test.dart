@@ -203,6 +203,7 @@ void main() {
         aliases: '[]',
         muscleGroup: 'chest',
         secondaryMuscles: '[]',
+          subTags: '[]',
         equipment: 'barbell',
         category: 'strength',
         trackType: 'weight_reps',

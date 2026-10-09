@@ -210,6 +210,7 @@ void main() {
           aliases: '[]',
           muscleGroup: 'chest',
           secondaryMuscles: '[]',
+          subTags: '[]',
           equipment: 'bodyweight',
           category: 'stretch',
           trackType: 'time',

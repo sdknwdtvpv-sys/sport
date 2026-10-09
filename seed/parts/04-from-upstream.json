@@ -127,7 +127,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_assisted_pistol_squat",
@@ -149,7 +152,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_band_pull_apart",
@@ -190,7 +196,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_dead_bug",
@@ -232,7 +241,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_face_pull",
@@ -253,7 +265,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "上背"
+    ]
   },
   {
     "id": "ex_banded_fire_hydrant",
@@ -293,7 +308,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_glute_bridge",
@@ -314,7 +332,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_hip_thrust",
@@ -335,7 +356,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_kickback",
@@ -356,7 +380,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_lat_pulldown",
@@ -377,7 +404,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_banded_lateral_walk",
@@ -464,7 +494,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_banded_seated_hip_abduction",
@@ -484,7 +517,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_squat",
@@ -506,7 +542,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_banded_standing_hip_abduction",
@@ -526,7 +565,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_banded_woodchop",
@@ -568,7 +610,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_battle_ropes",
@@ -652,7 +697,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_bench_dip",
@@ -675,7 +723,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_bicycle_crunch",
@@ -697,7 +748,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_burpee",
@@ -761,7 +815,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_cable_pallof_hold",
@@ -825,7 +882,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "后束"
+    ]
   },
   {
     "id": "ex_cable_standing_hip_abduction",
@@ -845,7 +905,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_cable_standing_hip_adduction",
@@ -866,7 +929,11 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "臀",
+      "内收"
+    ]
   },
   {
     "id": "ex_cable_woodchop",
@@ -906,7 +973,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "小腿"
+    ]
   },
   {
     "id": "ex_captains_chair_knee_raise",
@@ -971,7 +1041,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_childs_pose",
@@ -1012,7 +1085,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_commando_pull_up",
@@ -1036,7 +1112,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_copenhagen_plank",
@@ -1081,7 +1160,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_crab_walk",
@@ -1145,7 +1227,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_cycling",
@@ -1208,7 +1293,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_deficit_reverse_lunge",
@@ -1230,7 +1318,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_donkey_calf_raise",
@@ -1248,7 +1339,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "小腿"
+    ]
   },
   {
     "id": "ex_donkey_kick",
@@ -1271,7 +1365,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_doorway_chest_stretch",
@@ -1313,7 +1410,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_drag_curl",
@@ -1333,7 +1433,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_dragon_flag",
@@ -1376,7 +1479,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_dumbbell_glute_bridge",
@@ -1397,7 +1503,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_dumbbell_hip_thrust",
@@ -1417,7 +1526,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_dumbbell_lateral_lunge",
@@ -1439,7 +1551,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_dumbbell_romanian_deadlift",
@@ -1462,7 +1577,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_dumbbell_side_bend",
@@ -1482,7 +1600,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "侧腹"
+    ]
   },
   {
     "id": "ex_dumbbell_skull_crusher",
@@ -1502,7 +1623,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_dumbbell_sumo_deadlift",
@@ -1548,7 +1672,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_elliptical",
@@ -1698,7 +1825,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_frog_pump",
@@ -1718,7 +1848,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_front_foot_elevated_split_squat",
@@ -1739,7 +1872,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_glute_bridge_march",
@@ -1760,7 +1896,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_glute_focused_back_extension",
@@ -1781,7 +1920,11 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头",
+      "臀"
+    ]
   },
   {
     "id": "ex_good_morning",
@@ -1804,7 +1947,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_half_burpee",
@@ -1887,7 +2033,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_heel_tap",
@@ -1993,7 +2142,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_hollow_body_hold",
@@ -2075,7 +2227,11 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "上胸",
+      "中缝"
+    ]
   },
   {
     "id": "ex_jump_rope",
@@ -2116,7 +2272,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_jumping_jack",
@@ -2158,7 +2317,10 @@
     "default_target_distance_m": null,
     "weight_increment": 4,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_kettlebell_swing",
@@ -2267,7 +2429,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_landmine_press",
@@ -2288,7 +2453,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "前束"
+    ]
   },
   {
     "id": "ex_landmine_romanian_deadlift",
@@ -2309,7 +2477,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_landmine_squat",
@@ -2330,7 +2501,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_lateral_shuffle",
@@ -2394,7 +2568,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_machine_glute_kickback",
@@ -2414,7 +2591,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_meadows_row",
@@ -2435,7 +2615,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_negative_pull_up",
@@ -2459,7 +2642,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_neutral_grip_pull_up",
@@ -2482,7 +2668,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_nordic_hamstring_curl",
@@ -2505,7 +2694,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_pike_push_up",
@@ -2553,7 +2745,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_plank_shoulder_tap",
@@ -2594,7 +2789,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "前束"
+    ]
   },
   {
     "id": "ex_prone_t_raise",
@@ -2657,7 +2855,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "前束"
+    ]
   },
   {
     "id": "ex_push_up_shoulder_tap",
@@ -2700,7 +2901,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_reverse_snow_angel",
@@ -2786,7 +2990,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_scapular_push_up",
@@ -2892,7 +3099,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_side_lying_hip_abduction",
@@ -2912,7 +3122,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_side_lying_leg_raise",
@@ -2953,7 +3166,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "侧腹"
+    ]
   },
   {
     "id": "ex_single_arm_dumbbell_tricep_extension",
@@ -2973,7 +3189,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_single_dumbbell_skullcrusher",
@@ -2993,7 +3212,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "肱三头"
+    ]
   },
   {
     "id": "ex_single_leg_box_squat",
@@ -3015,7 +3237,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_sissy_squat",
@@ -3036,7 +3261,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_skater_hop",
@@ -3079,7 +3307,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_skierg",
@@ -3121,7 +3352,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_smith_machine_hip_thrust",
@@ -3142,7 +3376,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "臀"
+    ]
   },
   {
     "id": "ex_smith_machine_reverse_lunge",
@@ -3164,7 +3401,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_smith_machine_romanian_deadlift",
@@ -3185,7 +3425,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_smith_machine_split_squat",
@@ -3206,7 +3449,10 @@
     "default_target_distance_m": null,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_spider_curl",
@@ -3226,7 +3472,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "肱二头"
+    ]
   },
   {
     "id": "ex_sprawl",
@@ -3289,7 +3538,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_stair_climber",
@@ -3332,7 +3584,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "前束"
+    ]
   },
   {
     "id": "ex_standing_quad_stretch",
@@ -3517,7 +3772,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "腘绳"
+    ]
   },
   {
     "id": "ex_towel_pull_up",
@@ -3539,7 +3797,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_towel_row",
@@ -3561,7 +3822,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 20
+    "popularity": 20,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_trap_bar_deadlift",
@@ -3753,7 +4017,10 @@
     "default_target_distance_m": null,
     "weight_increment": 0,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "股四头"
+    ]
   },
   {
     "id": "ex_wall_walk",
@@ -3815,7 +4082,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "上腹"
+    ]
   },
   {
     "id": "ex_weighted_push_up",
@@ -3856,7 +4126,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 62
+    "popularity": 62,
+    "sub_tags": [
+      "侧腹"
+    ]
   },
   {
     "id": "ex_wide_grip_lat_pulldown",
@@ -3876,7 +4149,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 78
+    "popularity": 78,
+    "sub_tags": [
+      "背阔"
+    ]
   },
   {
     "id": "ex_wide_push_up",
@@ -3942,6 +4218,10 @@
     "default_target_distance_m": null,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 42
+    "popularity": 42,
+    "sub_tags": [
+      "肱二头",
+      "前臂"
+    ]
   }
 ]

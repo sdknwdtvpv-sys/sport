@@ -57,11 +57,15 @@ class ExerciseRepository {
   /// 注：曾经有个 `plannable` 参数（把距离类动作挡在推荐之外）——
   /// 2026-09-29 距离处方做出来之后它就多余了，删掉。
   /// **留着它反而危险**：以后有人加距离动作时会照着旧注释把自己挡在推荐外。
+  /// [subTag] 按**细分标签**过滤（上胸 / 中缝 / 后束…，10.9 清单第 7 条）。
+  /// 存的是 JSON 文本，所以用 LIKE 匹配 `"上胸"`（带引号，避免"胸"匹配到"上胸"以外的词 —
+  /// 标签都是短词且带引号写法唯一，这里够用；要精确匹配就得上关联表，见 `db.dart` 那一列的理由）。
   Future<List<ExerciseData>> search({
     String query = '',
     String? muscleGroup,
     String? equipment,
     String? category,
+    String? subTag,
     int limit = 50,
   }) {
     final String q = query.trim();
@@ -77,8 +81,16 @@ class ExerciseRepository {
       if (category != null) {
         cond = cond & t.category.equals(category);
       }
+      if (subTag != null && subTag.isNotEmpty) {
+        cond = cond & t.subTags.like('%"$subTag"%');
+      }
       if (q.isNotEmpty) {
-        cond = cond & (t.name.like('%$q%') | t.aliases.like('%$q%'));
+        // 名字 / 别名 / **细分标签**都参与搜索（10.9 清单第 7 条）：
+        // 用户打「上胸」时，他要的是"哪些动作是练上胸的"，而不是"名字里带'上胸'三个字"。
+        cond = cond &
+            (t.name.like('%$q%') |
+                t.aliases.like('%$q%') |
+                t.subTags.like('%$q%'));
       }
       return cond;
     });
@@ -206,6 +218,7 @@ class ExerciseRepository {
       aliases: jsonEncode(const <String>[]),
       muscleGroup: muscleGroup,
       secondaryMuscles: jsonEncode(const <String>[]),
+      subTags: jsonEncode(const <String>[]),
       equipment: equipment,
       // 用户自建的动作一律算力量动作：他想记的是一个训练动作。
       // （要建"我自己的一套拉伸"，那是另一个功能，不是这里。）
@@ -254,6 +267,7 @@ class ExerciseRepository {
           aliases: jsonEncode(const <String>[]),
           muscleGroup: 'unspecified',
           secondaryMuscles: jsonEncode(const <String>[]),
+          subTags: jsonEncode(const <String>[]),
           equipment: 'unspecified',
           category: 'strength',
           trackType: 'weight_reps',
@@ -289,6 +303,8 @@ class ExerciseRepository {
         defaultTargetDistanceM:
             (e['default_target_distance_m'] as num?)?.toDouble(),
         instructions: e['instructions'] as String?,
+        // 细分标签：老种子文件里没有这个字段（2026-10-09 之前）→ 空数组
+        subTags: jsonEncode(e['sub_tags'] ?? const <String>[]),
         weightIncrement: (e['weight_increment'] as num?)?.toDouble() ?? 0,
         isBuiltin: ((e['is_builtin'] as num?)?.toInt() ?? 1) == 1,
         popularity: (e['popularity'] as num?)?.toInt() ?? 0,
