@@ -34,6 +34,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'evidence_sets.dart';
 import 'package:lianleme/health/health_bridge.dart';
 import 'package:lianleme/main.dart' as app;
 
@@ -75,7 +76,7 @@ void main() {
     // ⚠️ 为什么不用首页那个 `quick-weight`：那是**今天有事要练**时才渲染的快捷入口，
     // 干净设备上首页是空状态，找不到它（第一次写这条测试就栽在这儿）。
     // 「进步」页的这张卡**没数据也在**（`w == null` 时按钮写「记录」），所以它稳定。
-    await tester.tap(find.byKey(const Key('tab-进步')));
+    await switchTab(tester, 0, '进步');
     await settle(1500);
     final Finder weightEdit = find.byKey(const Key('progress-weight-edit'));
     for (int i = 0;

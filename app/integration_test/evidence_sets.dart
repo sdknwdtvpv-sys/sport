@@ -9,7 +9,10 @@
 /// 里面每个动作 id 都取自 `assets/exercises.json`（写错了不报错、图里也看不出来）。
 library;
 
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/domain/models.dart';
+import 'package:lianleme/main.dart' show debugSwitchTab;
 
 /// **一份固定的训练记录**：约 6 周、每周 3 练、每次 4 个动作 × 3 组。
 ///
@@ -124,4 +127,23 @@ List<SetRecord> evidenceSets() {
     }
   }
   return out;
+}
+
+/// **切到第 [index] 个 tab**（0 起，[label] 是它在底栏上的字）。
+///
+/// 为什么要有这个助手（2026-10-09）：iOS 的底栏换成了**苹果原生的 `UITabBar`**
+/// （平台视图）—— Flutter 侧没有 `tab-*` 那些 key，`tester.tap` 也点不到它
+/// （合成事件进不了 UIKit）。所以：
+///   * **Android / 桌面**：照旧点 `tab-<label>`（那是用户真的会点的东西）；
+///   * **iOS**：走外壳交出来的 `debugSwitchTab`（同一条业务路径：`_selectTab`）。
+///
+/// ⚠️ 别在 iOS 上"点坐标"——注入的事件进不了平台视图，只会静默什么也没发生。
+Future<void> switchTab(WidgetTester tester, int index, String label) async {
+  final Finder byKey = find.byKey(Key('tab-$label'));
+  if (byKey.evaluate().isNotEmpty) {
+    await tester.tap(byKey);
+  } else {
+    debugSwitchTab?.call(index);
+  }
+  await tester.pumpAndSettle();
 }

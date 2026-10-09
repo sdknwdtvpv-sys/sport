@@ -28,6 +28,7 @@
 		AA0000000000000000000031 /* ReminderBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000030 /* ReminderBridge.swift */; };
 		AA0000000000000000000051 /* HealthBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000050 /* HealthBridge.swift */; };
 		AA0000000000000000000061 /* NativeTabBarBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000060 /* NativeTabBarBridge.swift */; };
+		AA0000000000000000000071 /* NativeSegmentedBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000070 /* NativeSegmentedBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,6 +102,7 @@
 		AA0000000000000000000030 /* ReminderBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderBridge.swift; sourceTree = "<group>"; };
 		AA0000000000000000000050 /* HealthBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthBridge.swift; sourceTree = "<group>"; };
 		AA0000000000000000000060 /* NativeTabBarBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTabBarBridge.swift; sourceTree = "<group>"; };
+		AA0000000000000000000070 /* NativeSegmentedBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSegmentedBridge.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000000000A1 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -183,6 +185,7 @@
 				AA0000000000000000000030 /* ReminderBridge.swift */,
 				AA0000000000000000000050 /* HealthBridge.swift */,
 				AA0000000000000000000060 /* NativeTabBarBridge.swift */,
+				AA0000000000000000000070 /* NativeSegmentedBridge.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -398,6 +401,7 @@
 				AA0000000000000000000031 /* ReminderBridge.swift in Sources */,
 				AA0000000000000000000051 /* HealthBridge.swift in Sources */,
 				AA0000000000000000000061 /* NativeTabBarBridge.swift in Sources */,
+				AA0000000000000000000071 /* NativeSegmentedBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

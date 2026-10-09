@@ -31,6 +31,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'glass_surface.dart' show GlassSurface;
+import 'native_hex.dart';
 import 'theme.dart';
 
 /// 原生底栏要的全部参数（与 `NativeTabBarBridge.swift` 读的键名一一对应）。
@@ -151,15 +152,6 @@ class _NativeTabBarState extends State<NativeTabBar> {
   }
 }
 
-/// 从 `Tokens` 取一个 `#RRGGBB`（原生按这个解析）。
-String hexOf(Color c) {
-  final int v = c.toARGB32();
-  final String r = ((v >> 16) & 0xFF).toRadixString(16).padLeft(2, '0');
-  final String g = ((v >> 8) & 0xFF).toRadixString(16).padLeft(2, '0');
-  final String b = (v & 0xFF).toRadixString(16).padLeft(2, '0');
-  return '#$r$g$b';
-}
-
 /// 底栏那五个 tab 的颜色（与 `AppTabBar` 里 Flutter 那一支**同源**，
 /// 免得两支各写一套颜色、改一处忘一处）。
 NativeTabBarSpec nativeTabBarSpec({
@@ -171,7 +163,7 @@ NativeTabBarSpec nativeTabBarSpec({
       labels: labels,
       icons: icons,
       selectedIndex: selectedIndex,
-      selectedColor: hexOf(Tokens.accent),
-      unselectedColor: hexOf(Tokens.text3),
-      hairline: hexOf(Tokens.line),
+      selectedColor: hexOfColor(Tokens.accent),
+      unselectedColor: hexOfColor(Tokens.text3),
+      hairline: hexOfColor(Tokens.line),
     );

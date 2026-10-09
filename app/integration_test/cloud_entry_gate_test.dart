@@ -31,6 +31,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'evidence_sets.dart';
 import 'package:lianleme/backup/backup_config.dart';
 import 'package:lianleme/main.dart' as app;
 
@@ -76,7 +77,7 @@ void main() {
       mark('consent-agreed');
     }
 
-    await tester.tap(find.byKey(const Key('tab-我的')));
+    await switchTab(tester, 4, '我的');
     await settle(1200);
     // ⚠️ 2026-10-09 改：设置那三组入口 v1.60.0 起搬进了独立设置页（顶栏右上角那枚齿轮），
     // 云备份入口也跟着搬到了「设置 → 数据与备份」。原来这一份还在「我的」页里翻

@@ -30,6 +30,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'evidence_sets.dart';
 import 'package:lianleme/backup/recovery_code.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
@@ -134,7 +135,7 @@ void main() {
     mark('snapshot-before=${before.join(' ／ ')}');
 
     // ---------------------------------------------------------------- 2. 开启云备份
-    await tester.tap(find.byKey(const Key('tab-我的')));
+    await switchTab(tester, 4, '我的');
     await settle(1800);
     await scrollToInProfile(find.byKey(const Key('cloud-backup')));
     await tester.tap(find.byKey(const Key('cloud-backup')));

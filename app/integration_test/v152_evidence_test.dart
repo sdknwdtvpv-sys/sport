@@ -19,6 +19,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'evidence_sets.dart';
 import 'package:lianleme/main.dart' as app;
 
 void main() {
@@ -106,7 +107,7 @@ void main() {
 
     // ── v1.51 计划屏的三个视图 ────────────────────────────────────────────
     await step('plan-week', () async {
-      await tester.tap(find.byKey(const Key('tab-计划')));
+      await switchTab(tester, 3, '计划');
       await settle(1800);
       await capture('v152-05-plan-week');
     });

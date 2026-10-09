@@ -164,6 +164,17 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
+/// 测试 / 证据脚本用：**切到第 N 个 tab**（0 起）。
+///
+/// ⚠️ 为什么需要它（2026-10-09）：iOS 的底栏从这一版起是**苹果原生的 `UITabBar`**
+/// （一块平台视图）—— Flutter 侧没有 `tab-*` 那些 key，`tester.tap` 也点不到它
+/// （合成事件进不了 UIKit）。而**商店截图与几条证据脚本要在 iOS 模拟器上切 tab**，
+/// 它们现在走这个入口。Android 那边照旧点 key（两条路语义一致：都是"用户点了那一格"）。
+///
+/// 只在 `HomeShell` 活着的时候非空（`dispose` 里清掉）。
+@visibleForTesting
+void Function(int index)? debugSwitchTab;
+
 class _HomeShellState extends State<HomeShell> {
   final SyncQueue _syncQueue = InMemorySyncQueue();
 
@@ -388,7 +399,10 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   void initState() {
-    // 手指拖页面时，每帧把"当前停在第几页"（小数）推给底栏那颗玻璃
+    // 把"切 tab"这条路交给测试/证据脚本（iOS 的底栏是原生控件，Flutter 点不到它）
+    debugSwitchTab = (int i) {
+      if (mounted) _selectTab(i);
+    };
     super.initState();
     _refreshHome();
     unawaited(_loadUnit());
@@ -834,6 +848,8 @@ class _HomeShellState extends State<HomeShell> {
     // 外部注入的库由注入方负责关闭，我们只关自己打开的
     if (widget.database == null) _db.close();
     super.dispose();
+    // 钩子只在树活着的时候有效（免得测试之间互相串）
+    debugSwitchTab = null;
   }
 
   /// 开一段训练会话：**一次把这一趟要练的动作都建好**，

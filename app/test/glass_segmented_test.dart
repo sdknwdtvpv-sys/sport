@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/app_tab_bar.dart';
 import 'package:lianleme/core/glass_segmented.dart';
+import 'package:lianleme/core/native_segmented.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/core/vi_cards.dart';
 
@@ -54,7 +55,7 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets('★ iOS：走原生容器视图，创建参数逐项对（原生按这些名字取值）',
+  testWidgets('★ iOS：走**苹果原生的 UISegmentedControl**（2026-10-09 起，不再自己画玻璃）',
       (WidgetTester tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     await pump(
@@ -66,42 +67,28 @@ void main() {
       ),
     );
 
+    // 用户看完底栏换成真 UITabBar 之后问：「其他的切换选项能不能也做成这个效果呢，
+    // 比如说像周 月 年的那个调整」—— 这一条就是那时换的。
+    // 判据与底栏那条同源：**不许再有自己画的玻璃**，平台视图的参数要对得上
+    // （原生按这些名字取值，写错了界面上就是一条空白、而且不报错）。
+    expect(find.byKey(const Key('native-segmented')), findsOneWidget);
     final UiKitView view = tester.widget<UiKitView>(find.byType(UiKitView));
-    expect(view.viewType, 'lianleme/glass_segmented',
-        reason: '与 GlassBridge.swift 里的 viewType 必须逐字一致');
+    expect(view.viewType, 'lianleme/native_segmented',
+        reason: '与 NativeSegmentedBridge.swift 里的 viewType 必须逐字一致');
     final Map<Object?, Object?> args = view.creationParams! as Map<Object?, Object?>;
-    expect(args['count'], 3);
-    expect(args['index'], 1);
-    expect(args['style'], 'regular');
-    expect(args['radius'], 16, reason: '高度 32 的胶囊 → 圆角是它的一半');
-    // 选中胶囊：往里缩 5pt（这就是"凸起那块"与底托之间的缝）+ 一点白
-    expect(args['pillInset'], 5);
-    // 默认**不染色 = 全透明**（用户 2026-10-06："能不能做成全透明的"）：
-    // 一个键都不带，原生那边就一点都不染
-    expect(args.containsKey('pillTint'), isFalse,
-        reason: '没给就是不染 —— 别传 null 让原生去猜');
-    // ⚠️ 胶囊默认 `.clear`：两块 `.regular` 叠着是双重磨砂 → 鼓起来那颗会变成奶白疙瘩
-    // （真机原话"通透度太差了 完全不是透明的"）
-    expect(args['pillStyle'], 'clear');
-    expect(args['style'], 'regular', reason: '底托仍然是磨砂的 regular');
-    // 按下去鼓 14pt：太小就没有那个"Q弹"的幅度（真机原话"太小了 要超出边界"）
-    expect(args['pressBulge'], 14);
-    // ② 的重影 bug：字**由原生画**（`labels` 发过去），Flutter 那份不画 ——
-    // 否则玻璃会把背后的字折射出第二份（用户备忘条第 2 条）
-    expect(args['labels'], <String>['周', '月', '年'],
-        reason: '分段控件的字也要交给原生画（否则玻璃会把它折射出第二份）');
-    expect(args['selectedColor'], isNotNull);
-    expect(args['unselectedColor'], isNotNull);
-    expect(args['labelFontSize'], 12);
-    // ⚠️ 不许再有"融合距离"这个参数：容器会把两块玻璃抹平成一块
-    // （真机上就是"切 tab 完全感觉不到玻璃"，证据 glass-probe-segment-variants.png）
-    expect(args.containsKey('spacing'), isFalse);
-    // 标签仍然是 Flutter 画的（在玻璃上面），原生只负责那两块玻璃
-    expect(find.text('月'), findsOneWidget);
+    expect(args['labels'], <String>['周', '月', '年']);
+    expect(args['selectedIndex'], 1);
+    expect(args['fontSize'], 12);
+    // 颜色走 `#RRGGBB`（原生按这个解析）：选中 = 最亮的字（玻璃自己就是那块亮色）
+    expect((args['selectedColor']! as String).startsWith('#'), isTrue);
+    expect((args['unselectedColor']! as String).startsWith('#'), isTrue);
+    // ⚠️ 宽度由 Dart 定（`itemWidth × 段数`）：原生关了"按内容撑开"，
+    // 否则同一行里的别的元素会跟着跳
+    expect(tester.getSize(find.byKey(const Key('native-segmented'))).width, 56 * 3);
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets('★ iOS：条目**等宽**（原生按 width/count 切格子，不等宽就会越往右越偏）',
+  testWidgets('★ iOS：宽度是 itemWidth × 段数（等宽由我们定，原生不许按内容撑开）',
       (WidgetTester tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     await pump(
@@ -113,33 +100,89 @@ void main() {
       ),
     );
 
-    final List<double> widths = <double>[
-      for (final String l in <String>['周', '月', '年'])
-        tester.getSize(find.byKey(Key('seg-$l'))).width,
-    ];
-    expect(widths, <double>[56, 56, 56], reason: '每格都要是 itemWidth，一个字和三个字一样');
+    // ⚠️ 原来这条量的是三格各自的宽度（`seg-周/月/年` 那三个 key）。
+    // 换成原生 `UISegmentedControl` 之后**格子在 UIKit 里**，Flutter 这边没有它们的 key ——
+    // 能钉的是"我们给了它多宽"，以及"原生那一侧关了按内容撑开"
+    // （`apportionsSegmentWidthsByContent = false`，见 Swift 那份注释）。
+    final Size size = tester.getSize(find.byKey(const Key('native-segmented')));
+    expect(size.width, 56 * 3, reason: '每格 itemWidth，一个字和三个字一样宽');
+    expect(size.height, 32);
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets('iOS：玻璃上面那层照样收点击（整格都是热区，不是只有字那几像素）',
+  testWidgets('★ iOS：触摸归**原生**（Flutter 不再拦点击，也不再自己画字）',
       (WidgetTester tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    int picked = -1;
     await pump(
       tester,
       ViSegmented(
         labels: const <String>['周', '月', '年'],
         current: 0,
-        onChanged: (int i) => picked = i,
+        onChanged: (int _) {},
       ),
     );
-    await tester.tap(find.byKey(const Key('seg-年')));
-    expect(picked, 2);
-    // 选中项在玻璃上：字色用最亮的那个（深墨压在浅玻璃上会糊）；
-    // 没选中的是次要色
-    expect(tester.widget<Text>(find.text('周')).style!.color, Tokens.text);
-    expect(tester.widget<Text>(find.text('年')).style!.color, Tokens.text2);
+
+    // ⚠️ 这条**反过来钉**了旧行为：以前 iOS 上那块玻璃是"触摸穿透"的，
+    // 所以 Flutter 得在上面盖透明热区、字也得由 Flutter 画（玻璃会折射第二份）。
+    // 现在换成真控件：它自己接触摸（`EagerGestureRecognizer`），
+    // 字由 UIKit 画 —— **Flutter 这边一个 `Text` 都不该有**。
+    expect(find.text('周'), findsNothing,
+        reason: '字交给 UIKit 画（否则会与系统控件里的字叠成两份）');
+    expect(find.byKey(const Key('seg-周')), findsNothing,
+        reason: 'Flutter 侧不再有热区（点击由原生控件收）');
+    // 平台视图的识别器必须是**认领手势**的那一种，否则系统控件一个点击都收不到
+    final UiKitView view = tester.widget<UiKitView>(find.byType(UiKitView));
+    expect(view.gestureRecognizers, isNotNull);
+    expect(view.gestureRecognizers!.length, 1);
+    // `gestureRecognizers` 装的是 **Factory**（不是识别器本身）——
+    // 造一个出来看类型，这才是原生真正会拿到的那个
+    // ⚠️ `Factory` 是一个**类**（`foundation/basic_types.dart`），不是函数类型 ——
+    // 要造识别器得读它的 `.constructor` 字段（写成 `first()` 会被解析成"调用 first"）。
+    final Object rec = view.gestureRecognizers!.first.constructor();
+    expect(rec.runtimeType.toString(), contains('EagerGestureRecognizer'));
     debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('★ iOS：段数/文字变了必须整块重建（只挪选中位会留下上一套标签）',
+      (WidgetTester tester) async {
+    // 这条守的是「身体数据」页 TrendMetric 那条真事：撤销授权后可选指标
+    // 从 4 个变 3 个 —— 段数变了，而选中位可能还是 0。
+    //
+    // ⚠️ 决策本身是纯函数（`nativeSegmentedUpdate`）。为什么不在 widget 里点：
+    // `_channel` 要等原生 `onPlatformViewCreated` 才建起来，widget 测试没有原生
+    // 那一侧，`invokeMethod` 会被静默丢掉 —— 那样这条测试永远绿，等于没写。
+    expect(
+      nativeSegmentedUpdate(
+        oldLabels: const <String>['体重', '体脂率', '腰围', '骨骼肌'],
+        oldIndex: 0,
+        newLabels: const <String>['体重', '体脂率', '骨骼肌'],
+        newIndex: 0,
+      ),
+      'setSpec',
+      reason: '段数变了：`setSelected` 改不了标题',
+    );
+    expect(
+      nativeSegmentedUpdate(
+        oldLabels: const <String>['周', '月', '年'],
+        oldIndex: 0,
+        newLabels: const <String>['周', '月', '年'],
+        newIndex: 2,
+      ),
+      'setSelected',
+      reason: '段没变，只是选中位变了',
+    );
+    expect(
+      nativeSegmentedUpdate(
+        oldLabels: const <String>['周', '月', '年'],
+        oldIndex: 1,
+        newLabels: const <String>['周', '月', '年'],
+        newIndex: 1,
+      ),
+      isNull,
+      reason: '什么都没变就别打扰原生（每次 rebuild 都发一遍会打断选中动画）',
+    );
+    // 逐字比，顺序也算 —— 原生的格是按顺序插的
+    expect(sameLabels(const <String>['周', '月'], const <String>['月', '周']), isFalse);
   });
 
   testWidgets('★ 通用的一行多选（单位那种）：非 iOS 原样、iOS 等宽进玻璃',

@@ -26,6 +26,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'evidence_sets.dart';
 import 'package:lianleme/main.dart' as app;
 
 void main() {
@@ -226,7 +227,7 @@ void main() {
     });
 
     await step('08-progress', () async {
-      await tester.tap(find.byKey(const Key('tab-进步')));
+      await switchTab(tester, 0, '进步');
       await settle(2000);
       await capture('08-progress');
     });
@@ -243,7 +244,7 @@ void main() {
     });
 
     await step('10-profile', () async {
-      await tester.tap(find.byKey(const Key('tab-我的')));
+      await switchTab(tester, 4, '我的');
       await settle(1800);
       await capture('10-profile');
     });

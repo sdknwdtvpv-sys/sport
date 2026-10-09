@@ -10,14 +10,10 @@ library;
 import 'package:flutter/material.dart';
 
 import 'glass_segmented.dart';
+import 'native_hex.dart';
+import 'native_segmented.dart';
 import 'glass_surface.dart';
 import 'theme.dart';
-
-/// `Color` → `#RRGGBB`（原生按这个解析）
-String _hexOf(Color c) {
-  final int v = c.toARGB32() & 0xFFFFFF;
-  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
-}
 
 /// 卡片：`surface` 底 + **白 6% 描边** + `rCard` 圆角。
 ///
@@ -185,43 +181,60 @@ class ViSegmented extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool glass = GlassSurface.isSupportedPlatform;
-    final Widget row = GlassSegmentedRow(
-      count: labels.length,
-      index: current,
-      itemWidth: itemWidth,
-      height: _glassHeight,
-      itemBuilder: _item,
-      // 字交给原生画（玻璃里面）：Flutter 那份在玻璃背后会被折射出第二份虚影
-      labels: labels,
-      selectedColor: _hexOf(Tokens.text),
-      unselectedColor: _hexOf(Tokens.text2),
-      labelFontSize: 12,
-    );
-
-    if (!glass) {
-      // 老样子：实心胶囊行，按内容收缩（Android 一个像素都不动）
-      return Container(
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: Tokens.elevated,
-          borderRadius: BorderRadius.circular(Tokens.rPill),
+    // **iOS：苹果原生的 `UISegmentedControl`**（2026-10-09，用户看完底栏之后问的
+    // 「其他的切换选项能不能也做成这个效果呢，比如说像周 月 年的那个调整」）。
+    // 这一支覆盖了 5 处调用点（周/月/年、按动作看/按时间看、计划三视图、
+    // 身体数据页的指标切换、分享卡预览）。
+    //
+    // ⚠️ 与旧那条玻璃支路的差别不只是"更像苹果"：**触摸归原生了** ——
+    // Flutter 的测试点不到它（合成事件进不了 UIKit），要驱动它得走业务入口
+    // （底栏那件事已经踩过一次，见 `main.dart` 的 `debugSwitchTab`）。
+    if (GlassSurface.isSupportedPlatform) {
+      return NativeSegmented(
+        width: itemWidth * labels.length,
+        height: _glassHeight,
+        spec: NativeSegmentedSpec(
+          labels: labels,
+          selectedIndex: current,
+          // 与玻璃那支同一套颜色契约：选中用最亮的字（玻璃自己就是那块亮色）
+          selectedColor: hexOfColor(Tokens.text),
+          unselectedColor: hexOfColor(Tokens.text2),
+          fontSize: 12,
         ),
-        child: row,
+        onChanged: onChanged,
       );
     }
 
-    return row;
+    // 非 iOS（Android / 桌面 / widget 测试）：老样子 —— 实心胶囊行，按内容收缩。
+    //
+    // ⚠️ iOS 那条玻璃支路（`GlassSegmentedRow`）**已经不用了**：2026-10-09 起
+    // 这一组件在 iOS 上走上面的原生 `UISegmentedControl`。所以这里不再传
+    // `labels` / `selectedColor` 那些"交给原生画字"的参数 —— 那些参数只有玻璃支路要。
+    // （想看以前长什么样：`git show v1.66.0:app/lib/core/vi_cards.dart`）
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Tokens.elevated,
+        borderRadius: BorderRadius.circular(Tokens.rPill),
+      ),
+      child: GlassSegmentedRow(
+        count: labels.length,
+        index: current,
+        itemWidth: itemWidth,
+        height: _glassHeight,
+        itemBuilder: _item,
+      ),
+    );
   }
 
   Widget _item(int i, bool glass) {
     final bool on = i == current;
-    // 选中项的字色：非 iOS 是"实心 accent 胶囊上的深墨"；玻璃上没有实心底，
-    // 玻璃自己就是那块亮色，字反过来要用最亮的 —— 否则深字压在浅玻璃上会糊。
     final Text label = Text(
       labels[i],
       style: TextStyle(
-        color: on ? (glass ? Tokens.text : Tokens.accentInk) : Tokens.text2,
+        // ⚠️ 这一支只在**非 iOS** 上跑（选中 = 实心 accent 胶囊 + 深墨字），
+        // 所以这里不再有"玻璃上要用最亮的字"那种分叉
+        color: on ? Tokens.accentInk : Tokens.text2,
         fontSize: 12,
         height: 1.2,
         fontWeight: on ? FontWeight.w700 : FontWeight.w500,
@@ -230,12 +243,9 @@ class ViSegmented extends StatelessWidget {
 
     return GestureDetector(
       key: Key('seg-${labels[i]}'),
-      // 玻璃那支：整格都要能点（否则只有字上那几像素是热区）
-      behavior: glass ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+      behavior: HitTestBehavior.deferToChild,
       onTap: () => onChanged(i),
-      child: glass
-          ? Center(child: label)
-          : Container(
+      child: Container(
               padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: 5),
               decoration: BoxDecoration(
                 color: on ? Tokens.accent : null,

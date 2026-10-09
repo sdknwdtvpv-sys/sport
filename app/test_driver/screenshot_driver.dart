@@ -19,6 +19,10 @@ Future<void> main() async {
   //   adb shell wm size 1080x1920
   //   SHOT_DIR=../store-assets/screenshots-play flutter drive ...
   //   adb shell wm size reset
+  // 可以整目录覆盖；`SHOT_DIR` 不设时进商店那套。
+  // ⚠️ **原生控件证据图**（`native_controls_evidence_test.dart`）用另一个目录：
+  //   SHOT_DIR=../docs/images/native-controls flutter drive ...
+  // 别把商店那 46 张图覆盖掉（它们是要上传的资产）。
   final Directory out = Directory(
     Platform.environment['SHOT_DIR'] ?? '../store-assets/screenshots',
   );

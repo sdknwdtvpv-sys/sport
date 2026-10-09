@@ -411,6 +411,40 @@
     而这条正是模拟器上验不了的那一条（`simctl` 不能注入点击）。
     ⚠️ 那一版**版本号仍是 1.66.0**（本地改动还没切版）—— 同一个版本号下改过 `app/` 就
     必须重出包/切版，这条纪律见 `docs/release-checklist.md`「构建链」那一行。
+* **分段切换器**（`core/vi_cards.dart` 的 `ViSegmented`）：同一晚**跟着也换成了苹果原生的
+  `UISegmentedControl`**（用户看完底栏之后问：「其他的切换选项能不能也做成这个效果呢，
+  比如说像周 月 年的那个调整」）。`ViSegmented` 是**一处改、五处生效**的复用点：
+  * 「进步」页的**周 / 月 / 年**（`progress_screen.dart:471`）；
+  * 「数据」页的**按动作看 / 按时间看**（`all_data_screen.dart:232`）；
+  * 「计划」页的**本周 / 模板库 / 历史**（`plan_screen.dart:126`）；
+  * 「身体数据」页趋势卡的**指标切换**（`body_metric_screen.dart:660`）；
+  * 分享卡预览的**明细 / 打卡**（`share_card_preview_screen.dart:190`）。
+  实现是 `ios/Runner/NativeSegmentedBridge.swift` + `core/native_segmented.dart`，
+  与底栏那块**同一套规矩**（触摸归原生、Dart 是唯一真源、宽度由 Dart 定）：
+  * **等宽由 Dart 给**（`itemWidth × 段数`，原生那侧关掉 `apportionsSegmentWidthsByContent`）——
+    按内容撑开的话同一行里的别的元素会跟着跳；
+  * **不设** `selectedSegmentTintColor`：iOS 26 那个选中胶囊是系统玻璃自己画的，
+    盖一层纯色上去就把玻璃替掉了（那正是用户要的观感）；
+  * **代价（如实写）**：选中胶囊是**系统灰玻璃**，不再是原来那颗橙色实心胶囊 ——
+    想换回强调色只需在 `NativeSegmentedBridge.swift` 里给 `selectedSegmentTintColor`
+    一行（Dart 侧不用动）。这一支与底栏一样**测试点不到**（合成事件进不了 UIKit）；
+  * **筛选胶囊不换**（有意）：动作选择器里的部位 / 器械 / 类型 / 细分标签是
+    "8 个里挑一个 + 全部"的**标签云**，`UISegmentedControl` 塞 8 段会挤成一排小字；
+    它们仍是 Flutter 的胶囊（同一张图里两种胶囊并排，见下面的证据图②）。
+  * **段数/文字变了要整块重建**（`setSpec`）—— 只挪选中位（`setSelected`）改不了标题，
+    「身体数据」页撤销授权后可选指标从 4 个变 3 个就是这条路
+    （决策抽成了纯函数 `nativeSegmentedUpdate`，有单测守着）。
+  * 证据：`docs/images/v166-native-segmented-iphone.png`
+    （**真机 iPhone 17 Pro**：「进步」页的**周 / 月 / 年**，就在「训练容量趋势」那张卡的标题右边；
+    这台机上有真实训练记录，所以那张卡在 —— 模拟器那台空库、只有空状态）
+    + `docs/images/v166-native-segmented-all-data-sim.png`（模拟器：「数据」页，按动作看 / 按时间看）
+    + `docs/images/v166-native-segmented-plan-sim.png`（模拟器：「计划」页，本周 / 模板库 / 历史，
+    同一张里能看到**原生分段控件与 Flutter 筛选胶囊并排**）。
+    ⚠️ 这些都必须是**设备级**截图（`xcrun devicectl device capture screenshot` /
+    `xcrun simctl io … screenshot`），不能是 `takeScreenshot` ——
+    **平台视图不会进 Flutter 那张图**，这条在 `docs/screenshots.md` 里已写过。
+    ⚠️ 真机那一版是用 `tool/ios-device-run.sh` 装的（`com.sdknwdtvpv.lianleme.dev`），
+    **版本号仍是 1.66.0** —— 与底栏那条同一个理由（本地改动还没切版）。
   用户 10.7 清单第 2 条 ——
   「下面导航栏五个，**训练放在最中间**，并且最好跟其他四个做区别展示」。
   顺序 `进步 / 数据 / 训练 / 计划 / 我的`；五格等宽。

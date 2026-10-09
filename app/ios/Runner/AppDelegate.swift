@@ -41,6 +41,11 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "NativeTabBarBridge") {
       NativeTabBarBridge.register(registrar: registrar)
     }
+    // **苹果原生的 `UISegmentedControl`**（2026-10-09）：周/月/年这类分段切换器
+    // 也换成系统控件（与上面那块底栏同一套做法）。
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "NativeSegmentedBridge") {
+      NativeSegmentedBridge.register(registrar: registrar)
+    }
     // 从系统健康库读体成分（2026-10-09）：Dart → MethodChannel → HealthKit。
     // ⚠️ **只读不写**（`requestAuthorization(toShare: [], read: ...)`）——
     // 政策里承诺的就是这一条，别再顺手把"写"的授权也申请上。
