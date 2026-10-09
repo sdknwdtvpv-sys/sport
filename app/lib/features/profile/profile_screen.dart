@@ -26,10 +26,10 @@ import '../../core/app_tab_bar.dart';
 import '../../core/vi_cards.dart';
 import '../progress/achievements_screen.dart';
 import '../progress/badges.dart';
-import '../progress/experience.dart';
 import '../progress/streak_protection.dart';
 import '../progress/level.dart';
-import '../progress/streak.dart';
+import '../progress/progress_data.dart' show workoutCountIn;
+import '../progress/weekly_challenge.dart' show weekBounds;
 import '../../core/units.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/exercise_repository.dart';
@@ -237,6 +237,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  /// 「本周已练 N 次」—— 与首页那行事实**同一个口径**（训练次数，不是当周挑战的进度）。
+  ///
+  /// 2026-10-10：这一页原来那张「我的进度」卡有三条进度条，收成一条之后，
+  /// 连续天数与本周次数降级成**一行事实**，就摆在等级那条进度下面。
+  String? get _weekWorkoutFact {
+    if (_sets.isEmpty) return null;
+    final ({DateTime start, DateTime end}) w = weekBounds(DateTime.now());
+    final int n = workoutCountIn(_sets, w.start, w.end);
+    return n <= 0 ? null : '本周已练 $n 次';
+  }
+
   /// 身份块：**昵称 + 账号 ID**（10.7 清单第 7 条）。
   ///
   /// 这里只**显示**，点一下进「身份」那一屏改 —— 「我」页要一眼看出"这是谁的记录"，
@@ -410,11 +421,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         settingsCard(<Widget>[
           navTile(
             key: const Key('open-achievements'),
-            title: '我的成就',
-            // 下一个连续里程碑（原来在打卡卡里）挪进副标题 —— A 档重排撤掉了那张卡，
-            // 而它其实是"目标"，与"我拿到了什么"同属成就那一族。
-            // 到顶时 `streakCopy` 会如实换一句话，**不编**下一个目标。
-            subtitle: _streak > 0 ? '徽章与收集进度 · ${streakCopy(_streak)}' : '徽章与收集进度',
+            title: '成就',
+            // ⚠️ 2026-10-10：这一行现在是**收藏册的唯一入口**，所以把"我拿到几枚"
+            // 直接写在右边（`12 / 73`）—— 原来那句"徽章与收集进度 · 再坚持 4 天解锁…"
+            // 把**下一个目标**塞在这里，而目标属于首页那行事实、不该再占一行。
+            subtitle: '已解锁 $_unlockedBadges / $_totalBadges 枚'
+                '${_completeLines.isEmpty ? '' : ' · 集齐 ${_completeLines.length} 条收集线'}',
             onTap: _openAchievements,
           ),
         ]),
@@ -444,136 +456,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// 等级卡。数字走 Oswald，进度条复用共用件 —— 与首页打卡卡是同一种"卡片 + 进度"。
-  /// **我的进度**（2026-10-06，A 档重排）：等级 / 段位 / 经验**三行一张卡**。
+  /// **唯一的进度条**（2026-10-10）：等级。
   ///
-  /// 为什么收：三张并列的大卡各带一条进度条、视觉权重一样，用户读不出"哪个才是主线"；
-  /// 而它们本来就是同一件事的三种说法（Lv 看**次数**、段位看**已解锁徽章枚数**、
-  /// 经验看**累计组数**）—— 诊断与取舍见 `docs/plan-profile-ia.md` §三/§四。
-  /// **数据口径一个都没动**：三个数仍然是算出来的，一列都没落库。
+  /// 这一格原来有**三行**（等级 / 段位 / 经验），每行各带一条进度条 —— 用户 10.10 的
+  /// 设计评审之后收成**一条**（`docs/plan-ux-2026-10-10.md` §五-B）：
+  ///   * **段位与收集线**搬去「成就」页 —— 那本收藏册本来就有分组与段位图例，
+  ///     同一件事在两张屏上各画一条进度条，正是"读不出哪个才是主线"的来源；
+  ///   * **经验那一行取消**：它和等级都是"练了多少"的另一种说法（一个看次数、一个看组数），
+  ///     两把尺子量同一件事；
+  ///   * **连续天数与本周次数留在这里，但只是事实** —— 一行小字，没有进度条。
   ///
-  /// 三行的 key 与原来那三张卡**同名**（`profile-level-*` / `rank-*` / `experience-*`），
-  /// 所以钉着它们的测试依然有效；只有 `rank-card` / `rank-card-line` 的语义从"整张卡"
-  /// 变成"段位那一行"—— A1 的集齐奖励仍然是"给这一行描一圈那条线的颜色"。
+  /// 留下的 key：`profile-level-number` / `profile-level-label` / `profile-level-count` /
+  /// `profile-level-hint`（原来那四行里钉着它们的测试一条没改）。
   Widget _progressCard() {
     final LevelInfo lv = levelFor(_stats?.workoutCount ?? 0);
-    final ExperienceInfo exp = experienceFor(_stats?.setCount ?? 0);
-    final ({String name, int need}) cur = rankFor(_unlockedBadges);
-    final ({String name, int need, int remaining})? next = nextRank(_unlockedBadges);
-    // 段位这一段内部的进度：底线 = 当前段位门槛，顶线 = 下一段门槛。
-    // 从 0 算的话青铜与白银会长得一模一样；到顶画满（已经没有"下一段"，画半截是假话）。
-    final double rankProgress = next == null
-        ? 1
-        : ((_unlockedBadges - cur.need) / (next.need - cur.need)).clamp(0.0, 1.0);
-    final List<BadgeLine> done = widget.debugCompleteLines ?? _completeLines;
-
-    /// 一行 = 图标 + 标题（右侧可带一个数）+ 进度条 + 一行小字。
-    Widget row({
-      required Widget leading,
-      required String title,
-      required Key titleKey,
-      String? trailing,
-      Key? trailingKey,
-      required double progress,
-      required String hint,
-      required Key hintKey,
-    }) =>
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            SizedBox(width: 28, height: 28, child: Center(child: leading)),
-            const SizedBox(width: Tokens.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(title,
-                            key: titleKey,
-                            style: const TextStyle(
-                                color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
-                      ),
-                      if (trailing != null)
-                        Text(trailing,
-                            key: trailingKey,
-                            style: Tokens.display(13, weight: 700, color: Tokens.text2)),
-                    ],
-                  ),
-                  const SizedBox(height: Tokens.s2),
-                  ViProgressBar(value: progress),
-                  const SizedBox(height: Tokens.s2),
-                  Text(hint,
-                      key: hintKey,
-                      style: const TextStyle(color: Tokens.text3, fontSize: 11, height: 1.4)),
-                ],
-              ),
-            ),
-          ],
-        );
-
-    // 段位那一行：集齐一条收集线时给它描一圈那条线的颜色（A1 的展示性奖励）。
-    // 只有"已集齐"时才包那层 Container —— 一枚都没集齐时出现色圈就是在说假话。
-    final Widget rankRow = row(
-      leading: const Icon(Icons.workspace_premium, color: Tokens.accent, size: 20),
-      title: '${cur.name} · ${cur.need} 枚',
-      titleKey: const Key('rank-name'),
-      progress: rankProgress,
-      hint: next == null
-          ? '已经是最高段位 · 已解锁 $_unlockedBadges / $_totalBadges 枚'
-          : '还差 ${next.remaining} 枚到${next.name} · 已解锁 $_unlockedBadges / $_totalBadges 枚',
-      hintKey: const Key('rank-next'),
-    );
-
     return ViCard(
       // 等级 > 1 时整张卡发光（原来挂在等级卡上；收成一张之后它就是这张卡的状态）
       glow: lv.level > 1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          row(
-            leading: Container(
-              width: 26,
-              height: 26,
-              decoration: const BoxDecoration(color: Tokens.accent, shape: BoxShape.circle),
-              child: Center(
-                child: Text('${lv.level}',
-                    key: const Key('profile-level-number'),
-                    style: Tokens.display(13, weight: 700, color: Tokens.accentInk)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 26,
+                height: 26,
+                decoration: const BoxDecoration(
+                    color: Tokens.accent, shape: BoxShape.circle),
+                child: Center(
+                  child: Text('${lv.level}',
+                      key: const Key('profile-level-number'),
+                      style: Tokens.display(13,
+                          weight: 700, color: Tokens.accentInk)),
+                ),
               ),
-            ),
-            title: levelLabel(lv),
-            titleKey: const Key('profile-level-label'),
-            trailing: '${_stats?.workoutCount ?? 0} 次',
-            trailingKey: const Key('profile-level-count'),
-            progress: lv.progress,
-            hint: levelHint(lv),
-            hintKey: const Key('profile-level-hint'),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(levelLabel(lv),
+                              key: const Key('profile-level-label'),
+                              style: const TextStyle(
+                                  color: Tokens.text,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                        Text('${_stats?.workoutCount ?? 0} 次',
+                            key: const Key('profile-level-count'),
+                            style: Tokens.display(13,
+                                weight: 700, color: Tokens.text2)),
+                      ],
+                    ),
+                    const SizedBox(height: Tokens.s2),
+                    ViProgressBar(value: lv.progress),
+                    const SizedBox(height: Tokens.s2),
+                    Text(levelHint(lv),
+                        key: const Key('profile-level-hint'),
+                        style: const TextStyle(
+                            color: Tokens.text3, fontSize: 11, height: 1.4)),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const Divider(height: Tokens.s5, color: Tokens.line),
-          if (done.isEmpty)
-            KeyedSubtree(key: const Key('rank-card'), child: rankRow)
-          else
-            Container(
-              key: const Key('rank-card-line'),
-              padding: const EdgeInsets.all(Tokens.s2),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(Tokens.rCard),
-                border: Border.all(color: lineColor(done.first.category), width: 1.5),
+          const SizedBox(height: Tokens.s3),
+          // **事实，不是进度**：连续多少天 + 这周练了几次。
+          // 与首页那行同一个口径（`main.dart` 的 `_weekWorkoutFact`）。
+          Row(
+            key: const Key('profile-fact-line'),
+            children: <Widget>[
+              const Icon(Icons.local_fire_department, color: Tokens.text3, size: 15),
+              const SizedBox(width: Tokens.s2),
+              Expanded(
+                child: Text(
+                  <String>[
+                    _streak > 0
+                        ? streakLabelWithProtection(_streak, _protectedInStreak)
+                        : '还没开始记连续天数',
+                    if (_weekWorkoutFact != null) _weekWorkoutFact!,
+                  ].join(' · '),
+                  key: const Key('profile-fact-label'),
+                  style: const TextStyle(
+                      color: Tokens.text3, fontSize: 12, height: 1.4),
+                ),
               ),
-              child: KeyedSubtree(key: const Key('rank-card'), child: rankRow),
-            ),
-          const Divider(height: Tokens.s5, color: Tokens.line),
-          row(
-            leading: const Icon(Icons.bolt, color: Tokens.accent, size: 20),
-            title: '经验 · ${exp.title}',
-            titleKey: const Key('experience-title'),
-            trailing: '${exp.sets} 组',
-            trailingKey: const Key('experience-sets'),
-            progress: exp.progress,
-            hint: experienceHint(exp),
-            hintKey: const Key('experience-hint'),
+            ],
           ),
         ],
       ),

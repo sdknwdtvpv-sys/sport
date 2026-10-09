@@ -84,6 +84,28 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             Text('已解锁 ${tally.unlocked} / ${tally.total} 枚徽章',
                 key: const Key('achievements-tally'),
                 style: const TextStyle(color: Tokens.text2, fontSize: 13)),
+            const SizedBox(height: Tokens.s1),
+            // **段位**（2026-10-10 从「我」那张三行进度卡搬过来的）。
+            // 它本来就是"按已解锁枚数分的档"，属于这本收藏册；放在这里之后，
+            // 「我」那一页只剩等级一条进度（`docs/plan-ux-2026-10-10.md` §五-B）。
+            Row(
+              children: <Widget>[
+                Text('${rankFor(tally.unlocked).name} · ${rankFor(tally.unlocked).need} 枚',
+                    key: const Key('rank-name'),
+                    style: const TextStyle(color: Tokens.text3, fontSize: 12.5)),
+                const SizedBox(width: Tokens.s2),
+                Expanded(
+                  child: Text(
+                    nextRank(tally.unlocked) == null
+                        ? '已经是最高段位'
+                        : '还差 ${nextRank(tally.unlocked)!.remaining} 枚到'
+                            '${nextRank(tally.unlocked)!.name}',
+                    key: const Key('rank-next'),
+                    style: const TextStyle(color: Tokens.text3, fontSize: 12.5),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: Tokens.s3),
             _nearestCard(all),
             const SizedBox(height: Tokens.s4),

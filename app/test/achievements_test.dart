@@ -327,4 +327,19 @@ void main() {
       reason: '解锁之后要写清条件，不能永远挂着「？？？」',
     );
   });
+
+  testWidgets('★ 段位那一行（2026-10-10 从「我」搬进来的）', (WidgetTester tester) async {
+    // ⚠️ 它原来在「我」那张三行进度卡里（`rank-card` / `rank-name` / `rank-next`）。
+    // 「我」只留一条进度（等级）之后，段位（本来就是"按已解锁枚数分档"）搬到了
+    // 这本收藏册里，就在总数下面一行。见 `docs/plan-ux-2026-10-10.md` §五-B。
+    await _pump(tester, <SetRecord>[]);
+
+    expect(tester.widget<Text>(find.byKey(const Key('rank-name'))).data,
+        matches(RegExp(r'^(青铜|白银|黄金|铂金|钻石|大师|传奇) · \d+ 枚$')),
+        reason: '段位名要带上这一段自己的门槛');
+    expect(
+      tester.widget<Text>(find.byKey(const Key('rank-next'))).data,
+      anyOf(contains('还差'), contains('已经是最高段位')),
+    );
+  });
 }

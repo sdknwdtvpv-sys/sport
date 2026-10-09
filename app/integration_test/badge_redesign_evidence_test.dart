@@ -9,7 +9,7 @@
 /// 段位条要有"还差 N 枚"。真机那份库里的数据不由我控制（清一次库就得重新攒），
 /// 而 `docs/images/memo-20261006-*.png` 那批的教训是"图里是什么，取决于设备当时的状态"。
 /// 所以这里**自带一份固定的训练记录**，在内存库里建好，再把**真身那一屏**（同一个
-/// `AchievementsScreen` / `ProfileScreen`、同一个主题、同一份 `AppTheme`）画出来截图。
+/// `AchievementsScreen`、同一个主题、同一份 `AppTheme`）画出来截图。
 /// 图里的每一个数字都能在这份记录上复算出来。
 ///
 /// 跑法（在 `app/` 下，iOS 模拟器 `lianleme-69`）：
@@ -29,10 +29,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
-import 'package:lianleme/data/exercise_repository.dart';
-import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
-import 'package:lianleme/features/profile/profile_screen.dart';
 import 'package:lianleme/features/progress/achievements_screen.dart';
 
 import 'evidence_sets.dart';
@@ -98,7 +95,12 @@ void main() {
       debugPrint('LIANLEME-EVIDENCE-STEP-FAIL a2 — $e');
     }
 
-    // ── A5 段位（「我」页）─────────────────────────────────────────────
+    // ── A5 段位（2026-10-10 起在**成就页**，不再在「我」页）──────────────
+    //
+    // ⚠️ 这一张原来拍的是「我」页那张三行进度卡的第二行（`rank-card`）。
+    // 用户 10.10 的设计评审之后「我」只留一条进度（等级），段位（本来就是
+    // "按已解锁枚数分档"）搬进了成就页 —— 所以这一张改成在成就页上拍，
+    // 抓的仍然是同一行数字（`rank-name` / `rank-next`）。
     final AppDatabase db = AppDatabase(NativeDatabase.memory());
     try {
       final DriftLocalStore store = DriftLocalStore(db);
@@ -108,18 +110,11 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
-        home: Scaffold(
-          backgroundColor: Tokens.bg,
-          body: ProfileScreen(
-            store: store,
-            repository: ExerciseRepository(db),
-            profile: ProfileRepository(db),
-          ),
-        ),
+        home: AchievementsScreen(sets: sets),
       ));
       await settle(2000);
-      expect(find.byKey(const Key('rank-card')), findsOneWidget,
-          reason: 'A5 段位卡没画出来 —— 这张图就没有意义了');
+      expect(find.byKey(const Key('rank-name')), findsOneWidget,
+          reason: '段位那一行没画出来 —— 这张图就没有意义了');
       debugPrint('LIANLEME-EVIDENCE-RANK '
           '${tester.widget<Text>(find.byKey(const Key('rank-name'))).data} / '
           '${tester.widget<Text>(find.byKey(const Key('rank-next'))).data}');

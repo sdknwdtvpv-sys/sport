@@ -15,6 +15,7 @@ import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/db.dart' show ExerciseData;
+import '../progress/badges.dart';
 import 'share_card_exporter.dart';
 import 'share_card_preview_screen.dart';
 import 'tips.dart';
@@ -32,6 +33,8 @@ class WorkoutSummaryScreen extends StatefulWidget {
     this.analytics,
     this.streak = 0,
     this.ordinal,
+    this.newBadges = const <BadgeStatus>[],
+    this.onOpenAchievements,
   });
 
   final SummaryService service;
@@ -60,6 +63,17 @@ class WorkoutSummaryScreen extends StatefulWidget {
   /// 由外壳算好传进来 —— **不在这一屏现算**，否则同一件事会有两份口径。
   final int streak;
   final int? ordinal;
+
+  /// **这一场新挣到的徽章**（2026-10-10）。
+  ///
+  /// 由外壳用**差额法**算好传进来（`badges.dart` 的 `newlyUnlockedBadges`：
+  /// 把刚练完这一场的组排除再算一遍，两次一减）—— 徽章是纯函数，没有"解锁事件"表，
+  /// 不需要为这一条新增任何落库状态。
+  /// **空列表 = 这块整个不出现**（不是摆一句"暂无新徽章"）。
+  final List<BadgeStatus> newBadges;
+
+  /// 点「全部 ›」去哪（外壳接上成就页）。不传就没有那个入口。
+  final VoidCallback? onOpenAchievements;
 
   /// 分享卡的交付实现。测试里换成假的（插件调用在 widget 测试里跑不了）。
   final ShareCardExporter exporter;
@@ -166,6 +180,10 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               _doneMark(),
               const SizedBox(height: Tokens.s5),
               _stats(s),
+              if (widget.newBadges.isNotEmpty) ...<Widget>[
+                const SizedBox(height: Tokens.s4),
+                _unlockBlock(),
+              ],
               if (s.hasDistance) _cardio(s),
               if (s.hasPr) ...<Widget>[
                 const SizedBox(height: Tokens.s5),
@@ -405,6 +423,111 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
           ),
         ],
       );
+
+  /// **「新解锁 N 枚」**（2026-10-10）。
+  ///
+  /// 勋章在**整个 app 里只有两个地方露面**：这一条（训练完成那一刻）与「我 → 成就」
+  /// 那本收藏册（`docs/plan-ux-2026-10-10.md` §五-B）。一级页面（首页 / 我）
+  /// 永远不写"还差 N 枚" —— 这条例外只在**真的有新解锁**时出现，所以它天然稀有。
+  ///
+  /// 只列**前两枚**（两枚圆 + 名字）：一次给五枚也不铺开，想看全的点「全部 ›」。
+  Widget _unlockBlock() {
+    final List<BadgeStatus> shown = widget.newBadges.take(2).toList();
+    final int rest = widget.newBadges.length - shown.length;
+    return Container(
+      key: const Key('summary-unlock'),
+      padding: const EdgeInsets.all(Tokens.s4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+        border: Border.all(color: Tokens.accent.withValues(alpha: 0.28)),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            Tokens.accent.withValues(alpha: 0.12),
+            Tokens.accent.withValues(alpha: 0.03),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  '✦ 新解锁 ${widget.newBadges.length} 枚',
+                  key: const Key('summary-unlock-title'),
+                  style: const TextStyle(
+                      color: Tokens.accent,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (widget.onOpenAchievements != null)
+                GestureDetector(
+                  key: const Key('summary-unlock-all'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onOpenAchievements,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: Tokens.s1, vertical: 2),
+                    child: Text('全部 ›',
+                        style: TextStyle(color: Tokens.text3, fontSize: 12.5)),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s3),
+          Row(
+            children: <Widget>[
+              for (int i = 0; i < shown.length; i++) ...<Widget>[
+                if (i > 0) const SizedBox(width: Tokens.s4),
+                Row(
+                  key: Key('summary-badge-${shown[i].id}'),
+                  children: <Widget>[
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: badgeTierColor(shown[i].tier).withValues(alpha: 0.16),
+                        border: Border.all(
+                            color: badgeTierColor(shown[i].tier).withValues(alpha: 0.5)),
+                      ),
+                      child: Icon(_badgeIcon(shown[i]),
+                          color: badgeTierColor(shown[i].tier), size: 19),
+                    ),
+                    const SizedBox(width: Tokens.s3),
+                    Text(shown[i].name,
+                        style: const TextStyle(color: Tokens.text, fontSize: 13.5)),
+                  ],
+                ),
+              ],
+              if (rest > 0) ...<Widget>[
+                const SizedBox(width: Tokens.s3),
+                Text('还有 $rest 枚',
+                    style: const TextStyle(color: Tokens.text3, fontSize: 12.5)),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 徽章圆里那枚图标：照类别给（收藏册里是同一套，见 `achievements_screen.dart`）。
+  IconData _badgeIcon(BadgeStatus b) {
+    switch (b.category) {
+      case BadgeCategory.streak:
+        return Icons.local_fire_department;
+      case BadgeCategory.strength:
+        return Icons.fitness_center;
+      case BadgeCategory.explore:
+        return Icons.explore;
+      case BadgeCategory.milestone:
+        return Icons.emoji_events;
+    }
+  }
 
   Widget _stats(WorkoutSummary s) {
     return Container(

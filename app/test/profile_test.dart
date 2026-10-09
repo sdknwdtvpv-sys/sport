@@ -17,7 +17,6 @@ import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
-import 'package:lianleme/features/progress/badges.dart';
 import 'package:lianleme/core/vi_cards.dart';
 import 'package:lianleme/features/profile/profile_screen.dart';
 import 'package:lianleme/features/profile/settings_home_screen.dart';
@@ -301,87 +300,28 @@ void main() {
       expect(find.byKey(const Key('profile-stat-workouts')), findsNothing,
           reason: '累计次数已经并进「我的进度」的 Lv 那一行');
       expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
-          reason: '累计组数已经并进「我的进度」的经验条那一行');
+          reason: '累计组数不在这两张卡里（2026-10-10 起连"经验条"也没有了 —— '
+              '全页只剩等级一条进度）');
       expect(tester.widget<Text>(find.byKey(const Key('profile-level-count'))).data,
           '1 次');
-      expect(tester.widget<Text>(find.byKey(const Key('experience-sets'))).data,
-          '2 组');
     });
 
-    testWidgets('A5 段位卡：0 枚时是青铜，如实写"还差 3 枚到白银"', (WidgetTester tester) async {
-      await pumpProfile(tester);
-      await scrollTo(tester, find.byKey(const Key('rank-card')));
-
-      expect(tester.widget<Text>(find.byKey(const Key('rank-name'))).data, '青铜 · 0 枚',
-          reason: '段位名要带上**这一段自己的门槛**，否则"离青铜多远"没人说得清');
-      expect(
-        tester.widget<Text>(find.byKey(const Key('rank-next'))).data,
-        contains('还差 3 枚到白银'),
-      );
-      expect(find.textContaining('已解锁 0 / '), findsOneWidget,
-          reason: '段位卡里的分母必须是**真的徽章总数**，不写死');
-    });
-
-    testWidgets('A5 段位卡：解锁到 3 枚以上就进白银（段位是算出来的，不落库）',
+    testWidgets('A5 段位 / A1 换色：2026-10-10 起**都不在「我」里了**（搬进成就页）',
         (WidgetTester tester) async {
-      // 5 枚最容易拿的一批：首训 / 练满 10 次还给不了、早鸟 + 夜猫 + 二十个动作要 20 个动作
-      // —— 这里直接构造"首批 5 枚"：1 次训练 + 早鸟 + 夜猫 + 不同动作 1 个 + 单次 5 吨
-      await store.saveSet(_set(id: 'a', reps: 10, weightKg: 600, atMs: 6 * 3600 * 1000));
-      await store.saveSet(_set(
-          id: 'b', reps: 10, weightKg: 600, setIndex: 2, atMs: 23 * 3600 * 1000));
+      // ⚠️ 这里原来有四条：段位是青铜/进白银、集齐一条收集线就换色、没集齐不许换色。
+      // 用户 10.10 的设计评审之后「我」只留**一条进度**（等级）—— 段位本来是
+      // "按已解锁枚数分档"，属于那本收藏册，所以它连同"集齐一条线的颜色奖励"
+      // 一起搬进了成就页（`achievements_screen.dart` 的 `rank-name` / `rank-next`，
+      // 断言在 `achievements_test.dart`）。这一条改成钉"确实搬走了、也没留下第二个入口"。
       await pumpProfile(tester);
-      await scrollTo(tester, find.byKey(const Key('rank-card')));
 
-      final String name =
-          tester.widget<Text>(find.byKey(const Key('rank-name'))).data!;
-      final String next =
-          tester.widget<Text>(find.byKey(const Key('rank-next'))).data!;
-      // 这一段**不钉死**解锁到第几枚（徽章还在分批扩），只钉"名字与门槛一致、进度与下一段自洽"
-      expect(name, matches(RegExp(r'^(青铜|白银|黄金|铂金|钻石|大师|传奇) · \d+ 枚$')));
-      expect(next, matches(RegExp(r'^(还差 \d+ 枚到.+|已经是最高段位) · 已解锁 \d+ / \d+ 枚$')));
-    });
-
-    testWidgets('★ A1 集齐奖励：集齐一条线 → 段位卡换上那条线的颜色（展示层）',
-        (WidgetTester tester) async {
-      // ⚠️ 这里**不走"造一年记录"那条路**（那测的是数据生成器）：
-      // 判据 `completedLines()` 已由 `badges_test.dart` 用构造的 BadgeStatus 钉死，
-      // 这一条只测"集齐之后界面上多了一圈什么颜色"，所以直接注入那一条已集齐的线。
-      await tester.pumpWidget(MaterialApp(
-        theme: buildAppTheme(),
-        home: Scaffold(
-          body: ProfileScreen(
-            store: store,
-            repository: repo,
-            profile: profile,
-            debugCompleteLines: const <BadgeLine>[
-              BadgeLine(
-                category: BadgeCategory.streak,
-                label: '连续打卡',
-                unlocked: 20,
-                total: 20,
-              ),
-            ],
-          ),
-        ),
-      ));
-      await tester.pumpAndSettle();
-      await scrollTo(tester, find.byKey(const Key('rank-card')));
-
-      expect(find.byKey(const Key('rank-card-line')), findsOneWidget,
-          reason: '集齐一条收集线之后，段位卡要换上那条线的颜色（A1 的展示性奖励）');
-      final Container box =
-          tester.widget<Container>(find.byKey(const Key('rank-card-line')));
-      final BoxDecoration deco = box.decoration! as BoxDecoration;
-      expect((deco.border! as Border).top.color, Tokens.accent,
-          reason: '集齐的是「连续打卡」那条线（它的颜色就是主色）');
-    });
-
-    testWidgets('A1：**没集齐就不许换色**（空记录下没有那圈描边）',
-        (WidgetTester tester) async {
-      await pumpProfile(tester);
-      await scrollTo(tester, find.byKey(const Key('rank-card')));
-      expect(find.byKey(const Key('rank-card-line')), findsNothing,
-          reason: '一枚都没集齐时出现那圈色 = 在说假话');
+      expect(find.byKey(const Key('rank-card')), findsNothing);
+      expect(find.byKey(const Key('rank-name')), findsNothing);
+      expect(find.byKey(const Key('rank-card-line')), findsNothing);
+      expect(find.byKey(const Key('experience-title')), findsNothing,
+          reason: '经验那一条也取消了 —— 等级与它都在说"练了多少"，两把尺子量一件事');
+      expect(find.byKey(const Key('open-achievements')), findsOneWidget,
+          reason: '收藏册仍然有一个入口（「成就」那一行）');
     });
 
     testWidgets('★ 连续天数**认补签**，而且如实写"其中 N 天是补签"（与首页同一口径）',
@@ -486,51 +426,42 @@ void main() {
           findsNothing);
     });
 
-    testWidgets('★ 经验卡（第二部分第 7 条）：按累计组数给等级与进度',
+    testWidgets('★ 经验（XP 称号）那一条**取消了** —— 全页只剩一条进度',
         (WidgetTester tester) async {
-      // 三组 → 经验等级还是「起步」，进度 3/100
+      // ⚠️ 原来这条钉的是「经验 · 起步 / 3 组 / 还差 97 组」。2026-10-10：等级与经验
+      // 都在说"练了多少"（一个看次数、一个看组数），两把尺子量同一件事 —— 只留等级
+      // （`docs/plan-ux-2026-10-10.md` §五-B）。`experience.dart` 那套纯函数还在
+      // （有自己的单测），只是**界面上没有任何入口**了；要不要彻底删留给后续决定。
       for (int i = 0; i < 3; i++) {
         await store.saveSet(_set(id: 'e$i', setIndex: i + 1));
       }
       await pumpProfile(tester);
-      // 2026-10-06（A 档重排）：经验不再是独立一张卡，而是「我的进度」里的第三行
-      // —— 滚动目标换成那一行的标题（`experience-card` 那个 key 已经没有了）
-      await scrollTo(tester, find.byKey(const Key('experience-title')));
 
-      expect(tester.widget<Text>(find.byKey(const Key('experience-sets'))).data, '3 组');
-      expect(tester.widget<Text>(find.byKey(const Key('experience-title'))).data,
-          '经验 · 起步');
-      expect(tester.widget<Text>(find.byKey(const Key('experience-hint'))).data,
-          contains('还差 97 组'));
+      expect(find.byKey(const Key('experience-title')), findsNothing);
+      expect(find.byKey(const Key('experience-sets')), findsNothing);
+      expect(find.byKey(const Key('experience-hint')), findsNothing);
+      expect(find.byKey(const Key('profile-level-label')), findsOneWidget,
+          reason: '留下的那一条是等级');
     });
 
-    testWidgets('★ A 档重排：「我的进度」一张卡装下等级 / 段位 / 经验三行',
+    testWidgets('★ 「我的进度」现在**只有一条进度**（等级）+ 一行事实',
         (WidgetTester tester) async {
+      // ⚠️ 原来这条钉的是"一张卡装下等级 / 段位 / 经验三行"。2026-10-10 改版：
+      // 全 app 只留**一条进度条**（等级），连续天数与本周次数降级成**一行事实**
+      // （没有进度条），段位搬去成就页、经验取消。见 `docs/plan-ux-2026-10-10.md` §五-B。
       await pumpProfile(tester);
-
-      // 分组标题在（它是"这三行是同一件事"的唯一提示）
-      expect(find.text('我的进度'), findsOneWidget, reason: '三行必须有一个共同的分组标题');
-
-      // 三行都在，而且**同一张卡**里 —— 判据：从等级那行往上找，找到的最近一张卡
-      // 里同时含段位与经验（这比"数卡片张数"稳，也不依赖具体像素）
       await scrollTo(tester, find.byKey(const Key('profile-level-label')));
-      expect(find.byKey(const Key('profile-level-label')), findsOneWidget);
-      expect(find.byKey(const Key('rank-name')), findsOneWidget);
-      expect(find.byKey(const Key('experience-title')), findsOneWidget);
 
-      // 三行必须在**同一张卡**里：各自最近的 ViCard 祖先应当是同一个 Element。
-      // （这比"数卡片张数"稳 —— 统计四宫格用的也是 ViCard。）
-      Finder cardOf(Key k) => find.ancestor(of: find.byKey(k), matching: find.byType(ViCard));
-      final Finder lvCard = cardOf(const Key('profile-level-label'));
-      final Finder rankCard = cardOf(const Key('rank-name'));
-      final Finder expCard = cardOf(const Key('experience-title'));
-      expect(lvCard, findsOneWidget);
-      expect(rankCard, findsOneWidget);
-      expect(expCard, findsOneWidget);
-      expect(identical(lvCard.evaluate().single, rankCard.evaluate().single), isTrue,
-          reason: '等级与段位不该各占一张卡（收成一张是这次改动的全部意义）');
-      expect(identical(lvCard.evaluate().single, expCard.evaluate().single), isTrue,
-          reason: '经验也不该另占一张卡');
+      expect(find.text('我的进度'), findsOneWidget);
+      expect(find.byKey(const Key('profile-level-label')), findsOneWidget);
+      expect(find.byKey(const Key('profile-fact-line')), findsOneWidget,
+          reason: '连续天数与本周次数是**一行事实**');
+      expect(find.byKey(const Key('rank-name')), findsNothing);
+      expect(find.byKey(const Key('experience-title')), findsNothing);
+
+      // 这一屏**只有一条进度条**：等级那条（统计那两张卡是 `StatTile`，没有进度条）
+      expect(find.byType(ViProgressBar), findsOneWidget,
+          reason: '唯一的那条进度就是等级');
     });
 
     testWidgets('开关默认开着，关掉之后写进库', (WidgetTester tester) async {

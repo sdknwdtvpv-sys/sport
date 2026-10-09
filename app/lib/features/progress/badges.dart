@@ -285,6 +285,37 @@ class BadgeStatus {
 /// [bodyWeightKg] **只为"体重倍数"那几枚**（卧推 1× 体重）：它是可选参数，
 /// 因为 `badgeStatuses` 的另一个调用点（通知规则）手上没有身体数据 ——
 /// 传 null 时那几枚就是"拿不到"，而不是拿 0 kg 去算出一个假的解锁。
+/// **这一场训练新挣到的徽章**（2026-10-10）。
+///
+/// **为什么是"差额"而不是记一个时间戳**：徽章全是**纯函数**（`badgeStatuses` 吃一份
+/// 训练记录就能算出全部状态），库里没有任何"解锁事件"的表。要回答"刚才那一下解锁了什么"，
+/// 最便宜也最不会出错的办法是：**把刚练完这一场的组排除再算一遍**，两次结果一减就是答案。
+/// 引入"已读徽章"表会让这一摊多出一份真相（还得处理导入备份、换设备、清数据）。
+///
+/// 空列表 = 这场什么都没解锁（界面那一块整个不出现，不是摆一句"暂无"）。
+List<BadgeStatus> newlyUnlockedBadges(
+  List<SetRecord> allSets, {
+  required String workoutId,
+  DateTime? now,
+  double? bodyWeightKg,
+}) {
+  final List<BadgeStatus> after =
+      badgeStatuses(allSets, now: now, bodyWeightKg: bodyWeightKg);
+  final List<SetRecord> before = <SetRecord>[
+    for (final SetRecord s in allSets)
+      if (s.workoutId != workoutId) s,
+  ];
+  final Set<String> had = <String>{
+    for (final BadgeStatus b
+        in badgeStatuses(before, now: now, bodyWeightKg: bodyWeightKg))
+      if (b.unlocked) b.id,
+  };
+  return <BadgeStatus>[
+    for (final BadgeStatus b in after)
+      if (b.unlocked && !had.contains(b.id)) b,
+  ];
+}
+
 List<BadgeStatus> badgeStatuses(
   List<SetRecord> sets, {
   DateTime? now,

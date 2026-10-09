@@ -66,6 +66,7 @@ import 'features/progress/achievements_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/progress/streak.dart';
 import 'features/progress/all_data_screen.dart';
+import 'features/progress/badges.dart';
 import 'features/progress/progress_data.dart';
 import 'features/progress/progress_screen.dart';
 import 'features/progress/weekly_report.dart';
@@ -1758,6 +1759,16 @@ class _HomeShellState extends State<HomeShell> {
           : '下次轮到 ${nextDay.label}（今天练的是 ${kMuscleLabels[todayTop] ?? todayTop}）';
     }
     if (!mounted) return;
+
+    // **这一场新挣到的徽章**（2026-10-10）：把刚练完这一场的组排除再算一遍，两次一减。
+    // 徽章是纯函数，不需要任何新的落库状态。
+    //
+    // ⚠️ 这里**必须现读一次库**，不能用内存里那份 `_allSets`：`_refreshHome()` 是在
+    // 完成页**之后**才跑的，那时 `_allSets` 里还没有刚记完的这几组 —— 差额成了空集，
+    // 完成页那条"新解锁"就永远不出现（真机跑证据图时抓到的）。空列表 = 整块不出现。
+    final List<BadgeStatus> newBadges =
+        newlyUnlockedBadges(await _store.allSets(), workoutId: workoutId);
+
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => WorkoutSummaryScreen(
@@ -1768,6 +1779,10 @@ class _HomeShellState extends State<HomeShell> {
           nextLine: nextLine,
           analytics: _analytics,
           streak: _streak,
+          // **这一场新挣到的徽章**（2026-10-10）：把刚练完这一场的组排除再算一遍，
+          // 两次结果一减 —— 徽章是纯函数，不需要任何新的落库状态。
+          newBadges: newBadges,
+          onOpenAchievements: _openAchievements,
           // "第几次训练"用**练完之后**的总数（这次刚记完，已经在库里了）
           ordinal: _totalWorkouts,
         ),

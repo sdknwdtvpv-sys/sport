@@ -530,4 +530,52 @@ void _a1Tests(DateTime today) {
     };
     expect(colors.length, BadgeCategory.values.length);
   });
+
+  group('newlyUnlockedBadges：这一场挣到了哪几枚（2026-10-10）', () {
+    test('差额法：排除刚练完这一场再算一遍，两次之差就是答案', () {
+      // 用一条**确定会解锁**的：三天不断（第 3 天那一场才够）。
+      // 不写"随便练两场总会挣到什么"—— 同一个动作连练两天可能一枚都不给。
+      final List<SetRecord> sets = <SetRecord>[
+        _set(workout: 'w1', at: DateTime(2026, 10, 1, 20)),
+        _set(workout: 'w2', at: DateTime(2026, 10, 2, 20)),
+        _set(workout: 'w3', at: DateTime(2026, 10, 3, 20)),
+      ];
+      final List<BadgeStatus> fresh = newlyUnlockedBadges(
+        sets,
+        workoutId: 'w3',
+        now: DateTime(2026, 10, 3, 21),
+      );
+      expect(fresh.map((BadgeStatus b) => b.id), contains('three_day_streak'),
+          reason: '第 3 天那一场才够「三天不断」');
+      for (final BadgeStatus b in fresh) {
+        expect(b.unlocked, isTrue);
+        expect(b.id, isNot('first_workout'),
+            reason: '首训是 w1 那场挣的，不属于这一场');
+      }
+    });
+
+    test('什么都没挣到时返回空表（界面那一块整个不出现，不摆"暂无"）', () {
+      final List<SetRecord> sets = <SetRecord>[
+        _set(workout: 'w1', at: DateTime(2026, 10, 4, 20)),
+      ];
+      // 把 w1 自己排除之后就没有记录了 —— 全部徽章都是靠它解锁的，
+      // 但那不算"这一场新挣到的"（它本来就是这一场）。
+      expect(newlyUnlockedBadges(sets, workoutId: 'w999', now: today), isEmpty);
+    });
+
+    test('同一份记录算两次结果一样（纯函数，不落库、不看"已读"）', () {
+      final DateTime d = DateTime(2026, 10, 4, 20);
+      final List<SetRecord> sets = <SetRecord>[
+        _set(workout: 'w1', at: d),
+        _set(workout: 'w2', at: d.add(const Duration(days: 1))),
+      ];
+      final List<String> a = newlyUnlockedBadges(sets, workoutId: 'w2', now: today)
+          .map((BadgeStatus b) => b.id)
+          .toList();
+      final List<String> b = newlyUnlockedBadges(sets, workoutId: 'w2', now: today)
+          .map((BadgeStatus b) => b.id)
+          .toList();
+      expect(a, b);
+    });
+  });
 }
