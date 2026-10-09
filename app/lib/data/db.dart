@@ -444,6 +444,50 @@ class Routine extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+/// **今天的安排**（2026-10-09，10.9 清单第 6 条：长按拖动 / 删除 / 替换）。
+///
+/// 为什么需要它：那份安排原来是**每次算出来的**（`TodayPlanner.planToday`），
+/// 所以用户改不动它 —— "改了没地方存"。现在当天这份落库，编辑才有意义，
+/// 而且**第二天打开看到的还是你昨天改过的那一份**（同一天内个把小时后再打开，
+/// 不该又换一批动作）。
+///
+/// 一天一行 × 一个动作（`position` 就是用户看到的顺序），只存**用户能改的东西**：
+/// 动作、处方。建议值（`Suggestion` / `LastSession`）刻意**不存** ——
+/// 那是"每次打开现算"的东西，存下来就会与历史脱节（今天练完再看还写着昨天的建议）。
+class DayPlanItem extends Table {
+  /// 哪一天（**本地日**，`YYYY-MM-DD`，与 `body_metric.date` 同一种写法）。
+  /// 用字符串而不是时间戳：这一列要能被人肉读出来（"改的是哪一天"）。
+  TextColumn get date => text()();
+
+  /// 顺序（0 起）。用户拖动改的就是它。
+  IntColumn get position => integer()();
+
+  TextColumn get exerciseId => text()();
+
+  IntColumn get targetSets => integer()();
+  IntColumn get targetRepsLow => integer()();
+  IntColumn get targetRepsHigh => integer()();
+
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{date, position};
+}
+
+/// 「这一天已经排过了」的标记 —— **一天一行**。
+///
+/// 为什么不能只看 `day_plan_item` 有没有行：用户可以把今天的动作**全删掉**，
+/// 而"我删光了"必须存得住 —— 否则下次冷启动看到那 6 个动作又回来了，
+/// 他会以为这个删除按钮是坏的。所以"排过"这件事单独记一笔，
+/// 与"排了哪几个"分开（空清单也是一种排过的结果）。
+class DayPlanDay extends Table {
+  TextColumn get date => text()();
+  IntColumn get generatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{date};
+}
+
 /// 计划里的一项。**简化版只有动作 + 组数 + 次数区间**（规格 S11 明确说的）。
 ///
 /// `targetWeightKg` 与 `restSec` 照 DDL 建好但**这一版不暴露编辑入口** ——
@@ -569,6 +613,8 @@ class StreakProtection extends Table {
   AppNotification,
   StreakProtection,
   AuthSession,
+  DayPlanItem,
+  DayPlanDay,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -608,8 +654,11 @@ class AppDatabase extends _$AppDatabase {
   /// 那正是准确的历史：这个功能出现之前，这台设备没读过任何健康库里的东西。
   /// v26（2026-10-09）：`user_profile` +`default_weight_increment`（用户自己设的默认加重步进）。
   /// **加列**，老库升上来是 null = 没设过 → 各动作仍用自己的步长（现状不变）。
+  /// v27（2026-10-09）：新增 `day_plan_item` / `day_plan_day`（今天的安排落库，
+  /// 10.9 清单第 6 条：长按拖动 / 删除 / 替换）。**只加表** ——
+  /// 老库升上来是空的 = "这一天还没排过" → 下次打开照旧按分化现算一份并落库。
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -864,6 +913,13 @@ class AppDatabase extends _$AppDatabase {
           // 在这之前，步进只可能来自动作自己（种子里的 2 / 2.5 / 5）。
           if (from < 26) {
             await addIfMissing(userProfile, userProfile.defaultWeightIncrement);
+          }
+          // v26 → v27：多两张"今天的安排"表（用户能改动的那一份）。
+          // 只加表、不动任何既有列 —— 老库升上来时它们是空的，
+          // 那正是准确的历史：这个功能出现之前，那份安排从来没被存下来过。
+          if (from < 27) {
+            await m.createTable(dayPlanItem);
+            await m.createTable(dayPlanDay);
           }
         },
       );

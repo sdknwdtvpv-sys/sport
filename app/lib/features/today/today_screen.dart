@@ -47,6 +47,7 @@ class TodayScreen extends StatelessWidget {
     this.todayPlan = const <PlannedExercise>[],
     this.todayLabel,
     this.onReroll,
+    this.onEditPlan,
     this.streak = 0,
     this.streakCopy,
     this.recent = const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[],
@@ -172,6 +173,13 @@ class TodayScreen extends StatelessWidget {
   /// 「换一批」：同一天的分化里换动作。为 null 时不显示那个入口。
   final VoidCallback? onReroll;
 
+  /// **长按「今天的安排」里的一行** → 调整顺序 / 替换 / 删除
+  /// （2026-10-09，10.9 清单第 6 条）。为 null 时整块不可编辑（老调用方与测试）。
+  ///
+  /// 为什么是"长按行"而不是加一个「编辑」按钮：这块卡片上已经有一个「换一批」
+  /// 和一个 `›`，再塞第三个入口就变成一排按钮了 —— 而拖动这件事用户本来就习惯长按。
+  final VoidCallback? onEditPlan;
+
   /// 大按钮：**一跳直接进训练屏**（用今天的第一条建议），不再强制过建议卡。
   ///
   /// 为什么：端到端口径下原来的路径是「今日页 → 建议卡 → 大按钮」= 3 次点击才记下
@@ -278,6 +286,7 @@ class TodayScreen extends StatelessWidget {
           label: todayLabel,
           onReroll: onReroll,
           onOpen: onSeePlan,
+          onEdit: onEditPlan,
         ),
         // 主按钮是**卡外**的一颗大胶囊（用户 2026-10-06 的备忘条第 1 条：
         // "开始今天的训练是一个大胶囊 放在训练计划的方框外"）。
@@ -656,11 +665,18 @@ class TodayScreen extends StatelessWidget {
 ///   * 动作值用的是引擎已经算好的 `loadLabel`（"62.5 kg × 8"），不是动作库默认值。
 class _TodayPlanCard extends StatelessWidget {
   const _TodayPlanCard(
-      {required this.plan, this.label, this.onReroll, this.onOpen});
+      {required this.plan,
+      this.label,
+      this.onReroll,
+      this.onOpen,
+      this.onEdit});
 
   final List<PlannedExercise> plan;
   final String? label;
   final VoidCallback? onReroll;
+
+  /// 长按某一行 → 调整安排（排序 / 替换 / 删除）。为 null 时长按无效。
+  final VoidCallback? onEdit;
 
   /// 点整块卡片 → 进建议卡。为 null 时卡片**不可点**（老调用方 / 测试），
   /// 也不摆那个 `›` —— 摆一个点不动的箭头比没有更糟。
@@ -732,25 +748,32 @@ class _TodayPlanCard extends StatelessWidget {
             ],
           ],
           for (int i = 0; i < head.length; i++)
-            Padding(
-              // 每行一个 key：测试要按**结构**数行，而不是猜"文字里有没有 kg"
-              // （自重动作念「自重 × 8」，按 ' kg ' 数会漏掉它们）
-              key: Key('today-plan-row-$i'),
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      head[i].exercise.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Tokens.text2, fontSize: 14),
+            GestureDetector(
+              // 长按整行 → 调整安排（2026-10-09，10.9 清单第 6 条）。
+              // ⚠️ 外层整块还有一个 `onTap`（进建议卡）：`onLongPress` 与它不冲突，
+              // 但**不能**用 `onLongPressStart` 之类去抢手势，那会把手感弄坏。
+              onLongPress: onEdit,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                // 每行一个 key：测试要按**结构**数行，而不是猜"文字里有没有 kg"
+                // （自重动作念「自重 × 8」，按 ' kg ' 数会漏掉它们）
+                key: Key('today-plan-row-$i'),
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        head[i].exercise.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Tokens.text2, fontSize: 14),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: Tokens.s2),
-                  Text(head[i].loadLabel,
-                      style: const TextStyle(color: Tokens.text3, fontSize: 13)),
-                ],
+                    const SizedBox(width: Tokens.s2),
+                    Text(head[i].loadLabel,
+                        style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                  ],
+                ),
               ),
             ),
           if (plan.length > head.length)
@@ -758,6 +781,15 @@ class _TodayPlanCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: Text('…还有 ${plan.length - head.length} 个',
                   style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+            ),
+          // 「能长按」这件事必须被看见 —— 一个只有长按才知道的入口等于没有
+          // （10.9 清单第 6 条。文案刻意用"长按调整"，与弹层里那句"长按一行可以拖动排序"同一口径）
+          if (onEdit != null && head.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 3),
+              child: Text('长按调整顺序 / 换动作 / 删掉',
+                  key: Key('today-plan-hint'),
+                  style: TextStyle(color: Tokens.text3, fontSize: 11.5)),
             ),
         ],
       ),

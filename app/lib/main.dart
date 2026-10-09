@@ -33,6 +33,7 @@ import 'data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutIte
 // 这里要的是补签那个 —— 所以把身体数据那个 hide 掉（它的使用者在本文件里
 // 都有自己的入口，不经过 main.dart 的这个名字）。
 import 'data/body_metric_repository.dart' hide dayKey;
+import 'data/day_plan_repository.dart';
 import 'data/drift_local_store.dart';
 import 'data/exercise_data_ext.dart';
 import 'data/exercise_repository.dart';
@@ -50,6 +51,7 @@ import 'features/today/today_planner.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/onboarding/intro_carousel_screen.dart';
 import 'features/onboarding/privacy_consent_screen.dart';
+import 'features/today/day_plan_editor.dart';
 import 'features/today/today_screen.dart';
 import 'features/today/today_suggestion_screen.dart';
 import 'features/summary/workout_summary.dart';
@@ -221,6 +223,9 @@ class _HomeShellState extends State<HomeShell> {
   late final SummaryService _summaryService =
       SummaryService(store: _store, repository: _repo);
   late final ProfileRepository _profile = ProfileRepository(_db);
+
+  /// 「今天的安排」落库（10.9 清单第 6 条：长按拖动 / 删除 / 替换）。
+  late final DayPlanRepository _dayPlan = DayPlanRepository(_db);
 
   /// 当前 Tab。五个（训练 / 进步 / 数据 / 计划 / 我的，见 docs/screens.md）。
   /// 当前 tab。**2026-10-07（v1.60.0）起「训练」在正中**（用户 10.7 清单第 2 条），
@@ -690,15 +695,38 @@ class _HomeShellState extends State<HomeShell> {
   ///
   /// ⚠️ **它与大按钮开练的是同一份计划**（`_todayPlan` 被 [_startNow] 直接用）——
   /// 首页显示了计划却不按它开练，比不显示更糟（"我看到的和我要练的不是一回事"）。
+  ///
+  /// 2026-10-09（10.9 清单第 6 条）起**先看库里有没有今天那一份**：
+  /// 有就用它（用户在编辑器里拖动 / 替换 / 删除过的结果），没有才按分化现算一份
+  /// **并落库**。这样"改了能存住"，而且同一天里再打开看到的还是同一份
+  /// （原来每次冷启动都可能换一批动作）。
   Future<void> _loadTodayPlan() async {
     try {
+      final String date = dayPlanKey(DateTime.now());
       final TrainingDay day = await _planner.nextTrainingDay();
-      final List<PlannedExercise> plan =
-          await _planner.planToday(
-              day: day,
-              unit: _unit,
-              // 10.8 清单第 8 条（用户选 A）：每周 ≤3 天 → 每个动作 4 组，≥4 天 → 3 组
-              weeklyFrequency: await _profile.weeklyFrequency());
+      // 顺手清掉 30 天前那些死数据（这张表一天会长几行，而只有当天那份有用）。
+      // 不 await：它是打扫卫生，与"今天显示什么"无关。
+      unawaited(_dayPlan.pruneBefore(date));
+      if (await _dayPlan.hasPlan(date)) {
+        final List<PlannedExercise> saved = await _planner.planFromRoutine(
+          entries: await _dayPlan.load(date),
+          unit: _unit,
+        );
+        if (!mounted) return;
+        setState(() {
+          _todayDay = day;
+          // ⚠️ 库里有几个动作就是几个：用户**删光了**也是一种结果（空清单），
+          // 不能在这里"看着像是空的就补一份" —— 那删除按钮就成了摆设。
+          _todayPlan = saved;
+        });
+        return;
+      }
+      final List<PlannedExercise> plan = await _planner.planToday(
+          day: day,
+          unit: _unit,
+          // 10.8 清单第 8 条（用户选 A）：每周 ≤3 天 → 每个动作 4 组，≥4 天 → 3 组
+          weeklyFrequency: await _profile.weeklyFrequency());
+      await _saveTodayPlan(plan: plan, date: date);
       if (!mounted) return;
       setState(() {
         _todayDay = day;
@@ -710,10 +738,46 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
+  /// 把当前这份安排写进库（[plan] 不传就用 `_todayPlan`）。
+  ///
+  /// ⚠️ 存的是**动作 + 处方 + 顺序**这三样用户能改的东西，不是整个 `PlannedExercise`
+  /// —— 建议值/上次成绩是"每次打开现算"的（见 `day_plan_repository.dart` 的文件头）。
+  Future<void> _saveTodayPlan({List<PlannedExercise>? plan, String? date}) async {
+    final List<PlannedExercise> items = plan ?? _todayPlan;
+    await _dayPlan.save(
+      date ?? dayPlanKey(DateTime.now()),
+      <RoutineEntry>[
+        for (final PlannedExercise p in items)
+          RoutineEntry(exerciseId: p.exercise.id, plan: p.plan),
+      ],
+    );
+  }
+
+  /// 长按「今天的安排」里的一行 → 调整顺序 / 替换 / 删除（10.9 清单第 6 条）。
+  ///
+  /// 弹层返回 null（直接关掉）= 什么都没改，这里一个字都不动。
+  Future<void> _editTodayPlan() async {
+    final List<PlannedExercise>? next = await showDayPlanEditor(
+      context,
+      plan: _todayPlan,
+      planner: _planner,
+      repository: _repo,
+      store: _store,
+      unit: _unit,
+    );
+    if (next == null || !mounted) return;
+    setState(() => _todayPlan = next);
+    await _saveTodayPlan();
+  }
+
   /// 「换一批」：在同一天的分化里换动作（换完仍然是首页显示的那一份）。
+  ///
+  /// ⚠️ 两份结果都要**写回库**（10.9 清单第 6 条）：换了批次却没存的话，
+  /// 下次冷启动又变回库里那一份 —— 用户会觉得"换一批"是个假按钮。
   Future<void> _rerollTodayPlan() async {
     if (_todayPlan.isEmpty) {
-      await _loadTodayPlan();
+      // 用户把今天的动作全删了 → 「换一批」就是"重新给我排一份"
+      await _regenerateTodayPlan();
       return;
     }
     try {
@@ -723,8 +787,29 @@ class _HomeShellState extends State<HomeShell> {
       );
       if (!mounted) return;
       setState(() => _todayPlan = next);
+      await _saveTodayPlan();
     } catch (_) {
       // 同上：换不动就保持原来那份，不弹错
+    }
+  }
+
+  /// 重新按分化排一份（**忽略库里那份**）并落库。
+  Future<void> _regenerateTodayPlan() async {
+    try {
+      final TrainingDay day = await _planner.nextTrainingDay();
+      final List<PlannedExercise> plan = await _planner.planToday(
+        day: day,
+        unit: _unit,
+        weeklyFrequency: await _profile.weeklyFrequency(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _todayDay = day;
+        _todayPlan = plan;
+      });
+      await _saveTodayPlan(plan: plan);
+    } catch (_) {
+      // 排不出来就保持现状（首页那块是预览，不该弹错）
     }
   }
 
@@ -1841,7 +1926,10 @@ class _HomeShellState extends State<HomeShell> {
             // 首页中间那一块：今天的安排（2026-10-04 替掉原来那个 Spacer）
             todayPlan: _todayPlan,
             todayLabel: _todayDay?.label,
-            onReroll: _todayPlan.isEmpty ? null : _rerollTodayPlan,
+            // ⚠️ 空清单时「换一批」要**留着**（2026-10-09）：用户可能刚把今天的动作
+            // 全删掉，那个按钮就是他"重新给我排一份"的出路。
+            onReroll: _rerollTodayPlan,
+            onEditPlan: _editTodayPlan,
             // 新 VI 的首页三块（2026-10-05）：打卡 / 快速入口 / 最近训练
             streak: _streak,
             streakCopy: streakCopy(_streak),

@@ -337,6 +337,10 @@ class DriftLocalStore implements LocalStore {
       // 动作置顶也是用户数据（他钉住的那几个动作）。新加表最容易漏掉这一步，
       // 所以 test/delete_all_test.dart 有一份**表清单守门**：出现新表就要去改那里。
       await _db.delete(_db.pinnedExercise).go();
+      // 「今天的安排」（v27，10.9 清单第 6 条）也是用户数据 —— 那是他自己拖动、
+      // 替换、删过的那一份。留着它，删光之后首页还会摆着"今天练这几个"。
+      await _db.delete(_db.dayPlanItem).go();
+      await _db.delete(_db.dayPlanDay).go();
       // 训练提醒也是用户设置（他自己选的开关与时间）
       await _db.delete(_db.reminderSetting).go();
       // 站内消息也是用户数据（那是他练出来的通知）。新加表最容易漏这一步 ——

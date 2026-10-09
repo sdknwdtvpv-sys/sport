@@ -23,6 +23,7 @@ import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/analytics_meta_repository.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
+import 'package:lianleme/data/day_plan_repository.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/streak_protection_repository.dart';
 import 'package:lianleme/data/exercise_repository.dart';
@@ -31,6 +32,8 @@ import 'package:lianleme/data/reminder_repository.dart';
 import 'package:lianleme/features/profile/reminder.dart';
 import 'package:lianleme/data/routine_repository.dart';
 import 'package:lianleme/domain/models.dart';
+// RoutineEntry 是 planner 那边的形状（今天的安排存的就是它）
+import 'package:lianleme/features/today/today_planner.dart' show RoutineEntry;
 
 /// 逐表行数（键是数据库里的真表名）
 Future<Map<String, int>> rowCounts(AppDatabase db) async {
@@ -104,6 +107,17 @@ void main() {
     // ⚠️ 它是这一批唯一新增的表，也是**唯一一件"关于历史"的用户声明**：
     // 留着它，"删除全部数据"之后连续天数就还是被补签撑着的（自相矛盾的界面）。
     await StreakProtectionRepository(db).protect('2026-10-05', nowMs: 1000);
+    // v27：今天的安排（10.9 清单第 6 条）—— 走公开 API，不写裸 SQL。
+    await DayPlanRepository(db).save(
+      dayPlanKey(DateTime(2026, 10, 9)),
+      <RoutineEntry>[
+        RoutineEntry(
+          exerciseId: 'ex_bb_bench_press',
+          plan: const PlanTarget(targetSets: 3, targetRepsLow: 8, targetRepsHigh: 12),
+        ),
+      ],
+      nowMs: 1000,
+    );
     // v22：登录会话（账号体系）。这一行**非有不可** —— 表清单守门只强制你"表态"，
     // 真正证明"删掉了"的是下面逐表核行数那一条；而一张从没被塞过行的表
     // 是 0 → 0，删没删都看不出来。
@@ -170,6 +184,10 @@ void main() {
       // v21（2026-10-06）：连续保护（补签）。**删** —— 那是用户自己做的决定
       // （"这一天不能让链断"），属于他的数据；留着会让删光之后连续天数还是被补签撑着的。
       'streak_protection',
+      // v27（2026-10-09）：今天的安排（用户拖动/替换/删除过的那一份）。**删** ——
+      // 那是用户自己的编辑结果；留着会让"删光之后"首页还摆着今天练哪几个。
+      'day_plan_item',
+      'day_plan_day',
     };
     expect(actual, equals(known),
         reason: '库里的表和这份清单对不上 —— 新增/改名一张表就要来改这里，'
