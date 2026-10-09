@@ -36,7 +36,7 @@
 | 本地数据库 | SQLite（经 drift 管理），当前模式版本 **v25** |
 | 开发环境 | macOS（Apple Silicon），Android SDK，Gradle |
 | 运行环境 | Android 7.0（API 24）～ Android 16（API 36），arm64 / armeabi-v7a / x86_64。⚠️ 其中"从系统健康库读取体成分"（3.6.1）需要 **Android 14 及以上**（Health Connect 系统内置那一档） |
-| 源程序量 | **294 个源文件 / 81,635 行**（截至 V1.65.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
+| 源程序量 | **294 个源文件 / 81,761 行**（截至 V1.65.0，仅统计自研源码：Dart / JS / Python；不含生成代码与第三方依赖） |
 
 ## 三、主要功能模块
 
