@@ -28,6 +28,7 @@ class AppTopBar extends StatelessWidget {
     this.unread = 0,
     this.onOpenSettings,
     this.onOpenNotifications,
+    this.showSettings = true,
   });
 
   /// 左标题（一般就是当前 tab 的名字；「今天」那一屏是"今天"）。
@@ -40,6 +41,16 @@ class AppTopBar extends StatelessWidget {
   final int unread;
 
   final VoidCallback? onOpenSettings;
+
+  /// **齿轮只在哪一屏出现**（2026-10-10）。
+  ///
+  /// 用户 10.10 的设计评审：「顶栏在每一格都一模一样（标题 + 齿轮 + 铃铛），
+  /// 而「我」本身就是设置集散地」。所以齿轮只在「我」那一屏出现，铃铛（通知）仍然全局。
+  ///
+  /// ⚠️ 这与 10.7 清单第 6 条（「所有的设置相关的能不能集成到右上角，一个小齿轮图标」）
+  /// **有意地不完全一致**：那一条要的是"设置别再散在页面里"，这一点没变 ——
+  /// 它只是收敛到「我」那一格。想改回去：把 `showSettings` 恒为 true 即可。
+  final bool showSettings;
   final VoidCallback? onOpenNotifications;
 
   /// 一排动作的触区（与首页原来那枚铃铛同规格：40×40，好按）。
@@ -96,7 +107,7 @@ class AppTopBar extends StatelessWidget {
               ],
             ),
           ),
-          if (onOpenSettings != null) _action(
+          if (onOpenSettings != null && showSettings) _action(
             key: const Key('top-bar-settings'),
             icon: Icons.settings_outlined,
             label: '设置',

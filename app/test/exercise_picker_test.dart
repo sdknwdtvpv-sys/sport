@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/labels.dart';
+import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
@@ -52,12 +53,27 @@ void main() {
   }
 
   group('动作说明', () {
-    testWidgets('写在种子里的说明会出现在列表里（选动作时才知道这是什么）',
+    testWidgets('★ 列表里**不再**放动作要点（2026-10-10）；长按进详情页才看全',
         (WidgetTester tester) async {
+      // ⚠️ 这条原来钉的是"说明出现在列表副标题里"。用户 10.10 的设计评审：
+      // 「每行 3 行描述扫不动」—— 副标题压成一行（部位 · 器械），
+      // 动作要点挪进**长按进的那一页**（`ExerciseDetailScreen` 的 `detail-instructions`）。
       await pumpPicker(tester);
 
-      // 杠铃卧推是推荐位上的动作，种子里有说明
-      expect(find.textContaining('肩胛后收贴凳'), findsOneWidget);
+      expect(find.textContaining('肩胛后收贴凳'), findsNothing,
+          reason: '列表里不再有那句话（它会长到三行）');
+
+      // 长按那一行 → 详情页里它还在
+      final Finder bench = find.ancestor(
+        of: find.text('杠铃卧推'),
+        matching: find.byType(ListTile),
+      );
+      expect(bench, findsWidgets, reason: '杠铃卧推该在列表里');
+      await tester.longPress(bench.first);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('detail-instructions')), findsOneWidget);
+      expect(find.textContaining('肩胛后收贴凳'), findsOneWidget,
+          reason: '要点没消失，只是搬到了该读它的地方');
     });
 
     testWidgets('没写说明的动作不会显示空的一行', (WidgetTester tester) async {
@@ -657,5 +673,50 @@ void main() {
       expect(find.byKey(Key('muscle-$fine')), findsNothing,
           reason: '$fine 是辅助肌群，只用于显示，不该出现在筛选里');
     }
+  });
+
+  group('筛选行与"上次"（2026-10-10）', () {
+    testWidgets('★ 四行筛选**都有行标签**，未筛选时「全部」不再是强调橙',
+        (WidgetTester tester) async {
+      // ⚠️ 用户 10.10 评审：「三行筛选胶囊每行第一个"全部××"都是橙色选中态
+      // （一屏四处强调色），而且三行没有行标签，只能靠名字猜」。
+      await pumpPicker(tester);
+
+      expect(find.byKey(const Key('filter-label-部位')), findsOneWidget);
+      expect(find.byKey(const Key('filter-label-器械')), findsOneWidget);
+      expect(find.byKey(const Key('filter-label-类型')), findsOneWidget);
+      // ⚠️ 行名也统一了：原来第一格分别叫「全部 / 全部器械 / 全部类型」，
+      // 现在三行都叫「全部」—— 行名由左边那个标签负责。
+      expect(find.text('全部器械'), findsNothing);
+      expect(find.text('全部类型'), findsNothing);
+      expect(find.byKey(const Key('equip-all')), findsOneWidget);
+      expect(find.byKey(const Key('cat-all')), findsOneWidget);
+
+      // 未筛选 = 三行「全部」都不是强调色（否则一屏四处 accent）
+      for (final String k in <String>['subtag-all', 'equip-all', 'cat-all']) {
+        if (find.byKey(Key(k)).evaluate().isEmpty) continue;
+        final Container box = tester.widget<Container>(
+          find.descendant(of: find.byKey(Key(k)), matching: find.byType(Container)),
+        );
+        final BoxDecoration deco = box.decoration! as BoxDecoration;
+        expect(deco.color, isNot(Tokens.accent),
+            reason: '$k 在"什么都没筛"时不该是强调色');
+      }
+    });
+
+    testWidgets('★ 有历史时右边念「上次 …」，不再印种子默认重量',
+        (WidgetTester tester) async {
+      // ⚠️ 用户 10.10 评审：「右侧"40 kg 总重"会被读成"我举过 40kg"，其实那是默认值」。
+      final LocalStore store = await storeWithRecent('ex_bb_bench_press');
+      await pumpPicker(tester, store: store);
+
+      expect(find.byKey(const Key('last-ex_bb_bench_press')), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('last-ex_bb_bench_press'))).data,
+        '上次 60 kg × 5',
+      );
+      // 口径说明（"总重（含杠铃杆）"）跟着默认重量一起让位
+      expect(find.byKey(const Key('basis-ex_bb_bench_press')), findsNothing);
+    });
   });
 }

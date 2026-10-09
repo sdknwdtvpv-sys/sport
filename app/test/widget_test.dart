@@ -45,7 +45,7 @@ void main() {
   /// 顶栏那两枚动作（2026-10-07，v1.60.0；用户 10.7 清单第 1、6 条）：
   /// 「小铃铛放在右上角，注意下布局协调性」+「所有的设置相关的能不能集成到右上角，
   /// 一个小齿轮图标」。这条测试钉的是**它们真的到了顶栏上、而且点得开**。
-  testWidgets('★ 右上角：齿轮进设置页、铃铛进通知中心（三个 tab 都点得到）',
+  testWidgets('★ 右上角：铃铛每格都在；**齿轮只在「我」那一格**（2026-10-10）',
       (WidgetTester tester) async {
     final AppDatabase db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
@@ -53,15 +53,23 @@ void main() {
     await tester.pumpWidget(LianLeMeApp(database: db));
     await tester.pumpAndSettle();
 
-    // 顶栏：标题 + 那两枚动作
+    // 顶栏：标题 + 铃铛（+ 只在「我」那格的齿轮）
     expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
     expect(find.text('今天'), findsWidgets, reason: '「开练」那一屏的顶栏标题是"今天"');
-    expect(find.byKey(const Key('top-bar-settings')), findsOneWidget);
-    expect(find.byKey(const Key('open-notifications')), findsOneWidget);
-    // ⚠️ 铃铛**只有一枚**：它从首页挪到了顶栏，两处都画就会出现两个入口
-    expect(find.byKey(const Key('open-notifications')), findsOneWidget);
+    expect(find.byKey(const Key('open-notifications')), findsOneWidget,
+        reason: '铃铛是全局的（通知与你在哪一屏无关）');
+    // ⚠️ 2026-10-10：齿轮**不在这一格** —— 「我」本身就是设置集散地，
+    // 另外两格再挂一个齿轮只是"每屏顶栏一模一样"的噪音（用户 10.10 的设计评审）。
+    expect(find.byKey(const Key('top-bar-settings')), findsNothing,
+        reason: '「开练」那一格的顶栏没有齿轮');
 
-    // 齿轮 → 设置页（三个入口都在）
+    // 换到「我」那一格：齿轮出现，而且点得开
+    await tester.tap(find.byKey(const Key('tab-我')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
+    expect(find.text('我的'), findsWidgets, reason: '顶栏标题跟着当前 tab 走');
+    expect(find.byKey(const Key('top-bar-settings')), findsOneWidget,
+        reason: '齿轮只在这一格');
     await tester.tap(find.byKey(const Key('top-bar-settings')));
     await tester.pumpAndSettle();
     expect(find.text('设置'), findsWidgets);
@@ -71,13 +79,10 @@ void main() {
     await tester.tap(find.byKey(const Key('subpage-back')));
     await tester.pumpAndSettle();
 
-    // 换到「我」那一格（三个 tab：进步 / 开练 / 我），顶栏还在、还点得到
-    await tester.tap(find.byKey(const Key('tab-我')));
+    // 铃铛 → 通知中心（换过 tab 之后仍然点得到）
+    expect(find.byKey(const Key('open-notifications')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('open-notifications')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
-    expect(find.text('我的'), findsWidgets, reason: '顶栏标题跟着当前 tab 走');
-    expect(find.byKey(const Key('top-bar-settings')), findsOneWidget,
-        reason: '齿轮是全局的 —— 换一屏也得点得到（这正是这一条要求的意义）');
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

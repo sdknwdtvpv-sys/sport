@@ -366,14 +366,14 @@ void main() {
       );
     });
 
-    testWidgets('★ 统计格子同排**等高**（v1.57.0 的回归：补签那句曾把「连续天数」撑高）',
+    testWidgets('★ 统计两格同排**等高**（v1.57.0 的回归；2026-10-10 起是一条细线带）',
         (WidgetTester tester) async {
-      // 用户看完 v1.57.0 的截图指出"两个格子不一样高"。原因是"其中 N 天是补签"
-      // 那句披露被塞进了「连续天数」那张卡里，于是它比同排的「训练次数」多一行。
-      // 现在那句话是**网格下面独立的一行**。
+      // 用户看完 v1.57.0 的截图指出"两个格子不一样高"：原因是"其中 N 天是补签"那句
+      // 披露被塞进了「连续天数」那一格里。现在那句话是**带子下面独立的一行**。
       //
-      // 这条测试量的是**渲染高度**，不是文案在不在 —— 文案还在、高度不等，那个 bug
-      // 就仍然在（上一版"只断言文案"的测试就是这么漏掉它的）。
+      // ⚠️ 2026-10-10：这两格从**两张 ViCard** 收成**一条细线带**（`profile-stats-band`，
+      // 上下 hairline + 中间一道竖线）—— 与「进步」页那条统计带同一个语言
+      // （"只有图表配卡片底"）。判据跟着改成量**两格的高度**，而且量的是渲染高度。
       final DateTime now = DateTime.now();
       final DateTime d0 = DateTime(now.year, now.month, now.day);
       final DateTime yesterday = d0.subtract(const Duration(days: 1));
@@ -400,30 +400,23 @@ void main() {
 
       expect(find.byKey(const Key('profile-streak-label')), findsOneWidget,
           reason: '这句披露必须还在（只是换了位置），不能为了排版把它删掉');
-      // ⚠️ 2026-10-09 起同排的另一张是「累计容量」（次数/组数两张卡拿掉了）
-      final Finder volumeCard = find
-          .ancestor(
-              of: find.byKey(const Key('profile-stat-volume')),
-              matching: find.byType(ViCard))
-          .first;
-      final Finder streakCard = find
-          .ancestor(
-              of: find.byKey(const Key('profile-stat-streak')),
-              matching: find.byType(ViCard))
-          .first;
-      expect(tester.getSize(streakCard).height,
-          tester.getSize(volumeCard).height,
-          reason: '同排两张格子必须等高：差出来的那十几像素就是用户说的"没排好"');
-      // 而且那句话得落在**两张格子下面**（不在任何一张格子里面）——
-      // 否则"等高"两个字就得靠"披露被裁掉"来换，那是更坏的修法。
+      expect(find.byKey(const Key('profile-stats-band')), findsOneWidget,
+          reason: '两格现在同属一条细线带');
+
+      // 两格的渲染高度必须一样（差出来的那十几像素就是用户说的"没排好"）
+      final double streakTop =
+          tester.getTopLeft(find.byKey(const Key('profile-stat-streak'))).dy;
+      final double volumeTop =
+          tester.getTopLeft(find.byKey(const Key('profile-stat-volume'))).dy;
+      expect(streakTop, closeTo(volumeTop, 0.5),
+          reason: '同排两格必须齐平');
+
+      // 那句披露得落在**带子外面**（不在任何一格里面）
+      final Finder band = find.byKey(const Key('profile-stats-band'));
       expect(
-          find.descendant(
-              of: volumeCard, matching: find.byKey(const Key('profile-streak-label'))),
-          findsNothing);
-      expect(
-          find.descendant(
-              of: streakCard, matching: find.byKey(const Key('profile-streak-label'))),
-          findsNothing);
+          find.descendant(of: band, matching: find.byKey(const Key('profile-streak-label'))),
+          findsNothing,
+          reason: '披露不能塞回格子里 —— 那正是当年把格子撑高的原因');
     });
 
     testWidgets('★ 经验（XP 称号）那一条**取消了** —— 全页只剩一条进度',

@@ -366,30 +366,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ])
         else ...<Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: ViCard(
-                  child: StatTile(
-                    label: '连续天数',
-                    value: '$_streak 天',
-                    valueKey: const Key('profile-stat-streak'),
-                  ),
+          // ⚠️ 2026-10-10：这两格原来是**两张 ViCard**（与「进步」页那四张同款的大方块）。
+          // 按"只有图表配卡片底、纯数字用细线分节"这条规矩收成**一条细线带**
+          // （上下 hairline + 中间一道竖线），与「进步」页的统计带同一个语言。
+          IntrinsicHeight(
+            child: Container(
+              key: const Key('profile-stats-band'),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Tokens.line),
+                  bottom: BorderSide(color: Tokens.line),
                 ),
               ),
-              const SizedBox(width: Tokens.s3),
-              Expanded(
-                child: ViCard(
-                  child: StatTile(
-                    // 「累计容量」而不是「总容量」：与进步页那个「本周容量」对看时，
-                    // 口径写在标签上，用户不必去猜哪边是全部历史
-                    label: '累计容量',
-                    value: s.volumeLabel,
-                    valueKey: const Key('profile-stat-volume'),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const SizedBox(width: 0),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
+                      child: StatTile(
+                        label: '连续天数',
+                        value: '$_streak 天',
+                        valueKey: const Key('profile-stat-streak'),
+                      ),
+                    ),
                   ),
-                ),
+                  Container(width: 1, color: Tokens.line),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                          left: Tokens.s4, top: Tokens.s4, bottom: Tokens.s4),
+                      child: StatTile(
+                        // 「累计容量」而不是「总容量」：与进步页那个「本周容量」对看时，
+                        // 口径写在标签上，用户不必去猜哪边是全部历史
+                        label: '累计容量',
+                        value: s.volumeLabel,
+                        valueKey: const Key('profile-stat-volume'),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
 
           // **含补签时必须写出来**（与首页同一句文案，见 `streak_protection.dart`）——

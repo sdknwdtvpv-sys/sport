@@ -1868,6 +1868,10 @@ class _HomeShellState extends State<HomeShell> {
       subtitle: _topBarSubtitle,
       unread: _unreadNotifications,
       onOpenSettings: _openSettings,
+      // ⚠️ 齿轮**只在「我」那一格**出现（2026-10-10 的设计评审）：那一屏本身就是
+      // 设置集散地，另外两格再挂一个齿轮只是"每屏顶栏一模一样"的噪音。
+      // 铃铛（通知）是全局的，仍然每格都在。
+      showSettings: _tab == 2,
       onOpenNotifications: _openNotifications,
     );
     return Scaffold(

@@ -8,6 +8,8 @@
 /// 一旦开始搜索或筛部位，就退回平铺列表 —— 那时用户已经知道自己在找什么。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/labels.dart';
@@ -17,6 +19,7 @@ import '../../data/db.dart';
 import '../../data/exercise_repository.dart';
 import '../../analytics/analytics.dart';
 import '../../data/local_store.dart';
+import '../../domain/models.dart' as domain;
 import 'custom_exercise_screen.dart';
 import 'exercise_detail_screen.dart';
 
@@ -71,6 +74,16 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   /// 为什么要有它：分区（最近做过 / 常用 / 全部）都是**系统猜的**——
   /// 而"我就是要练这几个"只有用户自己知道。这是唯一一处用户能直接表态的地方。
   List<ExerciseData> _pinned = const <ExerciseData>[];
+
+  /// **每个动作上一次练成什么样**（2026-10-10）。
+  ///
+  /// 为什么加：这一行右边原来印的是**种子默认重量**（`e.defaultWeightKg`，还带
+  /// "总重（含杠铃杆）"这种口径说明）—— 那会被读成"我举过 40kg"，其实它只是
+  /// "第一次练就从这儿开始"的默认值。用户 10.10 评审点名了这一条。
+  /// 有历史就念历史（`上次 45 kg × 10`），没有历史才退回默认值。
+  ///
+  /// 实现：**一次 `allSets()` 建一张表**，不是每行查一次库（这一屏最多 500 行）。
+  Map<String, domain.SetRecord> _lastByExercise = const <String, domain.SetRecord>{};
   bool _loading = true;
   late String? _muscleGroup = widget.initialMuscle;
 
@@ -104,12 +117,32 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   void initState() {
     super.initState();
     _load();
+    unawaited(_loadLastSets());
   }
 
   @override
   void dispose() {
     _query.dispose();
     super.dispose();
+  }
+
+  /// 建"每个动作最近一组"的表（一次查询，见字段注释）。
+  Future<void> _loadLastSets() async {
+    final LocalStore? store = widget.store;
+    if (store == null) return;
+    try {
+      final List<domain.SetRecord> sets = await store.allSets();
+      final Map<String, domain.SetRecord> map = <String, domain.SetRecord>{};
+      for (final domain.SetRecord r in sets) {
+        final domain.SetRecord? prev = map[r.exerciseId];
+        if (prev == null || r.completedAtMs > prev.completedAtMs) {
+          map[r.exerciseId] = r;
+        }
+      }
+      if (mounted) setState(() => _lastByExercise = map);
+    } catch (_) {
+      // 读不出来就当没有历史 —— 右边退回默认重量，其余一切照旧
+    }
   }
 
   Future<void> _load() async {
@@ -303,40 +336,28 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, 0),
-              child: SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: <Widget>[
+            _filterRow('部位', <Widget>[
+                    // ⚠️ 2026-10-10：未筛选时这一格是**中性色**，不再是强调橙 ——
+                    // 原来四行里的"全部××"全是橙色选中态，一屏四处强调色，
+                    // 把主操作都没了的地方（`interaction-spec` §4：一屏 accent ≤ 1）。
                     _chip('全部', _muscleGroup == null, () {
                       _muscleGroup = null;
                       // 部位清掉了，挂在它下面的细分标签也必须跟着清
                       _subTag = null;
                       _load();
-                    }),
+                    }, neutralWhenActive: true),
                     for (final String k in kPrimaryMuscleGroups)
                       _chip(muscleLabel(k), _muscleGroup == k, () {
                         _muscleGroup = k;
                         _subTag = null;
                         _load();
                       }, key: 'muscle-$k'),
-                  ],
-                ),
-              ),
-            ),
+            ]),
             // **细分标签这一行**（2026-10-09，10.9 清单第 7 条）：选了部位才出现 ——
             // 用户点「胸」之后最想问的下一句就是"上胸还是中缝"。
             // 不选部位时这一行不存在（6 个部位的标签混在一起会长到看不懂）。
             if (_muscleGroup != null && subTagsFor(_muscleGroup!).isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
-                child: SizedBox(
-                  height: 36,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: <Widget>[
+              _filterRow('细分', <Widget>[
                       _chip('全部', _subTag == null, () {
                         _subTag = null;
                         _load();
@@ -346,45 +367,27 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                           _subTag = t;
                           _load();
                         }, key: 'subtag-$t'),
-                    ],
-                  ),
-                ),
-              ),
+              ]),
             // 器械这一行：给"家里只有哑铃 / 只有自重"的人一条能走通的路。
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
-              child: SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: <Widget>[
-                    _chip('全部器械', _equipment == null, () {
+            _filterRow('器械', <Widget>[
+                    _chip('全部', _equipment == null, () {
                       _equipment = null;
                       _load();
-                    }, key: 'equip-all'),
+                    }, key: 'equip-all', neutralWhenActive: true),
                     for (final MapEntry<String, String> e
                         in kEquipmentLabels.entries)
                       _chip(e.value, _equipment == e.key, () {
                         _equipment = e.key;
                         _load();
                       }, key: 'equip-${e.key}'),
-                  ],
-                ),
-              ),
-            ),
+            ]),
             // 类别这一行：热身与拉伸是**另外的使用时机**（练前 / 练后），
             // 不给入口的话它们就是 500 条列表的最后几条 —— 等于没有。
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
-              child: SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: <Widget>[
-                    _chip('全部类型', _category == null, () {
+            _filterRow('类型', <Widget>[
+                    _chip('全部', _category == null, () {
                       _category = null;
                       _load();
-                    }, key: 'cat-all'),
+                    }, key: 'cat-all', neutralWhenActive: true),
                     // strength 不单独给 chip：它是这个 App 的默认语境，
                     // 「全部类型」减去热身与拉伸就是它。
                     for (final String c in const <String>['warmup', 'cardio', 'stretch'])
@@ -392,10 +395,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                         _category = c;
                         _load();
                       }, key: 'cat-$c'),
-                  ],
-                ),
-              ),
-            ),
+            ]),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -534,8 +534,10 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
           fontWeight: FontWeight.w600,
         ),
       ),
-      // 说明**接在副标题后面**（不另起一行）：351 个动作里只有一部分写了说明，
-      // 另起一行会让"有没有说明"变成两行/一行的不齐；接在后面则一行放得下要点。
+      // ⚠️ **2026-10-10：副标题压成一行**（用户 10.10 评审："每行 3 行描述扫不动"）。
+      // 原来把 `instructions`（一句话动作要点）也接在这里，于是一行长到三行 ——
+      // 351 条列表里全是字，扫不动。现在这里只留**分类信息**（部位 · 细分 · 器械），
+      // 动作要点在**长按进的那一页**（`_openDetail`）里完整可读。
       subtitle: Text(
         <String>[
           e.category == 'strength'
@@ -545,9 +547,9 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
           // 它为什么被搜出来，否则那是一条无法解释的结果
           ...decodeSubTags(e.subTags),
           equipmentLabel(e.equipment),
-          if (e.instructions != null && e.instructions!.isNotEmpty)
-            e.instructions!,
         ].join(' · '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(color: Tokens.text3, fontSize: 13),
       ),
       trailing: Row(
@@ -568,31 +570,93 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               ),
               onPressed: () => _togglePin(e),
             ),
-          Text(
-            bodyweight ? '自重' : formatWeight(e.defaultWeightKg, widget.unit),
-            style: const TextStyle(
-              color: Tokens.text2,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          // 口径（10.8 清单第 6 条）：杠铃填总重（含杆）、哑铃填单只 ——
-          // 用户就是在这一屏问"这一个还是两个"的，所以答案要印在**数字旁边**。
-          // 器械/绳索/自重没有这个歧义，`weightBasisLabel` 返回空串、这里不占位。
-          if (!bodyweight && weightBasisLabel(e.equipment).isNotEmpty) ...<Widget>[
-            const SizedBox(width: 4),
+          // ⚠️ **2026-10-10：有历史就念历史**（"上次 45 kg × 10"）。
+          // 原来这里印的是**种子默认重量**（还带"总重（含杠铃杆）"的口径说明）——
+          // 那会被读成"我举过 40kg"，其实它只是"第一次练从这儿开始"的默认值。
+          // 没历史时才退回默认值 + 口径（那时它确实是"你会从这儿开始"）。
+          if (_lastLabelFor(e) != null)
             Text(
-              weightBasisLabel(e.equipment),
-              key: Key('basis-${e.id}'),
-              style: const TextStyle(color: Tokens.text3, fontSize: 11),
+              _lastLabelFor(e)!,
+              key: Key('last-${e.id}'),
+              style: const TextStyle(color: Tokens.text3, fontSize: 13),
+            )
+          else ...<Widget>[
+            Text(
+              bodyweight ? '自重' : formatWeight(e.defaultWeightKg, widget.unit),
+              style: const TextStyle(
+                color: Tokens.text2,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            // 口径（10.8 清单第 6 条）：杠铃填总重（含杆）、哑铃填单只 ——
+            // 用户就是在这一屏问"这一个还是两个"的，所以答案要印在**数字旁边**。
+            // 器械/绳索/自重没有这个歧义，`weightBasisLabel` 返回空串、这里不占位。
+            if (!bodyweight && weightBasisLabel(e.equipment).isNotEmpty) ...<Widget>[
+              const SizedBox(width: 4),
+              Text(
+                weightBasisLabel(e.equipment),
+                key: Key('basis-${e.id}'),
+                style: const TextStyle(color: Tokens.text3, fontSize: 11),
+              ),
+            ],
           ],
         ],
       ),
     );
   }
 
-  Widget _chip(String label, bool active, VoidCallback onTap, {String? key}) {
+  /// 一行筛选：**左边一个小标签**（部位 / 器械 / 类型 / 细分）+ 横向滚动的胶囊。
+  ///
+  /// ⚠️ 2026-10-10：标签是**新加的**。原来四行胶囊一个标签都没有，只能靠第一格
+  /// "全部器械""全部类型"这种名字去猜这行是什么 —— 用户 10.10 评审点名了这条。
+  Widget _filterRow(String label, List<Widget> chips) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+      child: SizedBox(
+        height: 36,
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: 30,
+              child: Text(label,
+                  key: Key('filter-label-$label'),
+                  style: const TextStyle(color: Tokens.text3, fontSize: 11.5)),
+            ),
+            Expanded(
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: chips,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 「上次 45 kg × 10」/「上次 5.00 公里」/「上次 自重 × 12」。没有历史返回 null。
+  ///
+  /// 与训练屏那条对照带**同一个口径**（`core/best_set.dart` 的兄弟函数）：
+  /// 距离动作念里程、自重动作念"自重 × N"，不拿 0 kg 编一个数字。
+  String? _lastLabelFor(ExerciseData e) {
+    final domain.SetRecord? r = _lastByExercise[e.id];
+    if (r == null) return null;
+    final bool isTime = e.trackType == 'time';
+    final String main;
+    if (r.distanceM != null && r.distanceM! > 0) {
+      main = formatDistanceKm(r.distanceM!);
+    } else if (r.weightKg == null || r.weightKg! <= 0) {
+      main = '自重 × ${r.reps}${isTime ? ' 秒' : ''}';
+    } else {
+      main = '${formatWeight(r.weightKg, widget.unit)} × ${r.reps}'
+          '${isTime ? ' 秒' : ''}';
+    }
+    return '上次 $main';
+  }
+
+  Widget _chip(String label, bool active, VoidCallback onTap,
+      {String? key, bool neutralWhenActive = false}) {
     return Padding(
       padding: const EdgeInsets.only(right: Tokens.s2),
       child: GestureDetector(
@@ -602,15 +666,22 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
           decoration: BoxDecoration(
-            color: active ? Tokens.accent : Tokens.surface,
+            // 「全部」在**什么都没筛**的时候用中性色：它是"默认"，不是一个选择
+            // （详见 `neutralWhenActive` 的调用点）
+            color: active && !neutralWhenActive ? Tokens.accent : Tokens.surface,
             borderRadius: BorderRadius.circular(Tokens.rPill),
+            border: active && neutralWhenActive
+                ? Border.all(color: Tokens.lineStrong)
+                : null,
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: active ? Tokens.accentInk : Tokens.text2,
+              color: active && !neutralWhenActive ? Tokens.accentInk : Tokens.text2,
               fontSize: 13,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+              fontWeight: active && !neutralWhenActive
+                  ? FontWeight.w700
+                  : FontWeight.w400,
             ),
           ),
         ),
