@@ -79,6 +79,15 @@
 3. `privacy-audit` 的自检夹具用的是 `split('waist')`（**区分大小写**），
    而政策里出现了一处句首的「Waist」之后这条自检就抓不住东西了 ——
    夹具改成大小写无关（审计本身比对英文政策就是大小写无关的）。
+4. ⚠️ **`GlassBridge.swift` 里那行 `emphasisIconSize` 插错了位置**（第 2b 条那次改动）：
+   它被插在上一句 `emphasisIconColor = ...` 与它换行续写的 `.flatMap { … }` **中间**，
+   于是 `.flatMap` 挂到了 `CGFloat(...)` 上 —— Swift 当场报 4 个类型错。
+   **门禁六层一个都没抓住**（它们不编 iOS），是"装到 iPhone"这一步把它撞出来的。
+   教训：**改了 Swift/Swift 之外的平台代码，门禁绿不等于编得过 —— 推之前至少编一次那一端。**
+5. ⚠️ **Android 读不到腰围**（第 9 条）：Health Connect 既没有 `WaistCircumferenceRecord`、
+   也没有 `READ_WAIST_CIRCUMFERENCE` 这个权限（`HealthPermissions` 里一个 WAIST 都没有），
+   照着"另一端应该也有"写会**编不过**（这次是 Kotlin 编译拦住的）。所以腰围只落地在 iOS 那一半，
+   政策/界面文案/权限表都按平台分开写 —— **做不到的事不写进权限表**。
 
 ## v1.65.0 · 从系统健康库读体成分（iPhone 那一半）
 

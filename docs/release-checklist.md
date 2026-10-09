@@ -19,12 +19,17 @@
 - [x] ✅ **App 已装进真机**：`com.sdknwdtvpv.lianleme`。⚠️ **2026-10-09 晚这一版（v1.66.0 / 81）只装上了安卓那台** ——
       Redmi `75caf509` 走 `adb -s 75caf509 install -r dist/练了么-v1.66.0.apk`（覆盖安装、数据保留，
       `dumpsys package` 读到 `versionName=1.66.0 / versionCode=81`，冷启动 `E/flutter` 0 条 / `overflowed` 0 条）。
-      ⚠️ **iPhone 17 Pro 没装上**：`tool/ios-device-run.sh` 这次卡在**签名**上，Xcode 报的是
-      `No Accounts: Add a new account in Accounts settings.` 与
-      `Signing certificate "Apple Development: 919500973@qq.com (FA5LCQQVX8)" … is not valid for code signing.
-      It may have been revoked or expired.` —— 也就是**这台 Mac 的 Xcode 里要重新登录一次那个 Apple ID /
-      重签那张免费证书**（不是代码问题：同一条脚本在当天早些时候装 1.65.0 时是通的）。
-      所以那一台上**这一版还没装**（它上面仍是 1.65.0 / 80，见下面「真机验证」那行）。
+      ✅ **iPhone 17 Pro 当晚也装上了**（`00008150-000949CA0108401C`，`tool/ios-device-run.sh`：
+      `BUILD SUCCEEDED` → `App installed` → 拉起成功；`xcrun devicectl device info apps` 当场读到
+      **`1.66.0` / bundle version `81`**，bundle id 是免费团队那个 `.dev` 后缀）。
+      ⚠️ **中间卡了两轮，两件不同的事，都记在这儿**：
+      ① 第一次报 `No Accounts: Add a new account in Accounts settings.` + 那两张
+      `Apple Development: 919500973@qq.com (FA5LCQQVX8)` 证书被标成 **已吊销**（`CSSMERR_TP_CERT_REVOKED`；
+      证书本身到 2027-10-04 才到期，所以是 revoked 不是 expired）—— 在 Xcode 里重新登录一次那个 Apple ID
+      之后，脚本带的 `-allowProvisioningUpdates` 自己签出了新证书，这一关就过了；
+      ② 第二、三轮是**我改的 Swift 编不过**（`GlassBridge.swift` 里那行 `emphasisIconSize` 插错了位置，
+      把上一句的 `.flatMap` 挂到了 `CGFloat(...)` 上）—— ⚠️ **门禁六层一个都抓不到它**
+      （它们不编 iOS），只有真的编一次 iPhone 才会红。已修，并把这一条写进 CHANGELOG。
       ⚠️ 脚本跑完已自动把工程改回原来的 bundle id + Team。
       **历史**：第一次装上真机是 v1.0.0 / versionCode 1（那是当时）；
       Redmi 是从 v1.56.0 一路跳上来的（v1.57～v1.60 那几版它没连着，中间夹着**两次 schema 迁移（v22 → v24）**，
@@ -345,7 +350,7 @@ done          # 每个 ABI 都应该是 2（备份地址 + 统计地址/v1/event
 | 权限 | ✅ 源码 manifest **六项**（INTERNET + `WRITE_EXTERNAL_STORAGE` 限 API ≤29 + `POST_NOTIFICATIONS`（v1.42 的训练提醒，API 33+ 走**运行时**请求、只在用户主动打开开关时问）+ 健康库**只读**三条 `READ_WEIGHT` / `READ_BODY_FAT` / `READ_HEIGHT`（v1.65.0 起；⚠️ **没有** `READ_WAIST_CIRCUMFERENCE` —— Health Connect 里根本没有这一类数据，2026-10-09 出包时被 Kotlin 编译打回来才查清，见 `docs/plan-health-sync.md` §八）。这条以前写着"三项"，是 v1.42 那会儿的数字、后来一直没跟上）。打包后多一条**隐含**的 `READ_EXTERNAL_STORAGE`（≤29，系统因 WRITE 授予，不是谁声明的）—— **已在政策与 `privacy-facts.json` 里逐条披露**（`privacy-audit --apk` 每次对账）。⚠️ 这三条这个数字以前一直写着「两项/2 条」—— 加 `POST_NOTIFICATIONS` 那次**没同步改这里**，而 `privacy-audit` 只核「有没有披露」、不核「文档里数的是几条」，所以红不了。2026-10-05 对产物数出来才改 |
 | 隐私政策 | 🚧 中英文已成文、占位符已填；**待法务审核 + 公网 URL + 填生效日**。⚠️ 云备份一旦上线，§3.1/§3.2 必须重写（数据**会**离机） |
 | 删除数据入口 | ✅ 已实现并测试。v1.22.0 补上了**条件式的云端删除**：有云备份账号时，弹层多问一句「同时删除云端备份并注销」（默认勾选），先删云端、失败则整个中止。**v1.30.0 起另有逐表核对 + 表清单守门**（`app/test/delete_all_test.dart`）：删除后除动作库外**每张表都必须是 0 行**（负向验证：把 `body_metric` 的删除拆掉 → 立刻红，报 `body_metric=1`）；库里新增/改名一张表而没更新那份清单 → 也红。这条正是删除权的失败方式：**新表忘了接，界面上看不出任何异常** |
-| 真机验证 | ✅ **Redmi `75caf509` 上跑的是 **v1.66.0**（`versionCode 81`，2026-10-09 晚 `adb install -r dist/练了么-v1.66.0.apk` → `Success`、`dumpsys` 读到 `1.66.0 / 81`、冷启动 `E/flutter` 0 条 / `overflowed` 0 条）**，并在安卓 16 模拟器上用**同一份 release APK** 把这一版走了一遍（底栏正中那颗图标不再有实心圆、首页「今天的安排」第一次就排出来了、长按那一行弹出「调整今天的安排」、动作库选「胸」出现 上胸/下胸/中缝 三个 chip 且筛出 8 个动作）。⚠️ 为什么走查用模拟器：**Redmi 那台当时锁着屏**（`mDreamingLockscreen=true`），adb 点不进去 —— 装包与冷启动是在它上面核的，界面走查在模拟器上做（同一份产物）。⚠️ **iPhone 17 Pro 这一版还没装上**：`tool/ios-device-run.sh` 报 Xcode 的 `No Accounts` 与那张免费证书 `revoked or expired`（要重新登录 Apple ID）—— 它上面现在仍是 1.65.0（80）。**历史**：v1.65.0 / v1.64.0 / v1.60.0 / v1.59.0 / v1.58.0 / v1.57.0 都在两台机器上装过并在 `devicectl` / `dumpsys` 里核过版本 |
+| 真机验证 | ✅ **Redmi `75caf509` 上跑的是 **v1.66.0**（`versionCode 81`，2026-10-09 晚 `adb install -r dist/练了么-v1.66.0.apk` → `Success`、`dumpsys` 读到 `1.66.0 / 81`、冷启动 `E/flutter` 0 条 / `overflowed` 0 条）**，并在安卓 16 模拟器上用**同一份 release APK** 把这一版走了一遍（底栏正中那颗图标不再有实心圆、首页「今天的安排」第一次就排出来了、长按那一行弹出「调整今天的安排」、动作库选「胸」出现 上胸/下胸/中缝 三个 chip 且筛出 8 个动作）。⚠️ 为什么走查用模拟器：**Redmi 那台当时锁着屏**（`mDreamingLockscreen=true`），adb 点不进去 —— 装包与冷启动是在它上面核的，界面走查在模拟器上做（同一份产物）。✅ **iPhone 17 Pro 上也是 1.66.0（bundle version 81）** —— 当晚 `tool/ios-device-run.sh` 装上并拉起成功（中间卡了两轮：先是 Xcode 里要重新登录 Apple ID，后是我改的 Swift 编不过 —— 两件都记在上面「App 已装进真机」那条里）。**历史**：v1.65.0 / v1.64.0 / v1.60.0 / v1.59.0 / v1.58.0 / v1.57.0 都在两台机器上装过并在 `devicectl` / `dumpsys` 里核过版本 |
 | **体检数据的单独同意** | ✅ v1.31.0：体重属**敏感个人信息**（医疗健康类），按 PIPL 第 29 条**单独**征求同意 —— 第一次进「身体数据」页时单独弹一次说明（只存本机/不上传/可改可删），点了才记录，点「先不用」就不进那一页；同意时刻单独落库（当时是 schema **v14**，那一列就是那一版加的）。中英政策与 `privacy-facts.json` 的 `sensitiveLocal` 同步，硬门禁**两处横查**（政策说法 ↔ 代码里那道门）|
 | 匿名统计的默认值 | ✅ **默认开启**（**2026-10-07 用户拍板**，v1.59.0 / schema v23；此前 v1.28.0～v1.58.0 是"默认关闭"，再之前是"默认开" —— 翻过两次，施工单在 `docs/plan-ux-2026-10-07.md` §三·9）。⚠️ **只改默认值、不搬数据**：存量机器读它自己那一行（当年看到的是"默认关闭"，静默翻转等于对着旧承诺收集数据），这条由 `app/test/migration_test.dart` 的 v22→v23 用例钉着。关掉后连队列里没发出去的也停发；硬门禁三处对账（`privacy-facts.json` ↔ 代码默认值 ↔ 中英政策正文），并且**方向反过来**查对外文档写没写反（`privacy-audit` ⑩之四，两个方向各有自检）。**历史实测（2026-09-30，当时默认值是"关"）**：默认跑完整轮训练，应用真实库里 `pending=0`；同一流程预置成开则 `pending=11` —— 证明测量本身没坏（`integration_test/analytics_outbox_e2e_test.dart`）。⚠️ 默认值 2026-10-07 翻成"开"之后，这两跑该重做一遍（口径不变、只是默认那一路的期望值反过来）。**iOS 上同样两跑一致**（2026-09-30，模拟器 iOS 27.0）。⚠️ 这条与下面「积压事件」那条一起，决定"配了上报地址的包"能不能发 |
 | 个人信息收集清单（164 号文） | ✅ 应用内二级菜单「我 → 关于 → 个人信息收集清单」（v1.29.0）。两份清单都是**生成物**：收集清单 ← `privacy-facts.json`，共享清单 ← 政策里的第三方 SDK 表；与应用内隐私政策共用一套生成与防漂守卫（`gen-privacy-page.mjs --check`） |
@@ -394,7 +399,7 @@ done          # 每个 ABI 都应该是 2（备份地址 + 统计地址/v1/event
 
 | 项 | 实测结果 |
 |---|---|
-| **当前状态（2026-10-09 晚，v1.66.0）** | ✅ **包出好了、安卓那台真机已装上** —— `pubspec.yaml` = `1.66.0+81`、`kAppVersion` = `1.66.0`；`dist/` 里是 `练了么-v1.66.0.apk`（65,701,023 字节）+ `练了么-v1.66.0.aab`（63,558,303 字节）+ `copyright/`（**V1.66.0**）。判据全跑过：`check-dist` / `check-aab` / `privacy-audit --apk` / 三个 `--dart-define` 逐 ABI 命中 2 次 / `apksigner` 读到 `CN=李松`。⚠️ **iPhone 那台还没装上**：`tool/ios-device-run.sh` 报 Xcode 的 `No Accounts` 与那张免费证书 `revoked or expired` —— 重新登录一次 Apple ID / 重签即可（同一条脚本当天早些时候装 1.65.0 时是通的） |
+| **当前状态（2026-10-09 晚，v1.66.0）** | ✅ **包出好了、安卓那台真机已装上** —— `pubspec.yaml` = `1.66.0+81`、`kAppVersion` = `1.66.0`；`dist/` 里是 `练了么-v1.66.0.apk`（65,701,023 字节）+ `练了么-v1.66.0.aab`（63,558,303 字节）+ `copyright/`（**V1.66.0**）。判据全跑过：`check-dist` / `check-aab` / `privacy-audit --apk` / 三个 `--dart-define` 逐 ABI 命中 2 次 / `apksigner` 读到 `CN=李松`。✅ **iPhone 17 Pro 也装上了 1.66.0（bundle version 81）** —— `tool/ios-device-run.sh`：`BUILD SUCCEEDED` → `App installed` → 拉起成功，`devicectl` 当场读到 `1.66.0 / 81`（免费团队的 `.dev` bundle id；免费证书 7 天到期，到期重跑一次脚本即可） |
 | `dist/` 内容 | ✅ `练了么-v1.66.0.apk`（65,701,023 字节）+ `练了么-v1.66.0.aab`（63,558,303 字节）+ `copyright/`（**V1.66.0**：源程序 303 文件 / 85,471 行 / 1710 页、说明书 7 页）+ `README.md`—— 没有上一版的残留（`node tool/check-dist.mjs` 当场核过：包内 `1.66.0 (81)` 与真源一致） |
 | APK（旁加载包） | `versionCode 81 · versionName 1.66.0`（`check-dist` 读包内 manifest 核过），与 `app_info.dart` / `pubspec.yaml` 一致；签名者 **`CN=李松, C=CN`**（真 keystore，`apksigner verify --print-certs` 当场核过：SHA-256 `d27a03f3…`）；**三个 `--dart-define` 都在每个 ABI 里命中 2 次** |
 | `privacy-audit.mjs --apk`（发布前必跑） | ✅ **2026-10-09 对 `dist/练了么-v1.66.0.apk` 跑过**：22 事件 / 7 公共字段 / **6 声明权限**（INTERNET + WRITE_EXTERNAL_STORAGE + POST_NOTIFICATIONS + 健康库只读三条）/ **打包后合并 9 条**，全部已披露 |

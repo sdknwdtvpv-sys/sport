@@ -299,8 +299,12 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
     emphasisColor = (args["emphasisColor"] as? String)
       .flatMap { GlassPlatformView.color($0) }
     emphasisIconColor = (args["emphasisIconColor"] as? String)
-    emphasisIconSize = CGFloat((args["emphasisIconSize"] as? NSNumber)?.doubleValue ?? 0)
       .flatMap { GlassPlatformView.color($0) }
+    // 被点亮那一格的图标大小（2026-10-09，10.9 清单第 2b 条）。
+    // ⚠️ 这一行**必须写在上面那条 `.flatMap` 之后**：它是两行的表达式，
+    // 插在中间会把 `.flatMap` 挂到 `CGFloat(...)` 上（Swift 当场报 4 个类型错，
+    // 而**门禁六层一个都抓不到** —— 它们不编 iOS。见 CHANGELOG v1.66.0「这一版修掉的坑」）。
+    emphasisIconSize = CGFloat((args["emphasisIconSize"] as? NSNumber)?.doubleValue ?? 0)
     labelFontSize = CGFloat((args["labelFontSize"] as? NSNumber)?.doubleValue ?? 12)
     iconSize = CGFloat((args["iconSize"] as? NSNumber)?.doubleValue ?? 22)
     labelsBox.frame = frame
