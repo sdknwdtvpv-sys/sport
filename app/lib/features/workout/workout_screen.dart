@@ -29,6 +29,8 @@ class WorkoutScreen extends StatefulWidget {
     this.store,
     this.screenAwake = const MethodChannelScreenAwake(),
     this.onSwapExercise,
+    this.onWeightStepChanged,
+    this.onWeightStepAll,
   });
 
   /// 一次训练里的全部动作（S6）。单个动作就用 `WorkoutSession.single(c)`。
@@ -57,6 +59,17 @@ class WorkoutScreen extends StatefulWidget {
 
   /// 详情页要看历史；不传就只显示"怎么做"（测试与无库场景）
   final LocalStore? store;
+
+  /// **用户把某个动作的加重步进改了**（2026-10-09，10.9 清单第 8a 条）。
+  ///
+  /// 为什么由调用方实现（与 [onSwapExercise] 同一个理由）：写库要用 `ExerciseRepository`，
+  /// 而训练屏只拿得到瘦身过的控制器；外壳手里才有仓库。
+  /// 不传就没有"改步进"这个入口（测试与"单独打开这一屏"的场景）。
+  final Future<void> Function(String exerciseId, double kg)? onWeightStepChanged;
+
+  /// **把步进铺到所有动作**（同一条清单里的那个"所有动作都改"）。
+  /// 与 [onWeightStepChanged] 一样由外壳实现：它要动整个动作库，还要把值记成"你设的默认"。
+  final Future<void> Function(double kg)? onWeightStepAll;
 
 
   @override
@@ -731,6 +744,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       step: trimNumber(c.weightStep),
                       keyMinus: 'step-weight-down',
                       keyPlus: 'step-weight-up',
+                      // 步进可点改（10.9 清单第 8a 条）：有些健身房的片子只有 5 kg 一档，
+                      // 而步进本来是种子数据里写死的。
+                      onEditStep: widget.onWeightStepChanged == null
+                          ? null
+                          : () => _pickWeightStep(c),
                       onMinus: () => c.onStepper(deltaWeight: -c.weightStep),
                       onPlus: () => c.onStepper(deltaWeight: c.weightStep),
                     ),
@@ -759,6 +777,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       step: trimNumber(c.weightStep),
                       keyMinus: 'step-weight-down',
                       keyPlus: 'step-weight-up',
+                      // 步进可点改（10.9 清单第 8a 条）：有些健身房的片子只有 5 kg 一档，
+                      // 而步进本来是种子数据里写死的。
+                      onEditStep: widget.onWeightStepChanged == null
+                          ? null
+                          : () => _pickWeightStep(c),
                       onMinus: () => c.onStepper(deltaWeight: -c.weightStep),
                       onPlus: () => c.onStepper(deltaWeight: c.weightStep),
                     ),
@@ -895,6 +918,107 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
+  /// 改加重步进（10.9 清单第 8a 条「加重量的选项能不能自定义」）。
+  ///
+  /// 档位随**当前重量单位**给（kg 下 0.5/1/2/2.5/5；lb 下 1/2.5/5/10），另有"自定义"输入 ——
+  /// 真实健身房里的片子五花八门（1 kg、2.5 kg、5 kg 一对最常见）。
+  ///
+  /// 对话框里**一次问清范围**（比事后再弹一个"要不要铺到所有动作"顺）：
+  ///   * **只改这个动作** → 写在这个动作自己身上（下次进来还是它，别的动作不受影响）；
+  ///   * **所有动作都改** → 铺到整个动作库 + 记成"你设的默认值"
+  ///     （有些健身房的片子只有 5 kg 一档，那种地方就是要一次铺开）。
+  Future<void> _pickWeightStep(WorkoutController c) async {
+    final bool lb = c.unit == WeightUnit.lb;
+    final List<double> presets = lb
+        ? <double>[1, 2.5, 5, 10]
+        : <double>[0.5, 1, 2, 2.5, 5];
+    double selected = c.weightStep;
+    // ⚠️ 这里**不用 TextEditingController**：对话框 pop 之后路由还要播完退场动画，
+    // 而那时候 `TextField` 仍会重建一次 —— 一 dispose 就撞
+    // "A TextEditingController was used after being disposed"（写这一条时当场踩到，
+    // 而且是**跨用例污染**：崩在下一个用例里，看起来像别人坏了）。
+    // 自定义那一格直接改 `selected`，连局部字符串都不用留。
+
+    final _StepPick? pick = await showDialog<_StepPick>(
+      context: context,
+      builder: (BuildContext ctx) => StatefulBuilder(
+        builder: (BuildContext ctx, void Function(void Function()) setState) => AlertDialog(
+          backgroundColor: Tokens.surface,
+          title: Text('加重步进 · ${c.exercise.name.isEmpty ? '这个动作' : c.exercise.name}',
+              style: const TextStyle(color: Tokens.text, fontSize: 17)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Wrap(
+                spacing: Tokens.s2,
+                runSpacing: Tokens.s2,
+                children: <Widget>[
+                  for (final double v in presets)
+                    ChoiceChip(
+                      key: Key('step-preset-${trimNumber(v)}'),
+                      label: Text('${trimNumber(v)} ${c.unit.wire}'),
+                      selected: (v - selected).abs() < 0.001,
+                      onSelected: (_) => setState(() => selected = v),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Tokens.s4),
+              TextField(
+                key: const Key('step-custom'),
+                onChanged: (String v) {
+                  final double? d = double.tryParse(v.trim());
+                  if (d != null && d > 0) setState(() => selected = d);
+                },
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(color: Tokens.text),
+                decoration: const InputDecoration(
+                  labelText: '自定义',
+                  hintText: '例如 1.25',
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              key: const Key('step-cancel'),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('取消', style: TextStyle(color: Tokens.text2)),
+            ),
+            TextButton(
+              key: const Key('step-apply-one'),
+              onPressed: () =>
+                  Navigator.of(ctx).pop(_StepPick(selected, all: false)),
+              child: const Text('只改这个动作', style: TextStyle(color: Tokens.accent)),
+            ),
+            TextButton(
+              key: const Key('step-apply-all'),
+              onPressed: () => Navigator.of(ctx).pop(_StepPick(selected, all: true)),
+              child: const Text('所有动作都改', style: TextStyle(color: Tokens.accent)),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (pick == null || pick.kg <= 0) return;
+    // ① 内存：这一趟训练立刻按新步进加减（不用退出重进）
+    c.setWeightStep(pick.kg);
+    // ② 库：由外壳写（仓库在外壳手里，训练屏只有瘦身过的控制器）
+    if (pick.all) {
+      await widget.onWeightStepAll?.call(pick.kg);
+    } else {
+      await widget.onWeightStepChanged?.call(c.exercise.id, pick.kg);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(pick.all
+            ? '所有动作的加重步进都改成 ±${trimNumber(pick.kg)} ${c.unit.wire}'
+            : '加重步进改成 ±${trimNumber(pick.kg)} ${c.unit.wire}'),
+      ),
+    );
+  }
+
   Widget _stepperRow({
     required String value,
     required String unit,
@@ -907,6 +1031,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     required String keyPlus,
     required VoidCallback onMinus,
     required VoidCallback onPlus,
+    /// 传了就把中间的步进做成**可点**的（点开改步进）。只有重量那一行传。
+    VoidCallback? onEditStep,
   }) {
     return Row(
       children: <Widget>[
@@ -919,6 +1045,33 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     color: Tokens.text3, fontSize: 17, fontWeight: FontWeight.w600)),
           ),
         const Spacer(),
+        if (onEditStep != null) ...<Widget>[
+          // 「步进」这一小枚就是入口 —— 它自己就写着当前幅度（±2.5），点开能改
+          GestureDetector(
+            key: const Key('step-weight-edit'),
+            onTap: onEditStep,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: 6),
+              decoration: BoxDecoration(
+                color: Tokens.surface,
+                borderRadius: BorderRadius.circular(Tokens.rPill),
+                border: Border.all(color: Tokens.line),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text('±$step',
+                      style: const TextStyle(
+                          color: Tokens.text2, fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.tune, size: 14, color: Tokens.text3),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: Tokens.s2),
+        ],
         _stepButton(keyMinus, '−$step', onMinus),
         const SizedBox(width: Tokens.s2),
         _stepButton(keyPlus, '+$step', onPlus),
@@ -945,4 +1098,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       ),
     );
   }
+}
+
+/// 步进对话框的结果：改成多少 + 范围（只这一个动作 / 所有动作）。
+class _StepPick {
+  const _StepPick(this.kg, {required this.all});
+  final double kg;
+  final bool all;
 }

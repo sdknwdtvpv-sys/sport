@@ -95,6 +95,40 @@ class ExerciseRepository {
         ..where((t) => t.id.equals(id) & t.deletedAt.isNull()))
       .getSingleOrNull();
 
+  // ── 加重步进（2026-10-09，10.9 清单第 8a 条）──────────────────────────────
+  //
+  // 步进本来是**种子数据**的一部分（哑铃 2、器械 5、杠铃 2.5…），用户改不动 ——
+  // 而有些健身房的片子只有 5 kg 一档，那种地方每个动作都要能用同一个步进。
+
+  /// 改**某一个动作**的加重步进（kg）。`0` 表示自重动作（界面不会给自重动作开这个入口）。
+  ///
+  /// ⚠️ 只动这一列：动作名、部位、说明都不碰 —— 它是"用户自己的偏好"，
+  /// 不是"编辑这个动作"（那两个入口在动作库里）。
+  Future<void> setWeightIncrement(String exerciseId, double kg, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    await (_db.update(_db.exercise)..where((t) => t.id.equals(exerciseId)))
+        .write(ExerciseCompanion(
+      weightIncrement: Value<double>(kg),
+      updatedAt: Value<int>(now),
+    ));
+  }
+
+  /// 把步进**铺到所有动作**上（设置页那个"应用到所有动作"）。
+  ///
+  /// ⚠️ 自重动作（`weight_increment == 0`）**跳过**：它们的 0 是"没有重量"的标记
+  /// （`ExerciseSpec.isBodyweight` 就认它），铺上 5 会把引体向上变成"能加 5 kg"的动作。
+  /// ⚠️ 已删除的也跳过：那是回收站里的东西。
+  Future<int> setAllWeightIncrements(double kg, {int? nowMs}) async {
+    final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    return (_db.update(_db.exercise)
+          ..where((t) =>
+              t.deletedAt.isNull() & t.weightIncrement.isBiggerThanValue(0)))
+        .write(ExerciseCompanion(
+      weightIncrement: Value<double>(kg),
+      updatedAt: Value<int>(now),
+    ));
+  }
+
   /// 已导入的内置动作数
   Future<int> builtinCount() async {
     final rows = await (_db.select(_db.exercise)

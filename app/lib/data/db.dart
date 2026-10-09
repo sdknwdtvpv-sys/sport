@@ -275,6 +275,14 @@ class UserProfile extends Table {
   /// 政策里对应的说法由 `docs/privacy-facts.json` 的 `healthSync` 与硬门禁对账。
   IntColumn get healthConsentAtMs => integer().nullable()();
 
+  /// **用户自己设的"默认加重步进"**（kg；null = 没设过 → 各动作用自己的）。
+  ///
+  /// 为什么要有它（2026-10-09，用户 10.9 清单第 8a 条「加重量的选项能否自定义」）：
+  /// 步进本来只来自动作自己的 `weight_increment`（哑铃 2、器械 5、杠铃 2.5…），
+  /// 而**有些健身房的片子只有 5 kg 一档** —— 那种地方每个动作都要手改一次步进是不现实的。
+  /// 所以：设一次全局默认 → 用它铺到所有动作上；单个动作仍可在训练屏里单独改（那个更优先）。
+  RealColumn get defaultWeightIncrement => real().nullable()();
+
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
 
@@ -598,8 +606,10 @@ class AppDatabase extends _$AppDatabase {
   /// v25（2026-10-09）：`user_profile` +`health_consent_at_ms`（**从系统健康库读取体成分**
   /// 的单独同意时刻）。**加列**，老库升上来是 null = 从没同意过 = 一次都没读过 ——
   /// 那正是准确的历史：这个功能出现之前，这台设备没读过任何健康库里的东西。
+  /// v26（2026-10-09）：`user_profile` +`default_weight_increment`（用户自己设的默认加重步进）。
+  /// **加列**，老库升上来是 null = 没设过 → 各动作仍用自己的步长（现状不变）。
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -847,6 +857,13 @@ class AppDatabase extends _$AppDatabase {
           // 所以迁移里要先看库里有没有它（无条件 addColumn 会 `duplicate column name`）。
           if (from < 25) {
             await addIfMissing(userProfile, userProfile.healthConsentAtMs);
+          }
+
+          // v25 → v26：`user_profile` 加一列「用户自己设的默认加重步进」。
+          // **只加列**，老库升上来是 null = 没设过 —— 那正是准确的历史：
+          // 在这之前，步进只可能来自动作自己（种子里的 2 / 2.5 / 5）。
+          if (from < 26) {
+            await addIfMissing(userProfile, userProfile.defaultWeightIncrement);
           }
         },
       );

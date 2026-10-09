@@ -961,6 +961,16 @@ class _HomeShellState extends State<HomeShell> {
           ],
           store: _store,
           onSwapExercise: swapCurrentExercise,
+          // 改加重步进（10.9 清单第 8a 条）：写在**这个动作自己**身上 ——
+          // 下次进来还是它，别的动作不受影响（要一次铺到所有动作，去设置页那个开关）。
+          onWeightStepChanged: (String exerciseId, double kg) =>
+              _repo.setWeightIncrement(exerciseId, kg),
+          // 「所有动作都改」：铺到整个动作库 + 记成"你设的默认值"（设置页以后要显示它）。
+          // ⚠️ 自重动作在里面被跳过（`weight_increment == 0` 是"没有重量"的标记）。
+          onWeightStepAll: (double kg) async {
+            await _repo.setAllWeightIncrements(kg);
+            await _profile.setDefaultWeightIncrement(kg);
+          },
         ),
       ),
     );

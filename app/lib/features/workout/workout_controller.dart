@@ -319,8 +319,21 @@ class WorkoutController extends ChangeNotifier {
 
   /// 重量步进幅度：**用动作自己的步长**，不再写死 ±2.5。
   /// 种子里的步长有 2 / 5 / 2.5 / 0 四种（哑铃 2、器械 5…），写死会让用户改不动重量。
-  double get weightStep =>
-      exercise.weightIncrement > 0 ? exercise.weightIncrement : 2.5;
+  ///
+  /// 2026-10-09（10.9 清单第 8a 条「加重量的选项能否自定义」）：用户还能**当场改**它 ——
+  /// 改了之后先落在这个覆盖值上（这一趟训练立刻按新步进加减），由界面负责写库
+  /// （[setWeightStep] 只管内存，它不认识仓库 —— 与这个类一贯的边界一致）。
+  double get weightStep => _weightStepOverride ??
+      (exercise.weightIncrement > 0 ? exercise.weightIncrement : 2.5);
+
+  double? _weightStepOverride;
+
+  /// 用户在训练屏里把步进改成了 [kg]（kg，> 0）。界面同时负责持久化到那个动作上。
+  void setWeightStep(double kg) {
+    if (kg <= 0 || kg == _weightStepOverride) return;
+    _weightStepOverride = kg;
+    notifyListeners();
+  }
 
   /// 距离步进幅度：100 米。跑步机上最小刻度就是 0.1 km，
   /// 而再细（10 米）在长距离上要点太多次。

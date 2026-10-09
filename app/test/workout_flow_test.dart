@@ -175,6 +175,104 @@ void main() {
     await _teardown(tester, h);
   });
 
+  testWidgets('长按 → 点「步进」改幅度 → 加减按钮当场跟着变，并且回调写库那一边收到新值',
+      (WidgetTester tester) async {
+    // 2026-10-09（10.9 清单第 8a 条「加重量的选项能不能自定义」）：
+    // 步进本来是种子数据里写死的（哑铃 2 / 器械 5 / 杠铃 2.5），而有些健身房的片子
+    // 只有 5 kg 一档 —— 每个动作都要能当场改，改完这一趟立刻生效、下次进来还是它。
+    final _Harness h = _Harness();
+    final List<(String, double)> writes = <(String, double)>[];
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: WorkoutScreen(
+        session: WorkoutSession.single(h.controller),
+        onWeightStepChanged: (String id, double kg) async => writes.add((id, kg)),
+      ),
+    ));
+    await tester.pump();
+
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    // 入口就写着当前幅度
+    expect(find.byKey(const Key('step-weight-edit')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('step-weight-edit')));
+    await tester.pumpAndSettle();
+
+    // 档位是按单位给的；这个夹具是 kg。选完还要说清**范围**（只这个动作 / 所有动作）
+    await tester.tap(find.byKey(const Key('step-preset-5')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('step-apply-one')));
+    await tester.pumpAndSettle();
+
+    // ① 这一趟立刻生效：加减按钮上印的就是新幅度
+    expect(find.text('+5'), findsOneWidget);
+    expect(find.text('−5'), findsOneWidget);
+    // ② 传给了写库那一边（动作 id + 新步进）
+    expect(writes, <(String, double)>[(h.controller.exercise.id, 5.0)]);
+    // ③ 还没确定/记录：改步进本身**不能**产生一组记录
+    expect(h.controller.loggedSets, isEmpty);
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('长按 → 改步进 → 自定义一个数（1.25）也能用', (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    final List<(String, double)> writes = <(String, double)>[];
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: WorkoutScreen(
+        session: WorkoutSession.single(h.controller),
+        onWeightStepChanged: (String id, double kg) async => writes.add((id, kg)),
+      ),
+    ));
+    await tester.pump();
+
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('step-weight-edit')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('step-custom')), '1.25');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('step-apply-one')));
+    await tester.pumpAndSettle();
+
+    expect(writes, <(String, double)>[(h.controller.exercise.id, 1.25)]);
+    expect(find.text('+1.25'), findsOneWidget);
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('步进对话框选「所有动作都改」→ 走的是"铺到全库"那个回调（两个回调不会串）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    final List<(String, double)> one = <(String, double)>[];
+    final List<double> all = <double>[];
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: WorkoutScreen(
+        session: WorkoutSession.single(h.controller),
+        onWeightStepChanged: (String id, double kg) async => one.add((id, kg)),
+        onWeightStepAll: (double kg) async => all.add(kg),
+      ),
+    ));
+    await tester.pump();
+
+    await tester.longPress(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('step-weight-edit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('step-preset-2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('step-apply-all')));
+    await tester.pumpAndSettle();
+
+    expect(all, <double>[2.0], reason: '"所有动作都改"必须走全库那一个回调');
+    expect(one, isEmpty, reason: '不能顺手也写一遍单个动作（两边都写会互相盖）');
+
+    await _teardown(tester, h);
+  });
+
   testWidgets('长按 → 改重量 → 确定 → 记录：tap_count = 4，且新重量生效',
       (WidgetTester tester) async {
     final _Harness h = _Harness();
