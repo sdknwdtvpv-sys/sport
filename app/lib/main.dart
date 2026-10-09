@@ -727,7 +727,12 @@ class _HomeShellState extends State<HomeShell> {
           unit: _unit,
           // 10.8 清单第 8 条（用户选 A）：每周 ≤3 天 → 每个动作 4 组，≥4 天 → 3 组
           weeklyFrequency: await _profile.weeklyFrequency());
-      await _saveTodayPlan(plan: plan, date: date);
+      // ⚠️ **空清单不落库**（2026-10-09 真机冒烟抓到）：冷启动那一刻动作库可能还没导入完
+      // （`_importSeedQuietly` 与这一趟是并行的），于是 `planToday` 返回空 ——
+      // 而"空"一旦被记成"今天排过了"，首页就永远停在「今天还没有排动作」，
+      // 直到用户自己去点「换一批」。所以只有**真的排出了动作**才算排过。
+      // （用户把动作删光那条路走的是编辑器，它照样会写下"排过了"这个标记 —— 两件事不冲突。）
+      if (plan.isNotEmpty) await _saveTodayPlan(plan: plan, date: date);
       if (!mounted) return;
       setState(() {
         _todayDay = day;

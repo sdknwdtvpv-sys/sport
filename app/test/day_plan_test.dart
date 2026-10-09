@@ -260,11 +260,12 @@ void main() {
 
   // ── 整个 App：库里那份说了算 ─────────────────────────────────────────────
   group('整个 App', () {
-    Future<void> pumpApp(WidgetTester tester) async {
+    /// [seed] 只在"要伪造一个还没导入完的动作库"时才传（默认用 setUp 里那份真种子）。
+    Future<void> pumpApp(WidgetTester tester, {String? seed}) async {
       await ProfileRepository(db).setPrivacyConsent(nowMs: 1);
       await tester.pumpWidget(LianLeMeApp(
         database: db,
-        seedLoader: () async => seedJson,
+        seedLoader: () async => seed ?? seedJson,
       ));
       await tester.pumpAndSettle();
     }
@@ -283,6 +284,21 @@ void main() {
       expect(saved, isNotEmpty, reason: '首页显示的那份必须存下来，否则"改了没法存"');
       // 首页那块至少有 1 行 —— 而且它显示的就是库里那一份（同一次生成的）
       expect(find.byKey(const Key('today-plan-row-0')), findsOneWidget);
+
+      await teardown(tester);
+    });
+
+    testWidgets('★ 首启那一刻动作库还没导入完 → **空计划不许落库**（冒烟抓到的真 bug）',
+        (WidgetTester tester) async {
+      // 2026-10-09 真机冒烟抓到的：冷启动时 `_importSeedQuietly()` 与这一趟是并行的，
+      // `planToday` 可能返回空 —— 而"空"一旦被记成"今天排过了"，首页就永远停在
+      // 「今天还没有排动作」，直到用户自己去点「换一批」。
+      final String key = dayPlanKey(DateTime.now());
+      // 造出那个现场：**动作库是空的**（种子还没进来）
+      await pumpApp(tester, seed: '{"exercises": []}');
+
+      expect(await DayPlanRepository(db).hasPlan(key), isFalse,
+          reason: '一个动作都没排出来 = 还没排过，不许写下"排过了"这个标记');
 
       await teardown(tester);
     });

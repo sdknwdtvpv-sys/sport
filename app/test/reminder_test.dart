@@ -484,6 +484,9 @@ void main() {
         'android.permission.health.READ_WEIGHT',
         'android.permission.health.READ_BODY_FAT',
         'android.permission.health.READ_HEIGHT',
+        // ⚠️ **没有腰围**（2026-10-09 查清）：Health Connect 没有这一类数据、
+        // 也没有对应的读权限（`HealthPermissions` 里没有 WAIST）—— 只读三样。
+        // 腰围只有 iPhone 读得到（HealthKit 的 waistCircumference）。
       ], reason: '加一条"训练结束预告"不该多要任何权限 —— 它复用通知权限；'
           '加别的权限可以，但必须在这里显式登记（这几条就是穷举清单）');
 

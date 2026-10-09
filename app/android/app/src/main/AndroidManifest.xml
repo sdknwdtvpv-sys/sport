@@ -38,9 +38,10 @@
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
     <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
     <uses-permission android:name="android.permission.health.READ_HEIGHT" />
-    <!-- 腰围（2026-10-09，10.9 清单第 9 条）：与上面三样同属体成分、同一道同意门。
-         ⚠️ 同样只有读权限 —— 我们不往健康库里写任何东西。 -->
-    <uses-permission android:name="android.permission.health.READ_WAIST_CIRCUMFERENCE" />
+    <!-- ⚠️ **没有腰围**（2026-10-09 查清）：Health Connect **没有**这一类数据，
+         也没有对应的读权限 —— `HealthPermissions` 里 grep 不到任何 WAIST。
+         所以 Android 这一端只读三样；腰围只有 iPhone 那条路读得到（HealthKit 的
+         `waistCircumference`）。见 `docs/plan-health-sync.md` §八。 -->
 
     <application
         android:label="@string/app_name"

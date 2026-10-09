@@ -39,16 +39,18 @@ object HealthBridge {
   private const val DEFAULT_DAYS = 180
 
   /**
-   * 只读这四样（2026-10-09 起加了腰围）。心率 / 睡眠 / 运动**一律不申请**。
+   * 只读这三样。心率 / 睡眠 / 运动**一律不申请**。
    *
-   * ⚠️ 腰围与另外三样是**同一次请求、同一道同意门**：它在 Health Connect 里也归在
-   * 体成分那一类（`WaistCircumferenceRecord`），我们不为它单独弹一次授权。
+   * ⚠️ **没有腰围**（2026-10-09 查清）：Health Connect 里**没有**这一类数据 ——
+   * `HealthPermissions` 里 grep 不到任何 WAIST，也没有 `WaistCircumferenceRecord`。
+   * 所以"从系统健康库读腰围"这件事**只有 iPhone 做得到**（HealthKit 的
+   * `waistCircumference`），Android 这一端读三样，界面上的说法也跟着分平台。
+   * 见 `docs/plan-health-sync.md` §八。
    */
   private val READ_PERMISSIONS = arrayOf(
     "android.permission.health.READ_WEIGHT",
     "android.permission.health.READ_BODY_FAT",
     "android.permission.health.READ_HEIGHT",
-    "android.permission.health.READ_WAIST_CIRCUMFERENCE",
   )
 
   /** 与提醒那条通道的 `REQUEST_CODE`（4703）必须不同 —— 见 `MainActivity` 的分发。 */

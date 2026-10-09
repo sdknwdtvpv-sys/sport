@@ -22,10 +22,7 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 100,
-    "sub_tags": [
-      "股四头"
-    ]
+    "popularity": 100
   },
   {
     "id": "ex_front_squat",
@@ -48,10 +45,7 @@
     "default_weight_kg": 30,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62,
-    "sub_tags": [
-      "股四头"
-    ]
+    "popularity": 62
   },
   {
     "id": "ex_goblet_squat",
@@ -75,10 +69,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "哑铃抱在胸前，蹲时肘顺着膝盖内侧下去；这是最容易学好的蹲法。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "哑铃抱在胸前，蹲时肘顺着膝盖内侧下去；这是最容易学好的蹲法。"
   },
   {
     "id": "ex_smith_squat",
@@ -98,10 +89,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 58,
-    "instructions": "轨道固定，脚可以往前放一点保护膝盖；下蹲到底别让腰离开靠背。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "轨道固定，脚可以往前放一点保护膝盖；下蹲到底别让腰离开靠背。"
   },
   {
     "id": "ex_hack_squat",
@@ -122,10 +110,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 60,
-    "instructions": "背贴靠板、脚踩在踏板中前部，蹲到大腿接近水平；膝盖别锁死。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "背贴靠板、脚踩在踏板中前部，蹲到大腿接近水平；膝盖别锁死。"
   },
   {
     "id": "ex_box_squat",
@@ -147,10 +132,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "坐到箱子上停一下再起；箱子高度决定深度，也是学深蹲的好工具。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "坐到箱子上停一下再起；箱子高度决定深度，也是学深蹲的好工具。"
   },
   {
     "id": "ex_pause_squat",
@@ -172,10 +154,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 38,
-    "instructions": "蹲到底停 2 秒再起；停顿会暴露你平时借的那点弹力。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "蹲到底停 2 秒再起；停顿会暴露你平时借的那点弹力。"
   },
   {
     "id": "ex_bodyweight_squat",
@@ -199,10 +178,7 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "脚与肩同宽、膝盖顺脚尖方向，蹲到还能保持背直的最低点。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "脚与肩同宽、膝盖顺脚尖方向，蹲到还能保持背直的最低点。"
   },
   {
     "id": "ex_leg_press",
@@ -226,10 +202,7 @@
     "default_weight_kg": 60,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 88,
-    "sub_tags": [
-      "股四头"
-    ]
+    "popularity": 88
   },
   {
     "id": "ex_single_leg_press",
@@ -249,10 +222,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 42,
-    "instructions": "单腿踩在踏板中间，髋别跟着抬起来；重量比双腿小一半以上才正常。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "单腿踩在踏板中间，髋别跟着抬起来；重量比双腿小一半以上才正常。"
   },
   {
     "id": "ex_bulgarian_split_squat",
@@ -276,10 +246,7 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 70,
-    "sub_tags": [
-      "股四头"
-    ]
+    "popularity": 70
   },
   {
     "id": "ex_static_lunge",
@@ -300,10 +267,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 44,
-    "instructions": "前后脚站定不动，下沉到前腿大腿接近水平；起身靠前脚蹬，别用后脚借力。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "前后脚站定不动，下沉到前腿大腿接近水平；起身靠前脚蹬，别用后脚借力。"
   },
   {
     "id": "ex_walking_lunge",
@@ -328,10 +292,7 @@
     "default_weight_kg": 10,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 65,
-    "sub_tags": [
-      "股四头"
-    ]
+    "popularity": 65
   },
   {
     "id": "ex_reverse_lunge",
@@ -354,10 +315,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 48,
-    "instructions": "向后撤一步再下沉，前腿发力蹬回；比向前箭步更护膝。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "向后撤一步再下沉，前腿发力蹬回；比向前箭步更护膝。"
   },
   {
     "id": "ex_bb_lunge",
@@ -376,10 +334,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "杠铃放在上背，向前跨步下沉；前膝别越过脚尖太多。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "杠铃放在上背，向前跨步下沉；前膝别越过脚尖太多。"
   },
   {
     "id": "ex_lateral_lunge",
@@ -402,10 +357,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 38,
-    "instructions": "一侧跨出去蹲下，另一侧腿伸直；脚掌踩稳别内翻。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "一侧跨出去蹲下，另一侧腿伸直；脚掌踩稳别内翻。"
   },
   {
     "id": "ex_leg_extension",
@@ -427,10 +379,7 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 78,
-    "sub_tags": [
-      "股四头"
-    ]
+    "popularity": 78
   },
   {
     "id": "ex_single_leg_extension",
@@ -449,10 +398,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 34,
-    "instructions": "单腿伸膝到接近伸直；重量减半，别用惯性甩。",
-    "sub_tags": [
-      "股四头"
-    ]
+    "instructions": "单腿伸膝到接近伸直；重量减半，别用惯性甩。"
   },
   {
     "id": "ex_lying_leg_curl",
@@ -474,10 +420,7 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 76,
-    "sub_tags": [
-      "腘绳"
-    ]
+    "popularity": 76
   },
   {
     "id": "ex_seated_leg_curl",
@@ -497,10 +440,7 @@
     "default_weight_kg": 25,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62,
-    "sub_tags": [
-      "腘绳"
-    ]
+    "popularity": 62
   },
   {
     "id": "ex_rdl",
@@ -524,10 +464,7 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 85,
-    "sub_tags": [
-      "腘绳"
-    ]
+    "popularity": 85
   },
   {
     "id": "ex_stiff_leg_deadlift",
@@ -550,10 +487,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 58,
-    "instructions": "膝微屈基本不动，靠髋向后推把杠铃放低；背一旦弓起就停。",
-    "sub_tags": [
-      "腘绳"
-    ]
+    "instructions": "膝微屈基本不动，靠髋向后推把杠铃放低；背一旦弓起就停。"
   },
   {
     "id": "ex_single_leg_rdl",
@@ -576,10 +510,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "支撑腿微屈，另一条腿随身体一起向后伸；髋正对地面别打开。",
-    "sub_tags": [
-      "腘绳"
-    ]
+    "instructions": "支撑腿微屈，另一条腿随身体一起向后伸；髋正对地面别打开。"
   },
   {
     "id": "ex_hip_thrust",
@@ -602,10 +533,7 @@
     "default_weight_kg": 40,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 80,
-    "sub_tags": [
-      "臀"
-    ]
+    "popularity": 80
   },
   {
     "id": "ex_machine_hip_thrust",
@@ -625,10 +553,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 46,
-    "instructions": "上背贴垫、下巴微收，顶峰把臀夹紧；别靠腰过伸顶上去。",
-    "sub_tags": [
-      "臀"
-    ]
+    "instructions": "上背贴垫、下巴微收，顶峰把臀夹紧；别靠腰过伸顶上去。"
   },
   {
     "id": "ex_glute_bridge",
@@ -648,10 +573,7 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 50,
-    "instructions": "脚踩实、先收腹再顶髋，顶峰夹紧臀；用腰把身体顶起来是常见错。",
-    "sub_tags": [
-      "臀"
-    ]
+    "instructions": "脚踩实、先收腹再顶髋，顶峰夹紧臀；用腰把身体顶起来是常见错。"
   },
   {
     "id": "ex_weighted_glute_bridge",
@@ -671,10 +593,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 36,
-    "instructions": "髋上放杠铃，顶峰夹紧臀；靠腰过伸顶起来是常见错。",
-    "sub_tags": [
-      "臀"
-    ]
+    "instructions": "髋上放杠铃，顶峰夹紧臀；靠腰过伸顶起来是常见错。"
   },
   {
     "id": "ex_single_leg_glute_bridge",
@@ -694,10 +613,7 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 35,
-    "instructions": "一条腿撑地、另一条抬起，顶髋夹臀；髋别歪。",
-    "sub_tags": [
-      "臀"
-    ]
+    "instructions": "一条腿撑地、另一条抬起，顶髋夹臀；髋别歪。"
   },
   {
     "id": "ex_hip_abduction",
@@ -720,10 +636,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "上身别后仰，用臀外侧把腿推开；推开后停一下再慢慢合回来。",
-    "sub_tags": [
-      "臀"
-    ]
+    "instructions": "上身别后仰，用臀外侧把腿推开；推开后停一下再慢慢合回来。"
   },
   {
     "id": "ex_hip_adduction",
@@ -746,11 +659,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "上身别后仰，用大腿内侧把腿夹回来；慢慢回放，别让它自己弹回去。",
-    "sub_tags": [
-      "臀",
-      "内收"
-    ]
+    "instructions": "上身别后仰，用大腿内侧把腿夹回来；慢慢回放，别让它自己弹回去。"
   },
   {
     "id": "ex_standing_calf_raise",
@@ -771,10 +680,7 @@
     "default_weight_kg": 40,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 72,
-    "sub_tags": [
-      "小腿"
-    ]
+    "popularity": 72
   },
   {
     "id": "ex_seated_calf_raise",
@@ -793,10 +699,7 @@
     "default_weight_kg": 30,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 62,
-    "sub_tags": [
-      "小腿"
-    ]
+    "popularity": 62
   },
   {
     "id": "ex_leg_press_calf_raise",
@@ -815,11 +718,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 45,
-    "instructions": "前脚掌踩在踏板边缘，脚跟下沉到有拉伸再顶起；膝盖别锁死。",
-    "sub_tags": [
-      "股四头",
-      "小腿"
-    ]
+    "instructions": "前脚掌踩在踏板边缘，脚跟下沉到有拉伸再顶起；膝盖别锁死。"
   },
   {
     "id": "ex_single_leg_calf_raise",
@@ -841,10 +740,7 @@
     "weight_increment": 0,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "前脚掌踩实、单腿顶到最高；扶墙只为平衡，别用手帮忙。",
-    "sub_tags": [
-      "小腿"
-    ]
+    "instructions": "前脚掌踩实、单腿顶到最高；扶墙只为平衡，别用手帮忙。"
   },
   {
     "id": "ex_smith_calf_raise",
@@ -863,10 +759,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "轨道固定，前脚掌踩稳、脚跟先下沉再顶起；膝盖别锁死。",
-    "sub_tags": [
-      "小腿"
-    ]
+    "instructions": "轨道固定，前脚掌踩稳、脚跟先下沉再顶起；膝盖别锁死。"
   },
   {
     "id": "ex_bb_ohp",
@@ -893,10 +786,7 @@
     "default_weight_kg": 25,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 90,
-    "sub_tags": [
-      "前束"
-    ]
+    "popularity": 90
   },
   {
     "id": "ex_seated_bb_press",
@@ -918,10 +808,7 @@
     "default_weight_kg": 25,
     "weight_increment": 2.5,
     "is_builtin": 1,
-    "popularity": 62,
-    "sub_tags": [
-      "前束"
-    ]
+    "popularity": 62
   },
   {
     "id": "ex_db_shoulder_press",
@@ -945,10 +832,7 @@
     "default_weight_kg": 8,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 92,
-    "sub_tags": [
-      "前束"
-    ]
+    "popularity": 92
   },
   {
     "id": "ex_single_arm_db_press",
@@ -968,10 +852,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "单手往上推，核心抗住身体往一侧倒；另一侧别帮忙。",
-    "sub_tags": [
-      "前束"
-    ]
+    "instructions": "单手往上推，核心抗住身体往一侧倒；另一侧别帮忙。"
   },
   {
     "id": "ex_arnold_press",
@@ -994,10 +875,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 60,
-    "instructions": "从掌心朝自己旋到朝前，画弧推起；重量要比普通推举小一档。",
-    "sub_tags": [
-      "前束"
-    ]
+    "instructions": "从掌心朝自己旋到朝前，画弧推起；重量要比普通推举小一档。"
   },
   {
     "id": "ex_smith_shoulder_press",
@@ -1017,10 +895,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 50,
-    "instructions": "坐稳靠背，杠铃下到下巴附近；轨道固定，适合新手找推举路线。",
-    "sub_tags": [
-      "前束"
-    ]
+    "instructions": "坐稳靠背，杠铃下到下巴附近；轨道固定，适合新手找推举路线。"
   },
   {
     "id": "ex_machine_shoulder_press",
@@ -1042,10 +917,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 58,
-    "instructions": "背贴靠板、肘略在身前，推到手臂接近伸直；别让肩往前顶。",
-    "sub_tags": [
-      "前束"
-    ]
+    "instructions": "背贴靠板、肘略在身前，推到手臂接近伸直；别让肩往前顶。"
   },
   {
     "id": "ex_handstand_push_up",
@@ -1093,10 +965,7 @@
     "default_weight_kg": 5,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 95,
-    "sub_tags": [
-      "中束"
-    ]
+    "popularity": 95
   },
   {
     "id": "ex_cable_lateral_raise",
@@ -1116,10 +985,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 55,
-    "instructions": "绳索从身后过来，抬到手与肩平就停；耸肩说明重量太大。",
-    "sub_tags": [
-      "中束"
-    ]
+    "instructions": "绳索从身后过来，抬到手与肩平就停；耸肩说明重量太大。"
   },
   {
     "id": "ex_machine_lateral_raise",
@@ -1139,10 +1005,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 48,
-    "instructions": "肘微屈、抬到肩高，让把手带着走；别用惯性甩。",
-    "sub_tags": [
-      "中束"
-    ]
+    "instructions": "肘微屈、抬到肩高，让把手带着走；别用惯性甩。"
   },
   {
     "id": "ex_single_arm_cable_lateral",
@@ -1161,10 +1024,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 42,
-    "instructions": "绳索从身后过来，单臂抬到肩高；躯干别晃，另一侧别帮忙。",
-    "sub_tags": [
-      "中束"
-    ]
+    "instructions": "绳索从身后过来，单臂抬到肩高；躯干别晃，另一侧别帮忙。"
   },
   {
     "id": "ex_lean_away_lateral",
@@ -1185,10 +1045,7 @@
     "weight_increment": 2,
     "is_builtin": 1,
     "popularity": 38,
-    "instructions": "扶住固定物斜着身体，让重量落在身体前方；中束全程有张力。",
-    "sub_tags": [
-      "中束"
-    ]
+    "instructions": "扶住固定物斜着身体，让重量落在身体前方；中束全程有张力。"
   },
   {
     "id": "ex_smith_lateral_raise",
@@ -1207,10 +1064,7 @@
     "weight_increment": 5,
     "is_builtin": 1,
     "popularity": 32,
-    "instructions": "轨道固定，抬到肩高就停；重量小一点，别靠耸肩。",
-    "sub_tags": [
-      "中束"
-    ]
+    "instructions": "轨道固定，抬到肩高就停；重量小一点，别靠耸肩。"
   },
   {
     "id": "ex_db_front_raise",
@@ -1232,10 +1086,7 @@
     "default_weight_kg": 6,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 72,
-    "sub_tags": [
-      "前束"
-    ]
+    "popularity": 72
   },
   {
     "id": "ex_bb_front_raise",
@@ -1254,10 +1105,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 48,
-    "instructions": "抬到肩高就停，别用腰甩；重量小一点，前束很容易被中束抢走。",
-    "sub_tags": [
-      "前束"
-    ]
+    "instructions": "抬到肩高就停，别用腰甩；重量小一点，前束很容易被中束抢走。"
   },
   {
     "id": "ex_cable_front_raise",
@@ -1277,10 +1125,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 44,
-    "instructions": "绳索从身后过来，抬到肩高就停；全程肘别弯太多。",
-    "sub_tags": [
-      "前束"
-    ]
+    "instructions": "绳索从身后过来，抬到肩高就停；全程肘别弯太多。"
   },
   {
     "id": "ex_single_arm_cable_front",
@@ -1299,10 +1144,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 34,
-    "instructions": "单手抬到肩高，躯干别后仰；另一侧别帮忙。",
-    "sub_tags": [
-      "前束"
-    ]
+    "instructions": "单手抬到肩高，躯干别后仰；另一侧别帮忙。"
   },
   {
     "id": "ex_bent_over_db_fly",
@@ -1325,10 +1167,7 @@
     "default_weight_kg": 5,
     "weight_increment": 2,
     "is_builtin": 1,
-    "popularity": 78,
-    "sub_tags": [
-      "后束"
-    ]
+    "popularity": 78
   },
   {
     "id": "ex_bent_over_cable_fly",
@@ -1350,10 +1189,7 @@
     "weight_increment": 2.5,
     "is_builtin": 1,
     "popularity": 40,
-    "instructions": "俯身、手臂微屈向外展开像飞鸟；用三角后束发力，别耸肩。",
-    "sub_tags": [
-      "后束"
-    ]
+    "instructions": "俯身、手臂微屈向外展开像飞鸟；用三角后束发力，别耸肩。"
   },
   {
     "id": "ex_reverse_pec_deck",
@@ -1377,10 +1213,7 @@
     "default_weight_kg": 15,
     "weight_increment": 5,
     "is_builtin": 1,
-    "popularity": 66,
-    "sub_tags": [
-      "后束"
-    ]
+    "popularity": 66
   },
   {
     "id": "ex_upright_row",

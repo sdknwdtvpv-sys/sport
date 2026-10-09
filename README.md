@@ -1,6 +1,6 @@
 # 练了么
 
-**v1.65.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
+**v1.66.0** · [![CI](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml/badge.svg)](https://github.com/sdknwdtvpv-sys/sport/actions/workflows/ci.yml)
 
 > 训记的竞品。不靠功能更多取胜，靠**把"记录一组"的成本压到 1 次点击**，并让"今天练什么"不需要用户自己想。
 >
@@ -393,7 +393,7 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | 真机上装的是 **v1.65.0**（`versionCode 80`，2026-10-09 出的包：**从系统健康库读体成分** —— iPhone 走 HealthKit，安卓 14+ 走平台自带的 Health Connect）；Redmi `75caf509` 走 `adb install -r dist/练了么-v1.65.0.apk`、iPhone 17 Pro 走 `tool/ios-device-run.sh`，两边的版本都是当场读出来的（`dumpsys` / `devicectl` 各自读到 `1.65.0 / 80`）| **还没做的**是在真机上把功能**实际用一遍**（`ROADMAP.md` 阶段 2 那 5 条标准）。⚠️ 装的这一步以前卡过：**Xcode 里点运行编不过**，原因**不是账号掉了**（账号一直在、证书有效期到 2027-10-04），而是工程里刻意没写 `DEVELOPMENT_TEAM`、免费个人团队只能签 `.dev` 那个 bundle id —— 真机装包走那条脚本（临时换 id + 写 Team，装完自动改回）|
+| 🚧 **真机交互验收** | 真机上装的是 **v1.66.0**（**Redmi `75caf509`**，`versionCode 81`：2026-10-09 晚 `adb install -r dist/练了么-v1.66.0.apk` → `Success`，`dumpsys` 读到 `1.66.0 / 81`，冷启动 `E/flutter` 0 条）；界面走查是在**安卓 16 模拟器**上用同一份 release APK 做的（当天 Redmi 锁着屏、adb 点不进去）—— 看了底栏正中图标、首页「今天的安排」、长按进「调整今天的安排」、动作库的细分标签筛选。⚠️ **iPhone 17 Pro 那台仍是 1.65.0（80）**：`tool/ios-device-run.sh` 卡在签名上（Xcode 报 `No Accounts`、那张免费证书 `revoked or expired`，重新登录一次 Apple ID 即可重试） | **还没做的**是在真机上把功能**实际用一遍**（`ROADMAP.md` 阶段 2 那 5 条标准） |
 | ✅ ~~v1 → v2 迁移的真机验证~~（已在真机过） | 真机里原本是 `v1.0.0` 留下的**老库**，直接覆盖安装 `v1.2.0`（`schemaVersion` 1 → 3）后，`onUpgrade` 跑完、**数据一条没丢**（冷启动读回 12 组） | 这是"老库升级必须真机过一次"的实测通过 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |

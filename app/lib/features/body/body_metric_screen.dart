@@ -42,12 +42,24 @@ import '../../health/health_sync.dart';
 /// 那种时候告诉安卓用户"去 iPhone 的健康 App 里看看"就是一句**假话**。
 /// 抽成纯函数还顺带能被单测直接钉住两个分支，不用去伪装平台。
 String healthEmptyHint(TargetPlatform platform) => platform == TargetPlatform.iOS
-    ? '健康库里没有找到体重、体脂率或身高、腰围。\n\n'
+    ? '健康库里没有找到体重、体脂率、身高或腰围。\n\n'
         '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
         '可以去 iPhone 的「健康」App 里看看有没有数据。'
-    : '健康库里没有找到体重、体脂率或身高、腰围。\n\n'
+    : '健康库里没有找到体重、体脂率或身高。\n\n'
         '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
         '可以到系统里的「健康连接 / Health Connect」里看看有没有数据。';
+
+/// **「从系统健康同步」读的是哪几样**（2026-10-09，10.9 清单第 9 条）。
+///
+/// ⚠️ 两端**不一样**，而且这是事实、不是偷懒：Health Connect（Android 14+ 平台自带那个）
+/// **没有腰围这一类数据**，也没有对应的读权限 —— 我们在 android-36 的 `HealthPermissions`
+/// 里 grep 过，一个 WAIST 都没有（构建时也当场红过一次：照着"应该有个
+/// WaistCircumferenceRecord"写，Kotlin 直接编不过）。所以：
+///   * iPhone（HealthKit）：体重、体脂率、身高、**腰围**；
+///   * Android：体重、体脂率、身高。
+/// 界面上的小字与同意框正文都走这个函数 —— 一条写死的"四样"在 Android 上就是假话。
+String healthReadSummary(TargetPlatform platform) =>
+    platform == TargetPlatform.iOS ? '体重、体脂率、身高、腰围' : '体重、体脂率、身高';
 
 /// 「没拿到许可」该去哪儿打开 —— 同上，两端的设置路径根本不是同一条。
 String healthDeniedHint(TargetPlatform platform) => platform == TargetPlatform.iOS
@@ -325,10 +337,12 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
         backgroundColor: Tokens.surface,
         title: const Text('读系统健康库要单独征得你同意',
             style: TextStyle(color: Tokens.text)),
-        content: const Text(
+        content: Text(
           // ⚠️ 这里同样**不能**写 markdown 的星号：`Text` 不渲染 markdown。
+          // ⚠️ 读哪几样**分平台**（Android 读不到腰围，见 [healthReadSummary]）——
+          // 写死"四样"在 Android 上就是假话。
           '「系统健康库」就是 iPhone 上那个「健康」App。这里读的只有'
-          '体重、体脂率、身高、腰围四样（都是体成分）——'
+          '${healthReadSummary(Theme.of(context).platform)}（都是体成分）——'
           '心率、睡眠、运动记录一次都不读，也不申请。\n\n'
           '· 只读，不写回：我们一个字都不会写进你的健康库；\n'
           '· 按《个人信息保护法》，这几样属于敏感个人信息，要单独征求你的同意 —— '
@@ -509,7 +523,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         style: TextStyle(color: Tokens.text, fontSize: 15)),
                     const SizedBox(height: 2),
                     Text(
-                      '只读体重、体脂率、身高、腰围 · 可选',
+                      '只读${healthReadSummary(Theme.of(context).platform)} · 可选',
                       style: TextStyle(color: Tokens.text3, fontSize: 12),
                     ),
                   ],

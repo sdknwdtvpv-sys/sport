@@ -249,7 +249,7 @@ Health Connect 的 `WaistCircumferenceRecord`），而本机 `body_metric.waist_
 | Dart 同步 | `health_sync.dart` 按天分组时多一个 `waistByDay`；`HealthDayValues.waistCm` |
 | 合并 | `mergeHealthDays`：**我们的字段不覆盖，只补缺的**（那一列以前恒为 null，现在真的写）；"那天只有腰围"也算有内容 → 会建一条 |
 | iOS | `readTypes` 加 `.waistCircumference`；查询用 `HKUnit.meterUnit(with: .centi)`（与库里 cm 同单位） |
-| Android | 权限 `android.permission.health.READ_WAIST_CIRCUMFERENCE`（**只读**，manifest + `READ_PERMISSIONS` 两处）；`WaistCircumferenceRecord` 查询 |
+| Android | ⚠️ **读不到** —— 见下面那段"被构建打回来的一次" |
 | 合规 | 中英政策 §2.4 + 权限表各加一行；`privacy-facts.json` 加一条权限事实；重新生成 `app/assets/privacy-policy.txt` 与收集清单、公网政策页 |
 | 界面 | 「从系统健康同步」那一行的小字、同意框正文、空态提示都从"三样"改成"四样" |
 
@@ -257,7 +257,46 @@ Health Connect 的 `WaistCircumferenceRecord`），而本机 `body_metric.waist_
 `health_sync_test` 新增三条 —— 腰围按字段各取最新、**只量了腰围的那天也要建记录**、
 用户自己记过的腰围**不许被覆盖**（"我们的字段不覆盖，只补缺的"）。
 
-⚠️ **还没验的**：真机上从健康库读到腰围（与另外三样同一件没验的事，见 §七末段）。
+### ⚠️ 被构建打回来的一次：**Android 读不到腰围**（2026-10-09，值得记下来）
+
+上表原来写的是"Android 加一条 `READ_WAIST_CIRCUMFERENCE` + 查 `WaistCircumferenceRecord`"，
+依据是"两端的健康库里腰围都归在体成分"。**那是我的推测，不是事实** ——
+`flutter build apk --release` 当场红：
+
+```
+e: HealthConnectApi34.kt:12:41 Unresolved reference 'WaistCircumferenceRecord'.
+```
+
+顺着查了两处，都指向同一件事：
+
+* `android-36` 的 `android.jar` 里 `android/health/connect/datatypes/` 下**没有**任何
+  Waist 类（只有 WeightRecord / BodyFatRecord / HeightRecord / BoneMassRecord…）；
+* `android.health.connect.HealthPermissions` 的常量表里**没有任何 WAIST**
+  （`javap` 打出来 30 多条 READ_*，READ_WEIGHT / READ_HEIGHT 在，WAIST 一个都没有）。
+
+也就是说：**Health Connect 没有"腰围"这一类数据**，Android 这一端根本读不到它 ——
+只有 HealthKit（iOS）有 `waistCircumference`。
+
+于是这一条的落地形状变成**两端不一样，而且界面上也这么说**：
+
+| | 读哪几样 |
+|---|---|
+| iPhone | 体重、体脂率、身高、**腰围** |
+| Android | 体重、体脂率、身高（**三样**） |
+
+* manifest 与 `READ_PERMISSIONS` 都**没有**加那条不存在的权限（加了就是一条假声明，
+  `test/reminder_test.dart` 的穷举清单也会红 —— 它本来就该红）；
+* 界面上的小字与同意框正文走新的纯函数 `healthReadSummary(TargetPlatform)`
+  （与 `healthEmptyHint` 同一套做法）：Android 上写"三样"，不写腰围；
+* 中英政策 §2.4 改成**分平台**写清哪几样，权限表里删掉那一条；
+* `privacy-facts.json` 里那条权限事实也删掉（事实源不能留一条代码里没有的权限）。
+
+**教训**（与仓库里其它"猜 vs 查"的教训同源）：**"另一个平台大概也有"不是一条事实**。
+两端的能力表都要**从 SDK 里读出来**再写——这次是构建帮忙拦住的，而它拦住的原因
+恰好是"编译不过"；如果那边只是"权限名写错、编译能过"，就会一路进到用户的手机里。
+
+⚠️ **还没验的**：真机上从健康库读到腰围（**只有 iPhone 有这条路**；与另外三样同一件没验的事，
+见 §七末段）。
 
 ## 九、静息心率 / 睡眠 / 步数：方案与**合规代价**（2026-10-09，待拍板）
 

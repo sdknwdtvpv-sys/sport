@@ -46,6 +46,8 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+// 细分标签的规则只有一处（那边也解释了为什么必须共享：这份文件是生成物）
+import { subTagsFor } from '../seed/sub-tags.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -370,6 +372,15 @@ for (const i of items) {
     process.exit(1);
   }
   seenZh.add(i.name);
+}
+
+// 按共享规则打细分标签（2026-10-09，10.9 清单第 7 条）——
+// ⚠️ 必须在**这里**打，不能靠手写进这份生成物：`--check` 会拿上游快照重新生成一遍
+// 再逐字节比对，手写的那一份必然对不上。
+for (const it of items) {
+  const tags = subTagsFor(it);
+  if (tags.length > 0) it.sub_tags = tags;
+  else delete it.sub_tags;
 }
 
 items.sort((a, b) => a.id.localeCompare(b.id));

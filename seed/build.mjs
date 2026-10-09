@@ -14,6 +14,7 @@
  */
 import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { SUB_TAGS, subTagsFor } from './sub-tags.mjs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -55,22 +56,10 @@ const CATEGORIES = ['strength', 'warmup', 'cardio', 'stretch'];
 const TRACK_TYPES = [
   'weight_reps', 'reps_only', 'time', 'weight_time', 'distance_time', 'assisted_reps',
 ];
-// **细分标签**（2026-10-09，10.9 清单第 7 条「按肌群细分搜动作（上胸、中缝…）」）。
-//
-// 主部位只有 6 个（chest/back/…），而用户嘴里的"今天练上胸"落不到任何一个筛选上 ——
-// 选择器只能按"胸"筛。这一列是**用户能说出口的那个粒度**：
-//   * 只给 strength 类动作打（热身/拉伸谈"上胸"没有意义）；
-//   * 每个标签**必须属于它自己的主部位**（"上胸"不能出现在背的动作上）——
-//     否则筛选出来的东西是错的，比没有标签更糟；
-//   * 允许为空：标签是**内容债**，宁可没有也不要猜（`tool/content-report.mjs` 会算覆盖率）。
-const SUB_TAGS = {
-  chest: ['上胸', '下胸', '中缝'],
-  back: ['背阔', '上背', '下背', '斜方'],
-  shoulders: ['前束', '中束', '后束'],
-  arms: ['肱二头', '肱三头', '前臂'],
-  legs: ['股四头', '腘绳', '臀', '小腿', '内收'],
-  core: ['上腹', '下腹', '侧腹'],
-};
+// 细分标签（2026-10-09，10.9 清单第 7 条「按肌群细分搜动作」）：
+// **词表与规则都在 `seed/sub-tags.mjs`**（那边还解释了为什么必须共享 ——
+// `04-from-upstream.json` 是生成物，手写进去的标签会被下一次生成冲掉）。
+// 这里只负责"给每个动作打上 + 校验 + 打印覆盖率"。
 const REST_MIN = 30;
 const REST_MAX = 300;
 
@@ -88,6 +77,17 @@ for (const f of files) {
     const { exercises: _ignored, ...rest } = data;
     meta = { ...meta, ...rest };
   }
+}
+
+// ---------- 1.5 细分标签：按规则打上（先打标，再校验）----------
+//
+// ⚠️ **不读 parts 文件里手写的 `sub_tags`**：04-from-upstream.json 是生成物，
+// 手写的那一份会在下一次 `add-upstream-exercises.mjs` 生成时被冲掉，
+// 于是"本地能过、CI 红"。规则是唯一来源，覆盖不到的地方留空（宁可没有也不猜）。
+for (const e of exercises) {
+  const tags = subTagsFor(e);
+  if (tags.length > 0) e.sub_tags = tags;
+  else delete e.sub_tags;
 }
 
 // ---------- 2. 校验 ----------

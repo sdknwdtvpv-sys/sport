@@ -24,7 +24,7 @@
 |---|---|---|---|
 | **0** | 钉住工程：git + CI 真跑起来 | ✅ 完成 | — |
 | **1** | 数据活过重启（接 drift） | ✅ 完成（**真机已验证**：覆盖安装后冷启动读回 12 组） | — |
-| **2** | 装到真机 | ✅ **两台都**已装 `v1.65.0`（`versionCode 80`；2026-10-09 出的包 = 从系统健康库读体成分（iOS + Android 14+）+ 之前那几批）。Redmi `75caf509`：`adb install -r` → `Success`，`dumpsys` 读到 `1.65.0 / 80`，冷启动 `E/flutter` 0 条；iPhone 17 Pro：`tool/ios-device-run.sh` → `BUILD SUCCEEDED` → `App installed` → 拉起成功，`devicectl` 读到 `1.65.0 / 80` | —（两台都装上了） |
+| **2** | 装到真机 | ✅ 已装 `v1.66.0`（安卓那台 Redmi `75caf509`，`versionCode 81`；2026-10-09 晚 `adb install -r` → `Success`、`dumpsys` 读到 `1.66.0 / 81`、冷启动 `E/flutter` 0 条），并在安卓 16 模拟器上用同一份 release APK 走了界面（底栏图标 / 今天的安排 / 长按编辑 / 细分标签筛选）。⚠️ **iPhone 17 Pro 那台仍是 1.65.0（80）**：签名那一步被 Xcode 挡住（`No Accounts` + 证书 `revoked or expired`） | iPhone 那台：重新登录 Xcode 里的 Apple ID（然后 `tool/ios-device-run.sh` 重跑一次） |
 | **3** | **自己去练一次**（带手机去健身房） | ⬜ 未开始（真机走查已做：有氧记录 / 单位切换 / 升级迁移都确认过） | 只能人做 |
 | **4** | 铺 UI 屏 | ✅ **S1–S13 全部落地**（S15 已并入 S10） | S14 未做（需支付基建，已明确砍掉） |
 | **5** | **正式**可用性测试（5 人） | 🟡 **2026-10-05 降级为"建议做、不阻塞上架"**：`tap_count` 的门槛改由**熟人短测**定（3–5 个熟人、每人 5 分钟、半天做完，口径见 `docs/usability-test-kit.md` §A） | 你（短测占半天）。这 5 场仍建议做 —— 它答的是短测答不了的（T1 是否 90 秒零提示 / Q3 选谁 / 对照差值） |

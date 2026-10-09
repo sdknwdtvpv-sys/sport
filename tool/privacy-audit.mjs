@@ -946,7 +946,13 @@ function selftest() {
   const cases = [
     ['现状（真文件）不该有错', err({}), 0],
     ['中文政策漏了「腰围」要报', err({ policy: policy.split('腰围').join('围度') }), 1],
-    ['英文政策漏了 waist 要报', err({ enText: enText.split('waist').join('girth') }), 1],
+    // ⚠️ 替换必须是**不区分大小写**的：审计本身比对英文政策就是大小写无关的
+    // （理由见 `checkSensitiveFields` 里那条注释 —— 同一个词句首会大写）。
+    // 2026-10-09 抓到：政策里出现了一处句首的「Waist」之后，这条自检的
+    // `split('waist')` 只换掉了小写的那些，剩下大写的那处让审计照样过 ——
+    // 于是"自检说抓得住"变成了一句谎话（这正是自检要防的那种事）。
+    ['英文政策漏了 waist 要报',
+      err({ enText: enText.replace(/waist/gi, 'girth') }), 1],
     ['库里没有 waistCm 要报',
       err({ dbSrc: dbSrc.split('get waistCm').join('get waistCmX') }), 1],
     ['fields 整个丢了要报', err({ fields: undefined }), 1],

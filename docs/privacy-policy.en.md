@@ -175,12 +175,15 @@ circumference — written there by a smart-scale app, or by a clinic report. An 
 "Body data" screen can merge them in, by day, **read-only**, so you do not have to copy the numbers
 across by hand.
 
-- **What we read**: body weight, body fat percentage, height and waist circumference (all body
-  composition). Heart rate, sleep, workouts and steps are **never read** and never requested.
-  ⚠️ **Waist circumference has been included since 2026-10-09** (Android permission
-  `android.permission.health.READ_WAIST_CIRCUMFERENCE`); it shares the same consent gate and the same
-  single read as the other three, with no second gate — in both system health stores it belongs to
-  the body-composition category;
+- **What we read differs by platform** (verified 2026-10-09):
+  * **iPhone**: body weight, body fat percentage, height and **waist circumference** (four values,
+    all body composition);
+  * **Android**: body weight, body fat percentage and height (**three values**).
+    ⚠️ Waist circumference **cannot be read on Android** — the platform's Health Connect has no such
+    data type and no matching read permission (we checked the system's own `HealthPermissions`; there
+    is no WAIST entry at all). We do not list a permission we cannot use, and the line in the app
+    says which platform reads what.
+  Heart rate, sleep, workouts and steps are **never read** and never requested;
 - **Read-only — we never write back**: we request read access only and place nothing into your health store;
 - These values are **sensitive personal information**, so this needs your **separate consent** — and it is
   a **different** consent from the body-metrics one: that one covers "we record your weight on this phone",
@@ -357,7 +360,6 @@ store** (see 2.4): **only on Android 14 and above, and read-only**:
 | `android.permission.health.READ_WEIGHT` | Reading **body weight** from the system health store (the Health Connect built into Android 14+) into the on-device body-data page (see 2.4) | **Android 14 and above only**; never read by default, needs your **separate consent**; **read-only** |
 | `android.permission.health.READ_BODY_FAT` | Same, for **body fat percentage** | Same |
 | `android.permission.health.READ_HEIGHT` | Same, for **height** (used only to compute BMI) | Same |
-| `android.permission.health.READ_WAIST_CIRCUMFERENCE` | Same, for **waist circumference** (since 2026-10-09, see 2.4) | Same |
 
 Six notes on the third one (the notification permission):
 
