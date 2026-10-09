@@ -25,6 +25,7 @@ import '../../backup/cloud_backup.dart';
 import '../../analytics/analytics.dart';
 import '../../backup/recovery_code.dart';
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/db.dart' show BackupAccountData;
 import '../../data/exercise_repository.dart';
@@ -211,7 +212,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   // ------------------------------------------------------------ 开启
 
   Future<void> _enable() async {
-    final bool? agreed = await showDialog<bool>(
+    final bool? agreed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.elevated,
@@ -260,7 +261,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
 
     // 恢复码只出现这一次。没抄下来就不落库 —— 落库等于给了用户一个
     // 他打不开的账号，比没开还糟。
-    final bool? saved = await showDialog<bool>(
+    final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext ctx) => _RecoveryCodeDialog(account: account!),
@@ -368,7 +369,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   // ------------------------------------------------------------ 关闭 / 注销
 
   Future<void> _disableLocalOnly() async {
-    final bool? ok = await showDialog<bool>(
+    final bool? ok = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.elevated,
@@ -403,7 +404,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   Future<void> _deleteEverything() async {
     final BackupAccountData? account = _account;
     if (account == null) return;
-    final bool? ok = await showDialog<bool>(
+    final bool? ok = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.elevated,
@@ -446,7 +447,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   /// 用别处的恢复码接管一个已有账号（换手机走这条）
   Future<void> _adopt() async {
     final TextEditingController input = TextEditingController();
-    final String? code = await showDialog<String>(
+    final String? code = await showAppDialog<String>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.elevated,

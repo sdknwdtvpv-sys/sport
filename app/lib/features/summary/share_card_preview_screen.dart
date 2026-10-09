@@ -10,6 +10,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/vi_cards.dart';
 import '../../analytics/analytics.dart';
 import 'share_card.dart';
@@ -116,7 +117,7 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
     // 那种情况下不该白问用户一次。
     if (await widget.exporter.galleryNeedsPermission()) {
       if (!mounted) return;
-      final bool? go = await showDialog<bool>(
+      final bool? go = await showAppDialog<bool>(
         context: context,
         builder: (BuildContext ctx) => AlertDialog(
           backgroundColor: Tokens.elevated,

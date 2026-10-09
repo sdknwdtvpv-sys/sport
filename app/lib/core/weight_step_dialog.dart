@@ -13,6 +13,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'glass_overlay.dart';
 
 import 'theme.dart';
 import 'units.dart';
@@ -76,7 +77,7 @@ Future<WeightStepPick?> pickWeightStep(
   // 而且是**跨用例污染**：崩在下一个用例里，看起来像别人坏了）。
   // 自定义那一格直接改 `selected`，连局部字符串都不用留。
 
-  final WeightStepPick? pick = await showDialog<WeightStepPick>(
+  final WeightStepPick? pick = await showAppDialog<WeightStepPick>(
     context: context,
     builder: (BuildContext ctx) => StatefulBuilder(
       builder: (BuildContext ctx, void Function(void Function()) setLocal) => AlertDialog(

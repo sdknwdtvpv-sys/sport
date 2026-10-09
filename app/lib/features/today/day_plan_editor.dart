@@ -24,6 +24,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' show ExerciseData;
 import '../../data/exercise_repository.dart';
@@ -43,7 +44,7 @@ Future<List<PlannedExercise>?> showDayPlanEditor(
   LocalStore? store,
   WeightUnit unit = WeightUnit.kg,
 }) {
-  return showModalBottomSheet<List<PlannedExercise>>(
+  return showAppSheet<List<PlannedExercise>>(
     context: context,
     backgroundColor: Tokens.surface,
     // 清单可能有 6 行 + 两个按钮：默认高度（半屏）会把它挤成"只能看两行"。

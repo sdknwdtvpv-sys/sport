@@ -66,6 +66,7 @@ class GlassSegmented extends StatefulWidget {
     this.emphasisIndex = -1,
     this.emphasisColor,
     this.emphasisIconColor,
+    this.emphasisIconSize,
   });
 
   /// 盖在玻璃上面的内容（标签/图标 —— 仍然是 Flutter 画的，也仍然由 Flutter 收点击）。
@@ -153,6 +154,14 @@ class GlassSegmented extends StatefulWidget {
 
   /// 圆里图标的颜色（一般是"深墨"：强调色圆上要压一个深色图标才看得清）。
   final String? emphasisIconColor;
+
+  /// 被点亮那一格的**图标大小**（2026-10-09，10.9 清单第 2b 条）。
+  ///
+  /// 为什么要有它：用户说底栏正中"太割裂" —— 左右四个是线性图标，中间却是
+  /// "实心圆 + 深色图标"（两套视觉语言）。去掉圆之后，"中间那一格与别人不同"
+  /// 就只剩**大小**与颜色两个手段，而图标大小只有原生能改（字与图标都由原生画在玻璃之上）。
+  /// null = 与其余几格同一个大小。
+  final double? emphasisIconSize;
 
   @override
   State<GlassSegmented> createState() => _GlassSegmentedState();
@@ -308,6 +317,8 @@ class _GlassSegmentedState extends State<GlassSegmented> {
               if (widget.emphasisColor != null) 'emphasisColor': widget.emphasisColor,
               if (widget.emphasisIconColor != null)
                 'emphasisIconColor': widget.emphasisIconColor,
+              if (widget.emphasisIconSize != null)
+                'emphasisIconSize': widget.emphasisIconSize,
               if (widget.baseTint != null) 'baseTint': widget.baseTint,
               if (widget.pillTint != null) 'pillTint': widget.pillTint,
             },

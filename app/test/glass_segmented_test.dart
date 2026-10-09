@@ -224,9 +224,13 @@ void main() {
     expect(seg.icons![2], 'dumbbell.fill', reason: '正中那格也要原生画图标');
     expect(seg.labels![2], '训练', reason: '正中那格也要原生画文字（否则底栏少一个词）');
     expect(seg.emphasisIndex, 2, reason: '正中被点亮的那一格 = 训练（下标 2）');
-    expect(seg.emphasisColor, isNotNull, reason: '圆的填充色（强调色）必须传给原生');
-    expect(seg.emphasisIconColor, isNotNull,
-        reason: '圆里图标的颜色（深墨）也要传 —— 橙底橙图标看不清');
+    // ⚠️ 2026-10-09（10.9 清单第 2b 条）：**不再传 `emphasisColor`** ——
+    // 传了原生会插一颗实心圆，而那正是用户说"太割裂"的东西。
+    // 现在正中只靠"大一号 + 强调色"，两个数都要真的传下去。
+    expect(seg.emphasisColor, isNull, reason: '不许再画实心圆');
+    expect(seg.emphasisIconSize, AppTabBar.centerIconSize,
+        reason: '正中那颗要更大一号 —— 这是去掉圆之后仅剩的区分手段');
+    expect(seg.emphasisIconColor, isNotNull, reason: '一点强调色：正中那颗永远用强调色');
     // 拖动信号必须**一路传到玻璃组件**（外壳 → AppTabBar → GlassSegmented）：
     // 断了的话页面照样能拖，但底下那颗玻璃会跳格 —— 看起来就是"不跟手"。
     expect(seg.dragIndex, same(drag), reason: '那条"跟手"的线就靠它');

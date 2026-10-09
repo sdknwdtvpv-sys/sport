@@ -18,6 +18,7 @@ import '../../core/glass_segmented.dart';
 import '../../core/glass_switch.dart';
 import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
 import '../../core/weight_step_dialog.dart';
 import '../../data/profile_repository.dart';
@@ -172,7 +173,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   /// ⚠️ 返回值用 [_RestPick] 包一层：`null` 有两种含义（"关掉了弹层" 与
   /// "选了跟随动作"），直接 pop `int?` 会把它们混成一件（经典坑）。
   Future<void> _pickRest() async {
-    final _RestPick? pick = await showModalBottomSheet<_RestPick>(
+    final _RestPick? pick = await showAppSheet<_RestPick>(
       context: context,
       backgroundColor: Tokens.surface,
       shape: const RoundedRectangleBorder(
@@ -572,7 +573,7 @@ Future<TimeOfDay?> _showTimeWheel(
       FixedExtentScrollController(initialItem: initialHour);
   final FixedExtentScrollController minuteCtl =
       FixedExtentScrollController(initialItem: initialMinute);
-  return showModalBottomSheet<TimeOfDay>(
+  return showAppSheet<TimeOfDay>(
     context: context,
     backgroundColor: Tokens.surface,
     shape: const RoundedRectangleBorder(

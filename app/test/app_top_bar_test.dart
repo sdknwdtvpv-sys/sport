@@ -10,6 +10,7 @@
 /// `main.dart` 的 `_bodyFor` 对得上 —— 错一条就是"点训练进了数据"。
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/app_tab_bar.dart';
@@ -51,14 +52,27 @@ void main() {
         reason: '正中那格不许顶出底栏上沿（上一版是 top: -10，用户要求收进来）');
     expect(centerRect.bottom, lessThanOrEqualTo(bar.bottom + 0.01));
 
-    // ② 区别只做在**图标**上：一颗强调色圆垫在图标下，而且它也在栏内
-    final Finder circle = find.byKey(const Key('tab-center-icon'));
-    expect(circle, findsOneWidget, reason: '正中那颗强调圆必须有（这是唯一的区别）');
-    final Rect circleRect = tester.getRect(circle);
-    expect(circleRect.height, AppTabBar.centerCircleSize);
-    expect(circleRect.width, AppTabBar.centerCircleSize);
-    expect(circleRect.top, greaterThanOrEqualTo(bar.top - 0.01),
-        reason: '圆也要在栏内 —— 这才是"所有内容都包进来"');
+    // ② 区别只做在**图标**上：一个**大一号的强调色图标**，而且它也在栏内。
+    //
+    // ⚠️ 2026-10-09（10.9 清单第 2b 条）：这里原来钉的是"一颗实心强调圆"——
+    // 用户看完真机说"中间那个图标太割裂"（左右四个是线性图标，中间是实心圆 + 深色图标，
+    // 两套视觉语言），所以圆整个去掉了。现在钉的是"同一种图标、只差大小与颜色"，
+    // 而且**不许再出现圆形底**（下面那条 ancestor 断言就是干这个的）。
+    final Finder centerIcon = find.byKey(const Key('tab-center-icon'));
+    expect(centerIcon, findsOneWidget, reason: '正中那颗图标必须有（它仍是唯一的区别）');
+    expect(tester.getSize(centerIcon).height, AppTabBar.centerIconSize);
+    expect(AppTabBar.centerIconSize, greaterThan(AppTabBar.iconsize),
+        reason: '只靠大小与颜色区分 —— 那就必须真的比别的格子大一号');
+    expect(tester.getRect(centerIcon).top, greaterThanOrEqualTo(bar.top - 0.01),
+        reason: '图标也要在栏内 —— 这才是"所有内容都包进来"');
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('tab-训练')),
+        matching: find.byType(Container),
+      ),
+      findsNothing,
+      reason: '正中那格不许再有"圆底"那种容器（10.9 清单第 2b 条：太割裂）',
+    );
     // 文字照旧（底栏不许少一个词）
     expect(find.byKey(const Key('tab-center-label')), findsOneWidget);
     expect(find.text('训练'), findsOneWidget);
@@ -77,11 +91,12 @@ void main() {
     expect(tapped, 2, reason: '正中那颗就是「训练」（下标 2）');
   });
 
-  test('★ 底栏高度：装得下正中那颗圆 + 图标 + 文字（68pt，不再是 58）', () {
-    // 高度是"内容包得住"这条要求的量化形式：40（圆）+ 3（间隙）+ ~13（文字）+ 上下留白
-    // ≈ 60 起，再加上圆与文字的呼吸 —— 58 装不下，所以加到 68。
+  test('★ 底栏高度：装得下正中那颗（大一号的）图标 + 文字（68pt，不再是 58）', () {
+    // 高度是"内容包得住"这条要求的量化形式：图标 + 3（间隙）+ ~13（文字）+ 上下留白。
+    // 2026-10-09 起正中是一颗 26pt 的图标（不再是 36pt 的圆），所以这条比以前宽松 ——
+    // 但**高度不回退**：真机上 68 的手感是量过的，而且内容与栏沿之间要留呼吸。
     expect(AppTabBar.height, greaterThanOrEqualTo(64));
-    expect(AppTabBar.centerCircleSize, lessThanOrEqualTo(AppTabBar.height - 20));
+    expect(AppTabBar.centerIconSize, lessThanOrEqualTo(AppTabBar.height - 20));
   });
 
   testWidgets('顶栏：标题 + 副标题 + 两枚 40×40 的动作（同一基线）',
@@ -142,5 +157,80 @@ void main() {
     expect(find.byKey(const Key('notifications-unread-dot')), findsOneWidget);
     // 没给 onOpenSettings 时齿轮**不出现**（测试与"不接设置的调用点"保持干净）
     expect(find.byKey(const Key('top-bar-settings')), findsNothing);
+  });
+
+  // ── 顶栏玻璃与"浮动顶栏"留给内容的高度（10.9 清单第 2a 条）──────────────────
+  group('顶栏：iOS 玻璃 + 内容要让出多少', () {
+    testWidgets('非 iOS：顶栏原样（无玻璃、保留空间为 0）', (WidgetTester tester) async {
+      late double reserved;
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Builder(
+          builder: (BuildContext ctx) {
+            reserved = AppTopBar.reservedSpaceFor(ctx);
+            return const Scaffold(body: AppTopBar(title: '今天'));
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('glass-top-bar')), findsNothing,
+          reason: 'Android/桌面不画玻璃 —— 顶栏仍是 `Column` 里的原位');
+      expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
+      expect(reserved, 0, reason: '那边顶栏各占各的位置，内容不需要让');
+    });
+
+    testWidgets('★ iOS：顶栏是一块通栏玻璃，且内容要让出一条高度',
+        (WidgetTester tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      late double reserved;
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: Builder(
+          builder: (BuildContext ctx) {
+            reserved = AppTopBar.reservedSpaceFor(ctx);
+            return const Scaffold(body: AppTopBar(title: '今天'));
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('glass-top-bar')), findsOneWidget);
+      expect(reserved, greaterThan(0),
+          reason: 'iOS 上顶栏浮在内容之上，第一行内容必须让出这条高度');
+
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('★ 大字号时那条高度跟着长（1.5× 下标题自己也变高了）',
+        (WidgetTester tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      double at100 = 0;
+      double at150 = 0;
+      for (final double scale in <double>[1.0, 1.5]) {
+        await tester.pumpWidget(MaterialApp(
+          theme: buildAppTheme(),
+          home: MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+            child: Builder(
+              builder: (BuildContext ctx) {
+                if (scale == 1.0) {
+                  at100 = AppTopBar.reservedSpaceFor(ctx);
+                } else {
+                  at150 = AppTopBar.reservedSpaceFor(ctx);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ));
+        await tester.pumpAndSettle();
+      }
+
+      expect(at150, greaterThan(at100),
+          reason: '只按标准字号留空间的话，1.5× 下第一行内容会被压在玻璃下面');
+
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 }

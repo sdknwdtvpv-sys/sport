@@ -16,6 +16,7 @@ import 'plan_templates.dart';
 
 import '../../core/pills.dart';
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
 import '../../data/exercise_repository.dart';
@@ -451,7 +452,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
   }
 
   Future<void> _editItem(RoutineItemData item) async {
-    final ({int sets, int low, int high})? next = await showModalBottomSheet<
+    final ({int sets, int low, int high})? next = await showAppSheet<
         ({int sets, int low, int high})>(
       context: context,
       backgroundColor: Tokens.elevated,

@@ -54,10 +54,18 @@ class AppTabBar extends StatelessWidget {
   /// 左右与离底的留白（浮起来之后，屏幕边缘能看到内容在它两侧继续）。
   static const double floatMargin = 8;
 
-  /// 正中那颗圆的直径（只垫在**图标**下面，**完全在栏内** —— 不再有"突出去一截"）。
-  /// 直径 36：40 那颗在 iOS 的胶囊里会**贴着上沿**（胶囊上沿离栏顶还有 5pt 的内缩），
-  /// 看着像被切了一刀 —— 36 给两端都留出 2pt 以上的呼吸。两端同一个数。
-  static const double centerCircleSize = 36;
+  /// 正中那格的**图标大小**（2026-10-09，10.9 清单第 2b 条）。
+  ///
+  /// 用户原话：「底栏中间那个图标太割裂」—— 左右四个是线性图标，中间是
+  /// "实心强调色圆 + 深墨图标"，两套视觉语言。现在那**颗圆整个去掉**，
+  /// 中间与其余四个同一个画法，只靠两件事区分：
+  ///   * **大一号**（26 vs 22）；
+  ///   * 一点强调色（正中那格永远用强调色，不必等选中）。
+  /// 两颗数都留在这一处，两端（Flutter 画 / 原生画）取同一个值。
+  static const double centerIconSize = 26;
+
+  /// 其余四格的图标大小（与 [centerIconSize] 一起构成"只差一号"）。
+  static const double iconsize = 22;
 
   /// **每屏的滚动内容底部要留出的空间**（否则最后一项会被压在玻璃下面）。
   ///
@@ -88,22 +96,20 @@ class AppTabBar extends StatelessWidget {
   /// （Apple 那套"中间是动作、不是格子"的做法：有了文字反而像第二个 tab）。
   static const int _centerIndex = 2;
 
-  /// 正中那一格（**完全在栏内**）：强调色实心圆垫在图标下 + 深墨图标 + 文字。
+  /// 正中那一格（**完全在栏内**）：一个**大一号的强调色图标** + 文字。
   ///
-  /// 用户原话（真机反馈第二遍）：「只在**中间的图标**做点文章就行」——
-  /// 区别只在这颗圆；文字与另外四格同一个字号、同一个位置（五格仍然等宽）。
+  /// 用户原话（真机反馈第二遍）：「只在**中间的图标**做点文章就行」；
+  /// 2026-10-09（10.9 清单第 2b 条）又补了一句：「中间那个图标太割裂」——
+  /// 于是那颗实心圆**整个去掉**（见 [centerIconSize] 的注释）。
+  /// 文字与另外四格同一个字号、同一个位置（五格仍然等宽）。
   Widget _centerCell(int i) => Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Container(
+          Icon(
+            tabs[i].icon,
             key: const Key('tab-center-icon'),
-            width: centerCircleSize,
-            height: centerCircleSize,
-            decoration: const BoxDecoration(
-              color: Tokens.accent,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(tabs[i].icon, size: 20, color: Tokens.bg),
+            size: centerIconSize,
+            color: Tokens.accent,
           ),
           const SizedBox(height: 3),
           Text(
@@ -176,7 +182,7 @@ class AppTabBar extends StatelessWidget {
                   children: <Widget>[
                     Icon(
                       tabs[i].icon,
-                      size: 22,
+                      size: iconsize,
                       color: i == current ? Tokens.accent : Tokens.text3,
                     ),
                     const SizedBox(height: 4),
@@ -235,17 +241,17 @@ class AppTabBar extends StatelessWidget {
         'calendar',
         'person',
       ],
-      // 正中那颗：原生在这一层（玻璃**之上**）画一颗实心强调圆 + 深墨图标。
-      // ⚠️ iOS 上它**不凸出**平台视图的边界（平台视图是一张按 bounds 裁好的纹理）——
-      // 所以 iOS 是"实心强调圆"、Android 是"凸出上沿 10pt 的圆"：
-      // 同一个意图，各自贴合本端材质（差异记在 `docs/screens.md`）。
+      // 正中那一格：**不再画圆**（2026-10-09，10.9 清单第 2b 条）——
+      // 只把它的图标交给原生画成"大一号 + 强调色"。两端现在是**同一个意图**：
+      // 中间与其余四格同一种线性图标，只差大小与一点颜色。
+      // ⚠️ `emphasisColor` 特意**不传**：传了原生就会插一颗实心圆（见 `GlassBridge.swift`）。
       emphasisIndex: _centerIndex,
-      emphasisColor: _hexOf(Tokens.accent),
-      emphasisIconColor: _hexOf(Tokens.bg),
+      emphasisIconSize: centerIconSize,
+      emphasisIconColor: _hexOf(Tokens.accent),
       selectedColor: _hexOf(Tokens.accent),
       unselectedColor: _hexOf(Tokens.text3),
       labelFontSize: 11,
-      iconSize: 22,
+      iconSize: iconsize,
       // 按住不放、横向拖到别格再松手 = 换 tab（`changes` 幂等，与点击那条路不冲突）
       onDragSelect: onChanged,
       child: bar,

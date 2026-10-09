@@ -20,6 +20,7 @@ import 'package:flutter/services.dart';
 import '../../backup/account_login.dart';
 import '../../backup/login_session.dart';
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../data/db.dart' show BackupAccountData;
 import '../../data/profile_repository.dart';
 
@@ -229,7 +230,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _deleteAccount() async {
-    final bool? ok = await showDialog<bool>(
+    final bool? ok = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.elevated,

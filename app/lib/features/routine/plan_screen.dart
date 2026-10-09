@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
+import '../../core/app_top_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/exercise_repository.dart';
@@ -145,7 +146,11 @@ class _PlanScreenState extends State<PlanScreen> {
     const List<String> names = <String>['一', '二', '三', '四', '五', '六', '日'];
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
+      // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
+      padding: EdgeInsets.fromLTRB(
+          Tokens.s5,
+          AppTopBar.reservedSpaceFor(context),
+          Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         ViCard(
@@ -313,7 +318,11 @@ class _PlanScreenState extends State<PlanScreen> {
     }
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5,
+      // 顶部那条给浮动顶栏（iOS 非零、Android 为 0）
+      padding: EdgeInsets.fromLTRB(
+          Tokens.s5,
+          AppTopBar.reservedSpaceFor(context),
+          Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         for (final ({String title, List<({String workoutId, DateTime day, int exercises, int sets, double volume})> rows}) g in groups) ...<Widget>[

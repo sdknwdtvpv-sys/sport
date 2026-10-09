@@ -22,6 +22,7 @@ import '../../core/glass_segmented.dart';
 
 import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/vi_area_chart.dart';
 import '../../core/vi_cards.dart';
 import 'bmi.dart';
@@ -193,7 +194,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     }
     if (!mounted) return;
     setState(() => _consentPending = true); // 静态占位，别再转圈
-    final bool? agree = await showDialog<bool>(
+    final bool? agree = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
@@ -254,7 +255,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   Future<void> _revokeConsent() async {
     final ProfileRepository? profile = widget.profile;
     if (profile == null) return;
-    final bool? yes = await showDialog<bool>(
+    final bool? yes = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
@@ -318,7 +319,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       return true;
     }
     if (!mounted) return false;
-    final bool? agree = await showDialog<bool>(
+    final bool? agree = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
@@ -420,7 +421,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
         body = '还没有同意读取系统健康库。';
     }
 
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
@@ -448,7 +449,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   Future<void> _revokeHealthConsent() async {
     final ProfileRepository? profile = widget.profile;
     if (profile == null) return;
-    final bool? yes = await showDialog<bool>(
+    final bool? yes = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
@@ -853,7 +854,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   ///   * 结论来自真实身体数据：一天内的波动主要是水分与吃的东西，**不是脂肪**；
   ///   * 一个按钮「知道了」，点掉就走（不拦保存、不改数据）。
   Future<void> _maybeWarnWeighFrequency(int count) async {
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,

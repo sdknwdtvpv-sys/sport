@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/exercise_repository.dart';
@@ -166,7 +167,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
   /// 这条路径同时解决三件事：数据可携带（合规）、用户换了手机能回来、
   /// 以及可用性测试需要的"预置 6 周历史"（`docs/usability-test-kit.md` §4）。
   Future<void> _importBackup() async {
-    final BackupParse? parsed = await showDialog<BackupParse>(
+    final BackupParse? parsed = await showAppDialog<BackupParse>(
       context: context,
       builder: (BuildContext ctx) => const _ImportBackupDialog(),
     );
@@ -290,7 +291,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
     //   2. **云端删失败就整个中止**，本机一个字都不删。宁可让他重试，
     //      也不要留下"删了一半"的状态（那比不删更糟）。
     bool alsoCloud = true;
-    final bool? confirmed = await showDialog<bool>(
+    final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         key: const Key('delete-all-dialog'),

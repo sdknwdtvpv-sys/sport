@@ -12,6 +12,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
 import '../../core/weight_step_dialog.dart';
 import '../../data/db.dart' show ExerciseData;
@@ -146,7 +147,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     // 记完这一组正好在 setState/build 的尾巴上 —— 推到下一帧再弹，避免"build 期间弹窗"
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      final bool again = await showDialog<bool>(
+      final bool again = await showAppDialog<bool>(
             context: context,
             builder: (BuildContext ctx) => AlertDialog(
               backgroundColor: Tokens.surface,

@@ -17,6 +17,7 @@ import '../../core/labels.dart';
 import '../../analytics/analytics.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
+import '../../core/app_top_bar.dart';
 import '../../core/vi_area_chart.dart';
 import '../../core/vi_cards.dart';
 import '../../core/units.dart';
@@ -249,7 +250,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final ProgressData d = _data!;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
+      // 顶部那条是**浮动顶栏**留的（iOS 非零、Android 为 0，见 `AppTopBar.reservedSpaceFor`）
+      padding: EdgeInsets.fromLTRB(
+          Tokens.s5,
+          Tokens.s4 + AppTopBar.reservedSpaceFor(context),
+          Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         // ⚠️ 这里原来还画了一个 28pt 的「进步」大字 —— 与外壳顶栏那个标题**完全重复**

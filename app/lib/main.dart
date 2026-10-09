@@ -23,6 +23,7 @@ import 'core/app_top_bar.dart';
 import 'core/glass_surface.dart';
 import 'core/labels.dart';
 import 'core/theme.dart';
+import 'core/glass_overlay.dart';
 import 'core/units.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，
 // 同时裸 import 两个库时，一用到同名类就 ambiguity_import。这里预先 hide 掉。
@@ -991,7 +992,7 @@ class _HomeShellState extends State<HomeShell> {
       );
       if (warning != null) {
         if (!mounted) return;
-        final bool go = await showDialog<bool>(
+        final bool go = await showAppDialog<bool>(
               context: context,
               builder: (BuildContext ctx) => AlertDialog(
                 backgroundColor: Tokens.surface,
@@ -1178,7 +1179,7 @@ class _HomeShellState extends State<HomeShell> {
     final List<SetRecord> sets = await _store.setsFor(a.workoutId);
     if (!mounted) return;
     final DateTime now = DateTime.fromMillisecondsSinceEpoch(_clock());
-    final _StaleChoice? choice = await showDialog<_StaleChoice>(
+    final _StaleChoice? choice = await showAppDialog<_StaleChoice>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
@@ -1462,7 +1463,7 @@ class _HomeShellState extends State<HomeShell> {
   /// 为什么值得弹一次：这条提醒**在健身房里是刚需**（不卸片是安全事故，也是礼仪），
   /// 而 App 是那个"知道你今天用了杠铃"的唯一角色。文案只讲事实与动作，不说教。
   Future<void> _remindUnloadPlates() async {
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
@@ -1782,8 +1783,11 @@ class _HomeShellState extends State<HomeShell> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            // 统一顶栏（v1.60.0）：左标题 + 右上角 [齿轮][铃铛]，五个 tab 共用
-            topBar,
+            // 统一顶栏（v1.60.0）：左标题 + 右上角 [齿轮][铃铛]，五个 tab 共用。
+            // ⚠️ 2026-10-09（10.9 清单第 2a 条）：**iOS 上顶栏不再占位** ——
+            // 它挪进下面的 Stack 变成"浮在内容之上的玻璃"，内容从它后面滚过去。
+            // Android 保持 `Column` 里的原位（一个像素都不动）。
+            if (!GlassSurface.isSupportedPlatform) topBar,
             Expanded(
               child: !GlassSurface.isSupportedPlatform
                   // Android：底栏仍然贴在内容**下面**（通栏、贴底）。
@@ -1817,6 +1821,14 @@ class _HomeShellState extends State<HomeShell> {
                           right: AppTabBar.floatMargin,
                           bottom: AppTabBar.floatMargin,
                           child: tabBar,
+                        ),
+                        // ⚠️ 顶栏必须排在**最后**：Stack 里后画的在上面，
+                        // 放在 `PageView` 之前会被页面内容整个盖住（两边都试过）。
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: topBar,
                         ),
                       ],
                     ),

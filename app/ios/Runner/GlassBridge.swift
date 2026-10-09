@@ -163,6 +163,10 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
   private var emphasisIndex: Int = -1
   private var emphasisColor: UIColor?
   private var emphasisIconColor: UIColor?
+  /// 被点亮那一格的图标大小（2026-10-09，10.9 清单第 2b 条）。
+  /// 不去画圆之后，"中间那格与别人不同"就只剩大小与颜色两个手段 —— 而这个大小
+  /// 只有原生能改（字与图标都画在玻璃**之上**）。0 = 与其余几格一样大。
+  private var emphasisIconSize: CGFloat = 0
   private let emphasisCircle = UIView()
   private var unselectedColor: UIColor = .gray
   private var labelFontSize: CGFloat = 12
@@ -295,6 +299,7 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
     emphasisColor = (args["emphasisColor"] as? String)
       .flatMap { GlassPlatformView.color($0) }
     emphasisIconColor = (args["emphasisIconColor"] as? String)
+    emphasisIconSize = CGFloat((args["emphasisIconSize"] as? NSNumber)?.doubleValue ?? 0)
       .flatMap { GlassPlatformView.color($0) }
     labelFontSize = CGFloat((args["labelFontSize"] as? NSNumber)?.doubleValue ?? 12)
     iconSize = CGFloat((args["iconSize"] as? NSNumber)?.doubleValue ?? 22)
@@ -305,6 +310,11 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
       buildItems(labelStrings)
       // 正中那颗圆：**先插进 labelsBox**（所以它在图标/文字下面），
       // 而 labelsBox 整层在玻璃之上 —— 两件事缺一不可。
+      //
+      // ⚠️ 2026-10-09（10.9 清单第 2b 条）：Dart 那边**不再传 emphasisColor**，
+      // 所以这一段现在不会执行 —— 中间那格改成"大一号 + 强调色"的线性图标
+      // （`emphasisIconSize`）。这里保留这条分支的理由：圆是原生的能力，
+      // 哪天想换回"实心圆 + 深墨图标"只需在 Dart 传回颜色，不用改原生。
       if emphasisIndex >= 0, emphasisIndex < count, emphasisColor != nil {
         // 直径与 Android 那颗对齐（`AppTabBar.centerCircleSize = 36` = iconSize + 14）——
         // 两端是同一颗圆，只有"谁来画"不同。2026-10-08 第二遍：底栏加高到 68，
@@ -375,7 +385,7 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
       if !iconNames.isEmpty {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFit
-        iv.image = symbol(iconNames[safe: i], selected: i == index)
+        iv.image = symbol(iconNames[safe: i], selected: i == index, index: i)
         itemIcons.append(iv)
         let stack = UIStackView(arrangedSubviews: [iv, label])
         stack.axis = .vertical
@@ -391,10 +401,14 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
   }
 
   /// SF Symbol（选中时用粗一号 —— 苹果自己的底栏就是这么做的）。
-  private func symbol(_ name: String?, selected: Bool) -> UIImage? {
+  /// SF Symbol。`index` 传了而且正好是被点亮那一格 → 用 `emphasisIconSize`
+  /// （比其余几格大一号；0 表示没设，就用普通大小）。
+  private func symbol(_ name: String?, selected: Bool, index: Int = -1) -> UIImage? {
     guard let name else { return nil }
+    let size = (index >= 0 && index == emphasisIndex && emphasisIconSize > 0)
+      ? emphasisIconSize : iconSize
     let conf = UIImage.SymbolConfiguration(
-      pointSize: iconSize, weight: selected ? .semibold : .regular)
+      pointSize: size, weight: selected ? .semibold : .regular)
     return UIImage(systemName: name, withConfiguration: conf)
   }
 
@@ -440,7 +454,7 @@ class GlassSegmentedPlatformView: NSObject, FlutterPlatformView {
                                        weight: on ? .semibold : .regular)
       itemLabels[i].textColor = on ? selectedColor : unselectedColor
       if i < itemIcons.count {
-        itemIcons[i].image = symbol(iconNames[safe: i], selected: on)
+        itemIcons[i].image = symbol(iconNames[safe: i], selected: on, index: i)
         // ⚠️ SF Symbol 是**模板图**：不显式给 tintColor 它会用系统蓝（默认 tint），
         // 于是底栏图标是蓝的而字是橙的 —— 2026-10-06 实拍抓到。
         var tint = on ? selectedColor : unselectedColor
