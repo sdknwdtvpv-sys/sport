@@ -510,42 +510,50 @@ cocoapods.dart:307-310
 
 同一份 URL 也会填进 Google Play / 华为 / 小米等各商店的表单（`docs/release-checklist.md` §7）。
 
-### 怎么落地（2026-10-09：**这条路已经铺好了，只剩上传**）
+### 怎么落地（2026-10-09：服务器那一侧已经写进仓库，剩下的是"传 + 跑"）
 
-反代那一侧我已经写进仓库了（`server/deploy/Caddyfile` 与 `nginx-lianleme.conf` 都多了一条
-`/privacy*` 路由，落在 `WEB_ROOT`（默认 `/var/www/lianleme`）下的 `privacy/` 目录），
-`install.sh` 也多了「5.5/7 放隐私政策的公开页」这一步 —— 所以**你只要把两份 HTML 传上去**：
+⚠️ **先分清哪条命令在哪台机器上跑**（第一次写这一节时没说清，用户当场就问了）：
 
-**A. 服务器上有整个仓库**（比如部署就是把仓库拉过去）→ 重跑一次安装脚本即可：
+| 命令 | 在哪跑 | 为什么 |
+|---|---|---|
+| `scp -r server/ root@<机器>:/tmp/lianleme-server/` | **你的电脑**（仓库里） | 把部署包（含新的 `Caddyfile` / `install.sh`）传上去 |
+| `sudo … server/deploy/install.sh` | **云服务器**（root） | 它要写 systemd 单元、改 `/etc/caddy/Caddyfile`、`systemctl reload caddy` —— 这些只有在那台机器上才有意义 |
+| `scp store-assets/privacy/*.html root@<机器>:/var/www/lianleme/privacy/` | **你的电脑** | 把两份生成好的页面传上去（页面不在部署包里） |
+| `curl -s https://<域名>/privacy \| head -20` | 哪台都行 | 验收 |
 
-```bash
-sudo WEB_ROOT=/var/www/lianleme server/deploy/install.sh   # 其余参数照你上次那套
-```
-
-它会建目录、把 `store-assets/privacy/{index,en}.html` 拷进去，并把验收命令打出来。
-
-**B. 只上传了 `server/` 这一个目录**（更常见的做法）→ 在本机跑这一条就完事：
+**完整三步**（照你上次那套参数跑，只是多了一个 `WEB_ROOT`）：
 
 ```bash
+# ① 你的电脑：把部署包传上去（这一步不能省 —— 新的 Caddyfile 与 install.sh 都在里面）
+scp -r server/ root@<你的机器>:/tmp/lianleme-server/
+
+# ② 云服务器：重跑安装脚本（caddy 模式会连同 /privacy 路由一起覆盖；existing 模式会把片段打印给你贴）
+sudo DOMAIN=<你的域名> bash /tmp/lianleme-server/deploy/install.sh
+#   ⚠️ 脚本会多出一步「5.5/7 放隐私政策的公开页」：
+#      * 服务器上有整个仓库 → 它自己把两份 HTML 拷进 $WEB_ROOT/privacy/；
+#      * 只有 server/ 这一个目录（常见）→ 它把下面这条命令原样打出来，你在**自己电脑**上跑：
+
+# ③ 你的电脑：把两份页面传上去（② 已经拷过就跳过）
 scp store-assets/privacy/index.html store-assets/privacy/en.html \
     root@<你的机器>:/var/www/lianleme/privacy/
 ```
 
-传完**不用重启任何东西**（Caddy/Nginx 直接读目录）。**验收**：
+传完**不用重启任何东西**（反代直接读目录）。**验收**：
 
 ```bash
 curl -s https://<你的域名>/privacy | head -20     # 应当看到政策正文
 curl -s https://<你的域名>/privacy/en | head -5   # 英文版
 ```
 
-⚠️ **别跳过验收**：现在（路由还没生效时）`https://api.elliotli.work/privacy` 返回的是
-**8 个字节的 `lianleme`**（那条 catch-all 的问候语）——如果你看到的是它，说明路由还没生效，
-而商店审核打开的就是这个 URL。
+⚠️ **两个都做完才算完**（第一次写漏了这层）：**路由**（在反代配置里）+ **页面**（在 `$WEB_ROOT/privacy/`）。
+只传页面不装路由 → 请求落到 catch-all 上，返回的是 **8 个字节的 `lianleme`**；
+只装路由不传页面 → 404。**现在就处在这个状态**：`https://api.elliotli.work/privacy` 返回的还是那 8 个字节。
 
 **为什么这条路由必须写进仓库的模板**（而不是让你手工加一次）：`install.sh` 在
 `PROXY_MODE=caddy` 下会**整体覆盖** `/etc/caddy/Caddyfile`（我们自己的那份带
 `# managed-by: lianleme-install` 标记时）——手工加的 /privacy 路由会在下一次部署时消失，
-而那种失败只在审核当天才看得见。
+而那种失败只在审核当天才看得见。`PROXY_MODE=existing` 则相反：它**只打印**片段，
+所以那一版要你**重新跑一次脚本、把新片段贴进去**（老的片段里没有 /privacy）。
 
 **填进商店表单的 URL**：中文 `https://<你的域名>/privacy`、英文 `https://<你的域名>/privacy/en`
 （`docs/release-checklist.md` §7 那张表里逐条对应）。
