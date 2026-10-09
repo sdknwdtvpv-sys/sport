@@ -43,3 +43,43 @@ String? lastTimeLabel(
       : '最少 ${last.minReps} $unitText';
   return '上次 ${last.completedSets} 组 · $weight × $reps';
 }
+
+/// 大字那一行：`45 kg × 10`（自重念 `自重 × 12`，按时长念 `45 秒`，距离念里程）。
+///
+/// 2026-10-10：训练屏把它拆成两行之后新增 —— 原来只有
+/// [lastTimeLabel] 那一句连成一串的话，塞不进"上次 / 历史最佳"那条对照带的左半边。
+String? lastSetMainLabel(
+  LastSession? last, {
+  required WeightUnit unit,
+  String? trackType,
+}) {
+  if (last == null || last.completedSets == 0) return null;
+  final String track = trackType ?? '';
+  if (isDistanceTrack(track)) {
+    final double? meters = last.lastDistanceM ?? last.maxDistanceM;
+    if (meters == null || meters <= 0) return null;
+    return formatDistanceKm(meters);
+  }
+  final int reps = last.reps.isEmpty ? 0 : last.minReps;
+  if (isTimeTrack(track)) return '$reps 秒';
+  final String w = last.weightKg == null ? '自重' : formatWeight(last.weightKg, unit);
+  return '$w × $reps';
+}
+
+/// 小字那一行：`3 组 · 7 天前`。没有历史返回 null（界面那一行不出现）。
+String? lastSetSubLabel(LastSession? last) {
+  if (last == null || last.completedSets == 0) return null;
+  return '${last.completedSets} 组 · ${daysAgoLabel(last.daysAgo)}';
+}
+
+/// `0 → 今天` / `1 → 昨天` / `n → n 天前` / `n → n 个月前`。
+///
+/// ⚠️ 与「进步」页 PR 墙那套分档**同一口径**（那边是"最近一次破纪录"的分档）——
+/// 同一件事在两张屏上念得不一样，用户就会以为是两件事。
+String daysAgoLabel(int days) {
+  if (days <= 0) return '今天';
+  if (days == 1) return '昨天';
+  if (days < 30) return '$days 天前';
+  if (days < 365) return '${days ~/ 30} 个月前';
+  return '${days ~/ 365} 年前';
+}

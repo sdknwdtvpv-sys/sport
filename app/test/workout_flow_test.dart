@@ -718,27 +718,107 @@ void main() {
     await _teardown(tester, h);
   });
 
-  testWidgets('大按钮上方有「上次练了多少」那一行（站在器械前最想知道的数字）',
+  testWidgets('★ 「上次 / 历史最佳」对照带（2026-10-10 重排后它在上半屏）',
       (WidgetTester tester) async {
+    // ⚠️ 这一条原来是"大按钮上方有一行 `上次 3 组 · 45 kg × 10 次`"。
+    // 重排之后那句话拆成了**两行**（大字 `45 kg × 10`、小字 `3 组 · 今天`），
+    // 因为一句话塞不进对照带的左半边 —— 而右半边是这一屏从来没有过的「历史最佳」。
     final _Harness h = _Harness(
       lastSession: const LastSession(weightKg: 45, reps: <int>[10, 10, 10]),
     );
     await _pump(tester, h);
 
+    expect(find.byKey(const Key('compare-band')), findsOneWidget);
     expect(
       tester.widget<Text>(find.byKey(const Key('last-time'))).data,
-      '上次 3 组 · 45 kg × 10 次',
-      reason: '与建议页那条证据链是同一句话（同一份实现）',
+      '45 kg × 10',
+      reason: '与建议页那条证据链同源（`core/last_time.dart` 拆成两行）',
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const Key('last-time-sub'))).data,
+      '3 组 · 今天',
     );
     await _teardown(tester, h);
   });
 
-  testWidgets('没有历史时那一行**整个不出现**（不编一个"上次"出来）',
+  testWidgets('★ 主按钮在屏幕**下 1/3**（2026-10-10 重排；spec §5 那条硬约束）',
+      (WidgetTester tester) async {
+    // 重排前它落在屏幕**中部**：下 1/3 被"休息计时器 + 已完成 + 上下一个"占着，
+    // 而互动规格 §5 写的是"主操作位于屏幕下 1/3，高度 ≥ 88pt，单手可达"。
+    // 这条把位置钉住 —— 它是最容易被后续改动悄悄推回去的一条。
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    final double screen = tester.getSize(find.byType(WorkoutScreen)).height;
+    final Rect btn = tester.getRect(find.byKey(const Key('big-log-button')));
+    expect(btn.height, greaterThanOrEqualTo(88), reason: '高度 ≥ 88pt');
+    expect(btn.top, greaterThan(screen * 0.55),
+        reason: '主按钮的**上沿**也要落在下半屏（实测 ${btn.top} / 屏高 $screen）');
+    expect(btn.bottom, lessThanOrEqualTo(screen),
+        reason: '不许被挤出屏幕');
+
+    // 记了一组之后（休息条出现）主按钮**不许被顶回中部**
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+    final Rect after = tester.getRect(find.byKey(const Key('big-log-button')));
+    expect(after.top, greaterThan(screen * 0.5),
+        reason: '休息条出现也不能把主按钮推回上半屏');
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 「改重量」是一个**看得见**的入口（长按仍然是隐形的备选）',
       (WidgetTester tester) async {
     final _Harness h = _Harness();
     await _pump(tester, h);
 
-    expect(find.byKey(const Key('last-time')), findsNothing);
+    expect(find.byKey(const Key('edit-weight')), findsOneWidget);
+    expect(find.text('改重量'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('edit-weight')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('sheet')), findsOneWidget, reason: '点它 = 长按那一下');
+    expect(h.controller.loggedSets, isEmpty, reason: '进修改层绝不能顺手记一组');
+    expect(h.controller.sheetOpen, isTrue);
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 休息是主按钮上方**一条带百分比的细进度**（不是一个数字盒）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(find.byKey(const Key('rest-bar')), findsNothing,
+        reason: '没在休息就不该摆一个 00:00 在那里占位置');
+
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('rest-bar')), findsOneWidget);
+    expect(find.textContaining('还剩'), findsWidgets, reason: '比例要看得见，不能只有一个数字');
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+    await _teardown(tester, h);
+  });
+
+  testWidgets('没有历史时**不许编一个"上次"**，那条带子改念「今天的目标」',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+
+    expect(find.byKey(const Key('last-time')), findsNothing,
+        reason: '没练过就没有"上次"');
+    expect(find.byKey(const Key('best-time')), findsNothing,
+        reason: '也没练过就没有"历史最佳"');
+    expect(find.byKey(const Key('today-target')), findsOneWidget,
+        reason: '这块版面不空着 —— 第一次练也要回答"今天练多少"');
+    expect(
+      tester.widget<Text>(find.byKey(const Key('today-target'))).data,
+      '${h.controller.plannedSets} 组',
+      reason: '计划组数',
+    );
     await _teardown(tester, h);
   });
 
@@ -762,7 +842,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('big-log-button')), findsOneWidget);
     expect(find.byKey(const Key('rest-bar')), findsOneWidget);
-    expect(find.byKey(const Key('last-time')), findsOneWidget);
+    expect(find.byKey(const Key('compare-band')), findsOneWidget);
 
     await _teardown(tester, h);
   });

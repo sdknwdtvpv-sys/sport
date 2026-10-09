@@ -109,7 +109,7 @@ class WorkoutController extends ChangeNotifier {
     // 从一次被中断的训练回来：把休息接着数完（不做"重新开始"那件更糟的事）
     if (restEndsAtMs != null && restEndsAtMs > _clock()) {
       _beginRest(((restEndsAtMs - _clock()) / 1000).ceil(),
-          endsAtMs: restEndsAtMs, announce: false);
+          endsAtMs: restEndsAtMs, announce: false, totalSec: plannedRestSec);
     }
     // **ensure 而不是 begin**：端到端口径要求把"用户点开始训练 → 选动作"
     // 这些点击算进第一组，而它们发生在控制器被构造之前。
@@ -150,6 +150,11 @@ class WorkoutController extends ChangeNotifier {
   /// 「上次 3 组 · 45 kg × 10 次」这一行（没有历史就是 null，界面不出现这一行）。
   String? get lastTimeLabelText =>
       lastTimeLabel(_lastSession, unit: unit, trackType: exercise.trackType);
+
+  /// 上一次这个动作的原始数据。**2026-10-10 从私有改成公开** ——
+  /// 训练屏那条「上次 / 历史最佳」对照带要把它拆成**两行**念
+  /// （大字 `45 kg × 10`、小字 `3 组 · 7 天前`），一句话那版塞不进那块版面。
+  LastSession? get lastSession => _lastSession;
   Suggestion? _suggestion;
 
   /// 建议的稳定标识：**采纳率要靠它把"展示"与"采纳/手改"串成一条链**。
@@ -274,6 +279,12 @@ class WorkoutController extends ChangeNotifier {
   int get observedRestCount => _observedRestsSec.length;
 
   int get restRemainingSec => _restRemaining;
+
+  /// **这一轮休息开始时有多长**（秒）。训练屏那条细进度按它算比例；
+  /// 0 = 这次训练还没休息过。⚠️ 从中断处恢复时传的是 `plannedRestSec`
+  /// （那时已经不知道原来那一轮的总长），界面把比例 clamp 到 0..1。
+  int _restTotalSec = 0;
+  int get restTotalSec => _restTotalSec;
   bool get restRunning => _restRunning;
 
   /// 正在休息时给出"休息到几点"（绝对毫秒）—— 会话恢复要用它。
@@ -777,8 +788,14 @@ class WorkoutController extends ChangeNotifier {
     ));
   }
 
-  void _beginRest(int remainingSec, {required int endsAtMs, required bool announce}) {
+  void _beginRest(
+    int remainingSec, {
+    required int endsAtMs,
+    required bool announce,
+    int? totalSec,
+  }) {
     _stopRest();
+    _restTotalSec = totalSec ?? remainingSec;
     _restRemaining = remainingSec;
     _restEndsAtMs = endsAtMs;
     _restRunning = true;
