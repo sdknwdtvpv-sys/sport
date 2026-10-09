@@ -264,7 +264,7 @@ adb shell dumpsys deviceidle whitelist -com.sdknwdtvpv.lianleme
       **真机装不上时可用 Android 模拟器替代**（同步文档里写了怎么起、以及它的性能坑）；
       当前已出 4 张（首页/建议卡/计划/选动作），其余等真机安装放行后重跑
 - [ ] 应用描述、分类、内容分级
-- [ ] Google Play：开发者账号（一次性 25 美元）、隐私政策 URL、数据安全表单
+- [ ] Google Play：开发者账号（一次性 25 美元）、数据安全表单（隐私政策 URL ✅ **已上线**：`https://api.elliotli.work/privacy`，2026-10-09 从公网核过 200）
 - [ ] 健康类应用在国内可能需额外资质 —— **需按目标商店的具体要求确认**
 
 ## 8. 已知功能缺口（不挡上架，但要心里有数）

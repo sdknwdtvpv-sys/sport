@@ -545,6 +545,14 @@ curl -s https://<你的域名>/privacy | head -20     # 应当看到政策正文
 curl -s https://<你的域名>/privacy/en | head -5   # 英文版
 ```
 
+✅ **2026-10-09 已经在 `api.elliotli.work` 上生效**（那台机器跑的是 **nginx**，站点配置 `/etc/nginx/sites-available/lianleme-api` 里加了 `location /privacy`，页面放在 `/var/www/lianleme/privacy/`；两者的原文件都备份在 `/root/lianleme-api.bak*`）。
+从公网实测：**`/privacy` → 200（41 KB 中文页）、`/privacy/` → 200、`/privacy/en` → 200（42 KB 英文页）**；
+同时核过没碰坏别的东西：首页 `/` 仍是那句 `lianleme`、`/healthz` 仍是 200、
+另外两个站（`hanzi-kids` / `teacher-dashboard`）的配置文件**一个字节没动**。
+⚠️ 服务器上试出来两个 nginx 的细节（仓库模板已按这版改好）：`location` **不要写成带斜杠的
+`/privacy/`**（那样 `/privacy` 会先 301 补斜杠），而且 `try_files` 要**先试 `$uri/index.html`**
+（写 `$uri` 在前会先命中目录，照样 301）。
+
 ⚠️ **两个都做完才算完**（第一次写漏了这层）：**路由**（在反代配置里）+ **页面**（在 `$WEB_ROOT/privacy/`）。
 只传页面不装路由 → 请求落到 catch-all 上，返回的是 **8 个字节的 `lianleme`**；
 只装路由不传页面 → 404。**现在就处在这个状态**：`https://api.elliotli.work/privacy` 返回的还是那 8 个字节。
