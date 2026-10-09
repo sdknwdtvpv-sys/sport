@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>练了么 · 改版参考图 v1（3 tab + 训练主屏重排）</title>
+<title>练了么 · 改版参考图 v2（3 tab + 训练主屏重排 + 勋章收进收藏册）</title>
 <style>
   /* ⚠️ 这是**参考图**（给人看的静态稿），不是 App 代码，也不参与构建。
      颜色/圆角/间距全部照 app/lib/core/theme.dart 的 Tokens 抄，别在这里发明新色。
@@ -91,11 +91,12 @@
 </head>
 <body>
 
-<h1>练了么 · 改版参考图 v1</h1>
+<h1>练了么 · 改版参考图 v2</h1>
 <div class="sub">
-  2026-10-10 · <b>信息架构回 3 个 tab</b>（练 / 进步 / 我）+ <b>训练主屏重排</b> + 激励系统收敛成一套
+  2026-10-10 · <b>三个 tab：进步 / 开练 / 我</b>（已按你的选择定序）｜<b>训练主屏重排</b>｜
+  <b>激励收敛成"一条进度 + 一本收藏册"</b>（勋章保留，方案见第 ⑤ 屏）
   ｜配色、间距、圆角<b>没有动</b>（全部照现有 VI 令牌），这一版只改结构与信息取舍
-  ｜配套：<b>docs/plan-ux-2026-10-10.md</b>
+  ｜六屏：首页 / 训练中 / 进步 / 我的 / 成就 / 训练完成｜配套：<b>docs/plan-ux-2026-10-10.md</b>
 </div>
 
 <div class="sheet">
@@ -144,7 +145,7 @@
         <div style="height:22px"></div>
         <div style="height:60px;border-radius:99px;background:var(--accent);color:var(--ink);
                     display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700">
-          开始今天的训练
+          开练
         </div>
         <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--t3)">
           动作库 · 记录体重 · 5 分钟活动
@@ -153,7 +154,7 @@
 
       <div class="tabbar">
         <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-7 4 4"/></svg>进步</div>
-        <div class="tab on"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>练</div>
+        <div class="tab on"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>开练</div>
         <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div>
       </div>
     </div>
@@ -364,7 +365,7 @@
 
       <div class="tabbar">
         <div class="tab on"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-7 4 4"/></svg>进步</div>
-        <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>练</div>
+        <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>开练</div>
         <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div>
       </div>
     </div>
@@ -379,6 +380,11 @@
       </ul>
     </div>
   </div>
+
+</div>
+
+<!-- ══════════════ 第二排：我的 / 成就收藏册 / 训练完成 ══════════════ -->
+<div class="sheet">
 
   <!-- ══════════════ ④ 我的 ══════════════ -->
   <div class="col">
@@ -418,7 +424,7 @@
             <div style="width:22%;height:3px;border-radius:2px;background:var(--accent)"></div>
           </div>
           <div class="row" style="font-size:12px;color:var(--t3)">
-            <span>还差 4 次训练升到 Lv.2</span><span>勋章 3 / 73 ›</span>
+            <span>还差 4 次训练升到 Lv.2</span><span>本周已练 3 次</span>
           </div>
         </div>
 
@@ -452,7 +458,8 @@
         <div class="band">
           <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">身体数据</span><span style="color:var(--t3)">›</span></div>
           <div class="hr"></div>
-          <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">成就</span><span style="color:var(--t3)">12 / 73 ›</span></div>
+          <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">成就</span>
+            <span style="color:var(--t3)">最近解锁「连续 3 天」 · 12 / 73 ›</span></div>
           <div class="hr"></div>
           <div class="row" style="padding:13px 0"><span style="color:var(--t1);font-size:14.5px">数据与备份</span><span style="color:var(--t3)">›</span></div>
           <div class="hr"></div>
@@ -462,15 +469,16 @@
 
       <div class="tabbar">
         <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-7 4 4"/></svg>进步</div>
-        <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>练</div>
+        <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 8v8M20 8v8M7 6v12M17 6v12M7 12h10"/></svg>开练</div>
         <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>我</div>
       </div>
     </div>
 
     <div class="cap">
-      <h2>④ 我的<span>激励只留一套，设置只有一个 hub</span></h2>
+      <h2>④ 我的<span>激励只留一条进度 + 一本收藏册</span></h2>
       <ul>
-        <li><b>四套激励收敛成一条</b>：等级（Lv.1 → Lv.2）+ 连续天数；<span class="muted">原来这里是三条进度条（等级 / 勋章 / 经验），首页还另有一套打卡 + 本周挑战</span></li>
+        <li><b>唯一的进度 = 等级</b>（一条细杠）；连续天数与本周次数是<b>事实</b>，不是第二、第三条进度</li>
+        <li><b>勋章不再摆进度条</b>：只留一行入口，右边写"最近解锁了什么 · 12 / 73"（解法见第 ⑤ 屏）</li>
         <li><b>训练统计的大方块 → 细线带</b>（与「进步」同一条规矩：只有图表配卡片底）</li>
         <li><b>身体数据从「进步」搬到这里</b>；<b>成就</b>收成一行入口</li>
         <li><b>齿轮只在这个页面出现</b>：原来 5 个 tab 顶栏一模一样，而"我的"本身就是设置集散地</li>
@@ -478,16 +486,182 @@
     </div>
   </div>
 
+  <!-- ⑤ 成就（收藏册） -->
+  <div class="col">
+    <div class="phone">
+      <div class="sb">
+        <div>9:41</div>
+        <div class="right">
+          <div class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></div>
+          <span style="font-size:11px;margin-left:4px">5G</span><span class="batt"></span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="toprow">
+          <div style="display:flex;align-items:center;gap:8px">
+            <svg class="ico" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+            <span style="font-size:17px;font-weight:700;color:var(--t1)">成就</span>
+          </div>
+          <span class="num" style="font-size:13.5px;color:var(--t2)"><b style="color:var(--t1);font-size:15px">12</b> / 73</span>
+        </div>
+
+        <div class="band" style="padding:16px 0;display:flex;align-items:center;gap:14px">
+          <div class="bico on" style="width:56px;height:56px;font-size:24px">🏅</div>
+          <div style="flex:1">
+            <div style="font-size:11.5px;color:var(--accent);font-weight:600;letter-spacing:.4px">最近解锁</div>
+            <div style="font-size:16px;font-weight:700;color:var(--t1);margin-top:3px">首次破纪录</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:2px">10 月 7 日 · 卧推 80 kg</div>
+          </div>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding-top:16px">
+          <div class="row" style="font-size:12.5px;color:var(--t3);margin-bottom:12px">
+            <span style="font-weight:600;letter-spacing:.3px">坚持</span><span>4 / 12</span>
+          </div>
+          <div class="bgrid" style="margin-bottom:20px">
+            <div class="bcell"><div class="bico on">🏅</div><div class="bname">连续 3 天</div><span class="dot" style="background:var(--accent)"></span></div>
+            <div class="bcell"><div class="bico pr">🚀</div><div class="bname">连续 7 天</div><span class="dot" style="background:var(--pr)"></span></div>
+            <div class="bcell"><div class="bico">🔒</div><div class="bname lock">连续 30 天</div></div>
+            <div class="bcell"><div class="bico on">📅</div><div class="bname">本周 3 次</div><span class="dot" style="background:var(--accent)"></span></div>
+            <div class="bcell"><div class="bico rare">🌙</div><div class="bname">夜练 10 次</div><span class="dot" style="background:var(--rare)"></span></div>
+            <div class="bcell"><div class="bico">🔒</div><div class="bname lock">早起 10 次</div></div>
+          </div>
+
+          <div class="row" style="font-size:12.5px;color:var(--t3);margin-bottom:12px">
+            <span style="font-weight:600;letter-spacing:.3px">里程碑</span><span>5 / 24</span>
+          </div>
+          <div class="bgrid" style="margin-bottom:20px">
+            <div class="bcell"><div class="bico on">💪</div><div class="bname">100 组</div><span class="dot" style="background:var(--accent)"></span></div>
+            <div class="bcell"><div class="bico on">🏋️</div><div class="bname">10 吨</div><span class="dot" style="background:var(--accent)"></span></div>
+            <div class="bcell"><div class="bico pr">👑</div><div class="bname">卧推 80 kg</div><span class="dot" style="background:var(--pr)"></span></div>
+            <div class="bcell"><div class="bico">🔒</div><div class="bname lock">1000 组</div></div>
+            <div class="bcell"><div class="bico">🔒</div><div class="bname lock">100 吨</div></div>
+            <div class="bcell"><div class="bico">🔒</div><div class="bname lock">深蹲 1.5 倍体重</div></div>
+          </div>
+
+          <div class="row" style="font-size:12.5px;color:var(--t3);margin-bottom:12px">
+            <span style="font-weight:600;letter-spacing:.3px">探索</span><span>3 / 20</span>
+          </div>
+          <div class="bgrid">
+            <div class="bcell"><div class="bico on">🧭</div><div class="bname">练过 10 个动作</div></div>
+            <div class="bcell"><div class="bico">🔒</div><div class="bname lock">20 个动作</div></div>
+            <div class="bcell"><div class="bico rare">🛠</div><div class="bname">用过 4 种器械</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">
+      <h2>⑤ 成就（勋章保留的解法）<span>收藏册，不是第二套进度</span></h2>
+      <ul>
+        <li class="new"><b>勋章从此只在这一个页面里"存在"</b>：一本册子，唯一的数字是 <b>12 / 73</b></li>
+        <li><b>解锁线只有三条</b>：坚持 / 里程碑 / 探索 —— 每条都跟<b>行为</b>挂钩，<b>不跟经验值挂钩</b>（否则同一个行为被奖励两次，就又是四套系统）</li>
+        <li>三档稀有度沿用现有 VI（普通 = 强调橙 / 稀有 = 紫 `tierRare` / 传说 = 琥珀 `pr`），格子用现成 `vi/achievement-badges.html` 的语言：圆 + 名称 + 稀有度小点</li>
+        <li>未解锁的<b>不写"还差 N 次"</b>，只显示锁与灰名 —— 收藏册不该变成 73 条待办</li>
+        <li><b>一级页面（首页 / 我的）不出现任何"还差 N 枚"</b>：默认藏在「我 → 成就」一行里</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑥ 训练完成 -->
+  <div class="col">
+    <div class="phone">
+      <div class="sb">
+        <div>9:41</div>
+        <div class="right">
+          <div class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></div>
+          <span style="font-size:11px;margin-left:4px">5G</span><span class="batt"></span>
+        </div>
+      </div>
+      <div class="body" style="padding-top:6px">
+        <div style="text-align:center;padding:6px 0 4px">
+          <div style="width:62px;height:62px;border-radius:50%;background:var(--ok);margin:0 auto;
+                      display:flex;align-items:center;justify-content:center;font-size:30px;color:#06281D">✓</div>
+          <div style="font-size:24px;font-weight:700;color:var(--t1);margin-top:14px">训练完成！</div>
+          <div style="font-size:13px;color:var(--t3);margin-top:6px">干得漂亮，又变强了一点</div>
+        </div>
+
+        <div class="card" style="margin-top:16px;display:flex;padding:14px 0">
+          <div style="flex:1;text-align:center;border-right:1px solid var(--line)">
+            <div class="num" style="font-size:20px;font-weight:700;color:var(--t1)">640 kg</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:3px">容量</div>
+          </div>
+          <div style="flex:1;text-align:center;border-right:1px solid var(--line)">
+            <div class="num" style="font-size:20px;font-weight:700;color:var(--t1)">42 分</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:3px">时长</div>
+          </div>
+          <div style="flex:1;text-align:center">
+            <div class="num" style="font-size:20px;font-weight:700;color:var(--t1)">2 组</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:3px">组数</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;padding:14px 16px;
+                    background:linear-gradient(180deg,rgba(255,92,38,.12),rgba(255,92,38,.03));
+                    border:1px solid rgba(255,92,38,.28)">
+          <div class="row" style="margin-bottom:12px">
+            <span style="font-size:13.5px;font-weight:700;color:var(--accent)">✦ 新解锁 2 枚</span>
+            <span style="font-size:12.5px;color:var(--t3)">全部 ›</span>
+          </div>
+          <div style="display:flex;gap:16px">
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="bico on" style="width:38px;height:38px;font-size:17px">🏅</div>
+              <div style="font-size:13px;color:var(--t1)">连续 3 天</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="bico pr" style="width:38px;height:38px;font-size:17px">👑</div>
+              <div style="font-size:13px;color:var(--t1)">卧推 80 kg</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;padding:13px 16px">
+          <div class="row"><span style="font-size:14px;color:var(--t3)">今天的一句话（状态 / 感觉）</span>
+            <span style="color:var(--t3)">›</span></div>
+        </div>
+
+        <div class="band" style="margin-top:14px;padding:13px 0;display:flex;align-items:center;gap:10px">
+          <span style="font-size:15px">📅</span>
+          <div>
+            <div style="font-size:12px;color:var(--t3)">下一次</div>
+            <div style="font-size:14.5px;color:var(--t1);margin-top:2px">轮到 <b>下肢</b>（今天练的是 上肢）</div>
+          </div>
+        </div>
+
+        <div style="flex:1"></div>
+        <div style="height:50px;border-radius:99px;border:1px solid var(--line2);color:var(--t1);
+                    display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:10px">
+          ⤴ 分享训练卡
+        </div>
+        <div style="height:58px;border-radius:99px;background:var(--accent);color:var(--ink);
+                    display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;margin-bottom:14px">
+          完成
+        </div>
+      </div>
+    </div>
+    <div class="cap">
+      <h2>⑥ 训练完成<span>勋章唯一"主动露面"的一次</span></h2>
+      <ul>
+        <li class="new">只在<b>真的解锁了</b>的时候出现这一条（没有新解锁 → 整块不存在，页面与今天完全一样）</li>
+        <li>一次给两枚也不铺开，就是<b>两枚圆 + 名字</b>；想看全部点「全部 ›」进收藏册</li>
+        <li>这样"收藏感"保住了，而<b>解释成本为零</b>：用户不需要理解四套系统之间的关系</li>
+        <li>（下面「今天的一句话 / 下一次 / 拉伸 / 分享卡」保持现状，这一屏只加了中间那一条）</li>
+      </ul>
+    </div>
+  </div>
+
 </div>
 
 <div class="foot">
-  <b>待你拍的两件事：</b>
-  <span class="pill">A</span>底栏三个的顺序 —— 图里是 <b>进步 / 练 / 我</b>（保留 10.7 那条"训练在正中"的意图）；
-  另一种是 <b>练 / 进步 / 我</b>（练在最左，落地页就是第一个）。
-  <span class="pill">B</span>激励留哪一套 —— 图里是 <b>等级 + 连续天数</b>；勋章整个删掉，还是保留成「成就」那一行？
+  <b>已按你的两个选择定下来：</b>
+  <span class="pill">A</span>底栏 = <b>进步 / 开练 / 我</b>（tab 名从"训练"改成"开练"，与主按钮同一个词）；
+  <span class="pill">B</span>勋章<b>保留</b>，解法是"<b>一条进度 + 一本收藏册</b>"：
+  进度只有等级一条，勋章是一本册子（12 / 73），只在训练完成时主动露面一次。
   <br><br>
-  <b>这一版没动的：</b>配色 / 字阶 / 间距 / 圆角 / 图标风格（沿用现有 VI）；训练中"1 次点击 = 1 组"、
+  <b>这一版没动的：</b>配色 / 字阶 / 间距 / 圆角 / 图标风格（沿用现有 VI）；"1 次点击 = 1 组"、
   撤销而非确认、离线优先这些硬约束也都没动。
+  <br><br>
+  <b>下一步：</b>确认方向后按 <b>docs/plan-ux-2026-10-10.md</b> §七 的顺序开工 ——
+  先 P0-3 训练主屏重排，再 P0-1 激励收敛（含勋章收藏册），最后 P0-2 回 3 个 tab。
 </div>
 
 </body>
