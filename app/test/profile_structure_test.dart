@@ -143,10 +143,10 @@ void main() {
     expect(find.text('还没设昵称'), findsOneWidget, reason: '没设过就如实写，不编默认名');
 
     // 统计还在这一页（它是"每天看"的那一类）
-    await tester.dragUntilVisible(find.byKey(const Key('profile-stat-workouts')),
+    await tester.dragUntilVisible(find.byKey(const Key('profile-stat-volume')),
         find.byType(ListView), const Offset(0, -220));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('profile-stat-workouts')), findsOneWidget);
+    expect(find.byKey(const Key('profile-stat-volume')), findsOneWidget);
 
     // 成就入口也还在（它读的就是这一页刚算出来的数）
     await tester.dragUntilVisible(find.byKey(const Key('open-achievements')),

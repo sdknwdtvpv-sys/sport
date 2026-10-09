@@ -322,6 +322,33 @@ String rangeHint(ProgressRange r) => switch (r) {
   return (from: to.subtract(Duration(days: days)), to: to);
 }
 
+/// 上一个**同等长度**的窗口（周期对比要用的那一段）。
+///
+/// 与 [rangeWindow] 严格等长、紧挨着它：本周（最近 7 天）比的是**它前面那 7 天**。
+/// ⚠️ 不做"上一个自然周"—— 口径一旦与上面那个窗口不一致（一个是滚动 7 天、
+/// 一个是自然周），两个数就不在同一个尺度上，比出来的百分比是假的。
+({DateTime from, DateTime to}) previousRangeWindow(DateTime today, ProgressRange r) {
+  final ({DateTime from, DateTime to}) w = rangeWindow(today, r);
+  final Duration len = w.to.difference(w.from);
+  return (from: w.from.subtract(len), to: w.from);
+}
+
+/// 周期对比那一行字（2026-10-09，10.9 清单第 4 条「进步页 = 周期对比」）。
+///
+/// 四种情况分开说，因为它们**含义不同**：
+///   * 上期是 0、这期也是 0 → `—`（没什么可比）
+///   * 上期是 0、这期 > 0   → `上期没练`（这里没有百分比可写：除零；
+///     硬写 `+∞%` 或 `+100%` 都是在编一个数）
+///   * 变化不到 0.5%        → `与上期持平`（`+0%` 看着像没生效）
+///   * 其余                 → `较上期 +12%` / `较上期 −5%`
+String periodDeltaLabel(double current, double previous) {
+  if (previous <= 0) return current > 0 ? '上期没练' : '—';
+  final double ratio = (current - previous) / previous;
+  if (ratio.abs() < 0.005) return '与上期持平';
+  final int pct = (ratio * 100).round();
+  return '较上期 ${pct > 0 ? '+' : '−'}${pct.abs()}%';
+}
+
 /// 窗口内所有组的容量（kg）。
 double volumeIn(List<SetRecord> sets, DateTime from, DateTime to) {
   double v = 0;

@@ -42,6 +42,38 @@ void main() {
     expect(rangeLabel(ProgressRange.week), '本周');
   });
 
+  // ── 周期对比（2026-10-09，10.9 清单第 4 条：进步页 = 周期对比）──────────────
+  group('周期对比', () {
+    test('上一个窗口与当前窗口**严格等长、紧挨着**（本周比的是它前面那 7 天）', () {
+      final ({DateTime from, DateTime to}) w = rangeWindow(today, ProgressRange.week);
+      final ({DateTime from, DateTime to}) p =
+          previousRangeWindow(today, ProgressRange.week);
+
+      expect(p.to, w.from, reason: '中间不能有缝，也不能重叠');
+      expect(p.to.difference(p.from), w.to.difference(w.from),
+          reason: '两个窗口不等长，比出来的百分比就是假的');
+      expect(p.from, DateTime(2026, 9, 22));
+    });
+
+    test('月 / 年也一样等长', () {
+      for (final ProgressRange r in ProgressRange.values) {
+        final ({DateTime from, DateTime to}) w = rangeWindow(today, r);
+        final ({DateTime from, DateTime to}) p = previousRangeWindow(today, r);
+        expect(p.to.difference(p.from), w.to.difference(w.from), reason: '$r 不等长');
+      }
+    });
+
+    test('对比文案：四种情况分开说（上期没练 ≠ +100%）', () {
+      expect(periodDeltaLabel(120, 100), '较上期 +20%');
+      expect(periodDeltaLabel(80, 100), '较上期 −20%');
+      expect(periodDeltaLabel(100.2, 100), '与上期持平', reason: '0.2% 的波动不该说成涨了');
+      expect(periodDeltaLabel(50, 0), '上期没练',
+          reason: '除零没有百分比可写，硬写 +100% 就是编一个数');
+      expect(periodDeltaLabel(0, 0), '—', reason: '两边都没有，没什么可比的');
+      expect(periodDeltaLabel(0, 100), '较上期 −100%', reason: '归零是一件要说出来的事');
+    });
+  });
+
   test('容量 / 次数 / 组数：只算窗口内，且**未来时间不算**（与 lastSevenDays 同一条边界）', () {
     final List<SetRecord> sets = <SetRecord>[
       _set('w1', DateTime(2026, 10, 5, 9)), // 今天

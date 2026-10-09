@@ -209,7 +209,7 @@ void main() {
     await scrollToInProfile(find.textContaining('还没有训练记录'), up: true);
     expect(find.textContaining('还没有训练记录'), findsOneWidget,
         reason: '删除全部数据之后本机应当回到空态');
-    expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
+    expect(find.byKey(const Key('profile-stat-volume')), findsNothing,
         reason: '空态下不该有统计行');
 
     // ---------------------------------------------------------------- 5. 用恢复码取回
@@ -238,9 +238,11 @@ void main() {
     await tester.tap(find.byKey(const Key('cloud-back')));
     await settle(1500);
     // 统计卡在**上方**（视口还停在"数据"区）
-    await scrollToInProfile(find.byKey(const Key('profile-stat-sets')), up: true);
-    expect(textAt(const Key('profile-stat-sets')), '2 组',
-        reason: '换手机之后本机必须把 2 组拿回来');
+    // ⚠️ 2026-10-09：统计卡收成「连续天数 + 累计容量」两张（10.9 清单第 4 条），
+    // 断言改看累计容量；一组 60 kg × 8 次 = 480 kg，两组 960 kg。
+    await scrollToInProfile(find.byKey(const Key('profile-stat-volume')), up: true);
+    expect(textAt(const Key('profile-stat-volume')), '960 kg',
+        reason: '换手机之后本机必须把这两组拿回来');
 
     // **逐字段**比对：动作、重量、次数、组序、完成时间、组类型，一个都不许变。
     // 个数对只是"看起来回来了"，字段对才是"真的回来了"。

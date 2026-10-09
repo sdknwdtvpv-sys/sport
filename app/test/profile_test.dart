@@ -281,25 +281,31 @@ void main() {
       expect(find.byKey(const Key('profile-stat-sets')), findsNothing);
     });
 
-    testWidgets('有记录时显示三项统计', (WidgetTester tester) async {
+    testWidgets('有记录时显示累计容量与连续天数（2026-10-09：另两张卡拿掉了）',
+        (WidgetTester tester) async {
       await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
       await store.saveSet(_set(id: 'b', reps: 8, weightKg: 60, setIndex: 2));
       await pumpProfile(tester);
 
       // 同上：统计区在首屏之下，懒构建 —— 先滚过去
-      await scrollTo(tester, find.byKey(const Key('profile-stat-workouts')));
-      expect(
-        tester.widget<Text>(find.byKey(const Key('profile-stat-workouts'))).data,
-        '1 次',
-      );
-      expect(
-        tester.widget<Text>(find.byKey(const Key('profile-stat-sets'))).data,
-        '2 组',
-      );
+      await scrollTo(tester, find.byKey(const Key('profile-stat-volume')));
       expect(
         tester.widget<Text>(find.byKey(const Key('profile-stat-volume'))).data,
         '960 kg',
       );
+      expect(tester.widget<Text>(find.byKey(const Key('profile-stat-streak'))).data,
+          isNotEmpty);
+
+      // 10.9 清单第 4 条：这两张卡**从这一页拿掉**（进步页留周期口径）——
+      // 但那个数字没丢，它就在上面「我的进度」里：Lv 那行右边是次数、经验条那行是组数。
+      expect(find.byKey(const Key('profile-stat-workouts')), findsNothing,
+          reason: '累计次数已经并进「我的进度」的 Lv 那一行');
+      expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
+          reason: '累计组数已经并进「我的进度」的经验条那一行');
+      expect(tester.widget<Text>(find.byKey(const Key('profile-level-count'))).data,
+          '1 次');
+      expect(tester.widget<Text>(find.byKey(const Key('experience-sets'))).data,
+          '2 组');
     });
 
     testWidgets('A5 段位卡：0 枚时是青铜，如实写"还差 3 枚到白银"', (WidgetTester tester) async {
@@ -454,9 +460,10 @@ void main() {
 
       expect(find.byKey(const Key('profile-streak-label')), findsOneWidget,
           reason: '这句披露必须还在（只是换了位置），不能为了排版把它删掉');
-      final Finder workoutsCard = find
+      // ⚠️ 2026-10-09 起同排的另一张是「累计容量」（次数/组数两张卡拿掉了）
+      final Finder volumeCard = find
           .ancestor(
-              of: find.byKey(const Key('profile-stat-workouts')),
+              of: find.byKey(const Key('profile-stat-volume')),
               matching: find.byType(ViCard))
           .first;
       final Finder streakCard = find
@@ -465,13 +472,13 @@ void main() {
               matching: find.byType(ViCard))
           .first;
       expect(tester.getSize(streakCard).height,
-          tester.getSize(workoutsCard).height,
+          tester.getSize(volumeCard).height,
           reason: '同排两张格子必须等高：差出来的那十几像素就是用户说的"没排好"');
       // 而且那句话得落在**两张格子下面**（不在任何一张格子里面）——
       // 否则"等高"两个字就得靠"披露被裁掉"来换，那是更坏的修法。
       expect(
           find.descendant(
-              of: workoutsCard, matching: find.byKey(const Key('profile-streak-label'))),
+              of: volumeCard, matching: find.byKey(const Key('profile-streak-label'))),
           findsNothing);
       expect(
           find.descendant(

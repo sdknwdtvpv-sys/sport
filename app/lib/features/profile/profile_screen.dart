@@ -330,8 +330,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('训练统计'),
 
-        // 2026-10-05 按新 VI 换成**四张统计卡 + 打卡进度**（原来是三行文字）。
-        // 等级 Lv 与成就徽章要新数据，按计划留给 v1.47。
+        // 2026-10-05 按新 VI 换成统计卡；**2026-10-09 收成两张**（10.9 清单第 4 条）。
+        //
+        // 原来这四张是「训练次数 / 连续天数 / 总组数 / 总容量」，而进步页那四张是
+        // 「区间容量 / 训练次数 / 总组数 / 个人纪录」—— 三项重名，用户的原话是
+        // "重复度太高"。分工写死：
+        //   * **进步页 = 周期口径**（本周/本月/全年 + 与上一周期对比 + 趋势 + 个人纪录）；
+        //   * **这一页 = 累计口径 + 连续天数**。
+        // 于是「训练次数」「总组数」两张卡**从这一页拿掉** —— 不是信息没了：
+        // 那两个累计数字就在上面那张「我的进度」里（Lv 那一行右边是「12 次」，
+        // 经验条那一行右边是「340 组」，key 是 `profile-level-count` / `experience-sets`）。
+        // 一张页面上同一个数字出现两遍，才是这一条要治的东西。
         if (s.isEmpty)
           settingsCard(<Widget>[
             const Padding(
@@ -348,9 +357,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: ViCard(
                   child: StatTile(
-                    label: '训练次数',
-                    value: '${s.workoutCount} 次',
-                    valueKey: const Key('profile-stat-workouts'),
+                    label: '连续天数',
+                    value: '$_streak 天',
+                    valueKey: const Key('profile-stat-streak'),
                   ),
                 ),
               ),
@@ -358,16 +367,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: ViCard(
                   child: StatTile(
-                    label: '连续天数',
-                    value: '$_streak 天',
-                    valueKey: const Key('profile-stat-streak'),
+                    // 「累计容量」而不是「总容量」：与进步页那个「本周容量」对看时，
+                    // 口径写在标签上，用户不必去猜哪边是全部历史
+                    label: '累计容量',
+                    value: s.volumeLabel,
+                    valueKey: const Key('profile-stat-volume'),
                   ),
                 ),
               ),
             ],
           ),
 
-          // **含补签时必须写出来**（与首页同一句文案，见 streak_protection.dart）——
+          // **含补签时必须写出来**（与首页同一句文案，见 `streak_protection.dart`）——
           // 只写"连续 12 天"而其中 1 天是补的，那就是一句假话。
           //
           // 这句话的位置改过两次，第二次是**回归修复**（用户看完 v1.57.0 截图指出
@@ -388,30 +399,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: Tokens.s3),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: ViCard(
-                  child: StatTile(
-                    label: '总组数',
-                    value: '${s.setCount} 组',
-                    valueKey: const Key('profile-stat-sets'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: Tokens.s3),
-              Expanded(
-                child: ViCard(
-                  child: StatTile(
-                    label: '总容量',
-                    value: s.volumeLabel,
-                    valueKey: const Key('profile-stat-volume'),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
         const SizedBox(height: Tokens.s5),
         // 成就入口（2026-10-05）：**放统计下面、设置上面** ——

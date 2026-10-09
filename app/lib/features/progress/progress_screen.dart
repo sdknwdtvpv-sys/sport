@@ -372,16 +372,28 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  /// 四张统计卡（2026-10-05，新 VI）：区间容量 / 训练次数 / 总组数 / 个人纪录。
+  /// 四张统计卡（2026-10-05 新 VI；**2026-10-09 改成周期对比**，10.9 清单第 4 条）。
   ///
-  /// 前三张**跟着区间走**（周 / 月 / 年），第四张是全时段的历史纪录数 ——
+  /// 前三张跟着区间走（周 / 月 / 年），第四张是全时段的历史纪录数 ——
   /// 所以它的标签上写明了「全部」，不改口径也不含糊。
+  ///
+  /// ⚠️ 这一屏与「我的 → 训练统计」原来有**三项重名**（训练次数 / 总组数），
+  /// 用户的评价是"重复度太高"。分工现在写死了：
+  ///   * **这里 = 周期口径**：每张卡下面那一行不再是静态的口径说明（"最近 7 天"，
+  ///     那是上一个版本的样子），而是**与紧挨着的上一个同等长度窗口比**出来的变化；
+  ///   * **「我的」= 累计口径** + 连续天数（它那两张重名的卡已经拿掉）。
+  /// 标题也带上区间名（本周容量 / 本周训练 / 本周组数），一眼看得出这是"这一段的"。
   Widget _statsBlock() {
     final ({DateTime from, DateTime to}) w = rangeWindow(_today, _range);
+    final ({DateTime from, DateTime to}) prev = previousRangeWindow(_today, _range);
     final double volume = volumeIn(_sets, w.from, w.to);
     final int workouts = workoutCountIn(_sets, w.from, w.to);
     final int sets = setCountIn(_sets, w.from, w.to);
+    final double prevVolume = volumeIn(_sets, prev.from, prev.to);
+    final int prevWorkouts = workoutCountIn(_sets, prev.from, prev.to);
+    final int prevSets = setCountIn(_sets, prev.from, prev.to);
     final int prs = _data?.prs.length ?? 0;
+    final String range = rangeLabel(_range);
     return Column(
       children: <Widget>[
         Row(
@@ -389,10 +401,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Expanded(
               child: ViCard(
                 child: StatTile(
-                  label: '${rangeLabel(_range)}容量',
+                  label: '$range容量',
                   value: formatVolume(volume, widget.unit),
                   valueKey: const Key('progress-week-volume'),
-                  delta: rangeHint(_range),
+                  delta: periodDeltaLabel(volume, prevVolume),
+                  deltaKey: const Key('progress-delta-volume'),
                 ),
               ),
             ),
@@ -400,9 +413,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Expanded(
               child: ViCard(
                 child: StatTile(
-                  label: '训练次数',
+                  label: '$range训练',
                   value: '$workouts 次',
-                  delta: rangeHint(_range),
+                  delta: periodDeltaLabel(workouts.toDouble(), prevWorkouts.toDouble()),
+                  deltaKey: const Key('progress-delta-workouts'),
                 ),
               ),
             ),
@@ -414,9 +428,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Expanded(
               child: ViCard(
                 child: StatTile(
-                  label: '总组数',
+                  label: '$range组数',
                   value: '$sets 组',
-                  delta: rangeHint(_range),
+                  delta: periodDeltaLabel(sets.toDouble(), prevSets.toDouble()),
+                  deltaKey: const Key('progress-delta-sets'),
                 ),
               ),
             ),

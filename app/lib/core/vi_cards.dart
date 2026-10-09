@@ -98,6 +98,7 @@ class StatTile extends StatelessWidget {
     required this.value,
     this.delta,
     this.deltaUp,
+    this.deltaKey,
     this.valueSize = 28,
     this.valueKey,
   });
@@ -110,6 +111,10 @@ class StatTile extends StatelessWidget {
 
   /// 涨跌文案（例：`+18%`）。为空就不占位。
   final String? delta;
+
+  /// 挂在**涨跌那一行**上的 Key（周期对比的测试按它读那句话，
+  /// 例：`progress-delta-volume`）。`delta` 为空时它自然不出现。
+  final Key? deltaKey;
 
   /// 涨跌的方向：true 向上（绿）、false 向下（红）、null 中性（灰）。
   final bool? deltaUp;
@@ -138,6 +143,7 @@ class StatTile extends StatelessWidget {
           const SizedBox(height: Tokens.s1),
           Text(
             delta!,
+            key: deltaKey,
             style: TextStyle(color: deltaColor, fontSize: 12, height: 1.3),
           ),
         ],
