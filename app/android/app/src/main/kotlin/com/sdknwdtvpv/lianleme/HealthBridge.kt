@@ -38,11 +38,17 @@ object HealthBridge {
   /** 与 Dart 侧 `readBodyComposition(days:)` 的兜底值一致。 */
   private const val DEFAULT_DAYS = 180
 
-  /** 只读这三样。心率 / 睡眠 / 运动**一律不申请**。 */
+  /**
+   * 只读这四样（2026-10-09 起加了腰围）。心率 / 睡眠 / 运动**一律不申请**。
+   *
+   * ⚠️ 腰围与另外三样是**同一次请求、同一道同意门**：它在 Health Connect 里也归在
+   * 体成分那一类（`WaistCircumferenceRecord`），我们不为它单独弹一次授权。
+   */
   private val READ_PERMISSIONS = arrayOf(
     "android.permission.health.READ_WEIGHT",
     "android.permission.health.READ_BODY_FAT",
     "android.permission.health.READ_HEIGHT",
+    "android.permission.health.READ_WAIST_CIRCUMFERENCE",
   )
 
   /** 与提醒那条通道的 `REQUEST_CODE`（4703）必须不同 —— 见 `MainActivity` 的分发。 */

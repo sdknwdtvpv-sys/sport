@@ -99,22 +99,28 @@ class HealthSyncService {
     final Map<String, HealthDayValues> byDay = <String, HealthDayValues>{};
     final Map<String, double> weightByDay = <String, double>{};
     final Map<String, double> fatByDay = <String, double>{};
+    final Map<String, double> waistByDay = <String, double>{};
     double? newestHeight;
     for (final HealthSample s in sorted) {
       final String day =
           dayKey(DateTime.fromMillisecondsSinceEpoch(s.atMs));
       if (s.weightKg != null) weightByDay.putIfAbsent(day, () => s.weightKg!);
       if (s.bodyFatPct != null) fatByDay.putIfAbsent(day, () => s.bodyFatPct!);
+      if (s.waistCm != null) waistByDay.putIfAbsent(day, () => s.waistCm!);
       if (s.heightCm != null) newestHeight ??= s.heightCm;
     }
-    final List<String> dates = <String>{...weightByDay.keys, ...fatByDay.keys}
-        .toList()
+    final List<String> dates = <String>{
+      ...weightByDay.keys,
+      ...fatByDay.keys,
+      ...waistByDay.keys,
+    }.toList()
       ..sort();
     for (final String date in dates) {
       byDay[date] = HealthDayValues(
         date: date,
         weightKg: weightByDay[date],
         bodyFatPct: fatByDay[date],
+        waistCm: waistByDay[date],
       );
     }
 

@@ -123,9 +123,9 @@
 <li>❌ <strong>Free text</strong> such as workout notes or custom exercise names</li>
 </ul>
 <h3 id="2-4-reading-from-the-system-health-store-optional-off-by-default">2.4 Reading from the system health store (optional, off by default)</h3>
-<p>Your iPhone's Health app may already hold your body weight, body-fat percentage and height — written there by a smart-scale app, or by a clinic report. An optional entry on the &quot;Body data&quot; screen can merge them in, by day, <strong>read-only</strong>, so you do not have to copy the numbers across by hand.</p>
+<p>Your iPhone's Health app may already hold your body weight, body-fat percentage, height and waist circumference — written there by a smart-scale app, or by a clinic report. An optional entry on the &quot;Body data&quot; screen can merge them in, by day, <strong>read-only</strong>, so you do not have to copy the numbers across by hand.</p>
 <ul>
-<li><strong>What we read</strong>: body weight, body fat percentage, height. Heart rate, sleep, workouts and steps are <strong>never read</strong> and never requested;</li>
+<li><strong>What we read</strong>: body weight, body fat percentage, height and waist circumference (all body composition). Heart rate, sleep, workouts and steps are <strong>never read</strong> and never requested. ⚠️ <strong>Waist circumference has been included since 2026-10-09</strong> (Android permission <code>android.permission.health.READ_WAIST_CIRCUMFERENCE</code>); it shares the same consent gate and the same single read as the other three, with no second gate — in both system health stores it belongs to the body-composition category;</li>
 <li><strong>Read-only — we never write back</strong>: we request read access only and place nothing into your health store;</li>
 <li>These values are <strong>sensitive personal information</strong>, so this needs your <strong>separate consent</strong> — and it is a <strong>different</strong> consent from the body-metrics one: that one covers &quot;we record your weight on this phone&quot;, this one covers &quot;we read what other apps wrote into the system health store&quot;. Two gates, each of which you can withdraw on its own;</li>
 <li><strong>Without that consent we do not read a single byte</strong>: before you agree we do not even check whether your health store holds anything. We do ask once whether <strong>this device</strong> has a health store at all, so that we know whether to show the entry — that is a device capability, it touches none of your data and needs no permission;</li>
@@ -219,6 +219,7 @@
 <tr><td><code>android.permission.health.READ_WEIGHT</code></td><td>Reading <strong>body weight</strong> from the system health store (the Health Connect built into Android 14+) into the on-device body-data page (see 2.4)</td><td><strong>Android 14 and above only</strong>; never read by default, needs your <strong>separate consent</strong>; <strong>read-only</strong></td></tr>
 <tr><td><code>android.permission.health.READ_BODY_FAT</code></td><td>Same, for <strong>body fat percentage</strong></td><td>Same</td></tr>
 <tr><td><code>android.permission.health.READ_HEIGHT</code></td><td>Same, for <strong>height</strong> (used only to compute BMI)</td><td>Same</td></tr>
+<tr><td><code>android.permission.health.READ_WAIST_CIRCUMFERENCE</code></td><td>Same, for <strong>waist circumference</strong> (since 2026-10-09, see 2.4)</td><td>Same</td></tr>
 </tbody>
 </table>
 <p>Six notes on the third one (the notification permission):</p>

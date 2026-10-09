@@ -23,7 +23,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// 健康库里的一条体成分样本。**只读的四样东西**：时间 + 体重 + 体脂率 + 身高。
+/// 健康库里的一条体成分样本。**只读的五样东西**：时间 + 体重 + 体脂率 + 身高 + 腰围。
 ///
 /// 别的类型（心率 / 睡眠 / 运动）我们**不读也不申请** —— 这一条写在
 /// `docs/plan-health-sync.md` §二那张表里，政策正文也是这么承诺的。
@@ -33,6 +33,7 @@ class HealthSample {
     this.weightKg,
     this.bodyFatPct,
     this.heightCm,
+    this.waistCm,
   });
 
   /// 采样时刻（毫秒时间戳）。归属哪一天由调用方按**本地日**算。
@@ -41,7 +42,16 @@ class HealthSample {
   final double? bodyFatPct;
   final double? heightCm;
 
-  bool get hasContent => weightKg != null || bodyFatPct != null || heightCm != null;
+  /// 腰围（cm）。2026-10-09（10.9 清单第 9 条）：与另外三样同一道同意门、
+  /// 同一次读取 —— 它在两端都算"体成分"这一类（HealthKit 的 waistCircumference /
+  /// Health Connect 的 WaistCircumferenceRecord）。
+  final double? waistCm;
+
+  bool get hasContent =>
+      weightKg != null ||
+      bodyFatPct != null ||
+      heightCm != null ||
+      waistCm != null;
 }
 
 /// 系统健康库的读接口。
@@ -149,6 +159,7 @@ class MethodChannelHealthBridge implements HealthBridge {
           weightKg: (item['weightKg'] as num?)?.toDouble(),
           bodyFatPct: (item['bodyFatPct'] as num?)?.toDouble(),
           heightCm: (item['heightCm'] as num?)?.toDouble(),
+          waistCm: (item['waistCm'] as num?)?.toDouble(),
         ));
       }
       return out;

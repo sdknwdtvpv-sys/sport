@@ -311,6 +311,12 @@
       "maxSdkVersion": null,
       "why": "同上，读的是**身高**（只用来算 BMI）",
       "policyPhrase": "android.permission.health.READ_HEIGHT"
+    },
+    {
+      "name": "android.permission.health.READ_WAIST_CIRCUMFERENCE",
+      "maxSdkVersion": null,
+      "why": "同上，读的是**腰围**（2026-10-09，10.9 清单第 9 条）。⚠️ 它与上面三样**同一道同意门、同一次读取** —— 两边系统健康库里腰围本来就归在体成分那一类（HealthKit 的 waistCircumference / Health Connect 的 WaistCircumferenceRecord），所以不为它单开一道门；政策正文 2.4 已逐项点名，权限表也已列出",
+      "policyPhrase": "android.permission.health.READ_WAIST_CIRCUMFERENCE"
     }
   ],
   "injectedPermissions": [

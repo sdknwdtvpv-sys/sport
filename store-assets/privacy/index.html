@@ -124,9 +124,9 @@
 <li>❌ <strong>训练备注、自定义动作名称等自由文本</strong> —— 一律不上报</li>
 </ul>
 <h3 id="2-4-从系统健康库读取-可选-默认关">2.4 从系统健康库读取（可选，默认关）</h3>
-<p>iPhone 的「健康」里可能已经有你的体重、体脂率、身高 —— 有的来自体脂秤 App，有的来自体检报告。 「身体数据」页上有一个可选的入口，可以<strong>只读</strong>地把它们按天并进来，省得你两头抄。</p>
+<p>iPhone 的「健康」里可能已经有你的体重、体脂率、身高、腰围 —— 有的来自体脂秤 App， 有的来自体检报告。「身体数据」页上有一个可选的入口，可以<strong>只读</strong>地把它们按天并进来， 省得你两头抄。</p>
 <ul>
-<li><strong>读的就三样</strong>：体重、体脂率、身高。心率、睡眠、运动记录、步数<strong>一次都不读</strong>，也不申请；</li>
+<li><strong>读的就四样</strong>：体重、体脂率、身高、腰围（都是体成分）。心率、睡眠、运动记录、 步数<strong>一次都不读</strong>，也不申请； ⚠️ <strong>腰围自 2026-10-09 起</strong>也在这四样里（Android 的包名是 <code>android.permission.health.READ_WAIST_CIRCUMFERENCE</code>）—— 它与另外三样同一道同意门、 同一次读取，没有第二道门（理由：它在两端的系统健康库里本来就归在&quot;体成分&quot;这一类）；</li>
 <li><strong>只读，不写回</strong>：我们不会往你的健康库里写任何东西（申请的就是&quot;读取&quot;这一项授权）；</li>
 <li>这几样属于<strong>敏感个人信息</strong>，所以要你<strong>单独同意</strong> —— 而它与「身体数据」那道门是<strong>两件事</strong>： 那一道同意的是&quot;我们把你的体重记在这台手机上&quot;，这一道同意的是&quot;我们去读系统健康库里 别人写下来的记录&quot;。两道门各自一道、各自可以单独撤回；</li>
 <li><strong>不同意就一个字节都不读</strong>：没点过同意之前，我们连&quot;你的健康库里有没有数据&quot;都不查。 只问一次&quot;<strong>这台设备</strong>上有没有健康库&quot;来决定要不要显示那个入口 —— 那是设备能力， 不碰你的数据、也不需要任何授权；</li>
@@ -220,6 +220,7 @@
 <tr><td><code>android.permission.health.READ_WEIGHT</code></td><td>从系统健康库（Android 14+ 自带的 Health Connect）读<strong>体重</strong>，按天并进本机「身体数据」（见 2.4）</td><td><strong>仅 Android 14 及以上</strong>；默认不读，<strong>要你先单独同意</strong>；<strong>只读</strong></td></tr>
 <tr><td><code>android.permission.health.READ_BODY_FAT</code></td><td>同上，读<strong>体脂率</strong></td><td>同上</td></tr>
 <tr><td><code>android.permission.health.READ_HEIGHT</code></td><td>同上，读<strong>身高</strong>（只用来算 BMI）</td><td>同上</td></tr>
+<tr><td><code>android.permission.health.READ_WAIST_CIRCUMFERENCE</code></td><td>同上，读<strong>腰围</strong>（2026-10-09 起，见 2.4）</td><td>同上</td></tr>
 </tbody>
 </table>
 <p><strong>关于第三项（通知权限）</strong>，说明六点：</p>

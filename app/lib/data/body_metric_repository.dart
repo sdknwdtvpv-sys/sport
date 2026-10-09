@@ -35,15 +35,25 @@ const String kHealthNote = '来自系统健康';
 /// 健康库给**某一天**的体成分值（导入的输入）。身高不在这里 ——
 /// 它不是每日指标，存在档案里，由 `ProfileRepository.setHeightCm` 单独处理。
 class HealthDayValues {
-  const HealthDayValues({required this.date, this.weightKg, this.bodyFatPct});
+  const HealthDayValues({
+    required this.date,
+    this.weightKg,
+    this.bodyFatPct,
+    this.waistCm,
+  });
 
   /// `YYYY-MM-DD`（本地日），与库里的业务键同一个口径（[dayKey]）。
   final String date;
   final double? weightKg;
   final double? bodyFatPct;
 
+  /// 腰围（cm）。2026-10-09（10.9 清单第 9 条）加 —— 与体重/体脂同属体成分，
+  /// 共用同一道单独同意门，**不是**新的一类敏感数据。
+  final double? waistCm;
+
   /// 至少有一个值才算"有内容"：只有日期的空壳不该被写进库。
-  bool get hasContent => weightKg != null || bodyFatPct != null;
+  bool get hasContent =>
+      weightKg != null || bodyFatPct != null || waistCm != null;
 }
 
 /// 一次导入的**逐日结果**。界面照它如实报数：
@@ -214,7 +224,9 @@ class BodyMetricRepository {
                   date: Value<String>(d.date),
                   weightKg: Value<double?>(d.weightKg),
                   bodyFatPct: Value<double?>(d.bodyFatPct),
-                  waistCm: const Value<double?>(null),
+                  // ⚠️ 这一列以前恒为 null（健康库当时只读体重/体脂/身高）——
+                  // 10.9 清单第 9 条起腰围也读，缺的照样补
+                  waistCm: Value<double?>(d.waistCm),
                   muscleMassKg: const Value<double?>(null),
                   note: const Value<String?>(kHealthNote),
                   updatedAt: Value<int>(now),
@@ -232,7 +244,10 @@ class BodyMetricRepository {
 
         final double? weight = existing.weightKg ?? d.weightKg;
         final double? bodyFat = existing.bodyFatPct ?? d.bodyFatPct;
-        if (weight == existing.weightKg && bodyFat == existing.bodyFatPct) {
+        final double? waist = existing.waistCm ?? d.waistCm;
+        if (weight == existing.weightKg &&
+            bodyFat == existing.bodyFatPct &&
+            waist == existing.waistCm) {
           unchanged++;
           continue;
         }
@@ -243,7 +258,7 @@ class BodyMetricRepository {
                 date: Value<String>(existing.date),
                 weightKg: Value<double?>(weight),
                 bodyFatPct: Value<double?>(bodyFat),
-                waistCm: Value<double?>(existing.waistCm),
+                waistCm: Value<double?>(waist),
                 muscleMassKg: Value<double?>(existing.muscleMassKg),
                 // 用户的备注原样带回去 —— 合并**从不**碰它
                 note: Value<String?>(existing.note),

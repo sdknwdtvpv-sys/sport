@@ -269,6 +269,59 @@ void main() {
       expect((await body.forDate('2026-09-30'))!.weightKg, 73.0);
     });
 
+    // ── 腰围（2026-10-09，10.9 清单第 9 条）───────────────────────────────
+    test('★ 腰围也读进来：同一天按字段各取最新，且与体重互不覆盖', () async {
+      await profile.setHealthConsent(nowMs: 1);
+      bridge.samples = <HealthSample>[
+        HealthSample(atMs: atMs(2026, 10, 1, 7), weightKg: 72.5, waistCm: 84.0),
+        HealthSample(atMs: atMs(2026, 10, 1, 19), waistCm: 83.0),
+      ];
+      final HealthSyncOutcome out = await HealthSyncService(
+        bridge: bridge,
+        bodyMetrics: body,
+        profile: profile,
+      ).sync();
+
+      expect(out.status, HealthSyncStatus.imported);
+      final BodyMetricData row = (await body.forDate('2026-10-01'))!;
+      expect(row.waistCm, 83.0, reason: '取那天最新的腰围');
+      expect(row.weightKg, 72.5, reason: '体重那一条只有早上有 —— 按字段各取最新');
+    });
+
+    test('★ 那天**只有**腰围时也要建一条记录（不是只认体重）', () async {
+      await profile.setHealthConsent(nowMs: 1);
+      bridge.samples = <HealthSample>[
+        HealthSample(atMs: atMs(2026, 10, 3), waistCm: 82.0),
+      ];
+      final HealthSyncOutcome out = await HealthSyncService(
+        bridge: bridge,
+        bodyMetrics: body,
+        profile: profile,
+      ).sync();
+
+      expect(out.report!.created, 1,
+          reason: '只有腰围也算有内容 —— 否则"只量了腰围"的那天白读');
+      expect((await body.forDate('2026-10-03'))!.waistCm, 82.0);
+    });
+
+    test('★ 用户自己记过的腰围不被健康库覆盖，只补空的', () async {
+      await profile.setHealthConsent(nowMs: 1);
+      await body.save(date: '2026-10-01', weightKg: 70.5, waistCm: 90.0, nowMs: 1);
+      bridge.samples = <HealthSample>[
+        HealthSample(atMs: atMs(2026, 10, 1), weightKg: 72.0, waistCm: 80.0),
+      ];
+      await HealthSyncService(
+        bridge: bridge,
+        bodyMetrics: body,
+        profile: profile,
+      ).sync();
+
+      final BodyMetricData row = (await body.forDate('2026-10-01'))!;
+      expect(row.waistCm, 90.0, reason: '那一列我们自己有值 —— 一个数都不许被盖掉');
+      expect(row.weightKg, 70.5, reason: '体重同理（我们的字段不覆盖，只补缺的）');
+      expect(row.note, isNull, reason: '用户自己的记录不该被加上"来自系统健康"');
+    });
+
     test('身高只在档案里**空着**的时候才补', () async {
       await profile.setHealthConsent(nowMs: 1);
       bridge.samples = <HealthSample>[

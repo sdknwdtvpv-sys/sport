@@ -117,6 +117,7 @@
     · android.permission.health.READ_WEIGHT（全部版本）—— 从系统健康库（Android 14+ 自带的 Health Connect）读体重，按天并进本机「身体数据」。只读：没有任何 WRITE_* 权限、也没有写入路径；只在用户点「从系统健康同步」并单独同意之后才读
     · android.permission.health.READ_BODY_FAT（全部版本）—— 同上，读的是体脂率。⚠️ 平台上这个权限叫 READ_BODY_FAT，不是 READ_BODY_FAT_PERCENTAGE —— 施工单 §三② 那处写错了，2026-10-09 从 android-36 的 HealthPermissions 里读出来改的
     · android.permission.health.READ_HEIGHT（全部版本）—— 同上，读的是身高（只用来算 BMI）
+    · android.permission.health.READ_WAIST_CIRCUMFERENCE（全部版本）—— 同上，读的是腰围（2026-10-09，10.9 清单第 9 条）。⚠️ 它与上面三样同一道同意门、同一次读取 —— 两边系统健康库里腰围本来就归在体成分那一类（HealthKit 的 waistCircumference / Health Connect 的 WaistCircumferenceRecord），所以不为它单开一道门；政策正文 2.4 已逐项点名，权限表也已列出
     · android.permission.READ_EXTERNAL_STORAGE（系统因上一条隐含授予，仅 API ≤ 29）—— 系统因 WRITE 隐含授予；我们从不读用户文件
 
 二、与第三方共享个人信息清单

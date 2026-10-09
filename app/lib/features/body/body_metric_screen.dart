@@ -42,10 +42,10 @@ import '../../health/health_sync.dart';
 /// 那种时候告诉安卓用户"去 iPhone 的健康 App 里看看"就是一句**假话**。
 /// 抽成纯函数还顺带能被单测直接钉住两个分支，不用去伪装平台。
 String healthEmptyHint(TargetPlatform platform) => platform == TargetPlatform.iOS
-    ? '健康库里没有找到体重、体脂率或身高。\n\n'
+    ? '健康库里没有找到体重、体脂率或身高、腰围。\n\n'
         '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
         '可以去 iPhone 的「健康」App 里看看有没有数据。'
-    : '健康库里没有找到体重、体脂率或身高。\n\n'
+    : '健康库里没有找到体重、体脂率或身高、腰围。\n\n'
         '要么那里本来就没有这些记录，要么刚才没允许读取 —— '
         '可以到系统里的「健康连接 / Health Connect」里看看有没有数据。';
 
@@ -328,7 +328,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
         content: const Text(
           // ⚠️ 这里同样**不能**写 markdown 的星号：`Text` 不渲染 markdown。
           '「系统健康库」就是 iPhone 上那个「健康」App。这里读的只有'
-          '体重、体脂率、身高三样 —— 心率、睡眠、运动记录一次都不读，也不申请。\n\n'
+          '体重、体脂率、身高、腰围四样（都是体成分）——'
+          '心率、睡眠、运动记录一次都不读，也不申请。\n\n'
           '· 只读，不写回：我们一个字都不会写进你的健康库；\n'
           '· 按《个人信息保护法》，这几样属于敏感个人信息，要单独征求你的同意 —— '
           '它与「身体数据」那道门是两件事：那一道管"记在这台手机上"，'
@@ -508,7 +509,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                         style: TextStyle(color: Tokens.text, fontSize: 15)),
                     const SizedBox(height: 2),
                     Text(
-                      '只读体重、体脂率、身高 · 可选',
+                      '只读体重、体脂率、身高、腰围 · 可选',
                       style: TextStyle(color: Tokens.text3, fontSize: 12),
                     ),
                   ],

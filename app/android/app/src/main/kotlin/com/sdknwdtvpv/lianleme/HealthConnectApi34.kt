@@ -9,6 +9,7 @@ import android.health.connect.TimeInstantRangeFilter
 import android.health.connect.datatypes.BodyFatRecord
 import android.health.connect.datatypes.HeightRecord
 import android.health.connect.datatypes.Record
+import android.health.connect.datatypes.WaistCircumferenceRecord
 import android.health.connect.datatypes.WeightRecord
 import android.os.OutcomeReceiver
 import androidx.annotation.RequiresApi
@@ -116,6 +117,11 @@ object HealthConnectApi34 {
     }
     query(HeightRecord::class.java) { record ->
       mapOf("atMs" to record.time.toEpochMilli(), "heightCm" to record.height.inMeters * 100.0)
+    }
+    // 腰围（2026-10-09，10.9 清单第 9 条）：Health Connect 存的是 Length，换成厘米 ——
+    // 与库里 `body_metric.waist_cm`、与 iOS 那一侧同一个单位
+    query(WaistCircumferenceRecord::class.java) { record ->
+      mapOf("atMs" to record.time.toEpochMilli(), "waistCm" to record.waistCircumference.inMeters * 100.0)
     }
   }
 

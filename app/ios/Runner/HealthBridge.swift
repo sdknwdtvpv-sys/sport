@@ -28,12 +28,18 @@ enum HealthBridge {
   /// 往里看多少天由 Dart 侧传进来（默认 180）—— 这里是兜底值，两侧口径要一致。
   private static let defaultDays = 180
 
-  /// 只读这三样。心率 / 睡眠 / 运动**一律不申请**（`docs/plan-health-sync.md` §二那张表）。
+  /// 只读这四样（2026-10-09 起加了腰围）。心率 / 睡眠 / 运动**一律不申请**
+  /// （`docs/plan-health-sync.md` §二那张表）。
+  ///
+  /// ⚠️ 腰围与另外三样**同一道同意门、同一次读取**：它在 HealthKit 里也属于体成分
+  /// （`HKQuantityTypeIdentifier.waistCircumference`，iOS 11+ 就有）——
+  /// 我们不会为它单独要一次授权，政策里也没有把它单列成新的一类。
   private static var readTypes: Set<HKObjectType> {
     var types = Set<HKObjectType>()
     if let mass = HKQuantityType.quantityType(forIdentifier: .bodyMass) { types.insert(mass) }
     if let fat = HKQuantityType.quantityType(forIdentifier: .bodyFatPercentage) { types.insert(fat) }
     if let height = HKQuantityType.quantityType(forIdentifier: .height) { types.insert(height) }
+    if let waist = HKQuantityType.quantityType(forIdentifier: .waistCircumference) { types.insert(waist) }
     return types
   }
 
@@ -72,7 +78,7 @@ enum HealthBridge {
     }
   }
 
-  /// 读最近 `days` 天的体重 / 体脂率 / 身高，**每一条测量各自一条样本**。
+  /// 读最近 `days` 天的体重 / 体脂率 / 身高 / 腰围，**每一条测量各自一条样本**。
   ///
   /// 分组（"同一天取最新"）不在这里做 —— 那是 `health_sync.dart` 的活，
   /// 这一层只负责"把系统里的数按原样交出去"。
@@ -134,6 +140,8 @@ enum HealthBridge {
     // ⚠️ percent() 是 0–1 的比例 → ×100 才是百分数（见文件头那条）
     query(.bodyFatPercentage, unit: HKUnit.percent(), scale: 100, key: "bodyFatPct")
     query(.height, unit: HKUnit.meterUnit(with: .centi), scale: 1, key: "heightCm")
+    // 腰围：HealthKit 存的是长度，直接换成厘米（与库里 `body_metric.waist_cm` 同一个单位）
+    query(.waistCircumference, unit: HKUnit.meterUnit(with: .centi), scale: 1, key: "waistCm")
 
     group.notify(queue: DispatchQueue.main) {
       if let error = failure, samples.isEmpty {
