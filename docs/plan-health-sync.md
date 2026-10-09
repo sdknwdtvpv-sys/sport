@@ -206,6 +206,14 @@
 后者要等公网政策页的地址定下来（`docs/release-admin.md` §四），所以先不建那个说明页，
 免得挂一个打不开的链接。
 
+**产物级也核了**（2026-10-09）：`tool/check-ios-app.mjs` 多一条 —— 拿**真的 Runner.app** 核两件事：
+`Info.plist` 里必须有 `NSHealthShareUsageDescription`、**必须没有** `NSHealthUpdateUsageDescription`；
+而且只要这份产物是**签过能力的**（`codesign -d --entitlements` 读得到非空字典），就必须带
+`com.apple.developer.healthkit`。真机那份读出来是「用法说明是只读那一句 · 签名里带 healthkit」，
+模拟器那份读出来是「没带 entitlements（模拟器不签能力），能力那条跳过」—— 两条分支都验过。
+⚠️ 判"有没有签能力"要看**字典里有没有键**，不能看那段输出非不非空：模拟器构建会打印一份合法的
+**空字典**，按非空判会误报（加这条时当场踩了一次）。源码级的那一半在 `privacy-audit` 的 ⑩之六。
+
 **验到什么程度**（与 iOS 那半边同一个标准）：编得过（APK 构建）、
 `app/integration_test/health_entry_gate_test.dart` 在**真的 Android 16 模拟器**上跑过 ——
 `平台说能读=true → 入口出现`（那一台系统里确实有 Health Connect 模块

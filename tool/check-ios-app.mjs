@@ -23,6 +23,13 @@
  *      所以含 2（iPad）现在是**红**，不再是提示：商店页会承诺支持 iPad，
  *      而 iPad 上只是拉长的手机版，没人给它做过适配。
  *
+ *  11. **从系统健康库读体成分那件事的两条硬约束**（2026-10-09 加）：
+ *      `Info.plist` 里**必须有** `NSHealthShareUsageDescription`（没有它，iOS 上请求读健康数据
+ *      会直接失败），**必须没有** `NSHealthUpdateUsageDescription`（政策承诺的是"只读、不写回"）；
+ *      另外，**只要这份产物是签过能力的**（`codesign -d --entitlements` 读得到非空字典），
+ *      就必须带 `com.apple.developer.healthkit`。源码级的那一半在 `tool/privacy-audit.mjs` 的 ⑩之六，
+ *      这一条核的是**产物**：源码写对了、构建时掉了，是另一回事。
+ *
  *  10. **应用级隐私清单**（`PrivacyInfo.xcprivacy`）真的在包里、且 `NSPrivacyTracking = false`。
  *      为什么单列一条：漏了它会在**上传时**收到 `ITMS-91053: Missing API declaration` ——
  *      一条只有上传才看得见的错误（详见 `docs/release-admin.md` §二之四）。
@@ -185,6 +192,42 @@ function inspect(appPath, root = ROOT) {
       '（实测过），v1.30.0 已锁竖屏，这里不该回退');
   }
   facts.push(`主题 Dark · 方向 ${orients.length} 项（竖屏锁）`);
+
+  // ⑪ 从系统健康库读体成分：两条硬约束（用法说明只读、能力在产物里）
+  {
+    const share = plistRaw(plist, 'NSHealthShareUsageDescription');
+    const update = plistRaw(plist, 'NSHealthUpdateUsageDescription');
+    if (!share) {
+      problems.push('缺 NSHealthShareUsageDescription —— iOS 上请求读健康数据会**直接失败**，'
+        + '而政策 §2.4 承诺了我们会读');
+    }
+    if (update) {
+      problems.push('出现了 NSHealthUpdateUsageDescription（写回健康库的用法说明）—— '
+        + '政策承诺的是"只读、不写回"，代码里 `toShare` 也是空数组；写了这一条就是在向用户申请一件我们不做的事');
+    }
+    // 能力：只有**签过能力**的产物才读得到 entitlements。
+    // ⚠️ 模拟器构建不签能力（实测 dict 是空的），所以那种产物上这条**跳过并如实说**，
+    // 不能因为读不到就判红 —— 那是环境差异，不是产物有问题；反过来，读到了就必须有 healthkit。
+    let entitlementDict = '';
+    try {
+      entitlementDict = execFileSync('codesign',
+        ['-d', '--entitlements', ':-', appPath], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    } catch { entitlementDict = ''; }
+    // ⚠️ 判"有没有签能力"要**看字典里有没有键**，不能只看那段输出非空：
+    // 模拟器构建的 `codesign -d --entitlements` 会打印一份**合法的空字典**
+    // （`<dict></dict>`，2026-10-09 实测），按"非空字符串"判会把它当成"签了却缺 healthkit"而误报。
+    const hasEntitlements = /<key>/.test(entitlementDict);
+    if (/com\.apple\.developer\.healthkit/.test(entitlementDict)) {
+      facts.push('HealthKit：用法说明是"只读"那一句 · 产物签名里带 com.apple.developer.healthkit');
+    } else if (hasEntitlements) {
+      problems.push('这份产物**签了能力**（读得到 entitlements），但里面没有 '
+        + 'com.apple.developer.healthkit —— 源码里挂了、构建/签名时掉了，'
+        + '那样真机上请求读健康数据会失败');
+    } else {
+      facts.push('HealthKit：用法说明是"只读"那一句 · 这份产物没带 entitlements'
+        + '（模拟器构建不签能力），能力那一条跳过');
+    }
+  }
 
   // ⑤ 应用内资产
   const assetsDir = join(appPath, 'Frameworks/App.framework/flutter_assets/assets');
@@ -366,6 +409,7 @@ function selftest() {
       CFBundleShortVersionString: exp.version,
       CFBundleVersion: exp.buildNumber,
       NSPhotoLibraryAddUsageDescription: '写入相册',
+      NSHealthShareUsageDescription: '读取你健康里的体重、体脂率和身高',
       ITSAppUsesNonExemptEncryption: false,
       UIUserInterfaceStyle: 'Dark',
       UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
@@ -442,6 +486,11 @@ function selftest() {
       rmSync(join(a, 'AppIcon60x60@2x.png'), { force: true });
       return a;
     })(), true],
+    // ⚠️ 2026-10-09：健康库那两条 —— 缺"读"的用法说明、或悄悄加上"写"的那句，都必须红
+    ['缺 NSHealthShareUsageDescription → 必须红', mk('bad-no-healthshare',
+      (e) => { delete e.NSHealthShareUsageDescription; }), true],
+    ['多了 NSHealthUpdateUsageDescription（写回）→ 必须红', mk('bad-healthupdate',
+      (e) => { e.NSHealthUpdateUsageDescription = '写回健康库'; }), true],
   ];
   // 出口合规那三条：造临时仓库根，只动 pubspec 与两份文档
   const docRoot = (mutate) => {
