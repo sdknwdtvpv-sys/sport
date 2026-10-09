@@ -18,9 +18,7 @@ import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatf
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/glass_segmented.dart';
 
-import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/vi_area_chart.dart';
@@ -68,12 +66,6 @@ String healthDeniedHint(TargetPlatform platform) => platform == TargetPlatform.i
     : '没有拿到读取健康数据的许可。\n\n'
         '你可以在系统「设置 → 应用 → 健康连接 / Health Connect → 应用权限」里'
         '给「练了么」打开读权限，再回来试一次。';
-
-/// `Color` → `#RRGGBB`（原生按这个解析；`GlassSegmented` 的原生字色用它）
-String _hexOf(Color c) {
-  final int v = c.toARGB32() & 0xFFFFFF;
-  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
-}
 
 
 class BodyMetricScreen extends StatefulWidget {
@@ -1155,14 +1147,13 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     );
   }
 
-  /// 「体重  [kg][lb][斤]」——标签行右边挂三个小 chip，切换立即生效。
-  ///
-  /// iOS 26：等宽 + 底托/选中胶囊两块玻璃（用户 2026-10-06 拍板"所有像切 tab 的都做"）；
-  /// 非 iOS 原样 —— Android 一个像素都不动。
-  ///
-  /// ⚠️ 材质用 `.clear` + 一点点白：这一行在**卡片的平底**上，背后没有内容经过，
-  /// `.regular` 在这里只会变成一块灰板（这条规矩是 2026-10-06 试出来的）。
   /// 体重的单位开关（kg / lb / 斤）。
+  ///
+  /// ⚠️ **2026-10-10 用户：「选中胶囊还有没改的，你再查一下」** —— 查出来两处漏网，
+  /// 这是其中一处：它当时还在用旧的 `GlassSegmentedRow`（iOS 26 那块玻璃底托 +
+  /// 浅色选中胶囊），是"选中胶囊"里唯一没跟着改的两块之一。现在换成 `ViSegmented`：
+  /// iOS 上一块真的 `UISegmentedControl`（选中 = **强调橙**，与周/月/年同款），
+  /// 非 iOS 仍是老样子的实心胶囊（Android 一个像素都不动）。
   ///
   /// ⚠️ 它**自己不带"体重"标签、也不带 `Spacer`**（2026-10-08 重排改的）：
   /// 现在它贴在「体重」那张卡的标题行右侧，而**Row 的非弹性子项拿到的宽度约束是无界的** ——
@@ -1171,64 +1162,15 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   /// （重排时被 body_consent_test 那批测试抓到，14 条一起红）。
   /// 标签与右对齐现在由外层那个 Row（`_weightCard`）负责。
   Widget _weightUnitRow() {
-    return GlassSegmentedRow(
-            count: BodyWeightUnit.values.length,
-            index: BodyWeightUnit.values.indexOf(_unit),
-            itemWidth: 52,
-            height: 28,
-            style: GlassStyle.clear,
-            baseTint: '#FFFFFF14',
-            pillTint: '#FFFFFF2E',
-            // 字由原生画（玻璃里面）——Flutter 那份在玻璃背后会被折射出第二份虚影
-            labels: <String>[for (final BodyWeightUnit u in BodyWeightUnit.values) u.label],
-            selectedColor: _hexOf(Tokens.text),
-            unselectedColor: _hexOf(Tokens.text2),
-            labelFontSize: 12,
-            itemBuilder: (int i, bool glass) {
-              final BodyWeightUnit u = BodyWeightUnit.values[i];
-              final bool on = _unit == u;
-              if (!glass) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                      right: u == BodyWeightUnit.values.last ? 0 : Tokens.s2),
-                  child: GestureDetector(
-                    key: Key('body-unit-${u.wire}'),
-                    onTap: () => _switchUnit(u),
-                    child: Container(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: on ? Tokens.accent : Tokens.surface,
-                        borderRadius: BorderRadius.circular(Tokens.rPill),
-                      ),
-                      child: Text(
-                        u.label,
-                        style: TextStyle(
-                          color: on ? Tokens.accentInk : Tokens.text2,
-                          fontSize: 12,
-                          fontWeight: on ? FontWeight.w700 : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
-              return GestureDetector(
-                key: Key('body-unit-${u.wire}'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _switchUnit(u),
-                child: Text(
-                  u.label,
-                  style: TextStyle(
-                    color: on ? Tokens.text : Tokens.text2,
-                    fontSize: 12,
-                    fontWeight: on ? FontWeight.w700 : FontWeight.w400,
-                  ),
-                ),
-              );
-          },
-        );
+    return ViSegmented(
+      key: const Key('body-unit-row'),
+      itemWidth: 52,
+      labels: <String>[for (final BodyWeightUnit u in BodyWeightUnit.values) u.label],
+      current: BodyWeightUnit.values.indexOf(_unit),
+      // 标签是给人看的（`斤`），key 是给测试用的（`jin`）—— 所以 key 得自己给
+      itemKey: (int i) => Key('body-unit-${BodyWeightUnit.values[i].wire}'),
+      onChanged: (int i) => _switchUnit(BodyWeightUnit.values[i]),
+    );
   }
 
   /// 分组标题（2026-10-08 重排新增）：这一页现在只有三组

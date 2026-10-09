@@ -13,6 +13,8 @@
 /// `glass_surface_test.dart` 顶部）。
 library;
 
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -318,5 +320,37 @@ void main() {
     expect(AppTabBar.reservedSpaceFor(tester.element(find.byType(AppTabBar))), 0,
         reason: '不浮动就不用给内容留位置');
     debugDefaultTargetPlatformOverride = null;
+  });
+
+  test('★ 全仓扫一遍：分段控件只许走 `ViSegmented`（2026-10-10 漏过两处的教训）', () {
+    // 用户那天说「**选中胶囊还有没改的，你再查一下**」—— 一查真有：
+    // 「身体数据」页的体重单位（kg/lb/斤）与「设置 → 显示」的重量单位（kg/lb）
+    // 当时还在直接用 `GlassSegmentedRow`（iOS 上就是旧的玻璃胶囊），
+    // 所以那两处没跟着换成橙色的原生控件。
+    //
+    // 这条把"靠人眼找"换成"机械扫"：**除了 `ViSegmented` 自己那一支，
+    // lib/ 下不许再有人直接建玻璃分段行** —— 否则它就是下一个漏网的选中胶囊。
+    // 扫的是**去掉行注释之后**的代码（注释里提到这个名字是正常的，我在好几处都写了）。
+    final List<String> offenders = <String>[];
+    for (final FileSystemEntity e
+        in Directory('lib').listSync(recursive: true)) {
+      if (e is! File || !e.path.endsWith('.dart')) continue;
+      final String path = e.path;
+      // 这两个文件是"实现本身"，不算调用点
+      if (path.endsWith('core/vi_cards.dart')) continue;
+      if (path.endsWith('core/glass_segmented.dart')) continue;
+      final String code = e
+          .readAsLinesSync()
+          .map((String l) {
+            final int i = l.indexOf('//');
+            return i < 0 ? l : l.substring(0, i);
+          })
+          .join('\n');
+      if (code.contains('GlassSegmentedRow(') || code.contains('GlassSegmented(')) {
+        offenders.add(path);
+      }
+    }
+    expect(offenders, isEmpty,
+        reason: '这些地方还在自己建玻璃分段控件，应该改用 `ViSegmented`：$offenders');
   });
 }

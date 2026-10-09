@@ -167,6 +167,7 @@ class ViSegmented extends StatelessWidget {
     required this.current,
     required this.onChanged,
     this.itemWidth = 56,
+    this.itemKey,
   });
 
   final List<String> labels;
@@ -176,7 +177,13 @@ class ViSegmented extends StatelessWidget {
   /// iOS 上每格的宽度（等宽）。非 iOS 不生效。
   final double itemWidth;
 
-  /// iOS 上分段控件的高度：胶囊圆角 = 高度 / 2。
+  /// 每一格的 `Key`（**只有非 iOS 那一支用得上** —— iOS 的格子在 UIKit 里，没有 key）。
+  ///
+  /// 默认 `Key('seg-<标签>')`。单位那种"标签是给人看的、key 是给测试用的"地方要自己给：
+  /// 体重的三个单位标签是 `kg / lb / 斤`，而测试找的是 `body-unit-jin`（wire 值）。
+  final Key Function(int index)? itemKey;
+
+  /// 分段控件的高度（两支都用）：iOS 上就是原生控件的框高，圆角 = 高度 / 2。
   static const double _glassHeight = 32;
 
   @override
@@ -245,7 +252,7 @@ class ViSegmented extends StatelessWidget {
     );
 
     return GestureDetector(
-      key: Key('seg-${labels[i]}'),
+      key: itemKey?.call(i) ?? Key('seg-${labels[i]}'),
       behavior: HitTestBehavior.deferToChild,
       onTap: () => onChanged(i),
       child: Container(

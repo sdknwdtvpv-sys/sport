@@ -438,12 +438,22 @@
     必须重出包/切版，这条纪律见 `docs/release-checklist.md`「构建链」那一行。
 * **分段切换器**（`core/vi_cards.dart` 的 `ViSegmented`）：同一晚**跟着也换成了苹果原生的
   `UISegmentedControl`**（用户看完底栏之后问：「其他的切换选项能不能也做成这个效果呢，
-  比如说像周 月 年的那个调整」）。`ViSegmented` 是**一处改、五处生效**的复用点：
-  * 「进步」页的**周 / 月 / 年**（`progress_screen.dart:471`）；
+  比如说像周 月 年的那个调整」）。`ViSegmented` 是**一处改、七处生效**的复用点：
+  * 「进步」页的**周 / 月 / 年**（`progress_screen.dart:497`）；
   * 「数据」页的**按动作看 / 按时间看**（`all_data_screen.dart:232`）；
   * 「计划」页的**本周 / 模板库 / 历史**（`plan_screen.dart:126`）；
   * 「身体数据」页趋势卡的**指标切换**（`body_metric_screen.dart:660`）；
-  * 分享卡预览的**明细 / 打卡**（`share_card_preview_screen.dart:190`）。
+  * 分享卡预览的**明细 / 打卡**（`share_card_preview_screen.dart:190`）；
+  * 「身体数据」页体重那张卡标题右边的**单位开关**（kg / lb / 斤）——
+    ⚠️ **2026-10-10 才补上**，见下面那条"漏网"；
+  * 「设置 → 显示」里的**重量单位**（kg / lb）—— 同上，同一天补的。
+  ⚠️ **「选中胶囊还有没改的，你再查一下」（2026-10-10，用户原话）**：那两处单位开关
+  当时还在**直接用 `GlassSegmentedRow`**（iOS 上就是旧的玻璃胶囊），所以没跟着变成橙色。
+  根因是"分段控件"有两个入口（`ViSegmented` 与 `GlassSegmentedRow`），而我上一遍只查了前者。
+  现在：两处都改用 `ViSegmented`（`itemKey` 让它们保住原来的 `body-unit-jin` / `unit-lb`
+  这些 key，非 iOS 那一支的字与 key 一个字没变），并加了一条**机械扫描**的单测
+  （`test/glass_segmented_test.dart` 最后一条）：除 `core/vi_cards.dart` 自己那一支，
+  `lib/` 下**不许再有人直接建玻璃分段行**（去掉行注释之后扫，已反向验过：塞一个假文件进去当场红）。
   实现是 `ios/Runner/NativeSegmentedBridge.swift` + `core/native_segmented.dart`，
   与底栏那块**同一套规矩**（触摸归原生、Dart 是唯一真源、宽度由 Dart 定）：
   * **等宽由 Dart 给**（`itemWidth × 段数`，原生那侧关掉 `apportionsSegmentWidthsByContent`）——

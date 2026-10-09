@@ -14,10 +14,9 @@ library;
 import 'package:flutter/cupertino.dart' show CupertinoPicker, FixedExtentScrollController;
 import 'package:flutter/material.dart';
 
-import '../../core/glass_segmented.dart';
 import '../../core/glass_switch.dart';
-import '../../core/glass_surface.dart';
 import '../../core/theme.dart';
+import '../../core/vi_cards.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
 import '../../core/weight_step_dialog.dart';
@@ -26,12 +25,6 @@ import '../../domain/models.dart';
 import 'profile_widgets.dart';
 
 import 'reminder.dart';
-
-/// `Color` → `#RRGGBB`（原生按这个解析；`GlassSegmented` 的原生字色用它）
-String _hexOf(Color c) {
-  final int v = c.toARGB32() & 0xFFFFFF;
-  return '#${v.toRadixString(16).padLeft(6, '0').toUpperCase()}';
-}
 
 
 /// 休息时长的候选值。放在这里而不是 units.dart：它是产品决定，不是单位问题。
@@ -374,52 +367,17 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 const Text('重量单位',
                     style: TextStyle(color: Tokens.text2, fontSize: 13)),
                 const SizedBox(width: Tokens.s3),
-                // iOS 26：等宽 + 底托/选中胶囊两块玻璃；非 iOS 原样（Android 一个像素都不动）。
-                // ⚠️ 这里在**卡片的平底**上，所以用 `.clear` + 一点点白，而不是 `.regular` ——
-                // 背后没有内容经过时，`.regular` 会变成一块灰板（2026-10-06 试出来的）。
-                GlassSegmentedRow(
-                  count: WeightUnit.values.length,
-                  index: WeightUnit.values.indexOf(_unit),
+                // ⚠️ **2026-10-10 用户：「选中胶囊还有没改的，你再查一下」** —— 查出来两处漏网，
+                // 这是另一处：它当时还在用旧的 `GlassSegmentedRow`（iOS 26 那块玻璃底托 +
+                // 浅色选中胶囊）。现在换成 `ViSegmented`：iOS 上一块真的 `UISegmentedControl`
+                // （选中 = **强调橙**，与周/月/年、底栏同一个"选中"），非 iOS 仍是
+                // 老样子的实心胶囊（`choicePill`，Android 一个像素都不动）。
+                ViSegmented(
                   itemWidth: 52,
-                  height: 32,
-                  style: GlassStyle.clear,
-                  baseTint: '#FFFFFF14',
-                  pillTint: '#FFFFFF2E',
-                  // 字由原生画（玻璃里面）——Flutter 那份在玻璃背后会被折射出第二份虚影
                   labels: <String>[for (final WeightUnit u in WeightUnit.values) u.wire],
-                  selectedColor: _hexOf(Tokens.text),
-                  unselectedColor: _hexOf(Tokens.text2),
-                  labelFontSize: 13,
-                  itemBuilder: (int i, bool glass) {
-                    final WeightUnit u = WeightUnit.values[i];
-                    final bool on = _unit == u;
-                    if (!glass) {
-                      // 老样子（`choicePill` 自己就是热区）
-                      return Padding(
-                        padding: EdgeInsets.only(
-                            right: u == WeightUnit.values.last ? 0 : Tokens.s2),
-                        child: choicePill(
-                          key: Key('unit-${u.wire}'),
-                          label: u.wire,
-                          active: on,
-                          onTap: () => _setUnit(u),
-                        ),
-                      );
-                    }
-                    return GestureDetector(
-                      key: Key('unit-${u.wire}'),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _setUnit(u),
-                      child: Text(
-                        u.wire,
-                        style: TextStyle(
-                          color: on ? Tokens.text : Tokens.text2,
-                          fontSize: 13,
-                          fontWeight: on ? FontWeight.w700 : FontWeight.w400,
-                        ),
-                      ),
-                    );
-                  },
+                  current: WeightUnit.values.indexOf(_unit),
+                  itemKey: (int i) => Key('unit-${WeightUnit.values[i].wire}'),
+                  onChanged: (int i) => _setUnit(WeightUnit.values[i]),
                 ),
                 // ⚠️ 这里原来右边还有一句「只影响显示」（12pt 灰字）。
                 // 2026-10-08 用户真机反馈（10.8 清单第 4 条）："**只影响显示这五个字
