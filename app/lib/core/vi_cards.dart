@@ -196,9 +196,12 @@ class ViSegmented extends StatelessWidget {
         spec: NativeSegmentedSpec(
           labels: labels,
           selectedIndex: current,
-          // 与玻璃那支同一套颜色契约：选中用最亮的字（玻璃自己就是那块亮色）
-          selectedColor: hexOfColor(Tokens.text),
+          // 选中胶囊 = **强调色**（用户 2026-10-10 拍板：「橙色」）。
+          // 底色是橙的，字就必须是 `accentInk` —— 橙底 + 白字只有 3.08:1，
+          // 小字不合规（`docs/interaction-spec.md` 那条对比度规则）。
+          selectedColor: hexOfColor(Tokens.accentInk),
           unselectedColor: hexOfColor(Tokens.text2),
+          selectedTint: hexOfColor(Tokens.accent),
           fontSize: 12,
         ),
         onChanged: onChanged,

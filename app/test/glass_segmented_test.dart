@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/app_tab_bar.dart';
 import 'package:lianleme/core/glass_segmented.dart';
+import 'package:lianleme/core/native_hex.dart';
 import 'package:lianleme/core/native_segmented.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/core/vi_cards.dart';
@@ -79,8 +80,16 @@ void main() {
     expect(args['labels'], <String>['周', '月', '年']);
     expect(args['selectedIndex'], 1);
     expect(args['fontSize'], 12);
-    // 颜色走 `#RRGGBB`（原生按这个解析）：选中 = 最亮的字（玻璃自己就是那块亮色）
-    expect((args['selectedColor']! as String).startsWith('#'), isTrue);
+    // 颜色走 `#RRGGBB`（原生按这个解析）。
+    // 2026-10-10 用户拍板：「**橙色**」—— 所以选中胶囊的底是 accent，
+    // 而**橙底上的字必须是 accentInk**（橙底 + 白字只有 3.08:1，小字不合规）。
+    // 用 `hexOfColor(Tokens.*)` 而不是写死的 `#FF5C26`：钉住的是"传的就是这两颗令牌"，
+    // 令牌改名/改色时这条跟着走（写死字符串的话改色要手工同步，而它是会悄悄漂移的那种）。
+    expect(args['selectedTint'], hexOfColor(Tokens.accent), reason: '选中胶囊 = 强调色');
+    expect(args['selectedColor'], hexOfColor(Tokens.accentInk),
+        reason: '橙底上的字用 accentInk —— 不许是近白的 Tokens.text');
+    expect(args['selectedColor'], isNot(hexOfColor(Tokens.text)),
+        reason: '橙底 + 近白字 = 3.08:1，不合规');
     expect((args['unselectedColor']! as String).startsWith('#'), isTrue);
     // ⚠️ 宽度由 Dart 定（`itemWidth × 段数`）：原生关了"按内容撑开"，
     // 否则同一行里的别的元素会跟着跳

@@ -37,6 +37,7 @@ class NativeSegmentedSpec {
     required this.selectedIndex,
     required this.selectedColor,
     required this.unselectedColor,
+    this.selectedTint,
     this.fontSize = 12,
   });
 
@@ -46,6 +47,14 @@ class NativeSegmentedSpec {
   /// `#RRGGBB`（原生按这个解析）
   final String selectedColor;
   final String unselectedColor;
+
+  /// **选中胶囊的底色**（`#RRGGBB`）。`null` = 用系统玻璃。
+  ///
+  /// 2026-10-10 用户拍板：「**橙色**」—— 底栏选中那颗字/图标本来就是强调色，
+  /// 分段控件却是一块系统灰玻璃，同一屏里两种"选中"。
+  /// ⚠️ 盖上去之后 iOS 26 那块**液态玻璃就没了**（这正是当初不设它的理由），
+  /// 是有意识的取舍；盖了就得靠底色本身好看。
+  final String? selectedTint;
   final double fontSize;
 
   Map<String, Object?> toMap() => <String, Object?>{
@@ -53,6 +62,7 @@ class NativeSegmentedSpec {
         'selectedIndex': selectedIndex,
         'selectedColor': selectedColor,
         'unselectedColor': unselectedColor,
+        'selectedTint': selectedTint,
         'fontSize': fontSize,
       };
 }

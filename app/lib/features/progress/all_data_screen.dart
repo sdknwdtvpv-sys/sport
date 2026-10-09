@@ -266,11 +266,17 @@ class _AllDataScreenState extends State<AllDataScreen> {
         GestureDetector(
           key: const Key('all-data-pick-exercise'),
           onTap: _pickExercise,
+          behavior: HitTestBehavior.opaque,
+          // ⚠️ 2026-10-10：原来是一只**大圆角实心方块**（一屏里就它最大）。
+          // 用户：「数据这一页全是大方块儿 实在是太丑了」—— 换成一条**设置项那样的行**：
+          // 上下细线夹着，左边"选一个动作"、右边一个展开箭头，高度只有原来一半。
           child: Container(
-            padding: const EdgeInsets.all(Tokens.s4),
-            decoration: BoxDecoration(
-              color: Tokens.surface,
-              borderRadius: BorderRadius.circular(Tokens.rCard),
+            padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Tokens.line),
+                bottom: BorderSide(color: Tokens.line),
+              ),
             ),
             child: Row(
               children: <Widget>[
@@ -517,12 +523,20 @@ class _AllDataScreenState extends State<AllDataScreen> {
         ),
       );
 
+  /// 一组"标签 - 数值"行。
+  ///
+  /// ⚠️ 2026-10-10：原来是一只**圆角实心方块**（`surface` 底 + `rCard` 圆角）。
+  /// 用户说这一屏「全是大方块儿」—— 一屏三四只同款方块确实是这个观感。
+  /// 现在只留**上下两条细线**（分节靠它们），行与行之间的留白由 `_statRow` 自己带。
+  /// 与「进步」页同一条规矩：**只有图表还配卡片底**（`_trendCard` 没动）。
   Widget _card(List<Widget> children) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(Tokens.s4),
-        decoration: BoxDecoration(
-          color: Tokens.surface,
-          borderRadius: BorderRadius.circular(Tokens.rCard),
+        padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+        decoration: const BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Tokens.line),
+            bottom: BorderSide(color: Tokens.line),
+          ),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
       );

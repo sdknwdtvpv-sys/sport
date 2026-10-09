@@ -136,8 +136,15 @@ final class NativeSegmentedPlatformView: NSObject, FlutterPlatformView {
       }
     }
 
-    // ⚠️ **不设** `selectedSegmentTintColor`：iOS 26 那个"选中胶囊"是系统玻璃自己画的，
-    // 盖一个纯色上去就把玻璃替掉了（那正是用户要的观感）。
+    // **选中胶囊的底色**：Dart 给了就盖上去。
+    //
+    // 2026-10-10 用户拍板「橙色」—— 底栏选中那颗本来就是强调色，分段控件却是
+    // 一块系统灰玻璃，同一屏里两种"选中"。代价是 iOS 26 那块液态玻璃**没了**
+    // （这正是当初不设 `selectedSegmentTintColor` 的理由，现在是有意识的取舍）。
+    if let tint = Self.color(args["selectedTint"]) {
+      control.selectedSegmentTintColor = tint
+    }
+
     let fontSize = (args["fontSize"] as? NSNumber)?.doubleValue ?? 12
     if let unselected = Self.color(args["unselectedColor"]) {
       control.setTitleTextAttributes(

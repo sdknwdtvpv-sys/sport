@@ -155,13 +155,18 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   /// 体重卡片。S8 原本有三块，这块当时因为"没有 body_metric 表"而没做，
   /// 注释里写的是「等有了再加回来」。
+  ///
+  /// ⚠️ 2026-10-10：同一条改法（细线分节）—— 它现在是一条**体重行**，
+  /// 与「数据」页那条"选一个动作"同一个画法：左边数字，右边动作按钮。
   Widget _weightCard() {
     final BodyMetricData? w = _latestWeight;
     return Container(
-      padding: const EdgeInsets.all(Tokens.s4),
-      decoration: BoxDecoration(
-        color: Tokens.surface,
-        borderRadius: BorderRadius.circular(Tokens.rCard),
+      padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Tokens.line),
+          bottom: BorderSide(color: Tokens.line),
+        ),
       ),
       child: Row(
         children: <Widget>[
@@ -319,13 +324,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
   /// ⚠️ 只按主肌群算（卧推只记进"胸"）—— 所以显示的数字**低估**协同肌群的量，
   /// 这是已知简化，不在这里假装精确。
   Widget _muscleCard(ProgressData d) {
+    // ⚠️ 2026-10-10：原来是一只**带圆角+描边的方块**，与上面那四张卡同款 ——
+    // 用户那句「全是大方块儿」正是这一屏。同一套改法：细线上下各一条，内容落在页面上。
     return Container(
       key: const Key('progress-muscles'),
-      padding: const EdgeInsets.all(Tokens.s5),
-      decoration: BoxDecoration(
-        color: Tokens.surface,
-        borderRadius: BorderRadius.circular(Tokens.rCard),
-        border: Border.all(color: Tokens.line),
+      padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Tokens.line),
+          bottom: BorderSide(color: Tokens.line),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,6 +394,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
   ///     那是上一个版本的样子），而是**与紧挨着的上一个同等长度窗口比**出来的变化；
   ///   * **「我的」= 累计口径** + 连续天数（它那两张重名的卡已经拿掉）。
   /// 标题也带上区间名（本周容量 / 本周训练 / 本周组数），一眼看得出这是"这一段的"。
+  ///
+  /// ⚠️ **2026-10-10 用户：「进步这一页和数据这一页全是大方块儿 实在是太丑了」**。
+  /// 这四个数字原来是**四张各带圆角+描边的卡**，2×2 摆出来就是一屏同款方块；
+  /// 现在压成**一条细线围出来的带子**（上下各一条 hairline、中间一道竖线），
+  /// 数字直接落在页面上。判据：**只有图表还配卡片底**，纯数字用细线分节。
   Widget _statsBlock() {
     final ({DateTime from, DateTime to}) w = rangeWindow(_today, _range);
     final ({DateTime from, DateTime to}) prev = previousRangeWindow(_today, _range);
@@ -397,62 +410,75 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final int prevSets = setCountIn(_sets, prev.from, prev.to);
     final int prs = _data?.prs.length ?? 0;
     final String range = rangeLabel(_range);
-    return Column(
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: ViCard(
-                child: StatTile(
-                  label: '$range容量',
-                  value: formatVolume(volume, widget.unit),
-                  valueKey: const Key('progress-week-volume'),
-                  delta: periodDeltaLabel(volume, prevVolume),
-                  deltaKey: const Key('progress-delta-volume'),
-                ),
-              ),
-            ),
-            const SizedBox(width: Tokens.s3),
-            Expanded(
-              child: ViCard(
-                child: StatTile(
-                  label: '$range训练',
-                  value: '$workouts 次',
-                  delta: periodDeltaLabel(workouts.toDouble(), prevWorkouts.toDouble()),
-                  deltaKey: const Key('progress-delta-workouts'),
-                ),
-              ),
-            ),
-          ],
+    return Container(
+      key: const Key('progress-stats'),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Tokens.line),
+          bottom: BorderSide(color: Tokens.line),
         ),
-        const SizedBox(height: Tokens.s3),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: ViCard(
-                child: StatTile(
-                  label: '$range组数',
-                  value: '$sets 组',
-                  delta: periodDeltaLabel(sets.toDouble(), prevSets.toDouble()),
-                  deltaKey: const Key('progress-delta-sets'),
-                ),
-              ),
-            ),
-            const SizedBox(width: Tokens.s3),
-            Expanded(
-              child: ViCard(
-                child: StatTile(
-                  label: '个人纪录',
-                  value: '$prs 项',
-                  delta: '全部历史',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
+      child: Column(
+        children: <Widget>[
+          _statRow(<Widget>[
+            _statCell(StatTile(
+              label: '$range容量',
+              value: formatVolume(volume, widget.unit),
+              valueKey: const Key('progress-week-volume'),
+              delta: periodDeltaLabel(volume, prevVolume),
+              deltaKey: const Key('progress-delta-volume'),
+            )),
+            _statCell(StatTile(
+              label: '$range训练',
+              value: '$workouts 次',
+              delta: periodDeltaLabel(workouts.toDouble(), prevWorkouts.toDouble()),
+              deltaKey: const Key('progress-delta-workouts'),
+            )),
+          ]),
+          const Divider(height: 1, thickness: 1, color: Tokens.line),
+          _statRow(<Widget>[
+            _statCell(StatTile(
+              label: '$range组数',
+              value: '$sets 组',
+              delta: periodDeltaLabel(sets.toDouble(), prevSets.toDouble()),
+              deltaKey: const Key('progress-delta-sets'),
+            )),
+            _statCell(StatTile(
+              label: '个人纪录',
+              value: '$prs 项',
+              delta: '全部历史',
+            )),
+          ]),
+        ],
+      ),
     );
   }
+
+  /// 一格（上下留白靠这里，不靠卡片内边距）。
+  Widget _statCell(Widget child) => Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
+          child: child,
+        ),
+      );
+
+  /// 一行两格，中间一道**长满整行**的竖线。
+  ///
+  /// ⚠️ 那个 `IntrinsicHeight` 不是装饰：`CrossAxisAlignment.stretch` 要求先知道行高，
+  /// 而行高又由格子决定 —— 直接 stretch 会得到
+  /// "BoxConstraints.debugAssertIsValid / RenderBox was not laid out"
+  /// （2026-10-10 加这一行时真的踩到：progress_test 六条一起红）。
+  /// 先量一遍固有高度，循环就断开了。
+  Widget _statRow(List<Widget> cells) => IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            cells.first,
+            Container(width: 1, color: Tokens.line),
+            cells.last,
+          ],
+        ),
+      );
 
   /// 容量趋势（周 / 月 / 年）。曲线是零依赖自绘的 `ViAreaChart`。
   Widget _trendCard() {
@@ -507,19 +533,23 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
 
   Widget _prCard(ProgressData d) {
+    // ⚠️ 2026-10-10：与上面那条统计带同一条规矩 —— **纯文字用细线分节，只有图表配卡片底**。
+    // 原来是 surface 底 + 圆角 + 四边描边的一只方块（与另外四张卡同款），
+    // 而且行内还各留了 s4 的左右内边距 —— 改成通栏细线带之后，
+    // 行与上面那些数字**左边对齐**（页面自己的 s5 就是唯一的左边距）。
     return Container(
-      decoration: BoxDecoration(
-        color: Tokens.surface,
-        borderRadius: BorderRadius.circular(Tokens.rCard),
-        border: Border.all(color: Tokens.line),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Tokens.line),
+          bottom: BorderSide(color: Tokens.line),
+        ),
       ),
       child: Column(
         children: <Widget>[
           for (int i = 0; i < d.prs.length; i++)
             Container(
               key: Key('pr-${d.prs[i].exerciseId}'),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Tokens.s4, vertical: Tokens.s4),
+              padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
               decoration: BoxDecoration(
                 border: i == d.prs.length - 1
                     ? null
