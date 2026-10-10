@@ -152,6 +152,23 @@ iPhone → 设置 → 通用 → VPN 与设备管理 → 开发者 App → 你�
 | `error: Signing certificate is invalid … It may have been revoked or expired.` | 钥匙串里那几张 `Apple Development` 证书**已被吊销**（`security find-identity -v -p codesigning` 会显示 `CSSMERR_TP_CERT_REVOKED`）。免费档常见：换机/重装/别处点过 revoke 之后 | Xcode → Settings → Accounts → 选中你的团队 → **Manage Certificates…** → 左下角 `+` → **Apple Development**，新建一张；再跑第 5 步。（新建后 `security find-identity` 里那张新的应当没有 `REVOKED` 后缀） |
 | 我要验"微信登录" | 免费档用不了 Associated Domains（Universal Links） | 见 `docs/wechat-login-feasibility.md` §6：这条要等付费账号 |
 
+## 四之二、`LIANLEME_KEEP_PATCH=1` 曾是**假的**（2026-10-11 修）
+
+脚本的 `restore()` 原来**无条件**先 `cp "$BAK" "$PBX"` 把工程改回去，**然后**才打印
+「按 LIANLEME_KEEP_PATCH 保留了工程改动」—— 那句话是假的，工程其实被改回去了。
+
+后果不是"少个便利"，而是**下一步必踩的坑**：`KEEP_PATCH=1` 的唯一用途是
+"接着要在真机上跑 `flutter drive --profile`"（`frame_probe_test.dart` 那条），
+而 `flutter drive` 会**自己再编一次**；工程已被改回（没 dev bundle id、没 Team），
+那次构建签不过，报错却与"保留工程改动"毫不相干。
+
+现在语义是：**`KEEP_PATCH=1` = 真的保留**（备份直接删、不动工程），
+跑完自己 `git -C <repo> checkout -- app/ios/Runner.xcodeproj/project.pbxproj` 收尾。
+**判据**（跑完立刻核）：`grep -c "DEVELOPMENT_TEAM = " app/ios/Runner.xcodeproj/project.pbxproj`
+应当是 **6**；不保留时应当是 **0**。
+
+---
+
 ## 五、这份指南里哪些是"官方明确"，哪些是"社区口径"
 
 * ✅ **官方明确**：App ID 每 7 天 10 个（报错原文）、TestFlight/Ad Hoc/上架需要付费会员、

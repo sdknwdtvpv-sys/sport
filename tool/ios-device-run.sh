@@ -66,12 +66,21 @@ restore() {
   # 而报错信息说的是"工程不是一个合法的 property list"（看起来像工程坏了，
   # 其实是这行把好文件盖没了）。所以：**备份必须有内容才允许 restore**。
   if [ -s "$BAK" ]; then
-    cp "$BAK" "$PBX"
-    rm -f "$BAK"
     if [ -n "$KEEP" ]; then
+      # ⚠️ **KEEP 时不许 restore —— 这一条是 2026-10-11 修的，原来这里是反的。**
+      # 当时这段先无条件 `cp "$BAK" "$PBX"` 把工程改回去，**然后**才打印
+      # "按 LIANLEME_KEEP_PATCH 保留了工程改动" —— 那句话是**假的**。
+      # 后果不是"少一个便利功能"，而是**下一步必踩的坑**：`KEEP_PATCH=1` 的用途正是
+      # "接着要在真机上跑 `flutter drive --profile`"，而 `flutter drive` 会**自己再编一次**；
+      # 工程已被改回（没有 dev bundle id / 没有 Team），那次构建签不过，
+      # 报错却看起来与"保留工程改动"毫不相干（2026-10-11 就是这么撞上的）。
+      # 现在的语义：**KEEP=1 = 真的保留**（备份直接删掉，不动工程）。
+      rm -f "$BAK"
       red "⚠️ 按 LIANLEME_KEEP_PATCH 保留了工程改动（dev bundle id + Team）。"
       echo "   用完请恢复：git -C \"$REPO\" checkout -- app/ios/Runner.xcodeproj/project.pbxproj"
     else
+      cp "$BAK" "$PBX"
+      rm -f "$BAK"
       echo "↩︎ 已把 iOS 工程改回原来的 bundle id + Team"
     fi
   elif [ -n "$PATCHED" ]; then
