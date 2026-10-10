@@ -255,9 +255,9 @@ VI 里还剩五件事没做。排序的判据是**改动半径**：不碰数据�
 
 | 里程碑 | 图 |
 | --- | --- |
-| v1.49 引导页 | `docs/images/v152-01-intro-1.png` · `v152-02-intro-2.png` · `v152-03-intro-3.png` |
-| v1.50 通知中心 | `docs/images/v152-04-notification-center.png`（首次安装的**空态** —— 那正是新用户的真实所见） |
-| v1.51 计划三视图 | `docs/images/v152-05-plan-week.png` · `v152-06-plan-history.png` · `v152-07-plan-library.png` |
+| v1.49 引导页 | `docs/images/legacy-5tab/v152-01-intro-1.png` · `v152-02-intro-2.png` · `v152-03-intro-3.png` |
+| v1.50 通知中心 | `docs/images/legacy-5tab/v152-04-notification-center.png`（首次安装的**空态** —— 那正是新用户的真实所见） |
+| v1.51 计划三视图 | `docs/images/legacy-5tab/v152-05-plan-week.png` · `v152-06-plan-history.png` · `v152-07-plan-library.png` |
 | v1.52 身体数据 | `store-assets/screenshots/11-body-metric.png`（**重出过**：脚本会先真的记两天，图里有摘要卡 / BMI / 趋势卡） |
 
 这七张由 `app/integration_test/v152_evidence_test.dart` 一趟跑出来（模拟器 `emulator-5554`，

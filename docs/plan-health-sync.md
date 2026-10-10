@@ -156,7 +156,7 @@
      单测里平台是 `debugDefaultTargetPlatformOverride` **伪装**的，而这条走的是真 App + 真平台判断 + 真导航路径。
      ⚠️ 它**故意不去点那个入口** —— 点下去第一个副作用是系统级健康授权弹窗，那是测试框架既点不到也关不掉的 UI，
      整条测试会永远卡住（与"Mac 锁屏时钥匙串弹窗卡住 `codesign`"同一类问题）；点进去之后的流程由假桥那 22 条覆盖；
-  2. 那张卡在真 iOS 运行时里的样子：`docs/images/v165-health-sync-card-ios.png`
+  2. 那张卡在真 iOS 运行时里的样子：`docs/images/legacy-5tab/v165-health-sync-card-ios.png`
      （模拟器实拍：标题 + 「只读体重、体脂率、身高 · 可选」+ 右侧箭头，位置在摘要卡下面、「记这一天的」上面；
      同时那一趟 `overflowed` / `RenderFlex` 计数为 **0**，没有布局溢出）。
 

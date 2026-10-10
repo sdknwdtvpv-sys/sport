@@ -193,7 +193,7 @@ cd app && flutter pub outdated | grep -i share_plus                        # 是
 **把叠在一起的两块玻璃抹平成一块** —— 选中胶囊的亮边与凸起全没了（底托与胶囊同高时，
 屏幕上**什么都看不出来**）。用户的原话："切 tab 的时候完全感觉不到玻璃的感觉。"
 同一组参数只把容器去掉，胶囊立刻变成一块**有亮边的凸起玻璃**。
-逐行对比（同一屏幕、只改一个参数）：`docs/images/glass-probe-segment-variants.png`
+逐行对比（同一屏幕、只改一个参数）：`docs/images/legacy-5tab/glass-probe-segment-variants.png`
 （D 行 = 有容器，A/B 行 = 独立两块）。
 
 所以现在：**底托与选中胶囊是两块各自独立的玻璃**（`GlassSegmented`），
@@ -222,7 +222,7 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
 2. **通透度**：选中胶囊的材质是 **`.clear` + 默认一点白都不染**（底托才是 `.regular`）。
    2026-10-06 你追问"鼓起来那一块能不能做成全透明的"之后定为**完全不染色** ——
    实测那颗反而更像苹果：形状是靠**边缘折射**读出来的，不是靠一层白
-   （对比图 `docs/images/glass-probe-transparent.png`：第 0/3 行不染色，第 1/2/4 行染色）。
+   （对比图 `docs/images/legacy-5tab/glass-probe-transparent.png`：第 0/3 行不染色，第 1/2/4 行染色）。
    代价是"选中的是谁"完全交给**图标/文字的颜色**（底栏的橙色）与玻璃的边缘高光 ——
    平底卡片上的那两行单位是例外（背后没有内容可折射），仍然留一点白。
    老写法的问题：
@@ -230,10 +230,10 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
    你的原话是"通透度太差了 完全不是透明的"。按下时也只把染色提亮 15%（老参数 ×1.8 是刷白）；
 3. **Q 弹**：老参数阻尼 0.55 把弹簧压死了，现在按下去真的会过冲再收。
 
-逐行对比（同一屏、只改参数）：`docs/images/glass-probe-press-variants.png`
+逐行对比（同一屏、只改参数）：`docs/images/legacy-5tab/glass-probe-press-variants.png`
 （第 0 行平时；第 1/2 行 `regular` 的鼓包=奶白；第 3/4 行 `clear` 的鼓包=透得过去的圆按钮）。
-按住时实拍：`docs/images/glass-press-tab.png`（平时 / 按住「数据」/ 松手后）与
-`docs/images/glass-press-segmented.png`（分段控件：按住 / 松手后）。
+按住时实拍：`docs/images/legacy-5tab/glass-press-tab.png`（平时 / 按住「数据」/ 松手后）与
+`docs/images/legacy-5tab/glass-press-segmented.png`（分段控件：按住 / 松手后）。
 
 **按下去"两滴水滴融在一起"（2026-10-06 第四轮，你纠正了我一次）**：
 我第一版理解成"按住时那一格鼓成一个圆按钮"，你的意思是 ——
@@ -251,7 +251,7 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
 * 顺带把**按住不放、横向拖到别格再松手 = 换 tab** 做出来了（Dart 侧比对
   "按下那格"与"松手那格"，不同才回调 `onDragSelect`；普通点击走原来那条 tap，不会重复触发）。
 
-证据（同一屏四态，按时间顺序）：`docs/images/glass-drop-merge.png`
+证据（同一屏四态，按时间顺序）：`docs/images/legacy-5tab/glass-drop-merge.png`
 （平时 / 按住当前格 / 手指移到相邻格=两滴融合 / 松手后合成一滴）。
 
 **切 tab 的过渡：可拖的 `PageView` + 玻璃跟手（2026-10-06 你追加的第二条）**：
@@ -261,7 +261,7 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
 * **`PageView`（可以左右拖着换 tab）** —— 手指拖到一半松手，按页吸过去；
 * **底栏那颗玻璃跟着手指滑**：`PageController` 每帧把"当前停在第几页"（小数，例如 0.6）
   通过通道喂给原生（`setIndexFraction`），原生按 `w × 小数` 摆胶囊 ——
-  所以拖动时它是**连续移动**的，不是跳格（实拍 `docs/images/glass-swipe-pill-follows.png`：
+  所以拖动时它是**连续移动**的，不是跳格（实拍 `docs/images/legacy-5tab/glass-swipe-pill-follows.png`：
   页面滑到一半，胶囊正好停在两格中间）。松手落页后交回"整格"轨道（`setIndex`）；
 * **点 tab** 走另一条路（`_selectTab`）：图标颜色**立刻**变（等动画跑完再变会显得钝），
   页面 `animateToPage` 滑过去（远的 tab 给更长的时间，不然四页在 300ms 里一闪而过），

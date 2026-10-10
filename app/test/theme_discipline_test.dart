@@ -10,6 +10,8 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:lianleme/core/theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// 扫 `app/lib` 下的 Dart 源码（**跳过 `core/theme.dart`** —— 它是令牌的定义处，
@@ -122,5 +124,59 @@ void main() {
       }
     }
     expect(bad, isEmpty, reason: 'hair 是给 bg 用的最弱线：\n${bad.join('\n')}');
+  });
+
+  // ── 转圈圈的颜色（VI 计划 §批次 4 的"保留"那一条，2026-10-10）────────────────
+  //
+  // ⚠️ 计划里写着"21 处 `CircularProgressIndicator` 里至少 3 处没传色，在暖黑底上会取
+  // Material 默认的紫/青 —— 这是一个真 bug，值得单独一条 S 级任务"。
+  // **实测这条不成立**：`buildAppTheme()` 的 `ColorScheme` 把 `primary` 覆盖成了 `Tokens.accent`，
+  // 而 `CircularProgressIndicator` 的默认色正是 `progressIndicatorTheme.color ?? colorScheme.primary`
+  // —— 21 处里只有 2 处显式传色（都是 accent），其余全是橙的。
+  // 结论写在这里 + 两条断言钉住**机制**：谁把 `primary` 改掉，这一条就会红。
+  testWidgets('转圈圈的颜色来自 colorScheme.primary（= accent），不是 Material 默认色',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: const Scaffold(body: Center(child: CircularProgressIndicator())),
+    ));
+    final ThemeData theme =
+        Theme.of(tester.element(find.byType(CircularProgressIndicator)));
+    expect(theme.colorScheme.primary, Tokens.accent,
+        reason: '21 处转圈圈里只有 2 处显式传色，其余全靠这一条 —— primary 一变，它们全变紫');
+    expect(theme.progressIndicatorTheme.color ?? theme.colorScheme.primary,
+        Tokens.accent);
+  });
+
+  test('转圈圈要么不传色，要么传 accent（不许有自己的颜色）', () {
+    // ⚠️ **要看的是它自己那对括号里写的东西**，不是"接下来几行"：
+    // 第一版按"往后 4 行"扫，把隔壁 `Icon(..., color: Tokens.text3)` 当成了转圈圈的颜色
+    // （`body_metric_screen.dart:447` 的转圈圈本身压根没传色）—— 测试当场把这误报抓了出来。
+    String argsOf(String src, int open) {
+      int depth = 0;
+      for (int i = open; i < src.length; i++) {
+        if (src[i] == '(') depth++;
+        if (src[i] == ')') {
+          depth--;
+          if (depth == 0) return src.substring(open, i + 1);
+        }
+      }
+      return src.substring(open);
+    }
+
+    final List<String> bad = <String>[];
+    for (final FileSystemEntity e in Directory('lib').listSync(recursive: true)) {
+      if (e is! File || !e.path.endsWith('.dart')) continue;
+      final String src = e.readAsStringSync();
+      for (final RegExpMatch m in RegExp(r'CircularProgressIndicator\(').allMatches(src)) {
+        final String args = argsOf(src, m.end - 1);
+        final RegExpMatch? c = RegExp(r'color:\s*([^,)]+)').firstMatch(args);
+        if (c != null && !c.group(1)!.contains('Tokens.accent')) {
+          final int line = '\n'.allMatches(src.substring(0, m.start)).length + 1;
+          bad.add('${e.path}:$line: ${c.group(1)!.trim()}');
+        }
+      }
+    }
+    expect(bad, isEmpty, reason: '转圈圈只许用 accent（或干脆不传，走主题）：\n${bad.join('\n')}');
   });
 }

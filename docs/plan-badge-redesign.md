@@ -108,9 +108,9 @@
 - [x] **A5 纯函数 + 单测**：`kRanks` / `rankFor()` / `nextRank()`（门槛升序、到顶返回 null、
       不编下一个目标）—— 同文件两条
 - [x] A2 挂到成就页顶部：`_nearestCard()`（Key `nearest-badge` / `nearest-badge-name`），全拿到时如实显示“全部 N 枚都拿到了”；analyze 干净 + 三组徽章测试 25 条全过
-- [x] **A2 的截图证据**：`docs/images/badge-20261006-a2-nearest.png`（+ A4 那张 `badge-20261006-a4-collapse.png`）
+- [x] **A2 的截图证据**：`docs/images/legacy-5tab/badge-20261006-a2-nearest.png`（+ A4 那张 `badge-20261006-a4-collapse.png`）
 - [x] **A5 挂到「我」页（界面）+ 截图证据**：`profile_screen.dart` 的 `_rankCard()`（Key `rank-card` /
-      `rank-name` / `rank-next`），图 `docs/images/badge-20261006-a5-rank.png`。
+      `rank-name` / `rank-next`），图 `docs/images/legacy-5tab/badge-20261006-a5-rank.png`。
       取舍：**在 `_load()` 里算一次**（`_load` 本来就已经把 `allSets()` 全量读出来了 ——
       成就页要用同一份），所以段位不额外碰库；`build` 里一个库都不碰（那是 O(n)/帧）。
       图里那行是"白银 · 3 枚 / 还差 5 枚到黄金 · 已解锁 5 / 73 枚"（当时门槛还是旧表，见下）

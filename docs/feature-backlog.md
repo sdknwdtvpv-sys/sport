@@ -75,8 +75,8 @@
 
 | 背后是 | 观感 | 证据 |
 |---|---|---|
-| **纯炭黑 `#101014`** | ❌ **一块浅灰板** —— 比屏幕上所有东西都亮、抢视线，完全不像玻璃 | `docs/images/glass-spike-1-flat-vs-content.png` |
-| **暗 + 纹理/辉光**（炭黑 → `#1D1B26` → `#2A1A16` + 橙色辉光） | 🟡 `.regular` = 像"烟熏玻璃"，可用；**✅ `.clear` + 淡橙 `#FF5A1F33` = 最好看**，暗底上仍读得出是玻璃 | `docs/images/glass-spike-2-dark-textured.png` |
+| **纯炭黑 `#101014`** | ❌ **一块浅灰板** —— 比屏幕上所有东西都亮、抢视线，完全不像玻璃 | `docs/images/legacy-5tab/glass-spike-1-flat-vs-content.png` |
+| **暗 + 纹理/辉光**（炭黑 → `#1D1B26` → `#2A1A16` + 橙色辉光） | 🟡 `.regular` = 像"烟熏玻璃"，可用；**✅ `.clear` + 淡橙 `#FF5A1F33` = 最好看**，暗底上仍读得出是玻璃 | `docs/images/legacy-5tab/glass-spike-2-dark-textured.png` |
 | **彩色内容**（渐变 + 卡片） | ✅ 就是 Apple 那个样子：吸色、亮边、跟着内容动 | 同上 |
 
 **由此定下三条落地规矩**（写在这里，免得实现时凭感觉）：
@@ -121,7 +121,7 @@ platform view 有整屏合成代价，package 文档与 Apple 文档都这么说
   "合成一块"的容器）—— 真机上它的表现是**把叠着的两块抹平成一块**，选中胶囊的亮边和凸起
   全没了，屏幕上就是一条平的玻璃带（用户原话"切 tab 的时候完全感觉不到玻璃的感觉"）。
   同一组参数只把容器去掉，胶囊立刻变成一块有亮边的凸起玻璃。逐行对比证据
-  `docs/images/glass-probe-segment-variants.png`。**"融合"与"看得见的玻璃质感"在这件事上
+  `docs/images/legacy-5tab/glass-probe-segment-variants.png`。**"融合"与"看得见的玻璃质感"在这件事上
   是二选一**，按用户当场的诉求选了后者；
 * ⚠️ **几何契约：条目必须等宽**（原生按 `frame.width / count` 切格子）。这条是**静默失败**——
   Dart 那边改回"按内容收缩"，原生不报错，只会让胶囊与它上面那几个字**越往右越偏**。
@@ -148,16 +148,16 @@ platform view 有整屏合成代价，package 文档与 Apple 文档都这么说
   被你一眼否掉的三点（幅度太小 / 不超出边界 / 鼓起来像奶白疙瘩）就是这三处改的。为什么不是苹果原生的 `isInteractive`：平台视图在
   Flutter 内容下面，UIKit 收不到触摸 —— 所以由 Dart 的 `Listener` 通报给原生去演
   （点击、旁白、长按一条链路都没动）。底栏在 iOS 上同时关掉了 Material 水波纹。
-  证据 `docs/images/glass-press-tab.png`。
+  证据 `docs/images/legacy-5tab/glass-press-tab.png`。
 * **按下去"两滴水滴融合"（2026-10-06 第四轮，我先前理解错了你的意思）**：按住相邻的
   另一格时，手指底下冒出**第二颗水滴**并与选中那颗**融在一起**（同一个
   `UIGlassContainerEffect`，`spacing 34` → 中间长出一道"脖子"）；松手后**两滴一起滑到
   新那一格再收掉一颗**（= 融成一滴）。顺带支持**按住横向拖到别格松手 = 换 tab**。
-  证据 `docs/images/glass-drop-merge.png`。
+  证据 `docs/images/legacy-5tab/glass-drop-merge.png`。
 * **切 tab 的丝滑过渡（2026-10-06 第三轮追加）**：iOS 的外壳从"直接换一屏"换成
   **可拖的 `PageView` + 玻璃跟手**（`PageController` 每帧把小数页号喂给原生，
   胶囊跟着手指连续滑；点 tab 则"图标立刻变色 + 页面滑过去"）。**只在 iOS 开** ——
-  Android 保持"直接换一屏"。证据 `docs/images/glass-swipe-pill-follows.png`。
+  Android 保持"直接换一屏"。证据 `docs/images/legacy-5tab/glass-swipe-pill-follows.png`。
 * **选中胶囊改成全透明**（同一天，你的第二次追问）：`.clear` + 一点白都不染，
   "选中的是谁"交给图标颜色与玻璃的边缘折射（平底卡片上的单位行是例外）。
 * **顺手抓到一个只在真机/真 App 上才露头的 bug**：给 `GlassSegmented` 加 `Listener` 时把内容
@@ -300,7 +300,7 @@ App Privacy 表的 Device ID 那行）、`store-assets/privacy/` 两个 HTML（�
 >
 > | # | 操作 | 结果 | 证据图 |
 > |---|---|---|---|
-> | 1 | 首页大按钮 | 直接进训练屏（杠铃卧推，第 1 组，`40 kg × 8`） | `docs/images/a0-01-direct-to-workout.png` |
+> | 1 | 首页大按钮 | 直接进训练屏（杠铃卧推，第 1 组，`40 kg × 8`） | `docs/images/legacy-5tab/a0-01-direct-to-workout.png` |
 > | 2 | 点大按钮两次 | 已完成列表 2 行；**「我」页统计 = 1 次 / 2 组 / 640 kg**（2×8×40 正确） | `a0-02-one-tap-logged.png` |
 > | 3 | 杀进程重开 | 首页出现「上次的训练还没结束 · 上次练到第 1/3 个动作」✅ | `a0-03-resume-bar-after-kill.png` |
 > | 4 | 点它恢复 | 训练屏显示 **第 1 组**、**已完成列表为空** —— 但休息时间**接着数**（wall-clock 是对的）❌ | —— |
@@ -323,7 +323,7 @@ App Privacy 表的 Device ID 那行）、`store-assets/privacy/` 两个 HTML（�
 > 总结页时长会只剩后半段）。
 > **验收**：4 条回归测试（把修复临时撤掉会红 3 条）+ 真机同流程走一遍（2 组 → 杀进程 → 继续 →
 > 第 **3** 组 + 2 行已完成 → 记一组后「我」页 **3 组 / 960 kg**）。
-> 证据图 `docs/images/p0fix-01-resume-shows-set-3.png` · `p0fix-02-after-logging-3-sets.png`。
+> 证据图 `docs/images/legacy-5tab/p0fix-01-resume-shows-set-3.png` · `p0fix-02-after-logging-3-sets.png`。
 
 | # | 事项 | 出处 | 影响 | 成本 | 卡在 |
 |---|---|---|---|---|---|

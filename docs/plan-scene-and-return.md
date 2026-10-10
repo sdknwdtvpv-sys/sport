@@ -136,7 +136,7 @@
 | 扩展**真的在产物里**、扩展点/包名/`NSSupportsLiveActivities` 都对 | `tool/check-ios-app.mjs` 第 ⑪ 条（含 4 条负向自检） |
 | 什么时候该开、什么时候该撤、挂起后剩余时间准不准 | `app/test/rest_activity_test.dart`（8 条） |
 
-* **锁屏上那行字长什么样** —— ✅ **2026-10-04 在真机上验收了**：iPhone 17 Pro（iOS 27.2）装了 v1.42.0 的 dev 包（**免费 Apple ID / Personal Team**，路径见 `docs/ios-free-provisioning-guide.md`），记一组后锁屏出现 `组间休息 1:32 · 杠铃卧推 · 下一组 40 kg × 8 · 第 2/3 组`，**倒计时在自己走**（证据图 `docs/images/v142-live-activity-lockscreen.png`）。排版与设计一致：左边是标号+大号倒计时，右边是动作名/下一组/组序 |
+* **锁屏上那行字长什么样** —— ✅ **2026-10-04 在真机上验收了**：iPhone 17 Pro（iOS 27.2）装了 v1.42.0 的 dev 包（**免费 Apple ID / Personal Team**，路径见 `docs/ios-free-provisioning-guide.md`），记一组后锁屏出现 `组间休息 1:32 · 杠铃卧推 · 下一组 40 kg × 8 · 第 2/3 组`，**倒计时在自己走**（证据图 `docs/images/legacy-5tab/v142-live-activity-lockscreen.png`）。排版与设计一致：左边是标号+大号倒计时，右边是动作名/下一组/组序 |
 
 ⚠️ **为什么之前在模拟器上验不了**：这台机器的 Xcode 是精简安装，**没有 `Simulator.app`**，
 所以锁不了屏（`simctl` 也没有 lock 命令，`simctl io screenshot` 里连灵动岛本身都不渲染）。

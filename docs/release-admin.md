@@ -263,7 +263,7 @@ iOS 手机那份方向数组只留 Portrait。两端各有一条守卫钉着（�
 |---|---|
 | 崩溃 / 布局溢出 | **0**（logcat 里 `overflowed` / `RenderFlex` 命中 0 次，11 步全过） |
 | 观感 | **拉伸的手机布局**：大按钮变成通栏横条、内容靠左、大片空白 |
-| 证据 | `docs/images/ipad-width-home.png`、`docs/images/ipad-width-workout.png` |
+| 证据 | `docs/images/legacy-5tab/ipad-width-home.png`、`docs/images/legacy-5tab/ipad-width-workout.png` |
 
 原来那个 `TARGETED_DEVICE_FAMILY = "1,2"` **能通过门禁**，但商店页会写「支持 iPad」，
 而用户打开看到的是拉长的手机界面 —— 等于拿一个没验证过的承诺换一个标签。所以拍板：

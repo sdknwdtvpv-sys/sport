@@ -46,10 +46,10 @@
 | 1 屏幕常亮 | 模拟器 `emulator-5554`：`settings put global stay_on_while_plugged_in 0`（否则模拟器自己就常亮，测不出来）+ `screen_off_timeout 5000`；进训练屏后**什么都不点**等 12 秒看 `dumpsys power` 的 `mWakefulness` | ✅ **训练屏里 12 秒后仍是 `Awake`**（5 秒系统超时本该熄屏）；**离开训练屏 12 秒后是 `Asleep`** —— 说明"进开、走关"两头都对 |
 | 2 Android 休息提示 | 模拟器上先**不给**通知权限走一遍，再 `pm grant POST_NOTIFICATIONS` 走一遍；锁屏后等休息走完（120 秒），查 `dumpsys notification` | ✅ **通道 `lianleme_rest_cue`（组间休息，IMPORTANCE_HIGH）被创建** —— 那是 `show()` 里做的事，说明到点那条路真的跑了。⚠️ **没授权时通知记录不出现**（`POST_NOTIFICATIONS: granted=false`）—— 这正是文档里写的"没授权就静默不出现"，不是缺陷。授权之后（`pm grant … POST_NOTIFICATIONS`）再走一遍：**通知记录真的出现了** —— `NotificationRecord(pkg=com.sdknwdtvpv.lianleme id=4704 channel=lianleme_rest_cue importance=4 category=stopwatch AUTO_CANCEL)`，是在**锁屏状态**下发的 |
 | 3 触觉反馈 | —— | ⚠️ **没法自动验**（震动没有可读的系统状态）。逻辑由 `workout_flow_test` 的 3 条守住（含"没记上不许震"），**真机上靠手感**，如实记在这儿 |
-| 4「上次练了多少」 | 模拟器跑 `v153_evidence_test`（记一组 → 结束 → 再开一次看那一行） | ✅ 图 `docs/images/v153-01-workout.png` / `v153-06-last-time.png`；确定性判据在 `last_time_test`（8 条）与 `workout_flow_test` 的 2 条 widget 测试（有历史才显示） |
-| 5 休息 ±15 | 模拟器 `v153_evidence_test`：记一组 → 点 +15 → 断言 `rest-time` 真的变了 | ✅ 图 `docs/images/v153-02-rest-plus15.png`；单测 6 条 |
+| 4「上次练了多少」 | 模拟器跑 `v153_evidence_test`（记一组 → 结束 → 再开一次看那一行） | ✅ 图 `docs/images/legacy-5tab/v153-01-workout.png` / `v153-06-last-time.png`；确定性判据在 `last_time_test`（8 条）与 `workout_flow_test` 的 2 条 widget 测试（有历史才显示） |
+| 5 休息 ±15 | 模拟器 `v153_evidence_test`：记一组 → 点 +15 → 断言 `rest-time` 真的变了 | ✅ 图 `docs/images/legacy-5tab/v153-02-rest-plus15.png`；单测 6 条 |
 | 6 计时动作计时器 | —— | ⚠️ **模拟器上没走查到**（首页推荐里没有平板支撑）。逻辑由 `hold_timer_test` 8 条守着（含"秒数按开始时刻算""到点只震一次"）。**真机待验** |
-| 7 换动作 | 模拟器 `v153_evidence_test`：标题栏「换动作」→ 选择器（**同部位"胸"已预筛**）→ 选上斜哑铃卧推 → 回到训练屏 | ✅ 图 `docs/images/v153-03-swap-picker.png`（能看见"胸"高亮）/ `v153-04-after-swap.png`；单测 5 条 |
+| 7 换动作 | 模拟器 `v153_evidence_test`：标题栏「换动作」→ 选择器（**同部位"胸"已预筛**）→ 选上斜哑铃卧推 → 回到训练屏 | ✅ 图 `docs/images/legacy-5tab/v153-03-swap-picker.png`（能看见"胸"高亮）/ `v153-04-after-swap.png`；单测 5 条 |
 | 8 大字号 | 1.5× 的 widget 测试当场抓到两处真溢出（首页铃铛被挤出屏幕、训练屏大按钮与休息条） | ✅ 修完三条测试全绿（`today_plan_test` 1.3×/1.5× · `workout_flow_test` · `workout_summary_test`） |
 
 **这一批"没验"的**（不许当成验过了）：震动（第 3 条）与计时器（第 6 条）在真机上没走；

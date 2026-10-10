@@ -186,7 +186,7 @@ iPhone → 设置 → 通用 → VPN 与设备管理 → 开发者 App → 你�
 | ✅ **免费档能签 widget 扩展**（`.appex`） | `xcodebuild` 两个 target 一起 `BUILD SUCCEEDED`；`devicectl device install` 成功；设备上那款 App 的 `PlugIns` 目录里 `RestWidget.appex` 在、它自己的进程也在（`devicectl device info processes`） |
 | ✅ **命令行也能把设备注册到 Apple 那边** | 第一次只传 `-allowProvisioningUpdates`（Flutter 默认只传这个）报 `Your team has no devices from which to generate a provisioning profile`；加上 **`-allowProvisioningDeviceRegistration`** 之后自动注册设备、建 App ID、建描述文件，一次过 |
 | ✅ **装完必须信任证书，且这一步只能人工** | 未信任时拉起报 `invalid code signature, inadequate entitlements or its profile has not been explicitly trusted`；在 `设置 → 通用 → VPN 与设备管理 → 开发者 App → 信任` 之后正常启动 |
-| ✅ **Live Activity 在真机锁屏上正常显示** | `docs/images/v142-live-activity-lockscreen.png`（记一组后锁屏：`组间休息 1:32 · 杠铃卧推 · 下一组 40 kg × 8 · 第 2/3 组`，倒计时自己在走） |
+| ✅ **Live Activity 在真机锁屏上正常显示** | `docs/images/legacy-5tab/v142-live-activity-lockscreen.png`（记一组后锁屏：`组间休息 1:32 · 杠铃卧推 · 下一组 40 kg × 8 · 第 2/3 组`，倒计时自己在走） |
 | ⏳ 7 天到期行为 | **还没到期**（2026-10-04 装的），继续 🟡 |
 | ⏳ 同时 3 个免费签名 App / 设备台数上限 | 没验，继续 🟡 |
 | ⏳ 覆盖安装是否保留沙盒数据 | 没验，继续 🟡 |

@@ -86,7 +86,7 @@
 * 测试：`profile_test.dart` **29 项**（+1 条「A 档重排：三行同一张卡」，
   判据是"三行各自最近的 `ViCard` 祖先是同一个 Element"）；补签那条从"整句"改成"下半句"，
   整句仍由 `streak_protection_test.dart` 钉着。
-* 证据：真机/模拟器截图 `docs/images/v157-profile-ia.png`；三套商店截图的 `10-profile` 重出。
+* 证据：真机/模拟器截图 `docs/images/legacy-5tab/v157-profile-ia.png`；三套商店截图的 `10-profile` 重出。
 * **B 档（定 Lv 为主角）与 C 档（统计也收进次级页）都没做**，理由见 §四。
 
 ## 五、顺带记下的两条"从报告里学到、但先动手会后悔"的
