@@ -406,6 +406,37 @@ void runContractTests(StoreHarness harness) {
       expect(await store.deletedSets(), hasLength(2));
     });
 
+    test('★ 批量整理：一次删多组（Ultra 权益 8）', () async {
+      await store.saveSet(_set(id: 'a', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(id: 'b', workoutId: 'w1', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 2000));
+      await store.saveSet(_set(id: 'c', workoutId: 'w1', exerciseId: 'bench', setIndex: 3, reps: 8, atMs: 3000));
+
+      final int n = await store.deleteSets(<String>['a', 'b']);
+      expect(n, 2, reason: '要如实回条数 —— 界面那句"已移到回收站 2 组"就是它');
+      expect((await store.allSets()).map((SetRecord r) => r.id).toList(), <String>['c']);
+      expect((await store.deletedSets()).map((DeletedSet d) => d.set.id).toSet(),
+          <String>{'a', 'b'});
+      // 空列表是安全的空操作（界面在没选任何组时也会调到它）
+      expect(await store.deleteSets(<String>[]), 0);
+      // 重复删同一批：第二次什么也不删（幂等，不抛）
+      expect(await store.deleteSets(<String>['a', 'b']), 0);
+    });
+
+    test('★ 批量整理：一次改多组的动作，且**不碰回收站里的那些**', () async {
+      await store.saveSet(_set(id: 'a', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
+      await store.saveSet(_set(id: 'b', workoutId: 'w1', exerciseId: 'bench', setIndex: 2, reps: 8, atMs: 2000));
+      await store.saveSet(_set(id: 'c', workoutId: 'w1', exerciseId: 'bench', setIndex: 3, reps: 8, atMs: 3000));
+      await store.deleteSet('c');
+
+      final int n = await store.reassignSets(<String>['a', 'b', 'c'], 'squat');
+      expect(n, 2, reason: '回收站里的 c 不该被改 —— 用户改的是"现在看得到的这批"');
+      final List<SetRecord> live = await store.allSets();
+      expect(live.every((SetRecord r) => r.exerciseId == 'squat'), isTrue);
+      expect(live.map((SetRecord r) => r.id).toSet(), <String>{'a', 'b'});
+      // 改成同一个动作是幂等的
+      expect(await store.reassignSets(<String>['a'], 'squat'), 1);
+    });
+
     test('删除全部数据之后仍能继续正常记录（不是把库弄坏了）', () async {
       await store.saveSet(_set(id: 'old', workoutId: 'w1', exerciseId: 'bench', setIndex: 1, reps: 8, atMs: 1000));
 

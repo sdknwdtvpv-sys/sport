@@ -48,6 +48,25 @@ abstract class LocalStore {
   /// 免得下次有人"顺手补上"。
   Future<void> restoreSet(String id);
 
+  /// **批量移到回收站**（Ultra 权益 8「批量整理历史」，2026-10-10）。
+  ///
+  /// 与 [deleteSet] 的区别只有两点，但两点都重要：
+  ///   * **一次事务**：用户点的是"把这 12 组删掉"，那就该全删或全不删 ——
+  ///     中途失败留下一半，用户看到的是"删了几个、还有几个还在"，而他分不清哪几个；
+  ///   * **返回真实条数**：界面据此说"已移到回收站 12 组"，而不是"操作完成"。
+  ///
+  /// 它仍然是**软删除**（只写 `deletedAt`）：回收站里能恢复，与单条删除同一条路径。
+  Future<int> deleteSets(List<String> ids);
+
+  /// **批量改动作**（同一权益）：把这批组的 `exercise_id` 改成 [exerciseId]。
+  ///
+  /// 为什么必须有它：记错动作是真实且常见的（器械排队时随手选了同肌群的另一个），
+  /// 而此前唯一的修法是"删掉重记"—— 那等于让用户用自己的数据去补一个界面的缺口。
+  ///
+  /// ⚠️ 它会**同时影响纪录与统计**（PR 墙、容量趋势都按 `exercise_id` 归组）——
+  /// 这正是它值钱的地方，也是界面必须先给一句"这会改掉这些组的归属"的原因。
+  Future<int> reassignSets(List<String> ids, String exerciseId);
+
   Future<void> saveWorkout(Workout workout);
   Future<Workout?> loadWorkout(String id);
 
@@ -171,6 +190,30 @@ class InMemoryLocalStore implements LocalStore {
     final DeletedSet? back = _bin.remove(id);
     if (back == null) return;
     _sets[id] = back.set;
+  }
+
+  @override
+  Future<int> deleteSets(List<String> ids) async {
+    int n = 0;
+    for (final String id in ids) {
+      if (_sets.containsKey(id)) {
+        await deleteSet(id);
+        n++;
+      }
+    }
+    return n;
+  }
+
+  @override
+  Future<int> reassignSets(List<String> ids, String exerciseId) async {
+    int n = 0;
+    for (final String id in ids) {
+      final SetRecord? r = _sets[id];
+      if (r == null) continue; // 回收站里的不动（与 drift 那份同一个语义）
+      _sets[id] = r.copyWith(exerciseId: exerciseId);
+      n++;
+    }
+    return n;
   }
 
   @override

@@ -392,6 +392,34 @@ class SetRecord {
   /// 破纪录判定都不看它。DB 的 `rpe` 列早就有了，只是领域模型一直没接。
   final double? rpe;
 
+  /// 复制并覆盖若干个字段。
+  ///
+  /// 目前只有一处用到：Ultra 的**批量改动作**（`LocalStore.reassignSets`）。
+  /// ⚠️ `null` 的语义是"保持原值"，不是"清空" —— 将来若要支持"清掉重量"，
+  /// 得像 `Entitlement.copyWith` 那样显式加一个 `clearX` 开关，别指望传 null。
+  SetRecord copyWith({
+    String? exerciseId,
+    int? setIndex,
+    int? reps,
+    double? weightKg,
+    double? distanceM,
+    SetType? setType,
+    double? rpe,
+    int? completedAtMs,
+  }) =>
+      SetRecord(
+        id: id,
+        workoutId: workoutId,
+        exerciseId: exerciseId ?? this.exerciseId,
+        setIndex: setIndex ?? this.setIndex,
+        reps: reps ?? this.reps,
+        completedAtMs: completedAtMs ?? this.completedAtMs,
+        weightKg: weightKg ?? this.weightKg,
+        distanceM: distanceM ?? this.distanceM,
+        setType: setType ?? this.setType,
+        rpe: rpe ?? this.rpe,
+      );
+
   /// 容量。**距离动作恒为 0**：它的"次数"是秒，拿重量乘秒数没有量纲意义
   /// （与 drift_local_store 里物化的那份保持一致，两处口径必须一样）。
   double get volume => hasDistance ? 0 : (weightKg ?? 0) * reps;

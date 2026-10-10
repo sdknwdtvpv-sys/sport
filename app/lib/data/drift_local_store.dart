@@ -323,6 +323,45 @@ class DriftLocalStore implements LocalStore {
   }
 
   @override
+  Future<int> deleteSets(List<String> ids) async {
+    if (ids.isEmpty) return 0;
+    final int at = DateTime.now().millisecondsSinceEpoch;
+    late int n;
+    await _db.transaction(() async {
+      // ⚠️ 只动**还没被删掉**的那些（`deletedAt.isNull()`）：
+      //   ① 重复批删应当是空操作（返回 0，而不是"又删了 2 条"）；
+      //   ② 更要紧的是**别覆盖原来的删除时刻** —— 回收站按 `deletedAt` 倒序，
+      //      第二次批删把时间戳刷新一遍，用户会看到"我刚删的那批跑到了最上面"，
+      //      而它们其实早就删了。（契约测试当场抓到的：内存实现返回 0、drift 返回 2。）
+      n = await (_db.update(_db.setRecord)
+            ..where((t) => t.id.isIn(ids) & t.deletedAt.isNull()))
+          .write(SetRecordCompanion(
+        deletedAt: Value<int?>(at),
+        updatedAt: Value<int>(at),
+      ));
+    });
+    return n;
+  }
+
+  @override
+  Future<int> reassignSets(List<String> ids, String exerciseId) async {
+    if (ids.isEmpty) return 0;
+    final int at = DateTime.now().millisecondsSinceEpoch;
+    late int n;
+    await _db.transaction(() async {
+      // 只动**没被删掉**的那些：回收站里的组将来恢复时也该保持它原本的动作
+      // （用户改的是"我现在看得到的这批"，不是"包括我昨天删掉的那批"）
+      n = await (_db.update(_db.setRecord)
+            ..where((t) => t.id.isIn(ids) & t.deletedAt.isNull()))
+          .write(SetRecordCompanion(
+        exerciseId: Value<String>(exerciseId),
+        updatedAt: Value<int>(at),
+      ));
+    });
+    return n;
+  }
+
+  @override
   Future<void> deleteAllUserData() async {
     // 整个清空放进一个事务：中途失败就整体回滚，不会留下"训练没了但组还在"的
     // 半残状态 —— 那比不删更糟，用户会以为删干净了。

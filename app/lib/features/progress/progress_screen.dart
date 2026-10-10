@@ -259,6 +259,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
           repository: widget.repository,
           unit: widget.unit,
           now: widget.now,
+          // 透传权益与"去会员页"的入口：全部数据页的「整理（Ultra）」要用
+          // （它自己不 import 会员页 —— 耦合留在装配层，`free_red_line_test` 的白名单因此不用改）
+          entitlements: widget.entitlements,
+          onOpenUltra: widget.onOpenUltra,
         ),
       ),
     );

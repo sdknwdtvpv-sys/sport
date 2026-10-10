@@ -9,6 +9,8 @@
 /// （纯函数、可测），这一层不自己算任何东西。
 library;
 
+import '../../billing/debug_grant.dart';
+import '../../core/glass_overlay.dart';
 import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +22,7 @@ import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
+import '../../data/entitlement_repository.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../domain/models.dart';
@@ -37,6 +40,8 @@ class AllDataScreen extends StatefulWidget {
     required this.repository,
     this.unit = WeightUnit.kg,
     this.now,
+    this.entitlements,
+    this.onOpenUltra,
   });
 
   final LocalStore store;
@@ -57,6 +62,13 @@ class AllDataScreen extends StatefulWidget {
   /// 测试注入固定"今天"
   final DateTime? now;
 
+  /// 会员权益仓储（可选）。不传 = 当作**免费用户** —— 于是"批量整理"那一栏
+  /// 显示为「整理（Ultra）」，点下去是去会员页（`onOpenUltra`），不会真的改数据。
+  final EntitlementRepository? entitlements;
+
+  /// 「整理（Ultra）」点下去的去处。不传 = 那一栏点了没反应（宁可不显示，也不谎报）
+  final VoidCallback? onOpenUltra;
+
   @override
   State<AllDataScreen> createState() => _AllDataScreenState();
 }
@@ -68,6 +80,12 @@ class _AllDataScreenState extends State<AllDataScreen> {
   ExerciseData? _exercise;
   ExerciseStats? _stats;
   List<SetRecord> _records = const <SetRecord>[];
+
+  /// **批量整理**（Ultra 权益 8，2026-10-10）：多选态与已选集合。
+  /// 退出多选、或任何一次批量动作之后都要清空 —— 留着会让"下一次点"带着上一次的选择。
+  bool _selecting = false;
+  final Set<String> _selected = <String>{};
+  bool _ultra = false;
 
   PeriodReport? _week;
   PeriodReport? _month;
@@ -109,8 +127,13 @@ class _AllDataScreenState extends State<AllDataScreen> {
       );
     }
 
+    // ⚠️ 权益要在 setState **之前**读完（回调是同步的，里面不能 await）
+    final bool ultra = widget.entitlements == null
+        ? false
+        : (await widget.entitlements!.access(_today.millisecondsSinceEpoch)).ultra;
     if (!mounted) return;
     setState(() {
+      _ultra = debugUltraGranted || ultra;
       _exercise = exercise;
       _stats = stats;
       _records = records;
@@ -176,6 +199,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
               Expanded(
                 child: _mode == _Mode.byExercise ? _byExercise() : _byTime(),
               ),
+              if (_selecting) _selectionBar(),
             ],
           ],
         ),
@@ -209,11 +233,40 @@ class _AllDataScreenState extends State<AllDataScreen> {
               ),
             ),
           ),
+          // ⚠️ 两个动作按钮放进 `Flexible` + `Wrap`：大字号下（1.5×/2.0×）
+          // 「整理（Ultra）」+「导出 CSV」会把这一行顶出屏幕 —— `large_font_sweep_test`
+          // 当场抓到（全部数据页 1.5×/2.0× 溢出）。`Wrap` 让它们在放不下时**换行**，
+          // 而不是把标题挤没、或溢出到屏幕外。
+          Flexible(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+          // 「整理」= 批量整理历史（Ultra 权益 8）。**免费用户也看得见**，
+          // 但写着「（Ultra）」并指向会员页 —— 把入口藏起来，用户根本不知道有这种东西；
+          // 摆出来、说清解锁的是什么，才是"卖省心"而不是制造信息差（与进步页同一套口径）。
+          // 只在「按动作看」里出现：记录列表只存在于那个维度，而"进多选态却无行可选"
+          // 比"没有这个按钮"更让人摸不着头脑
+          if (!_selecting && _mode == _Mode.byExercise)
+            TextButton(
+              key: const Key('all-data-organize'),
+              style: TextButton.styleFrom(
+                foregroundColor: _ultra ? Tokens.accent : Tokens.text2,
+              ),
+              onPressed: _ultra ? _enterSelecting : widget.onOpenUltra,
+              child: Text(
+                _ultra ? '整理' : '整理（Ultra）',
+                style: const TextStyle(fontSize: Tokens.fsSub),
+              ),
+            ),
           TextButton(
             key: const Key('all-data-export'),
             style: TextButton.styleFrom(foregroundColor: Tokens.accent),
             onPressed: _export,
             child: const Text('导出 CSV', style: TextStyle(fontSize: Tokens.fsSub)),
+          ),
+              ],
+            ),
           ),
         ],
       ),
@@ -386,13 +439,157 @@ class _AllDataScreenState extends State<AllDataScreen> {
     );
   }
 
+  // ---------- 批量整理（Ultra 权益 8）----------
+
+  void _enterSelecting({String? withId}) {
+    if (!_ultra) {
+      // 免费用户点长按：把他带到会员页，而不是"点了没反应"或偷偷允许
+      widget.onOpenUltra?.call();
+      return;
+    }
+    setState(() {
+      _selecting = true;
+      if (withId != null) _selected.add(withId);
+    });
+  }
+
+  void _toggle(String id) {
+    setState(() {
+      if (!_selected.add(id)) _selected.remove(id);
+    });
+  }
+
+  void _cancelSelecting() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  /// 批量移到回收站。**先确认**：这是"改用户历史"的动作，而它是可恢复的
+  /// （回收站在「数据与备份」里），所以确认文案要写清"可以恢复"——
+  /// 否则用户会以为点错了就没了，于是不敢用这个功能。
+  Future<void> _moveSelectedToTrash() async {
+    final int n = _selected.length;
+    if (n == 0) return;
+    final bool? yes = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.surface,
+        title: Text('把这 $n 组移到回收站？'),
+        content: const Text('它们会从统计里消失，但可以随时在「数据与备份 → 回收站」里恢复。',
+            style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal)),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('organize-trash-cancel'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            key: const Key('organize-trash-confirm'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('移到回收站'),
+          ),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    final int done = await widget.store.deleteSets(_selected.toList());
+    if (!mounted) return;
+    _cancelSelecting();
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('已移到回收站 $done 组'),
+      backgroundColor: Tokens.elevated,
+    ));
+  }
+
+  /// 批量改动作：复用选动作页（它与"给这次训练挑动作"是同一套）。
+  Future<void> _reassignSelected() async {
+    if (_selected.isEmpty) return;
+    final ExerciseData? picked = await Navigator.of(context).push<ExerciseData>(
+      MaterialPageRoute<ExerciseData>(
+        builder: (_) => ExercisePickerScreen(repository: widget.repository),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final int done = await widget.store.reassignSets(_selected.toList(), picked.id);
+    if (!mounted) return;
+    _cancelSelecting();
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('已把 $done 组改成「${picked.name}」'),
+      backgroundColor: Tokens.elevated,
+    ));
+  }
+
+  /// 多选态下的底部操作条
+  Widget _selectionBar() => Container(
+        key: const Key('all-data-selection-bar'),
+        padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, Tokens.s3),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Tokens.line)),
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                '已选 ${_selected.length} 组',
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
+              ),
+            ),
+            TextButton(
+              key: const Key('organize-cancel'),
+              style: TextButton.styleFrom(foregroundColor: Tokens.text3),
+              onPressed: _cancelSelecting,
+              child: const Text('取消'),
+            ),
+            TextButton(
+              key: const Key('organize-reassign'),
+              style: TextButton.styleFrom(
+                foregroundColor: _selected.isEmpty ? Tokens.text3 : Tokens.text2,
+              ),
+              onPressed: _selected.isEmpty ? null : _reassignSelected,
+              child: const Text('改动作'),
+            ),
+            TextButton(
+              key: const Key('organize-trash'),
+              style: TextButton.styleFrom(
+                foregroundColor: _selected.isEmpty ? Tokens.text3 : Tokens.danger,
+              ),
+              onPressed: _selected.isEmpty ? null : _moveSelectedToTrash,
+              child: const Text('移到回收站'),
+            ),
+          ],
+        ),
+      );
+
   Widget _recordRow(SetRecord r) {
     final DateTime d = DateTime.fromMillisecondsSinceEpoch(r.completedAtMs);
     final String day = formatDateAxis(d);
-    return Padding(
+    final bool chosen = _selected.contains(r.id);
+    // 多选态：整行可点、左边一枚勾；**只有 Ultra 能进这个态**（`_enterSelecting` 守着）
+    // 非多选态：长按也能进来（比"先去右上角点整理"少一步，而长按在这个 App 里
+    // 已经是"对某一行做更多事"的通用手势 —— 训练屏长按一行是撤销）。
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _selecting ? () => _toggle(r.id) : null,
+      onLongPress: _selecting ? null : () => _enterSelecting(withId: r.id),
+      child: Padding(
       padding: const EdgeInsets.only(bottom: Tokens.s2),
       child: Row(
         children: <Widget>[
+          if (_selecting) ...<Widget>[
+            Icon(
+              chosen ? Icons.check_circle : Icons.circle_outlined,
+              key: Key('all-data-pick-${r.id}'),
+              color: chosen ? Tokens.success : Tokens.text3,
+              size: IconSpec.m,
+            ),
+            const SizedBox(width: Tokens.s2),
+          ],
           SizedBox(
             width: 48,
             child: Text(day,
@@ -422,6 +619,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
             style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
           ),
         ],
+      ),
       ),
     );
   }
