@@ -14,6 +14,15 @@
 /// `muscle_balance_test.dart` 的纯函数测试钉住（判据 + 文案都测了），
 /// 不为了一张图去改数据（改了就不再是同一份记录）。
 ///
+/// ⚠️ **2026-10-10 起这份脚本已经不能整套跑了，留着只作追溯** ——
+/// 它拍的是**五格底栏时代的「我」页**，而 2026-10-10 那次设计评审把段位卡 / 经验卡
+/// 从「我」页搬走（段位进了成就页、经验改成「我」页只剩一条进度），
+/// 于是 `rank-card` / `experience-card` / `streak-card` 这三个 key 在源码里**都不存在了**。
+/// 那一批图（`part2-20261006-*.png` / `badge-20261006-*.png`）已经连同其它 5 格时代的证据
+/// 一起搬进 `docs/images/legacy-5tab/`。**要看现在的形态，跑
+/// `badge_redesign_evidence_test.dart`**（它的 A5 段位那一段已经改到成就页上拍）。
+/// 下次谁跑它、看到"找不到控件"，那是这一条在起作用，不是新缺陷。
+///
 /// 跑法（在 `app/` 下，iOS 模拟器 `lianleme-69`）：
 ///     SHOT_DIR=../docs/images flutter drive \
 ///       --driver=test_driver/screenshot_driver.dart \

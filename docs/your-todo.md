@@ -23,8 +23,13 @@
 >   （那 43 张还是 5 格时代的）+ push + 看 CI + 重装两台设备。**在那之前 `dist/` 是旧的，
 >   六层门禁会红在那一条上**（`release-checklist.md` 里写了）。
 > * **真机那三条验证**（需要能装包的真机）：T2-1 的 iOS 平台视图帧率、T2-5 连点三次不出错帧、
->   T2-4 的"3 秒预告吵不吵"。Android 那台被 MIUI 拦了安装、iPhone 的 `--profile` 要团队签名，
->   补测命令写在各自集成测试文件头。
+>   T2-4 的"3 秒预告吵不吵"。补测命令写在各自集成测试文件头。**今天又试了一次，两条路都还是堵着，
+>   而且堵在哪现在是量出来的**：iPhone 插着线也认不到 —— `flutter devices` 报
+>   "Ensure the device is unlocked and attached with a cable … opted into Developer Mode (code -27)"，
+>   也就是**要你把手机解锁、在手机上点「信任此电脑」并打开开发者模式**（本机已有一张有效的
+>   Apple Development 证书，签名这一半是通的）；Android 那台仍被 MIUI 拦在
+>   `INSTALL_FAILED_USER_RESTRICTED`（要在手机上确认安装）。你在手机上做好这两步，我这边一条命令就能跑。
+>   **在你说「部署」之前，这两条一律记成"没做"，不写成"没问题"。**
 > * **T3-5（图标源换成 Material Symbols）** 按你拍板的"问题 1=B"**推到下个版本** —— 不用管。
 >
 > 机器能做的、不需要你输入的，我都在推进；不确定的我会来问你，不擅自决定。

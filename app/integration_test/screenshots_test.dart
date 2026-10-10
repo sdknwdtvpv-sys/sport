@@ -317,6 +317,17 @@ void main() {
         await scrollTo(tester, const Key('body-save'));
         await tester.tap(find.byKey(const Key('body-save')));
         await settle(1500);
+        // ⚠️ 一周内**第二次**记录体重会弹「这周已经称过 N 次了」的友情提醒
+        // （v1.63.0 加的），而它是个**模态**：不点掉，后面每一步（滚动、截图）
+        // 都打在那个对话框上 —— 2026-10-10 排练时最后一步
+        // `11b-body-revoke` 就是被它挡下的（drag 命中不到 ListView，报
+        // "derived an Offset … that would not hit test"），而且 `11-body-metric`
+        // 会拍成一张"对话框盖着页面"的图。提醒本身是产品行为，不是缺陷；
+        // 要修的是脚本：**存完就点掉**（按钮文案「知道了」，key 见页内实现）。
+        if (find.byKey(const Key('weigh-frequency-ok')).evaluate().isNotEmpty) {
+          await tester.tap(find.byKey(const Key('weigh-frequency-ok')));
+          await settle(600);
+        }
       }
 
       String day(DateTime d) => '${d.year}-'
@@ -340,10 +351,35 @@ void main() {
       await capture('11-body-metric');
 
       await step('11b-body-revoke', () async {
-        // 撤回同意（PIPL 第 15 条）的入口在这一页最下面，滚到底才可见 ——
-        // 单独留一张，作为"这个入口真的在、而且没渲染坏"的证
-        // （`**` 那类漏字只有截图看得见，单测看的是 key）。
-        await scrollTo(tester, const Key('body-revoke'));
+        // 撤回同意（PIPL 第 15 条）的入口 —— 单独留一张，作为"这个入口真的在、
+        // 而且没渲染坏"的证（`**` 那类漏字只有截图看得见，单测看的是 key）。
+        //
+        // ⚠️ **2026-10-10 发现这一步早就走不通了**（`Bad state: No element`）：
+        // 2026-10-09 第二份 docx 第 2 条把这条入口从「身体数据」页**搬进了
+        // 「隐私与关于」**（"设置类的入口全部收纳到设置里"），而脚本还在原地
+        // `scrollTo(body-revoke)` —— key 已经不在这页上了。更糟的是它**不报错**时
+        // 的形态：`store-assets/screenshots/11b-body-revoke.png` 是搬之前那张，
+        // **图比 App 旧了一个版本**，而 `check-screenshots` 只核张数与尺寸，核不出内容。
+        // 所以按现状走用户的真实路径：身体数据 →（返回）数据与备份 →（返回）设置
+        // →「隐私与关于」→ 滚到底。
+        await tapBack(const Key('body-back'));
+        await settle(900);
+        await tapBack(const Key('subpage-back'));
+        await settle(900);
+        await tester.dragUntilVisible(
+          find.byKey(const Key('open-privacy-about')),
+          find.byType(ListView).first,
+          const Offset(0, -220),
+        );
+        await settle(600);
+        await tester.tap(find.byKey(const Key('open-privacy-about')));
+        await settle(1500);
+        await tester.dragUntilVisible(
+          find.byKey(const Key('body-revoke')),
+          find.byType(ListView).first,
+          const Offset(0, -220),
+        );
+        await settle(600);
         await capture('11b-body-revoke');
       });
     });
