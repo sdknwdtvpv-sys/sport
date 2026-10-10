@@ -612,7 +612,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
             ),
             const SizedBox(width: Tokens.s3),
-            Text(
+            // ⚠️ **这一格必须是 `Expanded`**（2026-10-10 在 2.0× 系统字号下抓到的）：
+            // 它原来是裸 `Text`，而"助力 30 kg × 8 秒"这种组合在 2.0× 下会把这一行撑爆
+            // （实测溢出 17px）。主数字要能缩，右侧那几个标记（RPE / 热身 / ✓）先保。
+            Expanded(
+              child: Text(
               // 距离动作念「5.00 公里 · 30:00」—— 既没有"自重 × 1800"，
               // 也没有把秒读成次。
               r.hasDistance
@@ -630,6 +634,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 color: r.setType == SetType.warmup ? Tokens.text3 : Tokens.text2,
                 fontSize: Tokens.fsSub,
                 fontWeight: Tokens.fwStrong,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               ),
             ),
             // RPE 记了就必须显示 —— 只写库不显示就成了用户看不见的隐藏数据
@@ -896,9 +903,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   : Tokens.text),
                           fontSize: c.restDone ? 17 : 20,
                           fontWeight: Tokens.fwBold,
-                          fontFeatures: const <FontFeature>[
-                            FontFeature.tabularFigures()
-                          ],
+                          fontFeatures: Tokens.tabular,
                         ),
                       ),
                       if (!c.restDone) ...<Widget>[

@@ -237,6 +237,16 @@ abstract final class Tokens {
   /// 字体族名，与 `pubspec.yaml` 里声明的一致。
   static const String displayFont = 'Oswald';
 
+  /// **等宽数字**（`tabularFigures`）：倒计时、备份条数这类"会跳数字"的地方。
+  ///
+  /// 为什么收成一个常量（VI 计划 §7 B 组那条"3 处调用 → 定义处一处"）：
+  /// 等宽数字不是审美，是**防止数字跳动**——而它要在**同一个段落里每一处**都开，
+  /// 一处漏了就那一处跳。三个调用点各写一遍 `FontFeature.tabularFigures()` 的后果，
+  /// 就是下一处新数字没人记得加。现在写 `fontFeatures: Tokens.tabular` 就行。
+  static const List<FontFeature> tabular = <FontFeature>[
+    FontFeature.tabularFigures(),
+  ];
+
   /// 展示数字/拉丁的一站式样式。
   ///
   /// **只给数字与拉丁字符串用**：Oswald 不含汉字，中文会**回落到系统字体** ——

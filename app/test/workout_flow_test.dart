@@ -844,6 +844,19 @@ void main() {
     expect(find.byKey(const Key('rest-bar')), findsOneWidget);
     expect(find.byKey(const Key('compare-band')), findsOneWidget);
 
+    // ⚠️ VI 计划 §7 E 组那条"`xxxLarge` 下主按钮文字降到 17pt 且**高度不变**"
+    // （`hspPrimary = 88` 不变）—— 这里钉的是"高度"那一半：
+    // 文字让 `FittedBox` 去缩（那是它的职责），但**手指要点的那个东西不许变小**。
+    expect(tester.getSize(find.byKey(const Key('big-log-button'))).height,
+        Tokens.hPrimary,
+        reason: '大按钮高度是单手可达的硬约束，字号再大也不许压');
+
+    // ⚠️ **已知限制（2026-10-10 实测，留档）**：把字号推到 **2.0×** 时，训练屏有一条 Row
+    // 溢出 17px —— 已经定位到"**记完一组之后**才出现"（点之前没有、`skipRest()` 之后仍然有），
+    // 但没定位到具体那一行（渲染错误里的 element 是 DEFUNCT，拿不到 widget 名）。
+    // 1.5× 与 `xxxLarge`（≈1.35×）都没问题。**没有硬修**：不确定是哪一行时动布局，
+    // 等于拿真机观感赌一把；留给下一版或真机实测。
+
     await _teardown(tester, h);
   });
 }
