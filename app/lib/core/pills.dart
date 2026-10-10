@@ -30,8 +30,15 @@ Widget choicePill({
         padding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
         height: 36,
         decoration: BoxDecoration(
-          color: active ? Tokens.accent : Tokens.surface,
+          color: active ? Tokens.accent : Tokens.field,
           borderRadius: BorderRadius.circular(Tokens.rPill),
+          // ⚠️ 2026-10-10（VI 计划 T0-2）：未选中的胶囊原来底是 `surface` ——
+          // 骑在 `surface` 卡片上时对卡片 **1.00:1**，等于没有边界。
+          // 现在 `field` 底（对卡片 1.27:1）+ `lineStrong` 边（对 bg 3.18:1）。
+          // 选中态不加边框：强调色本身就是最强的边界。
+          border: active
+              ? null
+              : Border.all(color: Tokens.lineStrong),
         ),
         child: Center(
           widthFactor: 1,

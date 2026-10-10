@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/labels.dart';
 import '../../core/pills.dart';
+import '../../core/fields.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart';
@@ -151,18 +152,13 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
                     controller: _name,
                     autofocus: true,
                     style: const TextStyle(color: Tokens.text, fontSize: 17),
-                    decoration: InputDecoration(
-                      hintText: '例如：坐姿划船机',
-                      hintStyle: const TextStyle(color: Tokens.text3, fontSize: 17),
-                      filled: true,
-                      fillColor: Tokens.surface,
+                    decoration: appFieldDecoration(
+                      hint: '例如：坐姿划船机',
+                      fontSize: 17,
+                      radius: Tokens.rPill,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: Tokens.s5,
                         vertical: Tokens.s4,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(Tokens.rPill),
-                        borderSide: BorderSide.none,
                       ),
                     ),
                   ),

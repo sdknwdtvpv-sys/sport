@@ -15,6 +15,7 @@ import '../../domain/models.dart' show PlanTarget;
 import 'plan_templates.dart';
 
 import '../../core/pills.dart';
+import '../../core/fields.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
@@ -538,14 +539,11 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                   controller: _name,
                   style: const TextStyle(
                       color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700),
-                  decoration: const InputDecoration(
-                    hintText: '计划名称，如「推日」',
-                    hintStyle: TextStyle(color: Tokens.text3, fontSize: 20),
-                    filled: true,
-                    fillColor: Tokens.surface,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: Tokens.s4, vertical: Tokens.s4),
-                    border: OutlineInputBorder(borderSide: BorderSide.none),
+                  decoration: appFieldDecoration(
+                    hint: '计划名称，如「推日」',
+                    fontSize: 20,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: Tokens.s4, vertical: Tokens.s4),
                   ),
                   onSubmitted: _saveName,
                   onTapOutside: (_) => _saveName(_name.text),

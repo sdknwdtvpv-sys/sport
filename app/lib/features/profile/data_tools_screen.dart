@@ -11,6 +11,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/fields.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
@@ -598,15 +599,9 @@ class _ImportBackupDialogState extends State<_ImportBackupDialog> {
             controller: _text,
             maxLines: 6,
             style: const TextStyle(color: Tokens.text, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: '{"app":"lianleme", …}',
-              hintStyle: const TextStyle(color: Tokens.text3, fontSize: 13),
-              filled: true,
-              fillColor: Tokens.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(Tokens.rCard),
-                borderSide: BorderSide.none,
-              ),
+            decoration: appFieldDecoration(
+              hint: '{"app":"lianleme", …}',
+              fontSize: 13,
             ),
           ),
           if (_error != null) ...<Widget>[

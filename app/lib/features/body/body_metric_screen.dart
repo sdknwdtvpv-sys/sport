@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 
+import '../../core/fields.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/vi_area_chart.dart';
@@ -603,18 +604,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             // 点输入框以外的地方 → 收起键盘（第 3 条的另一半）
             onTapOutside: (_) => _dismissKeyboard(),
             style: const TextStyle(color: Tokens.text, fontSize: 18),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: Tokens.text3, fontSize: 15),
-              filled: true,
-              fillColor: Tokens.surface,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: Tokens.s4, vertical: Tokens.s3),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(Tokens.rCard),
-                borderSide: BorderSide.none,
-              ),
-            ),
+            decoration: appFieldDecoration(hint: hint),
           ),
         ],
       );
@@ -1017,16 +1007,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                       onTapOutside: (_) => _dismissKeyboard(),
                       maxLines: 2,
                       style: const TextStyle(color: Tokens.text, fontSize: 15),
-                      decoration: InputDecoration(
-                        hintText: '可选，例如：空腹、练后',
-                        hintStyle: const TextStyle(color: Tokens.text3, fontSize: 15),
-                        filled: true,
-                        fillColor: Tokens.surface,
+                      decoration: appFieldDecoration(
+                        hint: '可选，例如：空腹、练后',
                         contentPadding: const EdgeInsets.all(Tokens.s4),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(Tokens.rCard),
-                          borderSide: BorderSide.none,
-                        ),
                       ),
                     ),
 
@@ -1243,17 +1226,11 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               onTapOutside: (_) => _dismissKeyboard(),
               style: const TextStyle(
                   color: Tokens.text, fontSize: 24, fontWeight: FontWeight.w700),
-              decoration: InputDecoration(
-                hintText: '例如 72.5',
-                hintStyle: const TextStyle(color: Tokens.text3, fontSize: 20),
-                filled: true,
-                fillColor: Tokens.bg,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: Tokens.s4, vertical: Tokens.s3),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(Tokens.rCard),
-                  borderSide: BorderSide.none,
-                ),
+              // 这一个本来就在卡片里，所以底用 `bg`（下沉的井）—— 边界照旧走 lineStrong
+              decoration: appFieldDecoration(
+                hint: '例如 72.5',
+                fontSize: 20,
+                fill: Tokens.bg,
               ),
             ),
           ],

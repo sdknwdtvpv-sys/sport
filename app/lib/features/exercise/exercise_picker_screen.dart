@@ -13,6 +13,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/labels.dart';
+import '../../core/fields.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart';
@@ -320,19 +321,16 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 controller: _query,
                 onChanged: (_) => _load(),
                 style: const TextStyle(color: Tokens.text, fontSize: 17),
-                decoration: InputDecoration(
-                  hintText: '搜索动作或别名，如 bp / rdl',
-                  // 搜索 hint 是「这里能干什么」的唯一提示 → text2（VI 计划 T0-3）
-                  hintStyle: const TextStyle(color: Tokens.text2, fontSize: 17),
-                  filled: true,
-                  fillColor: Tokens.surface,
+                // ⚠️ 2026-10-10（VI 计划 T0-2）：这一格原来**没有边框**，
+                // 底对页面只有 1.10:1 —— 暗光健身房里看不出这里能打字。
+                // 现在走共用外观：`field` 底 + `lineStrong` 边界（3.18:1）。
+                decoration: appFieldDecoration(
+                  hint: '搜索动作或别名，如 bp / rdl',
+                  fontSize: 17,
+                  radius: Tokens.rPill,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: Tokens.s5,
                     vertical: Tokens.s4,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(Tokens.rPill),
-                    borderSide: BorderSide.none,
                   ),
                 ),
               ),

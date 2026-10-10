@@ -19,6 +19,7 @@ import 'dart:math' as math;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/pills.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/exercise_repository.dart';
@@ -111,6 +112,58 @@ void main() {
       // 白字是**永久禁止**的那一种：写进测试，免得有人从 `vi/` 里把白胶囊搬进代码
       expect(contrast(const Color(0xFFFFFFFF), Tokens.accent), lessThan(4.5),
           reason: '橙底白字只有 3.08:1 —— 这条不是"建议"，是硬约束');
+    });
+  });
+
+  group('输入框与胶囊的边界（T0-2）', () {
+    test('★ 抬升字段底"可分辨"，边界 ≥ 3:1', () {
+      // 计划的原文写的是 `contrast(input, bg) >= 3.0`，而 WCAG 1.4.11 管的是**边界**：
+      // 填充只要可分辨（否则深色界面里的输入框会变成一块浅灰板）。
+      // 这一条把两个口径都钉住 —— 谁改弱了都会红。
+      expect(contrast(Tokens.field, Tokens.bg), greaterThanOrEqualTo(1.3),
+          reason: '输入框底要对页面"看得出来"');
+      expect(contrast(Tokens.field, Tokens.surface), greaterThanOrEqualTo(1.25),
+          reason: '未选中胶囊要对卡片"看得出来"（原来是 1.00:1）');
+      expect(contrast(Tokens.lineStrong, Tokens.bg), greaterThanOrEqualTo(3.0),
+          reason: '边界要 3:1（WCAG 1.4.11）');
+      expect(contrast(Tokens.lineStrong, Tokens.surface), greaterThanOrEqualTo(2.5),
+          reason: '卡片上的胶囊边界对卡片也要够');
+    });
+
+    testWidgets('搜索框的边界真的画出来了（不是只写在令牌里）', (WidgetTester tester) async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final ExerciseRepository repo = ExerciseRepository(db);
+      await repo.importSeed(loadJson: () async => '{"exercises":[]}');
+      await tester.pumpWidget(MaterialApp(
+        home: ExercisePickerScreen(repository: repo),
+      ));
+      await tester.pumpAndSettle();
+
+      final TextField field =
+          tester.widget<TextField>(find.byKey(const Key('exercise-search')));
+      final OutlineInputBorder border =
+          field.decoration!.enabledBorder! as OutlineInputBorder;
+      expect(border.borderSide.color, Tokens.lineStrong,
+          reason: '搜索框的边界要用 lineStrong（原来这里是 BorderSide.none）');
+      expect(field.decoration!.fillColor, Tokens.field);
+    });
+
+    testWidgets('未选中的胶囊有边界（骑在卡片上时不再是 1.00:1）', (WidgetTester tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          backgroundColor: Tokens.bg,
+          body: Center(
+            child: choicePill(label: 'kg', active: false, onTap: () {}),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      final Container box = tester.widget<Container>(find.byType(Container).first);
+      final BoxDecoration deco = box.decoration! as BoxDecoration;
+      expect(deco.color, Tokens.field);
+      expect(deco.border, isNotNull, reason: '未选中胶囊必须有边界');
+      expect((deco.border! as Border).top.color, Tokens.lineStrong);
     });
   });
 
