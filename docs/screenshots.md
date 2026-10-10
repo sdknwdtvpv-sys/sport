@@ -48,6 +48,19 @@
 | `store-assets/screenshots-play/` | **1080×1920**（**9:16**） | **Google Play** —— 它要求宽高比在 9:16 或（另一种说法）1:2～2:1 之间，**两种口径都排除 20:9** |
 | `store-assets/screenshots-ios/` | **1320×2868**（iPhone 6.9 吋，**8 位 RGB、无 alpha**） | **App Store** —— 由 iOS 模拟器（iPhone 17 Pro Max）出图，再过 `tool/flatten-png.mjs` 压平 |
 
+### ✅ 三套的产出路径都在 2026-10-10 **空跑验证过**（切版当天照做即可）
+
+| 那一套 | 怎么出 | 2026-10-10 实测 |
+|---|---|---|
+| `screenshots/`（1080×2400） | Android 模拟器 `emulator-5554`（原生就是 1080×2400） | 这一套 **16 张**（脚本出 15 张 + `01b-home-fresh-install` 那张是整屏 `adb screencap` 补的，2026-09-30 起就如此）；`SHOT_DIR=/tmp/android-rehearsal` 空跑 **0 失败**，图是暗色的正常画面（**不是**白底/反色） |
+| `screenshots-play/`（1080×1920） | 先在模拟器上 `adb -s emulator-5554 shell wm size 1080x1920`，跑完 `wm size reset` | 这一套 **15 张**，空跑 **0 失败**；`wm size` 已复位（`Physical size: 1080x2400`） |
+| `screenshots-ios/`（1320×2868，8 位无 alpha） | iOS 模拟器 `FC97CA61-…`（iPhone 18 Pro Max）出图 → `tool/flatten-png.mjs` 逐张压平 | 这一套 **15 张**，空跑 **0 失败**；压平前实测 **16 位 + alpha**，压平后 **8 位 + 无 alpha + 1320×2868** ✅ |
+
+> ⚠️ 顺带纠正一条**本仓里传过的说法**：Android 模拟器上 `convertFlutterSurfaceToImage()`
+> 出来的图**不是**"白底/反色"。2026-10-10 那三张的像素均值是 RGB ≈ (23,17,14)～(46,29,22)
+> —— 正常的深色界面；上面 `01-home` 也逐张用眼睛看过（三格底栏、橙色大按钮都在）。
+> 之前那条结论若还写在别处，以这次的实测为准。
+
 ### ⚠️ 重出之前先**空跑一遍**（2026-10-10 加，起因是一次真事故）
 
 ```bash

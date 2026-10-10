@@ -302,6 +302,19 @@ void main() {
       Future<void> fillAndSave(String date, String weight, String waist,
           String muscle, String height) async {
         if (date.isNotEmpty) {
+          // ⚠️ **先滚回顶部再点日期**（2026-10-10 空跑 9:16 那套时抓到）：
+          // 上一轮存完会把页面停在最下面的「保存」附近，而日期 chips 在页面顶部、
+          // 又在 ListView 的**懒构建**范围之外 —— 屏幕一矮（9:16 的 1080×1920，
+          // 逻辑高度比 20:9 少约 180pt）它就没被建出来，`tap` 当场报
+          // `Found 0 widgets with key [<'body-day-…'>]`，于是那一套少两张图。
+          // 20:9 与 iOS 上侥幸能过，只是因为屏幕够高、chips 还在缓存范围里 ——
+          // 这种"看屏幕高度过不过"的步骤不能留。
+          await tester.dragUntilVisible(
+            find.byKey(Key('body-day-$date')),
+            find.byKey(const Key('body-scroll')),
+            const Offset(0, 220),
+          );
+          await settle(600);
           await tester.tap(find.byKey(Key('body-day-$date')));
           await settle(700);
         }
