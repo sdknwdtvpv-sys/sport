@@ -94,30 +94,38 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                   const SizedBox(height: Tokens.s3),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: Tokens.s5),
-                    child: Row(
-                      children: <Widget>[
-                        for (final (String? kind, String label) in <(String?, String)>[
-                          (null, '全部'),
-                          (NotificationKind.achievement,
-                              NotificationKind.label(NotificationKind.achievement)),
-                          (NotificationKind.reminder,
-                              NotificationKind.label(NotificationKind.reminder)),
-                          (NotificationKind.backup,
-                              NotificationKind.label(NotificationKind.backup)),
-                        ])
-                          Padding(
-                            padding: const EdgeInsets.only(right: Tokens.s2),
-                            child: choicePill(
-                              key: Key('notif-filter-$label'),
-                              label: label,
-                              active: _kind == kind,
-                              onTap: () {
-                                setState(() => _kind = kind);
-                                _load();
-                              },
+                    // ⚠️ **筛选胶囊那一行要能横滚**（2026-10-10 大字号全屏扫描抓到的）：
+                    // 四个胶囊在 **2.0×** 下合计 376pt > 屏宽 371pt（溢出 5px）。
+                    // 与动作库的筛选行同一个做法（`Expanded` + 横向 `ListView`）——
+                    // 胶囊数量或字号再长也不会有"看不见的第四格"。
+                    child: SizedBox(
+                      height: 36,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: <Widget>[
+                          for (final (String? kind, String label) in <(String?, String)>[
+                            (null, '全部'),
+                            (NotificationKind.achievement,
+                                NotificationKind.label(NotificationKind.achievement)),
+                            (NotificationKind.reminder,
+                                NotificationKind.label(NotificationKind.reminder)),
+                            (NotificationKind.backup,
+                                NotificationKind.label(NotificationKind.backup)),
+                          ])
+                            Padding(
+                              padding: const EdgeInsets.only(right: Tokens.s2),
+                              child: choicePill(
+                                key: Key('notif-filter-$label'),
+                                label: label,
+                                active: _kind == kind,
+                                onTap: () {
+                                  setState(() => _kind = kind);
+                                  _load();
+                                },
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: Tokens.s4),
