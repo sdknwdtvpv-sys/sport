@@ -136,7 +136,9 @@ void main() {
     await _pump(tester);
     await tester.tap(find.byKey(const Key('seg-历史')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('plan-history-empty')), findsOneWidget);
+    // T3-2：空态要有下一步（这里是"去开练"）
+    expect(find.byKey(const Key('empty-plan-history')), findsOneWidget);
+    expect(find.byKey(const Key('empty-action')), findsOneWidget);
   });
 
   testWidgets('有没结束的训练时，本周视图给「接着练」；没有就不给', (WidgetTester tester) async {

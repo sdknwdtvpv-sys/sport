@@ -2030,6 +2030,8 @@ class _HomeShellState extends State<HomeShell> {
             onBodyUnitChanged: (BodyWeightUnit u) {
               setState(() => _bodyUnit = u);
             },
+            // T3-2：进步页那处「还没有训练记录」的空态，下一步是回「开练」那一格
+            onOpenToday: () => _selectTab(1),
           );      case 1:
         return TodayScreen(
             // 大按钮一跳直开练；想先看看的人走下面那个入口

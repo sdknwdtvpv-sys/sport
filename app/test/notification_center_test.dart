@@ -35,7 +35,9 @@ void main() {
 
   testWidgets('一条消息都没有：给一句人话，而不是一块空白', (WidgetTester tester) async {
     await _pump(tester, repo);
-    expect(find.byKey(const Key('notifications-empty')), findsOneWidget);
+    // T3-2：空态不只是"一句人话"，还要有**下一步**（这里的是"回到今天"）
+    expect(find.byKey(const Key('empty-notifications')), findsOneWidget);
+    expect(find.byKey(const Key('empty-action')), findsOneWidget);
     expect(find.byKey(const Key('notifications-mark-all')), findsNothing,
         reason: '没有未读时那个按钮是个点不动的摆设');
   });

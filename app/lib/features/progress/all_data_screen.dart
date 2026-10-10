@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/sparkline.dart';
+import '../../core/empty_state.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
@@ -299,11 +300,15 @@ class _AllDataScreenState extends State<AllDataScreen> {
           ),
         ),
         if (s == null || s.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: Tokens.s5),
-            child: Text(
-              '这个动作还没有记录。练过一次再来。',
-              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
+          Padding(
+            padding: const EdgeInsets.only(top: Tokens.s5),
+            child: EmptyState(
+              key: const Key('empty-all-data'),
+              art: EmptyArt.ringSearch,
+              title: '这个动作还没有记录。',
+              body: '练过一次再来，或者换一个动作看看。',
+              action: '换一个动作',
+              onAction: _pickExercise,
             ),
           )
         else ...<Widget>[

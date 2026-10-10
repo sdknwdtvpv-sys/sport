@@ -309,6 +309,8 @@ void main() {
             now: kToday,
             unit: unit,
             bodyUnit: bodyUnit,
+            // T3-2：空态的下一步是必填的（这一屏的"还没有训练记录"要有出路）
+            onOpenToday: () {},
           ),
         ),
       ));

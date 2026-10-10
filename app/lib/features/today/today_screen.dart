@@ -10,6 +10,7 @@ library;
 import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/empty_state.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
@@ -315,7 +316,11 @@ class TodayScreen extends StatelessWidget {
           const SizedBox(height: Tokens.s3),
           _muscleBalanceLine(muscleBalance!),
         ],
-        if (recent.isNotEmpty) ...<Widget>[
+        // ⚠️ T3-2：原来这里只判 `recent.isNotEmpty` —— 于是**一次都没练过的人
+        // 在首页看到的是"最近训练"四个字下面的整片空黑**（那正是这一条要修的东西）。
+        // 现在没记录时也走 `_recentBlock()`，由它在"有记录 / 没记录"之间分叉，
+        // 没记录那一支是带下一步的空态。
+        if (recent.isNotEmpty || onOpenLibrary != null) ...<Widget>[
           const SizedBox(height: Tokens.s5),
           _recentBlock(),
         ],
@@ -558,6 +563,21 @@ class TodayScreen extends StatelessWidget {
       if (diff <= 0) return '今天';
       if (diff == 1) return '昨天';
       return formatDateAxis(d);
+    }
+
+    // T3-2：一次都没练过时，"最近训练"下面原来**什么都没有** ——
+    // 用户看到的是一片空黑。现在它是一处空态：说清事实 + **给一个下一步**
+    // （去动作库挑一个，而不是"点下面那颗大按钮"——大按钮已经在他眼前了，再说一遍是废话）。
+    if (recent.isEmpty) {
+      if (onOpenLibrary == null) return const SizedBox.shrink();
+      return EmptyState(
+        key: const Key('empty-today'),
+        art: EmptyArt.dashedRing,
+        title: '还没有训练记录。',
+        body: '练完第一次，这里会记下最近几次练了什么。',
+        action: '去动作库挑一个',
+        onAction: onOpenLibrary!,
+      );
     }
 
     return Column(

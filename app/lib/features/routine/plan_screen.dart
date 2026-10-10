@@ -13,6 +13,7 @@ library;
 import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/empty_state.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/pills.dart';
@@ -99,6 +100,15 @@ class PlanScreen extends StatefulWidget {
   State<PlanScreen> createState() => _PlanScreenState();
 }
 
+/// 测试 / 证据脚本用：**切到第 N 段**（0 = 本周 / 1 = 模板库 / 2 = 历史）。
+///
+/// ⚠️ 为什么需要它（2026-10-10，T3-2 出证据图时踩到的）：iOS 上那个分段控件是
+/// 苹果原生的 `UISegmentedControl`（一块平台视图）—— Flutter 侧**没有 `seg-*` 那些 key**，
+/// `tester.tap` 也点不到它（合成事件进不了 UIKit）。与 `debugSwitchTab` 是同一条理由。
+/// 只在 `PlanScreen` 活着的时候非空（`dispose` 里清掉）。
+@visibleForTesting
+void Function(int index)? debugPlanSegment;
+
 class _PlanScreenState extends State<PlanScreen> {
   PlanView _view = PlanView.week;
   List<SetRecord> _sets = const <SetRecord>[];
@@ -109,7 +119,18 @@ class _PlanScreenState extends State<PlanScreen> {
   @override
   void initState() {
     super.initState();
+    debugPlanSegment = (int i) {
+      if (mounted && i >= 0 && i < PlanView.values.length) {
+        setState(() => _view = PlanView.values[i]);
+      }
+    };
     _load();
+  }
+
+  @override
+  void dispose() {
+    debugPlanSegment = null;
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -411,11 +432,15 @@ class _PlanScreenState extends State<PlanScreen> {
     }
 
     if (groups.isEmpty) {
-      return const Center(
-        child: Text('还没有练过。\n练完第一次，这里会按周记下你练了几次、多少容量。',
-            key: Key('plan-history-empty'),
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal)),
+      return Center(
+        child: EmptyState(
+          key: const Key('empty-plan-history'),
+          art: EmptyArt.halfRing,
+          title: '还没有练过。',
+          body: '练完第一次，这里会按周记下你练了几次、多少容量。',
+          action: '去开练',
+          onAction: widget.onBack ?? () => Navigator.of(context).maybePop(),
+        ),
       );
     }
 

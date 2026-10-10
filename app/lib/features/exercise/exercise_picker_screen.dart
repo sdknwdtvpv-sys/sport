@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/labels.dart';
 import '../../core/fields.dart';
+import '../../core/empty_state.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart';
@@ -411,11 +412,21 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     );
   }
 
-  Widget _emptyState() => const Center(
-        child: Text(
-          '没找到这个动作。\n换个词试试，或者点右上角「＋ 新建」自建一个。',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
+  /// 搜不到时的空态（T3-2）：原来只有两行灰字，**没有下一步** ——
+  /// 而"搜不到"这件事的下一步非常明确：把关键词清掉再找一次。
+  Widget _emptyState() => Center(
+        child: EmptyState(
+          key: const Key('empty-picker'),
+          art: EmptyArt.ringSearch,
+          title: '没找到这个动作。',
+          body: '换个词试试，或者点右上角「＋ 新建」自建一个。',
+          action: '清空关键词',
+          onAction: () {
+            // 清掉关键词就是"回到浏览态"（`_browsing` 那个 getter 会跟着变）
+            _query.clear();
+            setState(() {});
+            _load();
+          },
         ),
       );
 

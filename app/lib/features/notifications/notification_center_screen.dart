@@ -11,6 +11,7 @@ library;
 import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/empty_state.dart';
 import '../../core/theme.dart';
 import '../../core/pills.dart';
 import '../../core/units.dart';
@@ -124,13 +125,16 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                     child: _loading
                         ? const Center(child: CircularProgressIndicator())
                         : _rows.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  '还没有消息。\n成就解锁、错过的提醒、备份结果都会记在这里。',
-                                  key: Key('notifications-empty'),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
+                            ? Center(
+                                child: EmptyState(
+                                  // 这一屏的空态下一步是"离开它" —— 通知中心是查东西的地方，
+                                  // 没有东西可查时最该做的是回到今天，而不是在这里等。
+                                  key: const Key('empty-notifications'),
+                                  art: EmptyArt.ringWithLock,
+                                  title: '还没有消息。',
+                                  body: '成就解锁、错过的提醒、备份结果都会记在这里。',
+                                  action: '回到今天',
+                                  onAction: () => Navigator.of(context).maybePop(),
                                 ),
                               )
                             : ListView.separated(

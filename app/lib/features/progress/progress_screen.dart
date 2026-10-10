@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 // db.dart（drift 表）与 models.dart（领域模型）都定义了 Workout / SetRecord，预先 hide。
 import '../../core/labels.dart';
 import '../../analytics/analytics.dart';
+import '../../core/empty_state.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/vi_area_chart.dart';
@@ -42,9 +43,19 @@ class ProgressScreen extends StatefulWidget {
     this.unit = WeightUnit.kg,
     this.bodyUnit = BodyWeightUnit.kg,
     this.now,
+    required this.onOpenToday,
   });
 
   final LocalStore store;
+
+  /// 「还没有训练记录」那个空态的下一步：回「开练」那一格。
+  ///
+  /// T3-2：空态**必须有下一步**（`EmptyState` 的类型就要求它）——
+  /// 这一屏原来的空态是两行灰字，用户看完只能自己退出去找入口。
+  ///
+  /// ⚠️ **必填**（不是可空）：不传就只剩一个"没有下一步的空态"，
+  /// 而那正是这一条要修的东西 —— 宁可让调用方在编译期被拦住。
+  final VoidCallback onOpenToday;
 
   /// 埋点（可选）：身体数据页从这里拿去上报 `body_metric_logged`
   final Analytics? analytics;
@@ -278,12 +289,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
         // 空态**不再提前 return** —— 否则"只记了体重、还没练过"的人
         // 看不到自己刚记的体重。体重和训练是两件独立的事。
         if (d.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(bottom: Tokens.s5),
-            child: Text(
-              '还没有训练记录。\n练完第一次，这里就会长出曲线和纪录。',
-              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: Tokens.s5),
+            child: EmptyState(
+                    key: const Key('empty-progress'),
+                    art: EmptyArt.dashedRing,
+                    title: '还没有训练记录。',
+                    body: '练完第一次，这里就会长出曲线和纪录。',
+                    action: '去开练',
+                    onAction: widget.onOpenToday,
+                  ),
           )
         else ...<Widget>[
           _statsBlock(),          // 四张统计卡（按区间现算）
