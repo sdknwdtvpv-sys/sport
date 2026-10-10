@@ -147,6 +147,8 @@ iPhone → 设置 → 通用 → VPN 与设备管理 → 开发者 App → 你�
 | `You may create up to 10 App IDs every 7 days` | 7 天内改 App ID 太多次 | 停手，等 7 天；**别再用试错法找 id** |
 | App 装上了、点开就退出 | 没信任证书，或没开开发者模式 | 第 4 / 第 6 步 |
 | 之前能用、今天突然打不开 | 7 天到了 | 重新跑第 5 步 |
+| `error: No Accounts: Add a new account in Accounts settings.` | **Xcode 里没有登录任何 Apple ID**（免费档的 Team 就是从那儿读的）。⚠️ 本机账号列表为空时，`tool/ios-device-run.sh` 仍会往下走，直到 xcodebuild 报这一句 —— 表现是"脚本跑了两分钟才红" | 第 1 步：Xcode → Settings（⌘,）→ Accounts → 左下角 `+` → 登录 Apple ID |
+| `error: Signing certificate is invalid … It may have been revoked or expired.` | 钥匙串里那几张 `Apple Development` 证书**已被吊销**（`security find-identity -v -p codesigning` 会显示 `CSSMERR_TP_CERT_REVOKED`）。免费档常见：换机/重装/别处点过 revoke 之后 | Xcode → Settings → Accounts → 选中你的团队 → **Manage Certificates…** → 左下角 `+` → **Apple Development**，新建一张；再跑第 5 步。（新建后 `security find-identity` 里那张新的应当没有 `REVOKED` 后缀） |
 | 我要验"微信登录" | 免费档用不了 Associated Domains（Universal Links） | 见 `docs/wechat-login-feasibility.md` §6：这条要等付费账号 |
 
 ## 五、这份指南里哪些是"官方明确"，哪些是"社区口径"
