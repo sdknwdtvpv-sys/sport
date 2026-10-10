@@ -12,11 +12,13 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// 扫 `app/lib` 下的全部 Dart 源码，返回命中 [pattern] 的行（`路径:行号: 内容`）。
+/// 扫 `app/lib` 下的 Dart 源码（**跳过 `core/theme.dart`** —— 它是令牌的定义处，
+/// 那些"不许在别处出现"的东西本来就要写在它里面），返回命中 [pattern] 的行。
 List<String> _hits(RegExp pattern) {
   final List<String> out = <String>[];
   for (final FileSystemEntity e in Directory('lib').listSync(recursive: true)) {
     if (e is! File || !e.path.endsWith('.dart')) continue;
+    if (e.path.replaceAll('\\', '/').endsWith('core/theme.dart')) continue;
     final List<String> lines = e.readAsLinesSync();
     for (int i = 0; i < lines.length; i++) {
       if (pattern.hasMatch(lines[i])) out.add('${e.path}:${i + 1}: ${lines[i].trim()}');
@@ -37,6 +39,71 @@ void main() {
     final List<String> bad = _hits(RegExp(r'0x0FFFFFFF|0x14FFFFFF'));
     expect(bad, isEmpty,
         reason: '这些是旧的 line / lineStrong 字面量，现在有三级实色：\n${bad.join('\n')}');
+  });
+
+  test('★ `theme.dart` 之外不许出现 `Color(0x`（色值只有一个真源）', () {
+    final List<String> bad = <String>[];
+    for (final FileSystemEntity e in Directory('lib').listSync(recursive: true)) {
+      if (e is! File || !e.path.endsWith('.dart')) continue;
+      if (e.path.replaceAll('\\', '/').endsWith('core/theme.dart')) continue;
+      final List<String> lines = e.readAsLinesSync();
+      for (int i = 0; i < lines.length; i++) {
+        if (lines[i].contains('Color(0x')) {
+          bad.add('${e.path}:${i + 1}: ${lines[i].trim()}');
+        }
+      }
+    }
+    expect(bad, isEmpty,
+        reason: '新色值要先进 theme.dart（否则它一定会漂）：\n${bad.join('\n')}');
+  });
+
+  test('★ `theme.dart` 之外不许出现 `BoxShadow(`（辉光只有一处实现）', () {
+    final List<String> bad = _hits(RegExp(r'BoxShadow\('));
+    expect(bad, isEmpty,
+        reason: '改用 Tokens.glow(...) —— 原来三处各写一份，同一个"发光"有三种半径：\n${bad.join('\n')}');
+  });
+
+  test('★ 语义色只许出现在白名单文件里（越界当场红）', () {
+    // ⚠️ **这张白名单是按现状写的**（批次 0/1 不夹带语义色越界的清理，那是批次 3）。
+    // 所以它现在的价值是"拦住新增的越界"，而不是"证明现在没有越界"。
+    // 每条后面标了"待收窄"的就是已知越界，批次 3 要清。
+    // ⚠️ **这张白名单是按现状写的**（批次 0/1 不夹带语义色越界的清理，那是批次 3）。
+    // 所以它现在的价值是"拦住**新增**的越界"，而不是"证明现在没有越界" ——
+    // 每条标了 `待收窄` 的就是**已知越界**，批次 3 要清（都记进了 `docs/plan-vi-2026-10-10.md`）。
+    const Map<String, List<String>> whitelist = <String, List<String>>{
+      'Tokens.danger': <String>[
+        // —— 合法：删除 / 不可逆 ——
+        'lib/features/profile/data_tools_screen.dart',   // 删除全部数据
+        'lib/features/account/account_screen.dart',      // 注销账号
+        'lib/features/backup/cloud_backup_screen.dart',  // 关闭云备份（不可逆）
+        'lib/main.dart',                                 // 丢弃这半截训练
+        'lib/features/profile/trash_screen.dart',
+        // —— 待收窄（批次 3）——
+        'lib/core/vi_cards.dart',                        // `StatTile` 的"跌"：那是**方向色**，不是删除色
+        'lib/features/progress/badges.dart',             // 「探索发现」那一档的**分类配色**（纯借用）
+        'lib/features/profile/privacy_policy_screen.dart', // 法律条款的**强调**
+        'lib/features/profile/collection_list_screen.dart', // 同上（个人信息清单）
+      ],
+      'Tokens.pr': <String>[
+        // —— 合法：破纪录 ——
+        'lib/features/workout/workout_screen.dart',       // 训练屏的"历史最佳"
+        'lib/features/progress/progress_screen.dart',      // PR 墙
+        'lib/features/summary/share_card.dart',            // 分享卡上的纪录
+        'lib/features/summary/workout_summary_screen.dart', // 完成页的破纪录块
+        // —— 待收窄（批次 3）——
+        'lib/features/progress/badges.dart',               // 传说档的徽章色（借用）
+        'lib/features/notifications/notification_visuals.dart', // 通知图标的"纪录"类（借用）
+        'lib/features/backup/cloud_backup_screen.dart',    // 云备份的"同步完成"（借用）
+      ],
+    };
+    final List<String> bad = <String>[];
+    for (final MapEntry<String, List<String>> e in whitelist.entries) {
+      for (final String hit in _hits(RegExp('${e.key}\\b'))) {
+        final String path = hit.split(':').first;
+        if (!e.value.contains(path)) bad.add('${e.key} 越界 → $hit');
+      }
+    }
+    expect(bad, isEmpty, reason: '语义色越界：\n${bad.join('\n')}');
   });
 
   test('★ 三级线各自只出现在该出现的层上', () {

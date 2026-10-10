@@ -115,6 +115,35 @@ void main() {
     });
   });
 
+  group('层级（T1-2）：每一层都有自己的下限', () {
+    test('★ 抬升材料 / 弹层底 / 输入底：都 ≥ 1.3:1', () {
+      // 目的不是"通过这些数字"，而是**把每一层的下限钉成可跑的东西** ——
+      // 下一轮谁把某一层调暗了，这里当场红。
+      expect(contrast(Tokens.lift, Tokens.surface), greaterThanOrEqualTo(1.3),
+          reason: '卡片里的进度槽/胶囊要对卡片看得出来');
+      expect(contrast(Tokens.lift, Tokens.bg), greaterThanOrEqualTo(1.3));
+      expect(contrast(Tokens.sheet, Tokens.bg), greaterThanOrEqualTo(1.3),
+          reason: '弹层要比页面明显"浮"起来');
+      expect(contrast(Tokens.field, Tokens.bg), greaterThanOrEqualTo(1.3),
+          reason: 'field 是 lift 的别名 —— 这条也在钉"别名没被偷偷改成另一个值"');
+    });
+
+    test('★ 这条断言是**故意写成"不合格"的**：lift 不许用在弹层里', () {
+      // `lift` 对 `sheet` 只有 1.10:1 —— 浮层里的进度条用它等于整条消失
+      // （成就页那四条 2/20、1/20 的收集线就是实况）。
+      // 把"为什么不能用"写成一条**永远为真**的断言，比写在注释里更难被忽略。
+      expect(contrast(Tokens.lift, Tokens.sheet), lessThan(1.2),
+          reason: 'lift 对 sheet 本来就不够 —— 这就是"lift 不许上弹层"的理由；'
+              '如果哪天它 ≥1.2 了，这条会红，那时回来把纪律改成"可以用"');
+      // 弹层里要"抬起来"的东西，用 sheet 自己的底 + lineStrong 边界（T0-2 的做法）
+    });
+
+    test('★ 成功色上的字 ≥ 4.5:1（inkOnSuccess）', () {
+      expect(contrast(Tokens.inkOnSuccess, Tokens.success),
+          greaterThanOrEqualTo(4.5));
+    });
+  });
+
   group('输入框与胶囊的边界（T0-2）', () {
     test('★ 抬升字段底"可分辨"，边界 ≥ 3:1', () {
       // 计划的原文写的是 `contrast(input, bg) >= 3.0`，而 WCAG 1.4.11 管的是**边界**：

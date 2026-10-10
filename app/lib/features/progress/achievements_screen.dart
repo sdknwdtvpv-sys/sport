@@ -518,15 +518,8 @@ class _BadgeTile extends StatelessWidget {
                 gradient: on ? badgeTierGradient(badge.tier) : null,
                 color: on ? null : Tokens.elevated,
                 border: on ? null : Border.all(color: tier.withValues(alpha: 0.35)),
-                boxShadow: on
-                    ? <BoxShadow>[
-                        BoxShadow(
-                          color: tier.withValues(alpha: 0.30),
-                          blurRadius: 18,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
+                // 已解锁的徽章发光（颜色跟着稀有度走）
+                boxShadow: on ? Tokens.glow(tier) : null,
               ),
               child: Icon(
                 // **每枚徽章自己的图形**（不是所有人的勾）：见 badges.dart 的 badgeIcon
@@ -552,7 +545,7 @@ class _BadgeTile extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: on ? tier : Tokens.elevated,
+        color: on ? tier : Tokens.lift,
         // 用底色描一圈：这个戳与内芯、外圈之间不会糊成一坨
         border: Border.all(color: Tokens.bg, width: 2),
       ),
@@ -588,7 +581,7 @@ class _BadgeRingPainter extends CustomPainter {
     // 底圈：未解锁时它就是"还差的那一段"。**必须比内芯亮一点**（内芯是 elevated）——
     // 用同一个色的话，进度为 0 的徽章（早鸟/夜猫还没练到时）连"有个环"都看不出来。
     // 这只是一层中性灰，没有引入新的色相：就是把 elevated 往 text3 提了 35%。
-    final Color lockedTrack = Color.lerp(Tokens.elevated, Tokens.text3, 0.35)!;
+    final Color lockedTrack = Color.lerp(Tokens.lift, Tokens.text3, 0.35)!;
     canvas.drawCircle(
       center,
       radius,

@@ -72,6 +72,9 @@ const FILES = [
       elevated: ['--elevated', '抬升表面：弹层、输入'],
       hair: ['--hair', '页面级长分隔（最弱一级）'],
       field: ['--field', '输入框 / 未选中胶囊的抬升底'],
+      lift: ['--lift', '卡片里抬起来的材料（进度槽 / 锁态徽章）'],
+      sheet: ['--sheet', '弹层底（对话框 / 底弹层 / SnackBar）'],
+      inkOnSuccess: ['--ink-on-success', '成功色上的字'],
       line: ['--line', '卡片描边 / 卡片内行分隔'],
       lineStrong: ['--line-strong', '功能性边界：输入框、未选中胶囊、分段控件'],
       text: ['--text', ''],
@@ -97,6 +100,8 @@ const FILES = [
       elevated: ['--elev', ''],
       hair: ['--hair', ''],
       field: ['--field', ''],
+      lift: ['--lift', ''],
+      sheet: ['--sheet', ''],
       line: ['--line', ''],
       lineStrong: ['--line2', ''],
       text: ['--t1', ''],
@@ -133,10 +138,21 @@ function parseColor(raw) {
 
 function readTheme() {
   const src = readFileSync(THEME, 'utf8');
+  // ① 先收字面量色值
   const colors = {};
   for (const m of src.matchAll(/static const Color (\w+) = (Color\(0x[0-9A-Fa-f]{8}\));/g)) {
     const parsed = parseColor(m[2]);
     if (parsed) colors[m[1]] = parsed.css;
+  }
+  // ② 再解**别名**（`static const Color field = lift;`）——
+  //    `theme.dart` 里有刻意的别名（`field` 就是 `lift`：同一种材料只该有一个值）。
+  //    解析不到别名就交给下面的"不做兜底"报错，绝不静默跳过。
+  const aliases = {};
+  for (const m of src.matchAll(/static const Color (\w+) = (\w+);/g)) {
+    aliases[m[1]] = m[2];
+  }
+  for (const [name, target] of Object.entries(aliases)) {
+    if (!colors[name] && colors[target]) colors[name] = colors[target];
   }
   const nums = {};
   for (const m of src.matchAll(/static const double (\w+) = ([0-9.]+);/g)) {

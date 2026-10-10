@@ -149,7 +149,8 @@ class _AllDataScreenState extends State<AllDataScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('已复制 ${sets.length} 条记录到剪贴板'),
-        backgroundColor: Tokens.elevated,
+        // 弹层底：比卡片再抬一档（T1-2 的 sheet）
+                backgroundColor: Tokens.sheet,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, 80),
       ),

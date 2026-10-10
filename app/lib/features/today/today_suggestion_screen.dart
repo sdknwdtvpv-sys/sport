@@ -164,7 +164,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('已存成计划「${r.name}」，下次在「我的计划」里直接用'),
-        backgroundColor: Tokens.elevated,
+        // 弹层底：比卡片再抬一档（T1-2 的 sheet）
+                backgroundColor: Tokens.sheet,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, 80),
       ),

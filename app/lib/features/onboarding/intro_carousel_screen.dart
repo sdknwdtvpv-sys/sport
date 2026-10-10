@@ -225,7 +225,7 @@ class _TapArt extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: const BoxDecoration(color: Tokens.success, shape: BoxShape.circle),
-                child: const Icon(Icons.check_rounded, color: Color(0xFF06231A), size: 22),
+                child: const Icon(Icons.check_rounded, color: Tokens.inkOnSuccess, size: 22),
               ),
             ),
           ],
@@ -344,7 +344,7 @@ class _ProgressArt extends StatelessWidget {
                 ),
                 child: const Text('+32%',
                     style: TextStyle(
-                        color: Color(0xFF06231A), fontSize: 11, fontWeight: FontWeight.w700)),
+                        color: Tokens.inkOnSuccess, fontSize: 11, fontWeight: FontWeight.w700)),
               ),
             ),
           ],

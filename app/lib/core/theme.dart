@@ -36,6 +36,34 @@ abstract final class Tokens {
   /// 换成实色之后，"哪一级只能上哪一层"就成了必须写下来的规矩：
   /// **`hair` 只做上下分隔（不许 `Border.all`）、`line` 不上页面长的分隔、`lineStrong` 只给功能边界。**
   /// `theme_discipline_test.dart`（放 `app/test/`）扫这几条。
+  /// **「抬起来的材料」**（2026-10-10，VI 计划 T1-2）：卡片里的**进度槽**、**锁态徽章**、
+  /// **未选中胶囊**、**输入框底** —— 都是它。对 `surface` 1.33:1、对 `bg` 1.45:1。
+  ///
+  /// ⚠️ **它不许用在弹层（`sheet`）里**：`lift` 对 `sheet` 只有 **1.10:1**，
+  /// 浮层里的进度条用它等于整条消失（成就页那四条 2/20、1/20 的收集线就是实况）。
+  /// `theme_contrast_test.dart` 把这两条都钉着。
+  ///
+  /// ⚠️ 计划文档里把它拆成 `lift` 与 `field` 两个名字；实现时**合成一个**（`field` 是别名）——
+  /// 两个名字如果永远取同一个值，第二个名字只是下一处漂移的入口。
+  static const Color lift = Color(0xFF332E28);
+
+  /// **弹层底**（对话框 / 底弹层 / SnackBar）：对 `bg` 1.32:1 —— 比 `surface` 再抬一档，
+  /// 因为弹层打开时底层被遮罩压暗，它必须比卡片更"浮"。
+  static const Color sheet = Color(0xFF2B2723);
+
+  /// 遮罩（弹层后面那层黑）：0x9E ≈ 62%。
+  static const Color scrim = Color(0x9E000000);
+
+  /// **成功色上的字**（那颗绿勾里的深墨）：`#06231A` 对 `success` `#0CAC78` = 5.0:1。
+  static const Color inkOnSuccess = Color(0xFF06231A);
+
+  /// **一团彩色辉光**（破纪录、未读点、完成勾）—— 三处原来各写一份 `BoxShadow`，
+  /// 于是同一个"发光"有三种模糊半径。统一到这里，半径按语义给。
+  static List<BoxShadow> glow(Color c, {double radius = 18, double spread = 1}) =>
+      <BoxShadow>[
+        BoxShadow(color: c.withValues(alpha: 0.28), blurRadius: radius, spreadRadius: spread),
+      ];
+
   /// **可交互的"抬升字段"底**（2026-10-10，VI 计划 T0-2）：输入框与**未选中胶囊**共用。
   ///
   /// 为什么需要它：搜索框原来的底是 `surface`，对页面 `bg` 只有 **1.10:1** 且**没有边框** ——
@@ -47,7 +75,7 @@ abstract final class Tokens {
   /// 不是填充 —— 填充只要**可分辨**即可（否则深色界面里的输入框会变成一块浅灰板）。
   /// 所以：**填充用 [field]（对 `bg` 1.39:1、对 `surface` 1.27:1 = 可分辨），
   /// 边界用 [lineStrong]（对 `bg` 3.18:1 = 达标）**。`theme_contrast_test.dart` 两条都钉着。
-  static const Color field = Color(0xFF302B26);
+  static const Color field = lift; // 别名：与 `lift` 是同一种材料（见上）
 
   static const Color hair = Color(0xFF2A2622);
   static const Color line = Color(0xFF3A342E);

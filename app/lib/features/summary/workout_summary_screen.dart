@@ -395,15 +395,10 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
             decoration: BoxDecoration(
               color: Tokens.success,
               shape: BoxShape.circle,
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Tokens.success.withValues(alpha: 0.25),
-                  blurRadius: 28,
-                  spreadRadius: 2,
-                ),
-              ],
+              // 完成那颗绿勾的辉光：半径最大的那一档（它是全 App 唯一"庆祝"的光）
+              boxShadow: Tokens.glow(Tokens.success, radius: 28, spread: 2),
             ),
-            child: const Icon(Icons.check_rounded, color: Color(0xFF06231A), size: 42),
+            child: const Icon(Icons.check_rounded, color: Tokens.inkOnSuccess, size: 42),
           ),
           const SizedBox(height: Tokens.s4),
           const Text(

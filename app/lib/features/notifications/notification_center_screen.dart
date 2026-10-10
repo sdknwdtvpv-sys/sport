@@ -186,13 +186,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           decoration: BoxDecoration(
             color: Tokens.accent,
             borderRadius: BorderRadius.circular(Tokens.rPill),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: Tokens.accent.withValues(alpha: 0.28),
-                blurRadius: 18,
-                spreadRadius: 1,
-              ),
-            ],
+            boxShadow: Tokens.glow(Tokens.accent),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,

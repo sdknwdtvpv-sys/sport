@@ -122,7 +122,7 @@ class StatTile extends StatelessWidget {
     final bool? up = deltaUp;
     final Color deltaColor = up == null
         ? Tokens.text3
-        : (up ? const Color(0xFF5FD08A) : Tokens.danger);
+        : (up ? Tokens.success : Tokens.danger);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -292,7 +292,8 @@ class ViProgressBar extends StatelessWidget {
       borderRadius: BorderRadius.circular(height / 2),
       child: Stack(
         children: <Widget>[
-          Container(height: height, color: Tokens.elevated),
+          // 进度槽 = 「抬起来的材料」（T1-2）。它只在卡片里用，不能在弹层里（对 sheet 只有 1.10:1）
+          Container(height: height, color: Tokens.lift),
           FractionallySizedBox(
             widthFactor: v,
             child: Container(height: height, color: color),

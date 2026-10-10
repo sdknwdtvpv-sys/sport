@@ -949,7 +949,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           GestureDetector(
             key: const Key('sheet-scrim'),
             onTap: c.onSheetConfirm,
-            child: Container(color: const Color(0x9E000000)),
+            child: Container(color: Tokens.scrim),
           ),
           Align(
             alignment: Alignment.bottomCenter,

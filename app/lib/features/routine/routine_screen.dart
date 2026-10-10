@@ -154,7 +154,8 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('这个计划还没加动作'),
-          backgroundColor: Tokens.elevated,
+          // 弹层底：比卡片再抬一档（T1-2 的 sheet）
+                backgroundColor: Tokens.sheet,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, 80),
         ),
@@ -456,7 +457,8 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
     final ({int sets, int low, int high})? next = await showAppSheet<
         ({int sets, int low, int high})>(
       context: context,
-      backgroundColor: Tokens.elevated,
+      // 弹层底：比卡片再抬一档（T1-2 的 sheet）
+                backgroundColor: Tokens.sheet,
       // 默认的弹层高度上限约半屏，装不下两排 chips + 按钮时
       // 保存按钮会被裁掉（测试里点不到）。放开高度并让它自己滚。
       isScrollControlled: true,
@@ -489,7 +491,8 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('先加几个动作'),
-          backgroundColor: Tokens.elevated,
+          // 弹层底：比卡片再抬一档（T1-2 的 sheet）
+                backgroundColor: Tokens.sheet,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, 80),
         ),
