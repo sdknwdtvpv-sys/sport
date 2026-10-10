@@ -16,6 +16,8 @@ import 'package:flutter/material.dart';
 import '../../core/labels.dart';
 import '../../analytics/analytics.dart';
 import '../../core/empty_state.dart';
+import '../../billing/debug_grant.dart';
+import '../../core/icon_spec.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/vi_area_chart.dart';
@@ -26,9 +28,12 @@ import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../data/profile_repository.dart';
 import '../../data/body_metric_repository.dart';
+import '../../data/entitlement_repository.dart';
 import '../../domain/models.dart';
 import '../body/body_metric_screen.dart';
 import 'all_data_screen.dart';
+import 'advanced_analysis.dart';
+import 'exercise_trend_screen.dart';
 import 'progress_data.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -43,6 +48,8 @@ class ProgressScreen extends StatefulWidget {
     this.unit = WeightUnit.kg,
     this.bodyUnit = BodyWeightUnit.kg,
     this.now,
+    this.entitlements,
+    this.onOpenUltra,
     required this.onOpenToday,
   });
 
@@ -56,6 +63,13 @@ class ProgressScreen extends StatefulWidget {
   /// ⚠️ **必填**（不是可空）：不传就只剩一个"没有下一步的空态"，
   /// 而那正是这一条要修的东西 —— 宁可让调用方在编译期被拦住。
   final VoidCallback onOpenToday;
+
+  /// 会员权益仓储（可选）。不传 = 当作**免费用户**（那时这一屏只显示进阶分析的预览态），
+  /// 于是"少了这个参数会不会误判成 Ultra"这件事不存在（方向是安全的那一边）。
+  final EntitlementRepository? entitlements;
+
+  /// 「看看 Ultra」按钮的落地：打开会员页。不传 = 不显示那个按钮（只留一行说明）。
+  final VoidCallback? onOpenUltra;
 
   /// 埋点（可选）：身体数据页从这里拿去上报 `body_metric_logged`
   final Analytics? analytics;
@@ -96,6 +110,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
   /// 原始组数据。卡片的三个数字与曲线都按**区间**现算 ——
   /// 所以这里要留着它（`ProgressData` 里只有"最近 7 天"那一份）。
   List<SetRecord> _sets = const <SetRecord>[];
+
+  /// 进阶分析（Ultra）是否可用。判定来自权益仓储 + `debugUltraGranted`
+  /// （后者只在 debug 构建里可能为真，见 `billing/debug_grant.dart`）。
+  bool _ultra = false;
 
   /// 「周 / 月 / 年」当前选中项（2026-10-05，新 VI）。
   ProgressRange _range = ProgressRange.week;
@@ -145,8 +163,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
     };
     final BodyMetricData? weight = await widget.bodyMetrics?.latest();
     if (!mounted) return;
+    // ⚠️ 权益要**在 setState 之前**读完：`setState` 的回调是同步的，
+    // 里面写 `await` 编译不过（而且那样也会让"先改状态再等 IO"的语义变得可疑）
+    final bool ultra = widget.entitlements == null
+        ? false
+        : (await widget.entitlements!.access(_today.millisecondsSinceEpoch)).ultra;
+    if (!mounted) return;
     setState(() {
       _sets = sets;
+      _ultra = debugUltraGranted || ultra;
       _data = buildProgress(
         sets: sets,
         exerciseNames: names,
@@ -318,6 +343,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
           const SizedBox(height: Tokens.s5),
           _sectionTitle('PR 墙'),
           _prCard(d),
+          const SizedBox(height: Tokens.s5),
+          // 进阶分析（Ultra 权益 7，2026-10-10 做成真功能）。
+          // ⚠️ **放在这一屏的最下面**（免费的四张卡 / 容量趋势 / 部位平衡 / PR 墙之后）：
+          // 先让免费用户看完他已经有的东西，再问他要不要更多 —— 顺序反了就是一进门撞付费墙
+          // （红线 1：付费入口别挡在主线前面）。顺带它也不再把既有卡片挤下去
+          // （`progress_test` 里那条"六个部位都在"当场发现了位置问题）。
+          _advancedCard(d),
         ],
         // 没有体重仓库就连标题都不显示 —— 否则会渲染一个
         // 「还没记录过体重」+ 点不动的「记录」按钮（测试抓出来的）
@@ -509,6 +541,146 @@ class _ProgressScreenState extends State<ProgressScreen> {
   /// （计划 §批次 4「不做 6」保留了硬切 —— 曲线形变要重采样 + 重写 `shouldRepaint`，
   /// 做错了每帧重绘），但那张卡自己要被隔离出来：切换时重绘的应该只有这一块，
   /// 而不是整屏（含四张统计卡）。
+  /// **进阶分析**（Ultra）：分动作趋势 + 周/月/季对比。
+  ///
+  /// 两种样子，同一个位置：
+  ///   * Ultra：列出最近 90 天练得最多的几个动作，点进去是它的趋势页；
+  ///   * 免费：**预览态** —— 说清"多拿到什么" + 一个「看看 Ultra」按钮，
+  ///     **不锁任何已有内容**（四张卡、容量趋势、PR 墙、全部数据页都原样免费）。
+  ///
+  /// 为什么是"预览态"而不是"藏起来"：把入口藏掉，用户根本不知道有这种东西；
+  /// 摆出来但锁着、并说清解锁的是什么，才是"卖省心"而不是"制造信息差"。
+  Widget _advancedCard(ProgressData d) {
+    if (!_ultra) {
+      return ViCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Icon(Icons.insights_outlined, color: Tokens.text2, size: IconSpec.m),
+                const SizedBox(width: Tokens.s3),
+                Expanded(
+                  child: Text('进阶分析',
+                      style: const TextStyle(
+                          color: Tokens.text,
+                          fontSize: Tokens.fsBodyS,
+                          fontWeight: Tokens.fwStrong)),
+                ),
+              ],
+            ),
+            const SizedBox(height: Tokens.s2),
+            const Text(
+              '分动作趋势（单个动作是涨了还是原地）与周 / 月 / 季对比。Ultra 里的一份能力，'
+              '免费版已有的曲线与纪录不受影响。',
+              key: Key('advanced-locked-note'),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
+            ),
+            if (widget.onOpenUltra != null) ...<Widget>[
+              const SizedBox(height: Tokens.s3),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton(
+                  key: const Key('advanced-try-ultra'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Tokens.text2,
+                    side: const BorderSide(color: Tokens.line),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Tokens.rPill),
+                    ),
+                  ),
+                  onPressed: widget.onOpenUltra,
+                  child: const Text('看看 Ultra', style: TextStyle(fontSize: Tokens.fsSub)),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    final List<String> ids = topExercisesBySets(_sets, now: _today);
+    return ViCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.insights, color: Tokens.text2, size: IconSpec.m),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: Text('进阶分析',
+                    style: const TextStyle(
+                        color: Tokens.text, fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
+              ),
+              Text('Ultra',
+                  style: const TextStyle(color: Tokens.accentText, fontSize: Tokens.fsMicro)),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          const Text(
+            '点一个动作，看它自己的趋势与周 / 月 / 季对比。',
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
+          ),
+          if (ids.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: Tokens.s3),
+              child: Text('最近 90 天还没有记录。练几次之后这里会有动作可选。',
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+            )
+          else
+            for (final String id in ids.take(6))
+              GestureDetector(
+                key: Key('advanced-exercise-$id'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _openTrend(d, id),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: Tokens.s3),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          _exerciseName(d, id),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
+                    ],
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  void _openTrend(ProgressData d, String exerciseId) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => ExerciseTrendScreen(
+        sets: _sets.where((SetRecord s) => s.exerciseId == exerciseId).toList(),
+        exerciseId: exerciseId,
+        exerciseName: _exerciseName(d, exerciseId),
+        unit: widget.unit,
+        // `ExerciseTrendScreen` 要的是一个"取现在"的函数；这一屏的 `now` 是固定时刻（可为空）
+        now: () => _today,
+      ),
+    ));
+  }
+
+  /// 动作名（拿不到就退回 id —— 界面上宁可显示一个 id，也不要显示空白）。
+  ///
+  /// `ProgressData` 里带名字的只有 PR 列表（`ExercisePr.name`），所以从那里查；
+  /// 一个动作"最近 90 天练过但一次 PR 都没有"时会落回 id，那是可接受的降级。
+  String _exerciseName(ProgressData d, String id) {
+    for (final ExercisePr pr in d.prs) {
+      if (pr.exerciseId == id) return pr.name;
+    }
+    return id;
+  }
+
   Widget _trendCard() {
     final List<double> series = volumeSeries(_sets, _today, _range);
     final List<String> ends = seriesEndLabels(_today, _range);

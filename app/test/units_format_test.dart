@@ -48,7 +48,7 @@ List<String> scanHandBuiltDates({String skip = 'core/units.dart'}) {
 }
 
 void main() {
-  test('千分位与日期三档都由 units.dart 产出', () {
+  test('千分位与日期各档都由 units.dart 产出（三档"某一天" + 两档"周期"）', () {
     // 千分位：五位数一眼能读（`12,400` 与 `5400` 并存的那种不一致收在这里）
     expect(withThousands(5400), '5,400');
     expect(withThousands(12400), '12,400');
@@ -64,6 +64,11 @@ void main() {
     expect(formatDateHuman(d, withYear: true), '2026 年 10 月 8 日');
     expect(formatDateAxis(d), '10/8');
     expect(formatDateSortable(d), '2026-10-08');
+    // 2026-10-10 加的两档**周期**标签（进阶分析用）：它们说的不是"某一天"
+    expect(formatMonthLabel(d), '2026 年 10 月');
+    expect(formatQuarterLabel(d), '2026 Q4');
+    expect(formatQuarterLabel(DateTime(2026, 1, 5)), '2026 Q1');
+    expect(formatQuarterLabel(DateTime(2025, 12, 31)), '2025 Q4');
 
     // 补零：`sortable` 档是为了**排序**才补的，个位数月份/日期最容易漏
     final DateTime jan = DateTime(2026, 1, 5);

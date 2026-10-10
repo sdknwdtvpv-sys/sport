@@ -38,6 +38,9 @@ import 'data/body_metric_repository.dart' hide dayKey;
 import 'data/day_plan_repository.dart';
 import 'data/drift_local_store.dart';
 import 'data/exercise_data_ext.dart';
+import 'billing/debug_grant.dart';
+import 'billing/paywall_copy.dart';
+import 'billing/paywall_screen.dart';
 import 'data/entitlement_repository.dart';
 import 'data/exercise_repository.dart';
 import 'data/local_store.dart';
@@ -2040,6 +2043,18 @@ class _HomeShellState extends State<HomeShell> {
             onBodyUnitChanged: (BodyWeightUnit u) {
               setState(() => _bodyUnit = u);
             },
+            // 会员权益（M1）：进步页的「进阶分析」卡据此决定显示真功能还是预览态
+            entitlements: EntitlementRepository(_db),
+            // 「看看 Ultra」→ 会员页（**它只在进步页那张卡的按钮上**，
+            // 首页/训练屏那条路径上一个付费入口都没有 —— `free_red_line_test` 钉着这件事）
+            onOpenUltra: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => PaywallScreen(
+                    repository: EntitlementRepository(_db),
+                    // 走查时给假商品（只在 debug 构建里存在）；release 里它是
+                    // `UnavailablePaywallCatalog`，会员页会如实写"暂时获取不到商品信息"
+                    catalog: debugFakeCatalog ?? const UnavailablePaywallCatalog(),
+                  ),
+                )),
             // T3-2：进步页那处「还没有训练记录」的空态，下一步是回「开练」那一格
             onOpenToday: () => _selectTab(1),
           );      case 1:

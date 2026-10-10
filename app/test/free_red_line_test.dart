@@ -22,7 +22,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// 允许出现 `PaywallScreen` 的文件（**只许在这些地方**）
 const Set<String> kPaywallAllowedFiles = <String>{
   'lib/billing/paywall_screen.dart', // 它自己
-  'lib/features/profile/settings_home_screen.dart', // 设置页那一行入口（唯一的"主动进来"）
+  'lib/features/profile/settings_home_screen.dart', // 设置页那一行入口（主动进来）
+  // 2026-10-10 加：进步页的「进阶分析」卡要一个 `onOpenUltra` 回调，
+  // 而**组装那条路由**的地方是 `main.dart`（屏自己不 import 会员页 ——
+  // 这正是白名单要有它的原因：耦合点在装配层，不在屏里）。
+  'lib/main.dart',
 };
 
 /// 开练那条路径上的文件：**一个字都不许出现付费入口**

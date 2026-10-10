@@ -207,6 +207,17 @@ String formatDateAxis(DateTime d) => '${d.month}/${d.day}';
 ///
 /// 用**本地**年月日，不用 `toIso8601String()`：后者带时分秒，而且 UTC 下
 /// 晚上 8 点之后就算成第二天了（中国时区 UTC+8，那会差 8 小时）。
+/// 「2026 年 10 月」—— 给**按月分桶**的地方（进阶分析的月档：轴标签与对比标题）。
+///
+/// ⚠️ 这是**第四档**日期写法，2026-10-10 加。前三档说的都是"某一天"，
+/// 而周期分析说的是"某个月 / 某个季度" —— 用「10 月 1 日」去当"10 月"的标签，
+/// 用户会以为那一列只统计了 1 号那一天。要加别的周期粒度（年？）请也放这里，
+/// 别在界面里各拼一份（`units_format_test.dart` 判据 3 会扫出来）。
+String formatMonthLabel(DateTime d) => '${d.year} 年 ${d.month} 月';
+
+/// 「2026 Q4」—— 给**按季分桶**的地方。季度从 1 月起算（Q1 = 1–3 月）。
+String formatQuarterLabel(DateTime d) => '${d.year} Q${((d.month - 1) ~/ 3) + 1}';
+
 String formatDateSortable(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';

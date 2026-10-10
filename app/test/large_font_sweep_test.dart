@@ -50,6 +50,7 @@ import 'package:lianleme/features/profile/data_tools_screen.dart';
 import 'package:lianleme/features/summary/share_card_preview_screen.dart';
 import 'package:lianleme/features/progress/achievements_screen.dart';
 import 'package:lianleme/features/progress/all_data_screen.dart';
+import 'package:lianleme/features/progress/exercise_trend_screen.dart';
 import 'package:lianleme/features/progress/progress_screen.dart';
 import 'package:lianleme/features/routine/plan_screen.dart';
 import 'package:lianleme/features/summary/workout_summary.dart';
@@ -204,6 +205,14 @@ void main() {
     '引导轮播': () async => IntroCarouselScreen(
           onSkip: () {},
           onStartFirst: () {},
+        ),
+    // 单动作趋势页（Ultra 权益 7，2026-10-10）：周期切换 + 图 + 四行数字 + 一行结论，
+    // 是大字号下最容易挤的一屏（横排数字 + 右侧"上周期 X"）。
+    '动作趋势页': () async => ExerciseTrendScreen(
+          sets: _sets(),
+          exerciseId: 'ex_bb_bench_press',
+          exerciseName: '杠铃卧推',
+          now: () => DateTime(2026, 10, 10, 12),
         ),
     // 会员页（M1，2026-10-10）：它有"三档商品 + 说明块 + 三个入口"，
     // 是大字号下最容易挤的一屏之一（价格数字用了 tabular，但仍要扫）。
