@@ -112,14 +112,12 @@ class AppSwitchTile extends StatelessWidget {
         onChanged: onChanged,
         activeThumbColor: Tokens.accentInk,
         activeTrackColor: Tokens.accent,
-        contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
         title: title,
         subtitle: subtitle,
       );
     }
     return ListTile(
       onTap: () => onChanged(!value),
-      contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
       title: title,
       subtitle: subtitle,
       trailing: GlassSwitch(value: value, onChanged: onChanged),

@@ -259,5 +259,31 @@ ThemeData buildAppTheme() {
     colorScheme: scheme,
     scaffoldBackgroundColor: Tokens.bg,
     splashFactory: NoSplash.splashFactory,
+    // ── 列表行（T1-8）────────────────────────────────────────────────────
+    //
+    // **为什么必须在 theme 里**：`ListTile` 全仓 26 处，其中 15 处各自写了
+    // `contentPadding: …s4`，而自绘行走 20pt —— 同一台手机上，两类列表的文字
+    // 不在同一列（数据工具页 x=36、全部记录页 x=20）。这类"每个使用点各写一遍"
+    // 的几何约束，正是该由主题一处说了算的东西。
+    //
+    // 取值 `Tokens.s5`（20）：与自绘行的 20 对齐；卡片内的行由"卡片自身的内边距"
+    // 提供（`settingsCard` / `all_data_screen._card` 都按同一档给）。
+    //
+    // `visualDensity` 竖直收 1 档：行高 56/72 → 52/68。风险如实记在
+    // `docs/plan-vi-2026-10-10.md` T1-8 里 —— 文案长的行会更容易换行。
+    listTileTheme: const ListTileThemeData(
+      contentPadding: EdgeInsets.symmetric(horizontal: Tokens.s5),
+      visualDensity: VisualDensity(vertical: -1),
+      iconColor: Tokens.text3,
+      // 这两条是**基线**：行里自己写的 `Text(stStyle: …)` 会盖掉它们。
+      // 26 处里的显式样式还没收（那是批次 3 的清理），但基线本身必须是令牌 ——
+      // 否则"没写样式的行"会落到 Material 默认的 `titleMedium` 上，那是另一套字阶。
+      titleTextStyle: TextStyle(
+        color: Tokens.text,
+        fontSize: Tokens.fsSub,
+        fontWeight: Tokens.fwBody,
+      ),
+      subtitleTextStyle: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
+    ),
   );
 }

@@ -332,7 +332,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           ListTile(
             key: const Key('rest-row'),
             onTap: _pickRest,
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: Text(
               _restLabel,
               key: const Key('rest-current'),
@@ -400,7 +399,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           ListTile(
             key: const Key('step-row'),
             onTap: _pickStep,
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             title: Text(
               _stepLabel,
               key: const Key('step-current'),
@@ -468,7 +466,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             ListTile(
               key: const Key('reminder-suggestion'),
               onTap: _applySuggestedTime,
-              contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
               leading: const Icon(Icons.schedule, color: Tokens.text3, size: IconSpec.m),
               title: Text(
                 widget.trainingTimeSuggestion!,

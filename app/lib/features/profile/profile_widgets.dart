@@ -60,7 +60,6 @@ Widget navTile({
 }) =>
     ListTile(
       key: key,
-      contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
       onTap: onTap,
       title: Text(
         title,

@@ -289,7 +289,6 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
         clipBehavior: Clip.antiAlias,
         child: ListTile(
         key: Key('template-${t.id}'),
-        contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
         onTap: () => _createFromTemplate(t),
         // 名字 + **一眼标签**（2026-10-04）：标签是"要不要器械 / 什么时候用"的
         // 一行答案，坐在名字旁边才叫"一眼选中"（放到副标题里就得读第二行）。

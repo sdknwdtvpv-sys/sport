@@ -396,7 +396,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           if (widget.bodyMetrics != null) ...<Widget>[
             ListTile(
               key: const Key('open-body-metric'),
-              contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
               onTap: _openBodyMetric,
               title: const Text(
                 '身体数据',
@@ -413,7 +412,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           ],
           ListTile(
             key: const Key('export-csv'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             onTap: _export,
             title: const Text(
               '导出全部记录',
@@ -431,7 +429,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
         settingsCard(<Widget>[
           ListTile(
             key: const Key('export-backup'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             onTap: _exportBackup,
             title: const Text(
               '导出备份文件',
@@ -447,7 +444,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           const Divider(height: 1, color: Tokens.line),
           ListTile(
             key: const Key('import-backup'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             onTap: _importBackup,
             title: const Text(
               '导入备份',
@@ -465,7 +461,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           // 对手最集中的抱怨也正是数据丢失。**留痕不留出路，等于没留。**
           ListTile(
             key: const Key('open-trash'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             onTap: _openTrash,
             title: const Text(
               '回收站',
@@ -483,7 +478,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             const Divider(height: 1, color: Tokens.line),
             ListTile(
               key: const Key('account'),
-              contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
               onTap: _openAccount,
               title: const Text(
                 '账号',
@@ -498,7 +492,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             const Divider(height: 1, color: Tokens.line),
             ListTile(
               key: const Key('cloud-backup'),
-              contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
               onTap: _openCloudBackup,
               title: const Text(
                 '云备份',
@@ -517,7 +510,6 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
         settingsCard(<Widget>[
           ListTile(
             key: const Key('delete-all'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
             onTap: _deleteAll,
             title: const Text(
               '删除全部数据',

@@ -533,7 +533,11 @@ class _AllDataScreenState extends State<AllDataScreen> {
   /// 与「进步」页同一条规矩：**只有图表还配卡片底**（`_trendCard` 没动）。
   Widget _card(List<Widget> children) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+        // T1-8：这条带子里的行与 `ListTile` 的行走**同一个内边距**（`Tokens.s5`，
+        // 见 `theme.dart` 的 `listTileTheme.contentPadding`）——
+        // 在此之前 ListTile 行是 16 + 卡片 0，这条带子是 0，两个"记录列表"
+        // 的文字不在同一列（差 16pt）。带子仍然只有上下两条 hair 线（分节靠它们）。
+        padding: const EdgeInsets.symmetric(horizontal: Tokens.s5, vertical: Tokens.s3),
         decoration: const BoxDecoration(
           border: Border(
             top: BorderSide(color: Tokens.hair),
