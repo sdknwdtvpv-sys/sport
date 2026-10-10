@@ -555,15 +555,81 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           const SizedBox(height: Tokens.s2),
           // ⚠️ 放进 `Expanded` + 可滚列表（2026-10-10）：原来这几行是定高的，
           // 组一多就把整屏挤爆（Expanded 的中部被压到 0）。现在它自己撑满、自己滚。
+          //
+          // ⚠️ **2026-10-11：不再"空就什么都不摆"** —— 用户看着这一屏说
+          // 「初始第一组的时候上边儿也太空了」。「动作要领」跟着已记的组后面：
+          //   * 一次都没记时，它就在那块空白的位置；
+          //   * 记了几组之后它顺延到列表末尾，组多了自己滚出去 —— **不会把大按钮顶走**
+          //     （大按钮的位置是这一屏最不能动的坐标）。
           Expanded(
-            child: sets.isEmpty
-                ? const SizedBox.shrink()
-                : ListView(
-                    padding: EdgeInsets.zero,
-                    children: <Widget>[
-                      for (final SetRecord r in sets) _doneRow(r),
-                    ],
-                  ),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: <Widget>[
+                for (final SetRecord r in sets) _doneRow(r),
+                _howToCard(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// **动作要领**（2026-10-11）：把"第一组之前那块空白"用起来。
+  ///
+  /// 三条口径：
+  ///   1. **数据用我们自己的**（动作库的 `instructions`，351 个动作全都有，中位 28 字）——
+  ///      零版权风险、零新增体积、离线可用。**不是**从网上抓的图；
+  ///   2. **文案一个字都不改写**：那句话本身就是"最容易错的点"（例：交叉箭步蹲 →
+  ///      「后腿斜向侧后方落脚，前脚站稳再起身；膝盖别内扣」）。界面只负责把它摆出来；
+  ///   3. **没有说明的动作就什么都不摆**（`instructions` 为空 → 不画一个空标题）：
+  ///      用户自建的动作很可能没有说明，摆一个空框比不摆更糟。
+  ///
+  /// 视觉上刻意**不做成卡片**：这一屏的语言是"大字 + 大按钮 + 细线"，插一张卡片进来
+  /// 会显得是另一个 App 的零件。就是一段安静的说明 + 一个通往完整说明的入口。
+  Widget _howToCard() {
+    final String? text = _dataFor(c.exercise.id)?.instructions?.trim();
+    if (text == null || text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: Tokens.s5, bottom: Tokens.s4),
+      child: Column(
+        key: const Key('howto-block'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(iconOf('info'), color: Tokens.text3, size: IconSpec.s),
+              const SizedBox(width: Tokens.s2),
+              const Text(
+                '动作要领',
+                style: TextStyle(
+                  color: Tokens.text3,
+                  fontSize: Tokens.fsMicro,
+                  letterSpacing: Tokens.lsWide,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Tokens.text2,
+              fontSize: Tokens.fsSub,
+              height: Tokens.lhLoose,
+            ),
+          ),
+          const SizedBox(height: Tokens.s2),
+          GestureDetector(
+            key: const Key('howto-open-detail'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openDetail(c.exercise.id),
+            child: const Text(
+              '看完整说明 ›',
+              // 橙色**文字**只许走 `accentText`（VI 计划 §3 冲突 5 的裁决，
+              // `accent_budget_test` 有一条机械扫描守着这件事）
+              style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap),
+            ),
           ),
         ],
       ),

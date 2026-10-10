@@ -108,9 +108,41 @@ void main() {
       expect(find.textContaining('下蹲到髋低于膝'), findsOneWidget);
     });
 
+    testWidgets('★ 第一组之前那块空白里摆着「动作要领」，并能点开完整说明', (WidgetTester tester) async {
+      // 用户的反馈：「初始第一组的时候上边儿也太空了」（2026-10-11）。
+      // 要领用的是**我们自己动作库里的 `instructions`**（351 个动作全有，中位 28 字）——
+      // 零版权风险、零新增体积，且那句话本身就是"最容易错的点"。
+      await pumpWorkout(tester);
+      expect(find.byKey(const Key('howto-block')), findsOneWidget);
+      expect(find.text('动作要领'), findsOneWidget);
+      expect(find.textContaining('下蹲到髋低于膝'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('howto-open-detail')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ExerciseDetailScreen), findsOneWidget);
+    });
+
+    testWidgets('★ 没有说明的动作：**什么都不摆**（不画一个空标题）', (WidgetTester tester) async {
+      // 用户自建的动作很可能没有 instructions —— 那时摆一个空的「动作要领」比不摆更糟
+      await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(),
+        home: WorkoutScreen(
+          session: WorkoutSession.single(controller),
+          catalog: <ExerciseData>[fullRow(instructions: null)],
+          store: store,
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('howto-block')), findsNothing);
+      // 大按钮照常在 = 这个可选块没有影响训练本身
+      expect(find.byKey(const Key('big-log-button')), findsOneWidget);
+    });
+
     testWidgets('没带动作库时不显示入口，但训练屏照常能用', (WidgetTester tester) async {
       await pumpWorkout(tester, withCatalog: false);
       expect(find.byKey(const Key('exercise-info')), findsNothing);
+      expect(find.byKey(const Key('howto-block')), findsNothing,
+          reason: '没有动作库就没有说明可摆 —— 别画一个空块');
       // 大按钮还在 = 这个可选入口没有影响训练本身
       expect(find.byKey(const Key('big-log-button')), findsOneWidget);
     });
