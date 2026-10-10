@@ -51,6 +51,7 @@ import 'features/exercise/exercise_library_screen.dart';
 import 'features/exercise/exercise_picker_screen.dart';
 import 'features/today/today_planner.dart';
 import 'features/onboarding/intro_carousel_screen.dart';
+import 'features/onboarding/splash_overlay.dart';
 import 'features/onboarding/privacy_consent_screen.dart';
 import 'features/today/day_plan_editor.dart';
 import 'features/today/today_screen.dart';
@@ -1842,9 +1843,15 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    // 还没读出同意状态：先给一块同色底（不闪、也不提前渲染任何内容）
+    // 还没读出同意状态：给**内启动屏**（VI 计划 T3-6）。
+    //
+    // ⚠️ 这里原来是 `Scaffold(bg, SizedBox.expand())` —— 一块纯色空屏。
+    // 它不闪白，但它闪"什么都没有"：原生启动图上那枚橙环**在这一帧消失了**，
+    // 等数据读完才又出现（完成页/首页）。客户 VI 稿里画的就是这一段
+    // （`vi/splash-screen.html`：圆环 ringPulse + 字标 + 三个 loadDot）。
+    // 现在从 Flutter 第一帧起就有环，且环的几何与原生启动图对得上（`tool/check-launch-relay.py` 量着）。
     if (_consented == null) {
-      return const Scaffold(backgroundColor: Tokens.bg, body: SizedBox.expand());
+      return const SplashOverlay();
     }
     // 没同意过：整屏征求同意 —— 主界面**一个像素都不渲染**
     if (_consented == false && !_declined) {

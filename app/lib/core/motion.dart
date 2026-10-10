@@ -67,6 +67,12 @@ abstract final class Motion {
   /// 上面那条时间轴的毫秒数（`Interval` 要的是 0..1 的切分点，用它算才不会两处写 1400）。
   static const int summaryTimelineMs = 1400;
 
+  /// **2500ms** —— 内启动屏那枚环的**呼吸周期**（VI 计划 T3-6）。
+  ///
+  /// 取值与客户稿对齐（`vi/splash-screen.html` 的 `ringPulse 2.5s`）。
+  /// 它是**循环**（`repeat()`），所以不属于五档里的任何一档 —— 五档讲的是"一次动多久"。
+  static const Duration splashPulse = Duration(milliseconds: 2500);
+
   // ── 曲线（4 档 + 1 个 iOS 原生）──────────────────────────────────────
 
   /// **位置与尺寸的默认曲线** `(0.0, 0.55, 0.45, 1.0)`：无过冲、单调收敛。

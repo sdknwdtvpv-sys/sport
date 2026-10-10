@@ -343,6 +343,14 @@ selfcheck tool/check-doc-paths.mjs "文档路径核对自检通过（指空的�
 
 selfcheck tool/check-vi-strokes.mjs "vi 稿子线宽守卫自检通过（1.5 / 1.8 越界、2.5 / 3 例外、没有描边的不误报）" "vi 稿子线宽守卫的自检失败"
 
+# 启动接力对位（T3-6）是 **Python** 守卫（要用 PIL 解 PNG）—— 自检与正式核都在下面那一段
+if python3 tool/check-launch-relay.py --selftest >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 启动接力对位守卫自检通过（环心不透明 / 环太小 / 环心偏移 / 三档不一致 都抓得住）"
+else
+  strip "$LOG"; echo "${RED}✗ 启动接力对位守卫的自检失败${OFF}"; fail=1
+fi
+echo
+
 # 任务卡一致性工具的**自检**：回归用例照着真事故做 ——
 # `usability/记录表.md` 里的 T5 被换成别的内容（kit 的 T5 是刻意必败任务），
 # 而报告工具只认 id，当时没有任何东西会发现。
@@ -427,6 +435,16 @@ if node tool/check-vi-strokes.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} vi/ 稿子的线宽只有 {2, 2.5, 3}"
 else
   strip "$LOG"; echo "${RED}✗ vi/ 稿子的线宽越界（默认 2 / 大色块上的勾 2.5 / 大插画 3）${OFF}"; fail=1
+fi
+echo
+
+# 启动接力那两枚环要对得上（2026-10-10，VI 计划 T3-6 判据 3）：原生 `LaunchImage@1x/2x/3x.png`
+# 与 Flutter 第一帧的 `SplashOverlay` 画的是**同一枚品牌环** —— 对不上，冷启动就会看到一次跳变。
+# 顺带钉住"环心是透明的"：它原来被一颗 3px 的白色闪光堵着（计划里说成"白饼"，实测是那颗闪光）。
+if python3 tool/check-launch-relay.py >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 启动图与内启动屏那两枚环对得上"
+else
+  strip "$LOG"; echo "${RED}✗ 启动接力对不上（环心不透明 / 外径差 > 2pt / 圆心偏了）${OFF}"; fail=1
 fi
 echo
 

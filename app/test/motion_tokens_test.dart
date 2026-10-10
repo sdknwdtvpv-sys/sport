@@ -63,6 +63,8 @@ void main() {
     // T2-3 的完成页时间轴：切分点（420/700/1020/1200）都按它算，改了要让所有图重新对一遍
     expect(Motion.summaryTimeline.inMilliseconds, 1400);
     expect(Motion.summaryTimelineMs, Motion.summaryTimeline.inMilliseconds);
+    // T3-6 的内启动屏：环的呼吸周期（与稿子的 ringPulse 2.5s 对齐）
+    expect(Motion.splashPulse.inMilliseconds, 2500);
     // 页面转场比默认档长（跨屏 vs 同屏）
     expect(Motion.pageTransition.inMilliseconds,
         greaterThan(Motion.base.inMilliseconds));

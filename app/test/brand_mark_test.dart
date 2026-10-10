@@ -72,7 +72,8 @@ void main() {
     // 白名单写死在测试里（与 T1-5 的语义色白名单同一种做法）。
     // **现在这两个文件里还没有** —— 白名单的意义是"下一步要加的时候加不到别处去"。
     const List<String> allowed = <String>[
-      'lib/main.dart', // 启动屏（T3-6 的 SplashOverlay 也挂在这儿）
+      'lib/main.dart', // 外壳（启动屏的挂载点）
+      'lib/features/onboarding/splash_overlay.dart', // 启动屏本体（T3-6 从 main.dart 抽出来的）
       'lib/features/summary/workout_summary_screen.dart', // 完成页背后的光环
     ];
     final List<String> hits = <String>[];
