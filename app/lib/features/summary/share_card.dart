@@ -18,16 +18,31 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+import '../../core/brand_mark.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import 'workout_summary.dart';
 
-/// 卡片逻辑尺寸。3:4 左右，适合朋友圈/微博这类竖版场景。
+/// 卡片逻辑尺寸。**2026-10-10（T3-3）从 460 提到 520**：3:4.33，仍是竖版场景（朋友圈/微博）。
+///
+/// 为什么加高：这张卡承担了**全部的获客职能**（`PRODUCT.md` §4），而这一版把卡头
+/// 从"15pt 橙字"换成"品牌环 + 字标"，底部"26pt 橙圆里一个汉字"也换成品牌环 ——
+/// 品牌那一层变厚了，数字那一层（容量/时长/组数）仍然要留够呼吸。
 const double kShareCardWidth = 360;
-const double kShareCardHeight = 460;
+const double kShareCardHeight = 520;
 
-/// 导出倍数。3 倍 → 1080 × 1380，够社交平台用且不至于太大。
+/// 导出倍数。3 倍 → **1080 × 1560**，够社交平台用且不至于太大。
 const double kShareCardPixelRatio = 3;
+
+/// 卡头那枚品牌环的直径（pt）。**不为漂亮随便定**：它要能在缩略图里被认出来。
+const double kShareCardMark = 22;
+
+/// 底部那枚品牌环的直径（pt）—— 原来这里是"26pt 橙圆里写一个「练」字"，
+/// 那是全 App 唯一的"字母标"，而它是个汉字（`T3-3` 换掉的就是它）。
+const double kShareCardFootMark = 26;
+
+/// 字标字号（pt）。判据：**≥ 16** —— 卡片被压到 200pt 宽看时，16pt 只剩 ~9pt 高。
+const double kShareCardWordmarkSize = 16;
 
 /// 两种版式（2026-10-05，新 VI 的 `vi/share-card.html` 里就给了两款）：
 ///   * [standard]：训练明细 —— 容量 / 组数 / 时长 + 前三个动作。想说"我今天练了什么"用它；
@@ -72,24 +87,10 @@ class ShareCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                const Text(
-                  '练了么',
-                  style: TextStyle(
-                    color: Tokens.accent,
-                    fontSize: Tokens.fsSub,
-                    fontWeight: Tokens.fwBold,
-                    letterSpacing: Tokens.lsWide,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  formatCardDate(summary.startedAtMs),
-                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
-                ),
-              ],
-            ),
+            // 卡头（T3-3）：**品牌环 + 字标**，不再是"15pt 橙字"。
+            // 15pt 的橙字在朋友圈缩略图（约 200pt 宽）里只有 ~8pt 高，**不可读**；
+            // 而这张卡的全部职能就是获客 —— 认不出是谁发的，它就只是一张数据图。
+            _cardHeader(),
             const SizedBox(height: Tokens.s5),
             const Text(
               '训练完成',
@@ -161,19 +162,7 @@ class ShareCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  const Text('练了么',
-                      style: TextStyle(
-                          color: Tokens.accent,
-                          fontSize: Tokens.fsSub,
-                          fontWeight: Tokens.fwBold,
-                          letterSpacing: Tokens.lsWide)),
-                  const Spacer(),
-                  Text(formatCardDate(summary.startedAtMs),
-                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-                ],
-              ),
+              _cardHeader(),
               const Spacer(),
               if (ordinal != null)
                 Text('DAY $ordinal',
@@ -199,19 +188,9 @@ class ShareCard extends StatelessWidget {
               const Spacer(),
               Row(
                 children: <Widget>[
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: const BoxDecoration(
-                        color: Tokens.accent, shape: BoxShape.circle),
-                    child: const Center(
-                      child: Text('练',
-                          style: TextStyle(
-                              color: Tokens.accentInk,
-                              fontSize: Tokens.fsCap,
-                              fontWeight: Tokens.fwBold)),
-                    ),
-                  ),
+                  // 品牌环（T3-3）：原来这里是"橙圆里写一个「练」"——
+                  // 全 App 唯一的"字母标"，而它是个汉字。环才是这枚品牌。
+                  const BrandMark(size: kShareCardFootMark),
                   const SizedBox(width: Tokens.s3),
                   const Text('分享自练了么',
                       style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
@@ -220,6 +199,31 @@ class ShareCard extends StatelessWidget {
             ],
           ),
         ),
+      );
+
+  /// 卡头：品牌环 + 字标 + 右边日期。**两个版式共用**（同一张卡的头不该有两套写法）。
+  Widget _cardHeader() => Row(
+        children: <Widget>[
+          const BrandMark(size: kShareCardMark),
+          const SizedBox(width: Tokens.s3),
+          const Text(
+            '练了么',
+            key: Key('share-card-wordmark'),
+            style: TextStyle(
+              color: Tokens.text,
+              fontSize: kShareCardWordmarkSize,
+              fontWeight: Tokens.fwBold,
+              // 字标的字距是**令牌**（T3-3）：6pt 让三个汉字"一个一个字"地站开，
+              // 缩略图里才认得出是三个字而不是一小团。
+              letterSpacing: Tokens.lsWordmark,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            formatCardDate(summary.startedAtMs),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+          ),
+        ],
       );
 
   Widget _stat(String label, String value) {

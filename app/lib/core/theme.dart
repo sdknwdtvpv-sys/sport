@@ -193,6 +193,14 @@ abstract final class Tokens {
   static const double lsWide = 0.3;
   static const double lsSpaced = 1.2;
 
+  /// **字标的字距**（VI 计划 T3-3）：分享卡卡头那种"三个汉字当标志用"的场合。
+  ///
+  /// 为什么它不能复用 `lsWide`（0.3）：字标要的是"**看起来像三个独立的字**"，
+  /// 而正文里放开 0.3 是"别挤在一起"—— 两件事，量级也差一个数量级。
+  /// 分享卡会被压到朋友圈缩略图（约 200pt 宽）去看，那时 16pt 的字只剩 ~9pt 高，
+  /// 字距拉开一点是它能被认出是"练了么"的关键。
+  static const double lsWordmark = 6;
+
   /// 字体族：数字与拉丁走 Oswald（`docs/plan-vi-migration.md` §六第 2 条的结论），
   /// 中文回落系统字体 —— 这个机制保留，只是从"注释里的约定"变成这个常量。
   static const String? fontFamilyLatn = 'Oswald';

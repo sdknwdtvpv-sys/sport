@@ -109,7 +109,7 @@ void main() {
     expect(hasTypeLiteral('style: Tokens.display(24, weight: 700, letterSpacing: Tokens.lsTight)),'), isFalse);
   });
 
-  test('★ 字距只许 4 档，且没有字面量（T1-7 的判据 1，比 grep 更严）', () {
+  test('★ 字距只许 5 档，且没有字面量（T1-7 的判据 1，比 grep 更严）', () {
     final List<String> hits = <String>[];
     for (final FileSystemEntity e in Directory('lib').listSync(recursive: true)) {
       if (e is! File || !e.path.endsWith('.dart')) continue;
@@ -121,7 +121,7 @@ void main() {
         final String code = c < 0 ? lines[i] : lines[i].substring(0, c);
         for (final RegExpMatch m
             in RegExp(r'letterSpacing: Tokens\.(ls[A-Za-z]+)').allMatches(code)) {
-          if (!const <String>['lsTight', 'lsSnug', 'lsWide', 'lsSpaced']
+          if (!const <String>['lsTight', 'lsSnug', 'lsWide', 'lsSpaced', 'lsWordmark']
               .contains(m.group(1))) {
             hits.add('$path:${i + 1}: ${m.group(1)}');
           }
@@ -130,7 +130,7 @@ void main() {
     }
     expect(hits, isEmpty, reason: '用了 4 档之外的字距：\n${hits.join('\n')}');
     // 判据 1 的"0 个字面量"由上面那条 `_scan(hasTypeLiteral)` 断言，
-    // 这一条额外钉住"档位只有 4 个"（黑名单抓不到 `Tokens.lsNew` 这种新档）。
+    // 这一条额外钉住"档位只有 5 个"（黑名单抓不到 `Tokens.lsNew` 这种新档）。
   });
 
   test('★ `theme.dart` 里的 10 级就是这 10 个名字', () {

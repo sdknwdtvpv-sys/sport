@@ -12,11 +12,15 @@
 /// 第一次写这个文件时就这么挂了 10 分钟。
 library;
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/brand_mark.dart';
+import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/features/summary/share_card.dart';
 import 'package:lianleme/features/summary/workout_summary.dart';
 
@@ -68,6 +72,8 @@ Future<GlobalKey> _pumpCard(WidgetTester tester, WorkoutSummary s) async {
 void main() {
   // 第二款版式（打卡版，2026-10-05 新 VI）
   _streakGroup();
+  // 品牌层（T3-3）
+  _brandGroup();
   testWidgets('分享卡能抓成合法 PNG', (WidgetTester tester) async {
     final GlobalKey key = await _pumpCard(tester, _summary());
 
@@ -227,4 +233,139 @@ void _streakGroup() {
     expect(find.text('分享自练了么'), findsOneWidget);
     expect(find.text(formatCardDate(_summary().startedAtMs)), findsOneWidget);
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 品牌层（VI 计划 T3-3，2026-10-10）
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// WCAG 的相对亮度分量（sRGB 先线性化）。
+double _lin(int c) {
+  final double v = c / 255;
+  return v <= 0.04045 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+}
+
+double _luminance(int r, int g, int b) =>
+    0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b);
+
+double _contrast(double a, double b) {
+  final double hi = math.max(a, b), lo = math.min(a, b);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+void _brandGroup() {
+  testWidgets('卡头是 BrandMark 而不是文字', (WidgetTester tester) async {
+    await _pumpCard(tester, _summary());
+
+    expect(
+      find.descendant(
+          of: find.byKey(const Key('share-card')), matching: find.byType(BrandMark)),
+      findsWidgets,
+      reason: '卡头要有品牌环 —— 这一条之前只有一行 15pt 的橙字',
+    );
+
+    final Text wordmark =
+        tester.widget<Text>(find.byKey(const Key('share-card-wordmark')));
+    expect(wordmark.data, '练了么');
+    expect(wordmark.style!.fontSize, greaterThanOrEqualTo(16),
+        reason: '字标 < 16pt 在 200pt 宽的缩略图里读不出来');
+    expect(wordmark.style!.letterSpacing, 6);
+    expect(Tokens.lsWordmark, 6, reason: '那个 6pt 必须是令牌（`Tokens.lsWordmark`）');
+
+    // 底部那个"橙圆里写一个「练」"必须没了：全 App 唯一的"字母标"不该是汉字
+    expect(find.text('练'), findsNothing);
+  });
+
+  testWidgets('卡面 360 × 520、导出 1080 × 1560（两个版式同一规格）',
+      (WidgetTester tester) async {
+    expect(kShareCardWidth, 360);
+    expect(kShareCardHeight, 520, reason: 'T3-3 把卡面从 460 提到 520（品牌那一层变厚了）');
+    expect(kShareCardWidth * kShareCardPixelRatio, 1080);
+    expect(kShareCardHeight * kShareCardPixelRatio, 1560);
+
+    await _pumpCard(tester, _summary());
+    expect(tester.getSize(find.byKey(const Key('share-card'))), const Size(360, 520));
+
+    await tester.pumpWidget(MaterialApp(
+      home: Center(
+        child: ShareCard(
+          summary: _summary(),
+          variant: ShareCardVariant.streak,
+          streak: 23,
+          ordinal: 41,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(const Key('share-card-streak'))),
+        const Size(360, 520));
+  });
+
+  testWidgets('缩略图可读性：压到 200pt 宽以后，字标仍然认得出',
+      (WidgetTester tester) async {
+    final GlobalKey key = await _pumpCard(tester, _summary());
+
+    final Rect cardBox = tester.getRect(find.byKey(const Key('share-card')));
+    final Rect wordBox = tester.getRect(find.byKey(const Key('share-card-wordmark')));
+    const double to200 = 200 / kShareCardWidth; // 0.556
+
+    // ① 几何：200pt 宽下字标有多高
+    expect(wordBox.height * to200, greaterThanOrEqualTo(8),
+        reason: '200pt 宽下字标只有 ${(wordBox.height * to200).toStringAsFixed(1)}px');
+
+    // ② 像素：按 200pt 宽真渲染一次，扫字标那一块（对比度 + 实际占了几行像素）
+    final _Pixels p = await _capturePixels(tester, key, pixelRatio: to200);
+    final int x0 = ((wordBox.left - cardBox.left) * to200).round();
+    final int y0 = ((wordBox.top - cardBox.top) * to200).round();
+    final int x1 = ((wordBox.right - cardBox.left) * to200).round();
+    final int y1 = ((wordBox.bottom - cardBox.top) * to200).round();
+
+    final int bgI = p.at((x1 + 4).clamp(0, p.width - 1), ((y0 + y1) ~/ 2));
+    final double bgLum = _luminance(p.rgba[bgI], p.rgba[bgI + 1], p.rgba[bgI + 2]);
+
+    double bestLum = 0;
+    int glyphRows = 0;
+    for (int y = y0; y < y1; y++) {
+      bool row = false;
+      for (int x = x0; x < x1; x++) {
+        final int i = p.at(x, y);
+        final double l = _luminance(p.rgba[i], p.rgba[i + 1], p.rgba[i + 2]);
+        if (l > bestLum) bestLum = l;
+        if (l > bgLum * 4) row = true;
+      }
+      if (row) glyphRows++;
+    }
+
+    final double ratio = _contrast(bestLum, bgLum);
+    expect(ratio, greaterThanOrEqualTo(4.5),
+        reason: '字标对底色的对比度只有 ${ratio.toStringAsFixed(2)}:1（要 ≥ 4.5）');
+    expect(glyphRows, greaterThanOrEqualTo(8),
+        reason: '字标在 200pt 宽下只占 $glyphRows 行像素（要 ≥ 8）—— 缩略图里读不出来');
+  });
+}
+
+typedef _Pixels = ({Uint8List rgba, int width, int height});
+
+extension on _Pixels {
+  int at(int x, int y) => (y * width + x) * 4;
+}
+
+/// 抓某个 key 上的位图**原始像素**（不是 PNG）—— 缩略图可读性只能从像素上看。
+Future<_Pixels> _capturePixels(WidgetTester tester, GlobalKey key,
+    {double pixelRatio = 1}) async {
+  final RenderRepaintBoundary b =
+      key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+  final _Pixels? out = await tester.runAsync(() async {
+    final ui.Image img = await b.toImage(pixelRatio: pixelRatio);
+    final ByteData data =
+        (await img.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+    final _Pixels p = (
+      rgba: data.buffer.asUint8List(),
+      width: img.width,
+      height: img.height
+    );
+    img.dispose();
+    return p;
+  });
+  return out!;
 }
