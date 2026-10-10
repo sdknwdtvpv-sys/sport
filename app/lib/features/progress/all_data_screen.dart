@@ -10,6 +10,7 @@
 library;
 
 import '../../billing/debug_grant.dart';
+import '../../billing/ultra_visibility.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,7 @@ class AllDataScreen extends StatefulWidget {
     this.now,
     this.entitlements,
     this.onOpenUltra,
+    this.showUltra = kUltraReleased,
   });
 
   final LocalStore store;
@@ -68,6 +70,11 @@ class AllDataScreen extends StatefulWidget {
 
   /// 「整理（Ultra）」点下去的去处。不传 = 那一栏点了没反应（宁可不显示，也不谎报）
   final VoidCallback? onOpenUltra;
+
+  /// 这一版上不上会员（默认 `kUltraReleased`，首版 `false`）。
+  /// 关着的时候「整理」那一栏**不渲染**，长按某一行也**不进多选态** ——
+  /// 批量整理是 Ultra 权益，而首版买不到（见 `ultra_visibility.dart`）。
+  final bool showUltra;
 
   @override
   State<AllDataScreen> createState() => _AllDataScreenState();
@@ -247,7 +254,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
           // 摆出来、说清解锁的是什么，才是"卖省心"而不是制造信息差（与进步页同一套口径）。
           // 只在「按动作看」里出现：记录列表只存在于那个维度，而"进多选态却无行可选"
           // 比"没有这个按钮"更让人摸不着头脑
-          if (!_selecting && _mode == _Mode.byExercise)
+          if (widget.showUltra && !_selecting && _mode == _Mode.byExercise)
             TextButton(
               key: const Key('all-data-organize'),
               style: TextButton.styleFrom(
@@ -442,6 +449,9 @@ class _AllDataScreenState extends State<AllDataScreen> {
   // ---------- 批量整理（Ultra 权益 8）----------
 
   void _enterSelecting({String? withId}) {
+    // 首版不上会员：这一版连"点进去看预览"都不给（按钮都没渲染），
+    // 长按也走同一条闸门 —— 免得出现"看不见按钮却进了多选态"的鬼状态
+    if (!widget.showUltra) return;
     if (!_ultra) {
       // 免费用户点长按：把他带到会员页，而不是"点了没反应"或偷偷允许
       widget.onOpenUltra?.call();

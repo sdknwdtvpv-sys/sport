@@ -17,6 +17,7 @@ import '../../core/labels.dart';
 import '../../analytics/analytics.dart';
 import '../../core/empty_state.dart';
 import '../../billing/debug_grant.dart';
+import '../../billing/ultra_visibility.dart';
 import '../../core/icon_spec.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
@@ -50,6 +51,7 @@ class ProgressScreen extends StatefulWidget {
     this.now,
     this.entitlements,
     this.onOpenUltra,
+    this.showUltra = kUltraReleased,
     required this.onOpenToday,
   });
 
@@ -70,6 +72,11 @@ class ProgressScreen extends StatefulWidget {
 
   /// 「看看 Ultra」按钮的落地：打开会员页。不传 = 不显示那个按钮（只留一行说明）。
   final VoidCallback? onOpenUltra;
+
+  /// 这一版上不上会员（默认 `kUltraReleased`，首版 `false`）。
+  /// 关着的时候**整张「进阶分析」卡都不出现** —— 包括那个"预览态"：
+  /// 免费版首版不该宣传一个买不到的东西（见 `ultra_visibility.dart`）。
+  final bool showUltra;
 
   /// 埋点（可选）：身体数据页从这里拿去上报 `body_metric_logged`
   final Analytics? analytics;
@@ -353,7 +360,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
           // 先让免费用户看完他已经有的东西，再问他要不要更多 —— 顺序反了就是一进门撞付费墙
           // （红线 1：付费入口别挡在主线前面）。顺带它也不再把既有卡片挤下去
           // （`progress_test` 里那条"六个部位都在"当场发现了位置问题）。
-          _advancedCard(d),
+          // ⚠️ 2026-10-11：首版不上会员 → 整张卡（含预览态）都不出现。
+          if (widget.showUltra) _advancedCard(d),
         ],
         // 没有体重仓库就连标题都不显示 —— 否则会渲染一个
         // 「还没记录过体重」+ 点不动的「记录」按钮（测试抓出来的）

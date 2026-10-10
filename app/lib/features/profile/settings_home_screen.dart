@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../../analytics/analytics.dart';
 import '../../billing/entitlement.dart';
+import '../../billing/ultra_visibility.dart';
 import '../../billing/debug_grant.dart';
 import '../../billing/paywall_copy.dart';
 import '../../billing/paywall_screen.dart';
@@ -62,6 +63,7 @@ class SettingsHomeScreen extends StatelessWidget {
     this.cloud,
     this.account,
     this.entitlements,
+    this.showUltra = kUltraReleased,
     this.reminder = ReminderSettings.off,
     this.reminderHint,
     this.onReminderChanged,
@@ -103,6 +105,10 @@ class SettingsHomeScreen extends StatelessWidget {
   /// 会员权益仓储（可选：测试与"没有付费那一版"都可以不传，那时入口只给一句静态说明）
   final EntitlementRepository? entitlements;
 
+  /// 这一版**上不上会员**（默认取 `kUltraReleased`，首版是 `false`）。
+  /// 关着的时候设置页**不渲染**「练了么 Ultra」那一行 —— 理由见 `ultra_visibility.dart`。
+  final bool showUltra;
+
   @override
   Widget build(BuildContext context) {
     final bool cloudOn = cloudBackupAvailable ?? isCloudBackupConfigured;
@@ -113,8 +119,14 @@ class SettingsHomeScreen extends StatelessWidget {
           // ⚠️ 2026-10-10：这一行是**新加的**。`profile_screen.dart` 里曾写着
           // "刻意没有放会员入口（还没有付费功能，占位入口比没有更糟）"——
           // 现在付费功能（Ultra）本身在落地（M1/M2），入口与它一起出现，那条理由自然失效。
-          UltraEntryTile(entitlements: entitlements),
-          const Divider(height: 1, color: Tokens.line),
+          //
+          // ⚠️ **2026-10-11：首版（免费）不卖会员 → 这一行不渲染**（`kUltraReleased == false`）。
+          // 原因不是"藏起来"，而是 release 包里**买不了**（真内购在 M2）：
+          // 摆一个开不了通的会员页 = Apple 2.1 / 3.1.1 的拒审面。
+          if (showUltra) ...<Widget>[
+            UltraEntryTile(entitlements: entitlements),
+            const Divider(height: 1, color: Tokens.line),
+          ],
           navTile(
             key: const Key('open-preferences'),
             title: '偏好设置',

@@ -57,6 +57,10 @@ Future<void> pumpAllData(
       repository: repo,
       unit: WeightUnit.kg,
       now: DateTime(2026, 10, 10, 12),
+      // ⚠️ **显式打开**（2026-10-11）：这一份测的是「批量整理」这个功能本身 ——
+      // 它的默认开关 `kUltraReleased` 首版是 `false`（免费版先上，那一栏不渲染），
+      // 「首版关着它 / 打开之后回来」那条判据在 `ultra_release_gate_test.dart` 里守。
+      showUltra: true,
       entitlements: entitlements,
       onOpenUltra: onOpenUltra,
     ),

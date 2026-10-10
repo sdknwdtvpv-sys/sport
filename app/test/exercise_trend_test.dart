@@ -198,6 +198,9 @@ Future<void> pumpProgress(
       body: ProgressScreen(
         store: store,
         repository: repo,
+        // 同上：这一份测的是「进阶分析」这张卡本身，显式打开开关；
+        // 首版（`kUltraReleased = false`）那张卡整块不出现，判据在 ultra_release_gate_test.dart
+        showUltra: true,
         entitlements: entitlements,
         onOpenUltra: onOpenUltra,
         now: DateTime(2026, 10, 8, 12),

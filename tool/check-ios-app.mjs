@@ -305,6 +305,26 @@ function inspect(appPath, root = ROOT) {
         .filter(Boolean);
       facts.push(`应用级隐私清单：追踪 ${tracking} · required-reason ${cats.length} 类（${cats.join('、')}）`);
     }
+
+    // ⚠️ **2026-10-11 加的判据**：数据类别的申报必须与"包里到底配没配上报地址"一致。
+    //
+    // 为什么要有它：那份清单长期写着"当前发布版本不向任何地方发送数据（默认关、没配上报地址）"，
+    // 而**默认值 2026-10-07 改成了开、正式包两个地址也都配了** —— 于是它在**对 Apple 说假话**
+    // （`NSPrivacyCollectedDataTypes = []` 是"变体 A：Data Not Collected"的写法）。
+    // 人眼看不出来（清单在包里，谁也不会每次翻），所以让机器对着**产物**核一遍：
+    // 二进制里有上报地址 = 变体 B = 必须声明数据类别。
+    const bin = join(appPath, 'Runner');
+    const hasAnalyticsUrl = existsSync(bin)
+      && readFileSync(bin).includes(Buffer.from('api.elliotli.work'));
+    const collected = plistJson(appManifest, 'NSPrivacyCollectedDataTypes') ?? [];
+    if (hasAnalyticsUrl && (!Array.isArray(collected) || collected.length === 0)) {
+      problems.push('包里**配了上报地址**（`Runner` 二进制里能找到 `api.elliotli.work`），'
+        + '但应用级隐私清单的 `NSPrivacyCollectedDataTypes` 是空的 —— 那是"变体 A"的写法，'
+        + '等于对外声明"我们不收集任何数据"。按 `docs/store-listing-ios.md` §三 的**变体 B** 逐条声明'
+        + '（EmailAddress 关联身份；DeviceID / ProductInteraction / Fitness 用途 Analytics）');
+    } else if (hasAnalyticsUrl) {
+      facts.push(`应用级隐私清单：数据类别 ${collected.length} 类（与"包里配了上报地址"一致 ✓）`);
+    }
   }
 
   // ⑪ 组间休息的 Live Activity：**扩展必须真的躺在 PlugIns 里**
@@ -388,7 +408,15 @@ function selftest() {
     writeFileSync(join(app, 'PrivacyInfo.xcprivacy'), toPlistXml({
       NSPrivacyTracking: false,
       NSPrivacyTrackingDomains: [],
-      NSPrivacyCollectedDataTypes: [],
+      // 变体 B：配了上报地址的正式包必须声明这些（与 docs/store-listing-ios.md §三 一致）
+      NSPrivacyCollectedDataTypes: [
+        {
+          NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeDeviceID',
+          NSPrivacyCollectedDataTypeLinked: false,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAnalytics'],
+        },
+      ],
       NSPrivacyAccessedAPITypes: [
         {
           NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
@@ -397,6 +425,8 @@ function selftest() {
       ],
     }));
     writeFileSync(join(app, 'AppIcon60x60@2x.png'), 'x');
+    // 主二进制：真实正式包里能找到上报地址（新判据靠它判断"这是变体 B 的包"）
+    writeFileSync(join(app, 'Runner'), 'x api.elliotli.work y');
     // Live Activity 扩展（真实产物里就有：PlugIns/RestWidget.appex）
     mkdirSync(join(app, 'PlugIns/RestWidget.appex'), { recursive: true });
     writeFileSync(join(app, 'PlugIns/RestWidget.appex/Info.plist'), toPlistXml({
@@ -461,6 +491,20 @@ function selftest() {
       const a = mk('bad-tracking');
       writeFileSync(join(a, 'PrivacyInfo.xcprivacy'), toPlistXml({
         NSPrivacyTracking: true,
+        NSPrivacyAccessedAPITypes: [
+          {
+            NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+            NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+          },
+        ],
+      }));
+      return a;
+    })(), true],
+    ['配了上报地址、清单却声明"不收集任何数据" → 必须红', (() => {
+      const a = mk('bad-privacy-empty');
+      writeFileSync(join(a, 'PrivacyInfo.xcprivacy'), toPlistXml({
+        NSPrivacyTracking: false,
+        NSPrivacyCollectedDataTypes: [],
         NSPrivacyAccessedAPITypes: [
           {
             NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',

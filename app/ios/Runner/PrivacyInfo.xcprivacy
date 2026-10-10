@@ -17,10 +17,22 @@
 
     * `NSPrivacyTracking = false` —— 我们不做跨 App 追踪，没有广告标识符。
     * `NSPrivacyTrackingDomains = []` —— 同上。
-    * `NSPrivacyCollectedDataTypes = []` —— **当前发布版本**不向任何地方发送数据
-      （「帮助改进产品」默认关，且没配上报地址的包里连发送通道都没有）。
-      ⚠️ **改这条之前先读** `docs/store-listing-ios.md` 的隐私标签两个变体：
-      一旦发布"配了上报地址"的包（变体 B），这里与 App Privacy 标签必须同时回来改。
+    * `NSPrivacyCollectedDataTypes` —— **2026-10-11 从"变体 A"改成"变体 B"**，理由如实记：
+      这一格长期写着"当前发布版本不向任何地方发送数据"，并且举了两个理由 ——
+      ① 「帮助改进产品」默认关 ② 没配上报地址。**两条现在都不成立了**：
+      ① 默认值 2026-10-07 用户拍板改回**默认开**；② 正式包**两个地址都配了**
+      （编译期两个 dart-define：备份地址 + 统计地址；出包时逐 ABI 核过 `api.elliotli.work` 命中 2 次）。
+      也就是说：按原来的写法，这份清单在**对 Apple 说假话**。
+      现在声明四类（与 `docs/store-listing-ios.md` §三「变体 B」那张表逐条对齐）：
+        - `EmailAddress`（Linked = true，用途 AppFunctionality）—— 只有用户主动注册账号时才有；
+        - `DeviceID` / `ProductInteraction` / `Fitness`（Linked = false，用途 **Analytics**）——
+          匿名使用统计带出去的：本机随机设备 id、交互事件、训练重量与次数。
+          ⚠️ **体重数值不发**（只发 `has_weight` 这类布尔值，见 `docs/privacy-facts.json` 的 `neverCollected`）。
+      ⚠️ 两个"不声明"的决定也写在这里，免得下次有人以为是漏了：
+        · **不做追踪** → 四类的 `Tracking` 全 false，`NSPrivacyTracking` 也是 false，所以不需要 ATT；
+        · `OtherUserContent`（云备份里的训练内容）**暂不声明**：服务端只有密文、我们读不出内容，
+          Apple 的定义里"你无法访问的数据不算收集"。**这一条是"待法务确认"的那一格**
+          （`docs/store-listing-ios.md` §三 的三点说明第 2 条），改之前先确认。
     * `NSPrivacyAccessedAPITypes` —— 三个"常见原因码"，逐条写明我们为什么用得上：
         - `UserDefaults` / `CA92.1`：只读写**本 App 自己**的偏好（设置、开关）。
         - `FileTimestamp` / `C617.1`：只读**App 容器内**文件的时间戳
@@ -59,6 +71,46 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- 匿名使用统计（2026-10-11 补）：默认开，会发本机随机设备 id 与交互事件。
+		     ⚠️ 「与身份关联」= false（id 是本机随机、与账号无关），「用于追踪」= false（不做跨 App 追踪）。 -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<!-- 训练容量（重量 × 次数）会随 set_logged 出去 —— 属于「健康与健身 → 健身」。
+		     体重数值不发（只发 has_weight 布尔）。 -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeFitness</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
 			</array>
 		</dict>
 	</array>
