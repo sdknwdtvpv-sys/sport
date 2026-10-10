@@ -21,7 +21,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/pills.dart';
 import 'package:lianleme/core/theme.dart';
-import 'package:lianleme/data/db.dart';
+// db.dart（drift 表）与 models.dart（领域模型）都定义了 SetRecord / Workout，预先 hide。
+import 'package:lianleme/data/db.dart' hide SetRecord, Workout, Exercise, WorkoutItem;
 import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
