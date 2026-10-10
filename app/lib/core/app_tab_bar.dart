@@ -120,7 +120,7 @@ class AppTabBar extends StatelessWidget {
             size: centerIconSize,
             color: Tokens.accent,
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Text(
             tabs[i].label,
             key: const Key('tab-center-label'),

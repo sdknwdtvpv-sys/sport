@@ -432,7 +432,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                   children: <Widget>[
                     const Text('从系统健康同步',
                         style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       '只读${healthReadSummary(Theme.of(context).platform)} · 可选',
                       style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
@@ -707,7 +707,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     ];
     return Container(
       key: const Key('body-summary'),
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),
@@ -727,9 +727,18 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 style: Tokens.display(28, weight: 700, letterSpacing: Tokens.lsTight),
               ),
               const SizedBox(width: Tokens.s2),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(m.date, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              // T1-9：卡片内边距 16→20 之后，这一行在窄屏上少了 5px 的余量。
+              // **不把内边距改回去**（那就等于让"栅格"给"这一行放不下"让路），
+              // 而是让日期这一格可收缩 —— 要缩的应该是**次要的那个数**，
+              // 大字号无障碍设置下也需要这条（原来在 318pt 宽里刚好差 5px）。
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(m.date,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                ),
               ),
             ],
           ),
@@ -1200,7 +1209,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   /// 全页唯一的必填项 —— 所以它占满宽度、字号最大（24pt），单位开关就贴在它右边。
   Widget _weightCard() => ViCard(
         key: const Key('body-weight-card'),
-        padding: const EdgeInsets.fromLTRB(Tokens.s4, Tokens.s3, Tokens.s4, Tokens.s4),
+        padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, Tokens.s5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -1244,7 +1253,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
   /// 而且明确写着"可选"：不填也能保存（可保存性由体重决定）。
   Widget _moreMetricsCard() => ViCard(
         key: const Key('body-more-metrics'),
-        padding: const EdgeInsets.fromLTRB(Tokens.s4, Tokens.s3, Tokens.s4, Tokens.s4),
+        padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, Tokens.s5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[

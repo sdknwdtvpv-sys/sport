@@ -426,7 +426,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
             ],
           ),
           if (p.suggestion != null) ...<Widget>[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               // 红线：解释不了的建议不许出现
               p.suggestion!.reasonText,
@@ -440,7 +440,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
             // 「上次 3 组 · 60 kg × 10 次 → 今天 62.5 kg」这条链能被用户看见，
             // 建议才不是黑箱；而看得见的事实也就可以被反驳（"这不是我上次记的"）。
             if (p.historyLabel != null) ...<Widget>[
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(
                 p.historyLabel!,
                 key: Key('history-${p.exercise.id}'),

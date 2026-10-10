@@ -744,7 +744,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
       ];
 
   Widget _card(List<Widget> children) => Container(
-        padding: const EdgeInsets.all(Tokens.s4),
+        padding: const EdgeInsets.all(Tokens.s5),
         decoration: BoxDecoration(
           color: Tokens.surface,
           borderRadius: BorderRadius.circular(Tokens.rCard),

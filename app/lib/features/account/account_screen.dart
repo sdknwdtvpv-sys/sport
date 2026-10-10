@@ -278,7 +278,7 @@ class _AccountScreenState extends State<AccountScreen> {
         title: const Text('账号'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(Tokens.s4),
+        padding: const EdgeInsets.all(Tokens.s5),
         children: <Widget>[
           if (_error != null) ...<Widget>[
             Text(

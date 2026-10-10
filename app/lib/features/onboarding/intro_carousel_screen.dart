@@ -103,7 +103,7 @@ class _IntroCarouselScreenState extends State<IntroCarouselScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s4, Tokens.s6, Tokens.s6),
+              padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s5),
               child: Row(
                 children: <Widget>[
                   // 圆点：当前位置一眼可见
@@ -248,7 +248,7 @@ class _PlanArt extends StatelessWidget {
           clipBehavior: Clip.none,
           children: <Widget>[
             Container(
-              padding: const EdgeInsets.all(Tokens.s4),
+              padding: const EdgeInsets.all(Tokens.s5),
               decoration: BoxDecoration(
                 color: Tokens.surface,
                 borderRadius: BorderRadius.circular(Tokens.rCard),

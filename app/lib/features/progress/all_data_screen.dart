@@ -372,7 +372,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
   Widget _trendCard(List<double> values, Key key) {
     return Container(
       height: 90,
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),
@@ -475,7 +475,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
     }
     return Container(
       key: key,
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),

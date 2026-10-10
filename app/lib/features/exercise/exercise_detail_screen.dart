@@ -173,7 +173,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
   Widget _howTo(String text) {
     return Container(
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),
@@ -205,7 +205,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   /// （当前 351 个动作全都有说明，所以这条是兜底：将来加了动作没写说明会走到这里。）
   Widget _howToMissing() {
     return Container(
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),
@@ -293,7 +293,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     final ExerciseStats? s = _stats;
     if (s == null || s.setCount == 0) {
       return Container(
-        padding: const EdgeInsets.all(Tokens.s4),
+        padding: const EdgeInsets.all(Tokens.s5),
         decoration: BoxDecoration(
           color: Tokens.surface,
           borderRadius: BorderRadius.circular(Tokens.rCard),
@@ -339,7 +339,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       bestText = '${formatWeight(best.weightKg, widget.unit)} × ${best.reps}';
     }
     return Container(
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),
@@ -363,7 +363,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(label, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           value,
           key: key,

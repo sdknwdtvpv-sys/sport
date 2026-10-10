@@ -23,7 +23,7 @@ class ViCard extends StatelessWidget {
   const ViCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(Tokens.s4),
+    this.padding = const EdgeInsets.all(Tokens.s5),
     this.glow = false,
     this.onTap,
   });

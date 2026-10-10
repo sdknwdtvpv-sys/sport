@@ -316,7 +316,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               children: <Widget>[
                 const Text('下一次',
                     style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   line,
                   key: const Key('summary-next-text'),
@@ -432,7 +432,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
     final int rest = widget.newBadges.length - shown.length;
     return Container(
       key: const Key('summary-unlock'),
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(Tokens.rCard),
         border: Border.all(color: Tokens.accent.withValues(alpha: 0.28)),
@@ -572,7 +572,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                   s.cardiovascularLabels.join(' · '),
                   style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   pace == null
                       ? '${s.distanceLabel}'

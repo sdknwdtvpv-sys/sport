@@ -420,7 +420,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           key: Key(key),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(Tokens.s4),
+            padding: const EdgeInsets.all(Tokens.s5),
             decoration: BoxDecoration(
               color: active ? Tokens.accent : Tokens.surface,
               borderRadius: BorderRadius.circular(Tokens.rCard),

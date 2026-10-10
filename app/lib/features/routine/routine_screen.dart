@@ -330,7 +330,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
     final int n = _counts[r.id] ?? 0;
     return Container(
       margin: const EdgeInsets.only(bottom: Tokens.s3),
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),

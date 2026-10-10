@@ -366,7 +366,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: <Widget>[
           Text(muscleLabel(group),
               style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             '$sets 组',
             key: Key('muscle-$group'),

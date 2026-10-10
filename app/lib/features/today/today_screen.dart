@@ -762,7 +762,7 @@ class _TodayPlanCard extends StatelessWidget {
                 style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
             // 不可点时**不写"点这里"** —— 一句点不动的话比没有更糟
             if (onOpen != null) ...<Widget>[
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               const Text('点这里看看怎么练 ›',
                   style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
             ],

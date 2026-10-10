@@ -488,7 +488,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           ),
         ),
         if (sub != null) ...<Widget>[
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(sub,
               key: subKey,
               style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
@@ -830,7 +830,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               _restAdjust(key: 'skip-rest', label: '跳过', onTap: c.skipRest),
             ],
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(

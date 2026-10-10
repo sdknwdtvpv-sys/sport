@@ -282,7 +282,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               key: const Key('weekly-name'),
               style: const TextStyle(
                   color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             c.done ? '本周已完成 · 下周换一枚' : '${c.spec.how} · ${c.current} / ${c.spec.target}${c.spec.unit}',
             key: const Key('weekly-progress'),
@@ -366,7 +366,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         // 线自己的颜色（没集齐也用它 —— 四条线并排时才分得出谁是谁）
                         ViProgressBar(value: l.progress, color: lineColor(l.category)),
                       ],
@@ -471,7 +471,7 @@ class _BadgeTile extends StatelessWidget {
               fontWeight: Tokens.fwStrong,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             // A4：隐藏徽章**解锁前**只说"？？？"，解锁后才把条件讲明白。
             // 名字（上面那一行）照常显示 —— 藏名字的话用户不知道有这么回事。
@@ -639,12 +639,12 @@ Widget _nearestCard(List<BadgeStatus> all) {
             children: <Widget>[
               const Text('离你最近的一枚',
                   style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(next.name,
                   key: const Key('nearest-badge-name'),
                   style: const TextStyle(
                       color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text('还差 ${next.target - next.current} · ${next.how}',
                   style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro, height: Tokens.lhSnug)),
             ],

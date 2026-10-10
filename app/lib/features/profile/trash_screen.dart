@@ -112,7 +112,7 @@ class _TrashScreenState extends State<TrashScreen> {
         if (_rows.isEmpty)
           settingsCard(<Widget>[
             const Padding(
-              padding: EdgeInsets.all(Tokens.s4),
+              padding: EdgeInsets.all(Tokens.s5),
               child: Text(
                 '这里空着。训练中长按「已完成」里的一行撤销掉的组会落到这儿，'
                 '想撤回那次撤销就点「恢复」。',

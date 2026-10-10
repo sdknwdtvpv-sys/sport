@@ -182,7 +182,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             const Padding(
-              padding: EdgeInsets.fromLTRB(Tokens.s4, Tokens.s4, Tokens.s4, Tokens.s2),
+              padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s3),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text('休息时长',
@@ -361,7 +361,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         profileSectionTitle('显示'),
         settingsCard(<Widget>[
           Padding(
-            padding: const EdgeInsets.all(Tokens.s4),
+            padding: const EdgeInsets.all(Tokens.s5),
             child: Row(
               children: <Widget>[
                 const Text('重量单位',

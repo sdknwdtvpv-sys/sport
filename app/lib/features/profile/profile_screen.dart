@@ -275,7 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontWeight: Tokens.fwBold,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     _accountId == null
                         ? '还没登录 · 点一下设昵称'

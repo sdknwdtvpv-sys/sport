@@ -207,7 +207,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     final bool unread = n.readAtMs == null;
     return ViCard(
       key: Key('notification-${n.id}'),
-      padding: const EdgeInsets.all(Tokens.s4),
+      padding: const EdgeInsets.all(Tokens.s5),
       // 点得进去看详情（用户 2026-10-06 的备忘条第 5 条：现在点不动，
       // 而"解锁了哪个成就 / 备份成没成"这些细节在列表里是看不全的）
       onTap: () => _openDetail(n),
@@ -252,7 +252,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                 const SizedBox(height: 4),
                 Text(n.body,
                     style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   '${NotificationKind.label(n.kind)} · ${relativeTime(n.createdAtMs)}',
                   style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
