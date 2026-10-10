@@ -568,7 +568,7 @@ Future<TimeOfDay?> _showTimeWheel(
                     )),
                     child: const Text('完成',
                         style: TextStyle(
-                            color: Tokens.accent, fontWeight: Tokens.fwBold)),
+                            color: Tokens.accentText, fontWeight: Tokens.fwBold)),
                   ),
                 ],
               ),

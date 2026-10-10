@@ -238,7 +238,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           TextButton(
             key: const Key('cloud-agree'),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('继续', style: TextStyle(color: Tokens.accent)),
+            child: const Text('继续', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),
@@ -472,7 +472,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           TextButton(
             key: const Key('cloud-adopt-ok'),
             onPressed: () => Navigator.of(ctx).pop(input.text),
-            child: const Text('取回', style: TextStyle(color: Tokens.accent)),
+            child: const Text('取回', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),
@@ -570,11 +570,23 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               ),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s8),
-                children: <Widget>[
-                  if (cloud == null) ..._notConfigured() else ..._body(),
-                ],
+              // ⚠️ **全 App 唯一的下拉刷新**（VI 计划 §批次 4「不做 7」的例外保留）。
+              // 为什么只留这一处：下拉刷新在别处是"给本地库做的假仪式感"（数据是本地库，
+              // 毫秒级就绪，下拉只是表演）；**而这里是唯一真的有网络请求的地方**
+              // （`cloud.info` / 上传 / 恢复），刷新有实际意义。
+              // 用 `RefreshIndicator.adaptive`：iOS 上走系统那套（时长与曲线**交给平台**，
+              // 这是计划里写的口径 —— 不自己定一个"我们的下拉刷新动画"）。
+              child: RefreshIndicator.adaptive(
+                key: const Key('cloud-pull-refresh'),
+                onRefresh: _load,
+                color: Tokens.accent,
+                backgroundColor: Tokens.elevated,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s8),
+                  children: <Widget>[
+                    if (cloud == null) ..._notConfigured() else ..._body(),
+                  ],
+                ),
               ),
             ),
           ],
@@ -871,7 +883,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
         TextButton(
           key: const Key('cloud-new-ok'),
           onPressed: _wrote ? () => Navigator.of(context).pop(true) : null,
-          child: const Text('开启', style: TextStyle(color: Tokens.accent)),
+          child: const Text('开启', style: TextStyle(color: Tokens.accentText)),
         ),
       ],
     );

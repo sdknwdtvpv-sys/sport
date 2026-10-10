@@ -188,13 +188,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 TextButton(
                   key: const Key('plan-done-more'),
                   onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('再加一组', style: TextStyle(color: Tokens.accent)),
+                  child: const Text('再加一组', style: TextStyle(color: Tokens.accentText)),
                 ),
                 TextButton(
                   key: const Key('plan-done-next'),
                   onPressed: () => Navigator.of(ctx).pop(false),
                   child: Text(last ? '结束训练' : '下一个',
-                      style: const TextStyle(color: Tokens.accent)),
+                      style: const TextStyle(color: Tokens.accentText)),
                 ),
               ],
             ),
@@ -646,7 +646,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             const SizedBox(width: Tokens.s2),
             const Text('✓',
                 style: TextStyle(
-                    color: Tokens.accent,
+                    color: Tokens.accentText,
                     fontSize: Tokens.fsSub,
                     fontWeight: Tokens.fwBold)),
           ],

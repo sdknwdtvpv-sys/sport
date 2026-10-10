@@ -248,7 +248,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           TextButton(
             key: const Key('body-consent-agree'),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('同意并记录', style: TextStyle(color: Tokens.accent)),
+            child: const Text('同意并记录', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),
@@ -321,7 +321,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             key: const Key('health-consent-agree'),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('同意并读取',
-                style: TextStyle(color: Tokens.accent)),
+                style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),
@@ -405,7 +405,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           TextButton(
             key: const Key('health-result-ok'),
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('知道了', style: TextStyle(color: Tokens.accent)),
+            child: const Text('知道了', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),
@@ -814,7 +814,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           TextButton(
             key: const Key('weigh-frequency-ok'),
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('知道了', style: TextStyle(color: Tokens.accent)),
+            child: const Text('知道了', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),

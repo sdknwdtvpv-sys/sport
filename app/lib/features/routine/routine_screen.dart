@@ -320,7 +320,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
         ),
         subtitle: Text('${t.note} · ${t.items.length} 个动作',
             style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug)),
-          trailing: const Icon(Icons.add_circle_outline, color: Tokens.accent, size: IconSpec.m),
+          trailing: const Icon(Icons.add_circle_outline, color: Tokens.accentText, size: IconSpec.m),
         ),
       ),
     );

@@ -107,6 +107,18 @@ abstract final class Tokens {
   static const Color accent = Color(0xFFFF5C26);
   static const Color accentPress = Color(0xFFE04A18);
 
+  /// **橙色文字**（链接、弹层里的文字按钮、橙色的标签）。
+  ///
+  /// 为什么要单独一个：`accent`（#FF5C26）是**实心块**的颜色，拿它写字在暖黑底上
+  /// 只有 5.3:1 —— 而"可点的文字"要 4.5:1 以上**并且**在暖黑底上看着不能发闷。
+  /// 提亮到 #FF8A5B 之后对 `bg` 是 **8.40:1**（`theme_contrast_test` 钉着）。
+  ///
+  /// ⚠️ 这一条是 VI 计划 §3 冲突 5 的裁决（"拆令牌：文字链接走 `accentText`"），
+  /// 而它**在批次 1 漏掉了** —— 裁决写了 ✅、代码里没有这个常量，于是全 App 59 处
+  /// `color: Tokens.accent` 里那 22 处**橙字**一直用的是实心块的颜色。
+  /// 2026-10-10 收尾时补上（`accent_budget_test` 现在盯着"橙字不许再用 accent"）。
+  static const Color accentText = Color(0xFFFF8A5B);
+
   /// 橙底上的字色。**必须用深色**：橙底 + 白字只有 3.08:1（AA 小字要 4.5），
   /// 深色是 6.06:1。界面稿里两种都出现过（训练首页那颗白胶囊是例外），这里按 6:1 那条来。
   static const Color accentInk = Color(0xFF141210);

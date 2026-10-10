@@ -124,7 +124,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
           TextButton(
             key: const Key('body-revoke-yes'),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('撤回', style: TextStyle(color: Tokens.accent)),
+            child: const Text('撤回', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),
@@ -163,7 +163,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
           TextButton(
             key: const Key('health-revoke-yes'),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('撤回', style: TextStyle(color: Tokens.accent)),
+            child: const Text('撤回', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),

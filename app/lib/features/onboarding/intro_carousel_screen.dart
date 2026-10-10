@@ -264,7 +264,7 @@ class _PlanArt extends StatelessWidget {
                             style: TextStyle(color: Tokens.text, fontSize: Tokens.fsCap)),
                       ),
                       Text('4 练',
-                          style: Tokens.display(14, weight: 700, color: Tokens.accent)),
+                          style: Tokens.display(14, weight: 700, color: Tokens.accentText)),
                     ],
                   ),
                   const SizedBox(height: Tokens.s3),

@@ -299,7 +299,7 @@ class _PlanScreenState extends State<PlanScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: Tokens.s2),
                     child: Text(widget.todayLabel!,
-                        style: const TextStyle(color: Tokens.accent, fontSize: Tokens.fsCap)),
+                        style: const TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap)),
                   ),
                 for (final PlannedExercise p in widget.todayPlan)
                   Padding(

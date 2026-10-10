@@ -1059,7 +1059,7 @@ class _HomeShellState extends State<HomeShell> {
                   TextButton(
                     key: const Key('synergy-continue'),
                     onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text('仍然换', style: TextStyle(color: Tokens.accent)),
+                    child: const Text('仍然换', style: TextStyle(color: Tokens.accentText)),
                   ),
                 ],
               ),
@@ -1272,7 +1272,7 @@ class _HomeShellState extends State<HomeShell> {
           TextButton(
             key: const Key('stale-resume'),
             onPressed: () => Navigator.of(ctx).pop(_StaleChoice.resume),
-            child: const Text('继续', style: TextStyle(color: Tokens.accent)),
+            child: const Text('继续', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),
@@ -1480,7 +1480,7 @@ class _HomeShellState extends State<HomeShell> {
           TextButton(
             key: const Key('unload-plates-ok'),
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('已归位', style: TextStyle(color: Tokens.accent)),
+            child: const Text('已归位', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),

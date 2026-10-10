@@ -121,7 +121,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
                 onPressed: _openPolicy,
                 child: const Text(
                   '阅读《隐私政策》',
-                  style: TextStyle(color: Tokens.accent, fontSize: Tokens.fsSub),
+                  style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsSub),
                 ),
               ),
               const SizedBox(height: Tokens.s3),

@@ -132,13 +132,13 @@ Future<WeightStepPick?> pickWeightStep(
               key: const Key('step-apply-one'),
               onPressed: () => Navigator.of(ctx)
                   .pop(WeightStepPick(toStoredKg(selected, unit), all: false)),
-              child: const Text('只改这个动作', style: TextStyle(color: Tokens.accent)),
+              child: const Text('只改这个动作', style: TextStyle(color: Tokens.accentText)),
             ),
           TextButton(
             key: const Key('step-apply-all'),
             onPressed: () => Navigator.of(ctx)
                 .pop(WeightStepPick(toStoredKg(selected, unit), all: true)),
-            child: const Text('所有动作都改', style: TextStyle(color: Tokens.accent)),
+            child: const Text('所有动作都改', style: TextStyle(color: Tokens.accentText)),
           ),
         ],
       ),

@@ -497,10 +497,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
       );
 
   /// 容量趋势（周 / 月 / 年）。曲线是零依赖自绘的 `ViAreaChart`。
+  /// 容量趋势（周 / 月 / 年）。
+  ///
+  /// ⚠️ **T1-9 的 `RepaintBoundary`**：周/月/年切换时曲线是**硬切**的
+  /// （计划 §批次 4「不做 6」保留了硬切 —— 曲线形变要重采样 + 重写 `shouldRepaint`，
+  /// 做错了每帧重绘），但那张卡自己要被隔离出来：切换时重绘的应该只有这一块，
+  /// 而不是整屏（含四张统计卡）。
   Widget _trendCard() {
     final List<double> series = volumeSeries(_sets, _today, _range);
     final List<String> ends = seriesEndLabels(_today, _range);
-    return ViCard(
+    return RepaintBoundary(
+      // 硬切那一帧只让这一块脏：外面是四张统计卡 + 周历，它们与曲线无关。
+      child: ViCard(
+      key: const Key('progress-trend-card'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -544,9 +553,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
         ],
       ),
+      ),
     );
   }
-
 
   Widget _prCard(ProgressData d) {
     // ⚠️ 2026-10-10：与上面那条统计带同一条规矩 —— **纯文字用细线分节，只有图表配卡片底**。

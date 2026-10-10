@@ -137,7 +137,7 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
             TextButton(
               key: const Key('gallery-rationale-ok'),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('继续', style: TextStyle(color: Tokens.accent)),
+              child: const Text('继续', style: TextStyle(color: Tokens.accentText)),
             ),
           ],
         ),

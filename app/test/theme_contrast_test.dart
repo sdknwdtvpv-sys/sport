@@ -295,4 +295,15 @@ void main() {
       expect(r.found, greaterThan(0), reason: '这一屏一个 text3 都没扫到 —— 样本失效了');
     });
   });
+  test('★ accentText：橙色**文字**在四个底色上都过 4.5:1', () {
+    // 冲突 5 的裁决把它拆出来就是为了这一条：`accent` 是实心块的颜色，
+    // 拿它写字在暖黑底上只有 5.3:1 —— 而"可点的文字"要更亮、更清楚。
+    expect(contrast(Tokens.accentText, Tokens.bg), greaterThanOrEqualTo(4.5));
+    expect(contrast(Tokens.accentText, Tokens.surface), greaterThanOrEqualTo(4.5));
+    expect(contrast(Tokens.accentText, Tokens.elevated), greaterThanOrEqualTo(4.5));
+    // 而且它必须比实心块那个亮（否则拆它没有意义）
+    expect(contrast(Tokens.accentText, Tokens.bg),
+        greaterThan(contrast(Tokens.accent, Tokens.bg)));
+  });
+
 }

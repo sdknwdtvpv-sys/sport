@@ -445,7 +445,8 @@ class _AccountScreenState extends State<AccountScreen> {
           SelectableText(
             _displayCode ?? '',
             key: const Key('account-recovery-code'),
-            style: const TextStyle(color: Tokens.accent, fontSize: Tokens.fsBodyS, height: Tokens.lhNormal),
+            // 恢复码是**字**（要念、要抄），走橙色文字的令牌（冲突 5）
+            style: const TextStyle(color: Tokens.accentText, fontSize: Tokens.fsBodyS, height: Tokens.lhNormal),
           ),
           TextButton(
             key: const Key('account-copy'),
