@@ -1034,7 +1034,7 @@ class _HomeShellState extends State<HomeShell> {
                 content: Text(
                   '$warning\n\n计划是建议，不是牢笼 —— 想换就换。',
                   key: const Key('synergy-note'),
-                  style: const TextStyle(color: Tokens.text2, height: 1.6),
+                  style: const TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
                 ),
                 actions: <Widget>[
                   TextButton(
@@ -1225,7 +1225,7 @@ class _HomeShellState extends State<HomeShell> {
             Text(
               '${staleSessionResumeLabel(a, now)}',
               key: const Key('stale-when'),
-              style: const TextStyle(color: Tokens.text2, height: 1.6),
+              style: const TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
             ),
             const SizedBox(height: Tokens.s3),
             Text(
@@ -1233,13 +1233,13 @@ class _HomeShellState extends State<HomeShell> {
                   ? '还没有记下任何一组。'
                   : '已经记下 ${sets.length} 组。',
               key: const Key('stale-count'),
-              style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
             ),
             if (sets.isNotEmpty) ...<Widget>[
               const SizedBox(height: Tokens.s2),
               const Text(
                 '「丢弃」= 删掉这次记的组（回收站里能找回）',
-                style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.5),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
               ),
             ],
           ],
@@ -1460,7 +1460,7 @@ class _HomeShellState extends State<HomeShell> {
           '今天用了杠铃 —— 走之前记得卸片、把杠铃放回架子上。'
           '下一个人可能会直接用，留着片子既危险也不礼貌。',
           key: Key('unload-plates-note'),
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(

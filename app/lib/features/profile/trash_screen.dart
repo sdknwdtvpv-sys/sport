@@ -116,7 +116,7 @@ class _TrashScreenState extends State<TrashScreen> {
               child: Text(
                 '这里空着。训练中长按「已完成」里的一行撤销掉的组会落到这儿，'
                 '想撤回那次撤销就点「恢复」。',
-                style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
               ),
             ),
           ])
@@ -130,11 +130,11 @@ class _TrashScreenState extends State<TrashScreen> {
                     const EdgeInsets.symmetric(horizontal: Tokens.s4),
                 title: Text(
                   _label(_rows[i].set),
-                  style: const TextStyle(color: Tokens.text, fontSize: 15),
+                  style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
                 ),
                 subtitle: Text(
                   _when(_rows[i].deletedAtMs),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                 ),
                 trailing: TextButton(
                   key: Key('restore-${_rows[i].set.id}'),
@@ -149,7 +149,7 @@ class _TrashScreenState extends State<TrashScreen> {
         const Text(
           '恢复只是把那一组放回原来的训练里 —— 它不会重新计算容量或 PR，'
           '那些数字本来就在算的时候把它算上了。',
-          style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.5),
+          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
         ),
       ],
     );

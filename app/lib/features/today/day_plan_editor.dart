@@ -154,8 +154,8 @@ class _DayPlanEditorState extends State<_DayPlanEditor> {
                     child: Text('调整今天的安排',
                         style: TextStyle(
                             color: Tokens.text,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600)),
+                            fontSize: Tokens.fsBody,
+                            fontWeight: Tokens.fwStrong)),
                   ),
                   TextButton(
                     key: const Key('plan-edit-done'),
@@ -172,7 +172,7 @@ class _DayPlanEditorState extends State<_DayPlanEditor> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text('长按一行可以拖动排序；只改练哪几个，组数次数不动',
-                    style: TextStyle(color: Tokens.text3, fontSize: 12.5, height: 1.4)),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug)),
               ),
             ),
             if (_items.isEmpty)
@@ -180,7 +180,7 @@ class _DayPlanEditorState extends State<_DayPlanEditor> {
                 padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s5, Tokens.s5, Tokens.s6),
                 child: Text('今天的动作都删光了 —— 回首页点「换一批」可以重新生成一份。',
                     key: Key('plan-edit-empty'),
-                    style: TextStyle(color: Tokens.text3, fontSize: 14, height: 1.6)),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal)),
               )
             else
               Flexible(
@@ -213,10 +213,10 @@ class _DayPlanEditorState extends State<_DayPlanEditor> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                          color: Tokens.text, fontSize: 14)),
+                                          color: Tokens.text, fontSize: Tokens.fsSub)),
                                   Text(e.loadLabel,
                                       style: const TextStyle(
-                                          color: Tokens.text3, fontSize: 12)),
+                                          color: Tokens.text3, fontSize: Tokens.fsMicro)),
                                 ],
                               ),
                             ),

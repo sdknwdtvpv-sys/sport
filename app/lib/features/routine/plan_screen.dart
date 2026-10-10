@@ -199,9 +199,9 @@ class _PlanScreenState extends State<PlanScreen> {
                 const SizedBox(width: Tokens.s3),
                 const Expanded(
                   child: Text('不知道从哪开始？帮我定个计划',
-                      style: TextStyle(color: Tokens.text, fontSize: 14.5)),
+                      style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
                 ),
-                const Text('›', style: TextStyle(color: Tokens.text3, fontSize: 16)),
+                const Text('›', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsBodyS)),
               ],
             ),
           ),
@@ -242,7 +242,7 @@ class _PlanScreenState extends State<PlanScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       const Text('上次的训练还没结束 —— 接着练',
-                          style: TextStyle(color: Tokens.text, fontSize: 14)),
+                          style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
                       if (widget.resumeLabel != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
@@ -250,7 +250,7 @@ class _PlanScreenState extends State<PlanScreen> {
                             widget.resumeLabel!,
                             key: const Key('plan-resume-when'),
                             style: const TextStyle(
-                                color: Tokens.text3, fontSize: 12, height: 1.4),
+                                color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                           ),
                         ),
                     ],
@@ -263,11 +263,11 @@ class _PlanScreenState extends State<PlanScreen> {
           const SizedBox(height: Tokens.s4),
         ],
         const Text('今天的安排',
-            style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+            style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s2),
         if (widget.todayPlan.isEmpty)
           const Text('今天还没有排动作 —— 回首页点「开始今天的训练」会自动生成。',
-              style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5))
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal))
         else
           ViCard(
             child: Column(
@@ -277,7 +277,7 @@ class _PlanScreenState extends State<PlanScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: Tokens.s2),
                     child: Text(widget.todayLabel!,
-                        style: const TextStyle(color: Tokens.accent, fontSize: 13)),
+                        style: const TextStyle(color: Tokens.accent, fontSize: Tokens.fsCap)),
                   ),
                 for (final PlannedExercise p in widget.todayPlan)
                   Padding(
@@ -288,10 +288,10 @@ class _PlanScreenState extends State<PlanScreen> {
                           child: Text(p.exercise.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Tokens.text2, fontSize: 14)),
+                              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
                         ),
                         Text(p.loadLabel,
-                            style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                       ],
                     ),
                   ),
@@ -319,14 +319,14 @@ class _PlanScreenState extends State<PlanScreen> {
               const Text('在哪儿练',
                   style: TextStyle(
                       color: Tokens.text2,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600)),
+                      fontSize: Tokens.fsCap,
+                      fontWeight: Tokens.fwStrong)),
               const SizedBox(width: Tokens.s2),
               Expanded(
                 child: Text(
                   widget.scenario.hint,
                   key: const Key('scenario-hint'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                 ),
               ),
             ],
@@ -359,7 +359,7 @@ class _PlanScreenState extends State<PlanScreen> {
       children: <Widget>[
         Text('周$label',
             style: TextStyle(
-                color: isToday ? Tokens.accent : Tokens.text3, fontSize: 11)),
+                color: isToday ? Tokens.accent : Tokens.text3, fontSize: Tokens.fsMicro)),
         const SizedBox(height: 4),
         Container(
           width: 30,
@@ -373,14 +373,14 @@ class _PlanScreenState extends State<PlanScreen> {
             child: Text('${day.day}',
                 style: TextStyle(
                   color: isToday ? Tokens.accentInk : Tokens.text2,
-                  fontSize: 13,
-                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                  fontSize: Tokens.fsCap,
+                  fontWeight: isToday ? Tokens.fwBold : Tokens.fwBody,
                 )),
           ),
         ),
         const SizedBox(height: 4),
         Text(sets > 0 ? '$sets 组' : '—',
-            style: TextStyle(color: sets > 0 ? Tokens.text2 : Tokens.text3, fontSize: 10)),
+            style: TextStyle(color: sets > 0 ? Tokens.text2 : Tokens.text3, fontSize: Tokens.fsMicro)),
       ],
     );
   }
@@ -414,7 +414,7 @@ class _PlanScreenState extends State<PlanScreen> {
         child: Text('还没有练过。\n练完第一次，这里会按周记下你练了几次、多少容量。',
             key: Key('plan-history-empty'),
             textAlign: TextAlign.center,
-            style: TextStyle(color: Tokens.text3, fontSize: 14, height: 1.6)),
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal)),
       );
     }
 
@@ -429,7 +429,7 @@ class _PlanScreenState extends State<PlanScreen> {
               '${g.title} · ${g.rows.length} 次 · '
               '${formatVolume(g.rows.fold<double>(0, (double a, ({String workoutId, DateTime day, int exercises, int sets, double volume}) r) => a + r.volume), widget.unit)}',
               key: Key('history-${g.title}'),
-              style: const TextStyle(color: Tokens.text2, fontSize: 13),
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
             ),
           ),
           for (final ({String workoutId, DateTime day, int exercises, int sets, double volume}) r in g.rows)
@@ -442,10 +442,10 @@ class _PlanScreenState extends State<PlanScreen> {
                   children: <Widget>[
                     Expanded(
                       child: Text('${r.day.month} 月 ${r.day.day} 日',
-                          style: const TextStyle(color: Tokens.text, fontSize: 14)),
+                          style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
                     ),
                     Text('${r.exercises} 个动作 · ${r.sets} 组 · ${formatVolume(r.volume, widget.unit)}',
-                        style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                   ],
                 ),
               ),

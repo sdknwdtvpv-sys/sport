@@ -162,7 +162,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const Expanded(
                     child: Text('定个计划',
                         style: TextStyle(
-                            color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
+                            color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                   ),
                   TextButton(
                     key: const Key('onboarding-skip'),
@@ -173,7 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       _leaveStep(skipped: true);
                       Navigator.of(context).pop();
                     },
-                    child: const Text('跳过', style: TextStyle(fontSize: 14)),
+                    child: const Text('跳过', style: TextStyle(fontSize: Tokens.fsSub)),
                   ),
                 ],
               ),
@@ -273,8 +273,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Text('$d 天',
                         style: TextStyle(
                           color: _days == d ? Tokens.accentInk : Tokens.text2,
-                          fontSize: 16,
-                          fontWeight: _days == d ? FontWeight.w700 : FontWeight.w400,
+                          fontSize: Tokens.fsBodyS,
+                          fontWeight: _days == d ? Tokens.fwBold : Tokens.fwBody,
                         )),
                   ),
                 ),
@@ -283,7 +283,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: Tokens.s4),
           Text(
             _days == null ? '选一个' : daysHint(_days!),
-            style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
           ),
           const SizedBox(height: Tokens.s5),
           _nextButton(
@@ -309,12 +309,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: <Widget>[
                 const Text('这是你的第一份计划',
                     style: TextStyle(
-                        color: Tokens.text, fontSize: 24, fontWeight: FontWeight.w700)),
+                        color: Tokens.text, fontSize: Tokens.fsNumL, fontWeight: Tokens.fwBold)),
                 const SizedBox(height: Tokens.s2),
                 Text(
                   '${_goal?.label ?? ''} · 一周 ${_days ?? 3} 天 · '
                   '${_target.targetSets} 组 × ${_target.targetRepsLow}–${_target.targetRepsHigh} 次',
-                  style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                 ),
                 const SizedBox(height: Tokens.s4),
                 for (final PlannedExercise p in _plan)
@@ -325,16 +325,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Expanded(
                           child: Text(p.exercise.name,
                               style: const TextStyle(
-                                  color: Tokens.text, fontSize: 16,
-                                  fontWeight: FontWeight.w600)),
+                                  color: Tokens.text, fontSize: Tokens.fsBodyS,
+                                  fontWeight: Tokens.fwStrong)),
                         ),
                         Text(
                           p.suggestion?.isBodyweight ?? true
                               ? '自重'
                               : formatWeight(p.suggestion?.weightKg, widget.unit),
                           style: const TextStyle(
-                              color: Tokens.text2, fontSize: 15,
-                              fontWeight: FontWeight.w600),
+                              color: Tokens.text2, fontSize: Tokens.fsSub,
+                              fontWeight: Tokens.fwStrong),
                         ),
                       ],
                     ),
@@ -343,7 +343,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 const Text(
                   '计划已经存下来了。之后可以在「今天练什么」里开始，'
                   '也能在「我的计划」里逐项改。',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.5),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
                 ),
               ],
             ),
@@ -369,7 +369,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ? null
                         : () => _commit(startNow: true),
                     child: const Text('就用这个，开始练',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                   ),
                 ),
                 TextButton(
@@ -378,7 +378,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ? null
                       : () => _commit(startNow: false),
                   child: const Text('先这样，回头再练',
-                      style: TextStyle(color: Tokens.text2, fontSize: 14)),
+                      style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
                 ),
               ],
             ),
@@ -398,10 +398,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: <Widget>[
           Text(title,
               style: const TextStyle(
-                  color: Tokens.text, fontSize: 24, fontWeight: FontWeight.w700)),
+                  color: Tokens.text, fontSize: Tokens.fsNumL, fontWeight: Tokens.fwBold)),
           const SizedBox(height: Tokens.s2),
           Text(subtitle,
-              style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5)),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal)),
           const SizedBox(height: Tokens.s5),
           ...children,
         ],
@@ -431,14 +431,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Text(label,
                       style: TextStyle(
                         color: active ? Tokens.accentInk : Tokens.text,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
+                        fontSize: Tokens.fsBody,
+                        fontWeight: Tokens.fwStrong,
                       )),
                 ),
                 Text(detail,
                     style: TextStyle(
                       color: active ? Tokens.accentInk : Tokens.text3,
-                      fontSize: 13,
+                      fontSize: Tokens.fsCap,
                     )),
               ],
             ),
@@ -466,7 +466,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           onPressed: enabled ? onTap : null,
           child: Text(label,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
         ),
       );
 }

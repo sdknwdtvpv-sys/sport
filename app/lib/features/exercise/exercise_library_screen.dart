@@ -57,7 +57,7 @@ class ExerciseLibraryScreen extends StatelessWidget {
                     const SizedBox(width: Tokens.s3),
                     const Text('动作库',
                         style: TextStyle(
-                            color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
+                            color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                   ],
                 ),
               ),

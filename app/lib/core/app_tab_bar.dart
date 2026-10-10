@@ -121,8 +121,8 @@ class AppTabBar extends StatelessWidget {
               // ⚠️ 未选中用 text2（不是 text3）：tab 标签是「我在哪一屏」的唯一线索，
                         // 属于**功能性标签**（VI 计划 T0-3 的豁免规则）。
                         color: i == current ? Tokens.accent : Tokens.text2,
-              fontSize: 11,
-              height: 1.2,
+              fontSize: Tokens.fsMicro,
+              height: Tokens.lhTight,
             ),
           ),
         ],
@@ -205,8 +205,8 @@ class AppTabBar extends StatelessWidget {
                           // ⚠️ 未选中用 text2（不是 text3）：tab 标签是「我在哪一屏」的唯一线索，
                         // 属于**功能性标签**（VI 计划 T0-3 的豁免规则）。
                         color: i == current ? Tokens.accent : Tokens.text2,
-                          fontSize: 11,
-                          height: 1.2,
+                          fontSize: Tokens.fsMicro,
+                          height: Tokens.lhTight,
                         ),
                       ),
                     ],

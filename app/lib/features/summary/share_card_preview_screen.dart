@@ -126,7 +126,7 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
             '接下来系统会问你是否允许「写入相册」。\n\n'
             '我们只是把这张训练卡写进去 —— 从不读取你的任何照片。',
             key: Key('gallery-rationale'),
-            style: TextStyle(color: Tokens.text2, height: 1.6),
+            style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
           ),
           actions: <Widget>[
             TextButton(
@@ -179,8 +179,8 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
                       '分享训练卡',
                       style: TextStyle(
                         color: Tokens.text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: Tokens.fsHeadline,
+                        fontWeight: Tokens.fwBold,
                       ),
                     ),
                   ),
@@ -232,7 +232,7 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
                           ),
                         ),
                         child: const Text('存相册',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
                       ),
                     ),
                   ),
@@ -251,7 +251,7 @@ class _ShareCardPreviewScreenState extends State<ShareCardPreviewScreen> {
                           ),
                         ),
                         child: const Text('分享',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                            style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwBold)),
                       ),
                     ),
                   ),

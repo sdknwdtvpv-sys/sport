@@ -81,7 +81,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                         const Expanded(
                           child: Text('消息通知',
                               style: TextStyle(
-                                  color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
+                                  color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                         ),
                         // 「全部已读」**不在标题栏**了（2026-10-06 用户备忘条第 6 条：
                         // "全部已读放在这个页面最下面 做一个悬浮胶囊"）—— 见页面底部那颗胶囊。
@@ -128,7 +128,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                                   key: Key('notifications-empty'),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                      color: Tokens.text3, fontSize: 14, height: 1.6),
+                                      color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
                                 ),
                               )
                             : ListView.separated(
@@ -195,7 +195,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               SizedBox(width: Tokens.s2),
               Text('全部已读',
                   style: TextStyle(
-                      color: Tokens.accentInk, fontSize: 15, fontWeight: FontWeight.w700)),
+                      color: Tokens.accentInk, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
             ],
           ),
         ),
@@ -232,7 +232,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                       child: Text(
                         n.title,
                         style: const TextStyle(
-                            color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600),
+                            color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
                       ),
                     ),
                     // 未读点：**不只靠颜色** —— 「全部已读」那个按钮只在有未读时出现，
@@ -249,11 +249,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(n.body,
-                    style: const TextStyle(color: Tokens.text2, fontSize: 13, height: 1.5)),
+                    style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal)),
                 const SizedBox(height: 6),
                 Text(
                   '${NotificationKind.label(n.kind)} · ${relativeTime(n.createdAtMs)}',
-                  style: const TextStyle(color: Tokens.text3, fontSize: 11),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                 ),
               ],
             ),

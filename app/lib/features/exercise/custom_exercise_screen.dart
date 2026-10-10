@@ -133,8 +133,8 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
                       '新建自定义动作',
                       style: TextStyle(
                         color: Tokens.text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: Tokens.fsHeadline,
+                        fontWeight: Tokens.fwBold,
                       ),
                     ),
                   ),
@@ -151,10 +151,10 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
                     key: const Key('custom-name'),
                     controller: _name,
                     autofocus: true,
-                    style: const TextStyle(color: Tokens.text, fontSize: 17),
+                    style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBody),
                     decoration: appFieldDecoration(
                       hint: '例如：坐姿划船机',
-                      fontSize: 17,
+                      fontSize: Tokens.fsBody,
                       radius: Tokens.rPill,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: Tokens.s5,
@@ -199,7 +199,7 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
                       _equipment == 'bodyweight'
                           ? '自重动作：按次数推进，不加重'
                           : '加重步长 ${formatWeight(kIncrementForEquipment[_equipment] ?? 2.5, widget.unit)}',
-                      style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                     ),
                   ),
                   _label('默认休息'),
@@ -236,7 +236,7 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
                   onPressed: _canSave ? _save : null,
                   child: const Text(
                     '保存并选用',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold),
                   ),
                 ),
               ),
@@ -253,9 +253,9 @@ class _CustomExerciseScreenState extends State<CustomExerciseScreen> {
           text,
           style: const TextStyle(
             color: Tokens.text3,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
+            fontSize: Tokens.fsCap,
+            fontWeight: Tokens.fwStrong,
+            letterSpacing: Tokens.lsWide,
           ),
         ),
       );

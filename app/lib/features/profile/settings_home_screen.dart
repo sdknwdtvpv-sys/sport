@@ -131,7 +131,7 @@ class SettingsHomeScreen extends StatelessWidget {
             cloudOn
                 ? '设置都存在这台手机上。唯一会联网的是匿名统计与你自己开的云备份。'
                 : '设置都存在这台手机上，不上传任何人。',
-            style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           ),
         ),
       ],

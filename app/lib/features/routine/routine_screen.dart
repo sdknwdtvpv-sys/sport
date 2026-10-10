@@ -179,7 +179,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                 key: const Key('routine-create'),
                 style: TextButton.styleFrom(foregroundColor: Tokens.accent),
                 onPressed: _create,
-                child: const Text('＋ 新建', style: TextStyle(fontSize: 14)),
+                child: const Text('＋ 新建', style: TextStyle(fontSize: Tokens.fsSub)),
               ),
             ),
           ),
@@ -210,13 +210,13 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                   const Expanded(
                     child: Text('我的计划',
                         style: TextStyle(
-                            color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
+                            color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                   ),
                   TextButton(
                     key: const Key('routine-create'),
                     style: TextButton.styleFrom(foregroundColor: Tokens.accent),
                     onPressed: _create,
-                    child: const Text('＋ 新建', style: TextStyle(fontSize: 14)),
+                    child: const Text('＋ 新建', style: TextStyle(fontSize: Tokens.fsSub)),
                   ),
                 ],
               ),
@@ -243,11 +243,11 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                               child: Text(
                                 '还没有计划。\n先用下面任意一套模板，'
                                 '下次打开就直接照着练 —— 不用每次重新挑动作。',
-                                style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.6),
+                                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
                               ),
                             ),
                             const Text('从模板开始',
-                                style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                             const SizedBox(height: Tokens.s2),
                             for (final PlanTemplate t in kPlanTemplates)
                               _templateRow(t),
@@ -260,13 +260,13 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                             // 「从模板开始」放在最上面：不知道自己该练什么的人，
                             // 第一眼该看到的是这个，而不是"＋ 新建"。
                             const Text('从模板开始',
-                                style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                             const SizedBox(height: Tokens.s2),
                             for (final PlanTemplate t in kPlanTemplates)
                               _templateRow(t),
                             const SizedBox(height: Tokens.s5),
                             const Text('我的计划',
-                                style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                             const SizedBox(height: Tokens.s2),
                             for (final RoutineData r in _routines) _row(r),
                           ],
@@ -301,7 +301,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
           runSpacing: 2,
           children: <Widget>[
             Text(t.name,
-                style: const TextStyle(color: Tokens.text, fontSize: 15)),
+                style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
             for (int i = 0; i < t.tags.length; i++)
               Container(
                   key: Key('template-tag-${t.id}-$i'),
@@ -313,13 +313,13 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                   child: Text(
                     t.tags[i],
                     style: const TextStyle(
-                        color: Tokens.accent, fontSize: 11, fontWeight: FontWeight.w600),
+                        color: Tokens.accent, fontSize: Tokens.fsMicro, fontWeight: Tokens.fwStrong),
                   ),
                 ),
           ],
         ),
         subtitle: Text('${t.note} · ${t.items.length} 个动作',
-            style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4)),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug)),
           trailing: const Icon(Icons.add_circle_outline, color: Tokens.accent, size: 20),
         ),
       ),
@@ -350,10 +350,10 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                 children: <Widget>[
                   Text(r.name,
                       style: const TextStyle(
-                          color: Tokens.text, fontSize: 17, fontWeight: FontWeight.w600)),
+                          color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
                   const SizedBox(height: Tokens.s1),
                   Text(n == 0 ? '还没有动作' : '$n 个动作',
-                      style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                 ],
               ),
             ),
@@ -527,7 +527,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                   const Expanded(
                     child: Text('编辑计划',
                         style: TextStyle(
-                            color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
+                            color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                   ),
                 ],
               ),
@@ -541,10 +541,10 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                   key: const Key('routine-name'),
                   controller: _name,
                   style: const TextStyle(
-                      color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700),
+                      color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold),
                   decoration: appFieldDecoration(
                     hint: '计划名称，如「推日」',
-                    fontSize: 20,
+                    fontSize: Tokens.fsHeadline,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: Tokens.s4, vertical: Tokens.s4),
                   ),
@@ -562,7 +562,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                         padding: EdgeInsets.symmetric(vertical: Tokens.s5),
                         child: Text(
                           '还没有动作。加几个，下次直接照着练。',
-                          style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.5),
+                          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
                         ),
                       ),
                     for (final RoutineItemData i in _items) _itemRow(i),
@@ -597,7 +597,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                     ),
                     onPressed: _start,
                     child: const Text('开始训练',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                   ),
                 ),
               ),
@@ -624,11 +624,11 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                 children: <Widget>[
                   Text(e?.name ?? i.exerciseId,
                       style: const TextStyle(
-                          color: Tokens.text, fontSize: 16, fontWeight: FontWeight.w600)),
+                          color: Tokens.text, fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
                   const SizedBox(height: Tokens.s1),
                   Text('${i.targetSets} 组 · ${i.targetRepsLow}–${i.targetRepsHigh} 次',
                       key: Key('routine-item-label-${i.id}'),
-                      style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                 ],
               ),
             ),
@@ -672,7 +672,7 @@ class _ItemEditorState extends State<_ItemEditor> {
         children: <Widget>[
           const Text('组数',
               style: TextStyle(
-                  color: Tokens.text3, fontSize: 13, fontWeight: FontWeight.w600)),
+                  color: Tokens.text3, fontSize: Tokens.fsCap, fontWeight: Tokens.fwStrong)),
           const SizedBox(height: Tokens.s1),
           Wrap(
             spacing: Tokens.s2,
@@ -684,7 +684,7 @@ class _ItemEditorState extends State<_ItemEditor> {
           const SizedBox(height: Tokens.s4),
           const Text('次数区间',
               style: TextStyle(
-                  color: Tokens.text3, fontSize: 13, fontWeight: FontWeight.w600)),
+                  color: Tokens.text3, fontSize: Tokens.fsCap, fontWeight: Tokens.fwStrong)),
           const SizedBox(height: Tokens.s1),
           Wrap(
             spacing: Tokens.s1,
@@ -716,7 +716,7 @@ class _ItemEditorState extends State<_ItemEditor> {
                 (sets: _sets, low: _low, high: _high),
               ),
               child: const Text('确定',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: Tokens.fsBody, fontWeight: Tokens.fwBold)),
             ),
           ),
         ],

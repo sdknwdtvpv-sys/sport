@@ -174,7 +174,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             child: w == null
                 ? const Text(
                     '还没记录过体重',
-                    style: TextStyle(color: Tokens.text3, fontSize: 15),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,7 +185,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         // 在「身体数据」看到「188.5 lb」：同一个体重，两个单位两块屏。
                         formatBodyWeight(w.weightKg, _bodyUnit),
                         key: const Key('progress-weight'),
-                        style: Tokens.display(24, weight: 700, letterSpacing: -0.3),
+                        style: Tokens.display(24, weight: 700, letterSpacing: Tokens.lsSnug),
                       ),
                       const SizedBox(height: Tokens.s1),
                       Text(
@@ -193,7 +193,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           w.date,
                           if (w.note != null && w.note!.isNotEmpty) w.note!,
                         ].join(' · '),
-                        style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                       ),
                     ],
                   ),
@@ -271,7 +271,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             // 那一屏回答"某个动作/某段时间到底怎么样"。
             style: TextButton.styleFrom(foregroundColor: Tokens.accent),
             onPressed: _openAllData,
-            child: const Text('全部数据 ›', style: TextStyle(fontSize: 14)),
+            child: const Text('全部数据 ›', style: TextStyle(fontSize: Tokens.fsSub)),
           ),
         ),
         const SizedBox(height: Tokens.s3),
@@ -282,7 +282,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             padding: EdgeInsets.only(bottom: Tokens.s5),
             child: Text(
               '还没有训练记录。\n练完第一次，这里就会长出曲线和纪录。',
-              style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.6),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
             ),
           )
         else ...<Widget>[
@@ -339,7 +339,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const Text('本周各部位组数',
-              style: TextStyle(color: Tokens.text3, fontSize: 13)),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
           const SizedBox(height: Tokens.s3),
           Wrap(
             spacing: Tokens.s3,
@@ -351,7 +351,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
           const SizedBox(height: Tokens.s3),
           const Text('循证区间：每块肌肉每周 12–20 组',
-              style: TextStyle(color: Tokens.text3, fontSize: 11)),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
         ],
       ),
     );
@@ -365,7 +365,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(muscleLabel(group),
-              style: const TextStyle(color: Tokens.text2, fontSize: 13)),
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
           const SizedBox(height: 2),
           Text(
             '$sets 组',
@@ -374,8 +374,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
               color: sets == 0
                   ? Tokens.text3
                   : (inRange ? Tokens.accent : Tokens.text),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontSize: Tokens.fsBody,
+              fontWeight: Tokens.fwBold,
             ),
           ),
         ],
@@ -493,7 +493,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             children: <Widget>[
               const Expanded(
                 child: Text('训练容量趋势',
-                    style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
               ),
               ViSegmented(
                 labels: const <String>['周', '月', '年'],
@@ -512,9 +512,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text(ends.first, style: const TextStyle(color: Tokens.text3, fontSize: 11)),
-              Text(rangeHint(_range), style: const TextStyle(color: Tokens.text3, fontSize: 11)),
-              Text(ends.last, style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+              Text(ends.first, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              Text(rangeHint(_range), style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              Text(ends.last, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ],
           ),
           // 这个区间一条记录都没有就说清楚 —— 曲线画成一条平线时，
@@ -524,7 +524,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               padding: const EdgeInsets.only(top: Tokens.s2),
               child: Text(
                 '${rangeHint(_range)}还没练',
-                style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
               ),
             ),
         ],
@@ -564,7 +564,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       children: <Widget>[
                         Text(
                           d.prs[i].name,
-                          style: const TextStyle(color: Tokens.text, fontSize: 15),
+                          style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
                         ),
                         // 预估 1RM（2026-10-04）。**只在算得出来时显示** ——
                         // 自重 / 按时长 / 次数超过 12 的动作没有可信的 1RM
@@ -576,7 +576,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               '预估 1RM ${formatWeight(d.prs[i].oneRm!, d.unit)}',
                               key: Key('pr-1rm-${d.prs[i].exerciseId}'),
                               style: const TextStyle(
-                                  color: Tokens.text3, fontSize: 12),
+                                  color: Tokens.text3, fontSize: Tokens.fsMicro),
                             ),
                           ),
                         // 距上次破纪录多少天（第二部分第 4 条，2026-10-06）。
@@ -590,7 +590,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               lastPrLabel(d.daysSinceLastPr, d.prs[i].exerciseId)!,
                               key: Key('pr-age-${d.prs[i].exerciseId}'),
                               style: const TextStyle(
-                                  color: Tokens.text3, fontSize: 12),
+                                  color: Tokens.text3, fontSize: Tokens.fsMicro),
                             ),
                           ),
                       ],
@@ -600,8 +600,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     d.prs[i].label,
                     style: const TextStyle(
                       color: Tokens.pr,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+                      fontSize: Tokens.fsBody,
+                      fontWeight: Tokens.fwBold,
                     ),
                   ),
                 ],
@@ -614,7 +614,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   Widget _sectionTitle(String t) => Padding(
         padding: const EdgeInsets.only(left: Tokens.s1, bottom: Tokens.s2),
-        child: Text(t, style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+        child: Text(t, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
       );
 
 }

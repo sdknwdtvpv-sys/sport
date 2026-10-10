@@ -187,8 +187,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 child: Text('休息时长',
                     style: TextStyle(
                         color: Tokens.text2,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
+                        fontSize: Tokens.fsCap,
+                        fontWeight: Tokens.fwStrong)),
               ),
             ),
             _restOption(ctx, key: 'rest-follow', sec: null, label: '跟随动作'),
@@ -211,7 +211,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         onTap: () => Navigator.of(ctx).pop(_RestPick(sec)),
         title: Text(label,
             style: TextStyle(
-                color: _rest == sec ? Tokens.accent : Tokens.text, fontSize: 15)),
+                color: _rest == sec ? Tokens.accent : Tokens.text, fontSize: Tokens.fsSub)),
         trailing: _rest == sec
             ? const Icon(Icons.check, size: 18, color: Tokens.accent)
             : null,
@@ -336,7 +336,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               _restLabel,
               key: const Key('rest-current'),
               style: const TextStyle(
-                  color: Tokens.accent, fontSize: 15, fontWeight: FontWeight.w600),
+                  color: Tokens.accent, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
             ),
             // 副标题只在**真的需要解释**的时候出现（2026-10-04 文案审计）：
             //   选「跟随动作」时，「跟随动作」这四个字本身看不出是什么 → 留一句解释；
@@ -349,7 +349,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     // 休息时间里」）—— 解释挪到这里：休息时长**是**会跟着你实际节奏微调的，
                     // 而这件事属于"设置"的话题，不该占用训练屏。
                     '每个动作用它自带的休息时长；练起来之后会按你实际歇的节奏微调',
-                    style: TextStyle(color: Tokens.text3, fontSize: 12.5, height: 1.4),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                   )
                 : null,
             trailing: const Icon(Icons.chevron_right, size: 18, color: Tokens.text3),
@@ -365,7 +365,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             child: Row(
               children: <Widget>[
                 const Text('重量单位',
-                    style: TextStyle(color: Tokens.text2, fontSize: 13)),
+                    style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
                 const SizedBox(width: Tokens.s3),
                 // ⚠️ **2026-10-10 用户：「选中胶囊还有没改的，你再查一下」** —— 查出来两处漏网，
                 // 这是另一处：它当时还在用旧的 `GlassSegmentedRow`（iOS 26 那块玻璃底托 +
@@ -404,7 +404,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               _stepLabel,
               key: const Key('step-current'),
               style: const TextStyle(
-                  color: Tokens.accent, fontSize: 15, fontWeight: FontWeight.w600),
+                  color: Tokens.accent, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
             ),
             // 副标题只在**真的需要解释**的时候出现（同「休息时长」那条规矩）：
             // 「跟随动作」四个字看不出是什么意思，所以要一句；选了具体数值时
@@ -412,7 +412,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             subtitle: _step == null
                 ? const Text(
                     '每个动作按器械给一个合适的档；改一次可以铺到所有动作',
-                    style: TextStyle(color: Tokens.text3, fontSize: 12.5, height: 1.4),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                   )
                 : null,
             trailing: const Icon(Icons.chevron_right, size: 18, color: Tokens.text3),
@@ -427,11 +427,11 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             onChanged: _toggleProgression,
             title: const Text(
               '根据历史提示重量',
-              style: TextStyle(color: Tokens.text, fontSize: 15),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
             subtitle: const Text(
               '关掉后只记录，不再提示该上多少重量',
-              style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
             ),
           ),
         ]),
@@ -444,7 +444,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             onChanged: _toggleReminder,
             title: const Text(
               '到点还没练就提醒我',
-              style: TextStyle(color: Tokens.text, fontSize: 15),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
             // 文案审计（2026-10-04，你点名删掉「练过就不打扰」）：
             //   * 打开时**不要副标题** —— 下面那一行「提醒时间」已经写着几点，
@@ -458,7 +458,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 ? null
                 : const Text(
                     '在本机提醒，不上传任何东西',
-                    style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
                   ),
           ),
           // 固定训练时段建议（第二部分第 6 条）：**只在有明确集中时段时出现**，
@@ -471,7 +471,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               leading: const Icon(Icons.schedule, color: Tokens.text3, size: 20),
               title: Text(
                 widget.trainingTimeSuggestion!,
-                style: const TextStyle(color: Tokens.text2, fontSize: 13, height: 1.4),
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
               ),
             ),
           if (_reminder.enabled)
@@ -483,14 +483,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: Tokens.s4),
                   title: const Text('提醒时间',
-                      style: TextStyle(color: Tokens.text, fontSize: 15)),
+                      style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
                   trailing: Text(
                     _reminder.label,
                     key: const Key('reminder-time-label'),
                     style: const TextStyle(
                         color: Tokens.accent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600),
+                        fontSize: Tokens.fsSub,
+                        fontWeight: Tokens.fwStrong),
                   ),
                 ),
                 // 「下次什么时候响」—— 没有这一行时，用户设完看不到任何反馈，
@@ -505,7 +505,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         widget.reminderHint!,
                         key: const Key('reminder-next'),
                         style: const TextStyle(
-                            color: Tokens.text3, fontSize: 12.5, height: 1.35),
+                            color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                       ),
                     ),
                   ),
@@ -555,8 +555,8 @@ Future<TimeOfDay?> _showTimeWheel(
                   const Text('提醒时间',
                       style: TextStyle(
                           color: Tokens.text,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600)),
+                          fontSize: Tokens.fsSub,
+                          fontWeight: Tokens.fwStrong)),
                   const Spacer(),
                   TextButton(
                     key: const Key('time-wheel-done'),
@@ -570,7 +570,7 @@ Future<TimeOfDay?> _showTimeWheel(
                     )),
                     child: const Text('完成',
                         style: TextStyle(
-                            color: Tokens.accent, fontWeight: FontWeight.w700)),
+                            color: Tokens.accent, fontWeight: Tokens.fwBold)),
                   ),
                 ],
               ),
@@ -590,7 +590,7 @@ Future<TimeOfDay?> _showTimeWheel(
                             Center(
                               child: Text('${h.toString().padLeft(2, '0')} 时',
                                   style: const TextStyle(
-                                      color: Tokens.text, fontSize: 20)),
+                                      color: Tokens.text, fontSize: Tokens.fsHeadline)),
                             ),
                         ],
                       ),
@@ -607,7 +607,7 @@ Future<TimeOfDay?> _showTimeWheel(
                             Center(
                               child: Text('${m.toString().padLeft(2, '0')} 分',
                                   style: const TextStyle(
-                                      color: Tokens.text, fontSize: 20)),
+                                      color: Tokens.text, fontSize: Tokens.fsHeadline)),
                             ),
                         ],
                       ),

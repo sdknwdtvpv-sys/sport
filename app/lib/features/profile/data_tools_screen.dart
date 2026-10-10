@@ -305,7 +305,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             const Text(
               '会删掉这台手机上所有训练记录、组记录和个人设置。\n\n'
               '无法撤销，也无法恢复。内置的动作库会保留。',
-              style: TextStyle(height: 1.5),
+              style: TextStyle(height: Tokens.lhNormal),
             ),
             if (cloudInvolved)
               StatefulBuilder(
@@ -318,11 +318,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
                   controlAffinity: ListTileControlAffinity.leading,
                   dense: true,
                   title: const Text('同时删除云端备份并注销',
-                      style: TextStyle(fontSize: 13)),
+                      style: TextStyle(fontSize: Tokens.fsCap)),
                   subtitle: const Text(
                     '不勾的话云端那份会留着 —— 但本机的恢复码会被清掉，'
                     '之后只能靠你自己抄下来的那串取回。',
-                    style: TextStyle(fontSize: 12, height: 1.4),
+                    style: TextStyle(fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                   ),
                 ),
               ),
@@ -399,12 +399,12 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               onTap: _openBodyMetric,
               title: const Text(
                 '身体数据',
-                style: TextStyle(color: Tokens.text, fontSize: 15),
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
               ),
               subtitle: const Text(
                 // v1.52 起不止体重了 —— 副标题跟着字段走，别让用户以为只记体重。
                 '体重、体脂率、腰围、肌肉量。一天一条',
-                style: TextStyle(color: Tokens.text3, fontSize: 13),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
               trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
             ),
@@ -416,11 +416,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             onTap: _export,
             title: const Text(
               '导出全部记录',
-              style: TextStyle(color: Tokens.text, fontSize: 15),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
             subtitle: const Text(
               '复制成 CSV 到剪贴板（报表，不能导回来）',
-              style: TextStyle(color: Tokens.text3, fontSize: 13),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
             trailing: const Icon(Icons.ios_share, color: Tokens.text3, size: 20),
           ),
@@ -434,7 +434,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             onTap: _exportBackup,
             title: const Text(
               '导出备份文件',
-              style: TextStyle(color: Tokens.text, fontSize: 15),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
             // 文案审计（2026-10-04，你拍的板）：这里原本是「导回来是同一批数据」——
             // 那是**在"导出"这一行下面说"导回来"的事**，读着跳；而且"导回来"这件事
@@ -450,11 +450,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             onTap: _importBackup,
             title: const Text(
               '导入备份',
-              style: TextStyle(color: Tokens.text, fontSize: 15),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
             subtitle: const Text(
               '把备份内容粘进来',
-              style: TextStyle(color: Tokens.text3, fontSize: 13),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
             trailing: const Icon(Icons.download, color: Tokens.text3, size: 20),
           ),
@@ -468,11 +468,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             onTap: _openTrash,
             title: const Text(
               '回收站',
-              style: TextStyle(color: Tokens.text, fontSize: 15),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
             subtitle: const Text(
               '撤销掉的组会落到这里，可以恢复',
-              style: TextStyle(color: Tokens.text3, fontSize: 13),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
             trailing: const Icon(Icons.delete_outline, color: Tokens.text3, size: 20),
           ),
@@ -486,11 +486,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               onTap: _openAccount,
               title: const Text(
                 '账号',
-                style: TextStyle(color: Tokens.text, fontSize: 15),
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
               ),
               subtitle: const Text(
                 '用邮箱和口令登录，换手机能找回。不登录也能用',
-                style: TextStyle(color: Tokens.text3, fontSize: 13),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
               trailing: const Icon(Icons.person_outline, color: Tokens.text3, size: 20),
             ),
@@ -501,11 +501,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               onTap: _openCloudBackup,
               title: const Text(
                 '云备份',
-                style: TextStyle(color: Tokens.text, fontSize: 15),
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
               ),
               subtitle: const Text(
                 '加密后存到服务器，换手机能取回。默认关闭',
-                style: TextStyle(color: Tokens.text3, fontSize: 13),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
               trailing: const Icon(Icons.cloud_outlined, color: Tokens.text3, size: 20),
             ),
@@ -520,11 +520,11 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             onTap: _deleteAll,
             title: const Text(
               '删除全部数据',
-              style: TextStyle(color: Tokens.danger, fontSize: 15),
+              style: TextStyle(color: Tokens.danger, fontSize: Tokens.fsSub),
             ),
             subtitle: const Text(
               '清空本机记录与设置，动作库保留。不可撤销',
-              style: TextStyle(color: Tokens.text3, fontSize: 13),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
             trailing: const Icon(Icons.delete_outline, color: Tokens.danger, size: 20),
           ),
@@ -591,17 +591,17 @@ class _ImportBackupDialogState extends State<_ImportBackupDialog> {
           const Text(
             '把「导出备份文件」得到的内容粘进下面。\n'
             '导入是幂等的：同一份粘两次不会变成两份。',
-            style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           ),
           const SizedBox(height: Tokens.s3),
           TextField(
             key: const Key('import-text'),
             controller: _text,
             maxLines: 6,
-            style: const TextStyle(color: Tokens.text, fontSize: 13),
+            style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsCap),
             decoration: appFieldDecoration(
               hint: '{"app":"lianleme", …}',
-              fontSize: 13,
+              fontSize: Tokens.fsCap,
             ),
           ),
           if (_error != null) ...<Widget>[
@@ -609,7 +609,7 @@ class _ImportBackupDialogState extends State<_ImportBackupDialog> {
             Text(
               _error!,
               key: const Key('import-error'),
-              style: const TextStyle(color: Tokens.danger, fontSize: 13),
+              style: const TextStyle(color: Tokens.danger, fontSize: Tokens.fsCap),
             ),
           ],
         ],

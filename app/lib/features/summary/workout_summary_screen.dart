@@ -160,7 +160,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
             child: Center(
               child: Text(
                 '这次没有记录到任何一组。',
-                style: TextStyle(color: Tokens.text3, fontSize: 15),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub),
               ),
             ),
           ),
@@ -231,18 +231,18 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               const Icon(Icons.lightbulb_outline, color: Tokens.text3, size: 16),
               const SizedBox(width: Tokens.s2),
               const Text('练后小知识',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ],
           ),
           const SizedBox(height: Tokens.s2),
           Text(t.title,
               key: const Key('tip-title'),
               style: const TextStyle(
-                  color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+                  color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
           const SizedBox(height: Tokens.s2),
           Text(t.body,
               key: const Key('tip-body'),
-              style: const TextStyle(color: Tokens.text2, fontSize: 13, height: 1.5)),
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal)),
         ],
       ),
     );
@@ -279,12 +279,12 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               maxLines: 1,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _saveNote(),
-              style: const TextStyle(color: Tokens.text, fontSize: 14),
+              style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
               decoration: const InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: '今天的一句话（状态 / 感觉 / 为什么没加重）',
-                hintStyle: TextStyle(color: Tokens.text3, fontSize: 13),
+                hintStyle: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
             ),
           ),
@@ -314,13 +314,13 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 const Text('下一次',
-                    style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                 const SizedBox(height: 2),
                 Text(
                   line,
                   key: const Key('summary-next-text'),
                   style: const TextStyle(
-                      color: Tokens.text, fontSize: 15, height: 1.4),
+                      color: Tokens.text, fontSize: Tokens.fsSub, height: Tokens.lhSnug),
                 ),
               ],
             ),
@@ -346,8 +346,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
             '练完拉伸一下',
             style: TextStyle(
               color: Tokens.text,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontSize: Tokens.fsBodyS,
+              fontWeight: Tokens.fwBold,
             ),
           ),
           const SizedBox(height: Tokens.s3),
@@ -361,8 +361,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                     e.name,
                     style: const TextStyle(
                       color: Tokens.text,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                      fontSize: Tokens.fsSub,
+                      fontWeight: Tokens.fwStrong,
                     ),
                   ),
                   if (e.instructions != null && e.instructions!.isNotEmpty)
@@ -370,8 +370,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                       e.instructions!,
                       style: const TextStyle(
                         color: Tokens.text3,
-                        fontSize: 13,
-                        height: 1.4,
+                        fontSize: Tokens.fsCap,
+                        height: Tokens.lhSnug,
                       ),
                     ),
                 ],
@@ -406,15 +406,15 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
             key: Key('summary-done-title'),
             style: TextStyle(
               color: Tokens.text,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
+              fontSize: Tokens.fsTitle,
+              fontWeight: Tokens.fwBold,
+              letterSpacing: Tokens.lsTight,
             ),
           ),
           const SizedBox(height: Tokens.s2),
           const Text(
             '干得漂亮，又变强了一点',
-            style: TextStyle(color: Tokens.text2, fontSize: 14),
+            style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
           ),
         ],
       );
@@ -455,8 +455,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                   key: const Key('summary-unlock-title'),
                   style: const TextStyle(
                       color: Tokens.accent,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700),
+                      fontSize: Tokens.fsCap,
+                      fontWeight: Tokens.fwBold),
                 ),
               ),
               if (widget.onOpenAchievements != null)
@@ -467,7 +467,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: Tokens.s1, vertical: 2),
                     child: Text('全部 ›',
-                        style: TextStyle(color: Tokens.text3, fontSize: 12.5)),
+                        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                   ),
                 ),
             ],
@@ -494,14 +494,14 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                     ),
                     const SizedBox(width: Tokens.s3),
                     Text(shown[i].name,
-                        style: const TextStyle(color: Tokens.text, fontSize: 13.5)),
+                        style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsCap)),
                   ],
                 ),
               ],
               if (rest > 0) ...<Widget>[
                 const SizedBox(width: Tokens.s3),
                 Text('还有 $rest 枚',
-                    style: const TextStyle(color: Tokens.text3, fontSize: 12.5)),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
               ],
             ],
           ),
@@ -569,7 +569,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               children: <Widget>[
                 Text(
                   s.cardiovascularLabels.join(' · '),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -579,8 +579,8 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                   key: const Key('summary-distance'),
                   style: const TextStyle(
                     color: Tokens.text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+                    fontSize: Tokens.fsBody,
+                    fontWeight: Tokens.fwBold,
                   ),
                 ),
               ],
@@ -609,14 +609,14 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 key: key,
                 maxLines: 1,
                 textAlign: TextAlign.center,
-                style: Tokens.display(22, weight: 700, letterSpacing: -0.5),
+                style: Tokens.display(22, weight: 700, letterSpacing: Tokens.lsTight),
               ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(color: Tokens.text3, fontSize: 13),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
           ),
         ],
       ),
@@ -640,14 +640,14 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
             children: <Widget>[
               // 破纪录用专属色，且**不只靠颜色**表达 —— 有文字
               const Text('★',
-                  style: TextStyle(color: Tokens.pr, fontSize: 16, height: 1.2)),
+                  style: TextStyle(color: Tokens.pr, fontSize: Tokens.fsBodyS, height: Tokens.lhTight)),
               const SizedBox(width: Tokens.s2),
               Text(
                 s.prs.length == 1 ? '破纪录' : '破了 ${s.prs.length} 项纪录',
                 style: const TextStyle(
                   color: Tokens.pr,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  fontSize: Tokens.fsSub,
+                  fontWeight: Tokens.fwBold,
                 ),
               ),
             ],
@@ -665,15 +665,15 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                       pr.exerciseName,
                       style: const TextStyle(
                         color: Tokens.text,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontSize: Tokens.fsSub,
+                        fontWeight: Tokens.fwStrong,
                       ),
                     ),
                   ),
                   const SizedBox(width: Tokens.s3),
                   Text(
                     pr.detail,
-                    style: const TextStyle(color: Tokens.text2, fontSize: 13),
+                    style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
                   ),
                 ],
               ),
@@ -702,7 +702,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
           ),
           icon: const Icon(Icons.ios_share, size: 18),
           label: const Text('分享训练卡',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => ShareCardPreviewScreen(
@@ -744,7 +744,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
           },
           child: const Text(
             '完成',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold),
           ),
         ),
       ),

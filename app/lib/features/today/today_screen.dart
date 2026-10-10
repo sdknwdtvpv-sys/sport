@@ -91,7 +91,7 @@ class TodayScreen extends StatelessWidget {
           children: <Widget>[
             Text(text,
                 key: const Key('comeback-copy'),
-                style: const TextStyle(color: Tokens.text, fontSize: 14, height: 1.4)),
+                style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, height: Tokens.lhSnug)),
             if (onLightWorkout != null) ...<Widget>[
               const SizedBox(height: Tokens.s3),
               SizedBox(
@@ -104,7 +104,7 @@ class TodayScreen extends StatelessWidget {
                     side: const BorderSide(color: Tokens.line),
                     padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
                   ),
-                  child: const Text('做 5 分钟活动', style: TextStyle(fontSize: 13)),
+                  child: const Text('做 5 分钟活动', style: TextStyle(fontSize: Tokens.fsCap)),
                 ),
               ),
             ],
@@ -322,7 +322,7 @@ class TodayScreen extends StatelessWidget {
         Center(
           child: Text(
             lastWeekSessions > 0 ? '我上周练了 $lastWeekSessions 次' : '还没有训练记录',
-            style: const TextStyle(color: Tokens.text3, fontSize: 13),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
           ),
         ),
       ],
@@ -368,8 +368,8 @@ class TodayScreen extends StatelessWidget {
                 key: const Key('streak-label'),
                 style: TextStyle(
                   color: streak > 0 ? Tokens.text2 : Tokens.text3,
-                  fontSize: 13,
-                  height: 1.4,
+                  fontSize: Tokens.fsCap,
+                  height: Tokens.lhSnug,
                 ),
               ),
             ),
@@ -383,7 +383,7 @@ class TodayScreen extends StatelessWidget {
                 child: Text(protectionOffer!.label,
                     key: const Key('protection-offer'),
                     style: const TextStyle(
-                        color: Tokens.text2, fontSize: 12, height: 1.4)),
+                        color: Tokens.text2, fontSize: Tokens.fsMicro, height: Tokens.lhSnug)),
               ),
               const SizedBox(width: Tokens.s2),
               TextButton(
@@ -395,7 +395,7 @@ class TodayScreen extends StatelessWidget {
                   minimumSize: const Size(0, 36),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('补签这一天', style: TextStyle(fontSize: 13)),
+                child: const Text('补签这一天', style: TextStyle(fontSize: Tokens.fsCap)),
               ),
             ],
           ),
@@ -429,25 +429,25 @@ class TodayScreen extends StatelessWidget {
               const Expanded(
                 child: Text('上周小结',
                     style: TextStyle(
-                        color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+                        color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
               ),
               Text(r.rangeLabel,
                   key: const Key('weekly-report-range'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ],
           ),
           const SizedBox(height: Tokens.s3),
           Text(r.headline,
               key: const Key('weekly-report-headline'),
-              style: const TextStyle(color: Tokens.text, fontSize: 14, height: 1.4)),
+              style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, height: Tokens.lhSnug)),
           const SizedBox(height: Tokens.s2),
           Text(r.statsLine,
               key: const Key('weekly-report-stats'),
-              style: const TextStyle(color: Tokens.text3, fontSize: 12, height: 1.4)),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug)),
           if (extras.isNotEmpty) ...<Widget>[
             const SizedBox(height: Tokens.s2),
             Text(extras.join(' · '),
-                style: const TextStyle(color: Tokens.text2, fontSize: 12)),
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro)),
           ],
           if (onOpenWeeklyReport != null) ...<Widget>[
             const SizedBox(height: Tokens.s3),
@@ -461,7 +461,7 @@ class TodayScreen extends StatelessWidget {
                   side: const BorderSide(color: Tokens.line),
                   padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
                 ),
-                child: const Text('做成一张卡', style: TextStyle(fontSize: 13)),
+                child: const Text('做成一张卡', style: TextStyle(fontSize: Tokens.fsCap)),
               ),
             ),
           ],
@@ -482,7 +482,7 @@ class TodayScreen extends StatelessWidget {
           const SizedBox(width: Tokens.s2),
           Expanded(
             child: Text(text,
-                style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
           ),
         ],
       );
@@ -534,7 +534,7 @@ class TodayScreen extends StatelessWidget {
                         const SizedBox(height: Tokens.s2),
                         Text(items[i].label,
                             style: const TextStyle(
-                                color: Tokens.text, fontSize: 14)),
+                                color: Tokens.text, fontSize: Tokens.fsSub)),
                       ],
                     ),
                   ),
@@ -563,7 +563,7 @@ class TodayScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         const Text('最近训练',
-            style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+            style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s2),
         for (final ({String workoutId, DateTime day, int exercises, int sets, double volume}) r in recent)
           Padding(
@@ -577,12 +577,12 @@ class TodayScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${r.exercises} 个动作 · ${r.sets} 组',
-                      style: const TextStyle(color: Tokens.text, fontSize: 14),
+                      style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
                     ),
                   ),
                   Text(
                     '${formatVolume(r.volume, unit)} · ${when(r.day)}',
-                    style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                   ),
                 ],
               ),
@@ -614,10 +614,10 @@ class TodayScreen extends StatelessWidget {
                   children: <Widget>[
                     const Text('上次的训练还没结束',
                         style: TextStyle(
-                            color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+                            color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
                     if (resumeLabel != null)
                       Text(resumeLabel!,
-                          style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                          style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                   ],
                 ),
               ),
@@ -643,7 +643,7 @@ class TodayScreen extends StatelessWidget {
           onPressed: onStart,
           child: const Text(
             '开始今天的训练',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold),
           ),
         ),
       );
@@ -712,8 +712,8 @@ class _TodayPlanCard extends StatelessWidget {
                   label == null ? '今天的安排' : '今天练 $label',
                   style: const TextStyle(
                       color: Tokens.text,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600),
+                      fontSize: Tokens.fsSub,
+                      fontWeight: Tokens.fwStrong),
                 ),
               ),
               if (onReroll != null)
@@ -729,7 +729,7 @@ class _TodayPlanCard extends StatelessWidget {
                         Icon(Icons.refresh, size: 15, color: Tokens.text3),
                         SizedBox(width: 4),
                         Text('换一批',
-                            style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                       ],
                     ),
                   ),
@@ -743,7 +743,7 @@ class _TodayPlanCard extends StatelessWidget {
                     padding: EdgeInsets.symmetric(
                         horizontal: Tokens.s2, vertical: Tokens.s1),
                     child: Text('计划 ›',
-                        style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                   ),
                 ),
               // 「整块可点」必须**看得出来** —— 不然它就是一个装饰。
@@ -758,12 +758,12 @@ class _TodayPlanCard extends StatelessWidget {
           // 并把"怎么练"指出去。**不显示一个空框**。
           if (head.isEmpty) ...<Widget>[
             const Text('今天还没有排动作',
-                style: TextStyle(color: Tokens.text2, fontSize: 14)),
+                style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
             // 不可点时**不写"点这里"** —— 一句点不动的话比没有更糟
             if (onOpen != null) ...<Widget>[
               const SizedBox(height: 3),
               const Text('点这里看看怎么练 ›',
-                  style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
             ],
           ],
           for (int i = 0; i < head.length; i++)
@@ -785,12 +785,12 @@ class _TodayPlanCard extends StatelessWidget {
                         head[i].exercise.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Tokens.text2, fontSize: 14),
+                        style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
                       ),
                     ),
                     const SizedBox(width: Tokens.s2),
                     Text(head[i].loadLabel,
-                        style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                   ],
                 ),
               ),
@@ -799,7 +799,7 @@ class _TodayPlanCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text('…还有 ${plan.length - head.length} 个',
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ),
           // 「能长按」这件事必须被看见 —— 一个只有长按才知道的入口等于没有
           // （10.9 清单第 6 条。文案刻意用"长按调整"，与弹层里那句"长按一行可以拖动排序"同一口径）
@@ -808,7 +808,7 @@ class _TodayPlanCard extends StatelessWidget {
               padding: EdgeInsets.only(top: 3),
               child: Text('长按调整顺序 / 换动作 / 删掉',
                   key: Key('today-plan-hint'),
-                  style: TextStyle(color: Tokens.text3, fontSize: 11.5)),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ),
         ],
       ),

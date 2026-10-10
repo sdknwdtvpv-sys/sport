@@ -56,14 +56,14 @@ class NotificationDetailScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 NotificationKind.label(n.kind),
-                style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
             ),
             Text(
               '${at.year}-${_two(at.month)}-${_two(at.day)} '
               '${_two(at.hour)}:${_two(at.minute)}',
               key: const Key('notification-detail-time'),
-              style: const TextStyle(color: Tokens.text3, fontSize: 12),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
             ),
           ],
         ),
@@ -78,15 +78,15 @@ class NotificationDetailScreen extends StatelessWidget {
                 n.title,
                 style: const TextStyle(
                     color: Tokens.text,
-                    fontSize: 19,
-                    height: 1.35,
-                    fontWeight: FontWeight.w700),
+                    fontSize: Tokens.fsHeadline,
+                    height: Tokens.lhSnug,
+                    fontWeight: Tokens.fwBold),
               ),
               const SizedBox(height: Tokens.s3),
               Text(
                 n.body,
                 style: const TextStyle(
-                    color: Tokens.text2, fontSize: 15, height: 1.7),
+                    color: Tokens.text2, fontSize: Tokens.fsSub, height: Tokens.lhLoose),
               ),
             ],
           ),
@@ -97,7 +97,7 @@ class NotificationDetailScreen extends StatelessWidget {
         const Text(
           '这些消息都在这台手机上生成，不推送、不上传。',
           key: Key('notification-detail-local-note'),
-          style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.6),
+          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
         ),
       ],
     );

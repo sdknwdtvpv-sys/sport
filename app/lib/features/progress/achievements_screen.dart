@@ -77,13 +77,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 const SizedBox(width: Tokens.s3),
                 const Text('我的成就',
                     style: TextStyle(
-                        color: Tokens.text, fontSize: 20, fontWeight: FontWeight.w700)),
+                        color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
               ],
             ),
             const SizedBox(height: Tokens.s3),
             Text('已解锁 ${tally.unlocked} / ${tally.total} 枚徽章',
                 key: const Key('achievements-tally'),
-                style: const TextStyle(color: Tokens.text2, fontSize: 13)),
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
             const SizedBox(height: Tokens.s1),
             // **段位**（2026-10-10 从「我」那张三行进度卡搬过来的）。
             // 它本来就是"按已解锁枚数分的档"，属于这本收藏册；放在这里之后，
@@ -92,7 +92,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               children: <Widget>[
                 Text('${rankFor(tally.unlocked).name} · ${rankFor(tally.unlocked).need} 枚',
                     key: const Key('rank-name'),
-                    style: const TextStyle(color: Tokens.text3, fontSize: 12.5)),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                 const SizedBox(width: Tokens.s2),
                 Expanded(
                   child: Text(
@@ -101,7 +101,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         : '还差 ${nextRank(tally.unlocked)!.remaining} 枚到'
                             '${nextRank(tally.unlocked)!.name}',
                     key: const Key('rank-next'),
-                    style: const TextStyle(color: Tokens.text3, fontSize: 12.5),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                   ),
                 ),
               ],
@@ -120,7 +120,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       const Expanded(
                         child: Text('收集进度',
                             style: TextStyle(
-                                color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+                                color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
                       ),
                       Text('${tally.unlocked} / ${tally.total}',
                           style: Tokens.display(18, weight: 700)),
@@ -170,7 +170,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         Expanded(
           child: Text(badgeCategoryLabel(c),
               style: const TextStyle(
-                  color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+                  color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
         ),
         Text('$got / ${rows.length}',
             key: Key('badge-section-count-${c.name}'),
@@ -234,7 +234,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ),
               child: Text(
                 open ? '收起' : '展开全部 ${rows.length} 枚',
-                style: const TextStyle(fontSize: 13),
+                style: const TextStyle(fontSize: Tokens.fsCap),
               ),
             ),
           ),
@@ -269,23 +269,23 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               const SizedBox(width: Tokens.s2),
               const Expanded(
                 child: Text('本周挑战',
-                    style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
               ),
               Text('还剩 ${c.daysLeft} 天',
                   key: const Key('weekly-days-left'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ],
           ),
           const SizedBox(height: Tokens.s2),
           Text(c.spec.name,
               key: const Key('weekly-name'),
               style: const TextStyle(
-                  color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
+                  color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
           const SizedBox(height: 2),
           Text(
             c.done ? '本周已完成 · 下周换一枚' : '${c.spec.how} · ${c.current} / ${c.spec.target}${c.spec.unit}',
             key: const Key('weekly-progress'),
-            style: const TextStyle(color: Tokens.text2, fontSize: 12, height: 1.4),
+            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
           ),
           if (!c.done) ...<Widget>[
             const SizedBox(height: Tokens.s3),
@@ -316,11 +316,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               const Expanded(
                 child: Text('收集线',
                     style: TextStyle(
-                        color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+                        color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
               ),
               Text(done == 0 ? '还差一点点' : '已集齐 $done / ${lines.length} 条',
                   key: const Key('badge-lines-done'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ],
           ),
           const SizedBox(height: Tokens.s3),
@@ -347,10 +347,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                               child: Text(l.label,
                                   style: TextStyle(
                                     color: l.complete ? Tokens.text : Tokens.text2,
-                                    fontSize: 13,
+                                    fontSize: Tokens.fsCap,
                                     fontWeight: l.complete
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
+                                        ? Tokens.fwStrong
+                                        : Tokens.fwBody,
                                   )),
                             ),
                             Text(
@@ -358,9 +358,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                               key: Key('line-count-${l.category.name}'),
                               style: TextStyle(
                                 color: l.complete ? lineColor(l.category) : Tokens.text3,
-                                fontSize: 12,
+                                fontSize: Tokens.fsMicro,
                                 fontWeight:
-                                    l.complete ? FontWeight.w600 : FontWeight.w400,
+                                    l.complete ? Tokens.fwStrong : Tokens.fwBody,
                               ),
                             ),
                           ],
@@ -393,7 +393,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const Text('稀有度',
-              style: TextStyle(color: Tokens.text, fontSize: 14, fontWeight: FontWeight.w600)),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
           const SizedBox(height: Tokens.s3),
           for (final (BadgeTier tier, String why) in rows)
             Padding(
@@ -412,10 +412,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   ),
                   const SizedBox(width: Tokens.s3),
                   Text(badgeTierLabel(tier),
-                      style: const TextStyle(color: Tokens.text, fontSize: 13)),
+                      style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsCap)),
                   const SizedBox(width: Tokens.s2),
                   Text('${countOf(tier)} 枚 · $why',
-                      style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                 ],
               ),
             ),
@@ -466,8 +466,8 @@ class _BadgeTile extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: badge.unlocked ? Tokens.text : Tokens.text2,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontSize: Tokens.fsCap,
+              fontWeight: Tokens.fwStrong,
             ),
           ),
           const SizedBox(height: 2),
@@ -480,7 +480,7 @@ class _BadgeTile extends StatelessWidget {
             key: Key('badge-meta-${badge.id}'),
             textAlign: TextAlign.center,
             maxLines: 2,
-            style: const TextStyle(color: Tokens.text3, fontSize: 11, height: 1.3),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
           ),
         ],
       ),
@@ -622,7 +622,7 @@ Widget _nearestCard(List<BadgeStatus> all) {
     return ViCard(
       key: const Key('nearest-badge'),
       child: Text('全部 ${all.length} 枚都拿到了 —— 厉害。',
-          style: const TextStyle(color: Tokens.text2, fontSize: 13)),
+          style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
     );
   }
   return ViCard(
@@ -637,15 +637,15 @@ Widget _nearestCard(List<BadgeStatus> all) {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               const Text('离你最近的一枚',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
               const SizedBox(height: 2),
               Text(next.name,
                   key: const Key('nearest-badge-name'),
                   style: const TextStyle(
-                      color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
+                      color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
               const SizedBox(height: 2),
               Text('还差 ${next.target - next.current} · ${next.how}',
-                  style: const TextStyle(color: Tokens.text2, fontSize: 12, height: 1.4)),
+                  style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro, height: Tokens.lhSnug)),
             ],
           ),
         ),

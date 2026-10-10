@@ -107,10 +107,10 @@ class _IdentityScreenState extends State<IdentityScreen> {
                 maxLength: 16,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _save(),
-                style: const TextStyle(color: Tokens.text, fontSize: 16),
+                style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBodyS),
                 decoration: const InputDecoration(
                   hintText: '怎么称呼你？（只存在这台手机上）',
-                  hintStyle: TextStyle(color: Tokens.text3, fontSize: 15),
+                  hintStyle: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub),
                   border: InputBorder.none,
                 ),
               ),
@@ -122,7 +122,7 @@ class _IdentityScreenState extends State<IdentityScreen> {
             padding: EdgeInsets.symmetric(horizontal: Tokens.s1),
             child: Text(
               '昵称只存在这台手机上，不上传、不参与找回归档。',
-              style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
             ),
           ),
           const SizedBox(height: Tokens.s5),
@@ -138,7 +138,7 @@ class _IdentityScreenState extends State<IdentityScreen> {
                   style: TextStyle(
                     color: id == null ? Tokens.text3 : Tokens.text,
                     fontSize: id == null ? 15 : 22,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: Tokens.fwBold,
                     letterSpacing: id == null ? 0 : 1.2,
                   ),
                 ),
@@ -149,7 +149,7 @@ class _IdentityScreenState extends State<IdentityScreen> {
                       ? 'ID 只在登录之后才有。注册后可跨设备取回数据；不注册也能用全部功能。'
                       : '登录的邮箱：${widget.email ?? '（这台设备上没记邮箱）'}\n'
                           '这个 ID 用于找回与客服核对；它由账号密钥算出来，密钥本身从不离开这台手机。',
-                  style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.6),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
                 ),
               ],
             ),

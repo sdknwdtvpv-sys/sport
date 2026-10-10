@@ -113,7 +113,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
           '· 之后的备份（本机导出与云备份）里也不会再带上它们；\n'
           '· 已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
           key: Key('body-revoke-note'),
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -152,7 +152,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
           '· 你不同意之前，不会再从健康库读任何东西；\n'
           '· 已经并进来的那些天不会被删掉 —— 要删请去「全部数据」。',
           key: Key('health-revoke-note'),
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -278,14 +278,14 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
             onChanged: _toggleAnalytics,
             title: const Text(
               '帮助改进产品',
-              style: TextStyle(color: Tokens.text, fontSize: 15),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
             subtitle: const Text(
               // 默认是**开**的（2026-10-07 拍板，v23；此前 v1.28.0～v1.58.0 是关），
               // 所以这句话要从"关掉会怎样"写起 —— 复述开关当前状态是废话，
               // 用户此刻想知道的是"关掉有什么后果"（`docs/copy.md` 的判据）。
               '关掉后一条都不发；功能完全不受影响，随时可以再打开',
-              style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
             ),
           ),
           // 导出入口**只在开关打开时出现**（2026-10-01 拍板）：
@@ -323,7 +323,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
                 ),
                 child: const Text('撤回我的同意',
                     style: TextStyle(
-                        fontSize: 14, decoration: TextDecoration.underline)),
+                        fontSize: Tokens.fsSub, decoration: TextDecoration.underline)),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -333,7 +333,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
                   key: Key('body-revoke-caption'),
                   '撤回后不再收集新的身体数据，「身体数据」那一页会重新问你一次；'
                   '已经记下来的历史不会被删掉 —— 要删请去「全部数据」。',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.6),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
                 ),
               ),
             ],
@@ -353,7 +353,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
                 ),
                 child: const Text('撤回「读系统健康」的同意',
                     style: TextStyle(
-                        fontSize: 14, decoration: TextDecoration.underline)),
+                        fontSize: Tokens.fsSub, decoration: TextDecoration.underline)),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -362,7 +362,7 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
                   key: Key('health-revoke-caption'),
                   '撤回后不再从系统健康库读取，下次点「从系统健康同步」会重新问你；'
                   '已经并进来的那些天不会被删掉。',
-                  style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.6),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
                 ),
               ),
             ],

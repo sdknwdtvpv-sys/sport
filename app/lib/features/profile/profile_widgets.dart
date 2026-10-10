@@ -22,7 +22,7 @@ Widget profileSectionTitle(String t) => Padding(
       padding: const EdgeInsets.only(left: Tokens.s1, bottom: Tokens.s2),
       child: Text(
         t,
-        style: const TextStyle(color: Tokens.text3, fontSize: 13),
+        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
       ),
     );
 
@@ -63,13 +63,13 @@ Widget navTile({
       onTap: onTap,
       title: Text(
         title,
-        style: TextStyle(color: titleColor ?? Tokens.text, fontSize: 15),
+        style: TextStyle(color: titleColor ?? Tokens.text, fontSize: Tokens.fsSub),
       ),
       subtitle: subtitle == null
           ? null
           : Text(
               subtitle,
-              style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.4),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
             ),
       trailing: Icon(trailing, color: trailingColor ?? Tokens.text3, size: 20),
     );
@@ -120,9 +120,9 @@ class ProfileSubPage extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: Tokens.text,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
+                        fontSize: Tokens.fsNum,
+                        fontWeight: Tokens.fwBold,
+                        letterSpacing: Tokens.lsSnug,
                       ),
                     ),
                   ),

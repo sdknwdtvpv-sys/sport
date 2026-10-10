@@ -64,8 +64,8 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
                       '个人信息收集清单',
                       style: TextStyle(
                         color: Tokens.text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: Tokens.fsHeadline,
+                        fontWeight: Tokens.fwBold,
                       ),
                     ),
                   ),
@@ -84,7 +84,7 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
                         '读不到内置的清单文本（${snap.error}）。\n'
                         '这属于打包问题，请告诉我们。',
                         key: const Key('collection-error'),
-                        style: const TextStyle(color: Tokens.danger, height: 1.6),
+                        style: const TextStyle(color: Tokens.danger, height: Tokens.lhNormal),
                       ),
                     );
                   }
@@ -146,9 +146,9 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
             line,
             style: const TextStyle(
               color: Tokens.text,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              height: 1.5,
+              fontSize: Tokens.fsBody,
+              fontWeight: Tokens.fwBold,
+              height: Tokens.lhNormal,
             ),
           ),
         ));
@@ -161,9 +161,9 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
             line.trim(),
             style: const TextStyle(
               color: Tokens.text,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              height: 1.6,
+              fontSize: Tokens.fsSub,
+              fontWeight: Tokens.fwStrong,
+              height: Tokens.lhNormal,
             ),
           ),
         ));
@@ -171,7 +171,7 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
       }
       out.add(Text(
         line,
-        style: const TextStyle(color: Tokens.text2, fontSize: 13.5, height: 1.75),
+        style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhLoose),
       ));
     }
     return out;

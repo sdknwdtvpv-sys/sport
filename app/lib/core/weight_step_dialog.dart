@@ -86,7 +86,7 @@ Future<WeightStepPick?> pickWeightStep(
           exerciseName == null || exerciseName.isEmpty
               ? '加重步进'
               : '加重步进 · $exerciseName',
-          style: const TextStyle(color: Tokens.text, fontSize: 17),
+          style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBody),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,

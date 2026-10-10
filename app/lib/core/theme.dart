@@ -131,6 +131,66 @@ abstract final class Tokens {
   static const Color danger = Color(0xFFFF5A5F);
 
   // 间距标尺（不允许出现奇数间距）
+  // ══════════════════════════════════════════════════════════════════════
+  // **字阶**（2026-10-10，VI 计划 T1-1）
+  //
+  // 为什么必须建它：全仓 **468 处 `fontSize:` 落在 21 个不同字号上**（规格只定义 7 级），
+  // 行高 10 个字面量、字重 5 种、字距 8 种 —— 而 `theme.dart` 里有色值、间距、圆角，
+  // **唯独没有字号**。所以"换 VI 只换掉了皮"：色值改一处全站生效，字号要改 178 处。
+  //
+  // **10 级**（这是全站唯一允许的字号集合；`typography_scale_test.dart` 扫全仓钉着）：
+  //   `fsHero 30` 训练屏大按钮上的值 / 引导页大标题；
+  //   `fsTitle 28` 页面标题（顶栏、建议页、同意页、完成页）；
+  //   `fsNumL 24` 大数字（「我」、身体数据摘要）；
+  //   `fsNum 22` 中等数字与标题（徽章名、动作详情）；
+  //   `fsHeadline 20` 卡片标题、输入框、分段控件；
+  //   `fsBody 17` 正文 / 搜索框；
+  //   `fsBodyS 16` 次级正文；
+  //   `fsSub 15` 说明文字、列表里的值；
+  //   `fsCap 13` 小标签、Tab、胶囊；
+  //   `fsMicro 12` 最小说明、hint。
+  //
+  // 折进来的那些（**每一条都是有意的**）：
+  //   19 → 20、18 → 17、14.5 → 15、**14 → 15**、13.5 → 13、12.5 → 12、
+  //   11.5 → 12、**11 → 12**（11pt 在健身房里太小，P2 的结论也是提上去）、10 → 12、26 → 28。
+  //
+  // 行高只有 4 档、字重只有 3 档、字距只有 3 档 —— 同样由守卫扫。
+  // ══════════════════════════════════════════════════════════════════════
+
+  /// 字号（10 级，见上面那张表）。
+  static const double fsHero = 30;
+  static const double fsTitle = 28;
+  static const double fsNumL = 24;
+  static const double fsNum = 22;
+  static const double fsHeadline = 20;
+  static const double fsBody = 17;
+  static const double fsBodyS = 16;
+  static const double fsSub = 15;
+  static const double fsCap = 13;
+  static const double fsMicro = 12;
+
+  /// 行高（4 档）。`tight` 给标题（26pt 以上才用）、`snug` 给小字标签、
+  /// `normal` 给正文、`loose` 给"要多说一句话"的空态。
+  static const double lhTight = 1.2;
+  static const double lhSnug = 1.35;
+  static const double lhNormal = 1.5;
+  static const double lhLoose = 1.7;
+
+  /// 字重（3 档）。**`w500` 与 `w800` 不再存在**：它们全仓只有 4 处，
+  /// 是"随手写的"而不是设计决定（`typography_scale_test.dart` 钉着）。
+  static const FontWeight fwBody = FontWeight.w400;
+  static const FontWeight fwStrong = FontWeight.w600;
+  static const FontWeight fwBold = FontWeight.w700;
+
+  /// 字距（3 档）。只有"数字很大时要收一点"与"全大写短标签要放开一点"两种场合。
+  static const double lsTight = -0.5;
+  static const double lsSnug = -0.3;
+  static const double lsWide = 0.3;
+
+  /// 字体族：数字与拉丁走 Oswald（`docs/plan-vi-migration.md` §六第 2 条的结论），
+  /// 中文回落系统字体 —— 这个机制保留，只是从"注释里的约定"变成这个常量。
+  static const String? fontFamilyLatn = 'Oswald';
+
   static const double s1 = 4;
   static const double s2 = 8;
   static const double s3 = 12;

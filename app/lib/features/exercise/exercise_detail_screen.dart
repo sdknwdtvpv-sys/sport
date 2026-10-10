@@ -141,8 +141,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                 e.name,
                 style: const TextStyle(
                   color: Tokens.text,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
+                  fontSize: Tokens.fsNum,
+                  fontWeight: Tokens.fwBold,
                 ),
               ),
               if (e.nameEn != null && e.nameEn!.trim().isNotEmpty)
@@ -150,7 +150,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
                     e.nameEn!,
-                    style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                   ),
                 ),
               // 别名：搜得到但看不到，等于没写。这里显式列出来。
@@ -159,7 +159,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     '也叫：${e.aliasList.join(' / ')}',
-                    style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                   ),
                 ),
             ],
@@ -186,15 +186,15 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
             '怎么做',
             style: TextStyle(
               color: Tokens.accent,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontSize: Tokens.fsCap,
+              fontWeight: Tokens.fwBold,
             ),
           ),
           const SizedBox(height: Tokens.s2),
           Text(
             text,
             key: const Key('detail-instructions'),
-            style: const TextStyle(color: Tokens.text, fontSize: 16, height: 1.6),
+            style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBodyS, height: Tokens.lhNormal),
           ),
         ],
       ),
@@ -215,7 +215,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
         '这个动作还没有写说明 —— 你可以先按自己的做法练，'
         '或换个更熟的动作。',
         key: Key('detail-instructions-missing'),
-        style: TextStyle(color: Tokens.text2, fontSize: 15, height: 1.5),
+        style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
       ),
     );
   }
@@ -230,8 +230,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           '基本事实',
           style: TextStyle(
             color: Tokens.text2,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontSize: Tokens.fsCap,
+            fontWeight: Tokens.fwBold,
           ),
         ),
         const SizedBox(height: Tokens.s3),
@@ -254,7 +254,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           Text(
             '重量填${weightBasisLabel(e.equipment)} · ${volumeBasisLabel(e.equipment)}',
             key: const Key('detail-weight-basis'),
-            style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           ),
         ],
       ],
@@ -271,7 +271,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       ),
       child: Text(
         label,
-        style: const TextStyle(color: Tokens.text2, fontSize: 13),
+        style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
       ),
     );
   }
@@ -287,7 +287,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: Tokens.s4),
         child: Text('正在看你的历史…',
-            style: TextStyle(color: Tokens.text3, fontSize: 14)),
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub)),
       );
     }
     final ExerciseStats? s = _stats;
@@ -302,7 +302,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
         child: const Text(
           '这个动作你还没练过。',
           key: Key('detail-no-history'),
-          style: TextStyle(color: Tokens.text2, fontSize: 15),
+          style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
         ),
       );
     }
@@ -314,8 +314,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           '我以前练成什么样',
           style: TextStyle(
             color: Tokens.text2,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontSize: Tokens.fsCap,
+            fontWeight: Tokens.fwBold,
           ),
         ),
         const SizedBox(height: Tokens.s3),
@@ -362,15 +362,15 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(label, style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+        Text(label, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
         const SizedBox(height: 2),
         Text(
           value,
           key: key,
           style: const TextStyle(
             color: Tokens.text,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+            fontSize: Tokens.fsBody,
+            fontWeight: Tokens.fwBold,
           ),
         ),
       ],
@@ -396,13 +396,13 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
             width: 52,
             child: Text(
               _prettyDate(day.date),
-              style: const TextStyle(color: Tokens.text3, fontSize: 14),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub),
             ),
           ),
           Expanded(
             child: Text(
               '${day.setCount} 组 · $load × ${reps.join(' · ')}',
-              style: const TextStyle(color: Tokens.text, fontSize: 15),
+              style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
             ),
           ),
         ],

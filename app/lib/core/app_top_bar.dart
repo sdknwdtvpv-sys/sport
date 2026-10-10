@@ -86,10 +86,10 @@ class AppTopBar extends StatelessWidget {
                   key: const Key('top-bar-title'),
                   style: const TextStyle(
                     color: Tokens.text,
-                    fontSize: 28,
-                    height: 1.1,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
+                    fontSize: Tokens.fsTitle,
+                    height: Tokens.lhTight,
+                    fontWeight: Tokens.fwBold,
+                    letterSpacing: Tokens.lsTight,
                   ),
                 ),
                 if (subtitle != null) ...<Widget>[
@@ -100,7 +100,7 @@ class AppTopBar extends StatelessWidget {
                       key: const Key('top-bar-subtitle'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                     ),
                   ),
                 ],

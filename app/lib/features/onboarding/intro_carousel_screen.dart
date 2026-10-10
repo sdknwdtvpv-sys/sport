@@ -90,7 +90,7 @@ class _IntroCarouselScreenState extends State<IntroCarouselScreen> {
               child: TextButton(
                 key: const Key('intro-skip'),
                 onPressed: widget.onSkip,
-                child: const Text('跳过', style: TextStyle(color: Tokens.text2, fontSize: 14)),
+                child: const Text('跳过', style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
               ),
             ),
             Expanded(
@@ -135,7 +135,7 @@ class _IntroCarouselScreenState extends State<IntroCarouselScreen> {
                         ),
                         onPressed: widget.onStartFirst,
                         child: const Text('开始第一次训练',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                            style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwBold)),
                       ),
                     )
                   else
@@ -180,16 +180,16 @@ class _IntroCarouselScreenState extends State<IntroCarouselScreen> {
               s.title,
               style: const TextStyle(
                 color: Tokens.text,
-                fontSize: 30,
-                height: 1.2,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.8,
+                fontSize: Tokens.fsHero,
+                height: Tokens.lhTight,
+                fontWeight: Tokens.fwBold,
+                letterSpacing: Tokens.lsTight,
               ),
             ),
             const SizedBox(height: Tokens.s3),
             Text(
               s.body,
-              style: const TextStyle(color: Tokens.text2, fontSize: 15, height: 1.6),
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
             ),
             const Spacer(),
           ],
@@ -260,7 +260,7 @@ class _PlanArt extends StatelessWidget {
                     children: <Widget>[
                       const Expanded(
                         child: Text('本周计划',
-                            style: TextStyle(color: Tokens.text, fontSize: 13)),
+                            style: TextStyle(color: Tokens.text, fontSize: Tokens.fsCap)),
                       ),
                       Text('4 练',
                           style: Tokens.display(14, weight: 700, color: Tokens.accent)),
@@ -294,7 +294,7 @@ class _PlanArt extends StatelessWidget {
                 ),
                 child: const Text('AI',
                     style: TextStyle(
-                        color: Tokens.accentInk, fontSize: 11, fontWeight: FontWeight.w700)),
+                        color: Tokens.accentInk, fontSize: Tokens.fsMicro, fontWeight: Tokens.fwBold)),
               ),
             ),
           ],
@@ -347,7 +347,7 @@ class _ProgressArt extends StatelessWidget {
                 ),
                 child: const Text('+32%',
                     style: TextStyle(
-                        color: Tokens.inkOnSuccess, fontSize: 11, fontWeight: FontWeight.w700)),
+                        color: Tokens.inkOnSuccess, fontSize: Tokens.fsMicro, fontWeight: Tokens.fwBold)),
               ),
             ),
           ],

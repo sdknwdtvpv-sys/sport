@@ -239,7 +239,7 @@ class _AccountScreenState extends State<AccountScreen> {
           '会删掉：这个账号、绑定的邮箱，以及云端那份备份。\n\n'
           '本机的训练记录不动（它一直是你的）。\n\n'
           '注销之后云端就没有你的任何东西了，这一步不能撤销。',
-          style: TextStyle(color: Tokens.text2, fontSize: 13, height: 1.6),
+          style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -284,7 +284,7 @@ class _AccountScreenState extends State<AccountScreen> {
             Text(
               _error!,
               key: const Key('account-error'),
-              style: const TextStyle(color: Tokens.danger, fontSize: 13, height: 1.5),
+              style: const TextStyle(color: Tokens.danger, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
             ),
             const SizedBox(height: Tokens.s3),
           ],
@@ -316,20 +316,20 @@ class _AccountScreenState extends State<AccountScreen> {
   List<Widget> _loggedOut() => <Widget>[
         const Text(
           '登录之后能做的事：',
-          style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600),
+          style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
         ),
         const SizedBox(height: Tokens.s2),
         const Text(
           '· 换手机时用邮箱与口令找回训练记录（云端那份是加密的）\n'
           '· 换口令不必重新备份一次',
-          style: TextStyle(color: Tokens.text2, fontSize: 14, height: 1.7),
+          style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub, height: Tokens.lhLoose),
         ),
         const SizedBox(height: Tokens.s3),
         const Text(
           '登录不改变的事：\n'
           '· 不登录照样能用全部功能，数据只在你手机上\n'
           '· 口令不会离开这台手机 —— 服务器读不到你的训练明细',
-          style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.7),
+          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhLoose),
         ),
         const SizedBox(height: Tokens.s5),
         FilledButton(
@@ -351,39 +351,39 @@ class _AccountScreenState extends State<AccountScreen> {
         ListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(s.email, key: const Key('account-current-email'),
-              style: const TextStyle(color: Tokens.text, fontSize: 15)),
-          subtitle: const Text('已登录', style: TextStyle(color: Tokens.text3, fontSize: 13)),
+              style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
+          subtitle: const Text('已登录', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
         ),
         const Divider(color: Tokens.line),
         ListTile(
           key: const Key('account-change-password'),
           contentPadding: EdgeInsets.zero,
           onTap: _busy ? null : () => _go(_Step.changePassword),
-          title: const Text('改口令', style: TextStyle(color: Tokens.text, fontSize: 15)),
-          subtitle: const Text('改完其他设备上的登录会失效', style: TextStyle(color: Tokens.text3, fontSize: 13)),
+          title: const Text('改口令', style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
+          subtitle: const Text('改完其他设备上的登录会失效', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
         ),
         ListTile(
           key: const Key('account-logout'),
           contentPadding: EdgeInsets.zero,
           onTap: _busy ? null : _logout,
-          title: const Text('登出', style: TextStyle(color: Tokens.text, fontSize: 15)),
+          title: const Text('登出', style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
           subtitle: const Text('只是这台设备不再登录，云端那份还在',
-              style: TextStyle(color: Tokens.text3, fontSize: 13)),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
         ),
         ListTile(
           key: const Key('account-delete'),
           contentPadding: EdgeInsets.zero,
           onTap: _busy ? null : _deleteAccount,
-          title: const Text('注销账号', style: TextStyle(color: Tokens.danger, fontSize: 15)),
+          title: const Text('注销账号', style: TextStyle(color: Tokens.danger, fontSize: Tokens.fsSub)),
           subtitle: const Text('账号、邮箱与云端备份一起删掉',
-              style: TextStyle(color: Tokens.text3, fontSize: 13)),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
         ),
       ];
 
   // ------------------------------------------------------------ 注册
 
   List<Widget> _registerForm() => <Widget>[
-        const Text('注册', style: TextStyle(color: Tokens.text, fontSize: 17, fontWeight: FontWeight.w600)),
+        const Text('注册', style: TextStyle(color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s3),
         TextField(
           key: const Key('account-email'),
@@ -402,7 +402,7 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
         if (_codeSent) ...<Widget>[
           const Text('验证码已经发出，去邮箱里看一眼（十分钟内有效）',
-              style: TextStyle(color: Tokens.text3, fontSize: 13)),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
           const SizedBox(height: Tokens.s2),
           TextField(
             key: const Key('account-code'),
@@ -428,24 +428,24 @@ class _AccountScreenState extends State<AccountScreen> {
 
   List<Widget> _registered() => <Widget>[
         const Text('账号建好了', key: Key('account-registered'),
-            style: TextStyle(color: Tokens.text, fontSize: 17, fontWeight: FontWeight.w600)),
+            style: TextStyle(color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s3),
         if (_boundExisting)
           const Text(
             '这个账号绑的是你原来那串恢复码：训练记录、云端备份、恢复码都没有变。',
-            style: TextStyle(color: Tokens.text2, fontSize: 13, height: 1.6),
+            style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           )
         else ...<Widget>[
           const Text(
             '下面这串恢复码只显示这一次。忘了口令时，靠它 + 邮箱验证码重设口令 —— '
             '它也丢了、口令也忘了，账号就找不回。',
-            style: TextStyle(color: Tokens.text2, fontSize: 13, height: 1.6),
+            style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           ),
           const SizedBox(height: Tokens.s3),
           SelectableText(
             _displayCode ?? '',
             key: const Key('account-recovery-code'),
-            style: const TextStyle(color: Tokens.accent, fontSize: 16, height: 1.6),
+            style: const TextStyle(color: Tokens.accent, fontSize: Tokens.fsBodyS, height: Tokens.lhNormal),
           ),
           TextButton(
             key: const Key('account-copy'),
@@ -457,7 +457,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 );
               }
             },
-            child: const Text('复制', style: TextStyle(color: Tokens.text2, fontSize: 13)),
+            child: const Text('复制', style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
           ),
           CheckboxListTile(
             key: const Key('account-wrote-check'),
@@ -466,7 +466,7 @@ class _AccountScreenState extends State<AccountScreen> {
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             dense: true,
-            title: const Text('我已经把它抄在纸上了', style: TextStyle(color: Tokens.text2, fontSize: 13)),
+            title: const Text('我已经把它抄在纸上了', style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
           ),
         ],
         const SizedBox(height: Tokens.s3),
@@ -481,7 +481,7 @@ class _AccountScreenState extends State<AccountScreen> {
   // ------------------------------------------------------------ 登录 / 找回 / 改口令
 
   List<Widget> _loginForm() => <Widget>[
-        const Text('登录', style: TextStyle(color: Tokens.text, fontSize: 17, fontWeight: FontWeight.w600)),
+        const Text('登录', style: TextStyle(color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s3),
         TextField(
           key: const Key('account-email'),
@@ -501,7 +501,7 @@ class _AccountScreenState extends State<AccountScreen> {
         TextButton(
           key: const Key('account-forgot'),
           onPressed: _busy ? null : () => _go(_Step.reset),
-          child: const Text('忘了口令？用恢复码重设', style: TextStyle(color: Tokens.text2, fontSize: 13)),
+          child: const Text('忘了口令？用恢复码重设', style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
         ),
         TextButton(
           onPressed: _busy ? null : () => _go(_Step.overview),
@@ -511,11 +511,11 @@ class _AccountScreenState extends State<AccountScreen> {
 
   List<Widget> _resetForm() => <Widget>[
         const Text('用恢复码重设口令',
-            style: TextStyle(color: Tokens.text, fontSize: 17, fontWeight: FontWeight.w600)),
+            style: TextStyle(color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s2),
         const Text(
           '恢复码抄错一位、或者邮箱填错，本地就会先拦下来（不会白发一次请求）。',
-          style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.6),
+          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
         ),
         const SizedBox(height: Tokens.s3),
         TextField(
@@ -564,7 +564,7 @@ class _AccountScreenState extends State<AccountScreen> {
       ];
 
   List<Widget> _changePasswordForm() => <Widget>[
-        const Text('改口令', style: TextStyle(color: Tokens.text, fontSize: 17, fontWeight: FontWeight.w600)),
+        const Text('改口令', style: TextStyle(color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s3),
         _passwordField(const Key('account-current-password'), _currentPassword, '当前口令'),
         const SizedBox(height: Tokens.s2),

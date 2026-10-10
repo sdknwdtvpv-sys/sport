@@ -253,9 +253,9 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               key: const Key('today-title'),
               style: const TextStyle(
                 color: Tokens.text,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
+                fontSize: Tokens.fsTitle,
+                fontWeight: Tokens.fwBold,
+                letterSpacing: Tokens.lsTight,
               ),
             ),
           ),
@@ -275,7 +275,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
           child: Text(
             '动作库还没准备好。\n可以点「我自己选」先练一个。',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.5),
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
           ),
         ),
       );
@@ -328,8 +328,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                   '练之前先热身',
                   style: TextStyle(
                     color: Tokens.text,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: Tokens.fsBodyS,
+                    fontWeight: Tokens.fwBold,
                   ),
                 ),
               ),
@@ -337,7 +337,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                 _warmupAdded ? '已加进今天' : '1 组 · 30 秒',
                 style: TextStyle(
                   color: _warmupAdded ? Tokens.accent : Tokens.text3,
-                  fontSize: 13,
+                  fontSize: Tokens.fsCap,
                 ),
               ),
             ],
@@ -357,8 +357,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                           w.name,
                           style: const TextStyle(
                             color: Tokens.text,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                            fontSize: Tokens.fsSub,
+                            fontWeight: Tokens.fwStrong,
                           ),
                         ),
                         if (w.instructions != null && w.instructions!.isNotEmpty)
@@ -366,8 +366,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                             w.instructions!,
                             style: const TextStyle(
                               color: Tokens.text3,
-                              fontSize: 13,
-                              height: 1.4,
+                              fontSize: Tokens.fsCap,
+                              height: Tokens.lhSnug,
                             ),
                           ),
                       ],
@@ -409,8 +409,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                   p.exercise.name,
                   style: const TextStyle(
                     color: Tokens.text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                    fontSize: Tokens.fsBody,
+                    fontWeight: Tokens.fwStrong,
                   ),
                 ),
               ),
@@ -419,8 +419,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                 p.loadLabel,
                 style: const TextStyle(
                   color: Tokens.text,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+                  fontSize: Tokens.fsBody,
+                  fontWeight: Tokens.fwBold,
                 ),
               ),
             ],
@@ -432,8 +432,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               p.suggestion!.reasonText,
               style: const TextStyle(
                 color: Tokens.accent,
-                fontSize: 13,
-                height: 1.4,
+                fontSize: Tokens.fsCap,
+                height: Tokens.lhSnug,
               ),
             ),
             // 证据链：把引擎据以判断的**事实**摆出来。
@@ -446,8 +446,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                 key: Key('history-${p.exercise.id}'),
                 style: const TextStyle(
                   color: Tokens.text3,
-                  fontSize: 12,
-                  height: 1.4,
+                  fontSize: Tokens.fsMicro,
+                  height: Tokens.lhSnug,
                 ),
               ),
             ],
@@ -477,7 +477,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               onPressed: _plan.isEmpty ? null : _start,
               child: const Text(
                 '开始训练',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold),
               ),
             ),
           ),
@@ -489,7 +489,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                   key: const Key('reroll'),
                   onPressed: _loading ? null : _reroll,
                   child: const Text('换一批',
-                      style: TextStyle(color: Tokens.text2, fontSize: 15)),
+                      style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
                 ),
               ),
               Expanded(
@@ -497,7 +497,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                   key: const Key('pick-myself'),
                   onPressed: _pickMyself,
                   child: const Text('我自己选',
-                      style: TextStyle(color: Tokens.text2, fontSize: 15)),
+                      style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
                 ),
               ),
               if (widget.routines != null && widget.exercises != null)
@@ -506,7 +506,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                     key: const Key('use-routine'),
                     onPressed: _useRoutine,
                     child: const Text('我的计划',
-                        style: TextStyle(color: Tokens.text2, fontSize: 15)),
+                        style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
                   ),
                 ),
             ],
@@ -518,7 +518,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               key: const Key('save-as-routine'),
               onPressed: _loading ? null : _saveAsRoutine,
               child: const Text('存成我的计划 ›',
-                  style: TextStyle(color: Tokens.text3, fontSize: 13)),
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
             ),
         ],
       ),

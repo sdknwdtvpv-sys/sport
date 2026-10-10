@@ -83,8 +83,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                       '隐私政策',
                       style: TextStyle(
                         color: Tokens.text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: Tokens.fsHeadline,
+                        fontWeight: Tokens.fwBold,
                       ),
                     ),
                   ),
@@ -103,7 +103,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                         '读不到内置的隐私政策文本（${snap.error}）。\n'
                         '这属于打包问题，请告诉我们。',
                         key: const Key('privacy-error'),
-                        style: const TextStyle(color: Tokens.danger, height: 1.6),
+                        style: const TextStyle(color: Tokens.danger, height: Tokens.lhNormal),
                       ),
                     );
                   }
@@ -121,7 +121,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                           child: Text(
                             'APP 备案号：${widget.filingNumber}',
                             key: const Key('privacy-filing'),
-                            style: const TextStyle(color: Tokens.text2, fontSize: 13),
+                            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
                           ),
                         ),
                       SelectableText(
@@ -129,8 +129,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                         key: const Key('privacy-text'),
                         style: const TextStyle(
                           color: Tokens.text2,
-                          fontSize: 14,
-                          height: 1.75,
+                          fontSize: Tokens.fsSub,
+                          height: Tokens.lhLoose,
                         ),
                       ),
                     ],

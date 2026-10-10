@@ -270,8 +270,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     key: const Key('profile-nickname'),
                     style: TextStyle(
                       color: _nickname == null ? Tokens.text3 : Tokens.text,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontSize: Tokens.fsBody,
+                      fontWeight: Tokens.fwBold,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -280,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ? '还没登录 · 点一下设昵称'
                         : 'ID ${IdentityScreen.shortId(_accountId!)} · 点一下改昵称',
                     key: const Key('profile-id-line'),
-                    style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                   ),
                 ],
               ),
@@ -361,7 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: EdgeInsets.all(Tokens.s5),
               child: Text(
                 '还没有训练记录。练完第一次，这里就有数了。',
-                style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.5),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
               ),
             ),
           ])
@@ -428,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Text(
                   streakProtectionSuffix(_protectedInStreak),
                   key: const Key('profile-streak-label'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                 ),
               ),
             ),
@@ -468,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 版本号仍然来自 core/app_info.dart，由 app_version_test 与 pubspec 对齐
             // （以前这里写死 '1.0.0'，两次切版后界面上的版本号就错了两个版本）。
             '版本 $kAppVersion',
-            style: const TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           ),
         ),
       ],
@@ -522,8 +522,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               key: const Key('profile-level-label'),
                               style: const TextStyle(
                                   color: Tokens.text,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600)),
+                                  fontSize: Tokens.fsSub,
+                                  fontWeight: Tokens.fwStrong)),
                         ),
                         Text('${_stats?.workoutCount ?? 0} 次',
                             key: const Key('profile-level-count'),
@@ -537,7 +537,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(levelHint(lv),
                         key: const Key('profile-level-hint'),
                         style: const TextStyle(
-                            color: Tokens.text3, fontSize: 11, height: 1.4)),
+                            color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug)),
                   ],
                 ),
               ),
@@ -561,7 +561,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ].join(' · '),
                   key: const Key('profile-fact-label'),
                   style: const TextStyle(
-                      color: Tokens.text3, fontSize: 12, height: 1.4),
+                      color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                 ),
               ),
             ],

@@ -227,7 +227,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           '· 服务端只拿到密文，上面这些它一项都读不出来\n'
           '· 钥匙是一串「恢复码」，只显示这一次 —— 请抄在纸上\n'
           '· 恢复码丢了，连我们也帮不了你（服务端没有你的钥匙）',
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -378,7 +378,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           '只清掉本机这串恢复码。\n\n'
           '云端那份还在 —— 抄下来的恢复码以后还能把它取回来。\n'
           '但本机不再备份，直到你重新输入恢复码。',
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -412,7 +412,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         content: const Text(
           '服务器上的备份会连同账号一起删掉，不可撤销。\n\n'
           '本机数据不受影响。',
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -555,8 +555,8 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
                       '云备份',
                       style: TextStyle(
                         color: Tokens.text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: Tokens.fsHeadline,
+                        fontWeight: Tokens.fwBold,
                       ),
                     ),
                   ),
@@ -587,7 +587,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         _card(
           <Widget>[
             const Text('这个版本没有配备份服务器',
-                style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
             const SizedBox(height: Tokens.s2),
             const Text(
               // 文案审计（2026-10-04）：原来写「云备份需要一台服务器（在开发者那边，还没上）」
@@ -595,7 +595,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               // 留下的这半句说明"这个功能需要什么"，并指出**不受影响的替代路径**。
               '云备份需要一个服务器地址才能用。'
               '本机的「导出备份文件 / 导入备份」不受影响，一直可用。',
-              style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
             ),
           ],
         ),
@@ -613,7 +613,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
       const Text(
         '备份内容是端到端加密的：服务端存的是密文，看不到动作名、重量、体重。\n'
         '恢复码是唯一的钥匙，服务端没有它 —— 所以丢了就是丢了。',
-        style: TextStyle(color: Tokens.text3, fontSize: 12, height: 1.6),
+        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
       ),
     ];
   }
@@ -621,12 +621,12 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   List<Widget> _setup() => <Widget>[
         _card(<Widget>[
           const Text('还没开启',
-              style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
           const SizedBox(height: Tokens.s2),
           const Text(
             '开启后，训练记录会加密存到服务器上：换手机、或手机丢了都能取回来。\n'
             '不想要的话，什么都不会上传。',
-            style: TextStyle(color: Tokens.text3, fontSize: 13, height: 1.5),
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           ),
           const SizedBox(height: Tokens.s4),
           _primaryButton(const Key('cloud-enable'), '开启云备份', _enable),
@@ -646,16 +646,16 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               ),
               const SizedBox(width: Tokens.s2),
               const Text('已开启',
-                  style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
+                  style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
             ],
           ),
           const SizedBox(height: Tokens.s3),
           Text(_timeLabel(account.lastUploadAtMs),
               key: const Key('cloud-last-upload'),
-              style: const TextStyle(color: Tokens.text2, fontSize: 13)),
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
           if (account.lastUploadBytes != null)
             Text('密文大小 ${_sizeLabel(account.lastUploadBytes!)}',
-                style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
           const SizedBox(height: Tokens.s2),
           // 云端那份的**真实**状态（本机记录的只是"这台设备上次看到的样子"）
           if (_cloudInfo != null && _cloudInfo!.hasBackup)
@@ -664,23 +664,23 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               '${_clockLabel(_cloudInfo!.updatedAtMs!)}'
               '${_cloudInfo!.devices > 1 ? ' · ${_cloudInfo!.devices} 台设备' : ''}',
               key: const Key('cloud-server-state'),
-              style: const TextStyle(color: Tokens.text3, fontSize: 12),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
             )
           else if (_cloudInfo != null)
             const Text('云端还没有备份',
                 key: Key('cloud-server-state'),
-                style: TextStyle(color: Tokens.text3, fontSize: 12))
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))
           // ⚠️ "云端没有备份"和"服务器上根本没有这个账号"是**两件事**，
           // 第一版把它们混成了一句 —— 测试当场问住了：账号被别的设备注销过、
           // 或者服务器换过库时，界面会什么都不说，用户以为一切正常。
           else if (!_infoError)
             const Text('服务器上没有这个账号（被注销过？）',
                 key: Key('cloud-server-state'),
-                style: TextStyle(color: Tokens.text3, fontSize: 12))
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))
           else
             const Text('云端状态取不到（离线？）',
                 key: Key('cloud-server-state'),
-                style: TextStyle(color: Tokens.text3, fontSize: 12)),
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
           if (_cloudIsNewer) ...<Widget>[
             const SizedBox(height: Tokens.s3),
             Container(
@@ -694,7 +694,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               child: const Text(
                 '云端那份比这台设备记录的要新 —— 可能是另一台设备备份的。\n'
                 '现在点「立即备份」会覆盖它。想先保住它，就先点下面的「从云端恢复」。',
-                style: TextStyle(color: Tokens.pr, fontSize: 12, height: 1.5),
+                style: TextStyle(color: Tokens.pr, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
               ),
             ),
           ],
@@ -706,15 +706,15 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         const SizedBox(height: Tokens.s4),
         _card(<Widget>[
           const Text('你的恢复码',
-              style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
           const SizedBox(height: Tokens.s3),
           SelectableText(
             formatRecoveryCode(account.recoveryCode),
             key: const Key('cloud-code'),
             style: const TextStyle(
               color: Tokens.accent,
-              fontSize: 15,
-              height: 1.6,
+              fontSize: Tokens.fsSub,
+              height: Tokens.lhNormal,
               fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
             ),
           ),
@@ -730,7 +730,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
         const SizedBox(height: Tokens.s4),
         _card(<Widget>[
           const Text('不想要了',
-              style: TextStyle(color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w700)),
+              style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
           const SizedBox(height: Tokens.s3),
           _ghostButton(const Key('cloud-disable'), '关闭云备份（云端保留）', _disableLocalOnly),
           const SizedBox(height: Tokens.s3),
@@ -762,7 +762,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           borderRadius: BorderRadius.circular(Tokens.rCard),
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
-        child: Text(text, style: TextStyle(color: color, fontSize: 13, height: 1.5)),
+        child: Text(text, style: TextStyle(color: color, fontSize: Tokens.fsCap, height: Tokens.lhNormal)),
       );
 
   Widget _primaryButton(Key key, String label, VoidCallback onTap) => SizedBox(
@@ -776,7 +776,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Tokens.rPill)),
           ),
           child: Text(label,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
         ),
       );
 
@@ -791,7 +791,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
             foregroundColor: danger ? Tokens.danger : Tokens.text2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Tokens.rPill)),
           ),
-          child: Text(label, style: const TextStyle(fontSize: 14)),
+          child: Text(label, style: const TextStyle(fontSize: Tokens.fsSub)),
         ),
       );
 }
@@ -825,7 +825,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
         children: <Widget>[
           const Text(
             '这是取回备份的唯一钥匙，只显示这一次，务必抄下来。',
-            style: TextStyle(color: Tokens.text2, fontSize: 13, height: 1.5),
+            style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
           ),
           const SizedBox(height: Tokens.s3),
           SelectableText(
@@ -833,8 +833,8 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
             key: const Key('cloud-new-code'),
             style: const TextStyle(
               color: Tokens.accent,
-              fontSize: 16,
-              height: 1.6,
+              fontSize: Tokens.fsBodyS,
+              height: Tokens.lhNormal,
               fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
             ),
           ),
@@ -847,7 +847,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
             },
             child: Text(
               _copied ? '已复制到剪贴板' : '复制',
-              style: const TextStyle(color: Tokens.text2, fontSize: 13),
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
             ),
           ),
           CheckboxListTile(
@@ -858,7 +858,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
             controlAffinity: ListTileControlAffinity.leading,
             dense: true,
             title: const Text('我已经把它抄在纸上了',
-                style: TextStyle(color: Tokens.text2, fontSize: 13)),
+                style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
           ),
         ],
       ),

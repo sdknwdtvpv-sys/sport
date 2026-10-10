@@ -288,8 +288,8 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                         '选动作',
                         style: TextStyle(
                           color: Tokens.text,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
+                          fontSize: Tokens.fsHeadline,
+                          fontWeight: Tokens.fwBold,
                         ),
                       ),
                     )
@@ -297,7 +297,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                     const Spacer(),
                   Text(
                     widget.onBrowse == null ? '${_rows.length} 个' : '共 ${_rows.length} 个动作',
-                    style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                   ),
                   const SizedBox(width: Tokens.s2),
                   // 规格 S3 的「右上角新建自定义动作」入口
@@ -309,7 +309,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
                       minimumSize: const Size(0, 36),
                     ),
-                    child: const Text('＋ 新建', style: TextStyle(fontSize: 14)),
+                    child: const Text('＋ 新建', style: TextStyle(fontSize: Tokens.fsSub)),
                   ),
                 ],
               ),
@@ -320,13 +320,13 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 key: const Key('exercise-search'),
                 controller: _query,
                 onChanged: (_) => _load(),
-                style: const TextStyle(color: Tokens.text, fontSize: 17),
+                style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBody),
                 // ⚠️ 2026-10-10（VI 计划 T0-2）：这一格原来**没有边框**，
                 // 底对页面只有 1.10:1 —— 暗光健身房里看不出这里能打字。
                 // 现在走共用外观：`field` 底 + `lineStrong` 边界（3.18:1）。
                 decoration: appFieldDecoration(
                   hint: '搜索动作或别名，如 bp / rdl',
-                  fontSize: 17,
+                  fontSize: Tokens.fsBody,
                   radius: Tokens.rPill,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: Tokens.s5,
@@ -414,7 +414,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
         child: Text(
           '没找到这个动作。\n换个词试试，或者点右上角「＋ 新建」自建一个。',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.5),
+          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
         ),
       );
 
@@ -498,9 +498,9 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
           label,
           style: const TextStyle(
             color: Tokens.text3,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
+            fontSize: Tokens.fsCap,
+            fontWeight: Tokens.fwStrong,
+            letterSpacing: Tokens.lsWide,
           ),
         ),
       );
@@ -529,8 +529,8 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
         e.name,
         style: const TextStyle(
           color: Tokens.text,
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
+          fontSize: Tokens.fsBody,
+          fontWeight: Tokens.fwStrong,
         ),
       ),
       // ⚠️ **2026-10-10：副标题压成一行**（用户 10.10 评审："每行 3 行描述扫不动"）。
@@ -550,7 +550,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         // 每行的「部位 · 器械」是选之前要读的东西 → text2（VI 计划 T0-3）
-        style: const TextStyle(color: Tokens.text2, fontSize: 13),
+        style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -578,15 +578,15 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
             Text(
               _lastLabelFor(e)!,
               key: Key('last-${e.id}'),
-              style: const TextStyle(color: Tokens.text3, fontSize: 13),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             )
           else ...<Widget>[
             Text(
               bodyweight ? '自重' : formatWeight(e.defaultWeightKg, widget.unit),
               style: const TextStyle(
                 color: Tokens.text2,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+                fontSize: Tokens.fsSub,
+                fontWeight: Tokens.fwStrong,
               ),
             ),
             // 口径（10.8 清单第 6 条）：杠铃填总重（含杆）、哑铃填单只 ——
@@ -597,7 +597,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               Text(
                 weightBasisLabel(e.equipment),
                 key: Key('basis-${e.id}'),
-                style: const TextStyle(color: Tokens.text3, fontSize: 11),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
               ),
             ],
           ],
@@ -622,7 +622,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               child: Text(label,
                   key: Key('filter-label-$label'),
                   // 行标签是功能性标签（「这行筛的是什么」）→ text2（VI 计划 T0-3）
-                  style: const TextStyle(color: Tokens.text2, fontSize: 12)),
+                  style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro)),
             ),
             Expanded(
               child: ListView(
@@ -679,10 +679,10 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
             label,
             style: TextStyle(
               color: active && !neutralWhenActive ? Tokens.accentInk : Tokens.text2,
-              fontSize: 13,
+              fontSize: Tokens.fsCap,
               fontWeight: active && !neutralWhenActive
-                  ? FontWeight.w700
-                  : FontWeight.w400,
+                  ? Tokens.fwBold
+                  : Tokens.fwBody,
             ),
           ),
         ),

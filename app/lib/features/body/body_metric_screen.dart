@@ -236,7 +236,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           '· 用途只有一个：给你自己看长期变化（身高只用来算 BMI）；\n'
           '· 你可以随时在「全部数据」里改或删掉它们，也可以随时撤回这次同意。',
           key: Key('body-consent'),
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -308,7 +308,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           '那份是端到端加密的密文）；\n'
           '· 随时可以撤回：撤回之后不再读，已经并进来的那些天不会被删掉。',
           key: Key('health-consent'),
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -398,7 +398,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
         content: Text(
           body,
           key: const Key('health-result'),
-          style: const TextStyle(color: Tokens.text2, height: 1.6),
+          style: const TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -430,11 +430,11 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const Text('从系统健康同步',
-                        style: TextStyle(color: Tokens.text, fontSize: 15)),
+                        style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
                     const SizedBox(height: 2),
                     Text(
                       '只读${healthReadSummary(Theme.of(context).platform)} · 可选',
-                      style: TextStyle(color: Tokens.text3, fontSize: 12),
+                      style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                     ),
                   ],
                 ),
@@ -592,7 +592,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(label,
-              style: const TextStyle(color: Tokens.text2, fontSize: 13)),
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
           const SizedBox(height: Tokens.s1),
           TextField(
             key: Key(key),
@@ -603,7 +603,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             ],
             // 点输入框以外的地方 → 收起键盘（第 3 条的另一半）
             onTapOutside: (_) => _dismissKeyboard(),
-            style: const TextStyle(color: Tokens.text, fontSize: 18),
+            style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBody),
             decoration: appFieldDecoration(hint: hint),
           ),
         ],
@@ -636,8 +636,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                   child: Text('身体数据趋势',
                       style: TextStyle(
                           color: Tokens.text,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600)),
+                          fontSize: Tokens.fsSub,
+                          fontWeight: Tokens.fwStrong)),
                 ),
                 ViSegmented(
                   key: const Key('body-trend-seg'),
@@ -661,7 +661,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Text(shortDate(trend.firstDate),
-                    style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                 // 首尾差：**带单位和正负号**，否则"掉了 2"读不出是 kg 还是 cm
                 Text(
                   delta == null ? '' : trendDeltaText(metric, delta),
@@ -670,11 +670,11 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                     color: delta != null && delta < 0
                         ? Tokens.success
                         : Tokens.text2,
-                    fontSize: 11,
+                    fontSize: Tokens.fsMicro,
                   ),
                 ),
                 Text(shortDate(trend.lastDate),
-                    style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
               ],
             ),
             Padding(
@@ -683,7 +683,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 '这条线只有 ${trend.samples.length} 次记录，'
                 '${metric.label}的单位是 ${metric.unit}',
                 key: const Key('body-trend-hint'),
-                style: const TextStyle(color: Tokens.text3, fontSize: 11),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
               ),
             ),
           ],
@@ -723,12 +723,12 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                     ? '还没记体重'
                     : formatBodyWeight(m.weightKg!, _unit),
                 key: const Key('body-summary-weight'),
-                style: Tokens.display(28, weight: 700, letterSpacing: -0.5),
+                style: Tokens.display(28, weight: 700, letterSpacing: Tokens.lsTight),
               ),
               const SizedBox(width: Tokens.s2),
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text(m.date, style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                child: Text(m.date, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
               ),
             ],
           ),
@@ -742,10 +742,10 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                   key: Key('body-tile-$label'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(label, style: const TextStyle(color: Tokens.text3, fontSize: 11)),
+                    Text(label, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                     Text(value,
                         style: const TextStyle(
-                            color: Tokens.text, fontSize: 15, fontWeight: FontWeight.w600)),
+                            color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
                   ],
                 ),
             ],
@@ -754,7 +754,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           Text(
             bmi == null ? bmiHint(bmi) : 'BMI ${bmiText(bmi)} · ${bmiBand(bmi)} —— ${bmiHint(bmi)}',
             key: const Key('body-bmi-hint'),
-            style: const TextStyle(color: Tokens.text3, fontSize: 11, height: 1.4),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
           ),
         ],
       ),
@@ -798,7 +798,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           '一周称两次就够 —— 一天之内的波动主要是水分和刚吃的东西，不是脂肪。'
           '看一周、一个月的趋势比看单天更有意义。',
           key: Key('weigh-frequency-note'),
-          style: TextStyle(color: Tokens.text2, height: 1.6),
+          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
         ),
         actions: <Widget>[
           TextButton(
@@ -902,8 +902,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                       '身体数据',
                       style: TextStyle(
                         color: Tokens.text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: Tokens.fsHeadline,
+                        fontWeight: Tokens.fwBold,
                       ),
                     ),
                   ),
@@ -986,7 +986,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                     Text(
                       _selectedDayLabel,
                       key: const Key('body-day-label'),
-                      style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                     ),
                     const SizedBox(height: Tokens.s4),
                     // 体重与单位**同一张卡**：标签那一行右侧就是单位开关
@@ -999,14 +999,14 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                     // 备注：名字**常驻**（与腰围/肌肉量同一个理由 —— 第二份 docx 第 1 条），
                     // 「（可选）」与例子留在 hint 里
                     const Text('备注',
-                        style: TextStyle(color: Tokens.text2, fontSize: 13)),
+                        style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
                     const SizedBox(height: Tokens.s1),
                     TextField(
                       key: const Key('body-note'),
                       controller: _note,
                       onTapOutside: (_) => _dismissKeyboard(),
                       maxLines: 2,
-                      style: const TextStyle(color: Tokens.text, fontSize: 15),
+                      style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
                       decoration: appFieldDecoration(
                         hint: '可选，例如：空腹、练后',
                         contentPadding: const EdgeInsets.all(Tokens.s4),
@@ -1055,7 +1055,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                   // 没填有效体重就不能存：存一条空的身体数据没有意义
                   onPressed: _canSave ? _save : null,
                   child: const Text('保存',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                      style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
                 ),
               ),
             ),
@@ -1089,8 +1089,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             isToday ? '今天' : '${d.month}/${d.day}',
             style: TextStyle(
               color: active ? Tokens.accentInk : Tokens.text2,
-              fontSize: 13,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+              fontSize: Tokens.fsCap,
+              fontWeight: active ? Tokens.fwBold : Tokens.fwBody,
             ),
           ),
         ),
@@ -1106,14 +1106,14 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
           SizedBox(
             width: 84,
             child: Text(r.date,
-                style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
           ),
           Text(
             r.weightKg == null
                 ? '—'
                 : formatBodyWeight(r.weightKg, _unit),
-            style: const TextStyle(color: Tokens.text, fontSize: 16,
-                fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBodyS,
+                fontWeight: Tokens.fwStrong),
           ),
           if (r.note != null && r.note!.isNotEmpty) ...<Widget>[
             const SizedBox(width: Tokens.s3),
@@ -1121,7 +1121,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               child: Text(
                 r.note!,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Tokens.text3, fontSize: 13),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
             ),
           ],
@@ -1168,8 +1168,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             text,
             style: const TextStyle(
               color: Tokens.text,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontSize: Tokens.fsSub,
+              fontWeight: Tokens.fwBold,
             ),
           ),
           const SizedBox(height: Tokens.s2),
@@ -1208,8 +1208,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                 const Text('体重',
                     style: TextStyle(
                         color: Tokens.text,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600)),
+                        fontSize: Tokens.fsSub,
+                        fontWeight: Tokens.fwStrong)),
                 const Spacer(),
                 _weightUnitRow(),
               ],
@@ -1225,11 +1225,11 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               onChanged: (_) => setState(() {}),
               onTapOutside: (_) => _dismissKeyboard(),
               style: const TextStyle(
-                  color: Tokens.text, fontSize: 24, fontWeight: FontWeight.w700),
+                  color: Tokens.text, fontSize: Tokens.fsNumL, fontWeight: Tokens.fwBold),
               // 这一个本来就在卡片里，所以底用 `bg`（下沉的井）—— 边界照旧走 lineStrong
               decoration: appFieldDecoration(
                 hint: '例如 72.5',
-                fontSize: 20,
+                fontSize: Tokens.fsHeadline,
                 fill: Tokens.bg,
               ),
             ),
@@ -1250,8 +1250,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             const Text('更多指标（可选）',
                 style: TextStyle(
                     color: Tokens.text2,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600)),
+                    fontSize: Tokens.fsCap,
+                    fontWeight: Tokens.fwStrong)),
             const SizedBox(height: Tokens.s3),
             Row(
               children: <Widget>[

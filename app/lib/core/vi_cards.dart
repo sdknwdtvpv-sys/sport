@@ -129,18 +129,18 @@ class StatTile extends StatelessWidget {
       children: <Widget>[
         Text(
           label,
-          style: const TextStyle(color: Tokens.text2, fontSize: 13, height: 1.3),
+          style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
         ),
         const SizedBox(height: Tokens.s2),
         Text(value,
             key: valueKey,
-            style: Tokens.display(valueSize, weight: 700, letterSpacing: -0.5)),
+            style: Tokens.display(valueSize, weight: 700, letterSpacing: Tokens.lsTight)),
         if (delta != null) ...<Widget>[
           const SizedBox(height: Tokens.s1),
           Text(
             delta!,
             key: deltaKey,
-            style: TextStyle(color: deltaColor, fontSize: 12, height: 1.3),
+            style: TextStyle(color: deltaColor, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
           ),
         ],
       ],
@@ -209,7 +209,7 @@ class ViSegmented extends StatelessWidget {
           selectedColor: hexOfColor(Tokens.accentInk),
           unselectedColor: hexOfColor(Tokens.text2),
           selectedTint: hexOfColor(Tokens.accent),
-          fontSize: 12,
+          fontSize: Tokens.fsMicro,
         ),
         onChanged: onChanged,
       );
@@ -245,9 +245,9 @@ class ViSegmented extends StatelessWidget {
         // ⚠️ 这一支只在**非 iOS** 上跑（选中 = 实心 accent 胶囊 + 深墨字），
         // 所以这里不再有"玻璃上要用最亮的字"那种分叉
         color: on ? Tokens.accentInk : Tokens.text2,
-        fontSize: 12,
-        height: 1.2,
-        fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+        fontSize: Tokens.fsMicro,
+        height: Tokens.lhTight,
+        fontWeight: on ? Tokens.fwBold : Tokens.fwStrong,
       ),
     );
 

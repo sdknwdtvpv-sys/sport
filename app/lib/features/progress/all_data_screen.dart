@@ -202,8 +202,8 @@ class _AllDataScreenState extends State<AllDataScreen> {
               '全部数据',
               style: TextStyle(
                 color: Tokens.text,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+                fontSize: Tokens.fsHeadline,
+                fontWeight: Tokens.fwBold,
               ),
             ),
           ),
@@ -211,7 +211,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
             key: const Key('all-data-export'),
             style: TextButton.styleFrom(foregroundColor: Tokens.accent),
             onPressed: _export,
-            child: const Text('导出 CSV', style: TextStyle(fontSize: 14)),
+            child: const Text('导出 CSV', style: TextStyle(fontSize: Tokens.fsSub)),
           ),
         ],
       ),
@@ -245,7 +245,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
               key: const Key('all-data-export'),
               style: TextButton.styleFrom(foregroundColor: Tokens.accent),
               onPressed: _export,
-              child: const Text('导出 CSV', style: TextStyle(fontSize: 14)),
+              child: const Text('导出 CSV', style: TextStyle(fontSize: Tokens.fsSub)),
             ),
           ],
         ],
@@ -287,8 +287,8 @@ class _AllDataScreenState extends State<AllDataScreen> {
                     key: const Key('all-data-exercise-name'),
                     style: const TextStyle(
                       color: Tokens.text,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
+                      fontSize: Tokens.fsBody,
+                      fontWeight: Tokens.fwStrong,
                     ),
                   ),
                 ),
@@ -302,7 +302,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
             padding: EdgeInsets.only(top: Tokens.s5),
             child: Text(
               '这个动作还没有记录。练过一次再来。',
-              style: TextStyle(color: Tokens.text3, fontSize: 15, height: 1.5),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
             ),
           )
         else ...<Widget>[
@@ -347,7 +347,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
                 s.isTime
                     ? '按时长动作不比容量 —— 它比的是每组坚持了多久。'
                     : '自重动作不比容量与 1RM —— 它比的是次数。',
-                style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
               ),
             ),
           ],
@@ -359,7 +359,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
                 padding: const EdgeInsets.only(top: Tokens.s2),
                 child: Text(
                   '只显示最近 30 条，共 ${_records.length} 条。完整数据用「导出 CSV」。',
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
                 ),
               ),
           ]),
@@ -390,7 +390,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
           SizedBox(
             width: 56,
             child: Text(day,
-                style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
           ),
           Text(
             // 有氧/农夫行走念「5.00 公里 · 30:00」—— 容量那一格对它们是 0，
@@ -401,12 +401,12 @@ class _AllDataScreenState extends State<AllDataScreen> {
                     ? '自重 × ${r.reps}'
                     : '${formatWeight(r.weightKg, widget.unit)} × ${r.reps}',
             style: const TextStyle(
-                color: Tokens.text2, fontSize: 15, fontWeight: FontWeight.w600),
+                color: Tokens.text2, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
           ),
           const Spacer(),
           Text(
             formatVolume(r.volume, widget.unit, zeroText: '—'),
-            style: const TextStyle(color: Tokens.text3, fontSize: 13),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
           ),
         ],
       ),
@@ -443,12 +443,12 @@ class _AllDataScreenState extends State<AllDataScreen> {
                   SizedBox(
                     width: 76,
                     child: Text(mv.label,
-                        style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                   ),
                   Text(
                     formatVolume(mv.volumeKg, widget.unit, zeroText: '—'),
                     style: const TextStyle(
-                        color: Tokens.text2, fontSize: 15, fontWeight: FontWeight.w600),
+                        color: Tokens.text2, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
                   ),
                 ],
               ),
@@ -469,7 +469,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
         key: key,
         padding: const EdgeInsets.symmetric(vertical: Tokens.s2),
         child: const Text('这段时间还没有记录',
-            style: TextStyle(color: Tokens.text3, fontSize: 15)),
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub)),
       );
     }
     return Container(
@@ -500,7 +500,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Text(label,
-              style: const TextStyle(color: Tokens.text3, fontSize: 13)),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
           Text(
             value,
             key: key,
@@ -517,9 +517,9 @@ class _AllDataScreenState extends State<AllDataScreen> {
           t,
           style: const TextStyle(
             color: Tokens.text3,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
+            fontSize: Tokens.fsCap,
+            fontWeight: Tokens.fwStrong,
+            letterSpacing: Tokens.lsWide,
           ),
         ),
       );

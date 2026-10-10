@@ -46,8 +46,8 @@ Widget choicePill({
             label,
             style: TextStyle(
               color: active ? Tokens.accentInk : Tokens.text2,
-              fontSize: 13,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+              fontSize: Tokens.fsCap,
+              fontWeight: active ? Tokens.fwBold : Tokens.fwBody,
             ),
           ),
         ),
