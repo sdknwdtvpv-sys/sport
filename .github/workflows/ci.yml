@@ -40,19 +40,6 @@ jobs:
           flutter-version: '3.47.5'
           cache: true
 
-      # ⚠️ **装 Pillow**：门禁里唯一一条 Python 守卫（`tool/check-launch-relay.py`，
-      # 启动图与内启动屏那两枚环对位）要用 PIL 解 PNG，而 runner 镜像默认**没有**它。
-      # 2026-10-10 那次 CI 就是这么红的（`ModuleNotFoundError: No module named 'PIL'`，
-      # 而且它是**两条**红：正式核 + 自己的自检各一条）—— 门禁里"没跑"在 CI 上不许算绿，
-      # 所以不能靠"跳过"，要么把依赖显式装上、要么把那条守卫改成不依赖 PIL。
-      # 这次选前者（快、且守住这条判据）；**改进方向**记在这里：把那条守卫改写成
-      # `tool/check-launch-relay.mjs`（Node 自带 zlib，能解 PNG 也能造自检夹具），
-      # 那时这段就可以删掉 —— 门禁里不该有一条需要额外环境的守卫。
-      - name: 装 Pillow（只有启动接力那条 Python 守卫要用）
-        run: |
-          python3 -m pip install --break-system-packages Pillow
-          python3 -c "import PIL; print('Pillow', PIL.__version__)"
-
       # 一条命令跑完六层（第 0 层引导 pub get + build_runner 也在这条命令里）。
       # 不许加 `--fast`：那会跳过第 5 层，CI 就又变成"看着像门禁"的东西了。
       - name: 门禁（./verify.sh 六层全跑）

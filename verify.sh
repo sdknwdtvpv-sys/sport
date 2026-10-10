@@ -343,8 +343,11 @@ selfcheck tool/check-doc-paths.mjs "文档路径核对自检通过（指空的�
 
 selfcheck tool/check-vi-strokes.mjs "vi 稿子线宽守卫自检通过（1.5 / 1.8 越界、2.5 / 3 例外、没有描边的不误报）" "vi 稿子线宽守卫的自检失败"
 
-# 启动接力对位（T3-6）是 **Python** 守卫（要用 PIL 解 PNG）—— 自检与正式核都在下面那一段
-if python3 tool/check-launch-relay.py --selftest >"$LOG" 2>&1; then
+# 启动接力对位（T3-6）：**2026-10-10 从 Python 重写成 Node**（原来是 `check-launch-relay.py`，
+# 靠 PIL 解 PNG —— 而 PIL 是门禁里唯一一个"要额外环境"的东西，ubuntu runner 上没有，
+# 那次 CI 直接红在 `ModuleNotFoundError`。仓库自己的守卫也拦住了"在 CI 里装 Pillow"那条路：
+# **CI 里不许有一条门禁不管的命令**。于是正确修法是把依赖去掉：Node 自带 zlib。）
+if node tool/check-launch-relay.mjs --selftest >"$LOG" 2>&1; then
   strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 启动接力对位守卫自检通过（环心不透明 / 环太小 / 环心偏移 / 三档不一致 都抓得住）"
 else
   strip "$LOG"; echo "${RED}✗ 启动接力对位守卫的自检失败${OFF}"; fail=1
@@ -441,7 +444,7 @@ echo
 # 启动接力那两枚环要对得上（2026-10-10，VI 计划 T3-6 判据 3）：原生 `LaunchImage@1x/2x/3x.png`
 # 与 Flutter 第一帧的 `SplashOverlay` 画的是**同一枚品牌环** —— 对不上，冷启动就会看到一次跳变。
 # 顺带钉住"环心是透明的"：它原来被一颗 3px 的白色闪光堵着（计划里说成"白饼"，实测是那颗闪光）。
-if python3 tool/check-launch-relay.py >"$LOG" 2>&1; then
+if node tool/check-launch-relay.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 启动图与内启动屏那两枚环对得上"
 else
   strip "$LOG"; echo "${RED}✗ 启动接力对不上（环心不透明 / 外径差 > 2pt / 圆心偏了）${OFF}"; fail=1
