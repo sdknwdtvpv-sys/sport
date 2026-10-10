@@ -280,6 +280,18 @@ class WorkoutController extends ChangeNotifier {
 
   int get restRemainingSec => _restRemaining;
 
+  /// **秒级倒计时的窄通道**（VI 计划 T2-1）。
+  ///
+  /// 为什么不能让每秒的 tick 走 `notifyListeners()`：训练屏是 `addListener(_onChange)`
+  /// 里 `setState(() {})` —— 那是**整屏重建**，而 iOS 上同一屏还活着一个 `UITabBar`
+  /// 平台视图（"活着的期间 Flutter 的栅格化不再与 Dart 并行"，见 `glass_surface.dart`）。
+  /// 于是"组间 60 秒"= 整屏每秒重建一次、持续 60 次。
+  ///
+  /// 现在：**秒级 tick 只写这个 `ValueNotifier`**（值就是剩余秒数），
+  /// 训练屏把那条 ~26pt 的休息带包在 `ValueListenableBuilder` 里听它 ——
+  /// 每秒重画的只有那一条。休息**开始 / 结束**仍然是结构性变化，照旧 `notifyListeners()`。
+  final ValueNotifier<int> restTick = ValueNotifier<int>(0);
+
   /// **这一轮休息开始时有多长**（秒）。训练屏那条细进度按它算比例；
   /// 0 = 这次训练还没休息过。⚠️ 从中断处恢复时传的是 `plannedRestSec`
   /// （那时已经不知道原来那一轮的总长），界面把比例 clamp 到 0..1。
@@ -835,10 +847,14 @@ class WorkoutController extends ChangeNotifier {
         // Android：锁屏上没有任何东西（iOS 有 Live Activity），发一条本地通知 ——
         // 这是"手机在包里也知道该下一组了"的唯一办法。
         unawaited(restCue.show(title: '休息结束', body: '下一组：$primaryButtonLabel'));
+        // 归零是**结构性变化**（整条要变成「休息结束」、颜色换成 success）→ 整屏重建一次
+        _notify();
       } else {
         _restRemaining = left;
+        // ⚠️ **不 notifyListeners**（VI 计划 T2-1）：秒级 tick 只惊动那条约 26pt 的带子。
+        // 这一行是这一条的全部内容 —— 少写它就等于没做（整屏仍然每秒重建）。
+        restTick.value = left;
       }
-      _notify();
     });
   }
 
@@ -858,6 +874,8 @@ class WorkoutController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _stopRest();
+    // 窄通道自己也要收掉（它不是 ChangeNotifier 的一部分）
+    restTick.dispose();
     _holdTimer?.cancel();
     _holdTimer = null;
     // 退出训练屏 = 这次休息不再有意义：锁屏上那条必须撤掉，

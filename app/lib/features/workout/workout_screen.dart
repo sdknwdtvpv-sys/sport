@@ -26,6 +26,16 @@ import 'workout_controller.dart';
 import 'screen_awake.dart';
 import 'workout_session.dart';
 
+/// **只为测试存在的两个计数**（VI 计划 T2-1 的判据 1）。
+///
+/// 这一条修的是"组间休息每秒**整屏重建**一次"这个**看不见**的性能风险 ——
+/// 而"看不见"就意味着改坏了也没人立刻发现。有了这两个数，
+/// `rest_local_rebuild_test.dart` 就能断言"每秒只有休息带重建、整屏一次都不重建"。
+///
+/// 用 `assert` 包住递增 → release 里这两行不存在（与 `debugSwitchTab` 同一种做法）。
+int debugWorkoutScreenBuilds = 0;
+int debugRestStripBuilds = 0;
+
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({
     super.key,
@@ -198,6 +208,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // **只为测试存在的计数**（VI 计划 T2-1 判据 1）：`assert` 包住 → release 里不存在。
+    assert(() {
+      debugWorkoutScreenBuilds++;
+      return true;
+    }());
     return Scaffold(
       backgroundColor: Tokens.bg,
       body: SafeArea(
@@ -766,8 +781,24 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   /// 现在：数字 + 百分比 + 一条 3pt 的进度条，整条只有 ~26pt 高，直接贴在大按钮上方。
   ///
   /// 不休息时**整条不出现** —— 不摆一个 `00:00` 在那里占位置。
+  ///
+  /// ⚠️ **2026-10-10（VI 计划 T2-1）**：里面的数字与进度条包在 `ValueListenableBuilder`
+  /// 里听 [WorkoutController.restTick] —— 秒级 tick 只重画这一条，
+  /// 不再走 `_onChange → setState`（那会整屏重建，而 iOS 上同屏还有 `UITabBar` 平台视图）。
+  /// 休息**开始 / 结束**仍是结构性变化，由父级重建。
   Widget _restStrip() {
     if (!c.restRunning && !c.restDone) return const SizedBox.shrink();
+    return ValueListenableBuilder<int>(
+      valueListenable: c.restTick,
+      builder: (BuildContext context, int tick, Widget? _) => _restStripBody(),
+    );
+  }
+
+  Widget _restStripBody() {
+    assert(() {
+      debugRestStripBuilds++;
+      return true;
+    }());
     final int total = c.restTotalSec > 0 ? c.restTotalSec : c.plannedRestSec;
     // ⚠️ **条的方向 = 「还剩多少」**（2026-10-10 修，VI 计划 T0-1）。
     // 原来这里是 `1 - 剩余/总`（条在**长**），而右边那行字写的是「还剩 41%」（数字在**减**）——
