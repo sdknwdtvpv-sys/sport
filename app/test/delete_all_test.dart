@@ -188,6 +188,12 @@ void main() {
       // 那是用户自己的编辑结果；留着会让"删光之后"首页还摆着今天练哪几个。
       'day_plan_item',
       'day_plan_day',
+      // v30（2026-10-10）：会员权益与计费流水。**删** —— 它们记的是"这个人是谁、
+      // 买过什么"，与 `backup_account` / `auth_session` 同类。
+      // ⚠️ 代价（有意接受，也已写在 `drift_local_store.deleteAllUserData` 那里）：
+      // 付费用户删完数据会暂时变成免费用户，直到点一次「恢复购买」。
+      'entitlement',
+      'billing_event',
     };
     expect(actual, equals(known),
         reason: '库里的表和这份清单对不上 —— 新增/改名一张表就要来改这里，'

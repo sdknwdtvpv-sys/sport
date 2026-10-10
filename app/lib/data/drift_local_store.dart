@@ -343,6 +343,17 @@ class DriftLocalStore implements LocalStore {
       await _db.delete(_db.dayPlanDay).go();
       // 训练提醒也是用户设置（他自己选的开关与时间）
       await _db.delete(_db.reminderSetting).go();
+      // 会员权益与计费流水（v30）也一起清。**这是一个有意的取舍，写清楚**：
+      //   * 留着它，被删过数据的付费用户下次打开仍是 Ultra —— 体验更顺；
+      //   * 清掉它，则"删除全部数据"就真的是"这台设备上不再留任何关于你的东西"
+      //     （他买过什么是商店的事，不是我们的）。
+      // 选了后者，因为这张表记的是"这个人是谁、买过什么"，与 `backup_account` /
+      // `auth_session` 是同一类东西 —— 那两张也都在清。代价如实记：
+      // **付费用户删数据之后会暂时变成免费用户**，直到点一次「恢复购买」
+      // （M2 会上线那个按钮；本机不再留凭据，只能从商店/服务端重新核实）。
+      // ⚠️ `test/delete_all_test.dart` 的表清单守门要跟着加这两张表。
+      await _db.delete(_db.entitlement).go();
+      await _db.delete(_db.billingEvent).go();
       // 站内消息也是用户数据（那是他练出来的通知）。新加表最容易漏这一步 ——
       // `test/delete_all_test.dart` 有一份表清单守门，出现新表就要去改那里。
       await _db.delete(_db.appNotification).go();

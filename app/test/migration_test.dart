@@ -665,4 +665,36 @@ void main() {
         reason: 'v24 的老库不该有这一列，否则上面那条迁移测试是空转');
     await legacy.close();
   });
+
+  test('v29 的库升到 v30：多出「会员权益」与「计费流水」两张表，而且**都是空的**', () async {
+    // v30（2026-10-10，会员 M1）= 只加表、不动既有列。
+    // 断言的重点不是"建出来了"，而是**"空"** —— 空 = 升级不会凭空给谁发权益，
+    // 而"没有记录"正是 `resolveUltraAccess(null, now)` 的 `none`（免费用户）。
+    // 这一条同时守住反向的错误：假如迁移里手滑写了 INSERT（例如给老用户送一个月），
+    // 老用户会一夜之间变成 Ultra —— 那是这个仓库里最不该发生的事。
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 29);
+      }),
+    );
+    // 打开即触发 onUpgrade（v29 → v30）
+    final List<QueryRow> tables = await legacy
+        .customSelect("SELECT name FROM sqlite_master WHERE type='table' "
+            "AND name IN ('entitlement', 'billing_event') ORDER BY name")
+        .get();
+    expect(tables.map((QueryRow r) => r.read<String>('name')).toList(),
+        <String>['billing_event', 'entitlement'],
+        reason: '两张表都要建出来（少一张，软件包里的仓储一读就崩）');
+
+    final int entitlements =
+        (await legacy.customSelect('SELECT count(*) AS n FROM entitlement').getSingle())
+            .read<int>('n');
+    final int events =
+        (await legacy.customSelect('SELECT count(*) AS n FROM billing_event').getSingle())
+            .read<int>('n');
+    expect(entitlements, 0, reason: '老库升级上来**不许凭空有权益**');
+    expect(events, 0);
+
+    await legacy.close();
+  });
 }

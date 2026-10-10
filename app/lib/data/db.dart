@@ -612,6 +612,76 @@ class StreakProtection extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{date};
 }
 
+/// **会员（Ultra）权益**（v30，2026-10-10，M1）。
+///
+/// 一行 = 一条**权益来源**；主键用幂等键（商店的原始交易号 / 兑换码批次 / 调试授权串），
+/// 于是"同一条交易被核实两次"只会覆盖自己那一行，不会长出第二条。
+///
+/// 为什么本机也要存一份（服务端 M3 才有）：**离线优先**。没网时按这份缓存给权益
+/// （宽限 7 天，见 `lib/billing/entitlement.dart` 的 `kOfflineGraceMs`），
+/// 有网时用商店/服务端的结果校准。方案 §4 的三层结构里，这是第三层。
+///
+/// ⚠️ 字段的语义（哪一列非空意味着什么）写在 `UltraEntitlement` 上，两边**不许各说各话**：
+/// 这个类的列名与那个模型的字段名一一对应，转换只在 `entitlement_repository.dart` 一处做。
+///
+/// ⚠️ 它是用户数据：`deleteAllUserData` 必须把它一起清掉（见那里的注释与
+/// `test/delete_all_test.dart` 的表清单守门）。
+class Entitlement extends Table {
+  /// 幂等键：Apple 的 `original_transaction_id` / Play 的 `purchaseToken` /
+  /// 兑换码核销记录 id / debug 授权的固定串。
+  TextColumn get id => text()();
+
+  /// monthly | yearly | lifetime（`UltraProduct.name`）
+  TextColumn get product => text()();
+
+  /// apple | google | redeemCode | debug（`UltraSource.name`）
+  TextColumn get source => text()();
+
+  IntColumn get purchasedAtMs => integer()();
+
+  /// **null = 终身**（非消耗型买断）
+  IntColumn get expiresAtMs => integer().nullable()();
+
+  /// 免费试用期内
+  BoolColumn get isTrial => boolean().withDefault(const Constant(false))();
+
+  /// Apple 宽限期截止时刻（`BillingGracePeriod`，要在 App Store Connect 主动开）
+  IntColumn get graceUntilMs => integer().nullable()();
+
+  /// Apple 账单重试截止时刻
+  IntColumn get billingRetryUntilMs => integer().nullable()();
+
+  /// 撤销 / 退款时刻。任何一条非空 → **立即降级**（不看到期时间）
+  IntColumn get revokedAtMs => integer().nullable()();
+  IntColumn get refundedAtMs => integer().nullable()();
+
+  /// 最近一次成功核实的时刻（离线宽限按它算）
+  IntColumn get lastVerifiedAtMs => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+/// **计费事件流水**（v30）。
+///
+/// 两个用途，都不是"为了以后可能有用"：
+///   1. **客服**要能回答"这个人为什么没有权益" —— 客服看得见的是"什么时候收到退款通知、
+///      什么时候核过一次、宽限期到哪天"，而不是让用户自己猜；
+///   2. 排查"用户说买了却不认"这类工单 —— 没有流水就只能靠用户复述。
+///
+/// ⚠️ **只记事件与时间，不记任何支付信息**（我们本来也拿不到卡号/账单地址，
+/// 见方案 §7.3）。`detail` 只放我们自己能解释的短串（商品 id、状态名），不放原始收据。
+class BillingEvent extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// 事件名（`UltraEventKind.name`，或 ui_* 一类本机动作）
+  TextColumn get kind => text()();
+
+  IntColumn get atMs => integer()();
+
+  TextColumn get detail => text().nullable()();
+}
+
 @DriftDatabase(tables: <Type>[
   Exercise,
   Workout,
@@ -632,6 +702,8 @@ class StreakProtection extends Table {
   AuthSession,
   DayPlanItem,
   DayPlanDay,
+  Entitlement,
+  BillingEvent,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -680,8 +752,11 @@ class AppDatabase extends _$AppDatabase {
   /// v29（2026-10-09 第二份 docx）：`user_profile` +`training_scenario`
   /// （在哪儿练：健身房 / 家里 / 徒手，第 4 条）。**加列**，老库升上来是 null
   /// = 没选过 → 按健身房算 —— 那正是这一版之前的行为。
+  /// v30（2026-10-10，会员 M1）：新增 `entitlement` / `billing_event` 两张表。
+  /// **只加表、不动任何既有列**，所以老库升上来时它们是空的 ——
+  /// 那正是准确的历史：在这个版本之前，这台设备没有任何权益记录（也没买过）。
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -954,6 +1029,16 @@ class AppDatabase extends _$AppDatabase {
           // 老库升上来是 null = 没选过 → 按健身房（全部器械）算。
           if (from < 29) {
             await addIfMissing(userProfile, userProfile.trainingScenario);
+          }
+
+          // v29 → v30：会员（Ultra）的权益与计费流水。**只加表、不动任何既有列**，
+          // 排在**链尾**（纪律，见上面 <18/<20 那几块的教训）。
+          // 老库升上来时两张都是空的：在这之前这台设备没有任何权益记录 ——
+          // 而"没有记录"正是 `resolveUltraAccess(null, now) == none`（免费用户），
+          // 也就是说升级不会给谁**凭空发**权益，也不会把谁误判成买过。
+          if (from < 30) {
+            await m.createTable(entitlement);
+            await m.createTable(billingEvent);
           }
         },
       );
