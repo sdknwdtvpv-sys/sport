@@ -831,7 +831,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         _restText(),
                         key: const Key('rest-time'),
                         style: TextStyle(
-                          color: c.restDone ? Tokens.accent : Tokens.text,
+                          // 三档颜色：剩余 ≤ 3 秒转 accent（与那一下最轻的预告触觉**同一刻**发生，
+                          // 视觉与触觉同时到 —— VI 计划 T2-4）；归零转 accent 且字号收小；
+                          // 其余时间是普通的 text。**不闪、不跳字号**。
+                          color: c.restDone
+                              ? Tokens.accent
+                              : (c.restRunning && c.restRemainingSec <= 3
+                                  ? Tokens.accent
+                                  : Tokens.text),
                           fontSize: c.restDone ? 17 : 20,
                           fontWeight: Tokens.fwBold,
                           fontFeatures: const <FontFeature>[

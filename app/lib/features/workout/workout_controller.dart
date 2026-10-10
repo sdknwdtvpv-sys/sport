@@ -217,6 +217,14 @@ class WorkoutController extends ChangeNotifier {
   int _restRemaining = 0;
   bool _restRunning = false;
 
+  /// 这一轮休息的**3 秒预告**发过没有（VI 计划 T2-4）。
+  ///
+  /// ⚠️ 为什么不是一个"剩余 == 3 就发"的判断：计时器每跳一次都从 `_restEndsAtMs` 重算，
+  /// 而用户随时可能 −15 / +15 —— 那会把"还剩 3 秒"这一刻**挪走**。
+  /// 所以这里记的是"发过了"，并且在**每次改结束时刻时重算**（见 [adjustRest]）：
+  /// 调整之后如果剩余又回到 3 秒以上，就应该还有一次预告。
+  bool _restPreviewed = false;
+
   /// 休息结束的**绝对**时间戳。存绝对值而不是"剩余秒数"，
   /// 是为了让"App 被杀掉 5 分钟"在这件事上等于"休息已经过去 5 分钟"。
   int? _restEndsAtMs;
@@ -559,6 +567,9 @@ class WorkoutController extends ChangeNotifier {
     _restEndsAtMs = endsAt + deltaSec * 1000;
     final int left = ((_restEndsAtMs! - _clock()) / 1000).ceil();
     _restRemaining = left < 0 ? 0 : left;
+    // 预告时刻是**跟着结束时刻算的**：+15 秒之后如果剩余又回到 3 秒以上，
+    // 那"还剩 3 秒"这一刻还没到 —— 把标记放开，它就该再响一次（只响一次是指**每一刻只响一次**）。
+    if (left > 3) _restPreviewed = false;
     _startRestActivity();
     _notify();
   }
@@ -811,6 +822,7 @@ class WorkoutController extends ChangeNotifier {
     _restRemaining = remainingSec;
     _restEndsAtMs = endsAtMs;
     _restRunning = true;
+    _restPreviewed = false;
     if (announce) {
       analytics.track('rest_started', <String, Object?>{
         'exercise_id': exercise.id,
@@ -854,6 +866,14 @@ class WorkoutController extends ChangeNotifier {
         // ⚠️ **不 notifyListeners**（VI 计划 T2-1）：秒级 tick 只惊动那条约 26pt 的带子。
         // 这一行是这一条的全部内容 —— 少写它就等于没做（整屏仍然每秒重建）。
         restTick.value = left;
+        // ── 3 秒预告（VI 计划 T2-4）────────────────────────────────────
+        // 与上一行同一个同步块：预告**不是**新开一个定时器（那会与这一跳漂开）。
+        // 三条口径见 `haptics.dart` 的 `restPreview`：只响一次、比"到点"轻两档、
+        // 总时长 ≤ 5 秒的休息不发（5 秒的休息里"还剩 3 秒"几乎就是"开始"）。
+        if (!_restPreviewed && left == 3 && _restTotalSec > 5) {
+          _restPreviewed = true;
+          unawaited(haptics.restPreview());
+        }
       }
     });
   }

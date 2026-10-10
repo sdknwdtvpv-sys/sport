@@ -50,6 +50,7 @@ const PlanTarget _plan3x8to10 = PlanTarget(
 class _FakeHaptics implements Haptics {
   int sets = 0;
   int rests = 0;
+  int previews = 0;
   int targets = 0;
 
   @override
@@ -57,6 +58,9 @@ class _FakeHaptics implements Haptics {
 
   @override
   Future<void> restFinished() async => rests += 1;
+
+  @override
+  Future<void> restPreview() async => previews += 1;
 
   @override
   Future<void> targetReached() async => targets += 1;

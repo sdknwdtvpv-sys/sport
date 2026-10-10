@@ -54,6 +54,9 @@ class _FakeHaptics implements Haptics {
   Future<void> restFinished() async {}
 
   @override
+  Future<void> restPreview() async {}
+
+  @override
   Future<void> targetReached() async => targets += 1;
 }
 
