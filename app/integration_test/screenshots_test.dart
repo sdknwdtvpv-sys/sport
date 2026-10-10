@@ -375,8 +375,30 @@ void main() {
         // **图比 App 旧了一个版本**，而 `check-screenshots` 只核张数与尺寸，核不出内容。
         // 所以按现状走用户的真实路径：身体数据 →（返回）数据与备份 →（返回）设置
         // →「隐私与关于」→ 滚到底。
+        // ⚠️ **点返回之前先把页面滚回顶部**（2026-10-10 出 9:16 那套时抓到）：
+        // 上一段存完数据把页面停在最下面，而「‹」在页面顶部、又在 ListView 的**懒构建**
+        // 范围之外 —— 屏幕一矮（9:16 的 1080×1920）那个返回键就没被建出来/不可命中，
+        // `tapBack` 静默落空（它只警告 "would not hit test"，不抛），于是**还在身体数据页上**，
+        // 下一步找 `subpage-back` 才炸：`Found 0 widgets with key [<'subpage-back'>]`。
+        // 20:9 与 iPhone 侥幸能过，只是因为屏幕够高。与 `fillAndSave` 里那条同一类毛病。
+        await tester.dragUntilVisible(
+          find.byKey(const Key('body-back')),
+          find.byKey(const Key('body-scroll')),
+          const Offset(0, 220),
+        );
+        await settle(600);
         await tapBack(const Key('body-back'));
         await settle(900);
+        // ⚠️ **第二道返回也要先把「数据与备份」滚回顶部**（2026-10-10 出 9:16 那套时抓到，
+        // 而且这一次失败现场图直接指认了它：那一屏停在「记录 / 备份」那几段上）：
+        // 进来时为了点「身体数据」把它滚下去过，返回时 ListView **保留着那个偏移**，
+        // 顶部的 `subpage-back` 就在懒构建范围之外 → `tapBack` 找不到它。
+        await tester.dragUntilVisible(
+          find.byKey(const Key('subpage-back')),
+          find.byType(ListView).first,
+          const Offset(0, 220),
+        );
+        await settle(600);
         await tapBack(const Key('subpage-back'));
         await settle(900);
         await tester.dragUntilVisible(
