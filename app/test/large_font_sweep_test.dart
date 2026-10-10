@@ -32,8 +32,14 @@ import 'package:lianleme/data/routine_repository.dart';
 import 'package:lianleme/data/sync_queue.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
+import 'package:lianleme/health/health_bridge.dart';
 import 'package:lianleme/features/notifications/notification_center_screen.dart';
 import 'package:lianleme/features/profile/settings_home_screen.dart';
+import 'package:lianleme/data/body_metric_repository.dart';
+import 'package:lianleme/core/units.dart';
+import 'package:lianleme/features/body/body_metric_screen.dart';
+import 'package:lianleme/features/profile/data_tools_screen.dart';
+import 'package:lianleme/features/summary/share_card_preview_screen.dart';
 import 'package:lianleme/features/progress/achievements_screen.dart';
 import 'package:lianleme/features/progress/all_data_screen.dart';
 import 'package:lianleme/features/progress/progress_screen.dart';
@@ -51,6 +57,9 @@ const Size kPhone = Size(411, 914);
 const double kPhoneDpr = 3.0;
 
 /// 一次训练记录（总结页/全部数据页要有东西可显示才谈得上"展示态溢出"）。
+/// 训练开始时间：组记录的第一组。
+final int _startMs = DateTime(2026, 10, 10, 19).millisecondsSinceEpoch;
+
 List<SetRecord> _sets() => <SetRecord>[
       for (int i = 0; i < 3; i++)
         SetRecord(
@@ -60,9 +69,25 @@ List<SetRecord> _sets() => <SetRecord>[
           setIndex: i + 1,
           reps: 10,
           weightKg: 65,
-          completedAtMs: DateTime(2026, 10, 10, 19).millisecondsSinceEpoch + i * 60000,
+          completedAtMs: _startMs + i * 60000,
         ),
     ];
+
+/// 假健康桥：`isAvailable=true`、读数返回空，**而且不挂 Timer**
+/// （真身那个 5 秒超时见 `MethodChannelHealthBridge._probeTimeout`）。
+class _FakeHealthBridge implements HealthBridge {
+  const _FakeHealthBridge();
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<List<HealthSample>> readBodyComposition({int days = 180}) async =>
+      const <HealthSample>[];
+}
 
 void main() {
   /// 训练屏那个控制器要留个引用：点完大按钮会起**休息倒计时**（periodic Timer），
@@ -80,6 +105,17 @@ void main() {
     await repo.importSeed(
       loadJson: () => File('assets/exercises.json').readAsString(),
     );
+    // 总结页与分享卡预览要有**一条真记录**才谈得上"展示态溢出"
+    // ⚠️ 起始时间必须是**真实的那天**：早先写 `startedAtMs: 0`（1970），
+    // 而组记录在 2026-10-10 —— 于是摘要时长算出来是「295131 小时 47 分」，
+    // 分享卡的「时长」一栏被这串假数据顶出 20px 溢出。
+    // 那是**测试自己的假数据**造出来的溢出，不是产品的：修种子，不改版式
+    // （把值改成 `Flexible` + 省略号反而是错的 —— 分享卡上的数字不能被截断）。
+    await store.saveWorkout(
+        Workout(id: 'w1', startedAtMs: _startMs));
+    for (final SetRecord r in _sets()) {
+      await store.saveSet(r);
+    }
   });
 
   tearDown(() => db.close());
@@ -114,16 +150,34 @@ void main() {
           repository: repo,
           profile: ProfileRepository(db),
         ),
-    '总结页': () async {
-      for (final SetRecord r in _sets()) {
-        await store.saveSet(r);
-      }
-      await store.saveWorkout(Workout(id: 'w1', startedAtMs: 0));
-      return WorkoutSummaryScreen(
-        service: SummaryService(store: store, repository: repo),
-        workoutId: 'w1',
-      );
-    },
+    '总结页': () async => WorkoutSummaryScreen(
+          service: SummaryService(store: store, repository: repo),
+          workoutId: 'w1',
+        ),
+    // ⚠️ 健康桥**必须注入**：真身 `MethodChannelHealthBridge.isAvailable()`
+    // 挂了一个 5 秒超时 Timer 等平台回话，widget 测试里平台不会回话，测试结束
+    // 就报 "A Timer is still pending" —— 那和"溢出不溢出"没有关系，却把这一屏
+    // 一直染成红的。两条路径都要扫：没有健康库（真机上的安卓/旧包）与有入口。
+    '身体数据页': () async => BodyMetricScreen(
+          repository: BodyMetricRepository(db),
+          clock: () => DateTime(2026, 10, 10, 8),
+          healthBridge: const NoopHealthBridge(),
+        ),
+    '身体数据页（有健康入口）': () async => BodyMetricScreen(
+          repository: BodyMetricRepository(db),
+          clock: () => DateTime(2026, 10, 10, 8),
+          healthBridge: const _FakeHealthBridge(),
+        ),
+    '数据与备份': () async => DataToolsScreen(
+          store: store,
+          repository: repo,
+          profile: ProfileRepository(db),
+        ),
+    '分享卡预览': () async => ShareCardPreviewScreen(
+          summary: (await SummaryService(store: store, repository: repo)
+              .build('w1', unit: WeightUnit.kg))!,
+          analytics: RecordingAnalytics(),
+        ),
     '训练屏（记过一组）': () async {
       final WorkoutController c = WorkoutController(
         exercise: const ExerciseSpec(
@@ -156,11 +210,49 @@ void main() {
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
+        final List<String> overflowing = <String>[];
+
+        /// 扫一遍横向 `RenderFlex`，把"子宽度之和 > 自身宽度"的那些记下来。
+        ///
+        /// ⚠️ **每一帧之后都要扫**：溢出可能只出现在中间某一帧（加载态 / 弹层刚出现时），
+        /// 到最后一帧已经恢复正常 —— 只在最后扫一次会漏掉它（第一版就是这么漏的）。
+        void scanOverflow() {
+          for (final Element el in tester.allElements) {
+            final RenderObject? ro = el.renderObject;
+            if (ro is! RenderFlex || ro.direction != Axis.horizontal) continue;
+            double sum = 0;
+            RenderBox? child = ro.firstChild;
+            while (child != null) {
+              sum += child.size.width;
+              child = ro.childAfter(child);
+            }
+            if (sum > ro.size.width + 0.5) {
+              final List<String> bits = <String>[];
+              void collect(Element e2) {
+                final Widget w = e2.widget;
+                if (w is Text && w.data != null && bits.length < 6) bits.add(w.data!);
+                e2.visitChildren(collect);
+              }
+              el.visitChildren(collect);
+              final String line = '${ro.size.width} ← 子 $sum ｜ 内容：${bits.join(' / ')}';
+              if (!overflowing.contains(line)) overflowing.add(line);
+            }
+          }
+        }
+
+        // ⚠️ **接住 FlutterErrorDetails**：`takeException()` 只给一个 FlutterError，
+        // 而"是哪一行"要的是 details 里那份完整诊断（含 `The relevant error-causing widget`）。
+        final List<FlutterErrorDetails> caught = <FlutterErrorDetails>[];
+        final void Function(FlutterErrorDetails)? prevOnError = FlutterError.onError;
+        FlutterError.onError = caught.add;
+
         final Widget home = await e.value();
         await tester.pumpWidget(MaterialApp(theme: buildAppTheme(), home: home));
+        scanOverflow(); // ← 第一帧也要扫（有些溢出只出现在加载态那一帧）
         // 推进固定时长而不是 pumpAndSettle：这些屏里有不确定进度的转圈圈/常驻计时器
         for (int i = 0; i < 12; i++) {
           await tester.pump(const Duration(milliseconds: 120));
+          scanOverflow();
         }
         final Object? first = tester.takeException();
 
@@ -173,29 +265,24 @@ void main() {
           }
         }
         final Object? second = tester.takeException();
-        // 溢出时报出**是哪一行**：渲染错误里的 element 是 DEFUNCT（拿不到 widget 名），
-        // 所以自己扫一遍横向 RenderFlex —— 子宽度之和 > 自身宽度的那一个就是它。
-        final List<String> overflowing = <String>[];
-        for (final Element el in tester.allElements) {
-          final RenderObject? ro = el.renderObject;
-          if (ro is! RenderFlex || ro.direction != Axis.horizontal) continue;
-          double sum = 0;
-          RenderBox? child = ro.firstChild;
-          while (child != null) {
-            sum += child.size.width;
-            child = ro.childAfter(child);
-          }
-          if (sum > ro.size.width + 0.5) {
-            overflowing.add('${ro.size.width} ← 子 $sum ｜ '
-                '${el.debugGetCreatorChain(6).replaceAll('\n', ' ')}');
-          }
-        }
         // 掐掉休息倒计时（否则 "Pending timers"）
         workoutController?.skipRest();
         workoutController?.dispose();
         workoutController = null;
 
-        expect(first ?? second, isNull,
+        FlutterError.onError = prevOnError;
+        if (caught.isNotEmpty) {
+          // ignore: avoid_print
+          print('SWEEP-DETAIL>>> ${e.key} ${scale}× :: '
+              '${caught.first.toString().split('\n').take(14).join(' ~ ')}');
+        }
+        final Object? err = first ?? second;
+        if (err is FlutterError) {
+          // ignore: avoid_print
+          print('SWEEP-ERR>>> ${e.key} ${scale}× :: '
+              '${err.diagnostics.map((DiagnosticsNode d) => d.toStringDeep()).join(' | ')}');
+        }
+        expect(err, isNull,
             reason: '${e.key} 在 ${scale}× 下溢出了 —— 大字号是 40+ 用户会开的档位，'
                 '而溢出意味着**有内容被裁掉**（不是"看着挤"）。'
                 '${overflowing.isEmpty ? '' : '溢出的行：${overflowing.join(' ／ ')}'}');

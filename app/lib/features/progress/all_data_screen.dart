@@ -394,22 +394,29 @@ class _AllDataScreenState extends State<AllDataScreen> {
       child: Row(
         children: <Widget>[
           SizedBox(
-            width: 56,
+            width: 48,
             child: Text(day,
                 style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
           ),
-          Text(
-            // 有氧/农夫行走念「5.00 公里 · 30:00」—— 容量那一格对它们是 0，
-            // 光看"自重 × 1800"看不出这是跑还是走。
-            r.hasDistance
-                ? '${formatDistanceKm(r.distanceM!)} · ${formatDurationHms(r.reps)}'
-                : r.weightKg == null
-                    ? '自重 × ${r.reps}'
-                    : '${formatWeight(r.weightKg, widget.unit)} × ${r.reps}',
-            style: const TextStyle(
-                color: Tokens.text2, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
+          // ⚠️ **中间那格要能缩**（2026-10-10 大字号扫描抓到：1.5× 下这一行 402pt > 331pt）：
+          // 「65 kg × 10」在大字号下很宽，而右边的容量数字是**结论**、左边的日期是**定位**，
+          // 真要挤的时候该让中间这一格先让步（省略号而不是把右边顶出去）。
+          Expanded(
+            child: Text(
+              // 有氧/农夫行走念「5.00 公里 · 30:00」—— 容量那一格对它们是 0，
+              // 光看"自重 × 1800"看不出这是跑还是走。
+              r.hasDistance
+                  ? '${formatDistanceKm(r.distanceM!)} · ${formatDurationHms(r.reps)}'
+                  : r.weightKg == null
+                      ? '自重 × ${r.reps}'
+                      : '${formatWeight(r.weightKg, widget.unit)} × ${r.reps}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Tokens.text2, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: Tokens.s2),
           Text(
             formatVolume(r.volume, widget.unit, zeroText: '—'),
             style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
@@ -505,8 +512,15 @@ class _AllDataScreenState extends State<AllDataScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          Text(label,
-              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+          // 标签是"这行是什么"，值是**数据** —— 大字号下要挤时让标签先省略
+          // （2026-10-10 扫描：2.0× 下这一行 434pt > 331pt）
+          Flexible(
+            child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+          ),
+          const SizedBox(width: Tokens.s2),
           Text(
             value,
             key: key,

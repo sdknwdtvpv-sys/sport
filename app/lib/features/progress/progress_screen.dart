@@ -196,14 +196,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         // 在「身体数据」看到「188.5 lb」：同一个体重，两个单位两块屏。
                         formatBodyWeight(w.weightKg, _bodyUnit),
                         key: const Key('progress-weight'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Tokens.display(24, weight: 700, letterSpacing: Tokens.lsSnug),
                       ),
                       const SizedBox(height: Tokens.s1),
+                      // ⚠️ 大字号下这一行会很长（日期 + 用户自己写的备注）→ 允许省略号
+                      // （2026-10-10 扫描抓到：2.0× 下 360pt > 329pt）
                       Text(
                         <String>[
                           w.date,
                           if (w.note != null && w.note!.isNotEmpty) w.note!,
                         ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
                       ),
                     ],
@@ -533,12 +539,30 @@ class _ProgressScreenState extends State<ProgressScreen> {
             height: 120,
           ),
           const SizedBox(height: Tokens.s2),
+          // ⚠️ 三个轴标签都要能缩（2026-10-10 扫描：2.0× 下这一行 360pt > 329pt）——
+          // 它们是**刻度**，被省略号截掉一个字符也比"整块被裁"好。
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text(ends.first, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              Text(rangeHint(_range), style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              Text(ends.last, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              Flexible(
+                child: Text(ends.first,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              ),
+              Flexible(
+                child: Text(rangeHint(_range),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              ),
+              Flexible(
+                child: Text(ends.last,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              ),
             ],
           ),
           // 这个区间一条记录都没有就说清楚 —— 曲线画成一条平线时，

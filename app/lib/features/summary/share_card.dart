@@ -72,6 +72,20 @@ class ShareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ⚠️ **这一张卡不跟随系统字号**（2026-10-10 大字号扫描抓到的真 bug）。
+    //
+    // 它是一张**固定尺寸、会被导出成图片发出去**的产物：360×520 / 1080×1560。
+    // 而 `Text` 默认继承 `MediaQuery.textScaler` —— 用户把系统字号调到 1.5× 时，
+    // 导出的那张卡上「练了么」与日期那一行会**溢出卡片边界**（实测 1.5× 就溢出 70pt，
+    // 2.0× 溢出 177pt），发到朋友圈的是一张被裁掉一截的图。
+    // 所以这里把缩放钉成 1.0：**同一份数据在任何人的手机上导出的卡必须一模一样**。
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: _cardBody(context),
+    );
+  }
+
+  Widget _cardBody(BuildContext context) {
     if (variant == ShareCardVariant.streak) return _streakCard(context);
     return SizedBox(
       width: kShareCardWidth,
