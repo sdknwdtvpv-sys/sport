@@ -616,7 +616,7 @@ class WorkoutController extends ChangeNotifier {
       // 只震一次：之后继续撑是他自己的选择，不该每秒震一下。
       if (!_holdAnnounced && elapsed >= _reps) {
         _holdAnnounced = true;
-        unawaited(haptics.targetReached());
+        unawaited(haptics.play(HapticCue.targetReached));
       }
       _notify();
     });
@@ -763,7 +763,7 @@ class WorkoutController extends ChangeNotifier {
 
     // 这一组**真的写进去了**才震一下。上面那条 `if (!canLog) return;` 的分支
     // 刻意不震：一次没记上的震动比不震更糟（用户以为记上了）。
-    unawaited(haptics.setLogged());
+    unawaited(haptics.play(HapticCue.setLogged));
 
     // 组数达标后不禁用，只提示。计划是建议不是牢笼。
     if (_normalSets >= plan.targetSets) {
@@ -855,7 +855,7 @@ class WorkoutController extends ChangeNotifier {
         });
         restActivity.end(); // 锁屏上那条也要撤下
         // 这一下通常不看屏幕（手机扣在器械上/在包里）—— 靠震动把人叫回来
-        unawaited(haptics.restFinished());
+        unawaited(haptics.play(HapticCue.restFinished));
         // Android：锁屏上没有任何东西（iOS 有 Live Activity），发一条本地通知 ——
         // 这是"手机在包里也知道该下一组了"的唯一办法。
         unawaited(restCue.show(title: '休息结束', body: '下一组：$primaryButtonLabel'));
@@ -872,7 +872,7 @@ class WorkoutController extends ChangeNotifier {
         // 总时长 ≤ 5 秒的休息不发（5 秒的休息里"还剩 3 秒"几乎就是"开始"）。
         if (!_restPreviewed && left == 3 && _restTotalSec > 5) {
           _restPreviewed = true;
-          unawaited(haptics.restPreview());
+          unawaited(haptics.play(HapticCue.restPreview));
         }
       }
     });
@@ -896,6 +896,8 @@ class WorkoutController extends ChangeNotifier {
     _stopRest();
     // 窄通道自己也要收掉（它不是 ChangeNotifier 的一部分）
     restTick.dispose();
+    // T2-2：离开这一屏时，还没响的那"第二下"不该再震（`Future.delayed` 做不到这件事）
+    haptics.cancelPending();
     _holdTimer?.cancel();
     _holdTimer = null;
     // 退出训练屏 = 这次休息不再有意义：锁屏上那条必须撤掉，

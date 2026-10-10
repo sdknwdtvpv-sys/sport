@@ -42,22 +42,18 @@ const PlanTarget _plan = PlanTarget(
 );
 
 class _FakeHaptics implements Haptics {
-  int sets = 0;
-  int rests = 0;
-  int targets = 0;
-  int previews = 0;
+  final List<HapticCue> cues = <HapticCue>[];
+
+  int get sets => cues.where((HapticCue c) => c == HapticCue.setLogged).length;
+  int get rests => cues.where((HapticCue c) => c == HapticCue.restFinished).length;
+  int get targets => cues.where((HapticCue c) => c == HapticCue.targetReached).length;
+  int get previews => cues.where((HapticCue c) => c == HapticCue.restPreview).length;
 
   @override
-  Future<void> setLogged() async => sets += 1;
+  Future<void> play(HapticCue cue) async => cues.add(cue);
 
   @override
-  Future<void> restFinished() async => rests += 1;
-
-  @override
-  Future<void> restPreview() async => previews += 1;
-
-  @override
-  Future<void> targetReached() async => targets += 1;
+  void cancelPending() {}
 }
 
 class _Harness {
@@ -193,9 +189,9 @@ void main() {
   test('反向自检：归零分支里颜色/文案的切换与触觉在同一个同步块（没有 await）', () {
     final String src =
         File('lib/features/workout/workout_controller.dart').readAsStringSync();
-    final int i = src.indexOf('haptics.restFinished()');
+    final int i = src.indexOf('haptics.play(HapticCue.restFinished)');
     expect(i, greaterThan(0), reason: '找不到 restFinished 的调用点');
-    // 从 `if (left <= 0) {` 到 `haptics.restFinished()` 之间不许出现 await ——
+    // 从 `if (left <= 0) {` 到 `play(HapticCue.restFinished)` 之间不许出现 await ——
     // 那意味着"震动"要等一个异步操作，掉帧时就会与视觉脱开。
     final int start = src.lastIndexOf('if (left <= 0)', i);
     expect(start, greaterThan(0));

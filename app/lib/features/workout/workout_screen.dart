@@ -16,6 +16,8 @@ import '../../core/best_set.dart';
 import '../../core/last_time.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
+import '../../core/motion.dart';
+import '../../core/reduced_motion.dart';
 import '../../core/units.dart';
 import '../../core/weight_step_dialog.dart';
 import '../../data/db.dart' show ExerciseData;
@@ -102,6 +104,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   /// 不记的话那一次弹窗会被反复弹出来。key 用 `exerciseId@plannedSets` ——
   /// 换了动作或组数变了就是另一次选择，该重新问。
   final Set<String> _askedPlanDone = <String>{};
+
+  /// 大按钮现在是不是被按着（T2-2 的按压缩放）。手指滑出去要弹回来，所以三个回调都改它。
+  bool _pressed = false;
   String get _planDoneKey => '${c.exercise.id}@${c.plannedSets}';
 
   @override
@@ -557,12 +562,46 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }
 
   /// 一行"已完成的组"。长按撤销（误触的后悔药）。
+  ///
+  /// ⚠️ **2026-10-10（VI 计划 T2-2）**：新行要有**入场**（规格 §8 写的是"pop 入场 280ms"，
+  /// 而它一直只写在纸上）。实现是这一行自己的 `TweenAnimationBuilder`，**不是 `AnimatedList`**：
+  /// 健身房里连点两下是常态，`AnimatedList` 的队列会让第二行**迟到**（排队播动画）——
+  /// 而行迟到在这件事上等于"我点的那一下没成功"，用户会再点一次（那就是两组）。
+  ///
+  /// 时长用 `Motion.base`（260ms，令牌里离 280 最近的一档 —— T1-4 的裁决是"时长只许来自令牌"）。
+  /// 减弱动态效果下直接给终值（不用等）。
   Widget _doneRow(SetRecord r) {
     return GestureDetector(
       key: Key('done-set-${r.id}'),
       behavior: HitTestBehavior.opaque,
       onLongPress: () => c.undoSet(r.id),
-      child: Padding(
+      child: _popIn(key: 'done-row-fade-${r.id}', child: _doneRowBody(r)),
+    );
+  }
+
+  /// 新行入场：**透明 0 → 1 且略微放大 0.96 → 1**（"长出来"而不是"闪出来"）。
+  Widget _popIn({required String key, required Widget child}) {
+    if (reducedMotion(context)) return child;
+    return TweenAnimationBuilder<double>(
+      key: Key(key),
+      duration: Motion.base,
+      // ⚠️ 用 `Motion.standard` 而**不是** `Motion.arrival`：后者是**过冲**曲线
+      // （峰值 1.0978，T1-4 里专门钉过这个数），喂给 `Opacity` 会直接断言失败 ——
+      // 透明度没有"超过 1"这回事。想做过冲就用 `Transform.scale` 单独加，
+      // 不许让它经过透明度（这条是测试当场抓出来的）。
+      curve: Motion.standard,
+      tween: Tween<double>(begin: 0, end: 1),
+      builder: (BuildContext context, double t, Widget? inner) => Opacity(
+        key: Key('$key-opacity'),
+        opacity: t,
+        child: Transform.scale(scale: 0.96 + 0.04 * t, child: inner),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _doneRowBody(SetRecord r) {
+    return Padding(
         padding: const EdgeInsets.only(bottom: Tokens.s2),
         child: Row(
           children: <Widget>[
@@ -612,7 +651,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     fontWeight: Tokens.fwBold)),
           ],
         ),
-      ),
     );
   }
 
@@ -669,12 +707,28 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
           ),
           const SizedBox(height: Tokens.s2),
+          // ⚠️ **2026-10-10（VI 计划 T2-2）**：`interaction-spec.md` §5 写着
+          // "按压缩放 0.975，时长 100ms ease"，而它一直**只写在纸上**——
+          // 这是全产品调用最频繁的一次交互（一次训练 12–25 次），
+          // 手指按下去有没有回应，直接决定"1 次点击 = 1 组"这句话的可信度。
+          //
+          // 三个回调缺一不可：`onTapDown` 按下去、`onTapUp` 抬手、
+          // `onTapCancel` **手指滑出按钮**（这才是最容易漏的那个 —— 滑出去手指就不该
+          // 回弹成"按过"的样子，更不该记组）。
           GestureDetector(
             key: const Key('big-log-button'),
             behavior: HitTestBehavior.opaque,
             onTap: c.onBigButtonTap,
             onLongPress: c.onLongPress,
-            child: Container(
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapUp: (_) => setState(() => _pressed = false),
+            onTapCancel: () => setState(() => _pressed = false),
+            child: AnimatedScale(
+              // 目标值就是规格里的 0.975；时长走令牌（`Motion.instant` = 100ms）
+              scale: _pressed ? 0.975 : 1.0,
+              duration: reducedMotion(context) ? Duration.zero : Motion.instant,
+              curve: Motion.press,
+              child: Container(
               height: Tokens.hPrimary,
               width: double.infinity,
               alignment: Alignment.center,
@@ -706,12 +760,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ),
                     ),
                     const SizedBox(width: Tokens.s2),
-                    Text('✓',
-                        style: TextStyle(
-                            color: c.canLog ? Tokens.accentInk : Tokens.text3,
-                            fontSize: Tokens.fsNumL,
-                            fontWeight: Tokens.fwBold)),
-                  ],
+                      Text('✓',
+                          style: TextStyle(
+                              color: c.canLog ? Tokens.accentInk : Tokens.text3,
+                              fontSize: Tokens.fsNumL,
+                              fontWeight: Tokens.fwBold)),
+                    ],
+                  ),
                 ),
               ),
             ),

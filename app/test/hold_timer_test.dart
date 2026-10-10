@@ -44,20 +44,16 @@ const PlanTarget _plan = PlanTarget(
 );
 
 class _FakeHaptics implements Haptics {
-  int sets = 0;
-  int targets = 0;
+  final List<HapticCue> cues = <HapticCue>[];
+
+  int get sets => cues.where((HapticCue c) => c == HapticCue.setLogged).length;
+  int get targets => cues.where((HapticCue c) => c == HapticCue.targetReached).length;
 
   @override
-  Future<void> setLogged() async => sets += 1;
+  Future<void> play(HapticCue cue) async => cues.add(cue);
 
   @override
-  Future<void> restFinished() async {}
-
-  @override
-  Future<void> restPreview() async {}
-
-  @override
-  Future<void> targetReached() async => targets += 1;
+  void cancelPending() {}
 }
 
 class _Harness {

@@ -48,22 +48,18 @@ const PlanTarget _plan3x8to10 = PlanTarget(
 /// 记下"该震的时候震了没有"的替身（v1.53）。真机上的震动测不了，
 /// 但"什么时候该调它"是逻辑，必须钉住 —— 尤其是**没记上那一组不许震**。
 class _FakeHaptics implements Haptics {
-  int sets = 0;
-  int rests = 0;
-  int previews = 0;
-  int targets = 0;
+  /// 记下每一次"该震"的时刻（T2-2 之后接口只有 `play(cue)` 这一个入口）。
+  final List<HapticCue> cues = <HapticCue>[];
+
+  int get sets => cues.where((HapticCue c) => c == HapticCue.setLogged).length;
+  int get rests => cues.where((HapticCue c) => c == HapticCue.restFinished).length;
+  int get targets => cues.where((HapticCue c) => c == HapticCue.targetReached).length;
 
   @override
-  Future<void> setLogged() async => sets += 1;
+  Future<void> play(HapticCue cue) async => cues.add(cue);
 
   @override
-  Future<void> restFinished() async => rests += 1;
-
-  @override
-  Future<void> restPreview() async => previews += 1;
-
-  @override
-  Future<void> targetReached() async => targets += 1;
+  void cancelPending() {}
 }
 
 class _Harness {

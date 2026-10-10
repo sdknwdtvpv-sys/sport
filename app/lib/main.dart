@@ -921,7 +921,7 @@ class _HomeShellState extends State<HomeShell> {
         restActivity: const MethodChannelRestActivity(),
         // 记一组 / 休息结束的触觉反馈（v1.53）。**生产在这里接上真的那个** ——
         // 默认是 NoopHaptics，漏传不会报错，只会"记了组没震"。
-        haptics: const SystemHaptics(),
+        haptics: SystemHaptics(),
         // 休息结束的体外提示（Android 通知；iOS 侧是空操作，那边有 Live Activity）。
         // 同样"漏传不报错、只是锁屏上没有东西"。
         restCue: const MethodChannelRestCue(),
@@ -1078,7 +1078,7 @@ class _HomeShellState extends State<HomeShell> {
         store: _store,
         syncQueue: _syncQueue,
         restActivity: const MethodChannelRestActivity(),
-        haptics: const SystemHaptics(),
+        haptics: SystemHaptics(),
         restCue: const MethodChannelRestCue(),
         lastSession: await _store.lastSessionFor(picked.id, excludeWorkoutId: workoutId),
         profile: UserProfile(unit: _unit, restOverrideSec: _restOverrideSec),
