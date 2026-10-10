@@ -274,8 +274,8 @@ class _AllDataScreenState extends State<AllDataScreen> {
             padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
             decoration: const BoxDecoration(
               border: Border(
-                top: BorderSide(color: Tokens.line),
-                bottom: BorderSide(color: Tokens.line),
+                top: BorderSide(color: Tokens.hair),
+                bottom: BorderSide(color: Tokens.hair),
               ),
             ),
             child: Row(
@@ -534,8 +534,8 @@ class _AllDataScreenState extends State<AllDataScreen> {
         padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
         decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(color: Tokens.line),
-            bottom: BorderSide(color: Tokens.line),
+            top: BorderSide(color: Tokens.hair),
+            bottom: BorderSide(color: Tokens.hair),
           ),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),

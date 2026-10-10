@@ -90,6 +90,22 @@ void main() {
       expect(contrast(Tokens.text, Tokens.bg), greaterThanOrEqualTo(7.0));
     });
 
+    test('★ 三级线：彼此亮度差不小于 1.2 倍，最强那级 ≥ 3:1（T0-4）', () {
+      // 原来 `line` 与 `lineStrong` 只差 1.07:1（白 6% vs 白 8%），而且都落在
+      // "绝对看不见"的区间里（对 bg 1.13 / 1.19）—— 卡片描边这个层级工具完全失效。
+      final double hair = contrast(Tokens.hair, Tokens.bg);
+      final double line = contrast(Tokens.line, Tokens.bg);
+      final double strong = contrast(Tokens.lineStrong, Tokens.bg);
+      expect(line / hair, greaterThanOrEqualTo(1.2),
+          reason: 'hair 与 line 要能看出差（现在 ${hair.toStringAsFixed(2)} vs ${line.toStringAsFixed(2)}）');
+      expect(contrast(Tokens.lineStrong, Tokens.surface) /
+              contrast(Tokens.line, Tokens.surface),
+          greaterThanOrEqualTo(1.2),
+          reason: '功能性边界要比卡片描边明显得多');
+      expect(strong, greaterThanOrEqualTo(3.0),
+          reason: 'WCAG 1.4.11：界面组件的边界要 3:1（实测 ${strong.toStringAsFixed(2)}）');
+    });
+
     test('★ 橙底上的字只许是 accentInk（§4 硬约束）', () {
       expect(contrast(Tokens.accentInk, Tokens.accent), greaterThanOrEqualTo(4.5));
       // 白字是**永久禁止**的那一种：写进测试，免得有人从 `vi/` 里把白胶囊搬进代码

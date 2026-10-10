@@ -1190,7 +1190,8 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             ),
           ),
           const SizedBox(height: Tokens.s2),
-          const Divider(height: 1, color: Tokens.line),
+          // 分组标题下的分隔线：躺在 bg 上 → hair（VI 计划 T0-4 的页面级长分隔）
+          const Divider(height: 1, color: Tokens.hair),
         ],
       );
 

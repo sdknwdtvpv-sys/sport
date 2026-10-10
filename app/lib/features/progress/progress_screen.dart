@@ -164,8 +164,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
       padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
       decoration: const BoxDecoration(
         border: Border(
-          top: BorderSide(color: Tokens.line),
-          bottom: BorderSide(color: Tokens.line),
+          top: BorderSide(color: Tokens.hair),
+          bottom: BorderSide(color: Tokens.hair),
         ),
       ),
       child: Row(
@@ -331,8 +331,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
       padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
       decoration: const BoxDecoration(
         border: Border(
-          top: BorderSide(color: Tokens.line),
-          bottom: BorderSide(color: Tokens.line),
+          top: BorderSide(color: Tokens.hair),
+          bottom: BorderSide(color: Tokens.hair),
         ),
       ),
       child: Column(
@@ -414,8 +414,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
       key: const Key('progress-stats'),
       decoration: const BoxDecoration(
         border: Border(
-          top: BorderSide(color: Tokens.line),
-          bottom: BorderSide(color: Tokens.line),
+          top: BorderSide(color: Tokens.hair),
+          bottom: BorderSide(color: Tokens.hair),
         ),
       ),
       child: Column(
@@ -435,7 +435,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
               deltaKey: const Key('progress-delta-workouts'),
             )),
           ]),
-          const Divider(height: 1, thickness: 1, color: Tokens.line),
+          // 带子内部那道横线：它躺在 bg 上 → hair（页面级分隔）
+          const Divider(height: 1, thickness: 1, color: Tokens.hair),
           _statRow(<Widget>[
             _statCell(StatTile(
               label: '$range组数',
@@ -540,8 +541,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Container(
       decoration: const BoxDecoration(
         border: Border(
-          top: BorderSide(color: Tokens.line),
-          bottom: BorderSide(color: Tokens.line),
+          top: BorderSide(color: Tokens.hair),
+          bottom: BorderSide(color: Tokens.hair),
         ),
       ),
       child: Column(
@@ -553,7 +554,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               decoration: BoxDecoration(
                 border: i == d.prs.length - 1
                     ? null
-                    : const Border(bottom: BorderSide(color: Tokens.line)),
+                    : const Border(bottom: BorderSide(color: Tokens.hair)),
               ),
               child: Row(
                 children: <Widget>[

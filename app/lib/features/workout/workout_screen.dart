@@ -400,8 +400,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
         decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(color: Tokens.line),
-            bottom: BorderSide(color: Tokens.line),
+            top: BorderSide(color: Tokens.hair),
+            bottom: BorderSide(color: Tokens.hair),
           ),
         ),
         child: IntrinsicHeight(
@@ -887,7 +887,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Tokens.line)),
+        border: Border(top: BorderSide(color: Tokens.hair)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

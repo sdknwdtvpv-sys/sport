@@ -20,10 +20,25 @@ abstract final class Tokens {
   static const Color surface = Color(0xFF1A1714);
   static const Color elevated = Color(0xFF24201C);
 
-  /// 分隔线：稿子里用的是**半透明白**（4%–8%），不是实心灰 —— 这样它叠在任何一层
-  /// 背景上都自动正确（旧版是 #2A2A31 那种实心灰，底色一换就得逐个重算）。
-  static const Color line = Color(0x0FFFFFFF); // 白 6%
-  static const Color lineStrong = Color(0x14FFFFFF); // 白 8%
+  /// **三级线**（2026-10-10，VI 计划 T0-4）。原来只有 `line`（白 6%）与 `lineStrong`（白 8%），
+  /// 两者**只差 1.07:1**，而且都落在"绝对看不见"的区间里（对 `bg` 1.13 / 1.19）——
+  /// 于是"卡片描边"这个本该承担层级的东西**完全失效**：它既分不出两级，也几乎看不见。
+  ///
+  /// 现在改成**实色三级**，每一级都有明确职责（别再随手挑一个用）：
+  ///   * [hair] 1.30:1 —— **页面级的长分隔**（「进步」的数字带、训练屏的对照带、
+  ///     「我」的统计带上下那两条）。它躺在 `bg` 上，最淡就够；
+  ///   * [line] 1.59:1（对 `surface` 1.45）—— **卡片描边**与**卡片内部**的行分隔；
+  ///   * [lineStrong] 3.18:1 —— **功能性边界**：输入框、未选中胶囊、分段控件外壳。
+  ///     这一条是 WCAG 1.4.11 那条"界面组件的边界要 3:1"。
+  ///
+  /// ⚠️ 为什么放弃半透明：半透明线的红利是"叠在任何底色上都自动正确"，
+  /// 但代价是**它永远只有一档可见度** —— 而层级需要的是"两档之间看得出差"。
+  /// 换成实色之后，"哪一级只能上哪一层"就成了必须写下来的规矩：
+  /// **`hair` 只做上下分隔（不许 `Border.all`）、`line` 不上页面长的分隔、`lineStrong` 只给功能边界。**
+  /// `theme_discipline_test.dart`（放 `app/test/`）扫这几条。
+  static const Color hair = Color(0xFF2A2622);
+  static const Color line = Color(0xFF3A342E);
+  static const Color lineStrong = Color(0xFF6A6055);
 
   // 前景层级（VI 的 neutral-50 / 300 / 500）
   static const Color text = Color(0xFFF5F3F1);
