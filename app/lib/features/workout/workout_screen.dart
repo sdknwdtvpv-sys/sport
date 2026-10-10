@@ -534,12 +534,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               const Spacer(),
               // 撤销的**入口要看得见**（v1.53）。只在真的记过组时出现 ——
               // 空列表上摆一句"长按可撤销"是废话。
+              //
+              // ⚠️ **必须是 `Flexible` + 省略号**（2026-10-10 在 2.0× 下抓到的那条溢出）：
+              // 这一行是「本次 · N 组」+ `Spacer` + 这句提示，三项在 2.0× 下合计 388pt >
+              // 屏宽 371pt。要缩的是**提示**那一句（"本次 · N 组"是信息，先保它）。
               if (sets.isNotEmpty)
-                Text(
-                  '长按某一行可撤销',
-                  key: const Key('done-list-hint'),
-                  style: const TextStyle(
-                      color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhTight),
+                Flexible(
+                  child: Text(
+                    '长按某一行可撤销',
+                    key: const Key('done-list-hint'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhTight),
+                  ),
                 ),
             ],
           ),
