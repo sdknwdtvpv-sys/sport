@@ -60,11 +60,19 @@ class NotificationDetailScreen extends StatelessWidget {
                 style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
             ),
-            Text(
-              '${at.year}-${_two(at.month)}-${_two(at.day)} '
-              '${_two(at.hour)}:${_two(at.minute)}',
-              key: const Key('notification-detail-time'),
-              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+            // ⚠️ **`Flexible`（不是裸 `Text`）**：2026-10-10 大字号扫描抓到
+            // 2.0× 下这一行溢出 **63px** —— 左边那 34pt 图标 + 分类名是固定的，
+            // 时间戳又是**必须完整**的信息（这一行存在的理由就是"到底是哪天"），
+            // 所以让它**折行**而不是省略：`Flexible` + 右对齐，1× 下仍是一行，
+            // 大字号下换到第二行。
+            Flexible(
+              child: Text(
+                '${at.year}-${_two(at.month)}-${_two(at.day)} '
+                '${_two(at.hour)}:${_two(at.minute)}',
+                key: const Key('notification-detail-time'),
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+              ),
             ),
           ],
         ),

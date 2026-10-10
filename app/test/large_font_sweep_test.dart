@@ -34,6 +34,10 @@ import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
 import 'package:lianleme/health/health_bridge.dart';
 import 'package:lianleme/features/notifications/notification_center_screen.dart';
+import 'package:lianleme/features/notifications/notification_detail_screen.dart';
+import 'package:lianleme/features/backup/cloud_backup_screen.dart';
+import 'package:lianleme/features/profile/privacy_about_screen.dart';
+import 'package:lianleme/features/onboarding/intro_carousel_screen.dart';
 import 'package:lianleme/features/profile/settings_home_screen.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/core/units.dart';
@@ -173,6 +177,30 @@ void main() {
           repository: repo,
           profile: ProfileRepository(db),
         ),
+    // 收尾补的四屏：都是"能到、但原来没人扫过大字号"的二级页。
+    // 通知详情是最窄的一屏（ProfileSubPage + 图标 + 长正文）；
+    // 「隐私与关于」那几段撤回说明是**全 App 最长的正文**；
+    // 云备份页有一行状态 + 一个主按钮；引导轮播是首启动第一眼。
+    '通知详情': () async => NotificationDetailScreen(
+          notification: AppNotificationData(
+            id: 'n1',
+            kind: 'achievement',
+            title: '解锁了新徽章',
+            body: '你解锁了「连续 7 天」——这个提示本身也会很长，'
+                '长到在大字号下必须能换行而不是把右边顶出去。',
+            createdAtMs: DateTime(2026, 10, 10, 9).millisecondsSinceEpoch,
+          ),
+        ),
+    '云备份': () async => CloudBackupScreen(
+          store: store,
+          repository: repo,
+          profile: ProfileRepository(db),
+        ),
+    '隐私与关于': () async => PrivacyAboutScreen(profile: ProfileRepository(db)),
+    '引导轮播': () async => IntroCarouselScreen(
+          onSkip: () {},
+          onStartFirst: () {},
+        ),
     '分享卡预览': () async => ShareCardPreviewScreen(
           summary: (await SummaryService(store: store, repository: repo)
               .build('w1', unit: WeightUnit.kg))!,
@@ -271,6 +299,15 @@ void main() {
         workoutController = null;
 
         FlutterError.onError = prevOnError;
+        // ⚠️ **接住之后必须再喂回原来的处理器**（2026-10-10 自己踩的坑）：
+        // `FlutterError.onError = caught.add` 会把异常**吞掉** —— 测试框架那个
+        // 处理器收不到，`takeException()` 于是永远是 null，**真的溢出被判成通过**。
+        // 第一版就是这么写的：补进「通知详情」这一屏后，它明明报了
+        // "A RenderFlex overflowed by 63 pixels"，测试却打的是 All tests passed。
+        // 所以：留一份给自己看（下面那行 SWEEP-DETAIL），再原样转发给原处理器。
+        for (final FlutterErrorDetails d in caught) {
+          prevOnError?.call(d);
+        }
         if (caught.isNotEmpty) {
           // ignore: avoid_print
           print('SWEEP-DETAIL>>> ${e.key} ${scale}× :: '
