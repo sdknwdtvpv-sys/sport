@@ -270,12 +270,25 @@ class _HomeShellState extends State<HomeShell> {
   void _selectTab(int i) {
     if (i == _tab) return;
     setState(() => _tab = i);
-    if (!GlassSurface.isSupportedPlatform) return;
-    // ⚠️ 2026-10-10（VI 计划 T1-4）：原来这里是 `260 + 90 × 距离` + `Curves.easeOutCubic`
-    // —— 一个规格外的算式加一个规格外的曲线。现在走 `Motion.pageTransition`（300ms）
-    // + `Motion.standard`：**跨屏位移按"跨屏"选档**，不为远近再开一档。
-    _pages.animateToPage(i,
-        duration: Motion.pageTransition, curve: Motion.standard);
+    // ⚠️ 2026-10-10（VI 计划 **T2-5**）：这里原来有一句
+    //     `if (!GlassSurface.isSupportedPlatform) return;`
+    // 位置在动画**之前** —— 于是 Android 上点底栏是**瞬切**、iOS 上是 300ms 缓动。
+    // 同一台产品两台设备两种手感，而规格书里从来没定义过 Tab 切换的动效。
+    // 现在两条平台共用这一段（`tab_transition_test.dart` 钉着"Android 也真的在动"）。
+    //
+    // iOS 上底栏那枚选中胶囊由**原生自己动**，Dart 只管 `PageView` 的位移 ——
+    // 两者各自跑完、不互相等。极端情况下（连点两格）会有一瞬间
+    // "底栏已经选好了、页面还在路上"，这是**可以接受**的：反过来会让底栏变迟钝。
+    //
+    // 2026-10-10（T1-4）：原来这里是 `260 + 90 × 距离` + `Curves.easeOutCubic`
+    // —— 一个规格外的算式加一个规格外的曲线。现在**跨屏位移按"跨屏"选档**，
+    // 不为远近再开一档（同一个测试里那条"时长不随距离变"钉着）。
+    // `hasClients`：外壳在"同意门之前 / 引导页"那一帧还没有 `PageView`，
+    // 这时点不到底栏（底栏也不在树上），但护栏还是留着 —— 断言崩溃比动画没跑更糟。
+    if (_pages.hasClients) {
+      _pages.animateToPage(i,
+          duration: Motion.pageTransition, curve: Motion.standard);
+    }
   }
 
   /// 有没有同意过隐私政策。**null = 还没从库里读出来**（读出来之前什么都不做）。
@@ -1888,9 +1901,27 @@ class _HomeShellState extends State<HomeShell> {
             Expanded(
               child: !GlassSurface.isSupportedPlatform
                   // Android：底栏仍然贴在内容**下面**（通栏、贴底）。
+                  //
+                  // ⚠️ 2026-10-10（VI 计划 **T2-5**）：内容这一层以前是
+                  // `Expanded(child: _bodyFor(_tab))` —— **Android 上根本没有 `PageView`**，
+                  // 所以 `_selectTab` 里那句 `if (!isSupportedPlatform) return;` 不是懒，
+                  // 而是**在躲一个 assert**（`PageController is not attached to a PageView`）。
+                  // 现在两支共用同一个 `PageView`：Tab 切换的手感两台设备一致，
+                  // Android 顺带也有了"左右拖着换格"（与 iOS 同一条）。
                   ? Column(
                       children: <Widget>[
-                        Expanded(child: _bodyFor(_tab)),
+                        Expanded(
+                          child: PageView(
+                            controller: _pages,
+                            onPageChanged: (int i) {
+                              if (i != _tab) setState(() => _tab = i);
+                            },
+                            children: <Widget>[
+                              for (int i = 0; i < AppTabBar.tabs.length; i++)
+                                _bodyFor(i),
+                            ],
+                          ),
+                        ),
                         tabBar,
                       ],
                     )
