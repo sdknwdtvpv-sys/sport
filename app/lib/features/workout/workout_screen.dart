@@ -768,10 +768,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget _restStrip() {
     if (!c.restRunning && !c.restDone) return const SizedBox.shrink();
     final int total = c.restTotalSec > 0 ? c.restTotalSec : c.plannedRestSec;
-    final double done = c.restDone || total <= 0
-        ? 1
-        : (1 - c.restRemainingSec / total).clamp(0.0, 1.0);
-    final int leftPct = ((1 - done) * 100).round();
+    // ⚠️ **条的方向 = 「还剩多少」**（2026-10-10 修，VI 计划 T0-1）。
+    // 原来这里是 `1 - 剩余/总`（条在**长**），而右边那行字写的是「还剩 41%」（数字在**减**）——
+    // 同一行里两个方向相反的信号，而这一行是"组间 60 秒"里唯一的时间线索。
+    // 现在两者同向：**条越短 = 剩得越少**（`rest_progress_direction_test.dart` 钉着）。
+    final double left = c.restDone || total <= 0
+        ? 0
+        : (c.restRemainingSec / total).clamp(0.0, 1.0);
+    final int leftPct = (left * 100).round();
     return Padding(
       key: const Key('rest-bar'),
       padding: const EdgeInsets.only(bottom: Tokens.s3),
@@ -829,7 +833,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
-              value: done,
+              value: left,
               minHeight: 3,
               backgroundColor: Tokens.lineStrong,
               valueColor: AlwaysStoppedAnimation<Color>(

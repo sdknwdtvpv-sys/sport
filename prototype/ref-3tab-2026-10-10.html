@@ -8,11 +8,23 @@
      颜色/圆角/间距全部照 app/lib/core/theme.dart 的 Tokens 抄，别在这里发明新色。
      渲染命令见 docs/plan-ux-2026-10-10.md §四。 */
   :root{
-    --bg:#0E0C0A; --surface:#1A1714; --elev:#24201C;
-    --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
-    --t1:#F5F3F1; --t2:#ABA49A; --t3:#6B6157;
-    --accent:#FF5C26; --ink:#141210; --ok:#0CAC78; --pr:#FBBF24;
-  }
+  /* ⚠️ 这一段由 `tool/gen-prototype-tokens.mjs` 从 `app/lib/core/theme.dart` 生成 —— 手改会被门禁打回 */
+  --bg:#0E0C0A; --surface:#1A1714; --elev:#24201C;
+  --line:rgba(255,255,255,0.06); --line2:rgba(255,255,255,0.08); --t1:#F5F3F1;
+  --t2:#ABA49A; --t3:#6B6157; --accent:#FF5C26;
+  --ink:#141210; --ok:#0CAC78; --pr:#FBBF24;
+  --rare:#8350EE;
+
+  /* 字号 / 行高 */
+  --fs-display:44px; --lh-display:48px;
+  --fs-title:28px;   --lh-title:34px;
+  --fs-headline:20px;--lh-headline:26px;
+  --fs-body:17px;    --lh-body:24px;
+  --fs-sub:15px;     --lh-sub:21px;
+  --fs-cap:13px;     --lh-cap:18px;
+  --fs-micro:11px;   --lh-micro:14px;
+  /* ── 生成块结束 ── */
+}
   *{box-sizing:border-box;margin:0;padding:0}
   body{
     background:#08080A; color:#CFC9C0; padding:34px 30px 40px;

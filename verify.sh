@@ -404,6 +404,17 @@ else
 fi
 echo
 
+# 原型的 token 不能漂（2026-10-10，VI 计划 T1-6）：`app/lib/core/theme.dart` 的文件头写着
+# 「三处必须一致」（theme.dart / interaction-spec §4 / prototype 的 CSS 变量），
+# 而这条契约从来没有守卫 —— 实测已经漂了三处（--elevated 是冷蓝灰、--pr 是旧琥珀、
+# --r-card 20px）。现在原型的 :root 是**生成的**，手改会被这一条打回。
+if node tool/gen-prototype-tokens.mjs --check >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 原型的 :root 与 theme.dart 同源"
+else
+  strip "$LOG"; echo "${RED}✗ 原型的 token 漂了（跑 node tool/gen-prototype-tokens.mjs）${OFF}"; fail=1
+fi
+echo
+
 # 软著材料里的数字不能漂：说明书与申请表写着「N 个源文件 / M 行」，release-checklist
 # 的「终局核验」表里还抄了一份带**页数**的。这些都是要填进申请表、与鉴别材料一起交的。
 if node tool/copyright-pdf.mjs --check-docs >"$LOG" 2>&1; then
