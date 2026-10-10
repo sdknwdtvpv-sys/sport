@@ -18,16 +18,12 @@
 > **还剩两件在你那边**：
 > * ✅ **Redmi `75caf509` 已装 v1.67.0**（2026-10-10 晚 `install -r` → `Success`，`dumpsys` 读到
 >   `1.67.0 / 82`，冷启动 `E/flutter` 0 条 / `overflowed` 0 条）。
-> * ⏳ **iPhone 17 Pro 还差两步，而且已经不在手机那一侧了**（手机侧已经好了：
->   `devicectl` 显示 `available (paired)`、`flutter devices` 认到 `iOS 27.2`）——
->   现在卡在 **Mac 的签名**：
->   1. **Xcode 登录 Apple ID**：`Xcode → Settings（⌘,）→ Accounts → 左下角 + → Apple ID`
->      （本机账号列表现在是空的，xcodebuild 报的就是 `error: No Accounts`）；
->   2. **新建一张开发证书**：同一个界面选中你的团队 → `Manage Certificates…` → 左下角 `+` →
->      `Apple Development`（钥匙串里那三张**全被吊销**了：`security find-identity -v -p codesigning`
->      每一条后面都写着 `CSSMERR_TP_CERT_REVOKED`）；
->   然后 `LIANLEME_DEVICE=00008150-000949CA0108401C tool/ios-device-run.sh` 就能装上。
->   这两条已经补进 `docs/ios-free-provisioning-guide.md` §四 的"对号入座"。
+> * ✅ **iPhone 17 Pro 也装上了 v1.67.0（`82`）**：`tool/ios-device-run.sh` → `BUILD SUCCEEDED`
+>   → `App installed`（免费档 `.dev` bundle id），`devicectl` 核到 `1.67.0 / 82` 并已拉起。
+>   ⚠️ **7 天后免费证书到期**，到那天重跑一次同一条命令即可（这一步只有你能触发，
+>   因为它需要这台 Mac 上的 Xcode 账号处于登录状态）。
+>   ⚠️ 还差一件**只有你能做**的：**上传商店** —— 三套截图与 `.aab` 都已就绪，
+>   iOS 那一边要 Apple Developer 付费账号（见下面那张表）。
 > * **上传商店**：三套截图与 `.aab` 都在 `dist/` / `store-assets/` 里就绪；
 >   iOS 那一边要 Apple Developer 账号（见下面那张表）。
 >

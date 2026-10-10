@@ -393,7 +393,7 @@ analysis server exited with code 255
 
 | 缺什么 | 为什么 | 影响 |
 |---|---|---|
-| 🚧 **真机交互验收** | 🟡 **Redmi `75caf509` 已装 v1.67.0**（2026-10-10 晚 `adb -s 75caf509 install -r "dist/练了么-v1.67.0.apk"` → `Success`；`dumpsys` 读到 `versionName=1.67.0 / versionCode=82`；冷启动 `E/flutter` **0** 条、`overflowed` **0** 条）。⚠️ **iPhone 17 Pro 还是 v1.66.0**：设备侧已经就绪（`devicectl` → `available (paired)`、`flutter devices` 认到了 `iOS 27.2`），**卡在 Mac 的签名**——Xcode 里没登录 Apple ID（`error: No Accounts`），钥匙串里那三张 `Apple Development` 证书**全部被吊销**（`CSSMERR_TP_CERT_REVOKED`）。修法见 `docs/ios-free-provisioning-guide.md` §四 新增的两行，然后 `LIANLEME_DEVICE=00008150-000949CA0108401C tool/ios-device-run.sh` | **还没做的**是在真机上把功能**实际用一遍**（`ROADMAP.md` 阶段 2 那 5 条标准） |
+| 🚧 **真机交互验收** | ✅ **两台都装上了 v1.67.0（`versionCode 82`）**：**Redmi `75caf509`** —— `adb -s 75caf509 install -r "dist/练了么-v1.67.0.apk"` → `Success`，`dumpsys` 读到 `versionName=1.67.0 / versionCode=82`，冷启动 `E/flutter` **0** 条 / `overflowed` **0** 条；**iPhone 17 Pro** —— `tool/ios-device-run.sh` → `BUILD SUCCEEDED` → `App installed`（免费档的 `.dev` bundle id），`devicectl` 读到 **`1.67.0 / 82`**、App 已拉起（免费证书 7 天有效，到期重跑一次脚本）。⚠️ 中途在 Mac 侧卡过一次签名（Xcode 没登录 Apple ID + 钥匙串里三张开发证书全被吊销）——登录账号后重跑，`-allowProvisioningUpdates` 自己新建了一张，过程记在 `docs/ios-free-provisioning-guide.md` §四 | **还没做的**是在真机上把功能**实际用一遍**（`ROADMAP.md` 阶段 2 那 5 条标准） |
 | ✅ ~~v1 → v2 迁移的真机验证~~（已在真机过） | 真机里原本是 `v1.0.0` 留下的**老库**，直接覆盖安装 `v1.2.0`（`schemaVersion` 1 → 3）后，`onUpgrade` 跑完、**数据一条没丢**（冷启动读回 12 组） | 这是"老库升级必须真机过一次"的实测通过 |
 | 🚧 **分享卡的交付** | 生成与交付都已实现（`share_plus` + `gal`），但分享面板与相册写入依赖平台通道 | 测试覆盖不到，只能真机跑 |
 | ❌ **发布签名** | 目前只有 debug key；release 签名要生成 keystore 并妥善保管（不能进仓库） | 商店不接受 debug 签名的包 |

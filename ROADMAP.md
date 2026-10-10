@@ -24,7 +24,7 @@
 |---|---|---|---|
 | **0** | 钉住工程：git + CI 真跑起来 | ✅ 完成 | — |
 | **1** | 数据活过重启（接 drift） | ✅ 完成（**真机已验证**：覆盖安装后冷启动读回 12 组） | — |
-| **2** | 装到真机 | 🟡 **Redmi `75caf509` 已装 v1.67.0**（`versionCode 82`，2026-10-10 晚，`dumpsys` 当场核过；冷启动 `E/flutter` 0 条 / `overflowed` 0 条）。⚠️ iPhone 还是 v1.66.0：**设备侧已就绪**（`devicectl` = `available (paired)`），卡在 **Mac 的签名**（Xcode 没登录 Apple ID + 三张开发证书全被吊销） | Mac 侧两步：Xcode 登录 Apple ID、`Manage Certificates` 新建一张 Apple Development |
+| **2** | 装到真机 | ✅ **两台都装上了 v1.67.0**（`versionCode 82`）：Redmi `75caf509`（`dumpsys` 当场核过；冷启动 `E/flutter` 0 / `overflowed` 0）与 iPhone 17 Pro（`tool/ios-device-run.sh` → `BUILD SUCCEEDED` → `App installed`，`devicectl` 读到 `1.67.0 / 82`）。⚠️ 免费档证书 7 天到期，iPhone 到期重跑脚本即可 | ✅ 已完成 |
 | **3** | **自己去练一次**（带手机去健身房） | ⬜ 未开始（真机走查已做：有氧记录 / 单位切换 / 升级迁移都确认过） | 只能人做 |
 | **4** | 铺 UI 屏 | ✅ **S1–S13 全部落地**（S15 已并入 S10） | S14 未做（需支付基建，已明确砍掉） |
 | **5** | **正式**可用性测试（5 人） | 🟡 **2026-10-05 降级为"建议做、不阻塞上架"**：`tap_count` 的门槛改由**熟人短测**定（3–5 个熟人、每人 5 分钟、半天做完，口径见 `docs/usability-test-kit.md` §A） | 你（短测占半天）。这 5 场仍建议做 —— 它答的是短测答不了的（T1 是否 90 秒零提示 / Q3 选谁 / 对照差值） |
