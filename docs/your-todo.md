@@ -16,9 +16,10 @@
 > 这一版里有：VI 落地那一整批、会员（Ultra）内核与会员页、**进阶分析**、**批量整理历史**。
 >
 > **还剩两件在你那边**：
-> * **真机重装 v1.67.0**（两台都卡在设备侧动作）：Redmi `75caf509` 要在手机上点「继续安装」
->   （`adb -s 75caf509 install -r "dist/练了么-v1.67.0.apk"`）；iPhone 要先解锁 + 点「信任此电脑」
->   + 打开开发者模式，再跑 `LIANLEME_DEVICE=00008150-000949CA0108401C tool/ios-device-run.sh`。
+> * ✅ **Redmi `75caf509` 已装 v1.67.0**（2026-10-10 晚 `install -r` → `Success`，`dumpsys` 读到
+>   `1.67.0 / 82`，冷启动 `E/flutter` 0 条 / `overflowed` 0 条）。
+> * ⏳ **iPhone 17 Pro 还差一步**（还是 v1.66.0）：先在手机上解锁 + 点「信任此电脑」+ 打开开发者模式，
+>   然后 `LIANLEME_DEVICE=00008150-000949CA0108401C tool/ios-device-run.sh`。
 > * **上传商店**：三套截图与 `.aab` 都在 `dist/` / `store-assets/` 里就绪；
 >   iOS 那一边要 Apple Developer 账号（见下面那张表）。
 >
