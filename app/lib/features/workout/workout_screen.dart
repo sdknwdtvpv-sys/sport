@@ -1153,7 +1153,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           child: Text(
             '${value.toInt()}',
             style: TextStyle(
-              color: active ? Tokens.accentInk : Tokens.text3,
+              // RPE 是功能控件（要读要选）→ text2（VI 计划 T0-3）
+              color: active ? Tokens.accentInk : Tokens.text2,
               fontSize: 13,
               fontWeight: active ? FontWeight.w700 : FontWeight.w500,
             ),

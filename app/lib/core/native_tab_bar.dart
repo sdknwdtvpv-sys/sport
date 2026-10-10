@@ -164,6 +164,7 @@ NativeTabBarSpec nativeTabBarSpec({
       icons: icons,
       selectedIndex: selectedIndex,
       selectedColor: hexOfColor(Tokens.accent),
-      unselectedColor: hexOfColor(Tokens.text3),
+      // 未选中 = text2：tab 标签是功能性标签（VI 计划 T0-3）
+      unselectedColor: hexOfColor(Tokens.text2),
       hairline: hexOfColor(Tokens.line),
     );

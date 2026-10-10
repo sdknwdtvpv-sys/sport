@@ -322,7 +322,8 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 style: const TextStyle(color: Tokens.text, fontSize: 17),
                 decoration: InputDecoration(
                   hintText: '搜索动作或别名，如 bp / rdl',
-                  hintStyle: const TextStyle(color: Tokens.text3, fontSize: 17),
+                  // 搜索 hint 是「这里能干什么」的唯一提示 → text2（VI 计划 T0-3）
+                  hintStyle: const TextStyle(color: Tokens.text2, fontSize: 17),
                   filled: true,
                   fillColor: Tokens.surface,
                   contentPadding: const EdgeInsets.symmetric(
@@ -550,7 +551,8 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
         ].join(' · '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: Tokens.text3, fontSize: 13),
+        // 每行的「部位 · 器械」是选之前要读的东西 → text2（VI 计划 T0-3）
+        style: const TextStyle(color: Tokens.text2, fontSize: 13),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -621,7 +623,8 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               width: 30,
               child: Text(label,
                   key: Key('filter-label-$label'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: 12)),
+                  // 行标签是功能性标签（「这行筛的是什么」）→ text2（VI 计划 T0-3）
+                  style: const TextStyle(color: Tokens.text2, fontSize: 12)),
             ),
             Expanded(
               child: ListView(

@@ -28,7 +28,20 @@ abstract final class Tokens {
   // 前景层级（VI 的 neutral-50 / 300 / 500）
   static const Color text = Color(0xFFF5F3F1);
   static const Color text2 = Color(0xFFABA49A);
-  static const Color text3 = Color(0xFF6B6157);
+  /// ⚠️ **2026-10-10 提亮**（VI 计划 T0-3，`docs/plan-vi-2026-10-10.md`）：`#6B6157` → `#8A8176`。
+  ///
+  /// 旧值在 `surface` 上只有 **2.95:1**、在 `bg` 上 3.23:1，而 `docs/interaction-spec.md` §9
+  /// 自己写着「`--text-3` 仅用于非关键信息，**且 ≥ 4.5:1**」—— 规格与实现互相打脸，
+  /// 而它被用了 **253 处**（其中 173 处在 11–13pt 的小字里）。
+  ///
+  /// 新值：对 `bg` **5.06:1**、对 `surface` **4.66:1**（都过 4.5），
+  /// 但对 `elevated` 只有 **4.22:1** —— 所以多了一条硬规矩：
+  /// **`text3` 只有权落在 `bg` / `surface` 上，不许上 `elevated` 或更亮的层**
+  /// （`theme_contrast_test.dart`（放 `app/test/`）会在真实界面树上扫这一条）。
+  ///
+  /// 配套（同一天做的）：凡是「用户读了要据此做动作」的标签**一律改 `text2`**，
+  /// 不管字号 —— 未选中 tab、选动作页的筛选行标签与每行副标题、搜索 hint、RPE 未选中值都改了。
+  static const Color text3 = Color(0xFF8A8176);
 
   // 强调色
   /// 唯一主操作色。**一屏之内只允许出现一次**，出现两次即说明主次不分。

@@ -118,7 +118,9 @@ class AppTabBar extends StatelessWidget {
             tabs[i].label,
             key: const Key('tab-center-label'),
             style: TextStyle(
-              color: i == current ? Tokens.accent : Tokens.text3,
+              // ⚠️ 未选中用 text2（不是 text3）：tab 标签是「我在哪一屏」的唯一线索，
+                        // 属于**功能性标签**（VI 计划 T0-3 的豁免规则）。
+                        color: i == current ? Tokens.accent : Tokens.text2,
               fontSize: 11,
               height: 1.2,
             ),
@@ -192,13 +194,17 @@ class AppTabBar extends StatelessWidget {
                       Icon(
                         tabs[i].icon,
                         size: iconsize,
-                        color: i == current ? Tokens.accent : Tokens.text3,
+                        // ⚠️ 未选中用 text2（不是 text3）：tab 标签是「我在哪一屏」的唯一线索，
+                        // 属于**功能性标签**（VI 计划 T0-3 的豁免规则）。
+                        color: i == current ? Tokens.accent : Tokens.text2,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         tabs[i].label,
                         style: TextStyle(
-                          color: i == current ? Tokens.accent : Tokens.text3,
+                          // ⚠️ 未选中用 text2（不是 text3）：tab 标签是「我在哪一屏」的唯一线索，
+                        // 属于**功能性标签**（VI 计划 T0-3 的豁免规则）。
+                        color: i == current ? Tokens.accent : Tokens.text2,
                           fontSize: 11,
                           height: 1.2,
                         ),
