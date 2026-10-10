@@ -9,7 +9,7 @@
 
 ## 〇、先说三条结论（这三条决定了后面怎么选）
 
-1. **最容易被搜到的那两个库，图是不能用的** —— `yuhonas/free-exercise-db` 与 `wrkout/exercises.json`
+1. **最容易被搜到的那两个库，图是不能用的** —— `yuhonas/free-exercise-db` 与 `wrkout` 那个 exercises 数据集
    的图片不是"许可不明"，是**已知侵权**：维护者 issue 原话「I actually have no idea where the images
    are from … usage would be at your own risk」，上游 README 更直接写了
    「these have been scraped off the internet … would advise against using them in commercial projects
@@ -42,7 +42,7 @@
 
 | 资源 | 为什么不能碰 |
 |---|---|
-| `yuhonas/free-exercise-db` · `wrkout/exercises.json` 的**图** | **已知侵权**（抓的 bodybuilding.com / ExRx），画面含器械商标；JSON 可用、图不可用 |
+| `yuhonas/free-exercise-db` · `wrkout` 那个 exercises 数据集 的**图** | **已知侵权**（抓的 bodybuilding.com / ExRx），画面含器械商标；JSON 可用、图不可用 |
 | `gengyueworks/gym-exercise-guide` 的图 | 自称源自上面那批 + Unlicense，实测不符 → 来源无法核实（**中文文本可取**） |
 | `hasaneyldrm/exercises-dataset`（22.6k★） | MEDIA 例外原文「Cloning this repository does not grant you any license to the media」，媒体版权属 Gym visual |
 | **ExerciseDB / exercisedb.io API** | 条款禁止缓存、禁止留存、终止后须删除、禁止做竞品 → **完全不能打包进产品** |
