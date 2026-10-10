@@ -18,6 +18,7 @@
 /// 刻意**没有**放的：会员入口（还没有付费功能，占位入口比没有更糟）。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_info.dart';
@@ -285,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+            const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
           ],
         ),
       );
@@ -549,7 +550,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             key: const Key('profile-fact-line'),
             children: <Widget>[
-              const Icon(Icons.local_fire_department, color: Tokens.text3, size: 15),
+              const Icon(Icons.local_fire_department, color: Tokens.text3, size: IconSpec.s),
               const SizedBox(width: Tokens.s2),
               Expanded(
                 child: Text(

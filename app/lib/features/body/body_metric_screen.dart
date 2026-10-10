@@ -12,6 +12,7 @@
 ///      这是一个有意的例外，不是忘了规矩。
 library;
 
+import '../../core/icon_spec.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
@@ -423,7 +424,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               horizontal: Tokens.s4, vertical: Tokens.s3),
           child: Row(
             children: <Widget>[
-              Icon(Icons.favorite_outline, size: 20, color: Tokens.accent),
+              Icon(Icons.favorite_outline, size: IconSpec.m, color: Tokens.accent),
               const SizedBox(width: Tokens.s3),
               Expanded(
                 child: Column(
@@ -445,7 +446,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+                  : Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
             ],
           ),
         ),

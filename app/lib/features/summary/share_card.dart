@@ -11,6 +11,7 @@
 /// 否则同一份训练在不同手机上分享出来长得不一样。
 library;
 
+import '../../core/icon_spec.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -180,7 +181,7 @@ class ShareCard extends StatelessWidget {
               const SizedBox(height: Tokens.s2),
               Row(
                 children: <Widget>[
-                  const Icon(Icons.local_fire_department, color: Tokens.accent, size: 20),
+                  const Icon(Icons.local_fire_department, color: Tokens.accent, size: IconSpec.m),
                   const SizedBox(width: Tokens.s2),
                   Text('连续打卡 $streak 天',
                       key: const Key('share-card-streak-text'),

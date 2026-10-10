@@ -8,6 +8,7 @@
 /// 一旦开始搜索或筛部位，就退回平铺列表 —— 那时用户已经知道自己在找什么。
 library;
 
+import '../../core/icon_spec.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -565,7 +566,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               tooltip: pinned ? '取消置顶' : '置顶',
               icon: Icon(
                 pinned ? Icons.push_pin : Icons.push_pin_outlined,
-                size: 18,
+                size: IconSpec.m,
                 color: pinned ? Tokens.accent : Tokens.text3,
               ),
               onPressed: () => _togglePin(e),

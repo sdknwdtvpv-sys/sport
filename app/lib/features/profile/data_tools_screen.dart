@@ -8,6 +8,7 @@
 /// 这一页的顺序是**按危险程度**排的：身体数据 → 导出（只读）→ 导入（写）→ 删除（不可撤销）。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -406,7 +407,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
                 '体重、体脂率、腰围、肌肉量。一天一条',
                 style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
-              trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+              trailing: const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
             ),
             const Divider(height: 1, color: Tokens.line),
           ],
@@ -422,7 +423,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               '复制成 CSV 到剪贴板（报表，不能导回来）',
               style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
-            trailing: const Icon(Icons.ios_share, color: Tokens.text3, size: 20),
+            trailing: const Icon(Icons.ios_share, color: Tokens.text3, size: IconSpec.m),
           ),
         ]),
         const SizedBox(height: Tokens.s5),
@@ -441,7 +442,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             // 本来就该由下面那行「导入备份」负责。**彻底删掉**，一行都不留。
             // ⚠️ 这一行因此成了这一屏**唯一没有副标题**的导航行（其余五行都留着），
             // 这是刻意的：想不出该说什么，就什么都不说 —— 见 `docs/copy.md`。
-            trailing: const Icon(Icons.save_alt, color: Tokens.text3, size: 20),
+            trailing: const Icon(Icons.save_alt, color: Tokens.text3, size: IconSpec.m),
           ),
           const Divider(height: 1, color: Tokens.line),
           ListTile(
@@ -456,7 +457,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               '把备份内容粘进来',
               style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
-            trailing: const Icon(Icons.download, color: Tokens.text3, size: 20),
+            trailing: const Icon(Icons.download, color: Tokens.text3, size: IconSpec.m),
           ),
           const Divider(height: 1, color: Tokens.line),
           // 回收站（2026-10-04）：软删除从第一天起就存在，但**从来没有恢复入口** ——
@@ -474,7 +475,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               '撤销掉的组会落到这里，可以恢复',
               style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
-            trailing: const Icon(Icons.delete_outline, color: Tokens.text3, size: 20),
+            trailing: const Icon(Icons.delete_outline, color: Tokens.text3, size: IconSpec.m),
           ),
           // 云备份的入口**只在配了服务器地址的包里存在**（见 lib/backup/backup_config.dart）：
           // 一个点进去必然报错的入口，比没有这个功能更伤。正式包没配地址 → 这里什么也不显示。
@@ -492,7 +493,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
                 '用邮箱和口令登录，换手机能找回。不登录也能用',
                 style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
-              trailing: const Icon(Icons.person_outline, color: Tokens.text3, size: 20),
+              trailing: const Icon(Icons.person_outline, color: Tokens.text3, size: IconSpec.m),
             ),
             const Divider(height: 1, color: Tokens.line),
             ListTile(
@@ -507,7 +508,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
                 '加密后存到服务器，换手机能取回。默认关闭',
                 style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
               ),
-              trailing: const Icon(Icons.cloud_outlined, color: Tokens.text3, size: 20),
+              trailing: const Icon(Icons.cloud_outlined, color: Tokens.text3, size: IconSpec.m),
             ),
           ],
         ]),
@@ -526,7 +527,7 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
               '清空本机记录与设置，动作库保留。不可撤销',
               style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
             ),
-            trailing: const Icon(Icons.delete_outline, color: Tokens.danger, size: 20),
+            trailing: const Icon(Icons.delete_outline, color: Tokens.danger, size: IconSpec.m),
           ),
         ]),
       ],

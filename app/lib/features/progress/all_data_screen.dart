@@ -9,6 +9,7 @@
 /// （纯函数、可测），这一层不自己算任何东西。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -292,7 +293,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
                     ),
                   ),
                 ),
-                const Icon(Icons.unfold_more, color: Tokens.text3, size: 20),
+                const Icon(Icons.unfold_more, color: Tokens.text3, size: IconSpec.m),
               ],
             ),
           ),

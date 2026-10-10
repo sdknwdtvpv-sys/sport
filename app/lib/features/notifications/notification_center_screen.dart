@@ -8,6 +8,7 @@
 /// 由 `reminder.dart` 管），两件事刻意分开：站内消息不需要任何权限就能用。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
@@ -191,7 +192,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(Icons.done_all, size: 18, color: Tokens.accentInk),
+              Icon(Icons.done_all, size: IconSpec.m, color: Tokens.accentInk),
               SizedBox(width: Tokens.s2),
               Text('全部已读',
                   style: TextStyle(
@@ -219,7 +220,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               color: Tokens.elevated,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(iconForKind(n.kind), color: colorForKind(n.kind), size: 18),
+            child: Icon(iconForKind(n.kind), color: colorForKind(n.kind), size: IconSpec.m),
           ),
           const SizedBox(width: Tokens.s3),
           Expanded(

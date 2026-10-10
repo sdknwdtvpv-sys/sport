@@ -8,6 +8,7 @@
 /// 数据部分（三项大数 + 破纪录）先做扎实，分享卡列在 ROADMAP 的后续增量里。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../analytics/analytics.dart';
@@ -228,7 +229,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Icon(Icons.lightbulb_outline, color: Tokens.text3, size: 16),
+              const Icon(Icons.lightbulb_outline, color: Tokens.text3, size: IconSpec.s),
               const SizedBox(width: Tokens.s2),
               const Text('练后小知识',
                   style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
@@ -269,7 +270,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(Icons.edit_note, size: 20, color: Tokens.text3),
+          const Icon(Icons.edit_note, size: IconSpec.m, color: Tokens.text3),
           const SizedBox(width: Tokens.s3),
           Expanded(
             child: TextField(
@@ -307,7 +308,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(Icons.event_repeat, size: 18, color: Tokens.accent),
+          const Icon(Icons.event_repeat, size: IconSpec.m, color: Tokens.accent),
           const SizedBox(width: Tokens.s3),
           Expanded(
             child: Column(
@@ -398,7 +399,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               // 完成那颗绿勾的辉光：半径最大的那一档（它是全 App 唯一"庆祝"的光）
               boxShadow: Tokens.glow(Tokens.success, radius: 28, spread: 2),
             ),
-            child: const Icon(Icons.check_rounded, color: Tokens.inkOnSuccess, size: 42),
+            child: const Icon(Icons.check, color: Tokens.inkOnSuccess, size: IconSpec.xl),
           ),
           const SizedBox(height: Tokens.s4),
           const Text(
@@ -490,7 +491,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                             color: badgeTierColor(shown[i].tier).withValues(alpha: 0.5)),
                       ),
                       child: Icon(_badgeIcon(shown[i]),
-                          color: badgeTierColor(shown[i].tier), size: 19),
+                          color: badgeTierColor(shown[i].tier), size: IconSpec.m),
                     ),
                     const SizedBox(width: Tokens.s3),
                     Text(shown[i].name,
@@ -561,7 +562,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(Icons.directions_run, size: 18, color: Tokens.text3),
+          const Icon(Icons.directions_run, size: IconSpec.m, color: Tokens.text3),
           const SizedBox(width: Tokens.s3),
           Expanded(
             child: Column(
@@ -700,7 +701,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               borderRadius: BorderRadius.circular(Tokens.rPill),
             ),
           ),
-          icon: const Icon(Icons.ios_share, size: 18),
+          icon: const Icon(Icons.ios_share, size: IconSpec.m),
           label: const Text('分享训练卡',
               style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
           onPressed: () => Navigator.of(context).push(

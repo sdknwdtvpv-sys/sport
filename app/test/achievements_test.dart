@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/icon_spec.dart';
 import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/progress/achievements_screen.dart';
@@ -168,7 +169,10 @@ void main() {
       _set('w1', DateTime(2026, 10, 5, 9)),
     ];
     await _pump(tester, sets);
-    expect(find.byIcon(Icons.check_rounded), findsWidgets, reason: '已解锁要有勾');
+    // ⚠️ 2026-10-10（VI 计划 T1-3）：`check_rounded` → 规范图形 `iconOf('check')`。
+    // 图标族从 3 套收到 1 套（`_rounded/_sharp/_two_tone` 全仓 0），
+    // 所以断言也改成"语义表里那一枚"，而不是某个族的具体字形。
+    expect(find.byIcon(iconOf('check')), findsWidgets, reason: '已解锁要有勾');
     expect(find.byIcon(Icons.lock_outline), findsWidgets, reason: '未解锁要有锁');
   });
 

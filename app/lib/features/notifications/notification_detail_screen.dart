@@ -15,6 +15,7 @@
 /// 这一页不去动仓库 —— 详情页越纯，测试越好钉。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
@@ -49,7 +50,7 @@ class NotificationDetailScreen extends StatelessWidget {
               child: Icon(
                 iconForKind(n.kind),
                 color: colorForKind(n.kind),
-                size: 18,
+                size: IconSpec.m,
               ),
             ),
             const SizedBox(width: Tokens.s3),

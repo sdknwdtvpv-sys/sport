@@ -7,6 +7,7 @@
 /// 自绘层可以在同一棵 widget 树里直接断言，不需要处理路由与动画时序。
 library;
 
+import '../../core/icon_spec.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -319,7 +320,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               child: IconButton(
                 key: const Key('exercise-info'),
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.info_outline, color: Tokens.text2, size: 20),
+                icon: const Icon(Icons.info_outline, color: Tokens.text2, size: IconSpec.m),
                 onPressed: () => _openDetail(c.exercise.id),
               ),
             ),
@@ -1243,7 +1244,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       style: const TextStyle(
                           color: Tokens.text2, fontSize: Tokens.fsCap, fontWeight: Tokens.fwStrong)),
                   const SizedBox(width: 4),
-                  const Icon(Icons.tune, size: 14, color: Tokens.text3),
+                  const Icon(Icons.tune, size: IconSpec.s, color: Tokens.text3),
                 ],
               ),
             ),

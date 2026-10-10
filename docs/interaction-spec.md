@@ -83,6 +83,12 @@
 
 ## 5. 组件规格
 
+> ⚠️ **2026-10-10（VI 计划 T1-3）：图标只有一个来源 —— `app/lib/core/icon_spec.dart`。**
+> **尺寸 4 档**（`IconSpec.s 16 / m 20 / l 24 / xl 40`，`lib` 里不许再出现 `size: <数字>`）；
+> **语义映射表** `kIconSemantics`（一个语义一个规范图形，Material 与 SF Symbol 成对写在同一条上，
+> 取错名字当场抛）；图标族只留一套（`_rounded/_sharp/_two_tone` 全仓 0）。
+> 守卫：`app/test/icon_spec_test.dart`。
+
 ### 主按钮（记录组）
 - 高度 **88pt**，宽度撑满内容区，圆角 `--r-pill`
 - 按压缩放 0.975，时长 100ms ease

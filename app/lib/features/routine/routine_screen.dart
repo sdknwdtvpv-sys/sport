@@ -9,6 +9,7 @@
 /// 那里已经有搜索、别名、最近做过与部位筛选。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 import '../../domain/models.dart' show PlanTarget;
 
@@ -320,7 +321,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
         ),
         subtitle: Text('${t.note} · ${t.items.length} 个动作',
             style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug)),
-          trailing: const Icon(Icons.add_circle_outline, color: Tokens.accent, size: 20),
+          trailing: const Icon(Icons.add_circle_outline, color: Tokens.accent, size: IconSpec.m),
         ),
       ),
     );
@@ -575,7 +576,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
                         minimumSize: const Size(0, 52),
                       ),
                       onPressed: _addExercise,
-                      icon: const Icon(Icons.add, size: 18),
+                      icon: const Icon(Icons.add, size: IconSpec.m),
                       label: const Text('添加动作'),
                     ),
                   ],
@@ -635,7 +636,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
           ),
           IconButton(
             key: Key('routine-item-remove-${i.id}'),
-            icon: const Icon(Icons.close, color: Tokens.text3, size: 20),
+            icon: const Icon(Icons.close, color: Tokens.text3, size: IconSpec.m),
             onPressed: () => _removeItem(i),
           ),
         ],

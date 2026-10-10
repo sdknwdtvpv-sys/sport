@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/icon_spec.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
@@ -258,7 +259,8 @@ void main() {
       // 2026-10-05 新 VI：完成标记是**绿色实心圆 + 白勾**，且用的是语义色 success
       expect(find.byKey(const Key('summary-done-title')), findsOneWidget);
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.check_rounded)).color,
+        // ⚠️ 2026-10-10（T1-3）：族收敛成一套 —— 断言走语义表
+        tester.widget<Icon>(find.byIcon(iconOf('check'))).color,
         const Color(0xFF06231A),
         reason: '勾的颜色变了就是换皮肤时被顺手改掉了',
       );

@@ -17,6 +17,7 @@
 /// 徽章**全部现算**（见 `badges.dart` 的文件头），这一屏不落任何库。
 library;
 
+import '../../core/icon_spec.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -264,7 +265,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             children: <Widget>[
               // 与徽章同一个"周"字：这里是**限时**的那一类，所以用沙漏不用奖杯
               Icon(c.done ? Icons.check_circle : Icons.hourglass_top,
-                  size: 18,
+                  size: IconSpec.m,
                   color: c.done ? Tokens.success : Tokens.accent),
               const SizedBox(width: Tokens.s2),
               const Expanded(
@@ -332,7 +333,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   // 集齐之后**徽记点亮**（这是奖励的第一半，另一半是下面那根条变色）
                   Icon(
                     lineIcon(l.category),
-                    size: 18,
+                    size: IconSpec.m,
                     color: l.complete ? lineColor(l.category) : Tokens.text3,
                     key: Key('line-emblem-${l.category.name}'),
                   ),
@@ -524,7 +525,7 @@ class _BadgeTile extends StatelessWidget {
               child: Icon(
                 // **每枚徽章自己的图形**（不是所有人的勾）：见 badges.dart 的 badgeIcon
                 badgeIcon(badge.id),
-                size: 22,
+                size: IconSpec.m,
                 // 渐变上走深墨：亮橙配白只有 3.08:1，深墨是 6:1（Tokens.accentInk 的注释）
                 color: on ? Tokens.accentInk : Tokens.text3,
               ),
@@ -550,8 +551,8 @@ class _BadgeTile extends StatelessWidget {
         border: Border.all(color: Tokens.bg, width: 2),
       ),
       child: Icon(
-        on ? Icons.check_rounded : Icons.lock_outline,
-        size: 11,
+        on ? Icons.check : Icons.lock_outline,
+        size: IconSpec.s,
         color: on ? Tokens.accentInk : Tokens.text3,
       ),
     );
@@ -630,7 +631,7 @@ Widget _nearestCard(List<BadgeStatus> all) {
     glow: true,
     child: Row(
       children: <Widget>[
-        Icon(badgeIcon(next.id), color: badgeTierColor(next.tier), size: 26),
+        Icon(badgeIcon(next.id), color: badgeTierColor(next.tier), size: IconSpec.l),
         const SizedBox(width: Tokens.s3),
         Expanded(
           child: Column(

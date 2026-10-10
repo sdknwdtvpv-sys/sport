@@ -10,6 +10,7 @@
 /// ⚠️ 这一屏**不写任何数据**：它只读（组记录 + 外壳给的今天计划）。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
@@ -195,7 +196,7 @@ class _PlanScreenState extends State<PlanScreen> {
             onTap: widget.onPlanWizard,
             child: Row(
               children: <Widget>[
-                const Icon(Icons.auto_awesome, color: Tokens.accent, size: 18),
+                const Icon(Icons.auto_awesome, color: Tokens.accent, size: IconSpec.m),
                 const SizedBox(width: Tokens.s3),
                 const Expanded(
                   child: Text('不知道从哪开始？帮我定个计划',
@@ -235,7 +236,7 @@ class _PlanScreenState extends State<PlanScreen> {
             onTap: widget.onResume,
             child: Row(
               children: <Widget>[
-                const Icon(Icons.play_circle_outline, color: Tokens.accent, size: 20),
+                const Icon(Icons.play_circle_outline, color: Tokens.accent, size: IconSpec.m),
                 const SizedBox(width: Tokens.s3),
                 Expanded(
                   child: Column(
@@ -256,7 +257,7 @@ class _PlanScreenState extends State<PlanScreen> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+                const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
               ],
             ),
           ),

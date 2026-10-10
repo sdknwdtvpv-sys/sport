@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 
 import 'glass_surface.dart';
+import 'icon_spec.dart';
 import 'native_tab_bar.dart';
 import 'theme.dart';
 
@@ -50,10 +51,11 @@ class AppTabBar extends StatelessWidget {
   ///   * **大一号**（26 vs 22）；
   ///   * 一点强调色（正中那格永远用强调色，不必等选中）。
   /// 两颗数都留在这一处，两端（Flutter 画 / 原生画）取同一个值。
-  static const double centerIconSize = 26;
+  /// 中间那一格的图标尺寸 = `IconSpec.l`（T1-3 之后只有 4 档）。
+  static const double centerIconSize = IconSpec.l;
 
-  /// 其余四格的图标大小（与 [centerIconSize] 一起构成"只差一号"）。
-  static const double iconsize = 22;
+  /// 其余两格的图标大小（与 [centerIconSize] 一起构成"只差一号"）。
+  static const double iconsize = IconSpec.m;
 
   /// **每屏的滚动内容底部要留出的空间**（否则最后一项会被压在玻璃下面）。
   ///
@@ -78,11 +80,13 @@ class AppTabBar extends StatelessWidget {
   ///
   /// ⚠️ **下标语义**：`main.dart` 的 `_bodyFor` 与初始 tab（1）必须与这一份
   /// **逐条对齐**，错一条就是"点开练进了进步"。两处都有注释互相指着。
+  /// 图标来自**语义映射表**（`core/icon_spec.dart` 的 `iconOf`）——
+  /// 底栏那三个名字与表里的 `progress` / `today` / `profile` 一一对应。
   static const List<({IconData icon, String label})> tabs =
       <({IconData icon, String label})>[
-    (icon: Icons.show_chart, label: '进步'),
+    (icon: Icons.trending_up, label: '进步'),
     (icon: Icons.fitness_center, label: '开练'),
-    (icon: Icons.person_outline, label: '我'),
+    (icon: Icons.person, label: '我'),
   ];
 
   /// 正中那一格（Flutter 那一支会把它画得大一号 + 强调色）。
@@ -92,10 +96,13 @@ class AppTabBar extends StatelessWidget {
   ///
   /// 为什么用 SF Symbol 而不是 Material 图标：那是系统底栏的语汇，
   /// VoiceOver、选中态的字重变化、可选的字形都与系统一致（v1.61 起就这么做了）。
+  /// ⚠️ 这三条**必须与 [tabs] 一一对应**（顺序也是）—— 长度不同会崩、
+  /// 语义错位没有任何东西会发现。它们都写在 `core/icon_spec.dart` 的
+  /// 语义映射表里（`progress` / `today` / `profile`），这里只做一次投影。
   static const List<String> _sfSymbols = <String>[
-    'chart.line.uptrend.xyaxis',
-    'dumbbell.fill',
-    'person',
+    'chart.line.uptrend.xyaxis', // progress
+    'dumbbell.fill', // today
+    'person', // profile
   ];
 
   /// 正中那一格（**完全在栏内**）：一个**大一号的强调色图标** + 文字。

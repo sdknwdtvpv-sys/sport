@@ -8,6 +8,7 @@
 /// 这里只放**没有状态**的展示件：逻辑（落库、弹层、导航）都留在各自的页面里。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
@@ -71,7 +72,7 @@ Widget navTile({
               subtitle,
               style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
             ),
-      trailing: Icon(trailing, color: trailingColor ?? Tokens.text3, size: 20),
+      trailing: Icon(trailing, color: trailingColor ?? Tokens.text3, size: IconSpec.m),
     );
 
 /// 二级页的外壳：统一的标题栏 + 返回箭头 + 可滚动内容。
@@ -112,7 +113,7 @@ class ProfileSubPage extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     child: const Padding(
                       padding: EdgeInsets.only(right: Tokens.s3, top: Tokens.s1, bottom: Tokens.s1),
-                      child: Icon(Icons.chevron_left, color: Tokens.text2, size: 26),
+                      child: Icon(Icons.chevron_left, color: Tokens.text2, size: IconSpec.l),
                     ),
                   ),
                   Expanded(

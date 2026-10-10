@@ -14,6 +14,7 @@
 /// 而这里此刻唯一该发生的事是"开始第一次训练"。所以末屏按钮直接开练。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/motion.dart';
@@ -156,7 +157,7 @@ class _IntroCarouselScreenState extends State<IntroCarouselScreen> {
                           duration: Motion.base,
                           curve: Motion.standard,
                         ),
-                        child: const Icon(Icons.arrow_forward, size: 22),
+                        child: const Icon(Icons.arrow_forward, size: IconSpec.m),
                       ),
                     ),
                 ],
@@ -219,7 +220,7 @@ class _TapArt extends StatelessWidget {
             const Positioned(
               left: 62,
               top: 62,
-              child: Icon(Icons.bolt, color: Tokens.text, size: 30),
+              child: Icon(Icons.bolt, color: Tokens.text, size: IconSpec.xl),
             ),
             Positioned(
               right: 34,
@@ -228,7 +229,7 @@ class _TapArt extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: const BoxDecoration(color: Tokens.success, shape: BoxShape.circle),
-                child: const Icon(Icons.check_rounded, color: Tokens.inkOnSuccess, size: 22),
+                child: const Icon(Icons.check, color: Tokens.inkOnSuccess, size: IconSpec.m),
               ),
             ),
           ],

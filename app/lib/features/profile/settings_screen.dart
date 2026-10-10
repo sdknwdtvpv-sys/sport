@@ -11,6 +11,7 @@
 ///   * **渐进建议**：关掉后只记录，不再提示该上多少重量。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPicker, FixedExtentScrollController;
 import 'package:flutter/material.dart';
 
@@ -213,7 +214,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             style: TextStyle(
                 color: _rest == sec ? Tokens.accent : Tokens.text, fontSize: Tokens.fsSub)),
         trailing: _rest == sec
-            ? const Icon(Icons.check, size: 18, color: Tokens.accent)
+            ? const Icon(Icons.check, size: IconSpec.m, color: Tokens.accent)
             : null,
       );
 
@@ -352,7 +353,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                   )
                 : null,
-            trailing: const Icon(Icons.chevron_right, size: 18, color: Tokens.text3),
+            trailing: const Icon(Icons.chevron_right, size: IconSpec.m, color: Tokens.text3),
           ),
         ]),
         const SizedBox(height: Tokens.s5),
@@ -415,7 +416,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
                   )
                 : null,
-            trailing: const Icon(Icons.chevron_right, size: 18, color: Tokens.text3),
+            trailing: const Icon(Icons.chevron_right, size: IconSpec.m, color: Tokens.text3),
           ),
         ]),
         const SizedBox(height: Tokens.s5),
@@ -468,7 +469,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               key: const Key('reminder-suggestion'),
               onTap: _applySuggestedTime,
               contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s4),
-              leading: const Icon(Icons.schedule, color: Tokens.text3, size: 20),
+              leading: const Icon(Icons.schedule, color: Tokens.text3, size: IconSpec.m),
               title: Text(
                 widget.trainingTimeSuggestion!,
                 style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhSnug),

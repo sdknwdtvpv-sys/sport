@@ -21,6 +21,7 @@
 /// 用户要的是换个动作，不是重新定计划（与训练屏「器械被占 → 换一个动作」同一条纪律）。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
@@ -203,7 +204,7 @@ class _DayPlanEditorState extends State<_DayPlanEditor> {
                         child: Row(
                           children: <Widget>[
                             const Icon(Icons.drag_handle,
-                                size: 18, color: Tokens.text3),
+                                size: IconSpec.m, color: Tokens.text3),
                             const SizedBox(width: Tokens.s2),
                             Expanded(
                               child: Column(
@@ -225,7 +226,7 @@ class _DayPlanEditorState extends State<_DayPlanEditor> {
                               tooltip: '换一个',
                               visualDensity: VisualDensity.compact,
                               icon: const Icon(Icons.swap_horiz,
-                                  size: 18, color: Tokens.text2),
+                                  size: IconSpec.m, color: Tokens.text2),
                               onPressed: () => _replace(i),
                             ),
                             IconButton(
@@ -233,7 +234,7 @@ class _DayPlanEditorState extends State<_DayPlanEditor> {
                               tooltip: '删掉',
                               visualDensity: VisualDensity.compact,
                               icon: const Icon(Icons.close,
-                                  size: 18, color: Tokens.text3),
+                                  size: IconSpec.m, color: Tokens.text3),
                               onPressed: () => _remove(i),
                             ),
                           ],

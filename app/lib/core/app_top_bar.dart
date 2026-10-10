@@ -16,6 +16,7 @@
 /// 但别在右上角塞"设置""消息"四个字。
 library;
 
+import 'icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import 'theme.dart';
@@ -137,7 +138,7 @@ class AppTopBar extends StatelessWidget {
             child: SizedBox(
               width: actionSize,
               height: actionSize,
-              child: Icon(icon, color: Tokens.text2, size: 22),
+              child: Icon(icon, color: Tokens.text2, size: IconSpec.m),
             ),
           ),
         ),
@@ -160,7 +161,7 @@ class AppTopBar extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: <Widget>[
-                  const Icon(Icons.notifications_none, color: Tokens.text2, size: 22),
+                  const Icon(Icons.notifications_none, color: Tokens.text2, size: IconSpec.m),
                   if (unread > 0)
                     Positioned(
                       right: 8,

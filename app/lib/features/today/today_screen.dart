@@ -7,6 +7,7 @@
 /// 假的可点按元件比没有更糟。
 library;
 
+import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
@@ -359,7 +360,7 @@ class TodayScreen extends StatelessWidget {
                   ? Icons.local_fire_department
                   : Icons.local_fire_department_outlined,
               color: streak > 0 ? Tokens.accent : Tokens.text3,
-              size: 16,
+              size: IconSpec.s,
             ),
             const SizedBox(width: Tokens.s2),
             Expanded(
@@ -424,7 +425,7 @@ class TodayScreen extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Icon(Icons.insights, color: Tokens.accent, size: 18),
+              const Icon(Icons.insights, color: Tokens.accent, size: IconSpec.m),
               const SizedBox(width: Tokens.s2),
               const Expanded(
                 child: Text('上周小结',
@@ -478,7 +479,7 @@ class TodayScreen extends StatelessWidget {
   Widget _muscleBalanceLine(String text) => Row(
         key: const Key('muscle-balance'),
         children: <Widget>[
-          const Icon(Icons.balance, color: Tokens.text3, size: 16),
+          const Icon(Icons.balance, color: Tokens.text3, size: IconSpec.s),
           const SizedBox(width: Tokens.s2),
           Expanded(
             child: Text(text,
@@ -530,7 +531,7 @@ class TodayScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        Icon(items[i].icon, color: Tokens.text2, size: 23),
+                        Icon(items[i].icon, color: Tokens.text2, size: IconSpec.l),
                         const SizedBox(height: Tokens.s2),
                         Text(items[i].label,
                             style: const TextStyle(
@@ -606,7 +607,7 @@ class TodayScreen extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              const Icon(Icons.play_circle_outline, color: Tokens.accent, size: 20),
+              const Icon(Icons.play_circle_outline, color: Tokens.accent, size: IconSpec.m),
               const SizedBox(width: Tokens.s3),
               Expanded(
                 child: Column(
@@ -621,7 +622,7 @@ class TodayScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Tokens.text3, size: 20),
+              const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
             ],
           ),
         ),
@@ -726,7 +727,7 @@ class _TodayPlanCard extends StatelessWidget {
                         horizontal: Tokens.s2, vertical: Tokens.s1),
                     child: Row(
                       children: <Widget>[
-                        Icon(Icons.refresh, size: 15, color: Tokens.text3),
+                        Icon(Icons.refresh, size: IconSpec.s, color: Tokens.text3),
                         SizedBox(width: 4),
                         Text('换一批',
                             style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
@@ -750,7 +751,7 @@ class _TodayPlanCard extends StatelessWidget {
               // ⚠️ 有「计划 ›」那个入口时**不再画这枚箭头**：两个箭头挨在一起
               // 会读成"计划 ››"（2026-10-10 证据图里就是这么出来的）。
               if (onOpen != null && onOpenPlan == null)
-                const Icon(Icons.chevron_right, size: 18, color: Tokens.text3),
+                const Icon(Icons.chevron_right, size: IconSpec.m, color: Tokens.text3),
             ],
           ),
           const SizedBox(height: Tokens.s2),
