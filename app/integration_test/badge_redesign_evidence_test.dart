@@ -107,6 +107,12 @@ void main() {
       for (final SetRecord r in sets) {
         await store.saveSet(r);
       }
+      // ⚠️ **先把上一段那棵树拆掉**（2026-10-10 修，跑 T3-4 证据时踩到）：
+      // `pumpWidget` 遇到根 widget 同类型会**复用 Element** —— 连 `ListView` 的滚动位置
+      // 一起复用。上一段（A2/A4）滚到了底下，于是这一段的头部**根本没被建出来**
+      // （懒构建），`rank-name` 报"找不到"。真实原因不是"没画"，是"没建"。
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
       await tester.pumpWidget(MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),

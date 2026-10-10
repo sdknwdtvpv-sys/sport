@@ -19,6 +19,7 @@ import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/db.dart' show ExerciseData;
+import '../progress/badge_medallion.dart';
 import '../progress/badges.dart';
 import 'share_card_exporter.dart';
 import 'share_card_preview_screen.dart';
@@ -550,17 +551,13 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
                 Row(
                   key: Key('summary-badge-${shown[i].id}'),
                   children: <Widget>[
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: badgeTierColor(shown[i].tier).withValues(alpha: 0.16),
-                        border: Border.all(
-                            color: badgeTierColor(shown[i].tier).withValues(alpha: 0.5)),
-                      ),
-                      child: Icon(_badgeIcon(shown[i]),
-                          color: badgeTierColor(shown[i].tier), size: IconSpec.m),
+                    // T3-4：**同一个渲染器**（收藏册里那 64pt 的那枚，这里 38pt）——
+                    // 同一个 id 在两处的图形与参数完全一致（有一条测试钉着）。
+                    BadgeMedallion(
+                      id: shown[i].id,
+                      tier: shown[i].tier,
+                      unlocked: true,
+                      diameter: 38,
                     ),
                     const SizedBox(width: Tokens.s3),
                     Text(shown[i].name,
@@ -580,19 +577,6 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
     );
   }
 
-  /// 徽章圆里那枚图标：照类别给（收藏册里是同一套，见 `achievements_screen.dart`）。
-  IconData _badgeIcon(BadgeStatus b) {
-    switch (b.category) {
-      case BadgeCategory.streak:
-        return Icons.local_fire_department;
-      case BadgeCategory.strength:
-        return Icons.fitness_center;
-      case BadgeCategory.explore:
-        return Icons.explore;
-      case BadgeCategory.milestone:
-        return Icons.emoji_events;
-    }
-  }
 
   Widget _stats(WorkoutSummary s) {
     return Container(

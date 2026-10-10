@@ -18,13 +18,13 @@
 library;
 
 import '../../core/icon_spec.dart';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/vi_cards.dart';
 import '../../domain/models.dart';
+import 'badge_medallion.dart';
 import 'badges.dart';
 import 'weekly_challenge.dart';
 
@@ -447,12 +447,6 @@ class _BadgeTile extends StatelessWidget {
   /// 勋章外圈直径（环形进度线画在这一圈上）。
   static const double _ring = 64;
 
-  /// 内芯直径。
-  static const double _core = 46;
-
-  /// 环形进度线的粗细。
-  static const double _stroke = 3;
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -472,151 +466,36 @@ class _BadgeTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            // A4：隐藏徽章**解锁前**只说"？？？"，解锁后才把条件讲明白。
-            // 名字（上面那一行）照常显示 —— 藏名字的话用户不知道有这么回事。
-            badge.unlocked
-                ? badge.how
-                : (badge.hidden ? '？？？' : '还差 ${badge.target - badge.current}'),
-            key: Key('badge-meta-${badge.id}'),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
-          ),
+          // ⚠️ **T3-4（用户 2026-10-10 拍板）**：未解锁的徽章**不再写「还差 N」**。
+          // 一屏原来最多同时 8 个数字 + 6 根进度条 —— 那是报表，不是收藏册；
+          // 而"还差多少"这件事已经由**外圈那根进度环**说清楚了（不用读字也看得出）。
+          // 唯一保留的一句是隐藏徽章的「？？？」：它说的是"有这么一枚，条件先不告诉你"，
+          // 与"还差几次"是两件事。
+          if (badge.unlocked || badge.hidden)
+            Text(
+              badge.unlocked ? badge.how : '？？？',
+              key: Key('badge-meta-${badge.id}'),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
+            ),
         ],
       ),
     );
   }
 
-  Widget _medallion() {
-    final bool on = badge.unlocked;
-    final Color tier = badgeTierColor(badge.tier);
-    return SizedBox(
-      width: _ring,
-      height: _ring,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          // 外圈：已解锁画满一整圈，未解锁只画到 progress
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _BadgeRingPainter(
-                progress: badge.progress,
-                color: tier,
-                unlocked: on,
-              ),
-            ),
-          ),
-          // 内芯：已解锁 = 该档渐变 + 一点外发光；未解锁 = 暗底 + 该档色的细描边
-          Center(
-            child: Container(
-              key: Key('badge-${badge.id}'),
-              width: _core,
-              height: _core,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: on ? badgeTierGradient(badge.tier) : null,
-                color: on ? null : Tokens.elevated,
-                border: on ? null : Border.all(color: tier.withValues(alpha: 0.35)),
-                // 已解锁的徽章发光（颜色跟着稀有度走）
-                boxShadow: on ? Tokens.glow(tier) : null,
-              ),
-              child: Icon(
-                // **每枚徽章自己的图形**（不是所有人的勾）：见 badges.dart 的 badgeIcon
-                badgeIcon(badge.id),
-                size: IconSpec.m,
-                // 渐变上走深墨：亮橙配白只有 3.08:1，深墨是 6:1（Tokens.accentInk 的注释）
-                color: on ? Tokens.accentInk : Tokens.text3,
-              ),
-            ),
-          ),
-          // 右下角的状态戳：**咬**进外圈里，勾/锁一眼可辨
-          Positioned(right: 0, bottom: 0, child: _statusChip(tier)),
-        ],
-      ),
-    );
-  }
+  /// 勋章本体：**唯一渲染器**（`BadgeMedallion`）——
+  /// 完成页那枚 38pt 的与这一枚 64pt 的是同一个组件、同一个 id 图形（T3-4）。
+  Widget _medallion() => BadgeMedallion(
+        id: badge.id,
+        tier: badge.tier,
+        unlocked: badge.unlocked,
+        progress: badge.progress,
+        diameter: _ring,
+      );
 
-  Widget _statusChip(Color tier) {
-    final bool on = badge.unlocked;
-    return Container(
-      width: 20,
-      height: 20,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: on ? tier : Tokens.lift,
-        // 用底色描一圈：这个戳与内芯、外圈之间不会糊成一坨
-        border: Border.all(color: Tokens.bg, width: 2),
-      ),
-      child: Icon(
-        on ? Icons.check : Icons.lock_outline,
-        size: IconSpec.s,
-        color: on ? Tokens.accentInk : Tokens.text3,
-      ),
-    );
-  }
 }
 
-/// 勋章外圈的环形进度。
-///
-/// 自己画而不用 `CircularProgressIndicator`：那个的线宽与圆头都得再包一层去覆盖，
-/// 而且 `value: null`（不确定态）在这一屏没有意义 —— "还差多少"永远是个确数。
-class _BadgeRingPainter extends CustomPainter {
-  const _BadgeRingPainter({
-    required this.progress,
-    required this.color,
-    required this.unlocked,
-  });
-
-  final double progress;
-  final Color color;
-  final bool unlocked;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Offset center = size.center(Offset.zero);
-    final double radius = (size.shortestSide - _BadgeTile._stroke) / 2;
-
-    // 底圈：未解锁时它就是"还差的那一段"。**必须比内芯亮一点**（内芯是 elevated）——
-    // 用同一个色的话，进度为 0 的徽章（早鸟/夜猫还没练到时）连"有个环"都看不出来。
-    // 这只是一层中性灰，没有引入新的色相：就是把 elevated 往 text3 提了 35%。
-    final Color lockedTrack = Color.lerp(Tokens.lift, Tokens.text3, 0.35)!;
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = _BadgeTile._stroke
-        ..color = unlocked ? color.withValues(alpha: 0.25) : lockedTrack,
-    );
-
-    final double v = progress.isNaN ? 0 : progress.clamp(0.0, 1.0);
-    if (v <= 0) return;
-
-    // 从 12 点开始顺时针：方向和"训练量在往上涨"一致
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      2 * math.pi * v,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = _BadgeTile._stroke
-        ..strokeCap = StrokeCap.round
-        ..color = unlocked ? color : color.withValues(alpha: 0.85),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _BadgeRingPainter old) =>
-      old.progress != progress || old.color != color || old.unlocked != unlocked;
-}
-
-/// **A2「离你最近的一枚」**（2026-10-06 拍板）：顶部回答"今天做什么能再拿一枚"。
-/// 判据在 `nearestBadge()`（纯函数、有单测）；全拿到了就如实说，不挑一枚充数。
-/// 点它不跳走 —— 与首页"今天的安排"同一条纪律：不给假入口。
 Widget _nearestCard(List<BadgeStatus> all) {
   final BadgeStatus? next = nearestBadge(all);
   if (next == null) {
