@@ -341,6 +341,8 @@ selfcheck tool/check-doc-tables.mjs "文档表格核对自检通过（截断/错
 # 文件改名/搬家之后它们会**悄悄指空** —— 读者照着敲就是"文件不存在"。
 selfcheck tool/check-doc-paths.mjs "文档路径核对自检通过（指空的引用藏不住）" "文档路径核对工具的自检失败"
 
+selfcheck tool/check-vi-strokes.mjs "vi 稿子线宽守卫自检通过（1.5 / 1.8 越界、2.5 / 3 例外、没有描边的不误报）" "vi 稿子线宽守卫的自检失败"
+
 # 任务卡一致性工具的**自检**：回归用例照着真事故做 ——
 # `usability/记录表.md` 里的 T5 被换成别的内容（kit 的 T5 是刻意必败任务），
 # 而报告工具只认 id，当时没有任何东西会发现。
@@ -417,6 +419,17 @@ echo
 
 # 软著材料里的数字不能漂：说明书与申请表写着「N 个源文件 / M 行」，release-checklist
 # 的「终局核验」表里还抄了一份带**页数**的。这些都是要填进申请表、与鉴别材料一起交的。
+# VI 稿子的线宽纪律（2026-10-10，VI 计划 T3-7）：客户稿子自己的线宽就有 5 个值
+# （`progress-home` 一张里 1.5 / 1.8 / 2 / 3，`tab-icon-system` 整张 1.8），
+# 而 VI 交付物最重要的一条是"**下一个照做的人不会做错**" —— 稿子混着，App 就一定会混
+# （`app/lib` 曾经 112 个字形 / 12 个尺寸 / 3 套图标族，正是这件事的下游）。
+if node tool/check-vi-strokes.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} vi/ 稿子的线宽只有 {2, 2.5, 3}"
+else
+  strip "$LOG"; echo "${RED}✗ vi/ 稿子的线宽越界（默认 2 / 大色块上的勾 2.5 / 大插画 3）${OFF}"; fail=1
+fi
+echo
+
 if node tool/copyright-pdf.mjs --check-docs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 软著材料里的源程序量与实际一致（文件数 / 行数 / 页数）"
 else
