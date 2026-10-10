@@ -9,6 +9,7 @@
 /// 加列迁移真正会出错的地方不是"崩不崩"，是**静默丢数据**。
 library;
 
+import 'package:drift/drift.dart' show QueryRow;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;

@@ -405,6 +405,27 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 
 **合计 15–21 人日**（不含"周期化计划"这个新功能；它单独再算 5–8 人日）。
 
+### M1 进度（2026-10-10 开工）
+
+| 段 | 内容 | 状态 |
+|---|---|---|
+| **M1a 内核** | 权益模型 + 九态状态机（纯函数）、本地两张表（库版本从 29 升到 30）、权益仓储、debug 假开关、判据 | ✅ **已做** —— `app/lib/billing/entitlement.dart`、`app/lib/data/entitlement_repository.dart`、`app/lib/billing/debug_grant.dart`；判据 `entitlement_test.dart`（24 条）、`entitlement_repository_test.dart`（7 条）、`migration_test.dart` 加 v29→v30、`delete_all_test.dart` 表清单加两张 |
+| **M1b 会员页与入口** | S14 会员页、付费墙文案唯一出处（3.1.2 六要素）、订阅条款页、设置页入口 `open-ultra`、判据 | ✅ **已做** —— `app/lib/billing/paywall_screen.dart` / `paywall_copy.dart` / `subscription_terms_screen.dart`；判据 `paywall_copy_test.dart`（12 条）、`free_red_line_test.dart`（4 条，含"付费入口白名单"与"开练路径零付费字样"）、`accent_budget_test` 加会员页额度 1、`large_font_sweep_test` 加会员页（**19 屏**） |
+| **M1c 锁点接线** | 进步页进阶分析（预览态）、全部数据批量整理、云备份多版本入口、导出进阶 | ⬜ **未做**（下一步） |
+| M2 真内购 | `in_app_purchase`、商品、沙盒、恢复购买、`presentCodeRedemptionSheet` 之外的一切 | ⬜ 等 M1c |
+
+**M1 里两处刻意的"还不做"**（都写进了代码注释，免得被当漏做）：
+* **会员页在 M1 拿不到商品就不显示价格**（`UnavailablePaywallCatalog`）：宁可不卖，也不编一个价格
+  —— 界面价格与内购项不一致是明确的拒审理由；
+* **恢复购买 / 购买按钮点下去只给一句"内购正在接入"**：M1 不是给用户用的版本，
+  摆一个点了没反应、或假装成功的按钮，才是真的坏。
+
+**M1 里被测试逼出来的两个真问题**（记在案，因为它们都会直接伤到用户）：
+1. `copyWith` 的 `null` 是"保持原值" —— 于是**"续订成功要清掉宽限/重试窗"根本写不出来**，
+   用户会看到"明明续上了却还写着宽限期"。改成显式的 `clearGrace` / `clearBillingRetry`。
+2. **宽限期与账单重试是互斥的两种模式**（Apple 语义：开了 Billing Grace Period 就在宽限里，
+   没开就直接进重试），不是"先宽限、宽限过了再重试"的串行两段 —— 判定顺序会把两者混起来。
+
 ---
 
 ## 十一、上架节奏：首版带不带内购（要你拍板）

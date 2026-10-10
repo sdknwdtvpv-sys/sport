@@ -19,6 +19,9 @@
 /// `debugSetUltraGranted` 的调用点必须都在 `assert(...)` 之内。
 library;
 
+import 'entitlement.dart';
+import 'paywall_copy.dart';
+
 bool _granted = false;
 
 /// 只在 debug 构建里可能为 true。
@@ -37,4 +40,47 @@ void debugSetUltraGranted(bool value) {
     _granted = value;
     return true;
   }());
+}
+
+/// **只在 debug 构建里存在**的假商品目录（M1 走查会员页用）。
+///
+/// ⚠️ 它给出的价格是**编的**（¥18 / ¥98 / ¥198）—— 那正是它在 release 里必须不存在的原因：
+/// Apple 要求界面价格与内购项一致，而"编一个价格"是明确的拒审理由（方案 §12.1 第 5 条）。
+/// release 里 [debugFakeCatalog] 返回 null → 会员页回到"暂时获取不到商品信息"那条路。
+PaywallCatalog? get debugFakeCatalog {
+  PaywallCatalog? c;
+  assert(() {
+    c = _FakeCatalog();
+    return true;
+  }());
+  return c;
+}
+
+class _FakeCatalog implements PaywallCatalog {
+  @override
+  Future<List<UltraProductView>> load() async => const <UltraProductView>[
+        UltraProductView(
+          id: 'com.sdknwdtvpv.lianleme.ultra.monthly',
+          product: UltraProduct.monthly,
+          title: 'Ultra 月订阅',
+          duration: '每月',
+          priceLabel: '¥18.00',
+        ),
+        UltraProductView(
+          id: 'com.sdknwdtvpv.lianleme.ultra.yearly',
+          product: UltraProduct.yearly,
+          title: 'Ultra 年订阅',
+          duration: '1 年',
+          priceLabel: '¥98.00',
+          trialDays: 7,
+          recommended: true,
+        ),
+        UltraProductView(
+          id: 'com.sdknwdtvpv.lianleme.ultra.lifetime',
+          product: UltraProduct.lifetime,
+          title: 'Ultra 终身',
+          duration: '一次性买断',
+          priceLabel: '¥198.00',
+        ),
+      ];
 }

@@ -35,6 +35,10 @@ import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/data/db.dart' hide SetRecord, Workout, Exercise, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
+import 'package:lianleme/billing/entitlement.dart';
+import 'package:lianleme/billing/paywall_copy.dart';
+import 'package:lianleme/billing/paywall_screen.dart';
+import 'package:lianleme/data/entitlement_repository.dart';
 import 'package:lianleme/features/progress/all_data_screen.dart';
 import 'package:lianleme/features/today/today_screen.dart';
 import 'package:lianleme/features/workout/workout_controller.dart';
@@ -143,6 +147,25 @@ void main() {
     expect(carriers.length, lessThanOrEqualTo(1), reason: '首页的橙：$carriers');
   });
 
+  testWidgets('会员页：额度 1（只有推荐那一档的按钮是橙底）', (WidgetTester tester) async {
+    final AppDatabase db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await tester.pumpWidget(MaterialApp(
+      theme: buildAppTheme(),
+      home: PaywallScreen(
+        repository: EntitlementRepository(db),
+        catalog: _BudgetCatalog(),
+        now: () => DateTime(2026, 10, 10, 12),
+      ),
+    ));
+    // 老规矩：这一屏加载时转圈，`pumpAndSettle` 等不到静止 → 推固定时长
+    for (int i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final List<String> carriers = accentCarriersIn(tester);
+    expect(carriers.length, lessThanOrEqualTo(1), reason: '会员页的橙：$carriers');
+  });
+
   testWidgets('全部数据页：额度 1', (WidgetTester tester) async {
     await tester.pumpWidget(MaterialApp(
       home: AllDataScreen(
@@ -216,4 +239,20 @@ void main() {
     expect(bad, isEmpty,
         reason: '橙色文字要用 `Tokens.accentText`（对 bg 8.40:1）：\n${bad.join('\n')}');
   });
+}
+
+/// 会员页额度测试用的最小目录：**只给推荐那一档**，这样"橙只该有一个"这件事才干净。
+class _BudgetCatalog implements PaywallCatalog {
+  @override
+  Future<List<UltraProductView>> load() async => const <UltraProductView>[
+        UltraProductView(
+          id: 'ultra.yearly',
+          product: UltraProduct.yearly,
+          title: 'Ultra 年订阅',
+          duration: '1 年',
+          priceLabel: r'$14.99',
+          trialDays: 7,
+          recommended: true,
+        ),
+      ];
 }

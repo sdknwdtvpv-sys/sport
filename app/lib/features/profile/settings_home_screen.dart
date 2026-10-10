@@ -15,6 +15,11 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../analytics/analytics.dart';
+import '../../billing/entitlement.dart';
+import '../../billing/debug_grant.dart';
+import '../../billing/paywall_copy.dart';
+import '../../billing/paywall_screen.dart';
+import '../../data/entitlement_repository.dart';
 import '../../analytics/outbox.dart';
 import '../../backup/backup_config.dart';
 import '../../backup/cloud_backup.dart';
@@ -56,6 +61,7 @@ class SettingsHomeScreen extends StatelessWidget {
     this.cloudBackupAvailable,
     this.cloud,
     this.account,
+    this.entitlements,
     this.reminder = ReminderSettings.off,
     this.reminderHint,
     this.onReminderChanged,
@@ -94,6 +100,9 @@ class SettingsHomeScreen extends StatelessWidget {
   /// （由调用方算好传进来也行，但直接给记录更省一层参数 —— `dominantWorkoutHour` 是纯函数）。
   final List<SetRecord> sets;
 
+  /// 会员权益仓储（可选：测试与"没有付费那一版"都可以不传，那时入口只给一句静态说明）
+  final EntitlementRepository? entitlements;
+
   @override
   Widget build(BuildContext context) {
     final bool cloudOn = cloudBackupAvailable ?? isCloudBackupConfigured;
@@ -101,6 +110,11 @@ class SettingsHomeScreen extends StatelessWidget {
       title: '设置',
       children: <Widget>[
         settingsCard(<Widget>[
+          // ⚠️ 2026-10-10：这一行是**新加的**。`profile_screen.dart` 里曾写着
+          // "刻意没有放会员入口（还没有付费功能，占位入口比没有更糟）"——
+          // 现在付费功能（Ultra）本身在落地（M1/M2），入口与它一起出现，那条理由自然失效。
+          UltraEntryTile(entitlements: entitlements),
+          const Divider(height: 1, color: Tokens.line),
           navTile(
             key: const Key('open-preferences'),
             title: '偏好设置',
@@ -202,3 +216,59 @@ class SettingsHomeScreen extends StatelessWidget {
         ),
       ));
 }
+
+
+/// 「练了么 Ultra」那一行：状态感知的入口（未开通 / 试用中 / 有效期到 / 已退款…）
+///
+/// 做成独立 `StatefulWidget` 而不是往设置页塞状态：这一屏本身是 `StatelessWidget`，
+/// 而"要读一次库才知道写什么"只影响这一行。
+class UltraEntryTile extends StatefulWidget {
+  const UltraEntryTile({super.key, this.entitlements, this.now});
+
+  final EntitlementRepository? entitlements;
+  final DateTime Function()? now;
+
+  @override
+  State<UltraEntryTile> createState() => _UltraEntryTileState();
+}
+
+class _UltraEntryTileState extends State<UltraEntryTile> {
+  UltraAccess? _access;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final EntitlementRepository? repo = widget.entitlements;
+    if (repo == null) return;
+    final UltraAccess a = await repo.access((widget.now ?? DateTime.now)().millisecondsSinceEpoch);
+    if (!mounted) return;
+    setState(() => _access = a);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final UltraAccess? a = _access;
+    return navTile(
+      key: const Key('open-ultra'),
+      title: PaywallCopy.title,
+      subtitle: a == null
+          ? '云备份历史 · 进阶分析 · 批量整理'
+          : (a.ultra ? '已开通：${PaywallCopy.statusLine(a, expiresOn: null)}'.replaceAll('。', '') : '看一眼能多拿到什么'),
+      onTap: () {
+        final EntitlementRepository? repo = widget.entitlements;
+        if (repo == null) return;
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => PaywallScreen(repository: repo, catalog: debugCatalogForWalkthrough()),
+        ));
+      },
+    );
+  }
+}
+
+/// 走查用：debug 构建给假商品（release 返回"拿不到"，会员页会如实写"暂时获取不到商品信息"）。
+PaywallCatalog debugCatalogForWalkthrough() =>
+    debugFakeCatalog ?? const UnavailablePaywallCatalog();

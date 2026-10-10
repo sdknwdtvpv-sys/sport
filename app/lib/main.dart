@@ -38,6 +38,7 @@ import 'data/body_metric_repository.dart' hide dayKey;
 import 'data/day_plan_repository.dart';
 import 'data/drift_local_store.dart';
 import 'data/exercise_data_ext.dart';
+import 'data/entitlement_repository.dart';
 import 'data/exercise_repository.dart';
 import 'data/local_store.dart';
 import 'data/notification_repository.dart';
@@ -2009,6 +2010,8 @@ class _HomeShellState extends State<HomeShell> {
         // 会话交给这一屏按需读（`ProfileRepository.authSessionStore()`），
         // 与「我」页同一个来源 —— 不在这里多存一份状态
         sets: _allSets,
+        // 会员权益仓储（M1）：设置页那一行据此显示"未开通 / 有效期到…"
+        entitlements: EntitlementRepository(_db),
         reminder: _reminder,
         reminderHint: _reminderHint,
         onReminderChanged: _setReminder,

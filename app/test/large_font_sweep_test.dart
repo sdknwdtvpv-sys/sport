@@ -31,6 +31,10 @@ import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/routine_repository.dart';
 import 'package:lianleme/data/sync_queue.dart';
 import 'package:lianleme/domain/models.dart';
+import 'package:lianleme/billing/entitlement.dart';
+import 'package:lianleme/billing/paywall_copy.dart';
+import 'package:lianleme/billing/paywall_screen.dart';
+import 'package:lianleme/data/entitlement_repository.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
 import 'package:lianleme/health/health_bridge.dart';
 import 'package:lianleme/features/notifications/notification_center_screen.dart';
@@ -201,6 +205,13 @@ void main() {
           onSkip: () {},
           onStartFirst: () {},
         ),
+    // 会员页（M1，2026-10-10）：它有"三档商品 + 说明块 + 三个入口"，
+    // 是大字号下最容易挤的一屏之一（价格数字用了 tabular，但仍要扫）。
+    '会员页': () async => PaywallScreen(
+          repository: EntitlementRepository(db),
+          catalog: const _SweepCatalog(),
+          now: () => DateTime(2026, 10, 10, 12),
+        ),
     '分享卡预览': () async => ShareCardPreviewScreen(
           summary: (await SummaryService(store: store, repository: repo)
               .build('w1', unit: WeightUnit.kg))!,
@@ -326,4 +337,36 @@ void main() {
       });
     }
   }
+}
+
+/// 大字号扫描用的商品目录：三档齐全（含推荐档），与真机上的形状一致。
+class _SweepCatalog implements PaywallCatalog {
+  const _SweepCatalog();
+
+  @override
+  Future<List<UltraProductView>> load() async => const <UltraProductView>[
+        UltraProductView(
+          id: 'ultra.monthly',
+          product: UltraProduct.monthly,
+          title: 'Ultra 月订阅',
+          duration: '每月',
+          priceLabel: r'¥18.00',
+        ),
+        UltraProductView(
+          id: 'ultra.yearly',
+          product: UltraProduct.yearly,
+          title: 'Ultra 年订阅',
+          duration: '1 年',
+          priceLabel: r'¥98.00',
+          trialDays: 7,
+          recommended: true,
+        ),
+        UltraProductView(
+          id: 'ultra.lifetime',
+          product: UltraProduct.lifetime,
+          title: 'Ultra 终身',
+          duration: '一次性买断',
+          priceLabel: r'¥198.00',
+        ),
+      ];
 }
