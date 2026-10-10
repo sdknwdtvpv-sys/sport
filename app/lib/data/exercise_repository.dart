@@ -214,7 +214,7 @@ class ExerciseRepository {
     // 一个有步长却没有起始重量的动作，会被引擎给出 weightKg = null 的建议，
     // 于是被当成自重动作 —— 用户再也输入不了重量。
     // 与其让链路自相矛盾，不如在这里兜一个保守的起步值（步长 × 8：
-    // 杠铃 20kg、哑铃 16kg、器械 40kg），用户可以随时用步进按钮改。
+    // 杠铃 20 kg、哑铃 16 kg、器械 40 kg），用户可以随时用步进按钮改。
     final double? startWeight =
         weightIncrement == 0 ? null : (defaultWeightKg ?? weightIncrement * 8);
 
@@ -253,7 +253,7 @@ class ExerciseRepository {
   ///   * **按原 id 建**（不是 `createCustom` 那种新生成 id）—— 否则记录里的 `exercise_id`
   ///     依然指不到它，等于白建；
   ///   * **已存在就什么都不做**（幂等）：用户可能改过名字/部位，不能拿备份里的旧名字盖回去；
-  ///   * **部位与器械写 `unspecified`（未分类）**、步长 2.5kg（起始 20kg）：备份里**没有**这两样信息，
+  ///   * **部位与器械写 `unspecified`（未分类）**、步长 2.5 kg（起始 20 kg）：备份里**没有**这两样信息，
   ///     与其瞎猜一个部位（那会是假话），不如明说"未分类"——它不会落进任何部位筛选，只在「全部」里出现。
   ///
   /// 返回 true 表示这次真的建了；false 表示本来就有（或名字是空的，没建）。
@@ -279,7 +279,7 @@ class ExerciseRepository {
           category: 'strength',
           trackType: 'weight_reps',
           defaultRestSec: 90,
-          // 步长 > 0 就必须有起始重量（见 createCustom 里那条不变量），20kg 是保守起步值
+          // 步长 > 0 就必须有起始重量（见 createCustom 里那条不变量），20 kg 是保守起步值
           defaultWeightKg: 20,
           weightIncrement: 2.5,
           isBuiltin: false,

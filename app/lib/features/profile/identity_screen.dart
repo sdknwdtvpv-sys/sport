@@ -139,7 +139,7 @@ class _IdentityScreenState extends State<IdentityScreen> {
                     color: id == null ? Tokens.text3 : Tokens.text,
                     fontSize: id == null ? 15 : 22,
                     fontWeight: Tokens.fwBold,
-                    letterSpacing: id == null ? 0 : 1.2,
+                    letterSpacing: id == null ? null : Tokens.lsSpaced,
                   ),
                 ),
                 const SizedBox(height: Tokens.s2),

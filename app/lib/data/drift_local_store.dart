@@ -55,7 +55,7 @@ class DriftLocalStore implements LocalStore {
             isPr: false,
             // volume 物化：weight × reps（自重动作 weight 为 null，容量记 0）。
             // **距离动作的容量记 0**：它的"次数"其实是秒（1800），
-            // 拿 20kg × 1800 当容量是把两个量纲乘在一起。距离动作要看的是
+            // 拿 20 kg × 1800 当容量是把两个量纲乘在一起。距离动作要看的是
             // 里程与配速，不是容量。
             volume: r.hasDistance ? 0 : (r.weightKg ?? 0) * r.reps,
             completedAt: r.completedAtMs,

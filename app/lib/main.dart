@@ -915,7 +915,7 @@ class _HomeShellState extends State<HomeShell> {
         // **上一次这个动作练成什么样 —— 渐进建议的输入，必须传。**
         //
         // 不传的后果（曾经就是这样）：引擎永远命中 progression.dart 的
-        // "零历史"分支 → 大按钮上恒是动作库默认重量（卧推 40kg）、
+        // "零历史"分支 → 大按钮上恒是动作库默认重量（卧推 40 kg）、
         // 理由恒是"第一次练这个动作"；而两秒前建议卡上写的是按历史算出来的
         // 数字 —— 同一个用户在两张屏上看到两个数。
         //
@@ -1504,7 +1504,7 @@ class _HomeShellState extends State<HomeShell> {
     await _refreshHome();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('已保护 ${offer.day.month} 月 ${offer.day.day} 日这一处断点 —— 每周一次。'),
+      content: Text('已保护 ${formatDateHuman(offer.day)}这一处断点 —— 每周一次。'),
     ));
   }
 
@@ -1944,7 +1944,7 @@ class _HomeShellState extends State<HomeShell> {
     if (_tab != 1) return null;
     const List<String> weekdays = <String>['一', '二', '三', '四', '五', '六', '日'];
     final DateTime now = DateTime.now();
-    return '${now.month} 月 ${now.day} 日 · 周${weekdays[now.weekday - 1]}';
+    return '${formatDateHuman(now)} · 周${weekdays[now.weekday - 1]}';
   }
 
   /// 齿轮 → 「设置」那一屏（三组设置从「我」页搬过去了）。

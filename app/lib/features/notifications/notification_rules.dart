@@ -16,6 +16,7 @@
 /// 埋在 initState 里就只能靠"跑一遍界面"来验，而界面测试看不到"到底发了哪几条"。
 library;
 
+import '../../core/units.dart';
 import '../../domain/models.dart';
 import '../../data/notification_repository.dart';
 import '../profile/reminder.dart';
@@ -101,8 +102,7 @@ Future<bool> maybeRemindMissed({
   if (nowMinutes < scheduledMinutes) return false; // 还没到点
   if (hasTrainedOn(sets: sets, day: t)) return false; // 今天练过了
 
-  final String day =
-      '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+  final String day = formatDateSortable(t);
   return repo.add(
     kind: NotificationKind.reminder,
     title: '今天还没练',

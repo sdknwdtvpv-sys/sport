@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../core/pills.dart';
+import '../../core/units.dart';
 import '../../core/vi_cards.dart';
 import '../../data/db.dart' show AppNotificationData;
 import '../../data/notification_repository.dart';
@@ -279,5 +280,5 @@ String relativeTime(int ms, {DateTime? now}) {
   if (d.inDays == 1) return '昨天';
   if (d.inDays < 7) return '${d.inDays} 天前';
   final DateTime day = DateTime.fromMillisecondsSinceEpoch(ms);
-  return '${day.month}月${day.day}日';
+  return formatDateHuman(day);
 }

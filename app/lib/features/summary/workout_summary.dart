@@ -45,7 +45,7 @@ class SetPr {
   /// 本次的成绩（重量或次数）
   double get value => isBodyweight ? reps.toDouble() : (weightKg ?? 0);
 
-  /// 一行展示，如「65kg（上次最好 60kg）」或「12 次（上次最好 10 次）」。
+  /// 一行展示，如「65 kg（上次最好 60 kg）」或「12 次（上次最好 10 次）」。
   /// 按时长动作说「秒」—— 破纪录破的是坚持的秒数。
   String get detail {
     if (isBodyweight) {

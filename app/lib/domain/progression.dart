@@ -5,7 +5,7 @@
 /// `engine/vectors.json`（与 JS 端同一份文件，不复制），逐条比对。
 ///
 /// 移植时踩到的第一个坑：Dart 打印 double 会输出 `2.0`，而 JS 输出 `2`，
-/// 直接影响 reasonText 里的「+2kg」。所以下面所有数字都过 `_fmt`。
+/// 直接影响 reasonText 里的「+2 kg」。所以下面所有数字都过 `_fmt`。
 library;
 
 import 'dart:math' as math;

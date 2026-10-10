@@ -9,17 +9,14 @@ library;
 
 import 'package:drift/drift.dart';
 
+import '../core/units.dart';
 import 'db.dart';
 
 /// 日期的业务键：`YYYY-MM-DD`（本地时区）。
 ///
 /// 用字符串而不是时间戳：用户说的"今天"是**日历上的今天**，
 /// 用时间戳的话 23:50 和次日 00:10 会被判成两天，而用户认为是同一天。
-String dayKey(DateTime d) {
-  final String m = d.month.toString().padLeft(2, '0');
-  final String day = d.day.toString().padLeft(2, '0');
-  return '${d.year}-$m-$day';
-}
+String dayKey(DateTime d) => formatDateSortable(d);
 
 /// 从系统健康库写进 `note` 的那句话 —— **来源必须留痕**。
 ///

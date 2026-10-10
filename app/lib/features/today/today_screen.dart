@@ -557,7 +557,7 @@ class TodayScreen extends StatelessWidget {
       final int diff = today0.difference(d0).inDays;
       if (diff <= 0) return '今天';
       if (diff == 1) return '昨天';
-      return '${d.month}/${d.day}';
+      return formatDateAxis(d);
     }
 
     return Column(

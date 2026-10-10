@@ -15,6 +15,7 @@
 /// 就会在改历史 / 导入备份 / 换设备之后和记录不一致。
 library;
 
+import '../../core/units.dart';
 import '../../domain/models.dart';
 import 'badges.dart';
 import 'weekly_challenge.dart';
@@ -73,7 +74,7 @@ class WeeklyReport {
   /// 而那一周的最后一天是 10 月 4 日 —— 差一天就是假话）。
   String get rangeLabel {
     final DateTime last = end.subtract(const Duration(days: 1));
-    return '${start.month} 月 ${start.day} 日 – ${last.month} 月 ${last.day} 日';
+    return '${formatDateHuman(start)} – ${formatDateHuman(last)}';
   }
 
   /// 那一行"人话"。**没有训练就如实说没事**，不硬凑一句鼓励

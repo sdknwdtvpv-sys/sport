@@ -18,6 +18,7 @@
 /// 判据全部是这里的纯函数，界面只负责画、仓库只负责搬。
 library;
 
+import '../../core/units.dart';
 import '../../domain/models.dart';
 
 /// 这一轮能补签哪一天（不能补时为 null）。
@@ -36,9 +37,7 @@ class StreakProtectionOffer {
 
 /// `YYYY-MM-DD`（**本地日**）。与 `body_metric.date` 同一种写法：
 /// 这一列要能被人肉读出来，排障时一眼看到"补的是哪一天"。
-String dayKey(DateTime t) => '${t.year.toString().padLeft(4, '0')}-'
-    '${t.month.toString().padLeft(2, '0')}-'
-    '${t.day.toString().padLeft(2, '0')}';
+String dayKey(DateTime t) => formatDateSortable(t);
 
 /// 一天有没有练（只算正式组：热身不算"今天练过了"—— 与 `streak.dart` 同一口径）。
 bool trainedOn(List<SetRecord> sets, DateTime day) {
@@ -183,9 +182,9 @@ String offerCopy(DateTime missed, DateTime today) {
   final String when = switch (daysAgo) {
     1 => '昨天',
     2 => '前天',
-    _ => '${missed.month} 月 ${missed.day} 日',
+    _ => formatDateHuman(missed),
   };
-  return '$when（${missed.month} 月 ${missed.day} 日）没练，'
+  return '$when（${formatDateHuman(missed)}）没练，'
       '补签一次就能接上 —— 每周一次。';
 }
 

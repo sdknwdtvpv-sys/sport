@@ -555,7 +555,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
     if (t.isEmpty) return null;
     final double? v = double.tryParse(t);
     if (v == null) return null;
-    // 明显不合理的值当作没填，避免把 720kg 存进去。
+    // 明显不合理的值当作没填，避免把 720 kg 存进去。
     // 范围按**显示单位**判断：400 kg（= 882 lb = 800 斤），再换成 kg 存库。
     // ⚠️ 三个单位都要算 —— 以前只有 kg/斤，加了 lb 之后
     // 用 `_unit == kg ? 400 : 400 * 2` 会把 400 lb（≈181 kg）也判成超标。
@@ -1087,7 +1087,7 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
             borderRadius: BorderRadius.circular(Tokens.rPill),
           ),
           child: Text(
-            isToday ? '今天' : '${d.month}/${d.day}',
+            isToday ? '今天' : formatDateAxis(d),
             style: TextStyle(
               color: active ? Tokens.accentInk : Tokens.text2,
               fontSize: Tokens.fsCap,
@@ -1190,9 +1190,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       0 => '今天',
       1 => '昨天',
       2 => '前天',
-      _ => '${_selected.month} 月 ${_selected.day} 日',
+      _ => formatDateHuman(_selected),
     };
-    return '正在记：$when（${_selected.month} 月 ${_selected.day} 日）';
+    return '正在记：$when（${formatDateHuman(_selected)}）';
   }
 
   /// 体重那一张卡：**标签 + 单位开关在同一行**，下面是大号输入框。

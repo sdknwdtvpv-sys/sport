@@ -383,7 +383,7 @@ class _AllDataScreenState extends State<AllDataScreen> {
 
   Widget _recordRow(SetRecord r) {
     final DateTime d = DateTime.fromMillisecondsSinceEpoch(r.completedAtMs);
-    final String day = '${d.month}/${d.day}';
+    final String day = formatDateAxis(d);
     return Padding(
       padding: const EdgeInsets.only(bottom: Tokens.s2),
       child: Row(

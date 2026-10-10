@@ -29,13 +29,24 @@ const List<String> scale = <String>[
 ];
 
 /// 一行里有没有"排版字面量"（**先去掉行注释** —— 这个仓库的习惯是把旧写法留在注释里）。
+///
+/// ⚠️ 字距走**白名单**而不是 `letterSpacing: -?[0-9]` 这种黑名单：T1-7 之前
+/// `identity_screen.dart` 里写着 `letterSpacing: id == null ? 0 : 1.2`，
+/// 字面量藏在三元表达式里，黑名单扫不到（`letterSpacing:` 后面跟的是 `id`）。
+/// 现在规则是：`letterSpacing:` 的值区里**不许出现数字**，且必须是 `Tokens.ls*` 或 `null`。
 bool hasTypeLiteral(String line) {
   final int i = line.indexOf('//');
   final String code = i < 0 ? line : line.substring(0, i);
-  return RegExp(r'fontSize: [0-9]').hasMatch(code) ||
+  if (RegExp(r'fontSize: [0-9]').hasMatch(code) ||
       RegExp(r'height: 1\.[0-9]').hasMatch(code) ||
-      RegExp(r'letterSpacing: -?[0-9]').hasMatch(code) ||
-      RegExp(r'FontWeight\.w[0-9]').hasMatch(code);
+      RegExp(r'FontWeight\.w[0-9]').hasMatch(code)) {
+    return true;
+  }
+  final RegExpMatch? ls = RegExp(r'letterSpacing: ([^,\n]+)').firstMatch(code);
+  if (ls == null) return false;
+  final String value = ls.group(1)!.trim();
+  if (RegExp(r'[0-9]').hasMatch(value)) return true;
+  return !value.contains('Tokens.ls') && value != 'null';
 }
 
 /// 一行里用了哪几级字号（`Tokens.fsXxx`）。
@@ -85,10 +96,41 @@ void main() {
     expect(hasTypeLiteral('style: TextStyle(fontSize: 13, height: 1.4),'), isTrue);
     expect(hasTypeLiteral('fontWeight: FontWeight.w500,'), isTrue);
     expect(hasTypeLiteral('letterSpacing: -0.5,'), isTrue);
+    // T1-7 补的那一种：字面量藏在三元表达式里（黑名单写法抓不到）
+    expect(hasTypeLiteral('letterSpacing: id == null ? 0 : 1.2,'), isTrue);
+    expect(hasTypeLiteral('letterSpacing: Tokens.fsCap,'), isTrue);
     // 注释里的旧写法不算（这个仓库的注释习惯就是留着旧值）
     expect(hasTypeLiteral('// 原来是 fontSize: 13 与 height: 1.4'), isFalse);
+    expect(hasTypeLiteral('// letterSpacing: id == null ? 0 : 1.2'), isFalse);
     // 令牌写法不算
     expect(hasTypeLiteral('style: TextStyle(fontSize: Tokens.fsCap, height: Tokens.lhSnug),'), isFalse);
+    expect(hasTypeLiteral('letterSpacing: Tokens.lsSpaced,'), isFalse);
+    expect(hasTypeLiteral('letterSpacing: id == null ? null : Tokens.lsSpaced,'), isFalse);
+    expect(hasTypeLiteral('style: Tokens.display(24, weight: 700, letterSpacing: Tokens.lsTight)),'), isFalse);
+  });
+
+  test('★ 字距只许 4 档，且没有字面量（T1-7 的判据 1，比 grep 更严）', () {
+    final List<String> hits = <String>[];
+    for (final FileSystemEntity e in Directory('lib').listSync(recursive: true)) {
+      if (e is! File || !e.path.endsWith('.dart')) continue;
+      final String path = e.path.replaceAll('\\', '/');
+      if (path.endsWith('core/theme.dart')) continue;
+      final List<String> lines = e.readAsLinesSync();
+      for (int i = 0; i < lines.length; i++) {
+        final int c = lines[i].indexOf('//');
+        final String code = c < 0 ? lines[i] : lines[i].substring(0, c);
+        for (final RegExpMatch m
+            in RegExp(r'letterSpacing: Tokens\.(ls[A-Za-z]+)').allMatches(code)) {
+          if (!const <String>['lsTight', 'lsSnug', 'lsWide', 'lsSpaced']
+              .contains(m.group(1))) {
+            hits.add('$path:${i + 1}: ${m.group(1)}');
+          }
+        }
+      }
+    }
+    expect(hits, isEmpty, reason: '用了 4 档之外的字距：\n${hits.join('\n')}');
+    // 判据 1 的"0 个字面量"由上面那条 `_scan(hasTypeLiteral)` 断言，
+    // 这一条额外钉住"档位只有 4 个"（黑名单抓不到 `Tokens.lsNew` 这种新档）。
   });
 
   test('★ `theme.dart` 里的 10 级就是这 10 个名字', () {

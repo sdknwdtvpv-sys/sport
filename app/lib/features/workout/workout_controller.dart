@@ -366,7 +366,7 @@ class WorkoutController extends ChangeNotifier {
     if (isDistance) {
       return '${formatDistanceKm(_distanceM)} · ${formatDurationHms(_reps)}';
     }
-    // 辅助自重：那个数字是**助力**。只说「30 kg × 8」会被读成"举起了 30kg"，
+    // 辅助自重：那个数字是**助力**。只说「30 kg × 8」会被读成"举起了 30 kg"，
     // 而它恰恰相反 —— 助力越大越轻松。引擎的方向已经反过来（达标 → 减助力），
     // 界面上也必须说清楚这个数是什么。
     final w = isAssisted

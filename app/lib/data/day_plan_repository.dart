@@ -22,6 +22,7 @@ library;
 
 import 'package:drift/drift.dart';
 
+import '../core/units.dart';
 import '../domain/models.dart' show PlanTarget;
 import '../features/today/today_planner.dart' show RoutineEntry;
 import 'db.dart';
@@ -31,9 +32,7 @@ import 'db.dart';
 ///
 /// ⚠️ 用**本地**年月日，不用 `toIso8601String()`：后者带时分秒，而且 UTC 下
 /// 晚上 8 点之后就算成第二天了（中国时区 UTC+8，那会差 8 小时）。
-String dayPlanKey(DateTime day) => '${day.year.toString().padLeft(4, '0')}-'
-    '${day.month.toString().padLeft(2, '0')}-'
-    '${day.day.toString().padLeft(2, '0')}';
+String dayPlanKey(DateTime day) => formatDateSortable(day);
 
 class DayPlanRepository {
   DayPlanRepository(this._db);

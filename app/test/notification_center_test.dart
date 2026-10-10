@@ -151,7 +151,8 @@ void main() {
     expect(relativeTime(ms(now.subtract(const Duration(hours: 5))), now: now), '5 小时前');
     expect(relativeTime(ms(now.subtract(const Duration(days: 1))), now: now), '昨天');
     expect(relativeTime(ms(now.subtract(const Duration(days: 3))), now: now), '3 天前');
-    expect(relativeTime(ms(now.subtract(const Duration(days: 30))), now: now), '9月5日');
+    // T1-7：日期写法收口到 `units.dart`，空格与补签文案里那种一致（原来写 `9月5日`）
+    expect(relativeTime(ms(now.subtract(const Duration(days: 30))), now: now), '9 月 5 日');
     expect(relativeTime(ms(now.add(const Duration(hours: 2))), now: now), '刚刚',
         reason: '时钟偏了也别显示"-2 小时前"');
   });

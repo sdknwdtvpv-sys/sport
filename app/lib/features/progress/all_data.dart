@@ -10,6 +10,7 @@
 library;
 
 import '../../core/sparkline.dart';
+import '../../core/units.dart';
 import '../../domain/models.dart';
 import '../../domain/progression.dart';
 import 'progress_data.dart';
@@ -24,7 +25,7 @@ import 'progress_data.dart';
 /// 排序口径：
 ///   * 按时长动作（平板支撑）：比秒数
 ///   * 自重动作：比次数
-///   * 负重动作：比估算 1RM（同样 8 次，60kg 强于 50kg；同样 60kg，10 次强于 8 次），
+///   * 负重动作：比估算 1RM（同样 8 次，60 kg 强于 50 kg；同样 60 kg，10 次强于 8 次），
 ///     持平再比重量、比次数 —— 保证结果可复现
 SetRecord? bestSetOf(List<SetRecord> sets, {bool isTime = false}) {
   final List<SetRecord> normal =
@@ -50,7 +51,7 @@ SetRecord? bestSetOf(List<SetRecord> sets, {bool isTime = false}) {
 /// 某个动作**某一天**的组（详情页的"最近几次"用它）。
 ///
 /// 为什么按天归并、而不是平铺每一组：用户问的是"我上次练成什么样"，
-/// 一组一组地平铺会把"上次 3 组都做了 40kg×8"拆成三行噪音。
+/// 一组一组地平铺会把"上次 3 组都做了 40 kg×8"拆成三行噪音。
 class ExerciseDayEntry {
   const ExerciseDayEntry({required this.date, required this.sets});
 
@@ -72,9 +73,7 @@ List<ExerciseDayEntry> groupSetsByDay(List<SetRecord> sets, {int limit = 3}) {
     if (s.setType != SetType.normal) continue;
     // 用**本地时间**切天：用户的"上次"是他自己日历上的那天
     final DateTime d = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
-    final String key = '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
+    final String key = formatDateSortable(d);
     (byDay[key] ??= <SetRecord>[]).add(s);
   }
   final List<String> days = byDay.keys.toList()..sort((String a, String b) => b.compareTo(a));

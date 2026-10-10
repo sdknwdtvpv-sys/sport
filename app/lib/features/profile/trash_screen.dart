@@ -155,7 +155,7 @@ class _TrashScreenState extends State<TrashScreen> {
     );
   }
 
-  /// 「3 分钟前 / 昨天 14:20 / 9月28日 14:20」—— 回收站看的是"什么时候删的"
+  /// 「3 分钟前 / 昨天 14:20 / 9 月 28 日 14:20」—— 回收站看的是"什么时候删的"
   String _when(int ms) {
     final DateTime t = DateTime.fromMillisecondsSinceEpoch(ms);
     final DateTime now = DateTime.now();
@@ -164,6 +164,6 @@ class _TrashScreenState extends State<TrashScreen> {
     if (ago.inMinutes < 1) return '刚刚删的';
     if (ago.inHours < 1) return '${ago.inMinutes} 分钟前删的';
     if (ago.inHours < 24 && now.day == t.day) return '今天 ${two(t.hour)}:${two(t.minute)} 删的';
-    return '${t.month}月${t.day}日 ${two(t.hour)}:${two(t.minute)} 删的';
+    return '${formatDateHuman(t)} ${two(t.hour)}:${two(t.minute)} 删的';
   }
 }

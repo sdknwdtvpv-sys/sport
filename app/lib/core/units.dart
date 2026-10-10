@@ -3,18 +3,18 @@
 /// **存储、引擎、埋点一律用 kg**；单位切换只发生在**显示**与**输入**这两层。
 ///
 /// 为什么不做 lb 原生存储：
-///   * 引擎的渐进判定建立在"杠铃片网格"上（杠铃 2.5kg / 哑铃 2kg / 器械 5kg，
+///   * 引擎的渐进判定建立在"杠铃片网格"上（杠铃 2.5 kg / 哑铃 2 kg / 器械 5 kg，
 ///     见 `engine/vectors.json` 里的 `linear_progress_*` 向量）。换单位存储会让
 ///     重量脱离网格，判重、破纪录、加重步长全都要重算，且历史数据要做迁移。
 ///   * 埋点 `weight_kg` 是跨用户可比的指标，混两种单位就没法看了。
 ///   * 用户切回 kg 时，历史数据一行都不用改。
 ///
 /// **代价如实记录**：lb 用户的步进会看到 5.5 lb 这种"不整"的增量，
-/// 因为底层网格仍是 2.5kg 的杠铃片。要做成 lb 原生步进（+5 lb），
+/// 因为底层网格仍是 2.5 kg 的杠铃片。要做成 lb 原生步进（+5 lb），
 /// 就得让重量脱离网格 —— 那是另一个量级的改动，不该顺手做。
 ///
 /// 这个文件也是全应用**唯一**的重量格式化入口：此前 `_trim` 在六个文件里
-/// 各写了一遍，而且间距还不统一（`60kg` 与 `5400 kg` 并存）。
+/// 各写了一遍，而且间距还不统一（`60 kg` 与 `5400 kg` 并存）。
 library;
 
 /// 国际磅。用完整精度，避免来回换算累积误差。
@@ -120,7 +120,7 @@ String withThousands(int v) {
 /// 「60 kg」/「132.3 lb」。[kg] 为 null 时返回 [nullText]。
 ///
 /// 空格是刻意的：全应用统一成「数字 + 空格 + 单位」。
-/// 此前组重量写 `60kg`、容量写 `5400 kg`，两种约定并存。
+/// 此前组重量写 `60 kg`、容量写 `5400 kg`，两种约定并存。
 String formatWeight(double? kg, WeightUnit unit, {String nullText = '—'}) {
   if (kg == null) return nullText;
   return '${trimNumber(round1(toDisplayWeight(kg, unit)))} ${unit.wire}';
@@ -175,3 +175,38 @@ String formatVolume(double volumeKg, WeightUnit unit, {String zeroText = '—'})
   if (volumeKg <= 0) return zeroText;
   return '${withThousands(toDisplayWeight(volumeKg, unit).round())} ${unit.wire}';
 }
+
+// ───────────────────────── 日期写法（T1-7） ─────────────────────────
+//
+// **全应用只有这三档**，任何界面都不许自己拼 `月/日`（`units_format_test.dart`
+// 里有一条机械扫描盯着这件事）。
+//
+// 为什么是三档而不是一个：同一个日期在不同位置承担的职责不同 ——
+//   * [formatDateHuman]「10 月 8 日」：给人读的一行（补签、周报范围、历史行）。
+//   * [formatDateAxis]「10/8」：窄位（曲线两端、数据表的日期列、补录日期条）。
+//   * [formatDateSortable]「2026-10-08」：排序 / 落库 / 当 key，字典序即时间序。
+//
+// 为什么不许各写各的：此前 8 个文件各拼了一遍，于是同一屏里并存着
+// 「10 月 8 日」与「10月8日」（差一个空格）、`10/8` 与 `10 / 8`。日期是最不该
+// 由各个界面自己发挥的东西 —— 用户一次只会记住一种写法，混着写就是没写完。
+
+/// 「10 月 8 日」。数字与「月」「日」之间**恒一个半角空格**（与「60 kg」同一条规矩）。
+///
+/// `withYear: true` 出「2026 年 10 月 8 日」—— **只给离开 App 也要能读懂的地方**
+/// （分享卡导出图）：日期没有年份，转发出去就说不清是哪一年。
+/// 应用内的日期一律不带年份（"哪一年"这件事在 App 里是已知的）。
+String formatDateHuman(DateTime d, {bool withYear = false}) =>
+    withYear ? '${d.year} 年 ${d.month} 月 ${d.day} 日' : '${d.month} 月 ${d.day} 日';
+
+/// 「10/8」。给放不下「10 月 8 日」的窄列用。**不补零**
+/// （少一个字符宽，曲线两端的标签才不会撞在一起）。
+String formatDateAxis(DateTime d) => '${d.month}/${d.day}';
+
+/// 「2026-10-08」。**月与日补零**：这一档要能被字符串排序，补零之后
+/// `compareTo` 的结果才与时间先后一致（不补零会把 10 月排到 2 月前面）。
+///
+/// 用**本地**年月日，不用 `toIso8601String()`：后者带时分秒，而且 UTC 下
+/// 晚上 8 点之后就算成第二天了（中国时区 UTC+8，那会差 8 小时）。
+String formatDateSortable(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';

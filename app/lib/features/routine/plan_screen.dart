@@ -442,7 +442,7 @@ class _PlanScreenState extends State<PlanScreen> {
                 child: Row(
                   children: <Widget>[
                     Expanded(
-                      child: Text('${r.day.month} 月 ${r.day.day} 日',
+                      child: Text(formatDateHuman(r.day),
                           style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
                     ),
                     Text('${r.exercises} 个动作 · ${r.sets} 组 · ${formatVolume(r.volume, widget.unit)}',

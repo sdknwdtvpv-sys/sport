@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../core/theme.dart';
+import '../../core/units.dart';
 import 'workout_summary.dart';
 
 /// 卡片逻辑尺寸。3:4 左右，适合朋友圈/微博这类竖版场景。
@@ -247,11 +248,11 @@ class ShareCard extends StatelessWidget {
 
 /// 「2026 年 9 月 28 日」。
 ///
-/// 手写而不用 `intl`：只为这一处格式化引入一个本地化依赖不划算，
-/// 而且这个格式是固定的，不需要按语言变化。
+/// 走 `units.dart` 的人读档（带年份那一种）：日期写法只有一处实现，
+/// 「2026 年 9 月 28 日」与补签文案里的「9 月 28 日」才不会两种空格写法。
 String formatCardDate(int ms) {
   final DateTime d = DateTime.fromMillisecondsSinceEpoch(ms);
-  return '${d.year} 年 ${d.month} 月 ${d.day} 日';
+  return formatDateHuman(d, withYear: true);
 }
 
 /// 把 [boundaryKey] 上的 `RepaintBoundary` 抓成 PNG 字节。

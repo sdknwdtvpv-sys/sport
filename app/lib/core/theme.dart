@@ -182,10 +182,16 @@ abstract final class Tokens {
   static const FontWeight fwStrong = FontWeight.w600;
   static const FontWeight fwBold = FontWeight.w700;
 
-  /// 字距（3 档）。只有"数字很大时要收一点"与"全大写短标签要放开一点"两种场合。
+  /// 字距（4 档）。前两档是"数字大要收一点"，第三档是"全大写短标签放开一点"，
+  /// 第四档只给**账号 ID** 这种"要一个字符一个字符数过去"的串。
+  ///
+  /// ⚠️ [lsSpaced] 是 T1-7 从 `identity_screen.dart` 里捞出来的：那里写着
+  /// `letterSpacing: id == null ? 0 : 1.2` —— 一个字面量藏在三元表达式里，
+  /// 连"grep `letterSpacing: -?[0-9]`"和当时的扫描器都漏了。
   static const double lsTight = -0.5;
   static const double lsSnug = -0.3;
   static const double lsWide = 0.3;
+  static const double lsSpaced = 1.2;
 
   /// 字体族：数字与拉丁走 Oswald（`docs/plan-vi-migration.md` §六第 2 条的结论），
   /// 中文回落系统字体 —— 这个机制保留，只是从"注释里的约定"变成这个常量。

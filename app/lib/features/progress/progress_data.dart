@@ -406,8 +406,10 @@ List<double> volumeSeries(List<SetRecord> sets, DateTime today, ProgressRange r)
 /// 曲线两端的标签（左旧右新）。月/年用中点日期，周用"周几"太啰嗦，统一用 M/D。
 List<String> seriesEndLabels(DateTime today, ProgressRange r) {
   final ({DateTime from, DateTime to}) w = rangeWindow(today, r);
-  String md(DateTime d) => '${d.month}/${d.day}';
-  return <String>[md(w.from), md(w.to.subtract(const Duration(days: 1)))];
+  return <String>[
+    formatDateAxis(w.from),
+    formatDateAxis(w.to.subtract(const Duration(days: 1))),
+  ];
 }
 
 /// 最近几次训练（首页「最近训练」与分享卡的打卡版都要）。
