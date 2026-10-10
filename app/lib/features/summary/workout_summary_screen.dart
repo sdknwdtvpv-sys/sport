@@ -12,6 +12,9 @@ import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
 import '../../analytics/analytics.dart';
+import '../../core/check_painter.dart';
+import '../../core/motion.dart';
+import '../../core/reduced_motion.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
@@ -83,9 +86,31 @@ class WorkoutSummaryScreen extends StatefulWidget {
   State<WorkoutSummaryScreen> createState() => _WorkoutSummaryScreenState();
 }
 
-class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
+class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
+    with SingleTickerProviderStateMixin {
   WorkoutSummary? _summary;
   bool _loading = true;
+
+  /// **完成页的 1400ms 时间轴**（VI 计划 T2-3）。
+  ///
+  /// 这一屏是"练完一场、最有分享欲"的那一屏，而它原来在视觉上是**一个静止的绿圆**。
+  /// 时间轴（一条控制器、一次跑完，只跑一次）：
+  ///   勾 0→420ms ｜ 标题 300→700 ｜ 三格数字 420→1020 ｜ 解锁横条 900→1200 ｜ 完成键 1100→1400
+  ///
+  /// 为什么是一条控制器 + `Interval` 而不是五个 `TweenAnimationBuilder`：
+  /// **"四个时刻的值各不相同且单调"这条判据只有在一条时间轴上才可能成立** ——
+  /// 五条各自计时的曲线凑出来的是一团同时淡入，不是时间轴。
+  late final AnimationController _tl = AnimationController(
+    vsync: this,
+    duration: Motion.summaryTimeline,
+  );
+
+  /// 时间轴上的一段（毫秒 → 0..1）。曲线统一 `Motion.standard`。
+  double _phase(int fromMs, int toMs) => Interval(
+        fromMs / Motion.summaryTimelineMs,
+        toMs / Motion.summaryTimelineMs,
+        curve: Motion.standard,
+      ).transform(_tl.value);
 
   /// 一句话笔记（2026-10-04）。列早就存在，但在此之前**没有任何写入路径**
   /// （`progress_screen` 一直在显示它，所以它是个"只读的死字段"）。
@@ -100,6 +125,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   @override
   void dispose() {
     _note.dispose();
+    _tl.dispose();
     super.dispose();
   }
 
@@ -138,6 +164,13 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       _summary = s;
       _loading = false;
     });
+    // 数据到位才开始跑（在 `_loading` 那一帧起跑等于把时间轴浪费在转圈上）。
+    // 减弱动态效果 → 直接落到终值（用户要的是"别动"，不是"慢一点动"）。
+    if (reducedMotion(context)) {
+      _tl.value = 1;
+    } else {
+      _tl.forward(from: 0);
+    }
   }
 
   @override
@@ -147,7 +180,12 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
-            : _body(),
+            // 时间轴在这一层订阅：整块内容跟着 1400ms 走（每帧一次 rebuild 是这一屏的代价，
+            // 而它只在"刚练完"那一刻发生一次 —— 换来的是这一屏第一次有"过程"）。
+            : AnimatedBuilder(
+                animation: _tl,
+                builder: (BuildContext context, Widget? _) => _body(),
+              ),
       ),
     );
   }
@@ -183,7 +221,13 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               _stats(s),
               if (widget.newBadges.isNotEmpty) ...<Widget>[
                 const SizedBox(height: Tokens.s4),
-                _unlockBlock(),
+                // 解锁横条 900→1200ms：它比三个数**晚**，因为它讲的是"额外收获"，
+                // 而总结屏上"这场练了什么"才是主线。
+                Opacity(
+                  key: const Key('summary-unlock-opacity'),
+                  opacity: _phase(900, 1200),
+                  child: _unlockBlock(),
+                ),
               ],
               if (s.hasDistance) _cardio(s),
               if (s.hasPr) ...<Widget>[
@@ -208,7 +252,15 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
           ),
         ),
         _shareButton(s),
-        _doneButton(),
+        // 完成键 1100→1400ms：**最后**出现 —— 它是这一屏的"结束"，
+        // 提前抢眼会让人没看完三个数就按下去。
+        // ⚠️ 透明度不是"能不能点"：两个按钮**从 t0 起就可点**（不加 `IgnorePointer`），
+        // 手快的人不必等动画（有测试钉着"1400ms 内点完成能立刻返回"）。
+        Opacity(
+          key: const Key('summary-done-opacity'),
+          opacity: _phase(1100, 1400),
+          child: _doneButton(),
+        ),
       ],
     );
   }
@@ -399,17 +451,34 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
               // 完成那颗绿勾的辉光：半径最大的那一档（它是全 App 唯一"庆祝"的光）
               boxShadow: Tokens.glow(Tokens.success, radius: 28, spread: 2),
             ),
-            child: const Icon(Icons.check, color: Tokens.inkOnSuccess, size: IconSpec.xl),
+            // ⚠️ **T2-3**：勾是**画出来**的（`CheckPainter` + `PathMetric`），不是字形淡入 ——
+            // 0→420ms 写完整笔。`RepaintBoundary` 把每帧重绘关在这 76pt 里。
+            child: RepaintBoundary(
+              child: CustomPaint(
+                key: const Key('summary-check'),
+                painter: CheckPainter(
+                  progress: _phase(0, 420),
+                  color: CheckPainter.defaultColor,
+                  strokeWidth: 5,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
           ),
           const SizedBox(height: Tokens.s4),
-          const Text(
-            '训练完成！',
-            key: Key('summary-done-title'),
-            style: TextStyle(
-              color: Tokens.text,
-              fontSize: Tokens.fsTitle,
-              fontWeight: Tokens.fwBold,
-              letterSpacing: Tokens.lsTight,
+          Opacity(
+            key: const Key('summary-title-opacity'),
+            // 标题 300→700ms：比勾**晚一点**起（眼睛先看到勾写下去，再读到那行字）
+            opacity: _phase(300, 700),
+            child: const Text(
+              '训练完成！',
+              key: Key('summary-done-title'),
+              style: TextStyle(
+                color: Tokens.text,
+                fontSize: Tokens.fsTitle,
+                fontWeight: Tokens.fwBold,
+                letterSpacing: Tokens.lsTight,
+              ),
             ),
           ),
           const SizedBox(height: Tokens.s2),
@@ -535,11 +604,40 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
       ),
       child: Row(
         children: <Widget>[
-          _stat('容量', s.volumeLabel, const Key('summary-volume')),
+          // ── T2-3：三格数字**同时**滚（420→1020ms，同一个 `_phase`）──────────
+          // 为什么要滚：这一屏的三个数就是"我刚刚干了什么"，直接跳出来是一份报表，
+          // 滚上来才是"我干成的"。
+          //
+          // ⚠️ 三条纪律（都写在计划的"风险"里，也是测试钉着的）：
+          //   * **同时滚、不许错峰**：错峰会让眼睛在三个数之间来回跳；
+          //   * 每格各套一个 `RepaintBoundary` —— 否则每帧的 `Text` 重绘会带着整个
+          //     `ListView` 一起重画（三格 = 每帧 3 次全屏重绘）；
+          //   * **个位数不滚**（组数 < 10 时直接给终值）：1 位数的值滚起来等于没滚，
+          //     还白多一次重绘。
+          _statCount(
+            label: '容量',
+            value: s.totalVolumeKg,
+            format: (double v) => formatVolume(v, s.unit, zeroText: '—'),
+            settled: s.volumeLabel,
+            key: const Key('summary-volume'),
+          ),
           _divider(),
-          _stat('时长', s.durationLabel, const Key('summary-duration')),
+          _statCount(
+            label: '时长',
+            value: (s.duration?.inSeconds ?? 0).toDouble(),
+            format: (double v) => WorkoutSummary.durationLabelOf(v.round()),
+            settled: s.durationLabel,
+            key: const Key('summary-duration'),
+          ),
           _divider(),
-          _stat('组数', '${s.totalSets}', const Key('summary-sets')),
+          _statCount(
+            label: '组数',
+            value: s.totalSets.toDouble(),
+            format: (double v) => '${v.round()}',
+            settled: '${s.totalSets}',
+            key: const Key('summary-sets'),
+            animate: s.totalSets >= 10,
+          ),
         ],
       ),
     );
@@ -592,9 +690,30 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
     );
   }
 
+  /// 会滚的格子：`value` 从 0 滚到 [value]（进度就是时间轴那一段），
+  /// 滚满之后交给 [settled] —— 终值直接拿原标签，**不重新格式化**，
+  /// 这样"滚完的字符串"与"不滚时应有的字符串"不可能出现第二套写法。
+  Widget _statCount({
+    required String label,
+    required double value,
+    required String Function(double) format,
+    required String settled,
+    required Key key,
+    bool animate = true,
+  }) {
+    final String text = (!animate || _tl.value >= 1)
+        ? settled
+        : (_tl.value <= 0 ? format(0) : format(value * _phase(420, 1020)));
+    return _stat(label, text, key);
+  }
+
   Widget _stat(String label, String value, Key key) {
     return Expanded(
-      child: Column(
+      // ⚠️ `RepaintBoundary` 必须在 `Expanded` **里面**：它是给 Column 那一格做隔离，
+      // 而不是给 Expanded 本身（Expanded 的父数据只能交给 Flex —— 包在外面当场报
+      // "Incorrect use of ParentDataWidget"，这条是测试跑出来的）。
+      child: RepaintBoundary(
+        child: Column(
         children: <Widget>[
           // ⚠️ 大数**必须是一行**，而且要在固定的高度里：
           // "不到 1 分钟"这类人话会长到换行，一换行就把这一格的标签顶下去，
@@ -620,6 +739,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
             style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
           ),
         ],
+        ),
       ),
     );
   }

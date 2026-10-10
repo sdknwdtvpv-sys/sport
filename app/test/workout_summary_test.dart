@@ -10,7 +10,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lianleme/core/icon_spec.dart';
+import 'package:lianleme/core/check_painter.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/exercise_repository.dart';
@@ -259,8 +259,11 @@ void main() {
       // 2026-10-05 新 VI：完成标记是**绿色实心圆 + 白勾**，且用的是语义色 success
       expect(find.byKey(const Key('summary-done-title')), findsOneWidget);
       expect(
-        // ⚠️ 2026-10-10（T1-3）：族收敛成一套 —— 断言走语义表
-        tester.widget<Icon>(find.byIcon(iconOf('check'))).color,
+        // ⚠️ 2026-10-10（T2-3）：勾从**现成字形**改成**自绘**（`CheckPainter` + PathMetric，
+        // 笔画是"写出来"的）。所以这一条断言跟着挪到 painter 上 —— 颜色仍然是 `inkOnSuccess`。
+        (tester.widget<CustomPaint>(find.byKey(const Key('summary-check'))).painter!
+                as CheckPainter)
+            .color,
         const Color(0xFF06231A),
         reason: '勾的颜色变了就是换皮肤时被顺手改掉了',
       );

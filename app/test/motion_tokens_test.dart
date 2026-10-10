@@ -57,9 +57,12 @@ void main() {
     for (int i = 1; i < ms.length; i++) {
       expect(ms[i], greaterThan(ms[i - 1]), reason: '档位必须单调：$ms');
     }
-    // 两个专用值也钉住（它们是"编排的节拍"，不是第六档）
+    // 三个专用值也钉住（它们是"编排的节拍"，不是第六档）
     expect(Motion.restTick.inMilliseconds, 1000);
     expect(Motion.pageTransition.inMilliseconds, 300);
+    // T2-3 的完成页时间轴：切分点（420/700/1020/1200）都按它算，改了要让所有图重新对一遍
+    expect(Motion.summaryTimeline.inMilliseconds, 1400);
+    expect(Motion.summaryTimelineMs, Motion.summaryTimeline.inMilliseconds);
     // 页面转场比默认档长（跨屏 vs 同屏）
     expect(Motion.pageTransition.inMilliseconds,
         greaterThan(Motion.base.inMilliseconds));

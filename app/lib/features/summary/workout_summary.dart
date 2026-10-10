@@ -106,10 +106,13 @@ class WorkoutSummary {
   bool get hasPr => prs.isNotEmpty;
 
   /// 如「42 分钟」。算不出时长返回「—」而不是 0。
-  String get durationLabel {
-    final Duration? d = duration;
-    if (d == null) return '—';
-    final int m = d.inMinutes;
+  String get durationLabel =>
+      duration == null ? '—' : durationLabelOf(duration!.inSeconds);
+
+  /// 秒数 → 同一套写法（T2-3 的完成页时间轴要**按秒滚**，而滚完必须与
+  /// [durationLabel] 一字不差 —— 所以两者只能是同一个实现，不许各写一份）。
+  static String durationLabelOf(int seconds) {
+    final int m = seconds ~/ 60;
     if (m < 1) return '不到 1 分钟';
     if (m < 60) return '$m 分钟';
     final int h = m ~/ 60;

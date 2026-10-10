@@ -57,6 +57,16 @@ abstract final class Motion {
   /// （所以**不设** `pageTransitionsTheme`，见 `docs/plan-vi-2026-10-10.md` §8 问题 2 的裁决 B）。
   static const Duration pageTransition = Duration(milliseconds: 300);
 
+  /// **1400ms** —— 完成页那条**时间轴**的总长（VI 计划 T2-3）。
+  ///
+  /// 为什么它是专用值而不是某一档：它是**一屏的叙事长度**（勾 420 → 标题 700 →
+  /// 数字 1020 → 解锁 1200 → 完成键 1400），不是"某个元素动多久"。
+  /// 五档管的是元素，它管的是**编排**；`Interval` 的切分点都按这个数算。
+  static const Duration summaryTimeline = Duration(milliseconds: 1400);
+
+  /// 上面那条时间轴的毫秒数（`Interval` 要的是 0..1 的切分点，用它算才不会两处写 1400）。
+  static const int summaryTimelineMs = 1400;
+
   // ── 曲线（4 档 + 1 个 iOS 原生）──────────────────────────────────────
 
   /// **位置与尺寸的默认曲线** `(0.0, 0.55, 0.45, 1.0)`：无过冲、单调收敛。
