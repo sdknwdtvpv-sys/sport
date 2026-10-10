@@ -336,6 +336,23 @@ done          # 每个 ABI 都应该是 2（备份地址 + 统计地址/v1/event
   build/app/outputs/apk/release/app-release.apk | grep -E "^package|sdkVersion"
 ```
 
+### ✅ 这套构建与核对命令 **2026-10-10 在 VI 那一版代码上彩排过**
+
+切版当天不要再"边跑边发现命令坏了"。同一条命令链（三处 `--dart-define` 与上面一字不差）
+在**还没有切版**的 VI 代码上跑了一遍，**只出产物、没进 `dist/`**（`build/` 不入库）：
+
+| 核哪一条 | 实测 |
+|---|---|
+| `flutter build apk --release`（三处 define） | ✅ 66.1MB；图标字体 tree-shake 正常（1,645,184 → 16,100 字节） |
+| 三处常量真的在包里（逐 ABI `strings` 数 `api.elliotli.work`） | ✅ arm64-v8a / armeabi-v7a / x86_64 **各 2 处**（备份地址 + 统计地址） |
+| `flutter build appbundle --release` | ⚠️ 报那句**假的**"failed to strip debug symbols"（卷名空格坑），`.aab` 照样产出（60.9MB）—— **别信退出码** |
+| `node tool/check-aab.mjs` | ✅ 121 条目 / ABI 齐全 / 版本号与 `app_info.dart` 一致 |
+| `keytool -printcert -jarfile …aab` | ✅ `CN=李松, C=CN` |
+| `jarsigner -verify …aab` | ✅ 已验证 |
+| `aapt2 dump badging …apk` | ✅ `com.sdknwdtvpv.lianleme` · `versionCode=81` · `versionName=1.66.0` · compileSdk 36 |
+
+也就是说切版当天只剩三件事：**改版本号那四处 → 重跑这两条构建并拷进 `dist/` → 三套截图重出**。
+
 ---
 
 > 🧾 **"到底还差什么、哪些必须你来做"统一看 [`your-todo.md`](your-todo.md)** ——
