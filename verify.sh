@@ -541,25 +541,34 @@ fi
 # 它们烂过：README 与 ROADMAP 停在 v1.27.0，release-checklist 甚至停在 v1.21.0 ——
 # 而这三行是用户判断"到底验到哪一步了"的依据，说错了就是**把没验的说成验了**。
 # 真源同样只有 app/lib/core/app_info.dart。
+# ⚠️ **2026-10-10 判据改过一次，理由必须留在这里**：
+#   旧判据要求这三行写成「上装的是 **v<当前版本>」/「已装 `v<当前版本>`」/「上跑的是 **v<当前版本>**」。
+#   而 v1.67.0 那一版**真机装不上**（两台都是设备侧阻塞：Redmi 被 MIUI 的 USB 安装权限拦着、
+#   iPhone 要先解锁并点「信任此电脑」+ 打开开发者模式）—— 旧判据会**逼着文档写一句"装上了"**，
+#   而那正是这条守卫存在的意义所要防的假话（"把没验的说成验了"）。
+#   新判据只守两件**机器核得动**的事：
+#     ① 这三份文件里必须**点名当前版本**（忘了切版就红 —— 这是它原本要防的漂移）；
+#     ② 提到真机/设备时必须给出**状态词**（装了 / 未装），不许含糊其辞。
+#   真正"装没装上"由人核（`dumpsys` / `devicectl`），脚本核不了、也不该假装核得了。
 check_installed_ver() {
-  local file="$1" pattern="$2" label="$3"
-  local got
-  got="$(grep -oE "$pattern" "$file" 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
-  if [ -z "$got" ]; then
-    echo "${RED}✗ $file 里找不到「${label}」（措辞变了？这条守卫已经失效，别当成通过）${OFF}"
+  local file="$1" label="$2"
+  if ! grep -qE "v${APP_VER}([^0-9]|$)" "$file"; then
+    echo "${RED}✗ $file 里没点名当前版本 v${APP_VER}（${label}）—— 切版时这一行要改${OFF}"
     fail=1
-  elif [ "$got" != "$APP_VER" ]; then
-    echo "${RED}✗ $file 写的是真机装 v${got}，实际版本是 $APP_VER${OFF}"
+    return
+  fi
+  local status
+  status="$(grep -oE '(真机|设备上)[^。]*(未装|还没装|装不上|装上了|已装上|已装|还是 v|仍是 v)[^。]*' "$file" | head -1)"
+  if [ -z "$status" ]; then
+    echo "${RED}✗ $file 里提到真机却没写清「装了」还是「没装」—— 读者没法判断验到哪一步${OFF}"
     fail=1
   else
-    echo "${GREEN}✓${OFF} $file 的真机版本（v${got}）与 app_info.dart 一致"
+    echo "${GREEN}✓${OFF} $file 点名了 v${APP_VER}，并写清了真机状态（${label}）"
   fi
 }
-# ⚠️ README 那行是 `**v1.27.2 release**` —— 粗体**跨过了版本号**，
-# 所以模式末尾**不能**要求 `**`（第一版就是那么写的，于是"匹配不到"→守卫死掉）。
-check_installed_ver README.md '上装的是 \*\*v[0-9]+\.[0-9]+\.[0-9]+' '上装的是 **vX.Y.Z'
-check_installed_ver ROADMAP.md '已装 `v[0-9]+\.[0-9]+\.[0-9]+`' '已装 `vX.Y.Z`'
-check_installed_ver docs/release-checklist.md '上跑的是 \*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*' '上跑的是 **vX.Y.Z**'
+check_installed_ver README.md 'README 的"真机交互验收"那一行'
+check_installed_ver ROADMAP.md '阶段 2 那一行'
+check_installed_ver docs/release-checklist.md '「真机验证」那一行'
 
 # iOS 可用性：每个直接依赖都得声明支持 iOS。
 # 挡的是"顺手加一个只有 Android 实现的插件" —— 它在本机（只有安卓真机）完全正常，
