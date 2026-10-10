@@ -16,6 +16,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/motion.dart';
 import '../../core/theme.dart';
 
 /// 一屏的内容（三屏都是"图 + 标题 + 一句话"）。
@@ -149,9 +150,11 @@ class _IntroCarouselScreenState extends State<IntroCarouselScreen> {
                           shape: const CircleBorder(),
                           padding: EdgeInsets.zero,
                         ),
+                        // 动效只从 `Motion` 取值（VI 计划 T1-4）——
+                        // 原来是 220ms + `Curves.easeOut`（规格外的第 22 个数字）。
                         onPressed: () => _pages.nextPage(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
+                          duration: Motion.base,
+                          curve: Motion.standard,
                         ),
                         child: const Icon(Icons.arrow_forward, size: 22),
                       ),

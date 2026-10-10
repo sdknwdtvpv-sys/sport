@@ -22,6 +22,7 @@ import 'core/app_tab_bar.dart';
 import 'core/app_top_bar.dart';
 import 'core/glass_surface.dart';
 import 'core/labels.dart';
+import 'core/motion.dart';
 import 'core/theme.dart';
 import 'core/glass_overlay.dart';
 import 'core/units.dart';
@@ -268,13 +269,13 @@ class _HomeShellState extends State<HomeShell> {
   /// 页面滑过去，玻璃由原生弹簧接管。
   void _selectTab(int i) {
     if (i == _tab) return;
-    final int from = _tab;
     setState(() => _tab = i);
     if (!GlassSurface.isSupportedPlatform) return;
-    // 远的 tab 给长一点的时间（不然四页在 300ms 里一闪而过）
+    // ⚠️ 2026-10-10（VI 计划 T1-4）：原来这里是 `260 + 90 × 距离` + `Curves.easeOutCubic`
+    // —— 一个规格外的算式加一个规格外的曲线。现在走 `Motion.pageTransition`（300ms）
+    // + `Motion.standard`：**跨屏位移按"跨屏"选档**，不为远近再开一档。
     _pages.animateToPage(i,
-        duration: Duration(milliseconds: 260 + 90 * (i - from).abs()),
-        curve: Curves.easeOutCubic);
+        duration: Motion.pageTransition, curve: Motion.standard);
   }
 
   /// 有没有同意过隐私政策。**null = 还没从库里读出来**（读出来之前什么都不做）。

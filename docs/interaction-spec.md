@@ -165,6 +165,15 @@
 
 ## 8. 动效与触觉
 
+> ⚠️ **2026-10-10（VI 计划 T1-4）：动效的取值只有一个来源 —— `app/lib/core/motion.dart` 的 `Motion`。**
+> 时长五档（`instant 100 / fast 180 / base 260 / slow 400 / celebrate 600`）+ 两个专用值
+> （`restTick 1000`、`pageTransition 300`）；曲线四档（`standard` `enter` `exit` `arrival`）
+> + 按住那一下的 `press`。**规矩**：位置变化按距离选档（同屏 260、跨屏 300），其余按"要不要被看见"选档；
+> **出场必须是入场的 0.7 倍**；透明度恒不用带过冲的曲线。
+> 降级只有一个开关：`app/lib/core/reduced_motion.dart` 的 `reducedMotion(context)`，
+> 页面一律用 `Motion.forContext(context, Motion.base)` 短路 —— **不许页面自己写 `if (disableAnimations)`**。
+> 守卫：`app/test/motion_discipline_test.dart`（扫全仓，豁免名单写死在测试里，且**反向验过**）。
+
 | 场景 | 动效 | 触觉 |
 |---|---|---|
 | 记录一组 | 新行 `pop` 入场 280ms（透明度 + 上移 6pt） | `light impact` |
