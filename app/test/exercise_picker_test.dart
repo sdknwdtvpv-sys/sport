@@ -71,6 +71,12 @@ void main() {
       expect(bench, findsWidgets, reason: '杠铃卧推该在列表里');
       await tester.longPress(bench.first);
       await tester.pumpAndSettle();
+      // 说明在 RepDB 插图下方（2026-10-11 起）：测试视口 800×600 比真机窄，
+      // 而 ListView 不构建视口外的子节点 —— 滚到它再断言。
+      await tester.scrollUntilVisible(
+          find.byKey(const Key('detail-instructions')), 200,
+          scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('detail-instructions')), findsOneWidget);
       expect(find.textContaining('肩胛后收贴凳'), findsOneWidget,
           reason: '要点没消失，只是搬到了该读它的地方');

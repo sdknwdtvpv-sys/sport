@@ -88,6 +88,10 @@ const List<IconSemantic> kIconSemantics = <IconSemantic>[
   (name: 'light', material: Icons.timer_outlined, sf: 'timer'),
   (name: 'history', material: Icons.history, sf: 'clock.arrow.circlepath'),
   (name: 'undo', material: Icons.undo, sf: 'arrow.uturn.backward'),
+  // ── 插图（动作详情页的 RepDB 示意图）──────────────────────────────
+  // `imageMissing` 是图片文件缺失时的占位（清单与实物不一致才会出现；
+  // 守卫 tool/check-repdb-art.mjs 会先抓住不一致，这个占位是"不白屏"的兜底）。
+  (name: 'imageMissing', material: Icons.image_not_supported_outlined, sf: 'photo'),
 ];
 
 /// 按名字取规范图形。**名字写错要当场炸**（不许静默给一个默认图标 ——

@@ -14,11 +14,13 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/icon_spec.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' show ExerciseData;
 import '../../data/exercise_data_ext.dart';
 import '../../data/local_store.dart';
+import '../../data/repdb_art.dart' show ExerciseArt, RepdbArt, RepdbArtCatalog;
 import '../../domain/models.dart';
 import '../progress/all_data.dart';
 import '../../core/labels.dart';
@@ -56,6 +58,18 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   void initState() {
     super.initState();
     _load();
+    _loadArt();
+  }
+
+  /// 插图清单是**异步**读出来的（asset → JSON），而这一屏不等它：
+  /// 文字说明才是用户点进来的原因。读到了就 `setState` 一次补上图。
+  ///
+  /// 已经有缓存时（第二次进详情页）走同步路径，不闪。
+  Future<void> _loadArt() async {
+    if (RepdbArt.cached != null) return;
+    final RepdbArtCatalog catalog = await RepdbArt.catalog();
+    if (!mounted || catalog.count == 0) return;
+    setState(() {});
   }
 
   Future<void> _load() async {
@@ -102,6 +116,11 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           children: <Widget>[
             _header(e),
             const SizedBox(height: Tokens.s5),
+            // 插图（有就画，没有就什么都不画 —— 见 data/repdb_art.dart 的"缺失就降级"）
+            if (RepdbArt.of(e.id) != null) ...<Widget>[
+              _ArtCard(art: RepdbArt.of(e.id)!),
+              const SizedBox(height: Tokens.s4),
+            ],
             if (e.instructions != null && e.instructions!.trim().isNotEmpty)
               _howTo(e.instructions!.trim())
             else
@@ -223,6 +242,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   // ---------- 事实 ----------
 
   Widget _facts(ExerciseData e) {
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -415,5 +435,99 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     final List<String> parts = iso.split('-');
     if (parts.length != 3) return iso;
     return '${int.tryParse(parts[1]) ?? parts[1]}/${int.tryParse(parts[2]) ?? parts[2]}';
+  }
+}
+
+/// 动作插图（RepDB 免费档静图）。
+///
+/// **为什么放在说明卡上方而不是下方**：用户点进详情页时，第一个问题是"这个动作
+/// 长什么样"——图先回答它，文字再补"最容易错的点"。反过来（先文字后图）会让人
+/// 读完一段字才发现下面有图。
+///
+/// **为什么图里画的人和 App 里其他地方不一样也没关系**：插图是"动作是什么样"的
+/// 示意，不是我们的品牌视觉。做成**有边界的图片框**（圆角 + 细线 + 固定底色）
+/// 就是承认这一点：它是一张贴进来的图，不是我们的插画体系。
+///
+/// 两张姿势（start / peak）时给一个切换：`peak` 是默认（最能看出这个动作的一张）。
+/// 单张图（拉伸/静力）没有切换。**边上有"AI 生成"标注** —— 这些图是 RepDB 用
+/// AI 工具生成后人工挑选的（许可原文 Origin of the data 一节），
+/// 国内《人工智能生成合成内容标识办法》（2025-09-01 生效）要求标识，所以写出来。
+/// 完整出处与许可在「我」→「隐私与关于」→「动作插图来源」。
+class _ArtCard extends StatefulWidget {
+  const _ArtCard({required this.art});
+
+  final ExerciseArt art;
+
+  @override
+  State<_ArtCard> createState() => _ArtCardState();
+}
+
+class _ArtCardState extends State<_ArtCard> {
+  /// true = 显示 peak（默认），false = 显示 start
+  bool _peak = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final ExerciseArt art = widget.art;
+    final String? path = _peak ? art.hero : art.start;
+    final bool canToggle = art.hasSecondPose && path != null;
+    return Column(
+      key: const Key('detail-art'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          decoration: BoxDecoration(
+            // 插图自带浅色底（RepDB 的扁平风是实色背景），所以给一个中性底把
+            // 圆角外的像素统一掉，避免浅色方块直接怼在深色页面上显得像漏图。
+            color: Tokens.elevated,
+            borderRadius: BorderRadius.circular(Tokens.rCard),
+            border: Border.all(color: Tokens.line),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: Image.asset(
+              path ?? '',
+              key: const Key('detail-art-image'),
+              fit: BoxFit.cover,
+              // 内存：425 张图各自 320×320，整包解码会很大；这里按实际绘制宽度解码。
+              cacheWidth: (MediaQuery.of(context).size.width *
+                      MediaQuery.of(context).devicePixelRatio)
+                  .round(),
+              // 文件缺失（清单与实物不一致）**不该崩**：画一个安静的占位，
+              // 因为"少一张图"远好过"详情页红屏"。守卫会去抓清单不一致。
+              errorBuilder: (_, __, ___) => Center(
+                child: Icon(iconOf('imageMissing'),
+                    color: Tokens.text3, size: IconSpec.m),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: Tokens.s2),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                // 标注"AI 生成"是合规要求（见类文档），不是排版偏好
+                '示意图 · AI 生成 · RepDB',
+                key: const Key('detail-art-caption'),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+              ),
+            ),
+            if (canToggle)
+              GestureDetector(
+                key: const Key('detail-art-toggle'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _peak = !_peak),
+                child: Text(
+                  _peak ? '看起始姿势' : '看顶峰姿势',
+                  // 橙色文字只许走 accentText（accent_budget_test 守着这条）
+                  style: const TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }

@@ -27,6 +27,7 @@ import 'backup_exporter.dart';
 import 'collection_list_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'profile_widgets.dart';
+import 'repdb_credits_screen.dart';
 
 class PrivacyAboutScreen extends StatefulWidget {
   const PrivacyAboutScreen({
@@ -242,8 +243,17 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
     );
   }
 
-  /// 打开开源许可（Flutter 自带页面）。
+  /// 打开「动作插图来源」（RepDB 署名页）。
   ///
+  /// 为什么用 `MaterialPageRoute` 而不是弹层：这一页是要**读**的（许可摘要三句），
+  /// 弹层会被当成"看一眼就关掉"的东西。与「隐私政策」「个人信息收集清单」一致。
+  void _openRepdbCredits() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const RepdbCreditsScreen()),
+    );
+  }
+
+  /// 打开开源许可（Flutter 自带页面）。
   /// 为什么有这个入口：隐私政策的第三方清单只列了**直接依赖**，而"包里到底有什么"
   /// 的准确答案在 Flutter 的许可页 —— 它由构建时的 `NOTICES` 生成，覆盖**全部**传递依赖。
   /// 与其在文档里写一句无法自证的"全部第三方代码"，不如让用户（和审核员）能当场翻。
@@ -400,6 +410,17 @@ class _PrivacyAboutScreenState extends State<PrivacyAboutScreen> {
             title: '开源许可',
             // 「这个包里用到的全部第三方组件与许可」= 复述「开源许可」四个字 → 删。
             onTap: _openLicenses,
+          ),
+          const Divider(height: 1, color: Tokens.line),
+          // 动作插图来源（RepDB）。
+          //
+          // ⚠️ **这个入口是许可证义务，不是装饰**：RepDB 免费档要求"可见的署名链接"，
+          // 而署名页必须**能从菜单点进去**（埋在代码注释里不算）。
+          // 删掉这一条 → `tool/check-repdb-art.mjs` 与 `app/test/repdb_art_test.dart` 会红。
+          navTile(
+            key: const Key('repdb-credits'),
+            title: '动作插图来源',
+            onTap: _openRepdbCredits,
           ),
         ]),
       ],

@@ -1,0 +1,265 @@
+# 练了么 → RepDB 动作插图映射表（唯一真源，人工维护）
+#
+# 格式（TAB 分隔）：our_id <TAB> repdb_id <TAB> 来源 <TAB> 备注
+#   our_id    —— app/assets/exercises.json 里的动作 id
+#   repdb_id  —— RepDB 免费档动作 id（tool/vendor-repdb-art.mjs --check 会核对它是否存在）
+#   来源      —— exact（英文名逐字相同）/ auto（机器候选，人工复核通过）/ review（人工判读）
+#   备注      —— 一句话，说明为什么这两条是同一个动作
+#
+# 覆盖率：226 / 351 = 64.4%。**其余 125 个动作有意不配图**（见文末"没配上的都是什么"）。
+#
+# ⚠️ 四条硬规矩（tool/vendor-repdb-art.mjs --check 与 verify.sh 守着）：
+#   1. **每个 repdb_id 只能出现一次**：RepDB 的图按动作 id 存，一张图配两个动作
+#      必然有一边是错的（"宁缺勿错配"）。
+#   2. **器械 / 平面 / 握距 / 姿势都不许凑**：machine ≠ barbell，smith ≠ barbell，
+#      push press ≠ press，hold ≠ lift，哑铃 ≠ 壶铃，下斜坐起 ≠ 下斜卷腹。
+#      拿不准就不写 —— 少一张图没有任何代价，错一张图（给"杠铃划船"配"直立划船"）
+#      是让用户照着错的动作练，那是产品缺陷。
+#   3. **只许用免费档的静图**（images/flat/*.webp）。premium-samples/ 的付费预览动画是
+#      "仅限评估"（许可第 6 条），一个字节都不许进包。
+#   4. **署名不可去掉**：许可靠第 2 条要求可见链接，落在
+#      app/lib/features/profile/repdb_credits_screen.dart，逐字是
+#      "Exercise data by RepDB (repdb.co)"（tool/check-repdb-art.mjs 会核对这句话还在）。
+#
+# 怎么维护：新增动作后想配图，先用英文名在 RepDB 的 exercises.json 里搜，
+# 确认是**同一个动作**再往这里加一行，然后跑 tool/vendor-repdb-art.mjs 重新生成。
+# 生成物：app/assets/repdb-art.json + app/assets/repdb-art/*.webp（两者都要提交）。
+#
+# ── 没配上的都是什么（125 个，不是漏了，是没有对应动作）──────────────────
+#   * 器械/上斜/单臂组合变体（RepDB 没有对应的器械动作）；
+#   * 弹力带动作整批（RepDB 的 band 动作与我们的发力方式不同）；
+#   * 静力保持类（平板支撑加重、L 坐、超人式保持）—— RepDB 只有动态动作；
+#   * 我们独有的动作（农夫行走变体、跳绳、部分拉伸）；
+#   * 人工复核时**主动推翻**的 5 条（图片画的不是我们写的那个动作）：
+#       ex_wide_t_bar_row（宽握 T 杠划船 → 普通 T 杠划船，已被 ex_t_bar_row 占用）
+#       ex_heel_elevated_goblet_squat（哑铃高脚杯蹲 ≠ 杠铃垫脚跟深蹲）
+#       ex_decline_sit_up（下斜仰卧起坐 ≠ 下斜卷腹：髋屈 vs 只屈腹）
+#       ex_single_arm_dumbbell_tricep_extension（未写明颈后 → 不套"颈后"那张图）
+#       ex_weighted_russian_twist（哑铃负重 ≠ 壶铃负重）
+
+ex_ab_wheel	ab-wheel-rollout	exact	英文名逐字相同
+ex_archer_push_up	archer-push-ups	review	弓手俯卧撑，同一动作
+ex_arnold_press	arnold-press	exact	英文名逐字相同
+ex_assisted_dip	assisted-dips	review	辅助双杠臂屈伸，动作一致
+ex_assisted_pull_up	assisted-pull-ups	review	辅助引体，器械动作一致
+ex_back_extension	back-extension	exact	英文名逐字相同
+ex_band_pull_apart	band-pull-apart	exact	英文名逐字相同
+ex_banded_clamshell	banded-clamshell	exact	英文名逐字相同
+ex_banded_fire_hydrant	banded-fire-hydrant	exact	英文名逐字相同
+ex_banded_glute_bridge	banded-glute-bridge	exact	英文名逐字相同
+ex_banded_hip_thrust	banded-hip-thrust	exact	英文名逐字相同
+ex_banded_lateral_walk	banded-lateral-walk	exact	英文名逐字相同
+ex_banded_seated_hip_abduction	banded-seated-hip-abduction	exact	英文名逐字相同
+ex_banded_squat	banded-squat	exact	英文名逐字相同
+ex_banded_standing_hip_abduction	banded-standing-hip-abduction	exact	英文名逐字相同
+ex_barbell_glute_bridge	barbell-glute-bridge	exact	英文名逐字相同
+ex_battle_ropes	battle-ropes	exact	英文名逐字相同
+ex_bb_bench_press	bench-press	exact	英文名逐字相同
+ex_bb_curl	barbell-curl	exact	英文名逐字相同
+ex_bb_decline_bench_press	decline-bench-press-barbell	exact	英文名逐字相同
+ex_bb_front_raise	barbell-front-raise	exact	英文名逐字相同
+ex_bb_incline_bench_press	incline-bench-press	exact	英文名逐字相同
+ex_bb_lunge	barbell-lunge	exact	英文名逐字相同
+ex_bb_row	barbell-row	auto	机器候选，人工复核通过
+ex_bb_shrug	shrug	exact	英文名逐字相同
+ex_bb_squat	squat	exact	英文名逐字相同
+ex_bear_crawl	bear-crawl	exact	英文名逐字相同
+ex_bear_plank	bear-plank-hold	review	熊式平板支撑，同一动作
+ex_bench_dip	bench-dips	review	凳上臂屈伸，同一动作
+ex_bent_over_db_fly	dumbbell-reverse-fly	review	俯身哑铃飞鸟，动作一致
+ex_bicycle_crunch	bicycle-crunch	exact	英文名逐字相同
+ex_bird_dog	bird-dog	exact	英文名逐字相同
+ex_bodyweight_squat	bodyweight-squat	exact	英文名逐字相同
+ex_box_squat	box-squat	exact	英文名逐字相同
+ex_bulgarian_split_squat	bulgarian-split-squat	exact	英文名逐字相同
+ex_burpee	burpees	review	波比跳，同一动作
+ex_butterfly_stretch	butterfly-stretch	exact	英文名逐字相同
+ex_cable_crossover	cable-fly	review	绳索夹胸，同一动作
+ex_cable_crunch	cable-crunch	exact	英文名逐字相同
+ex_cable_curl	cable-curl	exact	英文名逐字相同
+ex_cable_front_raise	cable-front-raise	exact	英文名逐字相同
+ex_cable_hammer_curl	cable-hammer-curl	exact	英文名逐字相同
+ex_cable_kickback	cable-kickback	review	绳索后踢腿，动作器械一致
+ex_cable_lateral_raise	cable-lateral-raise	exact	英文名逐字相同
+ex_cable_pull_through	cable-pull-through	exact	英文名逐字相同
+ex_cable_pushdown	tricep-pushdown	review	绳索下压，同一动作
+ex_cable_rear_delt_fly	rear-delt-fly	auto	机器候选，人工复核通过
+ex_calf_raise	bodyweight-calf-raise	review	徒手提踵，同一动作
+ex_captains_chair_knee_raise	captains-chair-knee-raise	exact	英文名逐字相同
+ex_cat_cow_stretch	cat-cow	review	猫牛式，同一动作
+ex_chest_supported_row	chest-supported-db-row	auto	机器候选，人工复核通过
+ex_childs_pose	childs-pose	exact	英文名逐字相同
+ex_chin_up	chin-ups	review	反握引体，同一动作
+ex_clamshell	clamshells	review	蚌式开合，同一动作
+ex_close_grip_bench	close-grip-bench-press	exact	英文名逐字相同
+ex_close_grip_pulldown	close-grip-lat-pulldown	exact	英文名逐字相同
+ex_commando_pull_up	commando-pull-up	exact	英文名逐字相同
+ex_concentration_curl	concentration-curl	exact	英文名逐字相同
+ex_cossack_squat	cossack-squat	exact	英文名逐字相同
+ex_cross_body_shoulder_stretch	cross-body-shoulder-stretch	exact	英文名逐字相同
+ex_crunch	crunches	review	卷腹，同一动作
+ex_cycling	stationary-bike	review	动感单车，器械动作一致
+ex_db_bench_press	db-bench-press	exact	英文名逐字相同
+ex_db_close_grip_press	close-grip-db-bench-press	review	同一动作，哑铃窄距卧推
+ex_db_curl	bicep-curl	review	哑铃弯举，同一动作
+ex_db_fly	db-fly	exact	英文名逐字相同
+ex_db_front_raise	dumbbell-front-raise	exact	英文名逐字相同
+ex_db_incline_fly	incline-dumbbell-fly	exact	英文名逐字相同
+ex_db_incline_press	incline-db-press	exact	英文名逐字相同
+ex_db_lateral_raise	lateral-raise	exact	英文名逐字相同
+ex_db_pullover	db-pullover	exact	英文名逐字相同
+ex_db_shoulder_press	dumbbell-shoulder-press	exact	英文名逐字相同
+ex_db_shrug	db-shrug	exact	英文名逐字相同
+ex_dead_bug	dead-bug	exact	英文名逐字相同
+ex_dead_hang	dead-hang	exact	英文名逐字相同
+ex_deadlift	deadlift	review	硬拉，动作器械一致
+ex_decline_push_up	decline-push-up	exact	英文名逐字相同
+ex_deficit_reverse_lunge	bodyweight-reverse-lunge	review	反向箭步蹲，动作一致
+ex_diamond_push_up	diamond-push-ups	review	窄距俯卧撑，同一动作
+ex_dip	dips	review	双杠臂屈伸，同一动作
+ex_donkey_calf_raise	donkey-calf-raise	exact	英文名逐字相同
+ex_donkey_kick	glute-kickback	review	跪姿后踢腿，同一动作
+ex_doorway_chest_stretch	doorway-chest-stretch	exact	英文名逐字相同
+ex_drag_curl	drag-curl	exact	英文名逐字相同
+ex_dragon_flag	dragon-flag	exact	英文名逐字相同
+ex_dumbbell_hip_thrust	dumbbell-hip-thrust	exact	英文名逐字相同
+ex_dumbbell_romanian_deadlift	dumbbell-romanian-deadlift	exact	英文名逐字相同
+ex_dumbbell_side_bend	dumbbell-side-bend	exact	英文名逐字相同
+ex_dumbbell_skull_crusher	lying-tricep-extension	review	仰卧臂屈伸，哑铃动作一致
+ex_dumbbell_sumo_deadlift	kettlebell-sumo-deadlift	review	相扑硬拉，同一动作
+ex_dumbbell_sumo_squat	db-sumo-squat	exact	英文名逐字相同
+ex_elliptical	elliptical-trainer	review	椭圆机，器械一致
+ex_explosive_push_up	clap-push-ups	review	爆发俯卧撑，同一动作
+ex_ez_bar_curl	ez-bar-curl	exact	英文名逐字相同
+ex_farmer_walk	dumbbell-farmers-walk	review	哑铃农夫行走，动作一致
+ex_fire_hydrant	fire-hydrant	exact	英文名逐字相同
+ex_flutter_kick	flutter-kicks	review	仰卧交替打腿，同一动作
+ex_forward_lunge	lunge	review	前箭步蹲，同一动作
+ex_front_squat	front-squat	exact	英文名逐字相同
+ex_glute_bridge	glute-bridge	exact	英文名逐字相同
+ex_glute_focused_back_extension	machine-back-extension	review	山羊挺身，器械一致
+ex_goblet_squat	goblet-squat	exact	英文名逐字相同
+ex_good_morning	good-morning	exact	英文名逐字相同
+ex_hack_squat	hack-squat	exact	英文名逐字相同
+ex_hammer_curl	hammer-curl	review	锤式弯举，同一动作
+ex_handstand_push_up	handstand-push-ups	review	倒立撑，同一动作
+ex_hanging_knee_raise	hanging-knee-raise	exact	英文名逐字相同
+ex_hanging_leg_raise	hanging-leg-raise	exact	英文名逐字相同
+ex_heel_touch	heel-touches	review	仰卧触踝，同一动作
+ex_high_knees	high-knees	exact	英文名逐字相同
+ex_hip_abduction	hip-abduction	review	髋外展，器械一致
+ex_hip_adduction	hip-adduction	exact	英文名逐字相同
+ex_hip_thrust	hip-thrust	exact	英文名逐字相同
+ex_hollow_body_hold	hollow-body-hold	exact	英文名逐字相同
+ex_incline_db_curl	incline-db-curl	exact	英文名逐字相同
+ex_incline_hammer_curl	incline-hammer-curl	exact	英文名逐字相同
+ex_incline_push_up	incline-push-ups	exact	英文名逐字相同
+ex_inverted_row	inverted-row	exact	英文名逐字相同
+ex_jump_rope	jump-rope	exact	英文名逐字相同
+ex_jump_squat	jump-squat	exact	英文名逐字相同
+ex_jumping_jack	jumping-jacks	review	开合跳，同一动作
+ex_kettlebell_swing	kettlebell-swing	exact	英文名逐字相同
+ex_knee_push_up	knee-push-ups	review	跪姿俯卧撑，同一动作
+ex_kneeling_hip_flexor_stretch	kneeling-hip-flexor-stretch	exact	英文名逐字相同
+ex_landmine_press	landmine-press	exact	英文名逐字相同
+ex_lat_pulldown	lat-pulldown	exact	英文名逐字相同
+ex_lateral_lunge	side-lunge	review	侧向弓步，动作一致
+ex_leg_extension	leg-extension	exact	英文名逐字相同
+ex_leg_press	leg-press	exact	英文名逐字相同
+ex_leg_swings_stretch	leg-swing-front-to-back	review	摆腿，同一动作
+ex_lying_leg_curl	leg-curl	exact	英文名逐字相同
+ex_lying_leg_raise	lying-leg-raise	exact	英文名逐字相同
+ex_machine_chest_press	chest-press-machine	auto	机器候选，人工复核通过
+ex_machine_crunch	machine-seated-crunch	review	器械卷腹，器械一致
+ex_machine_curl	machine-bicep-curl	review	器械弯举，器械一致
+ex_machine_hip_thrust	plate-loaded-glute-drive	review	器械臀推，同一动作
+ex_machine_lateral_raise	plate-loaded-lateral-raise	review	器械侧平举，同一动作
+ex_machine_pec_deck	pec-deck	review	蝴蝶机夹胸，器械一致
+ex_machine_shoulder_press	machine-shoulder-press	exact	英文名逐字相同
+ex_machine_triceps_extension	machine-triceps-extension	exact	英文名逐字相同
+ex_mountain_climber	mountain-climbers	review	登山跑，同一动作
+ex_negative_pull_up	negative-pull-ups	review	离心引体，同一动作
+ex_neutral_grip_pull_up	neutral-grip-pull-ups	review	对握引体，动作一致
+ex_nordic_hamstring_curl	nordic-hamstring-curl	exact	英文名逐字相同
+ex_one_arm_db_row	single-arm-db-row	auto	机器候选，人工复核通过
+ex_overhead_db_extension	seated-dumbbell-tricep-extension	review	哑铃颈后臂屈伸，器械一致
+ex_pallof_press	cable-pallof-press	auto	机器候选，人工复核通过
+ex_pause_squat	pause-squat	exact	英文名逐字相同
+ex_pendlay_row	pendlay-row	exact	英文名逐字相同
+ex_pike_push_up	pike-push-ups	review	派克俯卧撑，同一动作
+ex_pistol_squat	pistol-squat	exact	英文名逐字相同
+ex_plank	plank	exact	英文名逐字相同
+ex_preacher_curl	preacher-curl	exact	英文名逐字相同
+ex_pull_up	pull-up	exact	英文名逐字相同
+ex_push_press	push-press	exact	英文名逐字相同
+ex_push_up	push-up	exact	英文名逐字相同
+ex_rack_pull	rack-pull	exact	英文名逐字相同
+ex_rdl	romanian-deadlift	exact	英文名逐字相同
+ex_reverse_bb_curl	reverse-curl	review	反握杠铃弯举，动作一致
+ex_reverse_crunch	reverse-crunches	review	反向卷腹，同一动作
+ex_reverse_grip_bb_row	reverse-grip-bent-over-row	auto	机器候选，人工复核通过
+ex_reverse_grip_pulldown	reverse-grip-lat-pulldown	exact	英文名逐字相同
+ex_reverse_lunge	reverse-lunge	exact	英文名逐字相同
+ex_reverse_wrist_curl	db-reverse-wrist-curl	review	反向腕弯举，动作一致
+ex_rowing	rowing-machine	review	划船机，器械动作一致
+ex_running	running	exact	英文名逐字相同
+ex_russian_twist	russian-twist	exact	英文名逐字相同
+ex_scapular_pull_up	scapular-pull-ups	review	肩胛引体，同一动作
+ex_seated_bb_press	seated-barbell-overhead-press	auto	机器候选，人工复核通过
+ex_seated_cable_row	seated-cable-row	exact	英文名逐字相同
+ex_seated_calf_raise	seated-calf-raise	exact	英文名逐字相同
+ex_seated_forward_fold_stretch	seated-forward-fold	exact	英文名逐字相同
+ex_seated_leg_curl	seated-leg-curl	exact	英文名逐字相同
+ex_side_crunch	cross-body-crunch	review	侧卷腹，同一类转体卷腹
+ex_side_lying_hip_abduction	side-lying-hip-abduction	exact	英文名逐字相同
+ex_side_plank	side-plank	exact	英文名逐字相同
+ex_single_arm_cable_front	straight-bar-cable-front-raise	review	单臂与直杆前平举，器械一致
+ex_single_arm_cable_row	one-arm-seated-cable-row	auto	机器候选，人工复核通过
+ex_single_arm_pulldown	one-arm-lat-pulldown	auto	机器候选，人工复核通过
+ex_single_arm_pushdown	single-arm-tricep-pushdown	review	单臂绳索下压，动作一致
+ex_single_leg_calf_raise	single-leg-calf-raise	exact	英文名逐字相同
+ex_single_leg_extension	single-leg-extension	exact	英文名逐字相同
+ex_single_leg_glute_bridge	single-leg-glute-bridge	exact	英文名逐字相同
+ex_single_leg_press	single-leg-press	exact	英文名逐字相同
+ex_sit_up	sit-ups	review	仰卧起坐，同一动作
+ex_skierg	ski-erg	exact	英文名逐字相同
+ex_skull_crusher	skull-crusher	exact	英文名逐字相同
+ex_smith_bench_press	smith-machine-bench-press	exact	英文名逐字相同
+ex_smith_calf_raise	smith-machine-calf-raise	exact	英文名逐字相同
+ex_smith_incline_press	smith-machine-incline-bench-press	auto	机器候选，人工复核通过
+ex_smith_machine_bulgarian_split_squat	smith-machine-bulgarian-split	exact	英文名逐字相同
+ex_smith_machine_hip_thrust	smith-machine-hip-thrust	exact	英文名逐字相同
+ex_smith_machine_reverse_lunge	smith-machine-reverse-lunge	exact	英文名逐字相同
+ex_smith_machine_romanian_deadlift	smith-machine-rdl	exact	英文名逐字相同
+ex_smith_machine_split_squat	smith-machine-split-squat	exact	英文名逐字相同
+ex_smith_shoulder_press	smith-machine-shoulder-press	exact	英文名逐字相同
+ex_smith_squat	smith-machine-squat	exact	英文名逐字相同
+ex_spider_curl	spider-curl	exact	英文名逐字相同
+ex_stability_ball_hamstring_curl	ball-leg-curl	review	瑞士球腘绳肌弯举，动作一致
+ex_stair_climber	stair-climber	exact	英文名逐字相同
+ex_standing_calf_raise	standing-calf-raise	exact	英文名逐字相同
+ex_standing_quad_stretch	standing-quad-stretch	exact	英文名逐字相同
+ex_step_up	step-ups	review	哑铃台阶上步，动作一致
+ex_stiff_leg_deadlift	stiff-leg-deadlift	exact	英文名逐字相同
+ex_straight_arm_pulldown	straight-arm-pulldown	exact	英文名逐字相同
+ex_sumo_deadlift	sumo-deadlift	exact	英文名逐字相同
+ex_superman	superman	exact	英文名逐字相同
+ex_t_bar_row	t-bar-row	exact	英文名逐字相同
+ex_torso_twist_stretch	torso-twists	exact	英文名逐字相同
+ex_trap_bar_deadlift	hex-bar-deadlift	review	六角杠硬拉，器械动作一致
+ex_treadmill_incline_walk	incline-treadmill-walk	review	跑步机爬坡走，器械一致
+ex_triceps_kickback	tricep-kickback	review	哑铃俯身臂屈伸，动作一致
+ex_two_arm_db_row	bent-over-db-row	review	哑铃划船，动作器械一致
+ex_upright_row	upright-row	auto	机器候选，人工复核通过
+ex_v_up	v-ups	review	V字两头起，同一动作
+ex_walking	walking	exact	英文名逐字相同
+ex_walking_lunge	walking-lunge	exact	英文名逐字相同
+ex_wall_push_up	wall-push-ups	review	靠墙俯卧撑，同一动作
+ex_wall_sit	wall-sit	exact	英文名逐字相同
+ex_weighted_crunch	weighted-wall-crunch	review	负重卷腹，同一动作
+ex_weighted_dip	weighted-dips	review	负重双杠臂屈伸，动作一致
+ex_weighted_pull_up	weighted-pull-up	exact	英文名逐字相同
+ex_wide_cable_row	wide-grip-seated-cable-row	auto	机器候选，人工复核通过
+ex_wide_push_up	wide-grip-push-ups	review	宽距俯卧撑，动作一致
+ex_wrist_curl	wrist-curl	review	腕弯举，哑铃动作一致
+ex_zottman_curl	zottman-curl	exact	英文名逐字相同

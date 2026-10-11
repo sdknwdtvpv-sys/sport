@@ -35,6 +35,9 @@ import 'package:lianleme/billing/entitlement.dart';
 import 'package:lianleme/billing/paywall_copy.dart';
 import 'package:lianleme/billing/paywall_screen.dart';
 import 'package:lianleme/data/entitlement_repository.dart';
+import 'package:lianleme/data/repdb_art.dart';
+import 'package:lianleme/features/exercise/exercise_detail_screen.dart';
+import 'package:lianleme/features/profile/repdb_credits_screen.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
 import 'package:lianleme/health/health_bridge.dart';
 import 'package:lianleme/features/notifications/notification_center_screen.dart';
@@ -127,7 +130,12 @@ void main() {
     }
   });
 
-  tearDown(() => db.close());
+  tearDown(() {
+    // 插图清单是**进程内静态缓存**（RepdbArt.cached）——不清掉它，
+    // 这一屏塞进去的假清单会漏给后面每一屏（那种顺序耦合极难查）。
+    RepdbArt.debugSet(null);
+    db.close();
+  });
 
   /// 一屏怎么造。`label` 只用于报错信息。
   final Map<String, Future<Widget> Function()> screens =
@@ -226,6 +234,29 @@ void main() {
               .build('w1', unit: WeightUnit.kg))!,
           analytics: RecordingAnalytics(),
         ),
+    // 动作详情页（插图，2026-10-11）：它是**第一屏带方形图片**的页面，
+    // 大字号下最容易挤的是图下面那一行（"示意图 · AI 生成 · RepDB" + 右侧切换入口）。
+    // 插图用**假路径**：widget 测试里没有真 asset，图片会走 errorBuilder 的占位 ——
+    // 版式（标题+占位+说明+基本事实+历史）照样扫得到，而不用把 2.8MB 图拖进测试。
+    '动作详情页（有插图）': () async {
+      RepdbArt.debugSet(RepdbArtCatalog.fromJson(<String, dynamic>{
+        'exercises': <dynamic>[
+          <String, dynamic>{
+            'id': 'ex_bb_bench_press',
+            'repdb': 'bench-press-sweep-fake',
+            'start': 'assets/repdb-art/sweep-fake-start.webp',
+            'peak': 'assets/repdb-art/sweep-fake-peak.webp',
+          },
+        ],
+      }));
+      return ExerciseDetailScreen(
+        exercise: (await repo.byId('ex_bb_bench_press'))!,
+        store: store,
+      );
+    },
+    // 动作插图来源（RepDB 署名页）：三段长正文 + 两行可复制地址，
+    // 是"对外文本"那一类里最长的，必须扫。
+    '动作插图来源': () async => const RepdbCreditsScreen(),
     '训练屏（记过一组）': () async {
       final WorkoutController c = WorkoutController(
         exercise: const ExerciseSpec(

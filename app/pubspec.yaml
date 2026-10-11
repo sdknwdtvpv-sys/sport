@@ -73,3 +73,17 @@ flutter:
     - assets/collection-list.txt
     # 字体许可原文（OFL-1.1）—— main.dart 会把它读进「开源许可」页，所以要打包
     - fonts/OFL-Oswald.txt
+    # 动作插图清单 + 插图本体（RepDB 免费档静图，见 tool/vendor-repdb-art.mjs）。
+    #
+    # **为什么整批打包而不是按需下载**：训练时常常没有网（健身房在地下室），
+    # 而"这个动作怎么做"恰恰是那一刻最需要的东西。代价是包体 +2.77 MB（426 张 320px WebP），
+    # 换来的是完全离线可用、零请求、零缓存逻辑。
+    #
+    # ⚠️ 许可（RepDB Free Tier v1.0，原文在 tool/repdb-license.txt）：
+    #   应用内个人与商业用途免费，**必须署名**（署名落在
+    #   features/profile/repdb_credits_screen.dart，逐字「Exercise data by RepDB (repdb.co)」）；
+    #   不得作为数据集/API 再分发；不得作为生成式模型素材；
+    #   付费档预览图（premium-samples）**一字节都不许进包**。
+    #   这四条由 tool/check-repdb-art.mjs 与 app/test/repdb_art_test.dart 守着。
+    - assets/repdb-art.json
+    - assets/repdb-art/

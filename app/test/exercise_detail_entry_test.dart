@@ -204,10 +204,20 @@ void main() {
       await tester.longPress(row);
       await tester.pumpAndSettle();
       expect(find.byType(ExerciseDetailScreen), findsOneWidget);
+      // 视口小（这里沿用测试默认的 800×600），而详情页顶上现在有一张 RepDB 插图 ——
+      // 说明落在视口外，而 ListView **不构建**视口外的子节点。滚到它再断言。
+      await tester.scrollUntilVisible(find.textContaining('哑铃抱在胸前'), 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
       expect(find.textContaining('哑铃抱在胸前'), findsOneWidget);
       expect(picked, isNull, reason: '长按不该顺手把动作选了');
 
-      // 返回之后点一下 → 还是原来的选中行为
+      // 返回之后点一下 → 还是原来的选中行为。
+      // ⚠️ 先滚回**顶部**：返回键在页首，而上面为了看说明把列表滚下去了 ——
+      // 不滚回去 `find.byKey('detail-back')` 就是 0 个（它在视口之外，没有被构建）。
+      await tester.scrollUntilVisible(find.byKey(const Key('detail-back')), -200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('detail-back')));
       await tester.pumpAndSettle();
       await tester.tap(row);

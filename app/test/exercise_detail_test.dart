@@ -249,7 +249,20 @@ void main() {
       return e!;
     }
 
+    /// 打开详情页。**视口按真机尺寸设**（411×914）。
+    ///
+    /// 为什么不能沿用测试默认的 800×600：2026-10-11 详情页顶上多了一张 RepDB 插图
+    /// （~400px 高），而 800×600 的视口只有 600 高 —— 说明/基本事实/历史全被挤到
+    /// 视口之外，`ListView` **不构建**视口外的子节点，于是 `find` 返回 0，
+    /// 6 条测试一起红。而在真机（411×914）上这一页是放得下的：
+    /// 头部 ~60 + 插图 400 + 说明 ~90 + 事实 ~200 + 历史 ~150 ≈ 900 < 914。
+    ///
+    /// 判据是"用户在真机上能不能看见"，所以**让测试视口像真机**，而不是删插图或
+    /// 把断言改成"滚一下才看得见"（后者会把一个假问题固化进测试）。
     Future<void> pump(WidgetTester tester, ExerciseData e, {bool withStore = true}) async {
+      tester.view.physicalSize = const Size(411 * 3, 914 * 3);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(MaterialApp(
         home: ExerciseDetailScreen(
           exercise: e,

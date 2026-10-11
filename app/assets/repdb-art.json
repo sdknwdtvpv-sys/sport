@@ -1,0 +1,1342 @@
+{
+ "schema": 1,
+ "source": "https://github.com/RepDB/exercise-dataset",
+ "source_snapshot": "2026-10-08",
+ "license": "RepDB Free Tier License v1.0（原文副本：tool/repdb-license.txt）",
+ "attribution": "Exercise data by RepDB (repdb.co)",
+ "attribution_where": "app/lib/features/profile/repdb_credits_screen.dart",
+ "note": "RepDB 免费档静图（512px WebP 缩到 320px）。许可：应用内个人与商业用途免费，须署名；不得作为数据集/API 再分发；不得作为生成式模型素材；付费档预览图不得使用。动作说明文字**不是** RepDB 的，是我们自己写的（RepDB 只有英/德/西）。",
+ "count": 226,
+ "exercises": [
+  {
+   "id": "ex_ab_wheel",
+   "repdb": "ab-wheel-rollout",
+   "start": "assets/repdb-art/ab-wheel-rollout-start.webp",
+   "peak": "assets/repdb-art/ab-wheel-rollout-peak.webp"
+  },
+  {
+   "id": "ex_archer_push_up",
+   "repdb": "archer-push-ups",
+   "start": "assets/repdb-art/archer-push-ups-start.webp",
+   "peak": "assets/repdb-art/archer-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_arnold_press",
+   "repdb": "arnold-press",
+   "start": "assets/repdb-art/arnold-press-start.webp",
+   "peak": "assets/repdb-art/arnold-press-peak.webp"
+  },
+  {
+   "id": "ex_assisted_dip",
+   "repdb": "assisted-dips",
+   "start": "assets/repdb-art/assisted-dips-start.webp",
+   "peak": "assets/repdb-art/assisted-dips-peak.webp"
+  },
+  {
+   "id": "ex_assisted_pull_up",
+   "repdb": "assisted-pull-ups",
+   "start": "assets/repdb-art/assisted-pull-ups-start.webp",
+   "peak": "assets/repdb-art/assisted-pull-ups-peak.webp"
+  },
+  {
+   "id": "ex_back_extension",
+   "repdb": "back-extension",
+   "start": "assets/repdb-art/back-extension-start.webp",
+   "peak": "assets/repdb-art/back-extension-peak.webp"
+  },
+  {
+   "id": "ex_band_pull_apart",
+   "repdb": "band-pull-apart",
+   "start": "assets/repdb-art/band-pull-apart-start.webp",
+   "peak": "assets/repdb-art/band-pull-apart-peak.webp"
+  },
+  {
+   "id": "ex_banded_clamshell",
+   "repdb": "banded-clamshell",
+   "start": "assets/repdb-art/banded-clamshell-start.webp",
+   "peak": "assets/repdb-art/banded-clamshell-peak.webp"
+  },
+  {
+   "id": "ex_banded_fire_hydrant",
+   "repdb": "banded-fire-hydrant",
+   "start": "assets/repdb-art/banded-fire-hydrant-start.webp",
+   "peak": "assets/repdb-art/banded-fire-hydrant-peak.webp"
+  },
+  {
+   "id": "ex_banded_glute_bridge",
+   "repdb": "banded-glute-bridge",
+   "start": "assets/repdb-art/banded-glute-bridge-start.webp",
+   "peak": "assets/repdb-art/banded-glute-bridge-peak.webp"
+  },
+  {
+   "id": "ex_banded_hip_thrust",
+   "repdb": "banded-hip-thrust",
+   "start": "assets/repdb-art/banded-hip-thrust-start.webp",
+   "peak": "assets/repdb-art/banded-hip-thrust-peak.webp"
+  },
+  {
+   "id": "ex_banded_lateral_walk",
+   "repdb": "banded-lateral-walk",
+   "start": "assets/repdb-art/banded-lateral-walk-start.webp",
+   "peak": "assets/repdb-art/banded-lateral-walk-peak.webp"
+  },
+  {
+   "id": "ex_banded_seated_hip_abduction",
+   "repdb": "banded-seated-hip-abduction",
+   "start": "assets/repdb-art/banded-seated-hip-abduction-start.webp",
+   "peak": "assets/repdb-art/banded-seated-hip-abduction-peak.webp"
+  },
+  {
+   "id": "ex_banded_squat",
+   "repdb": "banded-squat",
+   "start": "assets/repdb-art/banded-squat-start.webp",
+   "peak": "assets/repdb-art/banded-squat-peak.webp"
+  },
+  {
+   "id": "ex_banded_standing_hip_abduction",
+   "repdb": "banded-standing-hip-abduction",
+   "start": "assets/repdb-art/banded-standing-hip-abduction-start.webp",
+   "peak": "assets/repdb-art/banded-standing-hip-abduction-peak.webp"
+  },
+  {
+   "id": "ex_barbell_glute_bridge",
+   "repdb": "barbell-glute-bridge",
+   "start": "assets/repdb-art/barbell-glute-bridge-start.webp",
+   "peak": "assets/repdb-art/barbell-glute-bridge-peak.webp"
+  },
+  {
+   "id": "ex_battle_ropes",
+   "repdb": "battle-ropes",
+   "main": "assets/repdb-art/battle-ropes-main.webp"
+  },
+  {
+   "id": "ex_bb_bench_press",
+   "repdb": "bench-press",
+   "start": "assets/repdb-art/bench-press-start.webp",
+   "peak": "assets/repdb-art/bench-press-peak.webp"
+  },
+  {
+   "id": "ex_bb_curl",
+   "repdb": "barbell-curl",
+   "start": "assets/repdb-art/barbell-curl-start.webp",
+   "peak": "assets/repdb-art/barbell-curl-peak.webp"
+  },
+  {
+   "id": "ex_bb_decline_bench_press",
+   "repdb": "decline-bench-press-barbell",
+   "start": "assets/repdb-art/decline-bench-press-barbell-start.webp",
+   "peak": "assets/repdb-art/decline-bench-press-barbell-peak.webp"
+  },
+  {
+   "id": "ex_bb_front_raise",
+   "repdb": "barbell-front-raise",
+   "start": "assets/repdb-art/barbell-front-raise-start.webp",
+   "peak": "assets/repdb-art/barbell-front-raise-peak.webp"
+  },
+  {
+   "id": "ex_bb_incline_bench_press",
+   "repdb": "incline-bench-press",
+   "start": "assets/repdb-art/incline-bench-press-start.webp",
+   "peak": "assets/repdb-art/incline-bench-press-peak.webp"
+  },
+  {
+   "id": "ex_bb_lunge",
+   "repdb": "barbell-lunge",
+   "start": "assets/repdb-art/barbell-lunge-start.webp",
+   "peak": "assets/repdb-art/barbell-lunge-peak.webp"
+  },
+  {
+   "id": "ex_bb_row",
+   "repdb": "barbell-row",
+   "start": "assets/repdb-art/barbell-row-start.webp",
+   "peak": "assets/repdb-art/barbell-row-peak.webp"
+  },
+  {
+   "id": "ex_bb_shrug",
+   "repdb": "shrug",
+   "start": "assets/repdb-art/shrug-start.webp",
+   "peak": "assets/repdb-art/shrug-peak.webp"
+  },
+  {
+   "id": "ex_bb_squat",
+   "repdb": "squat",
+   "start": "assets/repdb-art/squat-start.webp",
+   "peak": "assets/repdb-art/squat-peak.webp"
+  },
+  {
+   "id": "ex_bear_crawl",
+   "repdb": "bear-crawl",
+   "start": "assets/repdb-art/bear-crawl-start.webp",
+   "peak": "assets/repdb-art/bear-crawl-peak.webp"
+  },
+  {
+   "id": "ex_bear_plank",
+   "repdb": "bear-plank-hold",
+   "main": "assets/repdb-art/bear-plank-hold-main.webp"
+  },
+  {
+   "id": "ex_bench_dip",
+   "repdb": "bench-dips",
+   "start": "assets/repdb-art/bench-dips-start.webp",
+   "peak": "assets/repdb-art/bench-dips-peak.webp"
+  },
+  {
+   "id": "ex_bent_over_db_fly",
+   "repdb": "dumbbell-reverse-fly",
+   "start": "assets/repdb-art/dumbbell-reverse-fly-start.webp",
+   "peak": "assets/repdb-art/dumbbell-reverse-fly-peak.webp"
+  },
+  {
+   "id": "ex_bicycle_crunch",
+   "repdb": "bicycle-crunch",
+   "start": "assets/repdb-art/bicycle-crunch-start.webp",
+   "peak": "assets/repdb-art/bicycle-crunch-peak.webp"
+  },
+  {
+   "id": "ex_bird_dog",
+   "repdb": "bird-dog",
+   "start": "assets/repdb-art/bird-dog-start.webp",
+   "peak": "assets/repdb-art/bird-dog-peak.webp"
+  },
+  {
+   "id": "ex_bodyweight_squat",
+   "repdb": "bodyweight-squat",
+   "start": "assets/repdb-art/bodyweight-squat-start.webp",
+   "peak": "assets/repdb-art/bodyweight-squat-peak.webp"
+  },
+  {
+   "id": "ex_box_squat",
+   "repdb": "box-squat",
+   "start": "assets/repdb-art/box-squat-start.webp",
+   "peak": "assets/repdb-art/box-squat-peak.webp"
+  },
+  {
+   "id": "ex_bulgarian_split_squat",
+   "repdb": "bulgarian-split-squat",
+   "start": "assets/repdb-art/bulgarian-split-squat-start.webp",
+   "peak": "assets/repdb-art/bulgarian-split-squat-peak.webp"
+  },
+  {
+   "id": "ex_burpee",
+   "repdb": "burpees",
+   "main": "assets/repdb-art/burpees-main.webp"
+  },
+  {
+   "id": "ex_butterfly_stretch",
+   "repdb": "butterfly-stretch",
+   "main": "assets/repdb-art/butterfly-stretch-main.webp"
+  },
+  {
+   "id": "ex_cable_crossover",
+   "repdb": "cable-fly",
+   "start": "assets/repdb-art/cable-fly-start.webp",
+   "peak": "assets/repdb-art/cable-fly-peak.webp"
+  },
+  {
+   "id": "ex_cable_crunch",
+   "repdb": "cable-crunch",
+   "start": "assets/repdb-art/cable-crunch-start.webp",
+   "peak": "assets/repdb-art/cable-crunch-peak.webp"
+  },
+  {
+   "id": "ex_cable_curl",
+   "repdb": "cable-curl",
+   "start": "assets/repdb-art/cable-curl-start.webp",
+   "peak": "assets/repdb-art/cable-curl-peak.webp"
+  },
+  {
+   "id": "ex_cable_front_raise",
+   "repdb": "cable-front-raise",
+   "start": "assets/repdb-art/cable-front-raise-start.webp",
+   "peak": "assets/repdb-art/cable-front-raise-peak.webp"
+  },
+  {
+   "id": "ex_cable_hammer_curl",
+   "repdb": "cable-hammer-curl",
+   "start": "assets/repdb-art/cable-hammer-curl-start.webp",
+   "peak": "assets/repdb-art/cable-hammer-curl-peak.webp"
+  },
+  {
+   "id": "ex_cable_kickback",
+   "repdb": "cable-kickback",
+   "start": "assets/repdb-art/cable-kickback-start.webp",
+   "peak": "assets/repdb-art/cable-kickback-peak.webp"
+  },
+  {
+   "id": "ex_cable_lateral_raise",
+   "repdb": "cable-lateral-raise",
+   "start": "assets/repdb-art/cable-lateral-raise-start.webp",
+   "peak": "assets/repdb-art/cable-lateral-raise-peak.webp"
+  },
+  {
+   "id": "ex_cable_pull_through",
+   "repdb": "cable-pull-through",
+   "start": "assets/repdb-art/cable-pull-through-start.webp",
+   "peak": "assets/repdb-art/cable-pull-through-peak.webp"
+  },
+  {
+   "id": "ex_cable_pushdown",
+   "repdb": "tricep-pushdown",
+   "start": "assets/repdb-art/tricep-pushdown-start.webp",
+   "peak": "assets/repdb-art/tricep-pushdown-peak.webp"
+  },
+  {
+   "id": "ex_cable_rear_delt_fly",
+   "repdb": "rear-delt-fly",
+   "start": "assets/repdb-art/rear-delt-fly-start.webp",
+   "peak": "assets/repdb-art/rear-delt-fly-peak.webp"
+  },
+  {
+   "id": "ex_calf_raise",
+   "repdb": "bodyweight-calf-raise",
+   "start": "assets/repdb-art/bodyweight-calf-raise-start.webp",
+   "peak": "assets/repdb-art/bodyweight-calf-raise-peak.webp"
+  },
+  {
+   "id": "ex_captains_chair_knee_raise",
+   "repdb": "captains-chair-knee-raise",
+   "start": "assets/repdb-art/captains-chair-knee-raise-start.webp",
+   "peak": "assets/repdb-art/captains-chair-knee-raise-peak.webp"
+  },
+  {
+   "id": "ex_cat_cow_stretch",
+   "repdb": "cat-cow",
+   "main": "assets/repdb-art/cat-cow-main.webp"
+  },
+  {
+   "id": "ex_chest_supported_row",
+   "repdb": "chest-supported-db-row",
+   "start": "assets/repdb-art/chest-supported-db-row-start.webp",
+   "peak": "assets/repdb-art/chest-supported-db-row-peak.webp"
+  },
+  {
+   "id": "ex_childs_pose",
+   "repdb": "childs-pose",
+   "main": "assets/repdb-art/childs-pose-main.webp"
+  },
+  {
+   "id": "ex_chin_up",
+   "repdb": "chin-ups",
+   "start": "assets/repdb-art/chin-ups-start.webp",
+   "peak": "assets/repdb-art/chin-ups-peak.webp"
+  },
+  {
+   "id": "ex_clamshell",
+   "repdb": "clamshells",
+   "start": "assets/repdb-art/clamshells-start.webp",
+   "peak": "assets/repdb-art/clamshells-peak.webp"
+  },
+  {
+   "id": "ex_close_grip_bench",
+   "repdb": "close-grip-bench-press",
+   "start": "assets/repdb-art/close-grip-bench-press-start.webp",
+   "peak": "assets/repdb-art/close-grip-bench-press-peak.webp"
+  },
+  {
+   "id": "ex_close_grip_pulldown",
+   "repdb": "close-grip-lat-pulldown",
+   "start": "assets/repdb-art/close-grip-lat-pulldown-start.webp",
+   "peak": "assets/repdb-art/close-grip-lat-pulldown-peak.webp"
+  },
+  {
+   "id": "ex_commando_pull_up",
+   "repdb": "commando-pull-up",
+   "start": "assets/repdb-art/commando-pull-up-start.webp",
+   "peak": "assets/repdb-art/commando-pull-up-peak.webp"
+  },
+  {
+   "id": "ex_concentration_curl",
+   "repdb": "concentration-curl",
+   "start": "assets/repdb-art/concentration-curl-start.webp",
+   "peak": "assets/repdb-art/concentration-curl-peak.webp"
+  },
+  {
+   "id": "ex_cossack_squat",
+   "repdb": "cossack-squat",
+   "start": "assets/repdb-art/cossack-squat-start.webp",
+   "peak": "assets/repdb-art/cossack-squat-peak.webp"
+  },
+  {
+   "id": "ex_cross_body_shoulder_stretch",
+   "repdb": "cross-body-shoulder-stretch",
+   "main": "assets/repdb-art/cross-body-shoulder-stretch-main.webp"
+  },
+  {
+   "id": "ex_crunch",
+   "repdb": "crunches",
+   "start": "assets/repdb-art/crunches-start.webp",
+   "peak": "assets/repdb-art/crunches-peak.webp"
+  },
+  {
+   "id": "ex_cycling",
+   "repdb": "stationary-bike",
+   "main": "assets/repdb-art/stationary-bike-main.webp"
+  },
+  {
+   "id": "ex_db_bench_press",
+   "repdb": "db-bench-press",
+   "start": "assets/repdb-art/db-bench-press-start.webp",
+   "peak": "assets/repdb-art/db-bench-press-peak.webp"
+  },
+  {
+   "id": "ex_db_close_grip_press",
+   "repdb": "close-grip-db-bench-press",
+   "start": "assets/repdb-art/close-grip-db-bench-press-start.webp",
+   "peak": "assets/repdb-art/close-grip-db-bench-press-peak.webp"
+  },
+  {
+   "id": "ex_db_curl",
+   "repdb": "bicep-curl",
+   "start": "assets/repdb-art/bicep-curl-start.webp",
+   "peak": "assets/repdb-art/bicep-curl-peak.webp"
+  },
+  {
+   "id": "ex_db_fly",
+   "repdb": "db-fly",
+   "start": "assets/repdb-art/db-fly-start.webp",
+   "peak": "assets/repdb-art/db-fly-peak.webp"
+  },
+  {
+   "id": "ex_db_front_raise",
+   "repdb": "dumbbell-front-raise",
+   "start": "assets/repdb-art/dumbbell-front-raise-start.webp",
+   "peak": "assets/repdb-art/dumbbell-front-raise-peak.webp"
+  },
+  {
+   "id": "ex_db_incline_fly",
+   "repdb": "incline-dumbbell-fly",
+   "start": "assets/repdb-art/incline-dumbbell-fly-start.webp",
+   "peak": "assets/repdb-art/incline-dumbbell-fly-peak.webp"
+  },
+  {
+   "id": "ex_db_incline_press",
+   "repdb": "incline-db-press",
+   "start": "assets/repdb-art/incline-db-press-start.webp",
+   "peak": "assets/repdb-art/incline-db-press-peak.webp"
+  },
+  {
+   "id": "ex_db_lateral_raise",
+   "repdb": "lateral-raise",
+   "start": "assets/repdb-art/lateral-raise-start.webp",
+   "peak": "assets/repdb-art/lateral-raise-peak.webp"
+  },
+  {
+   "id": "ex_db_pullover",
+   "repdb": "db-pullover",
+   "start": "assets/repdb-art/db-pullover-start.webp",
+   "peak": "assets/repdb-art/db-pullover-peak.webp"
+  },
+  {
+   "id": "ex_db_shoulder_press",
+   "repdb": "dumbbell-shoulder-press",
+   "start": "assets/repdb-art/dumbbell-shoulder-press-start.webp",
+   "peak": "assets/repdb-art/dumbbell-shoulder-press-peak.webp"
+  },
+  {
+   "id": "ex_db_shrug",
+   "repdb": "db-shrug",
+   "start": "assets/repdb-art/db-shrug-start.webp",
+   "peak": "assets/repdb-art/db-shrug-peak.webp"
+  },
+  {
+   "id": "ex_dead_bug",
+   "repdb": "dead-bug",
+   "start": "assets/repdb-art/dead-bug-start.webp",
+   "peak": "assets/repdb-art/dead-bug-peak.webp"
+  },
+  {
+   "id": "ex_dead_hang",
+   "repdb": "dead-hang",
+   "main": "assets/repdb-art/dead-hang-main.webp"
+  },
+  {
+   "id": "ex_deadlift",
+   "repdb": "deadlift",
+   "start": "assets/repdb-art/deadlift-start.webp",
+   "peak": "assets/repdb-art/deadlift-peak.webp"
+  },
+  {
+   "id": "ex_decline_push_up",
+   "repdb": "decline-push-up",
+   "start": "assets/repdb-art/decline-push-up-start.webp",
+   "peak": "assets/repdb-art/decline-push-up-peak.webp"
+  },
+  {
+   "id": "ex_deficit_reverse_lunge",
+   "repdb": "bodyweight-reverse-lunge",
+   "start": "assets/repdb-art/bodyweight-reverse-lunge-start.webp",
+   "peak": "assets/repdb-art/bodyweight-reverse-lunge-peak.webp"
+  },
+  {
+   "id": "ex_diamond_push_up",
+   "repdb": "diamond-push-ups",
+   "start": "assets/repdb-art/diamond-push-ups-start.webp",
+   "peak": "assets/repdb-art/diamond-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_dip",
+   "repdb": "dips",
+   "start": "assets/repdb-art/dips-start.webp",
+   "peak": "assets/repdb-art/dips-peak.webp"
+  },
+  {
+   "id": "ex_donkey_calf_raise",
+   "repdb": "donkey-calf-raise",
+   "start": "assets/repdb-art/donkey-calf-raise-start.webp",
+   "peak": "assets/repdb-art/donkey-calf-raise-peak.webp"
+  },
+  {
+   "id": "ex_donkey_kick",
+   "repdb": "glute-kickback",
+   "start": "assets/repdb-art/glute-kickback-start.webp",
+   "peak": "assets/repdb-art/glute-kickback-peak.webp"
+  },
+  {
+   "id": "ex_doorway_chest_stretch",
+   "repdb": "doorway-chest-stretch",
+   "main": "assets/repdb-art/doorway-chest-stretch-main.webp"
+  },
+  {
+   "id": "ex_drag_curl",
+   "repdb": "drag-curl",
+   "start": "assets/repdb-art/drag-curl-start.webp",
+   "peak": "assets/repdb-art/drag-curl-peak.webp"
+  },
+  {
+   "id": "ex_dragon_flag",
+   "repdb": "dragon-flag",
+   "start": "assets/repdb-art/dragon-flag-start.webp",
+   "peak": "assets/repdb-art/dragon-flag-peak.webp"
+  },
+  {
+   "id": "ex_dumbbell_hip_thrust",
+   "repdb": "dumbbell-hip-thrust",
+   "start": "assets/repdb-art/dumbbell-hip-thrust-start.webp",
+   "peak": "assets/repdb-art/dumbbell-hip-thrust-peak.webp"
+  },
+  {
+   "id": "ex_dumbbell_romanian_deadlift",
+   "repdb": "dumbbell-romanian-deadlift",
+   "start": "assets/repdb-art/dumbbell-romanian-deadlift-start.webp",
+   "peak": "assets/repdb-art/dumbbell-romanian-deadlift-peak.webp"
+  },
+  {
+   "id": "ex_dumbbell_side_bend",
+   "repdb": "dumbbell-side-bend",
+   "start": "assets/repdb-art/dumbbell-side-bend-start.webp",
+   "peak": "assets/repdb-art/dumbbell-side-bend-peak.webp"
+  },
+  {
+   "id": "ex_dumbbell_skull_crusher",
+   "repdb": "lying-tricep-extension",
+   "start": "assets/repdb-art/lying-tricep-extension-start.webp",
+   "peak": "assets/repdb-art/lying-tricep-extension-peak.webp"
+  },
+  {
+   "id": "ex_dumbbell_sumo_deadlift",
+   "repdb": "kettlebell-sumo-deadlift",
+   "start": "assets/repdb-art/kettlebell-sumo-deadlift-start.webp",
+   "peak": "assets/repdb-art/kettlebell-sumo-deadlift-peak.webp"
+  },
+  {
+   "id": "ex_dumbbell_sumo_squat",
+   "repdb": "db-sumo-squat",
+   "start": "assets/repdb-art/db-sumo-squat-start.webp",
+   "peak": "assets/repdb-art/db-sumo-squat-peak.webp"
+  },
+  {
+   "id": "ex_elliptical",
+   "repdb": "elliptical-trainer",
+   "main": "assets/repdb-art/elliptical-trainer-main.webp"
+  },
+  {
+   "id": "ex_explosive_push_up",
+   "repdb": "clap-push-ups",
+   "start": "assets/repdb-art/clap-push-ups-start.webp",
+   "peak": "assets/repdb-art/clap-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_ez_bar_curl",
+   "repdb": "ez-bar-curl",
+   "start": "assets/repdb-art/ez-bar-curl-start.webp",
+   "peak": "assets/repdb-art/ez-bar-curl-peak.webp"
+  },
+  {
+   "id": "ex_farmer_walk",
+   "repdb": "dumbbell-farmers-walk",
+   "main": "assets/repdb-art/dumbbell-farmers-walk-main.webp"
+  },
+  {
+   "id": "ex_fire_hydrant",
+   "repdb": "fire-hydrant",
+   "start": "assets/repdb-art/fire-hydrant-start.webp",
+   "peak": "assets/repdb-art/fire-hydrant-peak.webp"
+  },
+  {
+   "id": "ex_flutter_kick",
+   "repdb": "flutter-kicks",
+   "start": "assets/repdb-art/flutter-kicks-start.webp",
+   "peak": "assets/repdb-art/flutter-kicks-peak.webp"
+  },
+  {
+   "id": "ex_forward_lunge",
+   "repdb": "lunge",
+   "start": "assets/repdb-art/lunge-start.webp",
+   "peak": "assets/repdb-art/lunge-peak.webp"
+  },
+  {
+   "id": "ex_front_squat",
+   "repdb": "front-squat",
+   "start": "assets/repdb-art/front-squat-start.webp",
+   "peak": "assets/repdb-art/front-squat-peak.webp"
+  },
+  {
+   "id": "ex_glute_bridge",
+   "repdb": "glute-bridge",
+   "start": "assets/repdb-art/glute-bridge-start.webp",
+   "peak": "assets/repdb-art/glute-bridge-peak.webp"
+  },
+  {
+   "id": "ex_glute_focused_back_extension",
+   "repdb": "machine-back-extension",
+   "start": "assets/repdb-art/machine-back-extension-start.webp",
+   "peak": "assets/repdb-art/machine-back-extension-peak.webp"
+  },
+  {
+   "id": "ex_goblet_squat",
+   "repdb": "goblet-squat",
+   "start": "assets/repdb-art/goblet-squat-start.webp",
+   "peak": "assets/repdb-art/goblet-squat-peak.webp"
+  },
+  {
+   "id": "ex_good_morning",
+   "repdb": "good-morning",
+   "start": "assets/repdb-art/good-morning-start.webp",
+   "peak": "assets/repdb-art/good-morning-peak.webp"
+  },
+  {
+   "id": "ex_hack_squat",
+   "repdb": "hack-squat",
+   "start": "assets/repdb-art/hack-squat-start.webp",
+   "peak": "assets/repdb-art/hack-squat-peak.webp"
+  },
+  {
+   "id": "ex_hammer_curl",
+   "repdb": "hammer-curl",
+   "start": "assets/repdb-art/hammer-curl-start.webp",
+   "peak": "assets/repdb-art/hammer-curl-peak.webp"
+  },
+  {
+   "id": "ex_handstand_push_up",
+   "repdb": "handstand-push-ups",
+   "start": "assets/repdb-art/handstand-push-ups-start.webp",
+   "peak": "assets/repdb-art/handstand-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_hanging_knee_raise",
+   "repdb": "hanging-knee-raise",
+   "start": "assets/repdb-art/hanging-knee-raise-start.webp",
+   "peak": "assets/repdb-art/hanging-knee-raise-peak.webp"
+  },
+  {
+   "id": "ex_hanging_leg_raise",
+   "repdb": "hanging-leg-raise",
+   "start": "assets/repdb-art/hanging-leg-raise-start.webp",
+   "peak": "assets/repdb-art/hanging-leg-raise-peak.webp"
+  },
+  {
+   "id": "ex_heel_touch",
+   "repdb": "heel-touches",
+   "start": "assets/repdb-art/heel-touches-start.webp",
+   "peak": "assets/repdb-art/heel-touches-peak.webp"
+  },
+  {
+   "id": "ex_high_knees",
+   "repdb": "high-knees",
+   "main": "assets/repdb-art/high-knees-main.webp"
+  },
+  {
+   "id": "ex_hip_abduction",
+   "repdb": "hip-abduction",
+   "start": "assets/repdb-art/hip-abduction-start.webp",
+   "peak": "assets/repdb-art/hip-abduction-peak.webp"
+  },
+  {
+   "id": "ex_hip_adduction",
+   "repdb": "hip-adduction",
+   "start": "assets/repdb-art/hip-adduction-start.webp",
+   "peak": "assets/repdb-art/hip-adduction-peak.webp"
+  },
+  {
+   "id": "ex_hip_thrust",
+   "repdb": "hip-thrust",
+   "start": "assets/repdb-art/hip-thrust-start.webp",
+   "peak": "assets/repdb-art/hip-thrust-peak.webp"
+  },
+  {
+   "id": "ex_hollow_body_hold",
+   "repdb": "hollow-body-hold",
+   "main": "assets/repdb-art/hollow-body-hold-main.webp"
+  },
+  {
+   "id": "ex_incline_db_curl",
+   "repdb": "incline-db-curl",
+   "start": "assets/repdb-art/incline-db-curl-start.webp",
+   "peak": "assets/repdb-art/incline-db-curl-peak.webp"
+  },
+  {
+   "id": "ex_incline_hammer_curl",
+   "repdb": "incline-hammer-curl",
+   "start": "assets/repdb-art/incline-hammer-curl-start.webp",
+   "peak": "assets/repdb-art/incline-hammer-curl-peak.webp"
+  },
+  {
+   "id": "ex_incline_push_up",
+   "repdb": "incline-push-ups",
+   "start": "assets/repdb-art/incline-push-ups-start.webp",
+   "peak": "assets/repdb-art/incline-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_inverted_row",
+   "repdb": "inverted-row",
+   "start": "assets/repdb-art/inverted-row-start.webp",
+   "peak": "assets/repdb-art/inverted-row-peak.webp"
+  },
+  {
+   "id": "ex_jump_rope",
+   "repdb": "jump-rope",
+   "main": "assets/repdb-art/jump-rope-main.webp"
+  },
+  {
+   "id": "ex_jump_squat",
+   "repdb": "jump-squat",
+   "start": "assets/repdb-art/jump-squat-start.webp",
+   "peak": "assets/repdb-art/jump-squat-peak.webp"
+  },
+  {
+   "id": "ex_jumping_jack",
+   "repdb": "jumping-jacks",
+   "start": "assets/repdb-art/jumping-jacks-start.webp",
+   "peak": "assets/repdb-art/jumping-jacks-peak.webp"
+  },
+  {
+   "id": "ex_kettlebell_swing",
+   "repdb": "kettlebell-swing",
+   "start": "assets/repdb-art/kettlebell-swing-start.webp",
+   "peak": "assets/repdb-art/kettlebell-swing-peak.webp"
+  },
+  {
+   "id": "ex_knee_push_up",
+   "repdb": "knee-push-ups",
+   "start": "assets/repdb-art/knee-push-ups-start.webp",
+   "peak": "assets/repdb-art/knee-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_kneeling_hip_flexor_stretch",
+   "repdb": "kneeling-hip-flexor-stretch",
+   "main": "assets/repdb-art/kneeling-hip-flexor-stretch-main.webp"
+  },
+  {
+   "id": "ex_landmine_press",
+   "repdb": "landmine-press",
+   "start": "assets/repdb-art/landmine-press-start.webp",
+   "peak": "assets/repdb-art/landmine-press-peak.webp"
+  },
+  {
+   "id": "ex_lat_pulldown",
+   "repdb": "lat-pulldown",
+   "start": "assets/repdb-art/lat-pulldown-start.webp",
+   "peak": "assets/repdb-art/lat-pulldown-peak.webp"
+  },
+  {
+   "id": "ex_lateral_lunge",
+   "repdb": "side-lunge",
+   "start": "assets/repdb-art/side-lunge-start.webp",
+   "peak": "assets/repdb-art/side-lunge-peak.webp"
+  },
+  {
+   "id": "ex_leg_extension",
+   "repdb": "leg-extension",
+   "start": "assets/repdb-art/leg-extension-start.webp",
+   "peak": "assets/repdb-art/leg-extension-peak.webp"
+  },
+  {
+   "id": "ex_leg_press",
+   "repdb": "leg-press",
+   "start": "assets/repdb-art/leg-press-start.webp",
+   "peak": "assets/repdb-art/leg-press-peak.webp"
+  },
+  {
+   "id": "ex_leg_swings_stretch",
+   "repdb": "leg-swing-front-to-back",
+   "start": "assets/repdb-art/leg-swing-front-to-back-start.webp",
+   "peak": "assets/repdb-art/leg-swing-front-to-back-peak.webp"
+  },
+  {
+   "id": "ex_lying_leg_curl",
+   "repdb": "leg-curl",
+   "start": "assets/repdb-art/leg-curl-start.webp",
+   "peak": "assets/repdb-art/leg-curl-peak.webp"
+  },
+  {
+   "id": "ex_lying_leg_raise",
+   "repdb": "lying-leg-raise",
+   "start": "assets/repdb-art/lying-leg-raise-start.webp",
+   "peak": "assets/repdb-art/lying-leg-raise-peak.webp"
+  },
+  {
+   "id": "ex_machine_chest_press",
+   "repdb": "chest-press-machine",
+   "start": "assets/repdb-art/chest-press-machine-start.webp",
+   "peak": "assets/repdb-art/chest-press-machine-peak.webp"
+  },
+  {
+   "id": "ex_machine_crunch",
+   "repdb": "machine-seated-crunch",
+   "start": "assets/repdb-art/machine-seated-crunch-start.webp",
+   "peak": "assets/repdb-art/machine-seated-crunch-peak.webp"
+  },
+  {
+   "id": "ex_machine_curl",
+   "repdb": "machine-bicep-curl",
+   "start": "assets/repdb-art/machine-bicep-curl-start.webp",
+   "peak": "assets/repdb-art/machine-bicep-curl-peak.webp"
+  },
+  {
+   "id": "ex_machine_hip_thrust",
+   "repdb": "plate-loaded-glute-drive",
+   "start": "assets/repdb-art/plate-loaded-glute-drive-start.webp",
+   "peak": "assets/repdb-art/plate-loaded-glute-drive-peak.webp"
+  },
+  {
+   "id": "ex_machine_lateral_raise",
+   "repdb": "plate-loaded-lateral-raise",
+   "start": "assets/repdb-art/plate-loaded-lateral-raise-start.webp",
+   "peak": "assets/repdb-art/plate-loaded-lateral-raise-peak.webp"
+  },
+  {
+   "id": "ex_machine_pec_deck",
+   "repdb": "pec-deck",
+   "start": "assets/repdb-art/pec-deck-start.webp",
+   "peak": "assets/repdb-art/pec-deck-peak.webp"
+  },
+  {
+   "id": "ex_machine_shoulder_press",
+   "repdb": "machine-shoulder-press",
+   "start": "assets/repdb-art/machine-shoulder-press-start.webp",
+   "peak": "assets/repdb-art/machine-shoulder-press-peak.webp"
+  },
+  {
+   "id": "ex_machine_triceps_extension",
+   "repdb": "machine-triceps-extension",
+   "start": "assets/repdb-art/machine-triceps-extension-start.webp",
+   "peak": "assets/repdb-art/machine-triceps-extension-peak.webp"
+  },
+  {
+   "id": "ex_mountain_climber",
+   "repdb": "mountain-climbers",
+   "start": "assets/repdb-art/mountain-climbers-start.webp",
+   "peak": "assets/repdb-art/mountain-climbers-peak.webp"
+  },
+  {
+   "id": "ex_negative_pull_up",
+   "repdb": "negative-pull-ups",
+   "start": "assets/repdb-art/negative-pull-ups-start.webp",
+   "peak": "assets/repdb-art/negative-pull-ups-peak.webp"
+  },
+  {
+   "id": "ex_neutral_grip_pull_up",
+   "repdb": "neutral-grip-pull-ups",
+   "start": "assets/repdb-art/neutral-grip-pull-ups-start.webp",
+   "peak": "assets/repdb-art/neutral-grip-pull-ups-peak.webp"
+  },
+  {
+   "id": "ex_nordic_hamstring_curl",
+   "repdb": "nordic-hamstring-curl",
+   "start": "assets/repdb-art/nordic-hamstring-curl-start.webp",
+   "peak": "assets/repdb-art/nordic-hamstring-curl-peak.webp"
+  },
+  {
+   "id": "ex_one_arm_db_row",
+   "repdb": "single-arm-db-row",
+   "start": "assets/repdb-art/single-arm-db-row-start.webp",
+   "peak": "assets/repdb-art/single-arm-db-row-peak.webp"
+  },
+  {
+   "id": "ex_overhead_db_extension",
+   "repdb": "seated-dumbbell-tricep-extension",
+   "start": "assets/repdb-art/seated-dumbbell-tricep-extension-start.webp",
+   "peak": "assets/repdb-art/seated-dumbbell-tricep-extension-peak.webp"
+  },
+  {
+   "id": "ex_pallof_press",
+   "repdb": "cable-pallof-press",
+   "start": "assets/repdb-art/cable-pallof-press-start.webp",
+   "peak": "assets/repdb-art/cable-pallof-press-peak.webp"
+  },
+  {
+   "id": "ex_pause_squat",
+   "repdb": "pause-squat",
+   "start": "assets/repdb-art/pause-squat-start.webp",
+   "peak": "assets/repdb-art/pause-squat-peak.webp"
+  },
+  {
+   "id": "ex_pendlay_row",
+   "repdb": "pendlay-row",
+   "start": "assets/repdb-art/pendlay-row-start.webp",
+   "peak": "assets/repdb-art/pendlay-row-peak.webp"
+  },
+  {
+   "id": "ex_pike_push_up",
+   "repdb": "pike-push-ups",
+   "start": "assets/repdb-art/pike-push-ups-start.webp",
+   "peak": "assets/repdb-art/pike-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_pistol_squat",
+   "repdb": "pistol-squat",
+   "start": "assets/repdb-art/pistol-squat-start.webp",
+   "peak": "assets/repdb-art/pistol-squat-peak.webp"
+  },
+  {
+   "id": "ex_plank",
+   "repdb": "plank",
+   "main": "assets/repdb-art/plank-main.webp"
+  },
+  {
+   "id": "ex_preacher_curl",
+   "repdb": "preacher-curl",
+   "start": "assets/repdb-art/preacher-curl-start.webp",
+   "peak": "assets/repdb-art/preacher-curl-peak.webp"
+  },
+  {
+   "id": "ex_pull_up",
+   "repdb": "pull-up",
+   "start": "assets/repdb-art/pull-up-start.webp",
+   "peak": "assets/repdb-art/pull-up-peak.webp"
+  },
+  {
+   "id": "ex_push_press",
+   "repdb": "push-press",
+   "start": "assets/repdb-art/push-press-start.webp",
+   "peak": "assets/repdb-art/push-press-peak.webp"
+  },
+  {
+   "id": "ex_push_up",
+   "repdb": "push-up",
+   "start": "assets/repdb-art/push-up-start.webp",
+   "peak": "assets/repdb-art/push-up-peak.webp"
+  },
+  {
+   "id": "ex_rack_pull",
+   "repdb": "rack-pull",
+   "start": "assets/repdb-art/rack-pull-start.webp",
+   "peak": "assets/repdb-art/rack-pull-peak.webp"
+  },
+  {
+   "id": "ex_rdl",
+   "repdb": "romanian-deadlift",
+   "start": "assets/repdb-art/romanian-deadlift-start.webp",
+   "peak": "assets/repdb-art/romanian-deadlift-peak.webp"
+  },
+  {
+   "id": "ex_reverse_bb_curl",
+   "repdb": "reverse-curl",
+   "start": "assets/repdb-art/reverse-curl-start.webp",
+   "peak": "assets/repdb-art/reverse-curl-peak.webp"
+  },
+  {
+   "id": "ex_reverse_crunch",
+   "repdb": "reverse-crunches",
+   "start": "assets/repdb-art/reverse-crunches-start.webp",
+   "peak": "assets/repdb-art/reverse-crunches-peak.webp"
+  },
+  {
+   "id": "ex_reverse_grip_bb_row",
+   "repdb": "reverse-grip-bent-over-row",
+   "start": "assets/repdb-art/reverse-grip-bent-over-row-start.webp",
+   "peak": "assets/repdb-art/reverse-grip-bent-over-row-peak.webp"
+  },
+  {
+   "id": "ex_reverse_grip_pulldown",
+   "repdb": "reverse-grip-lat-pulldown",
+   "start": "assets/repdb-art/reverse-grip-lat-pulldown-start.webp",
+   "peak": "assets/repdb-art/reverse-grip-lat-pulldown-peak.webp"
+  },
+  {
+   "id": "ex_reverse_lunge",
+   "repdb": "reverse-lunge",
+   "start": "assets/repdb-art/reverse-lunge-start.webp",
+   "peak": "assets/repdb-art/reverse-lunge-peak.webp"
+  },
+  {
+   "id": "ex_reverse_wrist_curl",
+   "repdb": "db-reverse-wrist-curl",
+   "start": "assets/repdb-art/db-reverse-wrist-curl-start.webp",
+   "peak": "assets/repdb-art/db-reverse-wrist-curl-peak.webp"
+  },
+  {
+   "id": "ex_rowing",
+   "repdb": "rowing-machine",
+   "start": "assets/repdb-art/rowing-machine-start.webp",
+   "peak": "assets/repdb-art/rowing-machine-peak.webp"
+  },
+  {
+   "id": "ex_running",
+   "repdb": "running",
+   "main": "assets/repdb-art/running-main.webp"
+  },
+  {
+   "id": "ex_russian_twist",
+   "repdb": "russian-twist",
+   "start": "assets/repdb-art/russian-twist-start.webp",
+   "peak": "assets/repdb-art/russian-twist-peak.webp"
+  },
+  {
+   "id": "ex_scapular_pull_up",
+   "repdb": "scapular-pull-ups",
+   "start": "assets/repdb-art/scapular-pull-ups-start.webp",
+   "peak": "assets/repdb-art/scapular-pull-ups-peak.webp"
+  },
+  {
+   "id": "ex_seated_bb_press",
+   "repdb": "seated-barbell-overhead-press",
+   "start": "assets/repdb-art/seated-barbell-overhead-press-start.webp",
+   "peak": "assets/repdb-art/seated-barbell-overhead-press-peak.webp"
+  },
+  {
+   "id": "ex_seated_cable_row",
+   "repdb": "seated-cable-row",
+   "start": "assets/repdb-art/seated-cable-row-start.webp",
+   "peak": "assets/repdb-art/seated-cable-row-peak.webp"
+  },
+  {
+   "id": "ex_seated_calf_raise",
+   "repdb": "seated-calf-raise",
+   "start": "assets/repdb-art/seated-calf-raise-start.webp",
+   "peak": "assets/repdb-art/seated-calf-raise-peak.webp"
+  },
+  {
+   "id": "ex_seated_forward_fold_stretch",
+   "repdb": "seated-forward-fold",
+   "main": "assets/repdb-art/seated-forward-fold-main.webp"
+  },
+  {
+   "id": "ex_seated_leg_curl",
+   "repdb": "seated-leg-curl",
+   "start": "assets/repdb-art/seated-leg-curl-start.webp",
+   "peak": "assets/repdb-art/seated-leg-curl-peak.webp"
+  },
+  {
+   "id": "ex_side_crunch",
+   "repdb": "cross-body-crunch",
+   "start": "assets/repdb-art/cross-body-crunch-start.webp",
+   "peak": "assets/repdb-art/cross-body-crunch-peak.webp"
+  },
+  {
+   "id": "ex_side_lying_hip_abduction",
+   "repdb": "side-lying-hip-abduction",
+   "start": "assets/repdb-art/side-lying-hip-abduction-start.webp",
+   "peak": "assets/repdb-art/side-lying-hip-abduction-peak.webp"
+  },
+  {
+   "id": "ex_side_plank",
+   "repdb": "side-plank",
+   "main": "assets/repdb-art/side-plank-main.webp"
+  },
+  {
+   "id": "ex_single_arm_cable_front",
+   "repdb": "straight-bar-cable-front-raise",
+   "start": "assets/repdb-art/straight-bar-cable-front-raise-start.webp",
+   "peak": "assets/repdb-art/straight-bar-cable-front-raise-peak.webp"
+  },
+  {
+   "id": "ex_single_arm_cable_row",
+   "repdb": "one-arm-seated-cable-row",
+   "start": "assets/repdb-art/one-arm-seated-cable-row-start.webp",
+   "peak": "assets/repdb-art/one-arm-seated-cable-row-peak.webp"
+  },
+  {
+   "id": "ex_single_arm_pulldown",
+   "repdb": "one-arm-lat-pulldown",
+   "start": "assets/repdb-art/one-arm-lat-pulldown-start.webp",
+   "peak": "assets/repdb-art/one-arm-lat-pulldown-peak.webp"
+  },
+  {
+   "id": "ex_single_arm_pushdown",
+   "repdb": "single-arm-tricep-pushdown",
+   "start": "assets/repdb-art/single-arm-tricep-pushdown-start.webp",
+   "peak": "assets/repdb-art/single-arm-tricep-pushdown-peak.webp"
+  },
+  {
+   "id": "ex_single_leg_calf_raise",
+   "repdb": "single-leg-calf-raise",
+   "start": "assets/repdb-art/single-leg-calf-raise-start.webp",
+   "peak": "assets/repdb-art/single-leg-calf-raise-peak.webp"
+  },
+  {
+   "id": "ex_single_leg_extension",
+   "repdb": "single-leg-extension",
+   "start": "assets/repdb-art/single-leg-extension-start.webp",
+   "peak": "assets/repdb-art/single-leg-extension-peak.webp"
+  },
+  {
+   "id": "ex_single_leg_glute_bridge",
+   "repdb": "single-leg-glute-bridge",
+   "start": "assets/repdb-art/single-leg-glute-bridge-start.webp",
+   "peak": "assets/repdb-art/single-leg-glute-bridge-peak.webp"
+  },
+  {
+   "id": "ex_single_leg_press",
+   "repdb": "single-leg-press",
+   "start": "assets/repdb-art/single-leg-press-start.webp",
+   "peak": "assets/repdb-art/single-leg-press-peak.webp"
+  },
+  {
+   "id": "ex_sit_up",
+   "repdb": "sit-ups",
+   "start": "assets/repdb-art/sit-ups-start.webp",
+   "peak": "assets/repdb-art/sit-ups-peak.webp"
+  },
+  {
+   "id": "ex_skierg",
+   "repdb": "ski-erg",
+   "start": "assets/repdb-art/ski-erg-start.webp",
+   "peak": "assets/repdb-art/ski-erg-peak.webp"
+  },
+  {
+   "id": "ex_skull_crusher",
+   "repdb": "skull-crusher",
+   "start": "assets/repdb-art/skull-crusher-start.webp",
+   "peak": "assets/repdb-art/skull-crusher-peak.webp"
+  },
+  {
+   "id": "ex_smith_bench_press",
+   "repdb": "smith-machine-bench-press",
+   "start": "assets/repdb-art/smith-machine-bench-press-start.webp",
+   "peak": "assets/repdb-art/smith-machine-bench-press-peak.webp"
+  },
+  {
+   "id": "ex_smith_calf_raise",
+   "repdb": "smith-machine-calf-raise",
+   "start": "assets/repdb-art/smith-machine-calf-raise-start.webp",
+   "peak": "assets/repdb-art/smith-machine-calf-raise-peak.webp"
+  },
+  {
+   "id": "ex_smith_incline_press",
+   "repdb": "smith-machine-incline-bench-press",
+   "start": "assets/repdb-art/smith-machine-incline-bench-press-start.webp",
+   "peak": "assets/repdb-art/smith-machine-incline-bench-press-peak.webp"
+  },
+  {
+   "id": "ex_smith_machine_bulgarian_split_squat",
+   "repdb": "smith-machine-bulgarian-split",
+   "start": "assets/repdb-art/smith-machine-bulgarian-split-start.webp",
+   "peak": "assets/repdb-art/smith-machine-bulgarian-split-peak.webp"
+  },
+  {
+   "id": "ex_smith_machine_hip_thrust",
+   "repdb": "smith-machine-hip-thrust",
+   "start": "assets/repdb-art/smith-machine-hip-thrust-start.webp",
+   "peak": "assets/repdb-art/smith-machine-hip-thrust-peak.webp"
+  },
+  {
+   "id": "ex_smith_machine_reverse_lunge",
+   "repdb": "smith-machine-reverse-lunge",
+   "start": "assets/repdb-art/smith-machine-reverse-lunge-start.webp",
+   "peak": "assets/repdb-art/smith-machine-reverse-lunge-peak.webp"
+  },
+  {
+   "id": "ex_smith_machine_romanian_deadlift",
+   "repdb": "smith-machine-rdl",
+   "start": "assets/repdb-art/smith-machine-rdl-start.webp",
+   "peak": "assets/repdb-art/smith-machine-rdl-peak.webp"
+  },
+  {
+   "id": "ex_smith_machine_split_squat",
+   "repdb": "smith-machine-split-squat",
+   "start": "assets/repdb-art/smith-machine-split-squat-start.webp",
+   "peak": "assets/repdb-art/smith-machine-split-squat-peak.webp"
+  },
+  {
+   "id": "ex_smith_shoulder_press",
+   "repdb": "smith-machine-shoulder-press",
+   "start": "assets/repdb-art/smith-machine-shoulder-press-start.webp",
+   "peak": "assets/repdb-art/smith-machine-shoulder-press-peak.webp"
+  },
+  {
+   "id": "ex_smith_squat",
+   "repdb": "smith-machine-squat",
+   "start": "assets/repdb-art/smith-machine-squat-start.webp",
+   "peak": "assets/repdb-art/smith-machine-squat-peak.webp"
+  },
+  {
+   "id": "ex_spider_curl",
+   "repdb": "spider-curl",
+   "start": "assets/repdb-art/spider-curl-start.webp",
+   "peak": "assets/repdb-art/spider-curl-peak.webp"
+  },
+  {
+   "id": "ex_stability_ball_hamstring_curl",
+   "repdb": "ball-leg-curl",
+   "start": "assets/repdb-art/ball-leg-curl-start.webp",
+   "peak": "assets/repdb-art/ball-leg-curl-peak.webp"
+  },
+  {
+   "id": "ex_stair_climber",
+   "repdb": "stair-climber",
+   "main": "assets/repdb-art/stair-climber-main.webp"
+  },
+  {
+   "id": "ex_standing_calf_raise",
+   "repdb": "standing-calf-raise",
+   "start": "assets/repdb-art/standing-calf-raise-start.webp",
+   "peak": "assets/repdb-art/standing-calf-raise-peak.webp"
+  },
+  {
+   "id": "ex_standing_quad_stretch",
+   "repdb": "standing-quad-stretch",
+   "main": "assets/repdb-art/standing-quad-stretch-main.webp"
+  },
+  {
+   "id": "ex_step_up",
+   "repdb": "step-ups",
+   "start": "assets/repdb-art/step-ups-start.webp",
+   "peak": "assets/repdb-art/step-ups-peak.webp"
+  },
+  {
+   "id": "ex_stiff_leg_deadlift",
+   "repdb": "stiff-leg-deadlift",
+   "start": "assets/repdb-art/stiff-leg-deadlift-start.webp",
+   "peak": "assets/repdb-art/stiff-leg-deadlift-peak.webp"
+  },
+  {
+   "id": "ex_straight_arm_pulldown",
+   "repdb": "straight-arm-pulldown",
+   "start": "assets/repdb-art/straight-arm-pulldown-start.webp",
+   "peak": "assets/repdb-art/straight-arm-pulldown-peak.webp"
+  },
+  {
+   "id": "ex_sumo_deadlift",
+   "repdb": "sumo-deadlift",
+   "start": "assets/repdb-art/sumo-deadlift-start.webp",
+   "peak": "assets/repdb-art/sumo-deadlift-peak.webp"
+  },
+  {
+   "id": "ex_superman",
+   "repdb": "superman",
+   "start": "assets/repdb-art/superman-start.webp",
+   "peak": "assets/repdb-art/superman-peak.webp"
+  },
+  {
+   "id": "ex_t_bar_row",
+   "repdb": "t-bar-row",
+   "start": "assets/repdb-art/t-bar-row-start.webp",
+   "peak": "assets/repdb-art/t-bar-row-peak.webp"
+  },
+  {
+   "id": "ex_torso_twist_stretch",
+   "repdb": "torso-twists",
+   "main": "assets/repdb-art/torso-twists-main.webp"
+  },
+  {
+   "id": "ex_trap_bar_deadlift",
+   "repdb": "hex-bar-deadlift",
+   "start": "assets/repdb-art/hex-bar-deadlift-start.webp",
+   "peak": "assets/repdb-art/hex-bar-deadlift-peak.webp"
+  },
+  {
+   "id": "ex_treadmill_incline_walk",
+   "repdb": "incline-treadmill-walk",
+   "main": "assets/repdb-art/incline-treadmill-walk-main.webp"
+  },
+  {
+   "id": "ex_triceps_kickback",
+   "repdb": "tricep-kickback",
+   "start": "assets/repdb-art/tricep-kickback-start.webp",
+   "peak": "assets/repdb-art/tricep-kickback-peak.webp"
+  },
+  {
+   "id": "ex_two_arm_db_row",
+   "repdb": "bent-over-db-row",
+   "start": "assets/repdb-art/bent-over-db-row-start.webp",
+   "peak": "assets/repdb-art/bent-over-db-row-peak.webp"
+  },
+  {
+   "id": "ex_upright_row",
+   "repdb": "upright-row",
+   "start": "assets/repdb-art/upright-row-start.webp",
+   "peak": "assets/repdb-art/upright-row-peak.webp"
+  },
+  {
+   "id": "ex_v_up",
+   "repdb": "v-ups",
+   "start": "assets/repdb-art/v-ups-start.webp",
+   "peak": "assets/repdb-art/v-ups-peak.webp"
+  },
+  {
+   "id": "ex_walking",
+   "repdb": "walking",
+   "main": "assets/repdb-art/walking-main.webp"
+  },
+  {
+   "id": "ex_walking_lunge",
+   "repdb": "walking-lunge",
+   "start": "assets/repdb-art/walking-lunge-start.webp",
+   "peak": "assets/repdb-art/walking-lunge-peak.webp"
+  },
+  {
+   "id": "ex_wall_push_up",
+   "repdb": "wall-push-ups",
+   "start": "assets/repdb-art/wall-push-ups-start.webp",
+   "peak": "assets/repdb-art/wall-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_wall_sit",
+   "repdb": "wall-sit",
+   "main": "assets/repdb-art/wall-sit-main.webp"
+  },
+  {
+   "id": "ex_weighted_crunch",
+   "repdb": "weighted-wall-crunch",
+   "start": "assets/repdb-art/weighted-wall-crunch-start.webp",
+   "peak": "assets/repdb-art/weighted-wall-crunch-peak.webp"
+  },
+  {
+   "id": "ex_weighted_dip",
+   "repdb": "weighted-dips",
+   "start": "assets/repdb-art/weighted-dips-start.webp",
+   "peak": "assets/repdb-art/weighted-dips-peak.webp"
+  },
+  {
+   "id": "ex_weighted_pull_up",
+   "repdb": "weighted-pull-up",
+   "start": "assets/repdb-art/weighted-pull-up-start.webp",
+   "peak": "assets/repdb-art/weighted-pull-up-peak.webp"
+  },
+  {
+   "id": "ex_wide_cable_row",
+   "repdb": "wide-grip-seated-cable-row",
+   "start": "assets/repdb-art/wide-grip-seated-cable-row-start.webp",
+   "peak": "assets/repdb-art/wide-grip-seated-cable-row-peak.webp"
+  },
+  {
+   "id": "ex_wide_push_up",
+   "repdb": "wide-grip-push-ups",
+   "start": "assets/repdb-art/wide-grip-push-ups-start.webp",
+   "peak": "assets/repdb-art/wide-grip-push-ups-peak.webp"
+  },
+  {
+   "id": "ex_wrist_curl",
+   "repdb": "wrist-curl",
+   "start": "assets/repdb-art/wrist-curl-start.webp",
+   "peak": "assets/repdb-art/wrist-curl-peak.webp"
+  },
+  {
+   "id": "ex_zottman_curl",
+   "repdb": "zottman-curl",
+   "start": "assets/repdb-art/zottman-curl-start.webp",
+   "peak": "assets/repdb-art/zottman-curl-peak.webp"
+  }
+ ]
+}

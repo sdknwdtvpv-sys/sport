@@ -354,6 +354,13 @@ else
 fi
 echo
 
+# RepDB 动作插图核对（许可证义务）的**自检**：
+# 这些图是别人按"免费商用 + 必须署名"授权给我们的，而违反授权之后 App 照样跑、
+# 测试照样绿 —— 唯一会出问题的地方是将来某一天收到一封律师函。
+# 所以每条义务都要有一条机械检查盯着（署名被删/入口被摘/许可原文丢失/
+# 付费档预览混进包/pubspec 漏声明）。
+selfcheck tool/check-repdb-art.mjs "RepDB 插图核对自检通过（署名被删 / 入口被摘 / 许可原文丢失 / 付费预览混入 / pubspec 漏声明 都藏不住）" "RepDB 插图核对工具的自检失败"
+
 # 任务卡一致性工具的**自检**：回归用例照着真事故做 ——
 # `usability/记录表.md` 里的 T5 被换成别的内容（kit 的 T5 是刻意必败任务），
 # 而报告工具只认 id，当时没有任何东西会发现。
@@ -448,6 +455,14 @@ if node tool/check-launch-relay.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} 启动图与内启动屏那两枚环对得上"
 else
   strip "$LOG"; echo "${RED}✗ 启动接力对不上（环心不透明 / 外径差 > 2pt / 圆心偏了）${OFF}"; fail=1
+fi
+echo
+
+# RepDB 动作插图：署名、许可原文、出处清单、资产边界、pubspec 声明（**真实扫描**，不是自检）
+if node tool/check-repdb-art.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -1; echo "${GREEN}✓${OFF} RepDB 插图：署名与许可义务逐条成立"
+else
+  strip "$LOG"; echo "${RED}✗ RepDB 插图的许可义务有条款不成立（署名/许可原文/出处/付费档边界/pubspec）${OFF}"; fail=1
 fi
 echo
 
