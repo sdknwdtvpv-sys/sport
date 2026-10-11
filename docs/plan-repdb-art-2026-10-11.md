@@ -137,20 +137,56 @@ RepDB Free Tier License v1.0，原文副本 `tool/repdb-license.txt`（GitHub �
 | 详情页有插图时画图、没图时不画空框 | ✅ widget 测试 |
 | 图片文件缺失时不白屏 | ✅ widget 测试（走占位图形） |
 | 大字号不溢出（1.5× / 2.0×） | ✅ 已把「动作详情页（有插图）」「动作插图来源」两屏加进 `large_font_sweep_test`（共 22 屏 × 2 档） |
-| **真机上看得对不对** | ⛔ **没验**。要在 iPhone/Redmi 上按 §八 走一遍 |
+| **模拟器上看得对不对** | ✅ **2026-10-12 验过**（`emulator-5554`，1080×2400 @440dpi ≈ 393dp 宽，release 包 v1.67.0+82 带着插图）：详情页插图正常渲染、切换姿势真的换图、`做法` 卡片排在图下方、冷启动 0 条 `E/flutter` / 0 条 `overflowed`。证据三张见 `docs/images/repdb-art-2026-10-12/`（含张开/顶峰两张对比） |
+| **真机上看得对不对** | ⛔ **还没验**（iPhone 18 Pro 的 UDID 不在开发描述文件里，见 §八 1） |
 
 ---
 
 ## 八、还没做 / 只有人能验的
 
-1. **真机看图**：320px 在真机的 3× 屏上会不会发虚；深色页面上浅底方图的观感；
-   切换姿势那一下会不会觉得多余。**这三件只有眼睛能判**。
-2. **许可第 ④ 条（不得喂模型）没有机械判据**。它是"我们没做这件事"的承诺，
+### 1. 真机安装：iPhone 18 Pro 卡在"设备没进描述文件"（2026-10-12）
+
+用户点单「装真机看一下」后的实测状态，**如实记**（这不是产品缺陷，是签名前提）：
+
+* **iPhone 18 Pro**（`00008160-000609EE0A08000A`，iPhone19,2）：`devicectl` 读到 `connected / paired ✓`，
+  但本地三份描述文件（`com.sdknwdtvpv.lianleme.dev`、`.RestWidget`、`work.elliot.yuanxu`）
+  **都不含它的 UDID**，所以 `xcodebuild` 报
+  `Provisioning profile … doesn't include the currently selected device`；
+* 而 `-allowProvisioningUpdates -allowProvisioningDeviceRegistration` 那两个开关**没能救回来**，
+  因为同时报 **`No Accounts: Add a new account in Accounts settings.`** ——
+  实测 Xcode 的账号列表**是空的**：
+  `defaults read com.apple.dt.Xcode DVTDeveloperAccountManagerAppleIDLists` →
+  `{"IDE.Identifiers.Prod" = ()}`。上一次（2026-10-09）同一个症状也是靠**在 Xcode 里重新登录
+  那个 Apple ID**解决的（见 `docs/ios-free-provisioning-guide.md` §四）。
+* **iPhone 17 Pro**（`00008150-000949CA0108401C`）：描述文件**含它**（三份都含），
+  但它现在 `unavailable`（没插线/没开无线调试）——**插上线就能装，不需要动账号**。
+* 结论：要装 iPhone 18 Pro 需要**你在 Xcode → Settings → Accounts 重新登录 Apple ID**，
+  之后本脚本会自动注册设备 + 建描述文件；想省这一步就插 iPhone 17 Pro。
+
+### 2. 只有眼睛能判的三件
+
+**模拟器给不了答案**（屏密度与观感不同），必须在真机上看：
+320px 在 3× 屏上会不会发虚；深色页面上浅底方图的观感；切换姿势那一下会不会觉得多余。
+
+### 3. 其余
+
+4. **许可第 ④ 条（不得喂模型）没有机械判据**。它是"我们没做这件事"的承诺，
    不是代码状态 —— 所以记在这里，而不是假装有守卫。将来若有人把动作图拿去做
    img2img / 风格迁移 / 微调，**门禁不会红**，只有这段文字会提醒。
-3. **上游会更新**：RepDB 的快照是 2026-10-08（637 个动作）。他们加动作之后，
+5. **上游会更新**：RepDB 的快照是 2026-10-08（637 个动作）。他们加动作之后，
    我们可以重跑匹配把覆盖率往上抬（现在的 125 个"无对应动作"是**那天**的事实）。
-4. **署名义务不止在 App 内**：许可说"App 的关于/致谢页、项目 README、或网站页脚"三处**任一**即可，
+6. **署名义务不止在 App 内**：许可说"App 的关于/致谢页、项目 README、或网站页脚"三处**任一**即可，
    我们做了 App 内那处。若将来做官网，那一处也该写上（成本一行字）。
-5. **AI 标识的措辞**还没经合规确认：现在写在图下方一行与署名页一段。
+7. **AI 标识的措辞**还没经合规确认：现在写在图下方一行与署名页一段。
    若国内应用商店审核提出更具体的标识要求（位置/字号/文案），按他们的来。
+
+---
+
+## 九、验证证据（模拟器，2026-10-12）
+
+| 图 | 看什么 |
+|---|---|
+| ![杠铃卧推详情](images/repdb-art-2026-10-12/emulator-01-bench-press-detail.png) | 插图渲染、图下「示意图 · AI 生成 · RepDB」、「怎么做」在下方 |
+| ![姿势切换对比](images/repdb-art-2026-10-12/emulator-02-pose-toggle.png) | 左 = 默认（顶峰：杠在锁骨上方）／右 = 点「看起始姿势」后（起始：杠在胸口），**真的换了图** |
+| ![绳索下压详情](images/repdb-art-2026-10-12/emulator-03-cable-pushdown-detail.png) | 另一个动作（绳索下压）：图与动作对得上（高位滑轮 + 绳索下压） |
+
