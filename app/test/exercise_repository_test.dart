@@ -237,6 +237,26 @@ void main() {
     expect(rdl.map((ExerciseData r) => r.id), contains('ex_rdl'));
   });
 
+  test('★ 全文检索：**英文名**也参与匹配（2026-10-12 补的缺陷）', () async {
+    await repo.importSeed(loadJson: _readAsset);
+
+    // 起因：搜索框的提示写着「搜索动作或别名，如 bp / rdl」，但代码里没搜 `name_en` ——
+    // 于是 `Barbell Bench Press` / `squat` / `rdl` 这类查询**返回 0 条**，
+    // 而 351 个动作的 name_en 是全的。抓到它的方式很偶然：
+    // 拍 v1.68.0 商店截图时脚本用英文名搜索，那一步不报错、只是截出一张空列表。
+    final List<ExerciseData> en = await repo.search(query: 'Barbell Bench Press');
+    expect(en.map((ExerciseData r) => r.id), contains('ex_bb_bench_press'));
+
+    // 大小写与"部分词"也要能用（用户不会把整个名字打全）
+    final List<ExerciseData> squat = await repo.search(query: 'squat');
+    expect(squat, isNotEmpty);
+    expect(
+      squat.every((ExerciseData r) =>
+          (r.nameEn ?? '').toLowerCase().contains('squat')),
+      isTrue,
+    );
+  });
+
   test('按部位筛选', () async {
     await repo.importSeed(loadJson: _readAsset);
 

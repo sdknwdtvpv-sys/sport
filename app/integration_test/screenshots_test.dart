@@ -23,7 +23,8 @@ library;
 
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
+// material 而不是 widgets：脚本要用 `ListTile` 长按选动作页的第一行（动作详情页的入口）
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'evidence_sets.dart';
@@ -178,6 +179,17 @@ void main() {
       await settle(1500);
       await capture('04-picker');
     });
+
+    // 动作详情页（2026-10-12 加）：**v1.68.0 的动作插图就长在这一页** ——
+    // 商店列表与软著说明书都该看得见它。长按一行是真实手势（也是这一页的入口）。
+    // 动作详情页（插图）**不进这套商店截图**：长按那一步在 integration_test 的
+    // 合成指针下始终进不去详情页（试过 byType.first / 按行 key / 手动 900ms 手势 /
+    // pump+真实延时，四次都停在列表页，而 `step()` 只在抛异常时才判失败 ——
+    // 前两次截出来的图与 `04-picker` 逐字节相同）。**不硬塞**：商店那三套的判据是
+    // "张数 + 尺寸 + 夹带"，塞一张来路不明的图只会让守卫与文档一起漂。
+    // 真机/模拟器上 `adb shell input swipe x y x y 800` 是能进详情页的 ——
+    // 证据图在 `docs/images/repdb-art-2026-10-12/emulator-01-bench-press-detail.png`，
+    // 取舍与四次尝试都记在 `docs/plan-repdb-art-2026-10-11.md` §八 3。
 
     await step('04b-back-home', () async {
       // 只需一次返回：从建议卡点「我自己选」是把建议卡**弹掉**再推选动作页的，
