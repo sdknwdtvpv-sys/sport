@@ -139,30 +139,49 @@ RepDB Free Tier License v1.0，原文副本 `tool/repdb-license.txt`（GitHub �
 | 大字号不溢出（1.5× / 2.0×） | ✅ 已把「动作详情页（有插图）」「动作插图来源」两屏加进 `large_font_sweep_test`（共 22 屏 × 2 档） |
 | **模拟器上看得对不对** | ✅ **2026-10-12 验过**（`emulator-5554`，1080×2400 @440dpi ≈ 393dp 宽，release 包 v1.67.0+82 带着插图）：详情页插图正常渲染、切换姿势真的换图、`做法` 卡片排在图下方、冷启动 0 条 `E/flutter` / 0 条 `overflowed`。证据三张见 `docs/images/repdb-art-2026-10-12/`（含张开/顶峰两张对比） |
 | **Redmi 上装上了新包** | ✅ **2026-10-12 装过**（`75caf509`）：`versionName=1.67.0 / versionCode=82`、release 签名、包内 426 张插图 + `api.elliotli.work` 命中 2 处（两个 ABI）、冷启动 `E/flutter` 0 / `overflowed` 0、动作库读到「共 351 个动作」。⛔ **但"插图在真机上的观感"没验成** —— adb 点不进详情页，见 §八 2 |
-| **iPhone 上装上了** | ⛔ **还没**。Xcode 账号列表仍是空的，见 §八 1 |
+| **iPhone 上装上了** | ✅ **2026-10-12 装上了**（iPhone 18 Pro `00008160-000609EE0A08000A`）：`devicectl` 读到 **`1.67.0` / bundle version `82`**、bundle id `com.sdknwdtvpv.lianleme.dev`（免费团队必须有 `.dev` 后缀，见 §八 1）；产物里 **426 张插图 + `api.elliotli.work` 2 处**；`devicectl device process launch` 拉起成功、进程在跑（冷启动没崩）。⚠️ 这个包 **7 天后打不开**（免费签名），重跑 `tool/ios-device-run.sh` 即可 |
+| **真机上的观感（眼睛）** | ⛔ **还没**。Redmi 上 adb 点不进详情页（§八 2）、iPhone 上的截图我取不到 —— 但两台都装好了，你点两下就能看 |
 
 ---
 
 ## 八、还没做 / 只有人能验的
 
-### 1. 真机安装：iPhone 18 Pro 卡在"设备没进描述文件"（2026-10-12）
+### 1. 真机安装：iPhone 18 Pro（2026-10-12，**已解决**）
 
-用户点单「装真机看一下」后的实测状态，**如实记**（这不是产品缺陷，是签名前提）：
+**症状**（值得记，因为 2026-10-09 出现过一次、这次又出现）：`xcodebuild` 报
 
-* **iPhone 18 Pro**（`00008160-000609EE0A08000A`，iPhone19,2）：`devicectl` 读到 `connected / paired ✓`，
-  但本地三份描述文件（`com.sdknwdtvpv.lianleme.dev`、`.RestWidget`、`work.elliot.yuanxu`）
-  **都不含它的 UDID**，所以 `xcodebuild` 报
-  `Provisioning profile … doesn't include the currently selected device`；
-* 而 `-allowProvisioningUpdates -allowProvisioningDeviceRegistration` 那两个开关**没能救回来**，
-  因为同时报 **`No Accounts: Add a new account in Accounts settings.`** ——
-  实测 Xcode 的账号列表**是空的**：
-  `defaults read com.apple.dt.Xcode DVTDeveloperAccountManagerAppleIDLists` →
-  `{"IDE.Identifiers.Prod" = ()}`。上一次（2026-10-09）同一个症状也是靠**在 Xcode 里重新登录
-  那个 Apple ID**解决的（见 `docs/ios-free-provisioning-guide.md` §四）。
-* **iPhone 17 Pro**（`00008150-000949CA0108401C`）：描述文件**含它**（三份都含），
-  但它现在 `unavailable`（没插线/没开无线调试）——**插上线就能装，不需要动账号**。
-* 结论：要装 iPhone 18 Pro 需要**你在 Xcode → Settings → Accounts 重新登录 Apple ID**，
-  之后本脚本会自动注册设备 + 建描述文件；想省这一步就插 iPhone 17 Pro。
+```
+error: No Accounts: Add a new account in Accounts settings.
+error: Provisioning profile "iOS Team Provisioning Profile: com.sdknwdtvpv.lianleme.dev"
+       doesn't include the currently selected device "李松的iPhone" (identifier 00008160-…)
+```
+
+**诊断过程**（把"看起来像网络问题"的东西一个个排掉）：
+
+| 查什么 | 结果 |
+|---|---|
+| 设备连上了吗 | ✅ `devicectl`：connected / paired |
+| 证书还有效吗 | ✅ `security find-identity -v -p codesigning` → `Apple Development: 919500973@qq.com (FA5LCQVX8)`，到 2027-10-10（旧的被吊销了，登录后自动签了新的） |
+| Team 登记了吗 | ✅ `IDEProvisioningTeamByIdentifier` 里有 `LSBQAS2A45` / `Elliot LI (Personal Team)` |
+| **账号在列表里吗** | ⚠️ **会自己变空**：01:45 登进去时有（`21E7D4A3-…`），**02:07 又变回空列表** —— Xcode 留不住这条账号 |
+| **钥匙串里有会话吗** | ❌ 整个 login keychain 里**没有一条 Xcode 条目**（我另外建了一条测试条目验证过钥匙串本身可读可写，不是权限问题） |
+| 命令行能绕过去吗 | ❌ `devicectl` 没有"注册设备"的命令；`-allowProvisioningUpdates -allowProvisioningDeviceRegistration` 在没有会话时**直接降级成 `No Accounts`** |
+
+**结论（可复用的判据）**：免费团队给新设备发描述文件**必须走 Xcode 界面里的那个 Apple ID 会话**（它存在钥匙串里）。
+只要 `DVTDeveloperAccountManagerAppleIDLists` 是空的、或钥匙串里没有 Xcode 条目 → 命令行 100% 装不上，
+跟设备、证书、Team 都没关系。
+
+**解法（有效）**：Xcode → Settings → Accounts → **删掉那个 Apple ID** → **⌘Q 完全退出 Xcode**
+→ 重开 → **重新登录** → **别关 Xcode**，再跑 `tool/ios-device-run.sh`。
+这次账号标识变成了 `8D3AB1BC-…` 并且**没再变空**，脚本自动完成了注册设备 + 建 App ID + 建描述文件：
+
+```
+iOS Team Provisioning Profile: com.sdknwdtvpv.lianleme.dev        → 00008160-000609EE0A08000A ✓
+iOS Team Provisioning Profile: com.sdknwdtvpv.lianleme.dev.RestWidget → 00008160-000609EE0A08000A ✓
+```
+
+（**iPhone 17 Pro** `00008150-…` 是一条备用路：它的描述文件一直含它，插线就能装、不需要动账号。）
+
 
 ### 2. 只有眼睛能判的三件
 
