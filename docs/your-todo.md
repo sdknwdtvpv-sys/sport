@@ -28,8 +28,10 @@
 > 但**隐私政策两页已重传到 `api.elliotli.work`**（线上那份是 10-09 的、少 594 字节），
 > 公网验收 `/privacy` `/privacy/` `/privacy/en` 全部 200。
 >
-> **还差一件只有你能做的**：**上传商店** —— 三套截图与 `.aab` 都就绪；
-> iOS 那一边要 Apple Developer 付费账号（见下面那张表）。
+> **还差一件只有你能做的**：**上传商店** —— 三套截图与 `.aab` 都就绪。
+> ✅ **Apple Developer 付费账号 2026-10-12 已加入**：iOS 那边现在可以出 **TestFlight 包**了，
+> 流程与分工见 **`docs/testflight-guide.md`**（你要做两步：Xcode 登账号、ASC 建 App 记录；
+> 归档 + 上传我可以跑，但要一把 App Store Connect API Key）。
 >
 > ## ✅ 2026-10-10 已部署：v1.67.0（VI 那一批 + 会员 M1 + 两个付费功能）
 >
