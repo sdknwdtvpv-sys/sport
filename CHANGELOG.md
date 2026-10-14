@@ -6,6 +6,39 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.68.1 · 修 Apple 上传校验挡下的那条（NSHealthUpdateUsageDescription）
+
+**起因**：2026-10-14 第一次往 TestFlight 传包，被 Apple 挡下：
+
+```
+ERROR ITMS-90683: Missing purpose string in Info.plist
+  … should contain a NSHealthUpdateUsageDescription key …
+```
+
+**根因**：包里带 HealthKit 能力（`com.apple.developer.healthkit`），而 Apple 的上传校验
+**要求读、写两个用途说明串都在**，它不看我们实际申不申请写权限。我们此前是**故意**只写"读"
+那一条（`Info.plist` 里还注释着"写了等于向用户申请一件我们不做的事"，
+`tool/check-ios-app.mjs` 第 11 条与 `tool/privacy-audit.mjs` 都把"不许有写那句"写成了硬守卫）。
+
+**改法**（选 A，不删功能）：补上 `NSHealthUpdateUsageDescription`，但文案**如实写"不写入"**：
+
+> 本 App 不会向「健康」写入任何数据。这一句是 App Store 上传校验的要求：只要应用带健康能力，
+> iOS 就要求读、写两项说明都存在。练了么只读取体重、体脂率和身高…写入类的数据我们一条都不产生。
+
+理由：用户看到它的唯一场合是系统授权弹窗，而我们**从不申请写权限**（`toShare: []`），
+所以那句**永远不会弹给用户**；写成"要写你的健康数据"才是假话。
+
+**两条守卫的判据反过来了**（`check-ios-app.mjs` ⑪ / `privacy-audit.mjs` ⑩之六）：
+以前是"**有这条就红**"，现在是"**缺了要红、而且文案里必须写明不写入**" ——
+自检用例同步换了（`bad-no-healthupdate` / `bad-healthupdate-lying` 各一条）。
+
+**政策同步**：`docs/privacy-policy.md` §2.4 补了一段解释（为什么包里会有两条、为什么它不弹），
+`store-assets/privacy/` 与 `app/assets/privacy-policy.txt` 已重生成。
+
+**产物**：安卓 APK / AAB 重出（**1.68.1+84**）—— 因为政策正文改了，已发布的 1.68.0 包内那份
+政策文本与仓库不再一致（包内 29,933 字节 vs 30,507）。iOS 那边**上传的是 1.68.0+83**
+（上传时 `kAppVersion` 还是 1.68.0，App Store 里那次构建不受影响；差异只有政策那一段文本）。
+
 ## v1.68.0 · 免费版先上（隐藏会员入口）+ 动作插图（RepDB）+ 训练屏「动作要领」
 
 用户 2026-10-10 的两次点单合成这一版：先「**走免费版线上**」（首版不带会员上架），

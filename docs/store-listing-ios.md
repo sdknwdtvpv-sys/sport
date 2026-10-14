@@ -35,7 +35,7 @@
 
 | 字段 | 值 |
 |---|---|
-| 应用名称（≤30） | **练了么** |
+| 应用名称（≤30） | **`Lianleme`** |
 | 副标题（≤30） | **一次点击记一组** |
 | Bundle ID | **`com.sdknwdtvpv.lianleme`**（与安卓一致；上架后不能改） |
 | 版本号 | 以 `app/pubspec.yaml` 为准（Flutter 会写进 `CFBundleShortVersionString` / `CFBundleVersion`） |
@@ -48,6 +48,11 @@
 | 隐私政策 URL | ⬜ **你填**（必须公网可访问；`store-assets/privacy/index.html` 就是要放上去的页面） |
 | 开发者名称 | ⬜ **你填**（个人主体写姓名，公司写公司名） |
 | 联系邮箱 | ⬜ **你填** |
+
+> ⚠️ **应用名称 2026-10-14 改过一次**：App Store 的名称**全网唯一**，建记录时 `练了么` 已被占用
+> （苹果那边另一个 App 占了），所以商店页标题用 **`Lianleme`**。
+> **手机图标下面的名字仍然写「练了么」**（`CFBundleDisplayName`，与商店名是两回事，不用动）。
+> 备选（万一 `Lianleme` 也被占）：`Lianleme — 健身记录` / `Lianleme · 力量训练`。
 
 ## 二、文案草稿（可直接粘贴）
 

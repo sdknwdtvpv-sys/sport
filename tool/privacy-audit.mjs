@@ -675,9 +675,19 @@ export function audit({ root = ROOT, apkPermissions = null } = {}) {
       // ⚠️ 判据要认**真的 plist 键**，不是"这个字符串出现过" ——
       // Info.plist 里那段注释正是在解释"为什么我们**不**写这一条"，
       // 用纯字符串匹配会把那条解释本身判成违规（第一次跑就踩了）。
-      if (/<key>\s*NSHealthUpdateUsageDescription\s*<\/key>/.test(plistSrc)) {
-        errors.push('Info.plist 里出现了 NSHealthUpdateUsageDescription（写回健康库的用法说明）—— '
-          + '政策承诺的是"只读、不写回"，写了这一条就是在向用户申请一件我们不做的事');
+      // ⚠️ 2026-10-14 判据反了：以前是"有这条就违规"，现在是"**必须有、而且文案不许说要写**"。
+      // 起因：第一次往 TestFlight 传包被 Apple 挡下（`ITMS-90683: Missing purpose string …
+      // NSHealthUpdateUsageDescription`）—— 只要包里带健康能力，上传校验就要求读、写两个
+      // 用途说明都在，它不看我们实际申不申请写权限。而政策承诺的仍然是"只读不写"，
+      // 所以这一条现在守的是**文案与代码一致**：文案里必须写明我们不写入。
+      const updateMatch = plistSrc.match(
+        /<key>\s*NSHealthUpdateUsageDescription\s*<\/key>\s*<string>([\s\S]*?)<\/string>/);
+      if (!updateMatch) {
+        errors.push('Info.plist 缺 NSHealthUpdateUsageDescription —— Apple 的上传校验会挡下这个包'
+          + '（`ITMS-90683`，带健康能力的包要求读、写两个用途说明都在）');
+      } else if (!/不(会)?(向|往)?「?健康」?(写入|写回)|不会写入/.test(updateMatch[1])) {
+        errors.push('NSHealthUpdateUsageDescription 的文案里没写明"不写入健康"—— '
+          + '政策承诺的是"只读、不写回"，代码里 toShare 是空数组；文案必须与之一致');
       }
       // **Android 那半边同一句话**：只读。两条都查 ——
       // Kotlin 里不许出现 `WRITE_`（写入权限/写入路径），manifest 里也不许声明写权限。

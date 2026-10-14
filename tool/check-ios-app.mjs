@@ -25,7 +25,11 @@
  *
  *  11. **从系统健康库读体成分那件事的两条硬约束**（2026-10-09 加）：
  *      `Info.plist` 里**必须有** `NSHealthShareUsageDescription`（没有它，iOS 上请求读健康数据
- *      会直接失败），**必须没有** `NSHealthUpdateUsageDescription`（政策承诺的是"只读、不写回"）；
+ *      会直接失败）；`NSHealthUpdateUsageDescription` **必须有、且文案里必须写明我们
+ *      "不写入"**（2026-10-14 改的判据：Apple 的上传校验要求带 HealthKit 能力的包
+ *      读、写两个用途串都在 —— 第一次传 TestFlight 就是被这句挡下的 `ITMS-90683`。
+ *      但它的文案**不许**说我们要写健康数据：代码里 `toShare` 是空数组，那句永远不会弹；
+ *      写成"要写"就是对用户的假话）；
  *      另外，**只要这份产物是签过能力的**（`codesign -d --entitlements` 读得到非空字典），
  *      就必须带 `com.apple.developer.healthkit`。源码级的那一半在 `tool/privacy-audit.mjs` 的 ⑩之六，
  *      这一条核的是**产物**：源码写对了、构建时掉了，是另一回事。
@@ -201,9 +205,17 @@ function inspect(appPath, root = ROOT) {
       problems.push('缺 NSHealthShareUsageDescription —— iOS 上请求读健康数据会**直接失败**，'
         + '而政策 §2.4 承诺了我们会读');
     }
-    if (update) {
-      problems.push('出现了 NSHealthUpdateUsageDescription（写回健康库的用法说明）—— '
-        + '政策承诺的是"只读、不写回"，代码里 `toShare` 也是空数组；写了这一条就是在向用户申请一件我们不做的事');
+    // ⚠️ 2026-10-14 判据**反过来了**：以前要求"必须没有"，而 Apple 的上传校验要求"必须有"
+    // （带 HealthKit 能力的包缺它 → `ITMS-90683`，第一次传 TestFlight 就是这么被挡下的）。
+    // 现在守两件更实在的事：**键要在**，而且**文案里必须写明我们不写入** ——
+    // 因为代码里 `toShare` 是空数组、那句永远不会弹给用户，写成"要写"才是假话。
+    if (!update) {
+      problems.push('缺 NSHealthUpdateUsageDescription —— Apple 的上传校验会挡下这个包'
+        + '（`ITMS-90683`，只要带 HealthKit 能力就要求读、写两个用途串都在）。'
+        + '文案要写明"本 App 不向健康写入任何数据"（我们 toShare 是空数组）');
+    } else if (!/不(会)?(向|往)?「?健康」?(写入|写回)|不会写入/.test(update)) {
+      problems.push('NSHealthUpdateUsageDescription 的文案里没写明"不写入健康"—— '
+        + '我们一个字都不写回健康库，文案必须与代码一致（否则是在向用户申请一件我们不做的事）');
     }
     // 能力：只有**签过能力**的产物才读得到 entitlements。
     // ⚠️ 模拟器构建不签能力（实测 dict 是空的），所以那种产物上这条**跳过并如实说**，
@@ -440,6 +452,9 @@ function selftest() {
       CFBundleVersion: exp.buildNumber,
       NSPhotoLibraryAddUsageDescription: '写入相册',
       NSHealthShareUsageDescription: '读取你健康里的体重、体脂率和身高',
+      // 2026-10-14：Apple 上传校验要求带 HealthKit 能力的包两个用途串都在，
+      // 所以夹具的**基准产物**也要有它；文案必须写明我们不写入（判据会核这一点）。
+      NSHealthUpdateUsageDescription: '本 App 不会向「健康」写入任何数据；只读取体重、体脂率和身高',
       ITSAppUsesNonExemptEncryption: false,
       UIUserInterfaceStyle: 'Dark',
       UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
@@ -533,8 +548,11 @@ function selftest() {
     // ⚠️ 2026-10-09：健康库那两条 —— 缺"读"的用法说明、或悄悄加上"写"的那句，都必须红
     ['缺 NSHealthShareUsageDescription → 必须红', mk('bad-no-healthshare',
       (e) => { delete e.NSHealthShareUsageDescription; }), true],
-    ['多了 NSHealthUpdateUsageDescription（写回）→ 必须红', mk('bad-healthupdate',
-      (e) => { e.NSHealthUpdateUsageDescription = '写回健康库'; }), true],
+    // 2026-10-14：判据反过来 —— 以前"多了要红"，现在"缺了要红"（Apple 要求必须有）
+    ['缺 NSHealthUpdateUsageDescription → 必须红（Apple 上传校验会挡）', mk('bad-no-healthupdate',
+      (e) => { delete e.NSHealthUpdateUsageDescription; }), true],
+    ['NSHealthUpdateUsageDescription 的文案没说"不写入" → 必须红', mk('bad-healthupdate-lying',
+      (e) => { e.NSHealthUpdateUsageDescription = '用于把训练记录写回健康库'; }), true],
   ];
   // 出口合规那三条：造临时仓库根，只动 pubspec 与两份文档
   const docRoot = (mutate) => {

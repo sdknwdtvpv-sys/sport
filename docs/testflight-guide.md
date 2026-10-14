@@ -54,6 +54,48 @@ TestFlight 是给"别人也能装"用的。
 
 ---
 
+## 〇之二、✅ 第一个构建已经传上去了（2026-10-14）
+
+**实测记录**（这一页的规矩是"跑通了才写"，所以这里补的是真数据）：
+
+| 项 | 值 |
+|---|---|
+| 命令 | `xcrun altool --upload-app -f build/ios/ipa/lianleme.ipa -t ios --apiKey <KeyID> --apiIssuer <IssuerID>` |
+| 认证 | App Store Connect **API Key**（角色 App 管理），`~/.appstoreconnect/private_keys/AuthKey_<KeyID>.p8`（`chmod 600`） |
+| 结果 | **`UPLOAD SUCCEEDED with no errors`**，`Delivery UUID 0e3ff0b2-0c76-4577-86fb-b19c53687405`，27,350,762 字节 / 11.1 秒 |
+| 构建（第一次） | `1.68.0` / `83` · `UPLOAD SUCCEEDED`，Delivery UUID `0e3ff0b2-…`（补了 Info.plist 那个键之后才过的） |
+| 构建（**当前这个**） | **`1.68.1` / `84`** · `UPLOAD SUCCEEDED`，Delivery UUID `54102369-a719-4663-b7bb-56d3c8791881`（27,356,544 字节 / 8.5 秒）；`com.sdknwdtvpv.lianleme` · 签名 `Apple Distribution: Song Li (LSBQAS2A45)` · 描述文件有效到 2027-10-14 · 包内 426 张插图 |
+| ASC 名称 | **`Lianleme`**（`练了么` 被占用，见 `store-listing-ios.md` §一） |
+
+
+> 📌 **ASC 里现在有两个构建**（`83` 与 `84`）。**用 `84` 那个**（它带着政策 §2.4 的更新）；
+> 旧的 `83` 可以在 TestFlight 页面里删掉，免得测试者装错。
+
+### ⚠️ 第一次传被 Apple 挡下（值得记住的一条）
+
+```
+ERROR ITMS-90683: Missing purpose string in Info.plist
+  … should contain a NSHealthUpdateUsageDescription key …
+```
+
+**根因**：包里带 HealthKit 能力（`com.apple.developer.healthkit`）时，Apple 的上传校验
+**要求 `Info.plist` 里读、写两个用途说明串都在** —— 它不看我们实际申不申请写权限。
+而我们是**故意**只写"读"那一条（代码里 `requestAuthorization(toShare: [])`），
+两条守卫（`tool/check-ios-app.mjs` ⑪ / `tool/privacy-audit.mjs` ⑩之六）
+甚至把"不许出现写那句"写成了硬要求 —— **于是三方互相钉死，只有真正上传一次才会发现**。
+
+**改法**：补上该键，但文案**如实写"不写入"**（`v1.68.1`，见 `CHANGELOG.md`）：
+
+> 本 App 不会向「健康」写入任何数据。这一句是 App Store 上传校验的要求……
+
+理由：它**永远不会弹给用户**（我们从不申请写权限），写成"要写你的健康数据"才是假话。
+两条守卫的判据**反过来**了：现在核的是"**缺了要红 / 文案没说"不写入"要红**"。
+
+> **教训（写给下一次）**：**"只读不写"这种产品承诺，在 iOS 上传校验面前不作数** ——
+> 校验看的是能力（entitlement），不是我们调了哪个 API。
+> 凡是"产品承诺 ↔ 平台机械要求"冲突的地方，**都得用一次真上传去证伪**，
+> 光靠门禁与代码审查会一路绿到上传那一刻。
+
 ## 二、四步流程（每步都写明"谁做"）
 
 ### 第 1 步：Xcode 里把账号登好（**只有你能做**）

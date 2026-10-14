@@ -24,7 +24,7 @@
 |---|---|---|---|
 | **0** | 钉住工程：git + CI 真跑起来 | ✅ 完成 | — |
 | **1** | 数据活过重启（接 drift） | ✅ 完成（**真机已验证**：覆盖安装后冷启动读回 12 组） | — |
-| **2** | 装到真机 | ✅ **两台都装上了 v1.68.0**（`versionCode 83`）：Redmi `75caf509`（`adb install -r` → `Success`，`dumpsys` 当场核过 `versionName 1.68.0 / versionCode 83`；冷启动 `E/flutter` 0 / `overflowed` 0）与 iPhone 18 Pro（`tool/ios-device-run.sh` → `BUILD SUCCEEDED` → `App installed`，`devicectl` 读到 `1.68.0 / 83`）。⚠️ 免费档证书 7 天到期，iPhone 到期重跑脚本即可 | ✅ 已完成 |
+| **2** | 装到真机 | ✅ **真机两台都装上了 v1.67.0／v1.68.0**（当时的 `versionCode 82／83`）：Redmi `75caf509`（`dumpsys` 当场核过；冷启动 `E/flutter` 0 / `overflowed` 0）与 iPhone 18 Pro（`tool/ios-device-run.sh` → `App installed`）。**当前版 v1.68.1（`versionCode 84`）还没装真机**（Redmi 2026-10-14 已离线）—— 但 iOS 已以 **`1.68.1 / 84`** 传上 TestFlight。⚠️ 免费档证书 7 天到期 | ✅ 已完成 |
 | **3** | **自己去练一次**（带手机去健身房） | ⬜ 未开始（真机走查已做：有氧记录 / 单位切换 / 升级迁移都确认过） | 只能人做 |
 | **4** | 铺 UI 屏 | ✅ **S1–S13 全部落地**（S15 已并入 S10） | S14 未做（需支付基建，已明确砍掉） |
 | **5** | **正式**可用性测试（5 人） | 🟡 **2026-10-05 降级为"建议做、不阻塞上架"**：`tap_count` 的门槛改由**熟人短测**定（3–5 个熟人、每人 5 分钟、半天做完，口径见 `docs/usability-test-kit.md` §A） | 你（短测占半天）。这 5 场仍建议做 —— 它答的是短测答不了的（T1 是否 90 秒零提示 / Q3 选谁 / 对照差值） |
