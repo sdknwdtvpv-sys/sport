@@ -16,7 +16,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { createCollector } from './collector.mjs';
+import { createCollector, appendDayFile } from './collector.mjs';
 import { readEvents, buildReport, median, percentile } from '../tool/analytics-report.mjs';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -38,7 +38,13 @@ const ev = (over) => ({
 
 export async function selftest() {
   const dir = mkdtempSync(join(tmpdir(), 'lianleme-collector-'));
-  const { server, handleBatch } = createCollector({ outDir: dir });
+  // 落盘次数可数：一批 N 条事件应当只写 1 次（按天分组），而不是 N 次。
+  const writes = [];
+  const countingWrite = (outDir, day, text) => {
+    writes.push({ day, text });
+    appendDayFile(outDir, day, text);
+  };
+  const { server, handleBatch, state } = createCollector({ outDir: dir, writeDayFile: countingWrite });
   const failures = [];
   const check = (name, ok, detail = '') => {
     if (!ok) failures.push(`${name}${detail ? `：${detail}` : ''}`);
@@ -49,6 +55,13 @@ export async function selftest() {
     const good = handleBatch({ events: [ev({ event: 'app_open' }), ev({ event: 'workout_started' })] });
     check('合法批次返回 202', good.status === 202, `实际 ${good.status}`);
     check('accepted = 2', good.payload.accepted === 2, `实际 ${good.payload.accepted}`);
+    // 2026-11-05：原先每条事件各一次 mkdirSync + appendFileSync（一批 100 条 = 200 次
+    // 同步文件系统调用，把事件循环挡住）。按天分组之后，同一批同一天只写 1 次。
+    check('一批 2 条事件只落盘 1 次（按天分组，不是每条一次）', writes.length === 1,
+      `实际 ${writes.length} 次`);
+    check('byEvent 与 accepted 一致（统计不早于落盘）',
+      state.byEvent.get('app_open') === 1 && state.byEvent.get('workout_started') === 1,
+      JSON.stringify(Object.fromEntries(state.byEvent)));
 
     const missingDevice = handleBatch({ events: [{ id: 'x', event: 'app_open', ts: T0 }] });
     check('缺公共字段的批次被拒（400）', missingDevice.status === 400);
@@ -61,6 +74,28 @@ export async function selftest() {
     const events = readEvents(dir);
     check('落盘条数 = 客户端送进来的条数', events.length === 2, `实际 ${events.length}`);
     check('落盘带 received_at（服务端时间）', events.every((e) => typeof e.received_at === 'number'));
+
+    // 跨天的批次：写两个文件（这本来就是两天的数据），但每份只 open 一次。
+    const crossDay = handleBatch({
+      events: [
+        ev({ event: 'app_open', ts: T0 }),
+        ev({ event: 'workout_started', ts: T0 + DAY }),
+      ],
+    });
+    check('跨天批次仍收下 2 条', crossDay.status === 202 && crossDay.payload.accepted === 2);
+    check('跨天批次按天分成 2 次写（不是每条一次）', writes.length === 3, `实际 ${writes.length} 次`);
+    check('两次写各是一天的文件', new Set(writes.map((w) => w.day)).size === 2);
+
+    // 落盘失败：要回 500、并且不把已收条数算进 /healthz（也不能让异常从回调里抛出去）。
+    const failing = createCollector({
+      outDir: dir,
+      writeDayFile: () => { throw new Error('磁盘满了'); },
+    });
+    const failed = failing.handleBatch({ events: [ev({ event: 'app_open' })] });
+    check('落盘失败回 500（而不是把进程带走）', failed.status === 500, `实际 ${failed.status}`);
+    check('落盘失败的批次不计入 events', failing.state.events === 0, `实际 ${failing.state.events}`);
+    check('落盘失败的批次也不进 byEvent / devices',
+      failing.state.byEvent.size === 0 && failing.state.devices.size === 0);
 
     // ---- 2. 口径：北极星的 24 小时窗口（含边界） ----
     const good2 = [
@@ -138,6 +173,34 @@ export async function selftest() {
     const health = await (await fetch(`http://127.0.0.1:${port}/healthz`)).json();
     check('healthz 报出了事件数', health.events >= 3, JSON.stringify(health));
     await new Promise((resolve) => server.close(resolve));
+
+    // ---- 6. 请求体上限：超了要回干净的 413，**不是掐断连接** ----
+    //
+    // 原先超限时 `req.destroy()`：客户端拿到的是一次 socket reset，客户端的退避重试
+    // 会把它当成"网络抖了"、然后一直重试同一个超大包（而服务端永远不告诉它"太大了"）。
+    // 这里用一个很小的上限来测，不必真的造 5 MB。
+    const bigDir = mkdtempSync(join(tmpdir(), 'lianleme-collector-big-'));
+    const big = createCollector({ outDir: bigDir, maxBodyBytes: 512 });
+    await new Promise((resolve) => big.server.listen(0, '127.0.0.1', resolve));
+    const bigPort = big.server.address().port;
+    let bigStatus = '抛异常';
+    let bigJson = null;
+    try {
+      const r = await fetch(`http://127.0.0.1:${bigPort}/v1/events`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ events: [ev({ event: 'app_open', padding: 'x'.repeat(2000) })] }),
+      });
+      bigStatus = r.status;
+      bigJson = await r.json();
+    } catch (e) {
+      bigStatus = `抛异常（${e?.message ?? e}）`;
+    }
+    check('超大请求体回 413（不是掐断连接）', bigStatus === 413, `实际 ${bigStatus}`);
+    check('413 说清上限是多少字节', typeof bigJson?.error === 'string' && bigJson.error.includes('512'),
+      JSON.stringify(bigJson));
+    await new Promise((resolve) => big.server.close(resolve));
+    rmSync(bigDir, { recursive: true, force: true });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

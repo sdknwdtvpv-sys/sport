@@ -36,7 +36,21 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** 事件的必需字段：缺了就没法归因（`docs/analytics.md` §2.1 的公共字段） */
 const REQUIRED = ['id', 'event', 'ts', 'device_id', 'session_id', 'app_version', 'schema_version'];
 
-export function createCollector({ outDir }) {
+/** 请求体上限（5 MB）。客户端一批最多 100 条，正常请求只有几十 KB。 */
+export const MAX_BODY_BYTES = 5 * 1024 * 1024;
+
+/**
+ * 把某一天的一批行追加到 `<outDir>/events-<day>.jsonl`。
+ *
+ * 抽出来是为了**可被测**：`collector.selftest.mjs` 用一个计数的包装验"一批 N 条
+ * 只落盘一次"，而不是靠"看起来更快"。默认实现保持"追加写、重启不丢"。
+ */
+export function appendDayFile(outDir, day, text) {
+  mkdirSync(outDir, { recursive: true });
+  appendFileSync(join(outDir, `events-${day}.jsonl`), text, 'utf8');
+}
+
+export function createCollector({ outDir, maxBodyBytes = MAX_BODY_BYTES, writeDayFile = appendDayFile }) {
   const state = { events: 0, byEvent: new Map(), devices: new Set(), files: new Map() };
 
   function lineFor(ev) {
@@ -50,21 +64,42 @@ export function createCollector({ outDir }) {
     }
     let accepted = 0;
     const rejected = [];
+    // 统计先记在**本地**，落盘成功后才并进 state：否则写失败的批次会出现在
+    // /stats 的 byEvent / devices 里，却不计入 events（两个数字互相矛盾）。
+    const acceptedByEvent = new Map();
+    const acceptedDevices = new Set();
+    // **按天分组、一天只写一次**（2026-11-05）：原先每条事件各调一次
+    // `mkdirSync` + `appendFileSync` —— 一批 100 条就是 200 次同步文件系统调用，
+    // 而这些调用把 Node 的事件循环**整段挡住**（同步 I/O），别的连接全在等。
+    // 分组的顺序与"一条一条追加"完全一致（同一个 Map 按插入顺序，事件本身也按原顺序），
+    // 落盘内容逐字节相同；跨天的批次本来就写两个文件，只是少掉 N 次重复的 open/mkdir。
+    const byDay = new Map();
     for (const ev of body.events) {
       if (!ev || typeof ev !== 'object') { rejected.push('not_an_object'); continue; }
       const missing = REQUIRED.filter((k) => ev[k] === undefined || ev[k] === null);
       if (missing.length) { rejected.push(`${ev.event ?? '?'}:missing:${missing.join(',')}`); continue; }
       const { day, line } = lineFor(ev);
-      mkdirSync(outDir, { recursive: true });
-      appendFileSync(join(outDir, `events-${day}.jsonl`), line, 'utf8');
+      const lines = byDay.get(day);
+      if (lines) lines.push(line); else byDay.set(day, [line]);
       accepted++;
-      state.events++;
-      state.byEvent.set(ev.event, (state.byEvent.get(ev.event) ?? 0) + 1);
-      state.devices.add(ev.device_id);
+      acceptedByEvent.set(ev.event, (acceptedByEvent.get(ev.event) ?? 0) + 1);
+      acceptedDevices.add(ev.device_id);
     }
     // 一条都没收下就是 400 —— 让客户端的退避重试逻辑真的有机会跑起来
     // （全 202 的收集端会让"重试"这条路径永远测不到）。
     if (accepted === 0) return { status: 400, payload: { accepted: 0, rejected } };
+    // 落盘失败要如实回 500（而不是让异常从 'end' 回调里抛出去把进程带走）。
+    // 状态计数放在**写成功之后**：失败的批次不该被算进 /healthz 与 /stats。
+    try {
+      for (const [day, lines] of byDay) writeDayFile(outDir, day, lines.join(''));
+    } catch (e) {
+      return { status: 500, payload: { error: `落盘失败：${e?.message ?? e}` } };
+    }
+    state.events += accepted;
+    for (const [name, n] of acceptedByEvent) {
+      state.byEvent.set(name, (state.byEvent.get(name) ?? 0) + n);
+    }
+    for (const d of acceptedDevices) state.devices.add(d);
     return { status: 202, payload: { accepted, rejected } };
   }
 
@@ -88,13 +123,25 @@ export function createCollector({ outDir }) {
     if (req.method === 'POST' && url.pathname === '/v1/events') {
       const chunks = [];
       let size = 0;
+      let tooLarge = false;
       req.on('data', (c) => {
         size += c.length;
-        // 客户端一批最多 100 条，正常的体是几十 KB；超过 5 MB 直接拒
-        if (size > 5 * 1024 * 1024) { req.destroy(); return; }
+        // 客户端一批最多 100 条，正常的体是几十 KB；超过上限（默认 5 MB）直接拒。
+        //
+        // ⚠️ **不能 `req.destroy()`**（2026-11-05 改的，与 `backend.mjs` 的 `readBody`
+        // 同一条教训）：掐断连接时客户端拿到的是 socket reset，而不是一个干净的 413 ——
+        // 客户端的退避重试会把它当"网络抖了"，然后一直重试同一个超大包。
+        // 正确姿势：不再缓存（内存有界），但把流读完，再回一个能读懂的状态码。
+        if (size > maxBodyBytes) {
+          if (!tooLarge) { tooLarge = true; chunks.length = 0; }
+          return;
+        }
         chunks.push(c);
       });
       req.on('end', () => {
+        if (tooLarge) {
+          return json(413, { error: `请求体超过上限 ${maxBodyBytes} 字节` });
+        }
         let body = null;
         try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { body = null; }
         const { status, payload } = handleBatch(body);

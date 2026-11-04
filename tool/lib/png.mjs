@@ -156,8 +156,12 @@ function paeth(a, b, c) {
  * 写一张 PNG。`channels` 3（颜色类型 2）或 4（颜色类型 6），`bitDepth` 8 或 16。
  * 位深 16 时把每个 8 位样本按 `v * 257` 展开（PNG 里 8→16 的标准写法）——
  * 自检要造得出"忘了压平"的那种 16 位图。
+ *
+ * [level] 是 zlib 压缩档位（默认 9，产物最小）。**自检夹具**可以传 1：
+ * 那些图只是"尺寸/通道/位深对"的占位，压到最小要花 10 倍的 CPU（见 `check-screenshots`
+ * 自检从 24s 降到几秒那次）；真实资产（截图、特征图）仍然走默认 9。
  */
-export function writePng(path, width, height, pixels, channels = 3, bitDepth = 8) {
+export function writePng(path, width, height, pixels, channels = 3, bitDepth = 8, { level = 9 } = {}) {
   if (channels !== 3 && channels !== 4) throw new Error('channels 只能是 3 或 4');
   if (bitDepth !== 8 && bitDepth !== 16) throw new Error('bitDepth 只能是 8 或 16');
   const expected = width * height * channels;
@@ -184,7 +188,7 @@ export function writePng(path, width, height, pixels, channels = 3, bitDepth = 8
   writeFileSync(path, Buffer.concat([
     SIGNATURE,
     chunk('IHDR', ihdr),
-    chunk('IDAT', deflateSync(raw, { level: 9 })),
+    chunk('IDAT', deflateSync(raw, { level })),
     chunk('IEND', Buffer.alloc(0)),
   ]));
 }

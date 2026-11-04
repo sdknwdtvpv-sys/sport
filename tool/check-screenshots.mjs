@@ -270,12 +270,22 @@ function inspect(root) {
 /** 造一张自检用的 PNG：安卓那两套按真实的来（RGBA），App Store 那套要 8 位 RGB。 */
 function fixturePng(path, set, { channels = set.flat8 ? 3 : 4, bitDepth = 8 } = {}) {
   mkdirSync(dirname(path), { recursive: true });
+  // 夹具只验尺寸/通道/位深，不需要"压到最小"：zlib 档位 1 比 9 快一个量级，
+  // 而这张图本身是纯色占位（内容一字节都不参与判据）。
   writePng(path, set.width, set.height, Buffer.alloc(set.width * set.height * channels, 17),
-    channels, bitDepth);
+    channels, bitDepth, { level: 1 });
 }
 
-function makeTree(mutate) {
-  const root = mkdtempSync(join(tmpdir(), 'lianleme-shots-'));
+/**
+ * 夹具模板：**只造一次**，每条自检用例拷一份。
+ *
+ * 2026-11-05 之前每条用例都重造 46 张 1080×2400 的 PNG —— 13 条用例 ≈ 600 张，
+ * 而 zlib 压缩是 CPU 密集的，`--selftest` 因此在门禁里占掉 **24 秒**（冷跑总时长 153s 的 16%）。
+ * 模板 + 拷贝之后用例数量与判据一个字都没变，只是不再重复做同一件纯计算。
+ */
+let templateTree = null;
+function makeTemplateTree() {
+  const root = mkdtempSync(join(tmpdir(), 'lianleme-shots-template-'));
   for (const set of SETS) {
     for (const name of set.files) {
       fixturePng(join(root, set.dir, `${name}.png`), set);
@@ -287,6 +297,13 @@ function makeTree(mutate) {
     mkdirSync(dirname(join(root, rel)), { recursive: true });
     cpSync(join(ROOT, rel), join(root, rel));
   }
+  return root;
+}
+
+function makeTree(mutate) {
+  if (!templateTree) templateTree = makeTemplateTree();
+  const root = mkdtempSync(join(tmpdir(), 'lianleme-shots-'));
+  cpSync(templateTree, root, { recursive: true });
   if (mutate) mutate(root);
   return root;
 }
@@ -342,6 +359,10 @@ function selftest() {
     if (!ok) bad += 1;
     console.log(`  ${ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m'} ${label}${why}`);
     rmSync(root, { recursive: true, force: true });
+  }
+  if (templateTree) {
+    rmSync(templateTree, { recursive: true, force: true });
+    templateTree = null;
   }
   if (bad) {
     console.error(`\n✗ 自检失败 ${bad} 项 —— 这个工具本身不可信，先修它`);
