@@ -377,7 +377,7 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
 | 服务端只做三件事 | ✅（**增量同步一期有意不做**） | `backend-design.md` §五、§八 |
 | Postgres + REST | ⚠️ 实现是 `node:sqlite` + 零依赖 HTTP | 见本节上方那处改动与 `backend-design.md` §七之五 |
 | 规则引擎跑在客户端 | ✅ | `engine/progression.mjs`；向量 + 场景级 eval + 变异测试都在门禁里 |
-| 合规 1：HealthKit 数据禁用于广告 | N/A（尚未接入）；但政策里已写明健康数据**不用于广告** | `privacy-policy.md` §2.1 那段 |
+| 合规 1：HealthKit 数据禁用于广告 | ✅ 已接（**只读**，2026-10-09 起两端都接了）；政策里明确健康数据**不用于广告** | `privacy-policy.md` §2.4 那段 |
 | 合规 2：收集清单 + 健康数据**单独同意** | ✅ 双清单 v1.29.0；**单独同意 v1.31.0** | `app/test/body_consent_test.dart` + 硬门禁两处横查（政策 ↔ 代码那道门） |
 | 合规 3：一键全量导出 + 注销删除 | ✅ 导出（CSV / JSON）；删除全部数据（逐表核对 v1.30.0）；条件式云端注销（v1.22.0） | `app/test/delete_all_test.dart`、`profile_screen.dart::_deleteAll` |
 | 合规 4：不上传动作视频/照片 | ✅ 一期不采集 | — |

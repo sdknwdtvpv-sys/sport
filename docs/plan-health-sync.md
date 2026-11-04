@@ -213,6 +213,7 @@
 
 **产物级也核了**（2026-10-09）：`tool/check-ios-app.mjs` 多一条 —— 拿**真的 Runner.app** 核两件事：
 `Info.plist` 里必须有 `NSHealthShareUsageDescription`、**必须没有** `NSHealthUpdateUsageDescription`；
+⚠️ **这条 2026-10-14（v1.68.1）被反转了**：Apple 上传校验要求只要应用带健康能力，读、写两条用途串都得在（`ITMS-90683`），现在两条都有、写的那条文案如实写“不会写入” —— 见 `CHANGELOG.md` v1.68.1；
 而且只要这份产物是**签过能力的**（`codesign -d --entitlements` 读得到非空字典），就必须带
 `com.apple.developer.healthkit`。真机那份读出来是「用法说明是只读那一句 · 签名里带 healthkit」，
 模拟器那份读出来是「没带 entitlements（模拟器不签能力），能力那条跳过」—— 两条分支都验过。

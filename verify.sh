@@ -320,6 +320,13 @@ selfcheck tool/check-screenshots.mjs "截图核对自检通过（少一张/多�
 # 而生成物最容易出的事故就是"留着上一版的"——2026-09-30 真的发生过两次。
 selfcheck tool/check-dist.mjs "交付目录核对自检通过（旧版本/没版本号/坏包都藏不住）" "交付目录核对工具的自检失败"
 
+# 产物 ↔ 构建参数核对（`docs/feature-backlog.md` 第 13 项「政策 ↔ 商店表单 ↔ 产物的三边对账」）：
+# 前两条腿已有守卫（privacy-audit / check-store-forms），**产物腿此前只有人工命令** ——
+# 2026-10-06 就出过一个"云备份入口根本不出现"的包（漏了 `--dart-define`），
+# 而商店表单与政策仍按变体 B 写 = 申报不实。它把 release-checklist §9 的出包命令当唯一真源，
+# 逐 ABI 核 dist/ 里那个包的 libapp.so；没有交付物时跳过（干净克隆/CI 正常）。
+selfcheck tool/check-dist-variant.mjs "产物 ↔ 构建参数自检通过（整个包变体 A / 某 ABI 缺地址 / 配方漏项 / 与事实源相反 都藏不住）" "产物 ↔ 构建参数的自检失败"
+
 # CI 与门禁关系核对工具的**自检**：「CI 绿 = 门禁绿」是写在 README 与政策里的**承诺**
 # （2026-09-30 起 CI 跑的就是这条 `verify.sh`）。用 --fast 偷跳第 5 层、混进门禁不管的
 # 命令、版本没钉死，都会当场变假，而本地门禁按定义复现不了 CI 自己加的东西。
@@ -430,6 +437,16 @@ else
 fi
 echo
 
+# 软著说明书（提交材料）：配图必须还在交付那套里；对"当前这个包"的数据流说法
+# 必须与 `privacy-facts.json` 的开关同向（云备份/统计/健康库）。真源不写死在这里 ——
+# 工具自己读事实源，开关翻向时两边一起判。
+if node tool/check-copyright-manual.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 软著说明书里的界面图与数据流说法与仓库一致"
+else
+  strip "$LOG"; echo "${RED}✗ 软著说明书与仓库事实/交付图对不上（提交材料，别交出去）${OFF}"; fail=1
+fi
+echo
+
 # 原型的 token 不能漂（2026-10-10，VI 计划 T1-6）：`app/lib/core/theme.dart` 的文件头写着
 # 「三处必须一致」（theme.dart / interaction-spec §4 / prototype 的 CSS 变量），
 # 而这条契约从来没有守卫 —— 实测已经漂了三处（--elevated 是冷蓝灰、--pr 是旧琥珀、
@@ -478,6 +495,11 @@ else
   strip "$LOG"; echo "${RED}✗ 软著材料里的源程序量过期（改文档或重新导出）${OFF}"; fail=1
 fi
 selfcheck tool/copyright-pdf.mjs "软著文档数字守卫自检（四种漂法都抓得住）" "软著文档数字守卫自检不过"
+
+# 软著说明书是**提交材料**：它配的界面图与它对"当前这个包"的数据流描述，以前没有任何守卫盯着 ——
+# 2026-10-04/05 起正式包就配了服务器地址，而说明书写着"当前发布版本不含任何上报地址"、
+# "这个版本里的数据一条都不会上传"。提交材料里的话与要发布的包相反，是最不该拖到审核当天的那种错。
+selfcheck tool/check-copyright-manual.mjs "软著说明书核对自检通过（配图点名/张数屏数写旧、开关方向写反、抄回过期版本 都藏不住）" "软著说明书核对工具的自检失败"
 
 # CHANGELOG 的结构：版本小节**降序**、**不重复**、且都从**行首**开始。
 # 2026-09-30 抓到的：粘到上一行去的标题在 `^## v` 眼里根本不存在，于是"降序"照样成立，
@@ -626,6 +648,16 @@ if node tool/check-dist.mjs >"$LOG" 2>&1; then
   strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 交付目录干净（只有当前版本，包内版本与真源一致）"
 else
   strip "$LOG"; echo "${RED}✗ 交付目录不对（旧版本/坏包/包内版本对不上）${OFF}"; fail=1
+fi
+echo
+
+# 交付的包是不是"变体 B"：正式包该带的那两个 `--dart-define` 地址，逐 ABI 看 libapp.so 里在不在。
+# 配方从 `docs/release-checklist.md` §9 的出包命令读（不在这里写死地址）。dist/ 里没有当前
+# 版本的包时跳过 —— 出包之前这条没有对象可核；出了包之后它就是"政策/表单 ↔ 产物"那条腿。
+if node tool/check-dist-variant.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 交付的包里带着正式构建的那两条地址（变体 B）"
+else
+  strip "$LOG"; echo "${RED}✗ 交付的包与政策/商店表单不是同一形态（漏了 --dart-define）${OFF}"; fail=1
 fi
 echo
 
@@ -927,6 +959,7 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/tool/check_domain.dart tool/mutation.mjs tool/check-aab.mjs \
          tool/check-ios-app.mjs tool/check-ciphertext.mjs tool/check-screenshots.mjs \
          tool/check-store-forms.mjs tool/check-ci.mjs tool/check-dist.mjs \
+         tool/check-dist-variant.mjs tool/check-copyright-manual.mjs \
          tool/check-user-text.mjs tool/check-doc-paths.mjs tool/check-doc-tables.mjs \
          tool/check-doc-versions.mjs tool/check-guards-wired.mjs \
          tool/flatten-png.mjs tool/lib/png.mjs tool/lib/plist.mjs tool/check-deploy.mjs \
