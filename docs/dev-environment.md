@@ -17,13 +17,52 @@ source ~/HARNESS/lianleme/flutter-env.sh   # 跑道上的副本（内容相同�
 > 改路径时改正本，然后 `cp tool/dev-env.sh ~/HARNESS/lianleme/flutter-env.sh`。
 > （原先这个脚本只活在跑道里、不在版本控制内 —— 机器一换就丢了。）
 
+## 2026-11-04：换了一台新的开发机（**这一节先看**）
+
+> 2026-11-04 起在 **macOS 27.3 / Apple Silicon** 的新机器上继续开发。依赖布局有一处必须知道的
+> 差别（Android SDK 不在 SSD 上），其余与下面几节一致。
+
+| 项 | 这台机器上的样子 |
+|---|---|
+| 系统工具 | **装了 Command Line Tools**（`git 2.54` / `clang 21` / `MacOSX.sdk`），**没装 Xcode** —— `flutter test`（native assets 要编译 sqlite3 / objective_c，会调 `xcrun` 与 clang）与 Android 出包都能跑；**iOS 包在本机出不了**（要完整 Xcode） |
+| Flutter | **3.47.5 stable**，与 `.github/workflows/ci.yml` 钉的版本一致，在 `harness-deps/flutter`（zip 解压，无 `.git`） |
+| JDK 17 | `harness-deps/jdk-17`（Temurin 17.0.21） |
+| Android SDK | **在内置盘 `~/HARNESS/deps/android-sdk`，不在 SSD 上** —— 卷名 `Elliot's SSD` 里同时有空格和撇号，`sdkmanager` / `apkanalyzer` 拼 classpath 时会被劈开（见下面「`sdkmanager` / `avdmanager` 在这台机器上是坏的」）。SSD 的 `harness-deps/android-sdk` 是一个**指向它的符号链接**，所以本文件「目录里有什么」那张表与 `verify.sh` 的环境自检仍然成立 |
+| NDK | `28.2.13676358`（AGP 按 `flutter.ndkVersion` 自动装进同一个 SDK，2.8G；首次构建会等它下载） |
+| Gradle / pub 缓存 | `harness-deps/gradle`（首次构建后约 1.6G）、`harness-deps/pub-cache`（约 300M） |
+| 构建跑道 | `~/HARNESS/lianleme`（无撇号）。`~/HARNESS/sync.sh` 是**单向** rsync（仓库 → 跑道），排除 `.dart_tool` / `build` / `dist` / `.pub-cache` / `*.g.dart` / `.git`；跑道里的 `.git` 是指回仓库的**符号链接**，只为让工作台那类"读 git"的自检读得到 |
+
+**环境变量入口**：`source ~/HARNESS/env.sh`（机器本地、不入库）。仓库里的 `tool/dev-env.sh` 仍是正本，
+但这台机器有三处不同，所以走本地那份：
+
+1. `ANDROID_SDK_ROOT` 指到内置盘（原因见上表）；
+2. `PUB_HOSTED_URL` / `FLUTTER_STORAGE_BASE_URL` 走国内镜像（pub.dev 直连能用但慢）；
+3. `FLUTTER_PREBUILT_ENGINE_VERSION` 钉住发布包自带的引擎 SHA —— 这台机器的 Flutter 是 **zip 解压的、
+   没有 `.git` 历史**，SDK 自己那个 update_engine_version.sh 会退到 `git ls-files` 而**静默退出 1**，
+   症状是 `flutter` 什么都不打印、`flutter pub get` 报 `Flutter SDK version is 0.0.0-unknown`（gal 的
+   `>=3.7.0` 约束当场拒绝解析）。设了它就走"发布包自带版本"那条路，不再碰 git。
+
+**一条命令跑门禁**：
+
+```bash
+source ~/HARNESS/env.sh && ~/HARNESS/sync.sh
+cd ~/HARNESS/lianleme && ./verify.sh
+```
+
+> ⚠️ **构建期间不要跑 `flutter test`**（见下面「跑完 integration_test…」那一节的并列规矩）。
+> 另外：跑道里的 `.dart_tool` 被删/重建之后要重跑 `dart run build_runner build`，
+> 否则 `app/lib/data/db.g.dart` 缺了会让构建报一片 "`ExerciseData` isn't a type"（这不是代码坏了）。
+>
+> `dist/` 为空时 `check-dist` / `check-dist-variant` 会**如实跳过**（不是失败）——
+> 出包（或从别处拷回 `dist/`）之后它们才有对象可核。
+
 ## 目录里有什么
 
 | 目录 | 是什么 | 大约 |
 |---|---|---|
 | `harness-deps/flutter` | Flutter SDK（含 dart-sdk） | 3.9G |
 | `harness-deps/jdk-17` | JDK 17（`JAVA_HOME` 指到 `Contents/Home`） | 309M |
-| `harness-deps/android-sdk` | Android SDK（platform-tools / build-tools / platforms / cmdline-tools） | 3.5G |
+| `harness-deps/android-sdk` | Android SDK（platform-tools / build-tools / platforms / cmdline-tools / ndk）—— **2026-11-04 起这台机器上是符号链接**，真身在 `~/HARNESS/deps/android-sdk` | 3.5G + 2.8G |
 | `harness-deps/gradle` | Gradle 用户目录（`GRADLE_USER_HOME`：依赖与构建缓存） | 4.8G |
 | `harness-deps/pub-cache` | Dart 包缓存（`PUB_CACHE`） | 848M |
 
@@ -36,8 +75,8 @@ source ~/HARNESS/lianleme/flutter-env.sh   # 跑道上的副本（内容相同�
 > （依赖 + wrapper 发行包），而 `harness-deps/gradle` 那份 4.8G 一直空着没人用。
 > 那天之后：
 >   * `~/HARNESS/lianleme/sync-and-verify.sh` 自己会 source 这份 env（修在脚本头上）；
->   * 内置盘里那份 `~/.gradle` 已迁到 `harness-deps/gradle-from-internal/`（**可回退的暂存**，
->     确认几次构建都正常之后可以删掉）；
+>   * 内置盘里那份 `~/.gradle` 已迁到暂存目录 `gradle-from-internal/`（旧机器的事，**可回退的暂存**，
+>     确认几次构建都正常之后可以删掉；2026-11-04 换的新机器上根本没有 `~/.gradle`）；
 >   * 验证判据很简单：跑完一次构建，**`~/.gradle` 不该被重新建出来**
 >     （`ls -d ~/.gradle` → No such file or directory 才对）。
 > 同一个 env 还负责 `JAVA_HOME` / `ANDROID_SDK_ROOT`，以及**对齐 flutter 的持久配置** ——
