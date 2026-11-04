@@ -9,7 +9,9 @@
 /// 加列迁移真正会出错的地方不是"崩不崩"，是**静默丢数据**。
 library;
 
-import 'package:drift/drift.dart' show QueryRow;
+import 'dart:io';
+
+import 'package:drift/drift.dart' show QueryRow, Variable, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
@@ -697,5 +699,146 @@ void main() {
     expect(events, 0);
 
     await legacy.close();
+  });
+
+  // ── v31（2026-11-05）：只加一条部分索引 ────────────────────────────────
+  //
+  // 这一版的特别之处：它是迁移链里**唯一不动数据**的一版（不建表、不加列、
+  // 不搬行）。所以测试除了"不崩"，还要证明两件容易漏的事：
+  //   ① 索引**真的被查询计划用上**（否则等于加了个没人用的东西，白背一个迁移）；
+  //   ② 迁移前后**查询结果逐条一致**（索引错了不会报错，只会让结果少行/乱序）。
+  // 另外用文件库测"重复打开幂等"——内存库一关就没了，测不出这一条。
+
+  /// v31 的"正式组按完成时间"查询（drift 生成的形状）的查询计划。
+  Future<List<String>> queryPlan(AppDatabase db) async {
+    final List<QueryRow> rows = await db.customSelect(
+      'EXPLAIN QUERY PLAN SELECT * FROM "set_record" '
+      'WHERE "set_type" = ? AND "deleted_at" IS NULL '
+      'ORDER BY "completed_at" ASC',
+      variables: <Variable<Object>>[Variable<String>('normal')],
+    ).get();
+    return rows.map((QueryRow r) => r.read<String>('detail')).toList();
+  }
+
+  Future<int> indexCount(AppDatabase db) async {
+    final QueryRow row = await db
+        .customSelect("SELECT count(*) AS n FROM sqlite_master "
+            "WHERE type='index' AND name='idx_set_live_time'")
+        .getSingle();
+    return row.read<int>('n');
+  }
+
+  test('v30 的库升到 v31：索引真的建出来、查询计划用上它、结果与迁移前逐条一致', () async {
+    late List<String> beforeIds;
+    late int beforeRowCount;
+    final AppDatabase legacy = AppDatabase(
+      NativeDatabase.memory(setup: (dynamic raw) {
+        legacySetup(raw, version: 30);
+        // 四种行混着放：两条正式组、一条热身组、一条已删除的正式组。
+        // 迁移前后"哪些行会被 allSets() 读到"必须一模一样。
+        raw.execute('''
+          INSERT INTO set_record
+            (id, workout_id, workout_item_id, exercise_id, set_index, set_type,
+             weight_kg, reps, is_pr, volume, completed_at, updated_at, deleted_at)
+          VALUES
+            ('s_normal_1', 'w1', 'wi1', 'ex1', 1, 'normal', 60.0, 8, 0, 480.0, 1000, 1000, NULL),
+            ('s_warmup',   'w1', 'wi1', 'ex1', 0, 'warmup', 30.0, 10, 0, 300.0, 1500, 1500, NULL),
+            ('s_normal_2', 'w2', 'wi2', 'ex2', 1, 'normal', 80.0, 5, 0, 400.0, 2000, 2000, NULL),
+            ('s_deleted',  'w2', 'wi2', 'ex2', 2, 'normal', 80.0, 5, 0, 400.0, 3000, 3000, 3000)
+        ''');
+        // **迁移前**用裸 SQL 抓一份结果（setup 在 drift 跑 onUpgrade 之前执行）。
+        beforeIds = raw
+            .select("SELECT id FROM set_record WHERE set_type = 'normal' "
+                "AND deleted_at IS NULL ORDER BY completed_at ASC")
+            .map<String>((row) => row['id'] as String)
+            .toList();
+        beforeRowCount = raw.select('SELECT count(*) AS n FROM set_record').first['n'] as int;
+      }),
+    );
+
+    // 打开即触发 onUpgrade（v30 → v31）。
+    final DriftLocalStore store = DriftLocalStore(legacy);
+    final List<SetRecord> sets = await store.allSets();
+
+    expect(sets.map((SetRecord s) => s.id).toList(), beforeIds,
+        reason: '迁移只加索引：正式组的顺序与内容必须与迁移前逐条一致');
+    expect(sets, hasLength(2), reason: '热身组与已删除组不该被 allSets 读到（口径不变）');
+
+    expect(await indexCount(legacy), 1, reason: 'v31 的索引必须真的建出来（否则这一版白升）');
+    final List<String> plan = await queryPlan(legacy);
+    expect(plan.join(' | '), contains('idx_set_live_time'),
+        reason: '索引建了但查询计划不用它 = 白加一个迁移；实际计划：$plan');
+
+    final QueryRow rowsAfter =
+        await legacy.customSelect('SELECT count(*) AS n FROM set_record').getSingle();
+    expect(rowsAfter.read<int>('n'), beforeRowCount,
+        reason: '迁移不许动任何一行（包括已删除组）');
+
+    await legacy.close();
+  });
+
+  test('新装库（onCreate）从第一天就带 idx_set_live_time，且查询计划用得上', () async {
+    // `onCreate` 与 `onUpgrade` 是两条路：只改 onUpgrade 的话，新装用户的库
+    // 永远缺这条索引 —— 而"新装"恰是绝大多数用户。
+    final AppDatabase fresh = AppDatabase(NativeDatabase.memory());
+    expect(await indexCount(fresh), 1);
+    final List<String> plan = await queryPlan(fresh);
+    expect(plan.join(' | '), contains('idx_set_live_time'));
+    await fresh.close();
+  });
+
+  test('v30 文件库迁移到 v31 后，重复打开是幂等的（不重复建索引、不动数据）', () async {
+    // `IF NOT EXISTS` + drift 的 user_version 本来就该幂等，但这一条必须用
+    // **文件库**测：内存库每次都从零开始，测不出"第二次打开已经 v31"这条路。
+    final Directory dir = await Directory.systemTemp.createTemp('lianleme-v31-');
+    final File file = File('${dir.path}/legacy.sqlite3');
+    // 这条测试要**故意**把同一个文件库打开三次（验幂等），drift 的
+    // "同一测试里多次实例化 AppDatabase" 警告在这里是预期噪音 —— 只在本条里关掉。
+    final bool dontWarnBefore = driftRuntimeOptions.dontWarnAboutMultipleDatabases;
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    try {
+      final AppDatabase first = AppDatabase(
+        NativeDatabase(file, setup: (dynamic raw) {
+          legacySetup(raw, version: 30);
+          raw.execute(legacySeedSetSql);
+        }),
+      );
+      final int beforeRows = (await first
+              .customSelect('SELECT count(*) AS n FROM set_record')
+              .getSingle())
+          .read<int>('n');
+      expect(
+        (await first.customSelect('PRAGMA user_version').getSingle())
+            .read<int>('user_version'),
+        31,
+        reason: '打开之后应当已经是 v31',
+      );
+      await first.close();
+
+      // 第二次打开：user_version 已是 31 → 不再进 onUpgrade；索引只能有一条。
+      final AppDatabase second = AppDatabase(NativeDatabase(file));
+      expect(await indexCount(second), 1, reason: '重复打开不许建第二条同名索引');
+      expect(
+        (await second.customSelect('SELECT count(*) AS n FROM set_record')
+                .getSingle())
+            .read<int>('n'),
+        beforeRows,
+        reason: '第二次打开也不许动数据',
+      );
+      expect((await queryPlan(second)).join(' | '), contains('idx_set_live_time'));
+      await second.close();
+
+      // 第三次打开（连续两次 reopen）同样应当正常。
+      final AppDatabase third = AppDatabase(NativeDatabase(file));
+      expect(
+        (await third.customSelect('PRAGMA user_version').getSingle())
+            .read<int>('user_version'),
+        31,
+      );
+      await third.close();
+    } finally {
+      driftRuntimeOptions.dontWarnAboutMultipleDatabases = dontWarnBefore;
+      await dir.delete(recursive: true);
+    }
   });
 }

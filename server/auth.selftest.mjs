@@ -152,6 +152,11 @@ export async function selftest() {
     const noSuchUser = await post('/v1/auth/login', { email: 'nobody@example.com', verifier });
     const noSuchBody = await noSuchUser.json();
     check('口令错 → 401', badLogin.status === 401, `实际 ${badLogin.status}`);
+    // 2026-11-05 加了全局限流之后，"普通失败"这条路的响应必须**一字不差**：
+    // 还是 401、还是那句话、**没有** Retry-After（那是 429 才有的语义）。
+    check('普通失败登录不带 Retry-After（接口语义没变）',
+      badLogin.headers.get('retry-after') === null,
+      String(badLogin.headers.get('retry-after')));
     check('邮箱不存在 → 401，且**与口令错回同一句话**（不给枚举信号）',
       noSuchUser.status === 401 && noSuchBody.error === badLoginBody.error,
       `${noSuchBody.error} vs ${badLoginBody.error}`);
@@ -261,6 +266,144 @@ export async function selftest() {
     check('注销后认证库里不残留绑定/令牌',
       authStore.stats().binds === 0 && authStore.stats().tokens === 0,
       JSON.stringify(authStore.stats()));
+
+    // ---- 9.5 全局限流 + 节流 prune（2026-11-05；429 位置按复核意见改过） ----
+    //
+    // 用一个**独立的**库与服务来测：这里要把"全局失败上限"调小才测得到，
+    // 不能污染上面那条正常流程 —— 上面必须继续证明"接口语义一个字节没变"。
+    //
+    // ⚠️ 2026-11-05 复核后改的语义：**全局上限只拦"本来就会失败"的请求**。
+    // 它的 429 判断排**口令校验之后** —— 打满 cap 时，口令正确的用户必须仍能登录成功；
+    // 旧写法（排在校验之前）会让攻击者用 300 次错误口令把所有人挡在门外 15 分钟。
+    {
+      // 可拨的时钟：既测"窗口滑过自动恢复"，也让所有断言与真实时间无关。
+      let gClock = 5_000_000;
+      const gStore = createAuthStore({ path: ':memory:', now: () => gClock });
+      const gBackend = createSqliteStore({ path: ':memory:' });
+      const gLogged = [];
+      const gAuth = createAuth({
+        store: gStore,
+        backendStore: gBackend,
+        mailer: createFileMailer({ path: join(dir, 'global-mail.ndjson') }),
+        secret: SECRET,
+        now: () => gClock,
+        log: (m) => gLogged.push(m),
+        limits: { loginFailGlobalPerWindow: 3, pruneMinIntervalMs: 0 },
+      });
+      // 造一个"口令正确"的账号：全局 cap 打满时它必须还能正常登录（本次改动的核心判据）。
+      const ownerEmail = 'owner@example.com';
+      const ownerVerifier = 'A'.repeat(40); // 形状满足 VERIFIER_RE
+      gStore.bindAccount({
+        accountId: 'a'.repeat(64),
+        email: ownerEmail,
+        salt: '00'.repeat(16),
+        kdf: '{}',
+        verifier: await gAuth._internals.hashSecret(ownerVerifier),
+        wrapped: 'W'.repeat(32),
+      });
+      const gServer = createBackend({ store: gBackend, auth: gAuth, log: (m) => gLogged.push(m) }).server;
+      await new Promise((r) => gServer.listen(0, '127.0.0.1', r));
+      const gBase = `http://127.0.0.1:${gServer.address().port}`;
+      const gLogin = (email, v = verifier) => fetch(`${gBase}/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, verifier: v }),
+      });
+      // 三个**不同**邮箱各用错误口令失败一次：每邮箱上限（10 次）都没到，但全局计数会到 3。
+      const failStatus = [];
+      for (const e of ['a@example.com', 'b@example.com', 'c@example.com']) {
+        failStatus.push((await gLogin(e)).status);
+      }
+      check('全局上限之前：三次失败都还是 401（不是 429）',
+        failStatus.every((x) => x === 401), JSON.stringify(failStatus));
+      const capCount = gStore.countEventsSince('login_fail', 0);
+      check('cap 之前失败事件数 = 3（每邮箱都没有超）', capCount === 3, `实际 ${capCount}`);
+
+      // 第 4 个新邮箱 + **错误**口令：校验失败之后才碰全局 cap → 429 + Retry-After。
+      const blocked = await gLogin('d@example.com');
+      const blockedBody = await blocked.json();
+      check('全局 cap 打满后：错误口令 → 429',
+        blocked.status === 429, `实际 ${blocked.status}`);
+      check('429 带 Retry-After（秒，正整数 —— 客户端据此退避）',
+        Number(blocked.headers.get('retry-after')) >= 1,
+        String(blocked.headers.get('retry-after')));
+      check('429 说的是"整台服务"的限流（不是"这个邮箱"）',
+        String(blockedBody.error ?? '').includes('登录失败次数过多'),
+        JSON.stringify(blockedBody));
+      check('被 429 的失败请求**不写** auth_events（表停在 cap，不会继续长）',
+        gStore.countEventsSince('login_fail', 0) === capCount,
+        `实际 ${gStore.countEventsSince('login_fail', 0)}`);
+
+      // ★ 本次改动的判据：cap 打满时，**口令正确的用户仍然 200**（旧写法这一条会红）。
+      const okLogin = await gLogin(ownerEmail, ownerVerifier);
+      check('★ 全局 cap 打满时，口令正确的用户仍能登录（200）',
+        okLogin.status === 200, `实际 ${okLogin.status}`);
+      const okBody = await okLogin.json();
+      check('这个正常登录照常拿到令牌（云备份/取回不被限流挡住）',
+        /^lm1_[0-9a-f]{64}$/.test(okBody.token ?? ''), String(okBody.token).slice(0, 12));
+      check('正确登录不会把失败计数加一',
+        gStore.countEventsSince('login_fail', 0) === capCount);
+
+      // 窗口滑过（15 分钟）：全局计数归零 → 错误口令回到 401，不需要任何人复位。
+      gClock += 16 * 60 * 1000;
+      const afterWindow = await gLogin('e@example.com');
+      check('窗口滑过后全局 cap 自动恢复（错误口令回 401，不是 429）',
+        afterWindow.status === 401, `实际 ${afterWindow.status}`);
+
+      await new Promise((r) => gServer.close(r));
+      gStore.close();
+      gBackend.close();
+    }
+
+    // 节流 prune：**失败路径**也要清过期数据，但不能每次失败都全表删。
+    // 用一个可拨的时钟（store 与 auth 共用）来制造"过期事件"，并用计数包装数 prune 次数。
+    {
+      let clock = 1_000_000;
+      const pStore = createAuthStore({ path: ':memory:', now: () => clock });
+      let pruneCalls = 0;
+      const countedStore = {
+        ...pStore,
+        prune: (opts) => { pruneCalls += 1; return pStore.prune(opts); },
+      };
+      const pAuth = createAuth({
+        store: countedStore,
+        mailer: createFileMailer({ path: join(dir, 'prune-mail.ndjson') }),
+        secret: SECRET,
+        now: () => clock,
+        limits: { pruneMinIntervalMs: 60_000 },
+      });
+      const pBackend = createSqliteStore({ path: ':memory:' });
+      const pServer = createBackend({ store: pBackend, auth: pAuth, log: () => {} }).server;
+      await new Promise((r) => pServer.listen(0, '127.0.0.1', r));
+      const pBase = `http://127.0.0.1:${pServer.address().port}`;
+      const pLogin = (email) => fetch(`${pBase}/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, verifier }),
+      });
+
+      await pLogin('old@example.com'); // 第 1 次失败：t0 记一条，首次调用会 prune
+      check('失败路径也会触发 prune（不再只在成功路径跑）', pruneCalls === 1, `实际 ${pruneCalls}`);
+      clock += 49 * 3600 * 1000; // 49 小时后：t0 那条已超过 48 小时 TTL
+      await pLogin('fresh@example.com');
+      check('prune 真的剪掉了过期事件（49 小时前那条没了）',
+        pStore.countEvents('login_fail', 'old@example.com', 0) === 0);
+      check('在 TTL 内的事件不会被误删',
+        pStore.countEvents('login_fail', 'fresh@example.com', 0) === 1);
+      const callsAfterPrune = pruneCalls;
+      clock += 1000; // 只过 1 秒：还在节流窗口内
+      await pLogin('third@example.com');
+      check('节流：窗口内再失败一次，不重复做全表 prune',
+        pruneCalls === callsAfterPrune, `实际 ${pruneCalls}，期望 ${callsAfterPrune}`);
+      clock += 61_000; // 过了节流窗口
+      await pLogin('fourth@example.com');
+      check('过了节流窗口后 prune 恢复（不会一直不剪）',
+        pruneCalls === callsAfterPrune + 1, `实际 ${pruneCalls}`);
+
+      await new Promise((r) => pServer.close(r));
+      pStore.close();
+      pBackend.close();
+    }
 
     // ---- 10. 隐私纪律：库里与日志里都不许有明文 ----
     // ⚠️ 用 **Buffer** 搜，不要 `readFileSync(p).toString('binary')` 再 includes 中文串：

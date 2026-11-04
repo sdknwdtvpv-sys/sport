@@ -103,7 +103,12 @@ class ReminderService {
   ///
   /// 幂等：调多少次结果都一样（每次都先取消再排）。练完一次调它，就会把
   /// "今天已经练过了"这件事反映成"今晚告诉你明天练什么 / 否则顺延到明天"。
-  Future<void> sync({int? nowMs}) async {
+  ///
+  /// [sets] 只给"调用方手里已经有一份刚读到的组记录"的路径（`main.dart` 的
+  /// `_refreshHome` / `_setReminder`，2026-11-05）：`allSets()` 是全表读，
+  /// 同一次刷新里首页已经读过一遍，这里再读一遍是白读。
+  /// 不传 = 行为与以前**一字不差**（自己读，单测与其它调用点就是走这条）。
+  Future<void> sync({int? nowMs, List<SetRecord>? sets}) async {
     final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
     final ReminderSettings settings = await repository.load();
 
@@ -112,9 +117,9 @@ class ReminderService {
       return;
     }
 
-    final List<SetRecord> sets = await store.allSets();
+    final List<SetRecord> all = sets ?? await store.allSets();
     final bool trainedToday = hasTrainedOn(
-      sets: sets,
+      sets: all,
       day: DateTime.fromMillisecondsSinceEpoch(now),
     );
     // 只在"今天练过"时才会用到下次部位：没练过的时候问了也用不上，

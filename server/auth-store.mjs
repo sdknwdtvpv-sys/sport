@@ -35,7 +35,7 @@ export const TOKEN_RE = /^lm1_[0-9a-f]{64}$/;
 /** 令牌的前缀（发令牌与验令牌两处都要用同一个常量） */
 export const TOKEN_PREFIX = 'lm1_';
 
-export function createAuthStore({ path = ':memory:' } = {}) {
+export function createAuthStore({ path = ':memory:', now = () => Date.now() } = {}) {
   const db = new DatabaseSync(path);
 
   db.exec(`
@@ -82,8 +82,6 @@ export function createAuthStore({ path = ':memory:' } = {}) {
     );
     create index if not exists auth_events_lookup on auth_events(kind, key, at);
   `);
-
-  const now = () => Date.now();
 
   return {
     // ------------------------------------------------------------ 账号
@@ -234,6 +232,26 @@ export function createAuthStore({ path = ':memory:' } = {}) {
         .prepare('select count(*) as n from auth_events where kind = ? and key = ? and at >= ?')
         .get(kind, key, sinceMs);
       return Number(row.n);
+    },
+
+    /**
+     * **全局**失败事件数（不按 key）—— 登录限流要有"整台服务"的上限：
+     * 只按邮箱限流的话，换邮箱就能继续写，`auth_events` 会随攻击时间无界增长。
+     * 走 `auth_events_lookup(kind, key, at)` 的 `kind` 前缀，不需要额外索引。
+     */
+    countEventsSince(kind, sinceMs) {
+      const row = db
+        .prepare('select count(*) as n from auth_events where kind = ? and at >= ?')
+        .get(kind, sinceMs);
+      return Number(row.n);
+    },
+
+    /** 窗口内最早的一条事件（算 `Retry-After` 用）。没有就返回 null。 */
+    oldestEventSince(kind, sinceMs) {
+      const row = db
+        .prepare('select min(at) as at from auth_events where kind = ? and at >= ?')
+        .get(kind, sinceMs);
+      return row?.at == null ? null : Number(row.at);
     },
 
     /** 清掉过期的验证码与陈旧的限流计数（每次调用顺手做一点，避免库无限长）。 */

@@ -26,42 +26,48 @@ class DriftLocalStore implements LocalStore {
     // workout_item 是"某次训练里的某个动作"，由组记录派生。
     // 用确定性 id，保证同一 (workout, exercise) 反复写入不会产生重复行。
     final itemId = 'wi_${r.workoutId}_${r.exerciseId}';
-    await _db.into(_db.workoutItem).insertOnConflictUpdate(
-          WorkoutItemData(
-            id: itemId,
-            workoutId: r.workoutId,
-            exerciseId: r.exerciseId,
-            position: 0,
-            updatedAt: r.completedAtMs,
-          ),
-        );
+    // ⚠️ 两条写必须**同一事务**（2026-11-05）：`workout_item` 与 `set_record` 是
+    // 同一次"记一组"派生出来的两行。分开写时，若第二条失败（磁盘满 / 进程被杀），
+    // 库里会留下一个**没有任何组的 workout_item**；它会让动作选择器的「最近做过」
+    // 与备份里"练过哪些训练"多出一次并不存在的训练。要么两行都成，要么都不成。
+    await _db.transaction(() async {
+      await _db.into(_db.workoutItem).insertOnConflictUpdate(
+            WorkoutItemData(
+              id: itemId,
+              workoutId: r.workoutId,
+              exerciseId: r.exerciseId,
+              position: 0,
+              updatedAt: r.completedAtMs,
+            ),
+          );
 
-    await _db.into(_db.setRecord).insertOnConflictUpdate(
-          SetRecordData(
-            id: r.id,
-            workoutId: r.workoutId,
-            workoutItemId: itemId,
-            exerciseId: r.exerciseId,
-            setIndex: r.setIndex,
-            setType: r.setType.wire,
-            weightKg: r.weightKg,
-            reps: r.reps,
-            // 距离：只有 distance_time 的动作有值，其余是 null
-            distanceM: r.distanceM,
-            // 可选的 RPE。DB 列早就有，以前一直没写值 —— 现在接上。
-            rpe: r.rpe,
-            // 注意：withDefault() 只给 SQL 层加 DEFAULT，Dart 数据类里这些字段仍是 required，
-            // 必须显式传。setType 同理（上面已传）。
-            isPr: false,
-            // volume 物化：weight × reps（自重动作 weight 为 null，容量记 0）。
-            // **距离动作的容量记 0**：它的"次数"其实是秒（1800），
-            // 拿 20 kg × 1800 当容量是把两个量纲乘在一起。距离动作要看的是
-            // 里程与配速，不是容量。
-            volume: r.hasDistance ? 0 : (r.weightKg ?? 0) * r.reps,
-            completedAt: r.completedAtMs,
-            updatedAt: r.completedAtMs,
-          ),
-        );
+      await _db.into(_db.setRecord).insertOnConflictUpdate(
+            SetRecordData(
+              id: r.id,
+              workoutId: r.workoutId,
+              workoutItemId: itemId,
+              exerciseId: r.exerciseId,
+              setIndex: r.setIndex,
+              setType: r.setType.wire,
+              weightKg: r.weightKg,
+              reps: r.reps,
+              // 距离：只有 distance_time 的动作有值，其余是 null
+              distanceM: r.distanceM,
+              // 可选的 RPE。DB 列早就有，以前一直没写值 —— 现在接上。
+              rpe: r.rpe,
+              // 注意：withDefault() 只给 SQL 层加 DEFAULT，Dart 数据类里这些字段仍是 required，
+              // 必须显式传。setType 同理（上面已传）。
+              isPr: false,
+              // volume 物化：weight × reps（自重动作 weight 为 null，容量记 0）。
+              // **距离动作的容量记 0**：它的"次数"其实是秒（1800），
+              // 拿 20 kg × 1800 当容量是把两个量纲乘在一起。距离动作要看的是
+              // 里程与配速，不是容量。
+              volume: r.hasDistance ? 0 : (r.weightKg ?? 0) * r.reps,
+              completedAt: r.completedAtMs,
+              updatedAt: r.completedAtMs,
+            ),
+          );
+    });
   }
 
   @override

@@ -93,9 +93,41 @@ export function createAuth({
     codePerDayGlobal: 200,
     loginFailWindowMs: 15 * 60 * 1000,
     loginFailPerEmail: 10,
+    // **全局**失败上限（不按邮箱，2026-11-05）：只按邮箱限流时，攻击者换一个邮箱
+    // 就能继续写 `auth_events` —— 表会随攻击时间无界增长（存储型 DoS）。
+    // 这个数是"整台服务 15 分钟内允许的失败登录次数"，给正常用户留了极大余量；
+    // 真被刷到上限时，所有人最多等一个窗口（429 里带 `Retry-After`）。
+    loginFailGlobalPerWindow: 300,
+    // `prune()` 的节流窗口：失败路径也要清过期数据，但**不能每次失败都全表删**。
+    pruneMinIntervalMs: 60 * 1000,
     codeMaxAttempts: 6,
     ...limits,
   };
+
+  /** 上一次 `prune()` 的时刻（null = 还没跑过）。失败路径与成功路径共用这一个闸门。 */
+  let lastPruneAtMs = null;
+
+  /**
+   * 清过期验证码 / 陈旧限流事件 —— **节流**调用（2026-11-05）。
+   *
+   * 为什么不能只挂在成功路径：攻击者不会登录成功，`auth_events` 就只增不减。
+   * 为什么不能每次失败都清：`delete ... where at < ?` 是整表条件，一秒几百次失败
+   * 会把它变成几百次全表删。所以按窗口节流：最多每 `pruneMinIntervalMs` 清一次。
+   */
+  function pruneIfDue() {
+    const t = now();
+    if (lastPruneAtMs !== null && t - lastPruneAtMs < L.pruneMinIntervalMs) return;
+    lastPruneAtMs = t;
+    store.prune();
+  }
+
+  /** 429 的 `Retry-After`（秒）：窗口内最早那条失败事件滚出窗口还需要多久。 */
+  function loginFailRetryAfterSec(t) {
+    const since = t - L.loginFailWindowMs;
+    const oldest = store.oldestEventSince('login_fail', since);
+    const ms = oldest === null ? L.loginFailWindowMs : oldest + L.loginFailWindowMs - t;
+    return Math.max(1, Math.ceil(ms / 1000));
+  }
 
   /** 邮箱在日志里的样子：指纹，不是明文。 */
   const fp = (email) => sha256hex(store.normalizeEmail(email)).slice(0, 8);
@@ -216,7 +248,7 @@ export function createAuth({
         json(res, 502, { error: '验证码没发出去，请稍后再试' });
         return true;
       }
-      store.prune();
+      pruneIfDue();
       log(`验证码已发（${purpose} · ${fp(email)}）`);
       say(200);
       json(res, 200, { ok: true });
@@ -266,6 +298,7 @@ export function createAuth({
         say(400); json(res, 400, { error: '登录参数不完整' }); return true;
       }
       const t = now();
+      // 每邮箱上限（既有行为，位置与语义都没动）。
       if (store.countEvents('login_fail', store.normalizeEmail(email), t - L.loginFailWindowMs) >= L.loginFailPerEmail) {
         say(429);
         json(res, 429, { error: '失败次数太多，请过一会儿再试' });
@@ -275,14 +308,28 @@ export function createAuth({
       // ⚠️ 邮箱不存在时**照样做一次 scrypt**：否则"快 = 没这个邮箱"，等于把枚举答案写在耗时里。
       const ok = row ? await verifySecret(verifier, row.verifier) : (await hashSecret(verifier), false);
       if (!ok) {
+        // **全局**上限（2026-11-05）：只拦"本来就会失败"的请求 —— 所以它排在校验**之后**。
+        // 排在校验之前的话，攻击者用 300 次错误口令就能让所有用户（含口令正确的）
+        // 在 15 分钟里全部 429：那是把"存储 DoS"换成"登录可用性 DoS"。
+        // 代价：达到上限后每次失败仍先付一次 scrypt；换的是正确口令永远登得进来。
+        // 达到上限时**不记这条事件**（表停在 cap，不再增长）。
+        // 为什么这样取舍、代价是什么：见 `docs/performance-audit-2026-11-05.md` §2.3。
+        if (store.countEventsSince('login_fail', t - L.loginFailWindowMs) >= L.loginFailGlobalPerWindow) {
+          say(429);
+          json(res, 429, { error: '登录失败次数过多，请过一会儿再试' },
+            { 'retry-after': String(loginFailRetryAfterSec(t)) });
+          return true;
+        }
         store.recordEvent('login_fail', store.normalizeEmail(email));
+        // 失败路径也要清过期数据（节流），否则攻击者永远等不到成功路径那一次 prune。
+        pruneIfDue();
         say(401);
         json(res, 401, { error: '邮箱或口令不对' });
         return true;
       }
       if (backendStore) backendStore.touchDevice(row.account_id, deviceId, deviceName);
       const token = issueToken(row.account_id, deviceId);
-      store.prune();
+      pruneIfDue();
       log(`登录成功（${fp(email)}）`);
       say(200);
       json(res, 200, {

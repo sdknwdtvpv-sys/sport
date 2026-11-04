@@ -16,6 +16,19 @@ import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/core/labels.dart';
 import 'package:lianleme/features/today/today_planner.dart';
 
+/// 数 `recentExerciseIds()` 被读了几次 —— 它是一次**全表扫**（v1.68.2 共享读库的判据）。
+class _CountingRecentStore extends DriftLocalStore {
+  _CountingRecentStore(AppDatabase db) : super(db);
+
+  int recentExerciseIdsCalls = 0;
+
+  @override
+  Future<List<String>> recentExerciseIds() {
+    recentExerciseIdsCalls++;
+    return super.recentExerciseIds();
+  }
+}
+
 void main() {
   late AppDatabase db;
   late DriftLocalStore store;
@@ -607,6 +620,40 @@ void main() {
     test('什么都没练 → null', () {
       expect(topMuscleGroupForStretch(const <({String muscleGroup, String category})>[]),
           isNull);
+    });
+  });
+
+  // ── v1.68.2：冷启动共享读库（同一次计算里别把全表扫重复做）──────────────
+  group('共享 recentExerciseIds（v1.68.2）', () {
+    test('★ nextMuscleGroupKey 只读一次 recentExerciseIds（旧实现读两次）', () async {
+      await train('w1', 'ex_bb_bench_press');
+      // 对照组：不带计数的 planner 给出的答案，就是"应该"的答案。
+      final String? expected = await planner.nextMuscleGroupKey();
+
+      final _CountingRecentStore counting = _CountingRecentStore(db);
+      final TodayPlanner shared =
+          TodayPlanner(repository: repo, store: counting);
+      counting.recentExerciseIdsCalls = 0;
+      final String? got = await shared.nextMuscleGroupKey();
+
+      expect(got, expected, reason: '共享这次读不许改变结果（只有次数该变）');
+      expect(counting.recentExerciseIdsCalls, 1,
+          reason: '旧实现先读一遍判空、nextTrainingDay 里又读一遍 → 2 次；'
+              '2026-11-05 起复用同一份 → 1 次');
+    });
+
+    test('nextTrainingDay 传了 recentIds 与自己读的结果一致', () async {
+      await train('w1', 'ex_bb_squat');
+      final _CountingRecentStore counting = _CountingRecentStore(db);
+      final TodayPlanner shared =
+          TodayPlanner(repository: repo, store: counting);
+      // 调用方先自己读一次（模拟"别的路径已经读过了"），传进来。
+      final List<String> recent = await store.recentExerciseIds();
+      counting.recentExerciseIdsCalls = 0;
+      final TrainingDay got = await shared.nextTrainingDay(recentIds: recent);
+      expect(got, await planner.nextTrainingDay(), reason: '结果必须一致');
+      expect(counting.recentExerciseIdsCalls, 0,
+          reason: '传了 recentIds 就不许再读一次全表');
     });
   });
 }

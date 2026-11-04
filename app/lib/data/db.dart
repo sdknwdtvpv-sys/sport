@@ -755,8 +755,14 @@ class AppDatabase extends _$AppDatabase {
   /// v30（2026-10-10，会员 M1）：新增 `entitlement` / `billing_event` 两张表。
   /// **只加表、不动任何既有列**，所以老库升上来时它们是空的 ——
   /// 那正是准确的历史：在这个版本之前，这台设备没有任何权益记录（也没买过）。
+  /// v31（2026-11-05）：**只加一条索引** —— `idx_set_live_time`，覆盖"正式组按完成时间"
+  /// 这条查询（`allSets()` / `recentExerciseIds()` 的 `set_type='normal' AND deleted_at
+  /// IS NULL ORDER BY completed_at`）。**不动任何行、不改任何列**：索引是纯附加结构，
+  /// 所以这一版即使出问题，回滚也只是 `DROP INDEX`，数据没有迁移风险。
+  /// 为什么加、为什么是"部分索引"、验证过它会用上：见
+  /// `docs/performance-audit-2026-11-05.md` §1.1 的 v31 迁移方案。
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -771,6 +777,13 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'CREATE INDEX IF NOT EXISTS idx_set_workout_item '
             'ON set_record (workout_item_id, set_index)',
+          );
+          // v31：正式组按完成时间（部分索引 = 热查询的精确形状，见 schemaVersion 注释）。
+          // `onCreate` 也要建：否则新装用户的库永远缺这条索引（迁移只服务老库）。
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_set_live_time '
+            "ON set_record (completed_at) "
+            "WHERE set_type = 'normal' AND deleted_at IS NULL",
           );
           // 消息去重：**数据库层**保证"同一件事只发一次"（partial unique index）。
           // 不靠调用方"记得先查一次"—— 那种记得迟早会漏，而漏了的后果是
@@ -1039,6 +1052,26 @@ class AppDatabase extends _$AppDatabase {
           if (from < 30) {
             await m.createTable(entitlement);
             await m.createTable(billingEvent);
+          }
+
+          // v30 → v31：**只加一条部分索引**（不建表、不加列、不搬数据）。
+          //
+          // 为什么排链尾：它 `CREATE INDEX ... ON set_record`，而那张表 v1 起就有，
+          // 顺序上其实无所谓 —— 但自 v18/v20 起"动既有对象的迁移一律排链尾"是纪律，
+          // 这里照办（下一个给既有表加列的人会感谢这条规则）。
+          //
+          // 为什么用 `IF NOT EXISTS`：迁移必须**幂等**。`user_version` 已经到 31 的库
+          // 不会再进这里，但"迁移中途失败后重试"这条路径也可能走到，不能因为
+          // "索引已存在"就把用户的 App 卡死在打不开的状态。
+          //
+          // ⚠️ 这条索引**只影响查询计划，不影响任何一行数据**：所以它是这套迁移链里
+          // 唯一一个"回滚零代价"的版本（回滚 = DROP INDEX，不是降 schemaVersion）。
+          if (from < 31) {
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_set_live_time '
+              "ON set_record (completed_at) "
+              "WHERE set_type = 'normal' AND deleted_at IS NULL",
+            );
           }
         },
       );

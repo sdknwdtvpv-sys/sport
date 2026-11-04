@@ -363,6 +363,17 @@ class _HomeShellState extends State<HomeShell> {
   /// 只读它、不直接改它。
   List<SetRecord> _allSets = const <SetRecord>[];
 
+  /// **最近一次 `_refreshHome()` 读到的组记录**（null = 还没读过）。
+  ///
+  /// 与 [_allSets] 的区别只有一个：`null` 能区分"还没读"与"读了但一条都没有"。
+  /// 冷启动时 `_importSeedQuietly` 与 `_refreshHome` 是并发的，两边都要算"今天的安排"；
+  /// 后者手里已经有这份数据，前者只要**读过**就传给它，别让它再全表读一遍（2026-11-05）。
+  List<SetRecord>? _setsSnapshot;
+
+  /// 正在跑的那次"今天的安排"计算（null = 没有）。冷启动时 `_refreshHome` 与
+  /// `_importSeedQuietly` 会各调一次；后者先**等前者跑完**再做决定，避免并发重复算。
+  Future<void>? _todayPlanInFlight;
+
   /// 首页那一行**部位平衡**（第二部分第 5 条）。null = 不显示。
   /// 判据与文案在 `muscle_balance.dart`（纯函数）；这里只负责把动作表查出来。
   String? _muscleBalance;
@@ -532,7 +543,19 @@ class _HomeShellState extends State<HomeShell> {
       await _repo.importSeed(loadJson: widget.seedLoader);
       // 库刷完之后才算得出"今天的安排"（它是从动作库里挑的）——
       // 首页中间那一块就靠这一步拿到内容。
-      await _loadTodayPlan();
+      //
+      // ⚠️ 2026-11-05：只在**首页那一趟还没给出内容**时才补算。
+      //   * 绝大多数冷启动：`_refreshHome()` 已经算好（或从库里读回）今天的安排，
+      //     这里再算一遍纯属重复 —— 而"算一遍"里有两次全表读；
+      //   * 首启：首页那一趟可能跑在种子导入之前（那时动作库还是空的，算出空且不落库），
+      //     这时才需要补算。
+      // 无论哪条，都把手里已有的 sets / day 传下去（`_setsSnapshot` 为 null 时退回自己读，
+      // 与以前完全一样；`_todayDay` 为 null 时同样退回自己算）。
+      final Future<void>? inFlight = _todayPlanInFlight;
+      if (inFlight != null) await inFlight; // 等首页那一趟跑完（纯 DB 链，没有平台通道）
+      if (mounted && _todayPlan.isEmpty) {
+        await _loadTodayPlan(sets: _setsSnapshot, day: _todayDay);
+      }
     } catch (e) {
       // 刷新失败不该挡住启动：库里已有上一份，用户照常能练。
       // 但要留痕 —— 否则"新动作没出现"会变成一个查不下去的问题。
@@ -623,6 +646,9 @@ class _HomeShellState extends State<HomeShell> {
   /// 否则首页会显示着上一次的分化、大按钮却开练另一次。
   Future<void> _refreshHome() async {
     final List<SetRecord> sets = await _store.allSets();
+    // 先记快照，再跑后面那一长串 await：`_importSeedQuietly` 可能在这中间就完成，
+    // 它需要这份数据来避免再全表读一次（见 `_setsSnapshot` 的注释）。
+    _setsSnapshot = sets;
     if (!mounted) return;
     // 四条消息生成规则**都在这里跑**（冷启动与"练完回来"都经过这个出口）：
     // 徽章解锁 / 每周挑战完成 / 错过的训练提醒 —— 都是本地算的，且各自带去重键，
@@ -657,6 +683,7 @@ class _HomeShellState extends State<HomeShell> {
       _totalWorkouts = totalWorkouts(sets);
       _recent = recentWorkouts(sets);
       _allSets = sets; // 首页周报要算"上周"的完整统计，见字段注释
+      // `_setsSnapshot` 在上面读完 allSets 时就已记下（要赶在 importSeed 之前），这里不再重复。
       _muscleBalance = balance?.text;
       _comebackNudge = comeback;
       _protectionOffer = offer;
@@ -664,10 +691,13 @@ class _HomeShellState extends State<HomeShell> {
       _reminderHint = hint;
       _unreadNotifications = unread;
     });
-    await _loadTodayPlan();
+    // ⚠️ 这两处都**传 sets**（2026-11-05）：它们原先各自再 `allSets()` 一次，
+    // 加上 `planToday()` 里那次"是不是第一次训练"的判断，一次冷启动要全表读 6 遍。
+    // 首页刚读到的这一份就在手上 —— 同一份数据读三遍没有任何意义。
+    await _loadTodayPlan(sets: sets);
     // 训练提醒也在这里同步：这个函数是"开 App / 练完回来"的公共出口，
     // 而提醒的正确状态正好取决于**刚刚是不是练过了**（练过就顺延到明天）。
-    await _syncReminder();
+    await _syncReminder(sets: sets);
   }
 
   /// 「下次提醒：…」。传 sets 是为了知道**今天练过没有** ——
@@ -696,8 +726,12 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 把系统里排着的提醒同步成"当前设置 + 今天的事实"该有的样子。
   /// 失败静默（`ReminderService` 里每一层都不抛）—— 排不上提醒不该影响记录训练。
-  Future<void> _syncReminder() async {
-    await _reminderService.sync();
+  ///
+  /// [sets] 只在"调用方手里已经有一份刚读到的组记录"时传（`_refreshHome` /
+  /// `_setReminder`）：`ReminderService.sync()` 自己会 `allSets()`，不传就还是
+  /// 原来那条路 —— 训练结束那条 `unawaited(_syncReminder())` 与此行为一致。
+  Future<void> _syncReminder({List<SetRecord>? sets}) async {
+    await _reminderService.sync(sets: sets);
   }
 
   /// 用户改了提醒设置（S10）。**打开时才向系统要通知权限**（不在启动时要）。
@@ -718,7 +752,7 @@ class _HomeShellState extends State<HomeShell> {
         _reminderHint = hint;
       });
     }
-    await _syncReminder();
+    await _syncReminder(sets: sets);
     return true;
   }
 
@@ -731,10 +765,20 @@ class _HomeShellState extends State<HomeShell> {
   /// 有就用它（用户在编辑器里拖动 / 替换 / 删除过的结果），没有才按分化现算一份
   /// **并落库**。这样"改了能存住"，而且同一天里再打开看到的还是同一份
   /// （原来每次冷启动都可能换一批动作）。
-  Future<void> _loadTodayPlan() async {
+  Future<void> _loadTodayPlan({List<SetRecord>? sets, TrainingDay? day}) {
+    // 同一个启动里可能有两处要它（`_refreshHome` / `_importSeedQuietly`）——
+    // 把"在飞的那一次"记下来，后到的那一处可以先等它，再决定要不要补算。
+    final Future<void> pending = _loadTodayPlanOnce(sets: sets, day: day);
+    _todayPlanInFlight = pending;
+    return pending.whenComplete(() {
+      if (identical(_todayPlanInFlight, pending)) _todayPlanInFlight = null;
+    });
+  }
+
+  Future<void> _loadTodayPlanOnce({List<SetRecord>? sets, TrainingDay? day}) async {
     try {
       final String date = dayPlanKey(DateTime.now());
-      final TrainingDay day = await _planner.nextTrainingDay();
+      final TrainingDay resolvedDay = day ?? await _planner.nextTrainingDay();
       // 顺手清掉 30 天前那些死数据（这张表一天会长几行，而只有当天那份有用）。
       // 不 await：它是打扫卫生，与"今天显示什么"无关。
       unawaited(_dayPlan.pruneBefore(date));
@@ -745,7 +789,7 @@ class _HomeShellState extends State<HomeShell> {
         );
         if (!mounted) return;
         setState(() {
-          _todayDay = day;
+          _todayDay = resolvedDay;
           // ⚠️ 库里有几个动作就是几个：用户**删光了**也是一种结果（空清单），
           // 不能在这里"看着像是空的就补一份" —— 那删除按钮就成了摆设。
           _todayPlan = saved;
@@ -753,12 +797,15 @@ class _HomeShellState extends State<HomeShell> {
         return;
       }
       final List<PlannedExercise> plan = await _planner.planToday(
-          day: day,
+          day: resolvedDay,
           unit: _unit,
           // 10.8 清单第 8 条（用户选 A）：每周 ≤3 天 → 每个动作 4 组，≥4 天 → 3 组
           weeklyFrequency: await _profile.weeklyFrequency(),
           // 在哪儿练（第二份 docx 第 4 条）
-          equipment: _scenario.equipment);
+          equipment: _scenario.equipment,
+          // 第一次训练给少一点（4 个动作）：调用方手里有刚读到的组记录就直接用，
+          // 别再让 planToday 为了这一个 bool 全表读一遍（2026-11-05）。
+          firstTime: sets == null ? null : sets.isEmpty);
       // ⚠️ **空清单不落库**（2026-10-09 真机冒烟抓到）：冷启动那一刻动作库可能还没导入完
       // （`_importSeedQuietly` 与这一趟是并行的），于是 `planToday` 返回空 ——
       // 而"空"一旦被记成"今天排过了"，首页就永远停在「今天还没有排动作」，
@@ -767,7 +814,7 @@ class _HomeShellState extends State<HomeShell> {
       if (plan.isNotEmpty) await _saveTodayPlan(plan: plan, date: date);
       if (!mounted) return;
       setState(() {
-        _todayDay = day;
+        _todayDay = resolvedDay;
         _todayPlan = plan;
       });
     } catch (_) {

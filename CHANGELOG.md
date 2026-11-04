@@ -6,6 +6,79 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.68.2 · 数据库 v31 部分索引 + 冷启动共享读库 + 登录全局限流
+
+用户 2026-11-05 拍板：把上一轮技术审计（`docs/performance-audit-2026-11-05.md`）里
+P2/P3 三项全做，并切一个小版。**没有用户可见的行为变化**（唯一动数据库的是加索引，
+回滚代价为零）。
+
+### 一、数据库 v31：只给"正式组按时间"加一条部分索引
+
+`app/lib/data/db.dart`：`schemaVersion` 30 → 31，`onCreate` 与 `onUpgrade` 各建一次
+`idx_set_live_time ON set_record(completed_at) WHERE set_type='normal' AND deleted_at IS NULL`。
+不改查询、不加列、不搬一行数据 —— 它服务 `allSets()` / `recentExerciseIds()`
+（此前这两条 `where set_type='normal' and deleted_at is null order by completed_at`
+用不上任何索引）。**迁移方案与回滚/幂等口径**写在 `docs/performance-audit-2026-11-05.md`
+§1.1，迁移历史补进 `docs/data-model.md`，决策记录补进 `docs/tech-decisions.md`。
+
+判据：`app/test/migration_test.dart` 新增 v30→v31（索引存在 + `EXPLAIN QUERY PLAN`
+真的用上 + 查询结果与迁移前逐条一致 + 迁移不动热身/已删除组）、新装库 `onCreate` 也有、
+文件库重复打开幂等（不重复建索引、数据行数不变）。
+
+### 二、冷启动共享读库：全表扫 6 次 → 4 次（同口径实测）
+
+同一次启动里，`_refreshHome()` 读到的组记录现在会传给 `_loadTodayPlan()` 与
+`ReminderService.sync()`；`nextMuscleGroupKey()` 不再把 `recentExerciseIds()` 读两遍；
+`_importSeedQuietly()` 会等首页那一趟并复用它已经读到的 `sets` 与 `day`，不再重复算。
+判据：`today_planner_test.dart`（`nextMuscleGroupKey` 只读 1 次、传 `recentIds` 时读 0 次）、
+`reminder_test.dart`（传了 `sets` 就读 0 次、不传时行为与以前一致、两条路排出来的是同一条提醒）。
+实测（已同意 + 种子导入 + 提醒默认关，审计同口径）：**6 → 4 次全表扫描**；
+提醒开着 8 → 4；首启且今日计划尚未落库 9 → 5。
+
+### 三、`saveSet()` 两条写进同一事务
+
+`workout_item` 与 `set_record` 是同一次"记一组"派生的两行。分开写时第二条失败会留下
+"没有任何组的 workout_item"（「最近做过」与备份会多出一次不存在的训练）。
+判据：`app/test/save_set_transaction_test.dart`（用 SQLite 触发器让第二刀必炸，
+断言第一刀也回滚；去掉失败原因后同一次保存两行都能落地）。
+
+### 四、动作选择器改 `ListView.builder`（懒构建）
+
+浏览态此前用 `ListView(children:)` 一次 build 最多 500 个 `ListTile`；改成先排
+"行描述"再懒构建。**分区顺序、标题、每个 tile 的 key 与埋点 `method` 一个都没变**；
+搜索/筛选走的是另一条本来就已经懒构建的 `ListView.separated`，未受影响。
+判据：`exercise_picker_test.dart` 新增"一次只建视口内的行（旧实现是几百个）"+ 滚到底仍能到达；
+既有 38 条分区/筛选/搜索测试全部照旧绿。
+
+### 五、登录失败事件：全局上限 + 429 Retry-After + 节流 prune
+
+只按邮箱限流时，攻击者换邮箱就能继续写 `auth_events`（无界增长 = 存储型 DoS）。
+现在：`登录失败` 在**每邮箱**上限之外多一道**全局**上限（默认 300 次 / 15 分钟），
+超出回 **429 + `Retry-After`（秒）**；`prune()` 不再只挂在成功路径，而是**节流触发**
+（失败路径也会清过期数据，但最多每 60 秒全表删一次）。接口语义不变：
+普通失败仍是 401、同一句话、没有 `Retry-After`。
+**429 判断排在校验之后**（复核意见）：打满 cap 时**口令正确的用户仍能 200 正常发令牌**，
+被 429 的失败请求**不记事件**（表停在 cap）；代价是失败请求仍先付一次 scrypt ——
+取舍与代价见 `docs/performance-audit-2026-11-05.md` §2.3。
+判据：`server/auth.selftest.mjs` 新增 15 条（跨邮箱触发全局 429、`Retry-After` 是正整数、
+普通失败无该头、失败路径触发 prune、49 小时前的事件真的被剪、TTL 内不误删、节流窗口内不重复 prune、
+过了窗口恢复）。
+
+### 六、工程效率（上一轮已落地，按版本策略并进这次）
+
+`server/collector.mjs` 按天批量落盘（一批 100 条：6,000 次同步调用 → 30 次，实测 60.5×）
++ 超限回干净的 413；`tool/check-screenshots.mjs` 自检夹具复用（24s → 1.3s，判据一条没少）。
+详见 `CHANGELOG.md` v1.68.1 之后的两次提交与 `docs/performance-audit-2026-11-05.md`。
+
+### 验证与产物
+
+- 六层门禁「未发现失败」（测试条数见 `docs/release-checklist.md` 的「当前状态速览」）；
+  迁移/新增用例见上；
+- **本轮不重出 APK/AAB/截图/软著 PDF**：本机没有 keystore，用户还没说"部署"；
+  `dist/` 为空时 `check-dist` / `check-dist-variant` 会如实跳过。
+- 软著材料里的源程序量已跟着改成当前值（`node tool/copyright-pdf.mjs --check-docs` 判绿），
+  PDF 那批按既定口径"下次切版重出"。
+
 ## v1.68.1 · 修 Apple 上传校验挡下的那条（NSHealthUpdateUsageDescription）
 
 **起因**：2026-10-14 第一次往 TestFlight 传包，被 Apple 挡下：

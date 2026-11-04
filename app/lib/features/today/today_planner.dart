@@ -309,12 +309,15 @@ class TodayPlanner {
   ///
   /// 旧版在这里做的是"6 部位轮转里找第一个没练过的"，那不是交替而是**两周一轮**
   /// （见 [TrainingDay] 的注释里那笔组数账）。
-  Future<TrainingDay> nextTrainingDay() async {
-    final List<String> recentIds = await _store.recentExerciseIds();
-    if (recentIds.isEmpty) return TrainingDay.upper;
+  ///
+  /// [recentIds] 只给"已经读过一次、想共享"的调用方（`nextMuscleGroupKey`，
+  /// 2026-11-05）：`recentExerciseIds()` 是**全表扫**，同一次冷启动里已经读到就别再读一遍。
+  Future<TrainingDay> nextTrainingDay({List<String>? recentIds}) async {
+    final List<String> ids = recentIds ?? await _store.recentExerciseIds();
+    if (ids.isEmpty) return TrainingDay.upper;
 
     final Set<String> trained = <String>{};
-    for (final String id in recentIds) {
+    for (final String id in ids) {
       final ExerciseData? row = await _repo.byId(id);
       if (row != null) trained.add(row.muscleGroup);
     }
@@ -332,10 +335,13 @@ class TodayPlanner {
   ///
   /// **从没练过 → null**（不是"上肢"）：没有上一次，就没有"下一次"可言 ——
   /// 预告那条的口径是"宁可不排，也不编"。
+  ///
+  /// ⚠️ 这里的 `recentIds` **只读一次**并传给 `nextTrainingDay`（2026-11-05 改）：
+  /// 旧实现先读一遍判空、`nextTrainingDay()` 里又读一遍，而每次读都是全表扫。
   Future<String?> nextMuscleGroupKey() async {
     final List<String> recentIds = await _store.recentExerciseIds();
     if (recentIds.isEmpty) return null;
-    final TrainingDay day = await nextTrainingDay();
+    final TrainingDay day = await nextTrainingDay(recentIds: recentIds);
     final List<({String group, int count})>? slots = kDayComposition[day];
     if (slots == null || slots.isEmpty) return null;
     return slots.first.group;

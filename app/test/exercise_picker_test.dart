@@ -295,6 +295,28 @@ void main() {
     expect(find.text('杠铃卧推'), findsOneWidget);
   });
 
+  testWidgets('★ 浏览态是懒构建：一次只建视口内的行（v1.68.2）',
+      (WidgetTester tester) async {
+    // 改 `ListView.builder` 之前这里是 `ListView(children:)`：打开这一屏会把
+    // 351 个动作行**全部 build 出来**（低端机明显掉帧）。判据不是"看起来更快"，
+    // 而是"同屏建出来的 tile 数量"—— 旧实现是几百，新实现只有视口那十来个。
+    await pumpPicker(tester);
+    final int built = find.byType(ListTile).evaluate().length;
+    expect(built, lessThan(50),
+        reason: '旧实现会把整份列表（351 个动作）一次性建出来；懒构建只建视口内的。'
+            '实际建了 $built 个');
+
+    // 懒构建不许把行弄丢：滚动之后仍然能到达后面的动作（顺序与数据不变）。
+    await tester.drag(find.byKey(const Key('picker-list')), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    expect(find.byType(ListTile).evaluate(), isNotEmpty);
+    // 继续滚到底，确认整份列表真的在（不是只留了首屏）。
+    await tester.drag(find.byKey(const Key('picker-list')), const Offset(0, -30000));
+    await tester.pumpAndSettle();
+    expect(find.byType(ListTile).evaluate(), isNotEmpty,
+        reason: '滚到底之后仍应有行可显示（懒构建只是延迟构建，不是截断列表）');
+  });
+
   testWidgets('搜索同时匹配名称与别名', (WidgetTester tester) async {
     await pumpPicker(tester);
 

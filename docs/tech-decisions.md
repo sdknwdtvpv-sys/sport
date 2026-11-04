@@ -341,6 +341,31 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
 不写就等于告诉用户"这些天我天天都练了"。这一句由
 `streakLabelWithProtection()` 生成，有测试钉着。
 
+## 只给"正式组按时间"加一条部分索引（2026-11-05 定，v31）
+
+**背景**：性能审计（`docs/performance-audit-2026-11-05.md` §1.1）测出一次已同意态冷启动
+有 **6 次 `set_record` 全表扫描**；其中两处 `allSets()` / `recentExerciseIds()` 的查询形状是
+`where set_type='normal' and deleted_at is null order by completed_at`，而库里的索引
+（`idx_set_exercise` = `(exercise_id, completed_at DESC)`、`idx_set_workout_item`）都用不上它。
+
+**决策**：加一条**部分索引** `idx_set_live_time ON set_record(completed_at)
+WHERE set_type='normal' AND deleted_at IS NULL`，**不改查询、不加列、不建冗余表**。
+三条理由：
+
+1. **形状与热查询完全重合**：只装正式组且未删除的行，热身/回收站不进来；索引本身就是
+   按 `completed_at` 排序，`order by` 不再需要临时排序。验证过它真的会被采用：
+   `EXPLAIN QUERY PLAN` 对参数化查询也回 `SCAN … USING INDEX`（对照组用普通复合索引
+   `(set_type, deleted_at, completed_at)` 也有效，但部分索引更小、语义更精确）。
+2. **它是这套迁移链里唯一"回滚零代价"的一版**：索引不影响任何一行的内容。万一要撤，
+   下个版本 `DROP INDEX` 就回到 v30 的查询计划 —— **不做 `schemaVersion` 降级**
+   （drift 打开"比代码更新"的库会直接报错，降版本号比索引本身危险得多）。
+3. **两处都建、且幂等**：`onCreate`（新装）与 `onUpgrade`（老库）各建一次；`IF NOT EXISTS`
+   保证重复执行安全。判据是 `migration_test.dart` 的 v30→v31 用例（索引存在 + 查询计划用上
+   + 结果与迁移前逐条一致 + 文件库重复打开幂等 + 新装库也有）。
+
+**没做的事**（免得下次有人以为漏了）：回收站（`deleted_at is not null order by deleted_at desc`）
+与"单动作历史"（`idx_set_exercise` 已覆盖）这次都没动 —— 它们不在冷启动热路径上。
+
 ## MVP 之后的触发条件（不要提前做）
 
 | 能力 | 触发条件 |
@@ -362,7 +387,7 @@ UIKit 收不到触摸 → **原生那套反应根本触发不了**（试过：`i
 | 决策 | 代码现状 | 证据 / 指针 |
 |---|---|---|
 | Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
-| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v30**） |
+| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v31**） |
 | **只支持 iPhone**（不承诺 iPad） | ✅ 2026-09-30 拍板 | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1"`；`tool/check-ios-app.mjs` 把"产物含 iPad"判红；依据（iPad 上只是拉长的手机版）见 `release-admin.md` §二之四之四 |
 | **「我」页按"多久碰一次"分三个二级页** | ✅ 2026-10-01 拍板并落地 | 统计每天看；偏好与备份设一次就不管；隐私与关于是给别人看的。`app/test/profile_structure_test.dart` 钉住"第一屏不许再长回去"；政策入口 3 次点击（小米"四步之内"） |
 | **体重单位默认跟随训练单位**（可单独选「斤」） | ✅ 2026-10-01 | `ProfileRepository.setUnit` 的联动判据 + `app/test/units_test.dart`；此前全局选了磅、身体页还写 kg，两套口径各说各的 |

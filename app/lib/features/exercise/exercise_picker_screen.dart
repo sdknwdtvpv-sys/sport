@@ -475,32 +475,47 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
             !popularIds.contains(e.id))
         .toList();
 
-    final List<Widget> children = <Widget>[];
+    // 分区先排成**一行一个描述**，再交给 `ListView.builder` 懒构建
+    // （2026-11-05）：旧实现把所有 `ListTile` 一次性塞进 `ListView(children:)`，
+    // 浏览态最多 500 行 —— 打开这一屏要把 500 个 tile 全 build 出来（低端机会掉帧）。
+    // 行的**顺序、分区标题、每个 tile 的 key 与 method 全部保持不变**，
+    // 变的只是"什么时候 build"：视口外的不再建。
+    final List<_BrowseRow> rows = <_BrowseRow>[];
     if (_pinned.isNotEmpty) {
-      children.add(_sectionHeader('置顶'));
-      children.addAll(_pinned.map((ExerciseData e) => _tile(e, method: 'pinned')));
+      rows.add(const _BrowseRow.header('置顶'));
+      rows.addAll(_pinned.map(
+          (ExerciseData e) => _BrowseRow.tile(e, method: 'pinned')));
     }
     if (recentShown.isNotEmpty) {
-      children.add(_sectionHeader('最近做过'));
-      children.addAll(recentShown.map((ExerciseData e) => _tile(e, method: 'recent')));
+      rows.add(const _BrowseRow.header('最近做过'));
+      rows.addAll(recentShown.map(
+          (ExerciseData e) => _BrowseRow.tile(e, method: 'recent')));
     }
     if (popular.isNotEmpty) {
       // 同一份数据、两种叫法（2026-10-05）：选动作时叫「常用」（用户关心的是
       // "我常练的在哪"），动作库（浏览态）里叫「热门」—— 与 VI 稿 `vi/complete-library.html`
       // 那一屏的说法对齐。**排序口径是同一个**：种子里人工定的 `popularity`（内置固定排序，
       // 不引服务端、也不看别人的数据）。
-      children.add(_sectionHeader(widget.onBrowse != null ? '热门' : '常用'));
-      children.addAll(popular.map((ExerciseData e) => _tile(e, method: 'suggest')));
+      rows.add(_BrowseRow.header(widget.onBrowse != null ? '热门' : '常用'));
+      rows.addAll(popular.map(
+          (ExerciseData e) => _BrowseRow.tile(e, method: 'suggest')));
     }
     if (rest.isNotEmpty) {
-      children.add(_sectionHeader('全部动作'));
-      children.addAll(rest.map((ExerciseData e) => _tile(e, method: 'all')));
+      rows.add(const _BrowseRow.header('全部动作'));
+      rows.addAll(
+          rest.map((ExerciseData e) => _BrowseRow.tile(e, method: 'all')));
     }
 
-    return ListView(
+    return ListView.builder(
       key: const Key('picker-list'),
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, Tokens.s6),
-      children: children,
+      itemCount: rows.length,
+      itemBuilder: (BuildContext context, int i) {
+        final _BrowseRow row = rows[i];
+        final String? header = row.header;
+        if (header != null) return _sectionHeader(header);
+        return _tile(row.exercise!, method: row.method);
+      },
     );
   }
 
@@ -701,4 +716,23 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       ),
     );
   }
+}
+
+/// 浏览态列表里的一行：**分区标题**或**动作行**（`_browseList` 用，v1.68.2）。
+///
+/// 为什么要有这个小类：改成 `ListView.builder` 之后，"这一行是什么"必须在
+/// build 时才知道，不能像以前那样先造好一堆 Widget。`method` 跟着动作行走 ——
+/// 它决定埋点里"这次选动作是从哪个分区点的"，不能因为改懒构建就丢。
+class _BrowseRow {
+  const _BrowseRow.header(String label)
+      : header = label,
+        exercise = null,
+        method = '';
+
+  const _BrowseRow.tile(ExerciseData this.exercise, {required this.method})
+      : header = null;
+
+  final String? header;
+  final ExerciseData? exercise;
+  final String method;
 }

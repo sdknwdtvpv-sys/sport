@@ -376,7 +376,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
-**当前 `schemaVersion = 30`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+**当前 `schemaVersion = 31`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
 `tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红 —— 包括这种 `schemaVersion = 20`
 的写法，2026-10-05 之前它只认 `schema v20`，而本文档恰好用的是前者，于是**只有这份文档
 逃过了检查**：规则补上 `=` 之后当场抓到它写着 15）。
@@ -406,6 +406,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 | v21 | 新增 `streak_protection`（连续保护 / 补签，第二部分第 2 条） | 只加表。老库升上来是空的 —— **准确的历史**：这个功能出现之前谁也没补签过（也就是说，他们的连续天数从来没被补签撑过）。⚠️ 这是**唯一一张「关于历史」的用户声明**（其余一切都是训练记录的推导结果）——所以它只能新开一张表，绝不能去改 `set_record`/`workout`：**记录就是事实**。删表清单（`test/delete_all_test.dart` 的表清单守门）里它是**删** |
 | v22 | 新增 `auth_session`（登录会话，账号体系 P1-3） | 只加表。老库升上来是空的 —— **准确的历史**：升级之前这台设备没有登录过任何账号。⚠️ 里面存着账号密钥（16 字节）与**还有效的会话令牌**，所以「删除全部数据」**必须清它**（`drift_local_store.deleteAllUserData` + `delete_all_test.dart` 的表清单与种子两处都接上了）|
 | **v30** | 新增 `entitlement` / `billing_event`（**会员（Ultra）权益与计费流水**，2026-10-10 会员 M1） | 只加表、排在链尾。老库升上来两张都是空的 —— **准确的历史**：在这之前这台设备没有任何权益记录；而"没有记录"正是 `resolveUltraAccess(null, now) == none`（免费用户），所以**升级不会凭空给谁发权益**（`migration_test.dart` 的 v29→v30 那条就是钉这个的：断言的重点是"空"）。⚠️ 两处取舍写在案：① `entitlement` 是**本机缓存**（离线也能用），真相永远在商店收据上，判定逻辑全在纯函数 `app/lib/billing/entitlement.dart`（九态状态机），表里只存字段；② 「删除全部数据」**会连它一起清**（它记的是"这个人是谁、买过什么"，与 `backup_account` / `auth_session` 同类）——代价是付费用户删完数据会暂时变回免费，直到点一次「恢复购买」 |
+| **v31** | **只加一条部分索引** `idx_set_live_time`：`set_record(completed_at) `WHERE set_type='normal' AND deleted_at IS NULL`（2026-11-05，性能审计 §1.1 的 A2） | **不动任何一行、不改任何一列**，也不建表 —— 索引是纯附加结构，所以这一版的回滚代价为零（回滚 = `DROP INDEX`，不是降 `schemaVersion`）。它服务的是 `allSets()` / `recentExerciseIds()`：此前那条 `where set_type='normal' and deleted_at is null order by completed_at` 用不上任何索引，每条冷启动路径都要全表扫 + 排序。⚠️ `onCreate`（新装）与 `onUpgrade`（老库）两处都要建 —— 迁移只服务老库；漏了 `onCreate`，新装用户会永远缺这条索引。幂等靠 `IF NOT EXISTS` + drift 的 `user_version`，重复打开不会重复建（文件库用例钉着） |
 | v29 | `user_profile` +`training_scenario`（**在哪儿练**：健身房 / 家里 / 徒手，2026-10-09 第二份 docx 第 4 条） | **加列**。老库升上来是 **null = 没选过** → 按**健身房**（全部器械）算 —— 那正是这一版之前的行为，所以老用户一个字都没变。⚠️ 词表与"每个场景允许哪些器械"的唯一出处是 `app/lib/features/today/training_scenario.dart`（纯函数 + 单测）：健身房=全部、家里=哑铃/壶铃/弹力带/自重、徒手=只有自重。它只影响**今天练什么**的挑动作（`planToday` / `reroll` → `search(equipmentIn:)`），**不改计划模板**（那要一套新内容） |
 | v28 | `exercise` +`sub_tags`（细分标签：上胸 / 中缝 / 后束…，10.9 清单第 7 条） | **加列**。老库升上来是 `[]` = 没标过 —— 那是准确的历史：在这之前动作库里没有这个粒度。⚠️ 而动作库**下次启动会按种子重新导入**（`importSeed` 按 id upsert），标签随之到位；用户自建的动作永远是 `[]`（我们不为他猜"这动作练的是上胸"）。词表与种子校验在 `seed/build.mjs`，客户端那一份在 `core/labels.dart`，两处不一致会让构建失败（交叉检查） |
 | v27 | 新增 `day_plan_item` / `day_plan_day`（**今天的安排**落库，10.9 清单第 6 条） | 只加表。老库升上来是空的 = "这一天还没排过" → 下次打开照旧按分化现算一份并落库。⚠️ 两张表是一件事的两半：`item` 存"练哪几个"（date + position + 动作 + 处方），`day` 存"这一天排过了" —— 因为用户可以把动作**全删光**，而"我删光了"必须存得住（只看有没有行的话，那批动作下次又冒出来，他会以为删除按钮是坏的） |
@@ -534,6 +535,12 @@ CREATE TABLE set_record (
 );
 CREATE INDEX idx_set_item     ON set_record(workout_item_id, set_index);
 CREATE INDEX idx_set_exercise ON set_record(exercise_id, completed_at DESC);  -- 规则引擎的关键索引
+-- v31（2026-11-05）：**部分索引**，只装"正式组且未删除"的行，服务
+-- `allSets()` / `recentExerciseIds()` 的 `set_type='normal' AND deleted_at IS NULL
+-- ORDER BY completed_at`（两处都是全表读）。热身组与回收站不进来，所以比整表索引小；
+-- 查询计划**实测会用上**（判据在 `app/test/migration_test.dart` 的 v30→v31 用例里）。
+CREATE INDEX idx_set_live_time ON set_record(completed_at)
+  WHERE set_type = 'normal' AND deleted_at IS NULL;
 ```
 
 ### 身体数据与 PR

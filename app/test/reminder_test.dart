@@ -50,6 +50,20 @@ class FakeReminder implements ReminderBridge {
   Future<int?> scheduledAtMs() async => _current?.atMs;
 }
 
+
+/// 数 `allSets()` 被读了几次（全表读；v1.68.2 共享读库的判据）。
+class _CountingAllSetsStore extends DriftLocalStore {
+  _CountingAllSetsStore(AppDatabase db) : super(db);
+
+  int allSetsCalls = 0;
+
+  @override
+  Future<List<SetRecord>> allSets() {
+    allSetsCalls++;
+    return super.allSets();
+  }
+}
+
 /// 本地时间的某个时刻（测试里不依赖机器时区：用 DateTime 构造，天然是本地时间）。
 int _at(int y, int mo, int d, int h, int mi, [int s = 0]) =>
     DateTime(y, mo, d, h, mi, s).millisecondsSinceEpoch;
@@ -562,6 +576,50 @@ void main() {
       );
       await expectLater(bridge.cancel(), completes);
       expect(await bridge.scheduledAtMs(), isNull);
+    });
+  });
+
+  // ── v1.68.2：冷启动共享读库 ─────────────────────────────────────────────
+  group('共享读库（v1.68.2）', () {
+    test('★ 传了 sets：sync 不再 allSets；不传仍自己读，两条路排出来的是同一条', () async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(() => db.close());
+      final _CountingAllSetsStore counting = _CountingAllSetsStore(db);
+      final ReminderRepository repo = ReminderRepository(db);
+      final FakeReminder bridge = FakeReminder();
+      final ReminderService service = ReminderService(
+        repository: repo,
+        bridge: bridge,
+        store: counting,
+      );
+      await repo.save(const ReminderSettings(enabled: true, minutesOfDay: 20 * 60));
+      final int now = _at(2026, 10, 4, 9, 0);
+      // 今天练过一组 → 走"练过"那条分支（与冷启动时最像）。
+      await counting.saveSet(SetRecord(
+        id: 's1',
+        workoutId: 'w1',
+        exerciseId: 'ex1',
+        setIndex: 1,
+        reps: 10,
+        weightKg: 60.0,
+        completedAtMs: _at(2026, 10, 4, 8, 0),
+      ));
+      final List<SetRecord> preloaded = await counting.allSets();
+
+      counting.allSetsCalls = 0;
+      await service.sync(nowMs: now, sets: preloaded);
+      expect(counting.allSetsCalls, 0, reason: '调用方传了 sets 就不该再全表读一次');
+      final ReminderRequest viaShared = bridge.scheduled.last;
+
+      // 旧路径（不传 sets）：必须仍能自己读，且排出来的是**同一条**提醒。
+      bridge.scheduled.clear();
+      counting.allSetsCalls = 0;
+      await service.sync(nowMs: now);
+      expect(counting.allSetsCalls, 1, reason: '不传 sets 的调用点保持原行为（自己读）');
+      final ReminderRequest viaStore = bridge.scheduled.last;
+      expect(viaStore.atMs, viaShared.atMs, reason: '两条路排出来的必须一致');
+      expect(viaStore.title, viaShared.title);
+      expect(viaStore.body, viaShared.body);
     });
   });
 }

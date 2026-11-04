@@ -56,9 +56,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** account_id 的形状：客户端算出的 32 字节哈希，用十六进制表示 */
 const ACCOUNT_ID_RE = /^[0-9a-f]{32,64}$/;
 
-function json(res, status, payload) {
+/**
+ * 统一 JSON 响应。[headers] 是给 429 的 `Retry-After` 这类**标准 HTTP 头**用的
+ * （2026-11-05，登录全局限流）；普通响应不传，字节与以前完全一致。
+ */
+function json(res, status, payload, headers = {}) {
   const body = JSON.stringify(payload);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', ...headers });
   res.end(body);
 }
 

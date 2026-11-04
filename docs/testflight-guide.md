@@ -64,7 +64,8 @@ TestFlight 是给"别人也能装"用的。
 | 认证 | App Store Connect **API Key**（角色 App 管理），`~/.appstoreconnect/private_keys/AuthKey_<KeyID>.p8`（`chmod 600`） |
 | 结果 | **`UPLOAD SUCCEEDED with no errors`**，`Delivery UUID 0e3ff0b2-0c76-4577-86fb-b19c53687405`，27,350,762 字节 / 11.1 秒 |
 | 构建（第一次） | `1.68.0` / `83` · `UPLOAD SUCCEEDED`，Delivery UUID `0e3ff0b2-…`（补了 Info.plist 那个键之后才过的） |
-| 构建（**当前这个**） | **`1.68.1` / `84`** · `UPLOAD SUCCEEDED`，Delivery UUID `54102369-a719-4663-b7bb-56d3c8791881`（27,356,544 字节 / 8.5 秒）；`com.sdknwdtvpv.lianleme` · 签名 `Apple Distribution: Song Li (LSBQAS2A45)` · 描述文件有效到 2027-10-14 · 包内 426 张插图 |
+| 构建（**最近一次上传**） | **`1.68.1` / `84`** · `UPLOAD SUCCEEDED`，Delivery UUID `54102369-a719-4663-b7bb-56d3c8791881`（27,356,544 字节 / 8.5 秒）；`com.sdknwdtvpv.lianleme` · 签名 `Apple Distribution: Song Li (LSBQAS2A45)` · 描述文件有效到 2027-10-14 · 包内 426 张插图 |
+| 当前仓库版本 | **`1.68.2` / `85`**（2026-11-05 切版；本轮按用户指示**不重出包、不上传**，所以 TestFlight 上最新的仍是上一行的 1.68.1/84） |
 | ASC 名称 | **`Lianleme`**（`练了么` 被占用，见 `store-listing-ios.md` §一） |
 
 
