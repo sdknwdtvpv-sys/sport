@@ -80,7 +80,8 @@ cd app && flutter test             # 再加上 widget 测试（需要能跑通 p
 而且 CI 里还有一道**账目**：日志里六层的标记必须都在、**不许出现「⊘ 阻塞」**
 （`verify.sh` 在开发机上允许"环境阻塞不算失败"，CI 上这会让"某一层没跑"也变绿 —— 所以那里反过来判红）。
 所以「CI 绿」= 「门禁绿」，没有第二种口径 —— 这层关系由 `tool/check-ci.mjs` 守着
-（CI 不跑门禁、用 `--fast` 偷偷跳过某一层、混进门禁不管的命令、版本没钉住，都会判红）。
+（CI 不跑门禁、用 `--fast` 偷偷跳过某一层、混进门禁不管的命令、版本没钉住、
+**依赖 registry 与 `app/pubspec.lock` 不一致**，都会判红）。
 这也意味着整套验证在**从零 clone 的干净 Linux 环境**里同样成立，不依赖任何本机配置 ——
 中文目录只影响本机的 `flutter analyze`，不影响 CI（runner 的工作目录本来就是 ASCII）。
 
@@ -246,6 +247,11 @@ flutter test
    export PUB_HOSTED_URL=https://pub.flutter-io.cn
    export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
    ```
+
+   ⚠️ **CI 也显式设同一个 `PUB_HOSTED_URL`**（`.github/workflows/ci.yml` 的 job 级 `env`）：
+   pub 把 registry 当成包身份的一部分，CI 与 `app/pubspec.lock` 的源不一致时**锁文件整份失效**、
+   会按 `^` 重新解析最新版 —— 2026-10-14 的 build_runner 2.16.2 事故就是这么来的。
+   机制、选型与残余风险见 [`docs/performance-audit-2026-11-05.md`](docs/performance-audit-2026-11-05.md) §5。
 
 ### 这台机器上没有、也不需要带走的东西
 

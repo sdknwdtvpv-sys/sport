@@ -10,7 +10,7 @@
  * 2026-09-30 用户拍板："CI 直接跑 `./verify.sh`"。于是关系变了，守卫跟着变：
  * 现在**不是**核"CI 是不是子集"，而是核"**CI 跑的是不是门禁本身**"。
  *
- * 它核五件事：
+ * 它核七件事：
  *   1. **CI 必须跑 `./verify.sh`**（不是把它的步骤抄一遍 —— 抄一遍就会漂，
  *      而且抄漏一层没人发现）；
  *   2. **不许 `--fast`**：那会跳过第 5 层 widget 测试，CI 就又变成"看着像门禁"的东西；
@@ -25,6 +25,11 @@
  *   6. **头部必须说清现在是等价关系**：要出现「CI 跑的就是门禁本身」这种说法，
  *      并且**不许**再出现过去那句"**子集**"的措辞（否则文档里的承诺又与被核的东西对不上），
  *      还必须在 `push` 与 `pull_request` 上都触发。
+ *   7. **依赖 registry 必须与锁文件一致**（2026-11-05 补，一次真实事故）：pub 把
+ *      registry 地址当成包身份的一部分，CI 的 `PUB_HOSTED_URL`（不设 = pub.dev）与
+ *      `app/pubspec.lock` 里记的 `url:` 对不上时，**锁文件整份失效**、按 `^` 约束重新解析 ——
+ *      2026-10-14 的 build_runner 2.16.2 事故就是这么来的（详见 workflow 头部注释）。
+ *      所以：CI 显式声明的 registry 必须**等于**锁文件里那个。
  *
  * 用法：
  *   node tool/check-ci.mjs              # 核仓库里的 workflow
@@ -62,6 +67,22 @@ const PINS = [
   [/node-version:\s*'22'/, /node-version:\s*'(?!22')/, "node-version 必须钉在 '22'（node:sqlite 要 22.5+）"],
   [/flutter-version:\s*'3\.47\.5'/, /flutter-version:\s*'(?!3\.47\.5')/, "flutter-version 必须钉在 '3.47.5'"],
 ];
+
+/** 锁文件、以及 CI 不设 registry 时 pub 的默认值（第 7 条要核的两个值）。 */
+const LOCK_REL = 'app/pubspec.lock';
+const PUB_DEV = 'https://pub.dev';
+
+/** 从锁文件里读 registry：hosted 依赖的 `url:`。读不到返回 null。 */
+function lockRegistry(root) {
+  let lock;
+  try {
+    lock = readFileSync(join(root, LOCK_REL), 'utf8');
+  } catch {
+    return null;
+  }
+  const m = /url:\s*"([^"]+)"/.exec(lock);
+  return m ? m[1] : null;
+}
 
 /** 把 workflow 里所有 `run:` 的命令抽出来（含 `run: |` 的多行块）。 */
 function extractRunCommands(text) {
@@ -156,16 +177,44 @@ function inspect(root) {
   if (!/on:\s*\n\s*push:/.test(text) || !/pull_request:/.test(text)) {
     problems.push('CI 没有在 push 与 pull_request 上都触发');
   }
+  // ── 7. 依赖 registry 必须与锁文件一致（2026-11-05，build_runner 2.16.2 事故之后补）
+  //
+  // pub 的 hosted 包身份 = (name, registry url)。CI 的 `PUB_HOSTED_URL` 与锁文件里的
+  // `url:` 不一致时，锁文件里那些条目会被当成"另一个源"的包、整份失效 —— pub 会按
+  // pubspec 的 `^` 约束重新解析最新版。2026-10-14 就是这样把锁着的 build_runner 2.16.1
+  // 换成了 2.16.2（那一版本 Dart SDK 上编译不过），而 2026-11-04 重跑又绿。
+  const lockUrl = lockRegistry(root);
+  const envMatch = /^\s*PUB_HOSTED_URL:\s*(\S+)/m.exec(text);
+  const ciRegistry = envMatch ? envMatch[1].replace(/^['"]|['"]$/g, '') : PUB_DEV;
+  if (!lockUrl) {
+    problems.push(`读不到 ${LOCK_REL} 里 hosted 依赖的 \`url:\` —— `
+      + '没有它就无法判断 CI 用的 registry 是否与锁文件一致（锁文件是依赖版本唯一真源）');
+  } else if (ciRegistry !== lockUrl) {
+    problems.push(`CI 的依赖 registry 是 ${ciRegistry}，而 ${LOCK_REL} 记的是 ${lockUrl} —— `
+      + 'pub 把 registry 当成包身份的一部分，两者不一致时**锁文件整份失效**、'
+      + '依赖会按 `^` 约束重新解析（2026-10-14 的 build_runner 2.16.2 事故就是这么来的）。'
+      + (envMatch
+        ? '把 workflow 的 PUB_HOSTED_URL 改成锁文件里那个值。'
+        : '在 workflow 的 job 里显式设 PUB_HOSTED_URL 为锁文件里那个值。'));
+  } else {
+    facts.push(`依赖 registry：CI ${ciRegistry} = ${LOCK_REL} ${lockUrl}`);
+  }
+
   return { problems, facts };
 }
 
 // ───────────────────────────────────────────────────────────── 自检
 function selftest() {
   const original = readFileSync(join(ROOT, CI_REL), 'utf8');
-  const makeTree = (mutate) => {
+  /** 自检夹具：锁文件里记的 registry（与真仓库一致，见第 7 条）。 */
+  const LOCK_MIRROR = 'packages:\n  build_runner:\n    description:\n      url: "https://pub.flutter-io.cn"\n';
+  const LOCK_PUB_DEV = 'packages:\n  build_runner:\n    description:\n      url: "https://pub.dev"\n';
+  const makeTree = (mutate, lockText = LOCK_MIRROR) => {
     const root = mkdtempSync(join(tmpdir(), 'lianleme-ci-'));
     const dir = join(root, '.github/workflows');
     mkdirSync(dir, { recursive: true });
+    mkdirSync(join(root, 'app'), { recursive: true });
+    writeFileSync(join(root, LOCK_REL), lockText);
     let text = original;
     if (mutate) text = mutate(text);
     writeFileSync(join(dir, 'ci.yml'), text);
@@ -212,11 +261,19 @@ function selftest() {
       if (i < 0 || j < 0 || j < i) throw new Error('自检夹具失效：找不到账目那一步');
       return t.slice(0, i) + t.slice(j);
     }, false, '账目'],
+    // 第 7 条（2026-11-05）：CI 与锁文件的 registry 必须是同一个
+    ['CI 不声明 registry（回落 pub.dev，而锁文件是镜像）', (t) =>
+      edit(t, '      PUB_HOSTED_URL: https://pub.flutter-io.cn\n', ''), false, 'registry'],
+    ['CI 的 PUB_HOSTED_URL 抄错一个字符（与锁文件不一致）', (t) =>
+      edit(t, 'PUB_HOSTED_URL: https://pub.flutter-io.cn', 'PUB_HOSTED_URL: https://pub.flutter-io.com'),
+      false, 'registry'],
+    ['锁文件换到 pub.dev，而 CI 还指着镜像', null, false, 'registry', LOCK_PUB_DEV],
+    ['锁文件里读不出 registry（url: 没了）', null, false, '读不到', 'packages: {}\n'],
   ];
 
   let bad = 0;
-  for (const [label, mutate, wantGreen, expect] of cases) {
-    const root = makeTree(mutate);
+  for (const [label, mutate, wantGreen, expect, lockText] of cases) {
+    const root = makeTree(mutate, lockText);
     const { problems } = inspect(root);
     const green = problems.length === 0;
     let ok = green === wantGreen;
@@ -234,7 +291,7 @@ function selftest() {
     process.exit(1);
   }
   console.log('\n✓ 自检通过：CI 不跑门禁、用 --fast 偷跳、混进别的命令、'
-    + '版本没钉住、头部说法与事实不符都藏不住');
+    + '版本没钉住、registry 与锁文件不一致、头部说法与事实不符都藏不住');
 }
 
 // ───────────────────────────────────────────────────────────────── 跑
@@ -251,5 +308,5 @@ if (process.argv.includes('--selftest')) {
     console.error('\n✗ CI 与门禁的关系不对 —— "CI 绿 = 门禁绿"是写在 README 与政策里的承诺');
     process.exit(1);
   }
-  console.log('\n✓ CI 跑的就是门禁本身、没混进别的东西、版本钉死、头部说法与事实一致');
+  console.log('\n✓ CI 跑的就是门禁本身、没混进别的东西、版本与依赖 registry 都钉死、头部说法与事实一致');
 }

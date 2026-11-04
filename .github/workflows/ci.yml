@@ -15,7 +15,19 @@ name: CI
 #     Ubuntu 26，届时 ubuntu-latest 会静默变成另一个系统。
 #   * actions/*@v5 —— v4 面向 Node.js 20，GitHub 已标记弃用并强制跑在 Node.js 24 上。
 #   * node 22 —— 服务端自检用 `node:sqlite`（22.5+ 才有），版本漂了会红得莫名其妙。
+#   * PUB_HOSTED_URL —— 依赖 registry 也必须钉住（2026-11-05 补），理由见下面 `env` 那段。
 # 复查时间：2027-01，或收到 GitHub 弃用公告时。
+#
+# 依赖 registry 为什么算"环境钉版本"的一部分：
+#   `app/pubspec.lock` 里所有 hosted 依赖的 `url:` 都是 `https://pub.flutter-io.cn`
+#   （开发机的 `PUB_HOSTED_URL` 走国内镜像）。CI 不设它 → 默认 pub.dev，而 pub 把
+#   "registry 地址"当成包身份的一部分：地址对不上时**锁文件整份失效**，会按 `^` 约束
+#   重新解析最新版。2026-10-14 就是这样在 CI 上装到了 build_runner **2.16.2**
+#   （锁文件里是 2.16.1），那一版在本 Dart SDK 上编译报
+#   `BuildStepImpl is missing implementations`，`db.g.dart` 没生成、后面全线红；
+#   2026-11-04 重跑又绿了 —— 典型的"不可复现的漂移"。所以这里显式声明与锁文件同一个
+#   registry，锁文件重新成为唯一真源。这一条由 `tool/check-ci.mjs` 核（值必须相等）；
+#   `app/pubspec.yaml` 里 build_runner 的精确版本是第二道锁。
 
 on:
   push:
@@ -25,6 +37,11 @@ jobs:
   gate:
     name: 六层门禁（./verify.sh，与本地同一条命令）
     runs-on: ubuntu-24.04
+    # ⚠️ 必须与 `app/pubspec.lock` 里记的 registry **完全相同**（`tool/check-ci.mjs` 会核）：
+    # registry 是 pub 的包身份的一部分，地址不同 → 锁文件整份失效 → 依赖按 `^` 重新解析。
+    # 2026-10-14 的 build_runner 2.16.2 事故就是这么来的（见文件头）。
+    env:
+      PUB_HOSTED_URL: https://pub.flutter-io.cn
     steps:
       - uses: actions/checkout@v5
 

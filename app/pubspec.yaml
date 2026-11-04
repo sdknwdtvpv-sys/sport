@@ -45,7 +45,15 @@ dev_dependencies:
   # 见 integration_test/screenshots_test.dart 与 test_driver/screenshot_driver.dart。
   integration_test:
     sdk: flutter
-  build_runner: ^2.16.1
+  # ⚠️ **精确版本，不带 `^`**（2026-11-05）。原因不是洁癖，是一次真实事故：
+  # 2026-10-14 的 CI 上 `pub get` 重新解析到了 build_runner **2.16.2**（锁文件里是
+  # 2.16.1），那一版在本 Dart SDK 上编译报 `BuildStepImpl is missing implementations`，
+  # `db.g.dart` 没生成，后面全线红；2026-11-04 重跑又绿了 —— 典型的"不可复现的漂移"。
+  # 根因是 CI 与 `pubspec.lock` 记的 registry 不一致（见 `.github/workflows/ci.yml` 的
+  # `PUB_HOSTED_URL`），那一步让锁文件在 CI 上整份失效；这一行是第二道锁：
+  # 即使有人在**另一个 registry** 上跑 `pub get`（锁文件被重写成那个源），
+  # build_runner 也只会是这一版。改它之前先读 `docs/performance-audit-2026-11-05.md`。
+  build_runner: 2.16.1
   drift_dev: ^2.35.0
 
 flutter:
