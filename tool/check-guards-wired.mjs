@@ -67,7 +67,13 @@ function inspect(root) {
   for (const f of readdirSync(join(root, 'tool'))) {
     if (/^(check-.*\.mjs)$/.test(f)) guards.push(`tool/${f}`);
   }
-  for (const f of ['usability-selftest.mjs', 'mutation.mjs']) guards.push(`tool/${f}`);
+  // 这三份**不是 `check-*`**，但同样是"守卫"：前两份自己就是自检（门禁里只能"调用"它们），
+  // 第三份是熟人短测门槛工具（`docs/feature-backlog.md` 第 12 项）—— 它算出来的门槛会被
+  // `tool/usability-report.mjs` **当真读走**，算错了没有别的守卫会发现，所以必须真的在
+  // `verify.sh` 里被调用（判据见下面 `runsDirectly` 的第三条）。
+  for (const f of ['usability-selftest.mjs', 'mutation.mjs', 'usability-threshold.mjs']) {
+    guards.push(`tool/${f}`);
+  }
   for (const f of readdirSync(join(root, 'server'))) {
     if (f.endsWith('.selftest.mjs')) guards.push(`server/${f}`);
   }
@@ -140,13 +146,17 @@ function selftest() {
     mkdirSync(join(root, 'tool'), { recursive: true });
     mkdirSync(join(root, 'server'), { recursive: true });
     mkdirSync(join(root, 'app/tool'), { recursive: true });
-    // 夹具里也要有"另外两个固定会被扫到"的守卫，并把它们写进假的 verify.sh ——
-    // 否则每条用例都会因为"它们没在跑"而红（假红），第一版就是这样
+    // 夹具里也要有"另外三个固定会被扫到"的守卫，并把它们写进假的 verify.sh ——
+    // 否则每条用例都会因为"它们没在跑"而红（假红），第一版就是这样。
+    // 第三份（`usability-threshold.mjs`）2026-11-04 加进名单时也照这个规矩办：
+    // 只改名单不改夹具 = 每一条自检用例都红在"夹具缺文件"上。
     writeFileSync(join(root, 'verify.sh'),
-      `node tool/mutation.mjs\nnode tool/usability-selftest.mjs\n${verify}`);
+      'node tool/mutation.mjs\nnode tool/usability-selftest.mjs\nnode tool/usability-threshold.mjs\n'
+      + verify);
     for (const t of tools) writeFileSync(join(root, t), '// x');
     writeFileSync(join(root, 'tool/mutation.mjs'), '// x');
     writeFileSync(join(root, 'tool/usability-selftest.mjs'), '// x');
+    writeFileSync(join(root, 'tool/usability-threshold.mjs'), '// x');
     for (const [rel, body] of Object.entries(extra)) writeFileSync(join(root, rel), body);
     return root;
   };

@@ -21,6 +21,10 @@ server/data-live/
 # 可用性测试的原始记录（含被试原话，不进仓库）；汇总后的结论才写进 docs/
 usability/sessions/
 
+# 熟人短测的原始记录（每人一份 JSON，`tool/usability-threshold.mjs` 的默认读数目录）——
+# kit §A4 说得很清楚：记录表与导出物不进仓库，§3 只收门槛与分布摘要
+usability/thresholds/
+
 # 软著源码导出等交付物（源码的副本，不进仓库）
 dist/
 

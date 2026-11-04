@@ -366,6 +366,12 @@ selfcheck tool/check-repdb-art.mjs "RepDB 插图核对自检通过（署名被�
 # 而报告工具只认 id，当时没有任何东西会发现。
 selfcheck tool/check-usability-tasks.mjs "任务卡一致性自检通过（三份文档漂了会被抓到）" "任务卡一致性工具的自检失败"
 
+# 熟人短测门槛工具的**自检**（`docs/feature-backlog.md` 第 12 项）：门槛的算法只有那一份，
+# 而算错的门槛会被 `tool/usability-report.mjs` **当真读走**（它读的就是 `docs/analytics.md` §3
+# 那一格），从此每份报告都用一把错尺子量。所以这里钉死：中位数、.5 向上去整（实测值保留）、
+# P90 填本次最大值（不是分位数）、P99 留空、分项之和必须等于总点击、n 只能 3–5。
+selfcheck tool/usability-threshold.mjs "熟人短测门槛自检通过（中位数 / .5 向上去整 / 分项对账 / 超 3 次提示 / P90=max / P99 空）" "熟人短测门槛工具的自检失败"
+
 # 预置历史生成器的**自检**：确定性（--check 的地基）+ 三条把任务卡钉住的不变量 ——
 # 今天必须轮到胸、真引擎对卧推必须算出 62.5kg、T4 的"上周卧推总容量"必须是 1800kg。
 selfcheck tool/preset-history.mjs "预置历史自检通过（确定性 + 真引擎算出 62.5kg + T4 答案 1800kg）" "预置历史生成器的自检失败"
@@ -882,7 +888,8 @@ for f in README.md PRODUCT.md ROADMAP.md CHANGELOG.md \
          app/test/assisted_exercise_test.dart \
          server/collector.mjs server/collector.selftest.mjs tool/analytics-report.mjs \
          app/lib/analytics/analytics_context.dart app/lib/data/analytics_meta_repository.dart \
-         tool/usability-report.mjs tool/usability-selftest.mjs tool/content-report.mjs \
+         tool/usability-report.mjs tool/usability-selftest.mjs tool/usability-threshold.mjs \
+         tool/content-report.mjs \
          tool/check-usability-tasks.mjs usability/tasks.json \
          tool/preset-history.mjs usability/preset-6-weeks.json \
          tool/privacy-audit.mjs docs/privacy-facts.json docs/release-admin.md \
