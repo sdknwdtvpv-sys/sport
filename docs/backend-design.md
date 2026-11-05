@@ -556,10 +556,30 @@ Caddyfile 没开访问日志。
   `redeem-admin.mjs` **和 `server/apple/AppleRootCA-G3.pem`**；
   `tool/check-deploy.mjs` 的判据会核"白名单覆盖了每个 `server/*.mjs`（selftest 除外）"。
 
+### 10.7 云备份多版本与配额（M4b，2026-11-06）
+
+* 新表 `backup_versions(account_id, seq, blob, bytes, created_at)`（PK `(account_id, seq)`）。
+  `backups` 仍是"最新一份"，`PUT/GET /v1/backup` 的语义与响应**一个字节都没变**；
+  新上传在同一事务里同时写最新一份与版本表。
+* **存量兼容**：老库第一次碰到账号时把 `backups` 那行幂等回填成 `seq=1`
+  （`insert or ignore` + 主键）；没有回填的账号在列表/上传时自动补。
+* **配额（服务端按权益算，不信客户端）**：免费 1 份 / 单份 8MB；
+  Ultra 10 份 / 单份 32MB / 账号总 256MB。单份超限 413、总量超限 409（人话原因）。
+* 端点（**会话令牌**）：
+  * `GET /v1/billing/backups`：列版本（`seq/bytes/created_at/is_latest`，**不含 blob**）；
+  * `GET /v1/backup/versions/:seq`：取指定版本**密文**（越权/不可见 → 404）；
+  * `POST /v1/billing/backups/restore`：把某版设为最新（**幂等**，不新增版本）。
+* **降级策略**（权益过期/退款）：停止新增版本；列表只显示最新 1 份；
+  **旧版本行不立刻删**（只隐藏，避免"降级即删用户数据"）。清理策略：先只隐藏，
+  后续可加"降级 30 天后清理隐藏版本"的运维命令/定时任务（本批未实现，**不假装做了**）。
+* 删除账号连带删 `backup_versions`（与备份/账号同一个删除事务链路）。
+* 部署：`server/backup-versions.mjs` 进拷贝白名单；`backend-store.mjs` 启动时自动建表
+  并给老库补 `backups.current_seq` 列（SQLite `add column`，幂等）。
+
 ### 10.6 这一批**没做**（M3 后续 / M4）
 
 * Google Play：purchaseToken 校验 + RTDN（等 Android 内购接入时一起做）。
-* 备份多版本（`backup_versions` 表 + Ultra 配额）：等云备份配额要做时一起。
+* ~~备份多版本（`backup_versions` 表 + Ultra 配额）~~ —— **已做（2026-11-06，见 §10.7）**。
 * Apple Offer Code / 兑换面板的客户端流程（M4）、App Store Server API 主动查询（可选）。
 * ~~「删除账号」联动删除计费权益~~ —— **已做（2026-11-05）**：`billing-store.deleteByAccount`
   在一个事务里删权益/事件、摘兑换码绑定；`DELETE /v1/account` 计费删除失败 → 整体 500；

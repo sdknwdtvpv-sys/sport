@@ -17,6 +17,7 @@ import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/units.dart';
 import '../../data/body_metric_repository.dart';
+import '../../data/entitlement_repository.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../data/profile_repository.dart';
@@ -31,6 +32,7 @@ import '../../backup/login_session.dart';
 import '../account/account_screen.dart';
 import '../backup/cloud_backup_screen.dart';
 import '../../backup/backup_config.dart';
+import '../../backup/backup_versions.dart';
 import '../../backup/backup_transport.dart';
 import '../../backup/cloud_backup.dart';
 import 'backup.dart';
@@ -56,6 +58,8 @@ class DataToolsScreen extends StatefulWidget {
     this.cloud,
     this.account,
     this.onAccountChanged,
+    this.entitlements,
+    this.showUltra,
   });
 
   final LocalStore store;
@@ -94,6 +98,12 @@ class DataToolsScreen extends StatefulWidget {
 
   /// 登录 / 注册 / 注销之后通知上层（M4a：上层静默同步服务端权益）
   final VoidCallback? onAccountChanged;
+
+  /// 本机权益（云备份多版本历史用；不传 = 这一屏不显示历史）
+  final EntitlementRepository? entitlements;
+
+  /// 这一版卖不卖 Ultra（null = 交给云备份屏按 `kUltraReleased` 判）
+  final bool? showUltra;
 
   @override
   State<DataToolsScreen> createState() => _DataToolsScreenState();
@@ -246,6 +256,10 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
           bodyMetrics: widget.bodyMetrics,
           // 云备份是唯一会让数据离开设备的功能，它自己的成败要有埋点（P1-1）
           analytics: widget.analytics,
+          entitlements: widget.entitlements,
+          // 没配服务器地址时是 null（不显示历史、也不发请求）
+          versions: backupVersionsFromConfig(sessionStore: widget.profile.authSessionStore()),
+          showUltra: widget.showUltra,
           onDataChanged: () => widget.onDataChanged?.call(),
         ),
       ),

@@ -260,7 +260,7 @@ step "3/7 拷代码（服务端 .mjs 白名单 + Apple 根证书）"
 # `await import('./auth-store.mjs')` / `./billing.mjs` 的 —— 少了它，症状是
 # "启用账号体系/计费后第一次请求 500"。
 for f in backend.mjs backend-store.mjs collector.mjs auth.mjs auth-store.mjs mailer.mjs \
-         billing.mjs billing-store.mjs redeem-admin.mjs; do
+         billing.mjs billing-store.mjs redeem-admin.mjs backup-versions.mjs; do
   run "install -o root -g root -m 644 '$REPO_SERVER/$f' '$APP_DIR/server/$f'"
 done
 # Apple 根证书随代码入库（验签不联网）：**必须一起拷**，否则计费端点启动时读不到根证书。

@@ -469,16 +469,20 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 
 **合计 15–21 人日**（不含"周期化计划"这个新功能；它单独再算 5–8 人日）。
 
-> **M3 进度（2026-11-05，第一批已完成）**：`billing-store.mjs` / `billing.mjs`（Apple JWS 验签 + V2 通知 + 权益下发 + 自建码核销/限速）/ `redeem-admin.mjs`（CLI）/ `billing.selftest.mjs`（判据 9/10 的服务端那一半）已落地并进六层门禁；Apple 根证书入库、`backend.mjs` 接线、部署白名单与 `check-deploy` 判据同步、`docs/backend-design.md` §十。**还差**：Google RTDN / purchaseToken 校验、备份多版本（Ultra 配额）、Apple offer code 客户端流程（M4）、可选 App Store Server API 主动查询（需用户 ASC API Key）、「删除账号」联动删除计费权益（**已做 2026-11-05**：与备份/账号一起删，失败整体 500）。
+> **M3 进度（2026-11-05，第一批已完成）**：`billing-store.mjs` / `billing.mjs`（Apple JWS 验签 + V2 通知 + 权益下发 + 自建码核销/限速）/ `redeem-admin.mjs`（CLI）/ `billing.selftest.mjs`（判据 9/10 的服务端那一半）已落地并进六层门禁；Apple 根证书入库、`backend.mjs` 接线、部署白名单与 `check-deploy` 判据同步、`docs/backend-design.md` §十。**还差**（备份多版本 **已于 2026-11-06 在 M4b 做完**，见 §十 M4 进度）：Google RTDN / purchaseToken 校验、Apple offer code 客户端流程（M4）、可选 App Store Server API 主动查询（需用户 ASC API Key）、「删除账号」联动删除计费权益（**已做 2026-11-05**：与备份/账号一起删，失败整体 500）。
 
-> **M4 进度（2026-11-06，M4a 已完成；M4b/M4c 未做）**：客户端已接服务端权益 ——
+> **M4 进度（2026-11-06，M4a + M4b 已完成；M4c 未做）**：客户端已接服务端权益 ——
 > `app/lib/billing/billing_server.dart`（可注入 API + 真实现 + 假实现）负责上送 StoreKit 2 JWS
 > （`POST /v1/billing/verify`，**服务端为准**）、启动/登录后 `GET /v1/billing/entitlement`
 > 合并（只延长不缩短；refunded/revoked 立即降级；离线保留本地）、`POST /v1/billing/redeem` 兑换；
 > `BillingClient` 本地先生效、服务端再校准（失败不阻挡购买结果）；`redeem_screen.dart` 平台分支
-> （iOS 不渲染输入框）。**M4b**（iOS Offer Code 面板）、**M4c**（翻 `kUltraReleased`、商城商品、
-> 政策/事实表/商店表单一起改、真机沙盒证据）仍未做；M4c 之前**政策 §2.5 不用改**：
-> 发版开关关着、正式包没配服务器地址 → 不会上传购买凭据。
+> （iOS 不渲染输入框）。**M4b 云备份多版本 + 配额已于 2026-11-06 做完**：服务端 `backup_versions` 表 +
+`backup-versions.mjs`（存量回填幂等、按权益算配额、版本列表/取密文/恢复幂等、降级不删数据）、
+客户端 `app/lib/backup/backup_versions.dart` + 云备份页「备份历史（Ultra）」（有权益才请求、
+二次确认恢复；免费/发版开关关时零新增付费入口）。
+**M4c**（翻 `kUltraReleased`、商城商品、政策/事实表/商店表单一起改、真机沙盒证据）
+仍未做；M4c 之前**政策 §2.5 不用改**：发版开关关着、正式包没配服务器地址 →
+不会上传购买凭据。
 
 ### M1 进度（2026-10-10 开工）
 

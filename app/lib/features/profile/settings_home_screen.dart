@@ -222,6 +222,8 @@ class SettingsHomeScreen extends StatelessWidget {
           cloud: cloud,
           account: account,
           onAccountChanged: onAccountChanged,
+          entitlements: entitlements,
+          showUltra: showUltra,
         ),
       ));
 

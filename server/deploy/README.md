@@ -74,6 +74,9 @@ BACKEND_PORT=18790 COLLECTOR_PORT=18787 DOMAIN=api.example.com bash server/deplo
 
 ## 会员计费（M3，2026-11-05）
 
+* **云备份多版本（M4b）**：`backend-store.mjs` 启动时自动建 `backup_versions` 表、给老库补
+  `backups.current_seq` 列（幂等）；免费 1 份 / Ultra 10 份，配额由服务端按权益算。
+  **不需要手工迁移**，原有 `PUT/GET /v1/backup` 语义不变。
 * **数据库**：计费库是单独一个 sqlite 文件，默认落在 `DATA_DIR` 下的
   `backend-billing.sqlite`（安装脚本会建好目录，后端首次启动自动建表）。**不需要手动配**。
 * **Apple 通知 URL**（要填进 App Store Connect → App 信息 → App Store Server Notifications V2）：

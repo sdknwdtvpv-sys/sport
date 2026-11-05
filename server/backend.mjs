@@ -21,6 +21,12 @@
  *   GET    /v1/billing/entitlement              登录 → 当前权益（过期/退款如实）
  *   POST   /v1/billing/redeem                   登录 · 体：{"code":"LMU-…"} → 自建码核销
  *
+ * 云备份多版本（M4b，Ultra 权益；服务端自己按权益算配额）：
+ *   PUT    /v1/backup                           登录 · 体：原始密文（现有语义不变；同时写版本）
+ *   GET    /v1/billing/backups                  登录 → 版本列表（不含 blob）
+ *   GET    /v1/backup/versions/:seq             登录 → 指定版本密文（越权/不可见 404）
+ *   POST   /v1/billing/backups/restore          登录 · 体：{"seq":N} → 设为最新（幂等）
+ *
  * 账号体系（**可选**，配了邮件通道才有；见 `docs/plan-account-login.md`）：
  *   POST   /v1/auth/salt            体：{"email"} → 200 {"salt","kdf"}（不存在的邮箱回**假盐**）
  *   POST   /v1/auth/code            体：{"email","purpose"} → 200 {"ok":true}（发 6 位验证码）
@@ -56,6 +62,7 @@ import { createServer } from 'node:http';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createSqliteStore, MAX_BACKUP_BYTES } from './backend-store.mjs';
+import { ULTRA_MAX_BLOB_BYTES, createBackupVersions } from './backup-versions.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -107,7 +114,7 @@ const bearer = (req) => {
   return m ? m[1].trim() : null;
 };
 
-export function createBackend({ store, log = console.log, auth = null, billing = null }) {
+export function createBackend({ store, log = console.log, auth = null, billing = null, versions = null }) {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
     const p = url.pathname;
@@ -184,6 +191,12 @@ export function createBackend({ store, log = console.log, auth = null, billing =
         return json(res, 404, { error: '账号不存在（恢复码算错了？）' });
       }
 
+      // ---- 云备份多版本（列版本 / 取某版密文 / 恢复为最新）----
+      // 只认会话令牌（authVia === 'token'）；越权/不可见一律 404。
+      if (versions && (await versions.tryHandle({
+        req, res, p, accountId, authVia: resolved?.via ?? null, say, json, readBody,
+      }))) return;
+
       // ---- 计费（验签 / 权益下发 / 自建码核销）：需要**会话令牌** ----
       // ⚠️ 不认老的 `Bearer <account_id>`（那是设备凭据）：计费要把权益绑到一个真实账号上，
       //    `authVia` 不是 'token' 时 billing 层会回 401。
@@ -198,14 +211,26 @@ export function createBackend({ store, log = console.log, auth = null, billing =
 
       // ---- 上传/下载备份：**原样收发，不解析内容** ----
       if (req.method === 'PUT' && p === '/v1/backup') {
-        const { body, tooLarge } = await readBody(req);
+        // 版本表启用时，请求体上限按 **Ultra 单份 32MB** 收；具体这份能不能收
+        //（免费 8MB / 超总量）由 backup-versions 按服务端算出的权益判，回 413/409。
+        const { body, tooLarge } = await readBody(req, versions ? ULTRA_MAX_BLOB_BYTES : MAX_BACKUP_BYTES);
         if (tooLarge) {
           say(413);
-          return json(res, 413, { error: `备份超过上限 ${MAX_BACKUP_BYTES} 字节` });
+          return json(res, 413, { error: `备份超过上限 ${versions ? ULTRA_MAX_BLOB_BYTES : MAX_BACKUP_BYTES} 字节` });
         }
         if (!body || body.length === 0) {
           say(400);
           return json(res, 400, { error: '备份内容为空' });
+        }
+        if (versions) {
+          const r = versions.putBackup(accountId, body);
+          if (!r.ok) {
+            say(r.status);
+            return json(res, r.status, { error: r.error });
+          }
+          say(200);
+          // ⚠️ 与老客户端约定的响应形状**逐字不变**（只多写了版本表，响应不变）。
+          return json(res, 200, { bytes: r.bytes, updated_at: r.updatedAt });
         }
         const r = store.putBackup(accountId, body);
         say(200);
@@ -328,7 +353,16 @@ if (isMain) {
     console.error('    服务会照常启动（备份与账号不受影响），/v1/billing/* 会明确返回 404。');
     billing = null;
   }
-  const { server } = createBackend({ store, auth, billing });
+  // 云备份多版本：**总是启用**（免费档就是 1 份，不需要计费模块也能工作；
+  // 有计费模块时由它回答"这个账号是不是 Ultra"）。
+  let versions = null;
+  try {
+    versions = createBackupVersions({ store, billing, log: (m) => console.log(m) });
+  } catch (e) {
+    console.error('⚠️  云备份多版本没能启用：' + (e?.message ?? e));
+    versions = null;
+  }
+  const { server } = createBackend({ store, auth, billing, versions });
   // `--port 0` 让内核挑一个空闲端口；**必须把真实端口打出来**，
   // 否则自动化测试拿到 "0" 就没法连上（app/test/cloud_backup_test.dart 正靠这一行）。
   // ⚠️ **必须显式绑 127.0.0.1**（2026-10-04 真机上量到的）：只写 server.listen(port)
@@ -347,6 +381,9 @@ if (isMain) {
       ? `  计费：已开（库 ${billingDbPath}）· POST /v1/billing/{verify,redeem} · GET /v1/billing/entitlement · Apple 通知已接收`
         + (billing.allowSandboxTransactions ? ' · ⚠️ 沙盒交易**允许**换权益（联调模式）' : ' · 沙盒交易**不**换权益')
       : '  计费：**没开**（/v1/billing/* 会 404）');
+    console.log(versions
+      ? '  备份多版本：已开（免费 1 份 / 8MB；Ultra 10 份 / 32MB 单份 / 256MB 总量）'
+      : '  备份多版本：**没开**（PUT /v1/backup 仍是单份覆盖）');
     console.log('  ⚠️ 服务端只存密文；生产必须走 HTTPS（凭据在 Authorization 头里）。');
   });
 }

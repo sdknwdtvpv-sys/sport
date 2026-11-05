@@ -128,6 +128,18 @@ class CloudBackup {
     return utf8.decode(clear);
   }
 
+  /// 用恢复码解开一个**指定的密文信封**（多版本恢复用；与 [download] 解密同一条路径）。
+  ///
+  /// 信封从 `GET /v1/backup/versions/:seq` 来 —— 服务端仍然只看到密文。
+  Future<String> decryptEnvelope({
+    required String recoveryCode,
+    required String envelope,
+  }) async {
+    final Uint8List key = decodeRecoveryKey(recoveryCode);
+    final List<int> clear = await decryptBackupWithKey(envelope: envelope, key: key);
+    return utf8.decode(clear);
+  }
+
   /// 问一下云端那份现在是什么状态（只读，不拉内容）。
   ///
   /// 界面上那一行"云端：3.2 MB · 09-30 12:31"就是它；它也是**"我之外还有没有人写过"**

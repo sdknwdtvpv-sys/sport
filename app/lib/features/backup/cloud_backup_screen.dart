@@ -21,13 +21,17 @@ import 'package:flutter/services.dart';
 
 import '../../backup/backup_crypto.dart';
 import '../../backup/backup_transport.dart';
+import '../../backup/backup_versions.dart';
 import '../../backup/cloud_backup.dart';
 import '../../analytics/analytics.dart';
 import '../../backup/recovery_code.dart';
+import '../../billing/entitlement.dart';
+import '../../billing/ultra_visibility.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../data/body_metric_repository.dart';
 import '../../data/db.dart' show BackupAccountData;
+import '../../data/entitlement_repository.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
 import '../../data/notification_repository.dart';
@@ -48,6 +52,9 @@ class CloudBackupScreen extends StatefulWidget {
     this.clock,
     this.notifications,
     this.analytics,
+    this.entitlements,
+    this.versions,
+    this.showUltra,
   });
 
   /// 埋点（可选）。**云备份是唯一会让数据离开设备的功能**，所以它自己的
@@ -77,6 +84,18 @@ class CloudBackupScreen extends StatefulWidget {
   /// 便于测试固定"现在"
   final DateTime Function()? clock;
 
+  /// 本机权益（决定是否显示「备份历史（Ultra）」；**没有权益时不发请求**）。
+  final EntitlementRepository? entitlements;
+
+  /// 多版本 API（真身按服务器地址建；测试注入假实现）。
+  final BackupVersionApi? versions;
+
+  /// 这一版**卖不卖 Ultra**。null = 取 `kUltraReleased`（默认就是发版口径）。
+  ///
+  /// 关着时：有权益的人仍能看到自己的历史（他们是真买过的），但**免费用户看不到
+  /// 任何新的"这是会员功能"说明/入口** —— 半成品付费入口是 2.1 / 3.1.1 的拒审面。
+  final bool? showUltra;
+
   @override
   State<CloudBackupScreen> createState() => _CloudBackupScreenState();
 }
@@ -92,6 +111,12 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   CloudBackupInfo? _cloudInfo;
   bool _infoError = false;
 
+  /// 本机权益现在是否给 Ultra（决定"要不要去问版本列表"）。
+  bool _ultraActive = false;
+  List<CloudBackupVersion>? _versions;
+  bool _historyLoading = false;
+  String? _historyError;
+
   /// 判断"云端那份比本机记录新"时要容忍的时钟偏差（毫秒）。
   ///
   /// 服务端与本机的时间不可能分秒不差，所以**不能用相等来判断**。一分钟足够
@@ -99,6 +124,8 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   static const int _clockSkewMs = 60 * 1000;
 
   int get _nowMs => (widget.clock?.call() ?? DateTime.now()).millisecondsSinceEpoch;
+
+  bool get _showUltra => widget.showUltra ?? kUltraReleased;
 
   /// 没注入就按编译期配置建；没配地址则返回 null（这一屏不该被打开）
   CloudBackup? get _cloud => widget.cloud ?? CloudBackup.fromConfig();
@@ -114,6 +141,48 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     if (!mounted) return;
     setState(() => _account = row);
     await _loadCloudInfo(row);
+    await _loadHistory();
+  }
+
+  /// 有权益才去问版本列表；**免费用户一个请求都不发**（这是产品/隐私边界，
+  /// 不是省流量）。失败也只在这一小块里如实说，不影响云备份本身。
+  Future<void> _loadHistory() async {
+    final EntitlementRepository? repo = widget.entitlements;
+    bool active = false;
+    if (repo != null) {
+      final UltraAccess access = await repo.access(_nowMs);
+      active = access.ultra;
+    }
+    if (!mounted) return;
+    setState(() {
+      _ultraActive = active;
+      if (!active) {
+        _versions = null;
+        _historyError = null;
+      }
+    });
+    if (!active) return; // 免费/降级：不发请求
+
+    final BackupVersionApi? api = widget.versions;
+    if (api == null) {
+      if (mounted) setState(() => _historyError = '这个包没有配服务器地址');
+      return;
+    }
+    setState(() {
+      _historyLoading = true;
+      _historyError = null;
+    });
+    try {
+      final BackupVersionList list = await api.list();
+      if (!mounted) return;
+      setState(() => _versions = list.versions);
+    } on BackupVersionException catch (e) {
+      if (mounted) setState(() => _historyError = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _historyError = '备份历史暂时取不到');
+    } finally {
+      if (mounted) setState(() => _historyLoading = false);
+    }
   }
 
   /// 拉一次云端状态。
@@ -716,6 +785,22 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           _ghostButton(const Key('cloud-restore'), '从云端恢复（合并，不覆盖本机）', _restore),
         ]),
         const SizedBox(height: Tokens.s4),
+        // ── 备份历史（Ultra）──
+        // 有权益：列出版本 + "恢复到这一份"；免费：不请求，只在未来版本售卖时给一行说明。
+        if (_ultraActive)
+          _historyCard()
+        else if (_showUltra)
+          _card(<Widget>[
+            const Text('备份历史（Ultra）',
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
+            const SizedBox(height: Tokens.s2),
+            const Text(
+              '云备份多版本（保留最近 10 份）是 Ultra 权益；当前只保留最新 1 份。',
+              key: Key('cloud-history-ultra-note'),
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
+            ),
+          ]),
+        if (_ultraActive || _showUltra) const SizedBox(height: Tokens.s4),
         _card(<Widget>[
           const Text('你的恢复码',
               style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
@@ -754,6 +839,133 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
           ),
         ]),
       ];
+
+  Widget _historyCard() {
+    final List<CloudBackupVersion>? versions = _versions;
+    return _card(<Widget>[
+      const Text('备份历史（Ultra）',
+          style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwBold)),
+      const SizedBox(height: Tokens.s2),
+      const Text(
+        '保留最近 10 份。恢复某一份会把它设为云端最新，并合并进本机（不删除本机多出来的记录）。',
+        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhNormal),
+      ),
+      const SizedBox(height: Tokens.s3),
+      if (_historyLoading)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: Tokens.s2),
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Tokens.accent),
+          ),
+        )
+      else if (_historyError != null)
+        Text(_historyError!,
+            key: const Key('cloud-versions-error'),
+            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap, height: Tokens.lhNormal))
+      else if (versions == null || versions.isEmpty)
+        const Text('还没有可用的历史版本。',
+            key: Key('cloud-versions-empty'),
+            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal))
+      else
+        for (final CloudBackupVersion v in versions) ...<Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Tokens.s1),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    '第 ${v.seq} 份 · ${_sizeLabel(v.bytes)}'
+                    '${v.isLatest ? ' · 最新' : ''}',
+                    key: Key('cloud-version-${v.seq}'),
+                    style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
+                  ),
+                ),
+                if (!v.isLatest)
+                  TextButton(
+                    key: Key('cloud-version-restore-${v.seq}'),
+                    onPressed: _busy ? null : () => _restoreVersion(v),
+                    child: const Text('恢复到这一份',
+                        style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap)),
+                  ),
+              ],
+            ),
+          ),
+        ],
+    ]);
+  }
+
+  /// 恢复到某一版：**二次确认** → 取密文 → 客户端解密 → 走既有恢复流程（合并、不覆盖）
+  /// → 让服务端把这一版设为最新 → 刷新列表。
+  Future<void> _restoreVersion(CloudBackupVersion version) async {
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: Tokens.elevated,
+        title: const Text('恢复到这一份？', style: TextStyle(color: Tokens.text)),
+        content: Text(
+          '会用「第 ${version.seq} 份」设为云端最新，并合并进本机（不删除本机多出来的记录）。\n\n'
+          '这一步不会删除其他历史版本。',
+          key: const Key('cloud-version-restore-dialog'),
+          style: const TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const Key('cloud-version-restore-cancel'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消', style: TextStyle(color: Tokens.text2)),
+          ),
+          TextButton(
+            key: const Key('cloud-version-restore-ok'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('恢复', style: TextStyle(color: Tokens.accentText)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final BackupAccountData? account = _account;
+    final BackupVersionApi? api = widget.versions;
+    if (account == null || api == null) return;
+    await _run(kind: 'restore', () async {
+      final CloudBackup? cloud = _cloud;
+      if (cloud == null) {
+        setState(() => _error = '这个版本没有配备份服务器');
+        return;
+      }
+      // 取的是**密文**；解密只在客户端做（服务端仍然看不到内容）。
+      final String envelope = await api.download(version.seq);
+      final String json = await cloud.decryptEnvelope(
+        recoveryCode: account.recoveryCode,
+        envelope: envelope,
+      );
+      final BackupParse parsed = parseBackup(json);
+      if (!parsed.ok) {
+        setState(() => _error = '这一份备份读不出来：${parsed.error}');
+        return;
+      }
+      final BackupApplyResult r = await applyBackup(
+        widget.store,
+        parsed,
+        exercises: widget.repository,
+        bodyMetrics: widget.bodyMetrics,
+        profile: widget.profile,
+      );
+      // 复用既有事件名（不新增埋点；政策/表单在 M4c 一起改）
+      widget.analytics?.track('cloud_restore_done', <String, Object?>{
+        'workouts': r.workouts,
+        'body_synced': r.bodyMetrics,
+      });
+      // 让云端最新也指向这一版（幂等；失败也只影响"其他设备看到的最新"）
+      await api.restore(version.seq);
+      if (!mounted) return;
+      widget.onDataChanged?.call();
+      setState(() => _notice = '已恢复第 ${version.seq} 份：${r.summary}');
+      await _load();
+    });
+  }
 
   Widget _card(List<Widget> children) => Container(
         padding: const EdgeInsets.all(Tokens.s5),

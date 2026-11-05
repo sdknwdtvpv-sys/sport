@@ -584,11 +584,22 @@ export function createBilling({
     json(res, 200, { ok: true, duplicate: r.duplicate === true, ignored: r.ignored === true });
   }
 
+  /** 备份配额要问的那一句：这个账号现在有没有 Ultra（服务端自己算，**不信客户端**）。 */
+  function hasUltra(accountId) {
+    if (!accountId) return false;
+    try {
+      return store.currentFor(accountId, nowMs()).status === 'active';
+    } catch {
+      return false;
+    }
+  }
+
   return {
     tryHandle,
     handleAppleNotification,
     store,
     allowSandboxTransactions,
+    hasUltra,
     _internals: {
       verifyAppleJws,
       transactionClaims,

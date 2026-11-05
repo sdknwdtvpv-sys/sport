@@ -288,6 +288,14 @@ else
   strip "$LOG"; echo "${RED}✗ 计费自检失败${OFF}"; fail=1
 fi
 
+# 云备份多版本自检（M4b）：存量回填幂等 / 免费 1 份 / Ultra 10 份 / 配额 413·409 /
+# 越权 404 / 恢复幂等 / 降级不删数据 / 删除账号连带清版本。
+if node server/backup-versions.selftest.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 云备份多版本自检通过"
+else
+  strip "$LOG"; echo "${RED}✗ 云备份多版本自检失败${OFF}"; fail=1
+fi
+
 # plist 读写库的**自检**：核 iOS 产物要读 Info.plist，macOS 上靠 /usr/bin/plutil，
 # 而 CI 是 ubuntu（**没有 plutil**）—— 那就得有一个自己的解析器，且它必须被验过
 # （解析/序列化互逆、坏输入会抛、与系统 plutil 结果一致）。

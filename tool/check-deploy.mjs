@@ -450,7 +450,7 @@ function selftest() {
     // ——自检当场抓到了这个（2026-10-06 加 auth.mjs / mailer.mjs 时）。
     for (const f of ['backend.mjs', 'backend-store.mjs', 'collector.mjs',
       'auth.mjs', 'auth-store.mjs', 'mailer.mjs',
-      'billing.mjs', 'billing-store.mjs', 'redeem-admin.mjs']) {
+      'billing.mjs', 'billing-store.mjs', 'redeem-admin.mjs', 'backup-versions.mjs']) {
       cpSync(join(ROOT, 'server', f), join(root, 'server', f));
     }
     cpSync(join(ROOT, 'server', 'apple'), join(root, 'server', 'apple'), { recursive: true });
