@@ -27,7 +27,7 @@ import '../../data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import '../../analytics/analytics.dart';
 import '../../domain/models.dart';
 import '../body/body_metric_screen.dart';
-import 'training_stats.dart' show buildSetsCsv;
+import 'training_stats.dart' show buildPerExerciseCsv, buildSetsCsv;
 import '../../backup/login_session.dart';
 import '../account/account_screen.dart';
 import '../backup/cloud_backup_screen.dart';
@@ -39,6 +39,7 @@ import 'backup.dart';
 import 'backup_exporter.dart';
 import 'backup_source.dart';
 import 'profile_widgets.dart';
+import 'annual_report_screen.dart';
 import 'trash_screen.dart';
 
 class DataToolsScreen extends StatefulWidget {
@@ -110,6 +111,28 @@ class DataToolsScreen extends StatefulWidget {
 }
 
 class _DataToolsScreenState extends State<DataToolsScreen> {
+  /// 本机权益是否给 Ultra（决定"导出进阶"那一组是否出现）。
+  /// **没权益就整组不渲染**（`kUltraReleased=false` 时连说明都没有 —— 付费入口的红线）。
+  bool _ultraActive = false;
+
+  /// 按动作 CSV 正在生成：按钮置灰 + 副标题给进度反馈（大导出不让人以为没反应）。
+  bool _exporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUltra();
+  }
+
+  Future<void> _loadUltra() async {
+    final EntitlementRepository? repo = widget.entitlements;
+    if (repo == null) return;
+    final bool active =
+        (await repo.access(DateTime.now().millisecondsSinceEpoch)).ultra;
+    if (!mounted) return;
+    setState(() => _ultraActive = active);
+  }
+
   /// 导出**报表**（CSV，给人看的）。
   Future<void> _export() async {
     final List<SetRecord> sets = await widget.store.allSets();
@@ -128,6 +151,63 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
         backgroundColor: Tokens.elevated,
       ),
     );
+  }
+
+  /// 打开年度报告卡（Ultra 权益 9）。数据一次取好，年份切换在屏幕内完成。
+  Future<void> _openAnnualReport() async {
+    final List<SetRecord> sets = await widget.store.allSets();
+    final List<ExerciseData> rows = await widget.repository.search(limit: 1000);
+    final Map<String, String> names = <String, String>{
+      for (final ExerciseData r in rows) r.id: r.name,
+    };
+    final Map<String, String> muscleGroups = <String, String>{
+      for (final ExerciseData r in rows) r.id: r.muscleGroup,
+    };
+    final Set<String> timeExercises = <String>{
+      for (final ExerciseData r in rows)
+        if (isTimeTrack(r.trackType)) r.id,
+    };
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (BuildContext ctx) => AnnualReportScreen(
+        sets: sets,
+        exerciseNames: names,
+        muscleGroups: muscleGroups,
+        timeExercises: timeExercises,
+        unit: widget.unit,
+      ),
+    ));
+  }
+
+  /// 导出**按动作拆分的 CSV**（Ultra 权益 9）：列与「导出全部记录」完全一致，
+  /// 只是行按"动作 → 时间"排好；生成期间给一句进度反馈。
+  Future<void> _exportPerExerciseCsv() async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    // 先把"正在生成"画出来再干活：大导出是同步计算，不先让一帧过去就等于没反馈。
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('正在生成按动作 CSV…'), backgroundColor: Tokens.elevated),
+    );
+    await Future<void>.delayed(Duration.zero);
+    try {
+      final List<SetRecord> sets = await widget.store.allSets();
+      final List<ExerciseData> rows = await widget.repository.search(limit: 1000);
+      final Map<String, String> names = <String, String>{
+        for (final ExerciseData r in rows) r.id: r.name,
+      };
+      final String csv =
+          buildPerExerciseCsv(sets: sets, exerciseNames: names, unit: widget.unit);
+      await Clipboard.setData(ClipboardData(text: csv));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已复制 ${sets.length} 条记录（按动作排列）到剪贴板'),
+          backgroundColor: Tokens.elevated,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   /// 打开回收站（2026-10-04）。恢复之后要通知上层刷新统计。
@@ -445,6 +525,47 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
             trailing: const Icon(Icons.ios_share, color: Tokens.text3, size: IconSpec.m),
           ),
         ]),
+        // 导出进阶（Ultra 权益 9）：**只有真的持有权益才渲染整组**。
+        // 没有权益时这里连一行说明都没有 —— 这是 `kUltraReleased == false` 期间的硬边界。
+        if (_ultraActive) ...<Widget>[
+          const SizedBox(height: Tokens.s5),
+          profileSectionTitle('导出进阶（Ultra）'),
+          settingsCard(<Widget>[
+            ListTile(
+              key: const Key('export-annual-report'),
+              onTap: _openAnnualReport,
+              title: const Text(
+                '年度报告卡',
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
+              ),
+              subtitle: const Text(
+                '这一年练了多少、最好的几组、部位分布（可分享/存相册）',
+                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
+              ),
+              trailing: const Icon(Icons.insights, color: Tokens.text3, size: IconSpec.m),
+            ),
+            const Divider(height: 1, color: Tokens.line),
+            ListTile(
+              key: const Key('export-per-exercise-csv'),
+              onTap: _exporting ? null : _exportPerExerciseCsv,
+              title: const Text(
+                '按动作导出 CSV',
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
+              ),
+              subtitle: Text(
+                _exporting ? '正在生成…' : '每个动作一条时间序列（列与「导出全部记录」一致）',
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
+              ),
+              trailing: _exporting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Tokens.accent),
+                    )
+                  : const Icon(Icons.table_view, color: Tokens.text3, size: IconSpec.m),
+            ),
+          ]),
+        ],
         const SizedBox(height: Tokens.s5),
         profileSectionTitle('备份'),
         settingsCard(<Widget>[

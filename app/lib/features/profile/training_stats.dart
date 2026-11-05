@@ -72,32 +72,67 @@ String _csvField(String v) => '"${v.replaceAll('"', '""')}"';
 ///
 /// 重量列跟随 [unit]：界面上显示 lb、导出却是 kg 的话，用户会以为导错了。
 /// 表头也随之写清楚是哪个单位。
+String _csvHeader(WeightUnit unit) {
+  // 「距离km」列：有氧与农夫行走靠它才带得走数据。
+  // 那一行的「次数」列其实是**秒**（沿用 time 的约定），报表里不改表头 ——
+  // 改了就要动已存在的表的解析，代价大于收益；说明写在 docs/data-model.md 与这里。
+  return '日期,动作,重量${unit.wire},次数,容量${unit.wire},组序,距离km';
+}
+
+/// CSV 的一行（**表头与列序只在这里定义一次**，两种导出共用）。
+String _csvRow(SetRecord s, Map<String, String> exerciseNames, WeightUnit unit) {
+  final String name = exerciseNames[s.exerciseId] ?? s.exerciseId;
+  return <String>[
+    _csvField(formatLocalTime(s.completedAtMs)),
+    _csvField(name),
+    _csvField(s.weightKg == null
+        ? ''
+        : trimNumber(round1(toDisplayWeight(s.weightKg!, unit)))),
+    _csvField('${s.reps}'),
+    _csvField(trimNumber(round1(toDisplayWeight(s.volume, unit)))),
+    _csvField('${s.setIndex}'),
+    _csvField(s.distanceM == null || s.distanceM == 0
+        ? ''
+        : (s.distanceM! / 1000).toStringAsFixed(2)),
+  ].join(',');
+}
+
 String buildSetsCsv({
   required List<SetRecord> sets,
   required Map<String, String> exerciseNames,
   WeightUnit unit = WeightUnit.kg,
 }) {
-  final String u = unit.wire;
   final StringBuffer b = StringBuffer();
-  // 「距离km」列：有氧与农夫行走靠它才带得走数据。
-  // 那一行的「次数」列其实是**秒**（沿用 time 的约定），报表里不改表头 ——
-  // 改了就要动已存在的表的解析，代价大于收益；说明写在 docs/data-model.md 与这里。
-  b.writeln('日期,动作,重量$u,次数,容量$u,组序,距离km');
+  b.writeln(_csvHeader(unit));
   for (final SetRecord s in sets) {
-    final String name = exerciseNames[s.exerciseId] ?? s.exerciseId;
-    b.writeln(<String>[
-      _csvField(formatLocalTime(s.completedAtMs)),
-      _csvField(name),
-      _csvField(s.weightKg == null
-          ? ''
-          : trimNumber(round1(toDisplayWeight(s.weightKg!, unit)))),
-      _csvField('${s.reps}'),
-      _csvField(trimNumber(round1(toDisplayWeight(s.volume, unit)))),
-      _csvField('${s.setIndex}'),
-      _csvField(s.distanceM == null || s.distanceM == 0
-          ? ''
-          : (s.distanceM! / 1000).toStringAsFixed(2)),
-    ].join(','));
+    b.writeln(_csvRow(s, exerciseNames, unit));
+  }
+  return b.toString();
+}
+
+/// **按动作拆分**的 CSV（Ultra 权益 9）：列与 [buildSetsCsv] 完全一致（不自创字段），
+/// 只是行按"动作 → 时间 → 组序"排好，于是每个动作是一条连续的时间序列。
+///
+/// 为什么不拆成多个文件：用户点一次导出拿到一个可粘进表格的文本；
+/// 一个动作一个小文件会把"导出"变成"收一堆文件"。要拆开的话在表格里按「动作」列筛即可。
+String buildPerExerciseCsv({
+  required List<SetRecord> sets,
+  required Map<String, String> exerciseNames,
+  WeightUnit unit = WeightUnit.kg,
+}) {
+  final List<SetRecord> sorted = List<SetRecord>.of(sets)
+    ..sort((SetRecord a, SetRecord b) {
+      final int byExercise = (exerciseNames[a.exerciseId] ?? a.exerciseId)
+          .compareTo(exerciseNames[b.exerciseId] ?? b.exerciseId);
+      if (byExercise != 0) return byExercise;
+      final int byTime = a.completedAtMs.compareTo(b.completedAtMs);
+      if (byTime != 0) return byTime;
+      return a.setIndex.compareTo(b.setIndex);
+    });
+  final StringBuffer b = StringBuffer();
+  b.writeln(_csvHeader(unit));
+  for (final SetRecord s in sorted) {
+    b.writeln(_csvRow(s, exerciseNames, unit));
   }
   return b.toString();
 }

@@ -65,7 +65,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 | 6 | **云备份容量**：单份上限 8MB → 32MB；账号总配额 256MB | 🟡 8MB | ✅ | 服务端配额校验 | ✅ 存储 |
 | 7 | **进阶分析**：分动作趋势、周/月/季对比、1RM 趋势 | 🟡 四张卡 + 容量趋势（已有） | ✅ **2026-10-10 已做**（见 §九-③） | 纯本地计算（`advanced_analysis.dart` 与 `progress_data.dart` 同一约定：无 IO） | ❌ |
 | 8 | **批量整理历史**：多选改动作 / 批量删到回收站 | ❌（今天「全部数据」是**只读**的） | ✅ **2026-10-10 已做**（见 §九-④；**改器械 / 合并重复动作还没做**，见那一段） | **净新增功能**（原先全仓无多选） | ❌ |
-| 9 | **导出进阶**：训练年报/月报图（**复用分享卡的渲染管线**）、按动作拆分的 CSV、Excel(.xlsx) | ❌ | ✅ | 年报卡复用 `share_card.dart`；xlsx 需要新依赖（见 §八 风险） | ❌ |
+| 9 | **导出进阶**：训练年报图（**复用分享卡的渲染管线**）、按动作拆分的 CSV、Excel(.xlsx) | ❌ | ✅ **已做（v1.70.0，2026-11-06）**：年报卡 `annual_report.dart` + `annual_report_card.dart`/`annual_report_screen.dart`（可分享/存相册）；按动作 CSV `buildPerExerciseCsv`（列与全量 CSV 一致）；**xlsx 不做**（方案 §十三 拍板项 4） | 年报卡复用分享卡的 `RepaintBoundary` 管线；纯本地计算 | ❌ |
 | 10 | **周期化计划**：多周计划、按周自动加重、计划导入导出 | ❌（今天是 5 套内置模板 + 简化编辑，`plan_templates.dart:88`，**没有** locked 字段） | ✅ | 新功能，工作量最大 | ❌ |
 | 11 | AI 动态调整建议 | ❌ | ⏳ **不在这一版** | 要算力 + 要动"数据不出设备" | ✅ 算力 |
 | 12 | 教练协作 | ❌ | ⏳ **不在这一版** | 要真实的人际功能 | ✅ |
@@ -471,7 +471,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 
 > **M3 进度（2026-11-05，第一批已完成）**：`billing-store.mjs` / `billing.mjs`（Apple JWS 验签 + V2 通知 + 权益下发 + 自建码核销/限速）/ `redeem-admin.mjs`（CLI）/ `billing.selftest.mjs`（判据 9/10 的服务端那一半）已落地并进六层门禁；Apple 根证书入库、`backend.mjs` 接线、部署白名单与 `check-deploy` 判据同步、`docs/backend-design.md` §十。**还差**（备份多版本 **已于 2026-11-06 在 M4b 做完**，见 §十 M4 进度）：Google RTDN / purchaseToken 校验、Apple offer code 客户端流程（M4）、可选 App Store Server API 主动查询（需用户 ASC API Key）、「删除账号」联动删除计费权益（**已做 2026-11-05**：与备份/账号一起删，失败整体 500）。
 
-> **M4 进度（2026-11-06，M4a + M4b 已完成；M4c 未做）**：客户端已接服务端权益 ——
+> **M4 进度（2026-11-06，M4a + M4b + 导出进阶（权益 9）已完成；M4c 未做）**：客户端已接服务端权益 ——
 > `app/lib/billing/billing_server.dart`（可注入 API + 真实现 + 假实现）负责上送 StoreKit 2 JWS
 > （`POST /v1/billing/verify`，**服务端为准**）、启动/登录后 `GET /v1/billing/entitlement`
 > 合并（只延长不缩短；refunded/revoked 立即降级；离线保留本地）、`POST /v1/billing/redeem` 兑换；
@@ -480,6 +480,9 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 `backup-versions.mjs`（存量回填幂等、按权益算配额、版本列表/取密文/恢复幂等、降级不删数据）、
 客户端 `app/lib/backup/backup_versions.dart` + 云备份页「备份历史（Ultra）」（有权益才请求、
 二次确认恢复；免费/发版开关关时零新增付费入口）。
+**导出进阶（权益 9）也于 2026-11-06 做完（v1.70.0）**：`annual_report.dart` 纯函数 +
+年报卡/预览屏（复用分享卡抓图管线）、`buildPerExerciseCsv`（列与全量 CSV 一致）、
+`data_tools_screen` 的「导出进阶（Ultra）」整组**只有 active 权益才渲染**。
 **M4c**（翻 `kUltraReleased`、商城商品、政策/事实表/商店表单一起改、真机沙盒证据）
 仍未做；M4c 之前**政策 §2.5 不用改**：发版开关关着、正式包没配服务器地址 →
 不会上传购买凭据。
@@ -490,7 +493,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 |---|---|---|
 | **M1a 内核** | 权益模型 + 九态状态机（纯函数）、本地两张表（库版本从 29 升到 30）、权益仓储、debug 假开关、判据 | ✅ **已做** —— `app/lib/billing/entitlement.dart`、`app/lib/data/entitlement_repository.dart`、`app/lib/billing/debug_grant.dart`；判据 `entitlement_test.dart`（24 条）、`entitlement_repository_test.dart`（7 条）、`migration_test.dart` 加 v29→v30、`delete_all_test.dart` 表清单加两张 |
 | **M1b 会员页与入口** | S14 会员页、付费墙文案唯一出处（3.1.2 六要素）、订阅条款页、设置页入口 `open-ultra`、判据 | ✅ **已做** —— `app/lib/billing/paywall_screen.dart` / `paywall_copy.dart` / `subscription_terms_screen.dart`；判据 `paywall_copy_test.dart`（12 条）、`free_red_line_test.dart`（4 条，含"付费入口白名单"与"开练路径零付费字样"）、`accent_budget_test` 加会员页额度 1、`large_font_sweep_test` 加会员页（**19 屏**） |
-| **M1c 锁点接线** | 进步页进阶分析（预览态）、全部数据批量整理、云备份多版本入口、导出进阶 | ⚠️ **卡在一个前提上，见下** |
+| **M1c 锁点接线** | 进步页进阶分析（预览态）、全部数据批量整理、云备份多版本入口、导出进阶 | ✅ **四个锁点的功能与门控都已就位**（批量整理 2026-10-10、云多版本 2026-11-06、导出进阶 2026-11-06；均**有权益才渲染**）。⚠️ 正式开放仍由 `kUltraReleased` 闸门（M4c） |
 | **M2 真内购** | `in_app_purchase`、交易→权益接线、恢复购买、会员页真目录 | 🟡 **客户端已做（v1.68.3）**：`app/lib/billing/billing_client.dart` + 假商店 29 条测试；**商品还没在 App Store Connect 建**、沙盒真机购买（判据 12）要用户建完商品后在真机跑 |
 
 ### ⚠️ M1c 为什么先停一下：**接线的前提是"那个功能真的存在"**
@@ -498,9 +501,9 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 原计划把"各锁点接线"当成 M1 的最后一段（"用假开关走查全部界面"）。做到 M1b 才看清一件事：
 
 **四个锁点里，有三个现在还不存在**——
-* 「云备份多版本」要服务端先有 `backup_versions` 表（今天 `backups.account_id` 是主键，只可能有一份）；
+* ~~「云备份多版本」要服务端先有 `backup_versions` 表~~ —— **2026-11-06 已做（服务端 `backup_versions` + 客户端历史，见 §十 M4 进度）**；
 * 「批量整理历史」是**净新增功能**（今天「全部数据」是只读的，全仓没有 `Checkbox`、没有多选）；
-* 「导出进阶」（年报卡 / 按条拆分）也还没写；
+* ~~「导出进阶」（年报卡 / 按条拆分）也还没写~~ —— **2026-11-06 已做（M4b，见 §十 M4 进度）**；
 * 只有「进步页进阶分析」能靠现有的本地数据先做出预览态。
 
 于是"接线"会变成：**在 Ultra 用户那里挂一个"解锁"按钮，点开是一个还不存在的功能**。
