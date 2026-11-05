@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import '../../analytics/analytics.dart';
 import '../../billing/entitlement.dart';
 import '../../billing/ultra_visibility.dart';
+import '../../billing/billing_client.dart';
 import '../../billing/debug_grant.dart';
 import '../../billing/paywall_copy.dart';
 import '../../billing/paywall_screen.dart';
@@ -274,13 +275,20 @@ class _UltraEntryTileState extends State<UltraEntryTile> {
         final EntitlementRepository? repo = widget.entitlements;
         if (repo == null) return;
         Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => PaywallScreen(repository: repo, catalog: debugCatalogForWalkthrough()),
+          builder: (_) => PaywallScreen(
+            repository: repo,
+            // debug 走查给假商品；release 里它是 null → 会员页从**真商店**拉商品。
+            catalog: debugCatalogForWalkthrough(),
+            billing: BillingClient(gateway: InAppPurchaseGateway(), repository: repo),
+          ),
         ));
       },
     );
   }
 }
 
-/// 走查用：debug 构建给假商品（release 返回"拿不到"，会员页会如实写"暂时获取不到商品信息"）。
-PaywallCatalog debugCatalogForWalkthrough() =>
-    debugFakeCatalog ?? const UnavailablePaywallCatalog();
+/// 走查用：**只在 debug 构建里存在**的假商品目录；release 里返回 null。
+///
+/// 返回 null 不等于"拿不到商品" —— 会员页拿到 null 会走 [BillingClient] 从真商店拉；
+/// 只有连商店都拿不到时才显示"暂时获取不到商品信息"（`paywall_copy.dart` 的既有红线）。
+PaywallCatalog? debugCatalogForWalkthrough() => debugFakeCatalog;

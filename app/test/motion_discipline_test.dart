@@ -19,6 +19,7 @@ const Map<String, String> exempt = <String, String>{
   'lib/features/workout/haptics.dart': '触觉的两次震动之间那个 120ms 间隔（节奏，不是动画）',
   'lib/domain/models.dart': '时长算术（end - startedAtMs，把毫秒数包成 Duration）',
   'lib/analytics/flusher.dart': '上报失败后的指数退避（网络策略，不是 UI）',
+  'lib/billing/billing_client.dart': '商店交易策略：购买超时 2 分钟、恢复购买的安静窗口 900ms（网络/商店节奏，不是动画）',
   // 令牌与开关自己就是定义处
   'lib/core/motion.dart': '动效令牌的定义处',
   'lib/core/reduced_motion.dart': '降级开关的定义处',

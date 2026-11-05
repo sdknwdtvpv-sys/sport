@@ -18,6 +18,8 @@
 ///   5. **可测**：仓库与商品目录都从构造参数进来，测试注入假目录即可断言 3.1.2 那六项。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/icon_spec.dart';
@@ -26,6 +28,7 @@ import '../core/units.dart';
 import '../data/entitlement_repository.dart';
 import '../features/profile/privacy_policy_screen.dart';
 import '../features/profile/profile_widgets.dart';
+import 'billing_client.dart';
 import 'entitlement.dart';
 import 'paywall_copy.dart';
 import 'subscription_terms_screen.dart';
@@ -34,15 +37,21 @@ class PaywallScreen extends StatefulWidget {
   const PaywallScreen({
     super.key,
     required this.repository,
-    this.catalog = const UnavailablePaywallCatalog(),
+    this.catalog,
+    this.billing,
     this.now,
   });
 
   final EntitlementRepository repository;
 
-  /// 商品目录。**M1 默认拿不到商品**（真商店在 M2）；
-  /// 调试走查用 `debug_grant.dart` 里的假目录（只在 debug 构建里存在）。
-  final PaywallCatalog catalog;
+  /// 商品目录覆盖（**测试与 debug 走查用**）。
+  ///
+  /// null = 没有覆盖：有 [billing] 就用真商店拉商品，没有就等同于"拿不到商品"
+  /// （会员页如实写"暂时获取不到商品信息"，**不编价格**）。
+  final PaywallCatalog? catalog;
+
+  /// 真内购接线（M2）。null = 这一版没有商店（M1 行为）：购买/恢复只给一句说明。
+  final BillingClient? billing;
 
   /// 便于测试固定"现在"
   final DateTime Function()? now;
@@ -61,18 +70,35 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   void initState() {
     super.initState();
+    // 交易流要在用户点购买之前就订阅好（插件会把"上次没完成的交易"也重投过来）。
+    unawaited(widget.billing?.start() ?? Future<void>.value());
     _load();
+  }
+
+  @override
+  void dispose() {
+    unawaited(widget.billing?.dispose() ?? Future<void>.value());
+    super.dispose();
   }
 
   Future<void> _load() async {
     final UltraAccess access = await widget.repository.access(_nowMs);
-    final List<UltraProductView> products = await widget.catalog.load();
+    final List<UltraProductView> products = await _loadProducts();
     if (!mounted) return;
     setState(() {
       _access = access;
       _products = products;
       _loading = false;
     });
+  }
+
+  /// 商品：显式覆盖优先（测试/走查），否则走真商店；两者都没有 = 拿不到商品。
+  Future<List<UltraProductView>> _loadProducts() async {
+    final PaywallCatalog? override = widget.catalog;
+    if (override != null) return override.load();
+    final BillingClient? billing = widget.billing;
+    if (billing == null) return const <UltraProductView>[];
+    return billing.loadCatalog();
   }
 
   void _open(Widget page) {
@@ -291,7 +317,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         borderRadius: BorderRadius.circular(Tokens.rPill),
                       ),
                     ),
-                    onPressed: () => _buy(p),
+                    onPressed: _busy ? null : () => _buy(p),
                     child: const Text('开通 Ultra',
                         style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwBold)),
                   )
@@ -304,7 +330,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         borderRadius: BorderRadius.circular(Tokens.rPill),
                       ),
                     ),
-                    onPressed: () => _buy(p),
+                    onPressed: _busy ? null : () => _buy(p),
                     child: const Text('选择这一档',
                         style: TextStyle(fontSize: Tokens.fsBodyS)),
                   ),
@@ -349,22 +375,45 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
       );
 
-  /// M1 里买不了（真内购在 M2）：**如实告诉用户**，而不是摆一个点了没反应的按钮
-  void _buy(UltraProductView p) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('内购正在接入（${p.title}），这一版还不能真的购买。'),
-        backgroundColor: Tokens.elevated,
-      ),
-    );
+  /// 购买。M2 起走真商店（[BillingClient]），结果如实回给用户：
+  /// 成功 / 待确认 / 取消 / 失败各有各的说法 —— 不吞异常、不假装成功。
+  Future<void> _buy(UltraProductView p) async {
+    final BillingClient? billing = widget.billing;
+    if (billing == null) {
+      // 没有商店接线（M1 行为 / 只给测试注入假目录时）：不摆一个点了没反应的按钮。
+      _toast('内购正在接入（${p.title}），这一版还不能真的购买。');
+      return;
+    }
+    if (_busy) return;
+    setState(() => _busy = true);
+    final BillingResult result = await billing.buy(p.id);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(result.message);
+    if (result.ok) await _load(); // 权益已落库，状态行/价格块跟着刷新
   }
 
-  void _restore() {
+  /// 恢复购买：换手机、重装之后把权益找回来（Apple 硬要求它**可见可用**）。
+  Future<void> _restore() async {
+    final BillingClient? billing = widget.billing;
+    if (billing == null) {
+      _toast('内购正在接入，恢复购买会在同一版里上线。');
+      return;
+    }
+    if (_busy) return;
+    setState(() => _busy = true);
+    final BillingResult result = await billing.restore();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(result.message);
+    if (result.ok) await _load();
+  }
+
+  bool _busy = false;
+
+  void _toast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('内购正在接入，恢复购买会在同一版里上线。'),
-        backgroundColor: Tokens.elevated,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Tokens.elevated),
     );
   }
 

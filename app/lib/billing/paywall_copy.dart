@@ -36,7 +36,7 @@ class UltraProductView {
   /// 「1 年」/「每月」/「一次性」
   final String duration;
 
-  /// 商店给的本地化价格（「¥98.00」/「$14.99」）。**不许自己拼**。
+  /// 商店给的本地化价格（「¥38.00」/「$4.99」）。**不许自己拼**。
   final String priceLabel;
 
   /// 免费试用天数（没有就是 null）

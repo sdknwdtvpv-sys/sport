@@ -38,8 +38,8 @@ import 'data/body_metric_repository.dart' hide dayKey;
 import 'data/day_plan_repository.dart';
 import 'data/drift_local_store.dart';
 import 'data/exercise_data_ext.dart';
+import 'billing/billing_client.dart';
 import 'billing/debug_grant.dart';
-import 'billing/paywall_copy.dart';
 import 'billing/paywall_screen.dart';
 import 'data/entitlement_repository.dart';
 import 'data/exercise_repository.dart';
@@ -2097,9 +2097,13 @@ class _HomeShellState extends State<HomeShell> {
             onOpenUltra: () => Navigator.of(context).push(MaterialPageRoute<void>(
                   builder: (_) => PaywallScreen(
                     repository: EntitlementRepository(_db),
-                    // 走查时给假商品（只在 debug 构建里存在）；release 里它是
-                    // `UnavailablePaywallCatalog`，会员页会如实写"暂时获取不到商品信息"
-                    catalog: debugFakeCatalog ?? const UnavailablePaywallCatalog(),
+                    // debug 走查给假商品（只在 debug 构建里存在）；release 里它是 null
+                    // → 会员页从**真商店**拉商品（M2 的真内购从这里接进来）。
+                    catalog: debugFakeCatalog,
+                    billing: BillingClient(
+                      gateway: InAppPurchaseGateway(),
+                      repository: EntitlementRepository(_db),
+                    ),
                   ),
                 )),
             // T3-2：进步页那处「还没有训练记录」的空态，下一步是回「开练」那一格

@@ -390,14 +390,14 @@ class _SweepCatalog implements PaywallCatalog {
           product: UltraProduct.monthly,
           title: 'Ultra 月订阅',
           duration: '每月',
-          priceLabel: r'¥18.00',
+          priceLabel: r'¥8.00',
         ),
         UltraProductView(
           id: 'ultra.yearly',
           product: UltraProduct.yearly,
           title: 'Ultra 年订阅',
           duration: '1 年',
-          priceLabel: r'¥98.00',
+          priceLabel: r'¥38.00',
           trialDays: 7,
           recommended: true,
         ),
@@ -406,7 +406,7 @@ class _SweepCatalog implements PaywallCatalog {
           product: UltraProduct.lifetime,
           title: 'Ultra 终身',
           duration: '一次性买断',
-          priceLabel: r'¥198.00',
+          priceLabel: r'¥68.00',
         ),
       ];
 }

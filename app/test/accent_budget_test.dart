@@ -250,7 +250,7 @@ class _BudgetCatalog implements PaywallCatalog {
           product: UltraProduct.yearly,
           title: 'Ultra 年订阅',
           duration: '1 年',
-          priceLabel: r'$14.99',
+          priceLabel: r'$4.99',
           trialDays: 7,
           recommended: true,
         ),

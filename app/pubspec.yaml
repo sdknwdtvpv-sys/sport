@@ -1,7 +1,7 @@
 name: lianleme
 description: 练了么 —— 一次点击记一组的力量训练记录工具
 publish_to: 'none'
-version: 1.68.2+85
+version: 1.68.3+86
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -37,6 +37,13 @@ dependencies:
   share_plus: ^13.3.0
   gal: ^2.3.3
   cryptography: ^2.9.0
+  # 内购（M2，2026-11-05）：**Flutter 官方插件**，两端同一套 API。
+  # ⚠️ 刻意**不引 RevenueCat 之类的第三方变现 SDK**：
+  #   * 它会把购买数据送到第三方 —— 与"默认不收集"这条产品红线冲突，
+  #     而且要多改一遍政策、两张商店表单与隐私事实表；
+  #   * 它还抽成。内购本身是 Apple/Google 的通道，官方插件就够。
+  # 版本与用途见 `docs/plan-membership-2026-10-10.md` §五 / §8.4。
+  in_app_purchase: ^3.3.1
 
 dev_dependencies:
   flutter_test:

@@ -44,7 +44,8 @@ void debugSetUltraGranted(bool value) {
 
 /// **只在 debug 构建里存在**的假商品目录（M1 走查会员页用）。
 ///
-/// ⚠️ 它给出的价格是**编的**（¥18 / ¥98 / ¥198）—— 那正是它在 release 里必须不存在的原因：
+/// ⚠️ 它给出的价格是**编的**（¥8 / ¥38 / ¥68，2026-11-05 用户下调后的档位）——
+/// 那正是它在 release 里必须不存在的原因：
 /// Apple 要求界面价格与内购项一致，而"编一个价格"是明确的拒审理由（方案 §12.1 第 5 条）。
 /// release 里 [debugFakeCatalog] 返回 null → 会员页回到"暂时获取不到商品信息"那条路。
 PaywallCatalog? get debugFakeCatalog {
@@ -64,14 +65,14 @@ class _FakeCatalog implements PaywallCatalog {
           product: UltraProduct.monthly,
           title: 'Ultra 月订阅',
           duration: '每月',
-          priceLabel: '¥18.00',
+          priceLabel: '¥8.00',
         ),
         UltraProductView(
           id: 'com.sdknwdtvpv.lianleme.ultra.yearly',
           product: UltraProduct.yearly,
           title: 'Ultra 年订阅',
           duration: '1 年',
-          priceLabel: '¥98.00',
+          priceLabel: '¥38.00',
           trialDays: 7,
           recommended: true,
         ),
@@ -80,7 +81,7 @@ class _FakeCatalog implements PaywallCatalog {
           product: UltraProduct.lifetime,
           title: 'Ultra 终身',
           duration: '一次性买断',
-          priceLabel: '¥198.00',
+          priceLabel: '¥68.00',
         ),
       ];
 }

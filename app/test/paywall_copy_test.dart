@@ -35,14 +35,14 @@ const List<UltraProductView> _kThree = <UltraProductView>[
     product: UltraProduct.monthly,
     title: 'Ultra 月订阅',
     duration: '每月',
-    priceLabel: '¥18.00',
+    priceLabel: '¥8.00',
   ),
   UltraProductView(
     id: 'ultra.yearly',
     product: UltraProduct.yearly,
     title: 'Ultra 年订阅',
     duration: '1 年',
-    priceLabel: r'$14.99',
+    priceLabel: r'$4.99',
     trialDays: 7,
     recommended: true,
   ),
@@ -51,7 +51,7 @@ const List<UltraProductView> _kThree = <UltraProductView>[
     product: UltraProduct.lifetime,
     title: 'Ultra 终身',
     duration: '一次性买断',
-    priceLabel: '¥198.00',
+    priceLabel: '¥68.00',
   ),
 ];
 
@@ -98,9 +98,9 @@ void main() {
         expect(find.byKey(Key('product-price-${p.product.name}')), findsOneWidget);
       }
       // 价格逐字来自 catalog（不是界面自己拼的）
-      expect(find.text('¥18.00'), findsOneWidget);
-      expect(find.text('\$14.99'), findsOneWidget, reason: '海外价也要照抄商店返回值');
-      expect(find.text('¥198.00'), findsOneWidget);
+      expect(find.text('¥8.00'), findsOneWidget);
+      expect(find.text('\$4.99'), findsOneWidget, reason: '海外价也要照抄商店返回值');
+      expect(find.text('¥68.00'), findsOneWidget);
       // 时长与试用写在副标题里
       expect(find.text('1 年 · 前 7 天免费'), findsOneWidget);
       expect(find.text('每月'), findsOneWidget);
@@ -115,12 +115,12 @@ void main() {
             product: UltraProduct.monthly,
             title: 'Ultra 月订阅',
             duration: '每月',
-            priceLabel: r'US$2.99',
+            priceLabel: r'US$0.99',
           ),
         ]),
       );
-      expect(find.text('US\$2.99'), findsOneWidget);
-      expect(find.text('¥18.00'), findsNothing);
+      expect(find.text('US\$0.99'), findsOneWidget);
+      expect(find.text('¥8.00'), findsNothing);
     });
 
     testWidgets('④条款入口 ⑤隐私政策入口：都在这一屏，而且都点得开', (WidgetTester tester) async {

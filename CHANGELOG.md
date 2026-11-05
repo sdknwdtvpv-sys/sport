@@ -6,6 +6,80 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.68.3 · 会员 Ultra 接入真内购（M2，客户端）
+
+用户 2026-11-05 拍板开始做会员 Ultra（先 Apple；付费开发者账号已有，商品尚未创建）。
+本轮只做**客户端 M2**：把真内购接上并用假商店测通，**不翻 `kUltraReleased`、不提交商品审核、
+不改商店的「价格/含内购」** —— 这一版对用户仍然是免费版。
+
+> 价格变动（用户 2026-11-05 拍板，领队侧已改）：**月 ¥8 / 年 ¥38（7 天试用）/ 终身 ¥68**，
+> 海外 **$0.99 / $4.99 / $9.99**；商品 ID 不变。代码里**不硬编码价格** ——
+> `UltraProductView.priceLabel` 逐字来自 `ProductDetails.price`。
+
+### 一、依赖：官方 `in_app_purchase` 3.3.1（不引第三方变现 SDK）
+
+`app/pubspec.yaml` 加运行时依赖（`in_app_purchase` + 传递依赖共 4 个，锁文件已更新）。
+**刻意不引 RevenueCat 之类**：它们会把购买数据送到第三方（与"默认不收集"冲突、政策/表单要多改一遍）
+且抽成；内购是 Apple/Google 的通道，官方插件就够。加依赖触发了 `privacy-audit` 的
+"直接依赖必须在政策 SDK 清单里"硬门禁 —— 已按仓库规矩同步（见第四节）。
+
+### 二、新 `billing_client.dart`：可注入网关 + 交易 → 权益接线
+
+* **`BillingGateway` 抽象**：`isAvailable` / `queryProducts` / `buy` / `restore` / `transactions`
+  / `complete` / `storeSource` / `dispose`。生产实现 `InAppPurchaseGateway` 包官方插件；
+  测试用假商店（`app/test/fake_billing_gateway.dart`），**不进真商店、不碰平台通道**。
+* **交易流**：`purchaseStream` 归一化成 `BillingTransaction`（purchased / restored / pending / error /
+  canceled），映射 `IAPError` 为**可读原因**（不吞原始 message）。
+* **`completePurchase`**：iOS 不完成会每次启动重弹；按 `pendingCompletePurchase` 指示完成，
+  **pending 不完成**（插件明确说完成 pending 会抛）。
+* **幂等**：同一笔交易（`purchaseId@transactionDate`）只写一次权益、只 complete 一次。
+* **`BillingClient`**：购买等交易流终态再返回（成功 / 待确认 / 取消 / 失败各有可读文案）；
+  恢复购买用"安静窗口"收集 restored 事件，没有就如实说"没有找到可以恢复的购买"；
+  成功交易走 M1 的 `entitlement_repository` 落库（`applyBillingEvent` 九态仍由纯函数判定）。
+* ⚠️ **M2 已知限制**：没有服务端验签（M3），到期时间按商品周期**估算**
+  （月 +1 自然月 / 年 +1 自然年，日期夹到目标月最后一天；终身 = null），
+  **不显示试用天数**（`ProductDetails` 不暴露 introductory offer，编数字比不写更危险）。
+  M3 用收据里的真实 `expires_date` 覆盖。
+
+### 三、会员页接真商品目录（价格只来自商店）
+
+`PaywallScreen` 增加可注入的 `BillingClient`：有它就从真商店拉目录，没有就维持 M1 的
+"暂时获取不到商品信息"。商品视图的 `priceLabel` 逐字取 `ProductDetails.price`，
+**代码/文案里没有一个价格数字**；拿不到商品时**不显示价格、不显示购买按钮**（宁可不卖）。
+三个入口仍由 `kUltraReleased == false` 关闭（`ultra_release_gate_test` 三条断言照旧绿）。
+
+### 四、合规同步（一份事实只写一处）
+
+* 政策中英两版的「第三方依赖（SDK）清单」加 `in_app_purchase` 行（功能、是否收集、许可）；
+* 政策中英新增「购买与支付」一节：**本版本未开放购买**、客户端已接入官方内购能力、
+  将来只存"档位/来源/购买与到期时间/交易号/本机计费流水"、**不存支付方式/姓名/账单地址**、
+  服务端验签是后续版本（M3）；`docs/privacy-facts.json` 加 `purchases` 事实块；
+* 重新生成应用内政策与 164 号文双清单（`gen-privacy-page.mjs`）；
+* **商店表单不动**：这一版仍是"免费、不含内购"，与货源一致（M4 开放购买时才改）。
+
+### 五、测试（假商店，29 条）
+
+新增 `app/test/billing_client_test.dart`（18 条）与 `app/test/paywall_billing_test.dart`（11 条）：
+购买成功→权益 active、失败→可读原因且权益不变、取消→不扣款、pending→不写权益不完成、
+恢复成功→权益回来、恢复为空→如实说没有找到、**未登录也能买/恢复**（命中 Apple 5.1.1(v) 与判据 4）、
+交易重复→只写一次/只 complete 一次、未知商品→不写权益但完成交易、到期时间估算（月/年/闰年/终身）、
+退款→立即降级但数据不删、到期/宽限期接线、商品拿不到→页面不显示任何价格与购买按钮。
+`paywall_copy_test` / `ultra_release_gate_test` / `accent_budget_test` / `large_font_sweep_test` /
+`free_red_line_test` 全部照旧绿。
+
+### 六、本轮明确不做（M3/M4）
+
+不翻 `kUltraReleased`、不提交商品审核、不改商店「价格/含内购」；不做服务端 `billing.mjs` /
+验签 / V2 通知 / 兑换码 / 备份多版本（M3）；**不加新埋点事件**（`purchase_completed` /
+`paywall_viewed` 已有就复用，`purchase_failed` / `restore_completed` / `redeem_completed` 留 M4
+与政策/表单一次性加）。
+
+### 验证与产物
+
+六层门禁「未发现失败」（测试条数见 `docs/release-checklist.md` 的「当前状态速览」）；
+`privacy-audit` / `check-store-forms` / `gen-privacy-page --check` 全绿。
+**本轮不重出 APK/AAB/截图/软著 PDF**（本机无 keystore、用户还没说部署；`dist/` 为空时守卫如实跳过）。
+
 ## v1.68.2 · 数据库 v31 部分索引 + 冷启动共享读库 + 登录全局限流
 
 用户 2026-11-05 拍板：把上一轮技术审计（`docs/performance-audit-2026-11-05.md`）里

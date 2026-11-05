@@ -134,6 +134,14 @@
 <li>What we read <strong>stays on this phone</strong> and is <strong>never uploaded</strong> (the only path off the device is still the cloud backup you enable yourself; it is end-to-end encrypted, see 3.3). Imported days are marked with a note saying &quot;from system health&quot;;</li>
 <li>You can <strong>withdraw your consent at any time</strong>. After that we stop reading; the days already merged in are <strong>not deleted</strong> — you withdraw consent, not data (delete data under &quot;All data&quot;).</li>
 </ul>
+<h3 id="2-5-purchases-and-payments-not-enabled-in-this-release">2.5 Purchases and payments (<strong>not enabled in this release</strong>)</h3>
+<ul>
+<li><strong>Nothing is for sale in this release (1.68.3)</strong>: every Ultra entry point is off, and no products have been created in App Store Connect / Google Play — so <strong>you cannot make any purchase or payment here</strong>.</li>
+<li>The client already integrates the <strong>official Apple / Google in-app purchase capability</strong> (<code>in_app_purchase</code>) for a future release (query products, start a purchase, restore purchases); <strong>in this version it does not query the store</strong> (the entry points are unreachable) and no product data leaves your device.</li>
+<li>When purchases are enabled in a later release, we will store only: which plan was bought (monthly / yearly / lifetime), the store it came from (Apple / Google), the purchase time, the expiry time and the store transaction id — plus a local billing-event log for support.</li>
+<li>We <strong>never store or handle</strong> payment method (card number / bank account), name or billing address — those are handled by the Apple / Google store and are not visible to us.</li>
+<li><strong>Server-side receipt verification ships in a later release (M3)</strong>; this version uploads no purchase receipt and has no server-side entitlement.</li>
+</ul>
 <hr>
 <h2 id="3-where-the-data-lives-and-who-receives-it">3. Where the data lives and who receives it</h2>
 <h3 id="3-1-three-things-can-reach-the-network-none-without-your-action">3.1 Three things can reach the network — none without your action</h3>
@@ -197,6 +205,7 @@
 <tr><td><code>share_plus</code></td><td>13.3.0</td><td>Hands a share card or backup file to the <strong>system</strong> share sheet</td><td><strong>No.</strong> It only calls system APIs — you choose the destination in the sheet; we never touch it</td><td>BSD-3-Clause</td><td><a href="https://pub.dev/packages/share_plus">pub.dev</a></td></tr>
 <tr><td><code>gal</code></td><td>2.3.3</td><td>Saves the share card into the <strong>system photo library</strong></td><td><strong>No.</strong> Write-only; it <strong>never reads</strong> your photos</td><td>BSD-3-Clause</td><td><a href="https://pub.dev/packages/gal">pub.dev</a></td></tr>
 <tr><td><code>cryptography</code></td><td>2.9.0</td><td>End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM)</td><td><strong>No.</strong> Pure Dart, no network</td><td>Apache-2.0</td><td><a href="https://pub.dev/packages/cryptography">pub.dev</a></td></tr>
+<tr><td><code>in_app_purchase</code></td><td>3.3.1</td><td><strong>In-app purchases</strong> (Apple / Google official stores): query products, start a purchase, restore purchases</td><td><strong>No active collection.</strong> It only calls the system store; payment method, name and billing address are handled by the store and never touch us. <strong>Purchases are not enabled in this release</strong></td><td>BSD-3-Clause</td><td><a href="https://pub.dev/packages/in_app_purchase">pub.dev</a></td></tr>
 </tbody>
 </table>
 <p>One dependency is <strong>not</strong> third-party, and we state it here too:</p>
@@ -205,7 +214,7 @@
 </ul>
 <p>Three notes:</p>
 <ul>
-<li><strong>No advertising SDK, no analytics SDK, no crash-reporting SDK.</strong> None of the libraries above sends anything to a third party.</li>
+<li><strong>No advertising SDK, no analytics SDK, no crash-reporting SDK.</strong> None of the libraries above sends anything to a third party; <code>in_app_purchase</code> only calls the <strong>Apple / Google system store</strong> (payments are handled by the store).</li>
 <li>Our own code goes online only when <strong>you</strong> enable cloud backup, or when &quot;Help improve the product&quot; is on <strong>and</strong> the build has an endpoint configured — see 3.1 (the current release has none).</li>
 <li><strong>Development-only dependencies never ship</strong>: <code>build_runner</code> / <code>drift_dev</code> (code generation) and <code>integration_test</code> (our own test harness) exist only in development and CI.</li>
 <li><strong>The table above lists direct dependencies only.</strong> They pull in further transitive libraries (the Flutter framework, Skia, ICU, …). The complete list is available <strong>inside the app</strong> at &quot;Me → Open-source licences&quot; (Flutter's licence page enumerates every component shipped in the package). The per-library &quot;does it collect anything&quot; notes are hand-written for the libraries we chose; the authoritative answer for &quot;what is in the package&quot; is that page, not this table.</li>

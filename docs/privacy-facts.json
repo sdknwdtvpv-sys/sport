@@ -539,5 +539,38 @@
         "deletes the account, the email binding"
       ]
     }
+  },
+  "purchases": {
+    "_why": "内购（M2，2026-11-05 起客户端已接入 Apple/Google 官方 `in_app_purchase`）。**本版本（1.68.3）未开放购买**：会员入口全部关闭、App Store Connect 商品也还没创建，所以对用户没有发生任何购买/支付。这一块只写事实，供 M4 开放购买时改政策/商店表单前先来这里对账。",
+    "enabledInDistributedBuild": false,
+    "appStoreProductsCreated": false,
+    "whatWeStore": [
+      "买到哪一档（Ultra 月 / 年 / 终身）",
+      "权益来源（Apple / Google）",
+      "购买时间与到期时间（服务端验签前是本机按商品周期估算，M3 换成收据里的真实值）",
+      "商店交易号（幂等键）",
+      "本机的计费事件流水（排障与客服用）"
+    ],
+    "neverCollected": [
+      "支付方式（卡号 / 银行账户）",
+      "姓名",
+      "账单地址",
+      "任何明文收据（M2 未上传任何购买凭据；服务端验签是 M3）"
+    ],
+    "policyPhrases": {
+      "_why": "政策正文里必须出现的说法（中文政策 + 英文政策各一份）。M2 只写事实、不开放购买。",
+      "zh": [
+        "本版本未开放购买",
+        "支付方式",
+        "账单地址",
+        "商品数据"
+      ],
+      "en": [
+        "not enabled in this release",
+        "payment method",
+        "billing address",
+        "product data"
+      ]
+    }
   }
 }

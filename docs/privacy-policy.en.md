@@ -199,6 +199,22 @@ across by hand.
 - You can **withdraw your consent at any time**. After that we stop reading; the days already merged in
   are **not deleted** — you withdraw consent, not data (delete data under "All data").
 
+### 2.5 Purchases and payments (**not enabled in this release**)
+
+- **Nothing is for sale in this release (1.68.3)**: every Ultra entry point is off, and no products
+  have been created in App Store Connect / Google Play — so **you cannot make any purchase or payment here**.
+- The client already integrates the **official Apple / Google in-app purchase capability**
+  (`in_app_purchase`) for a future release (query products, start a purchase, restore purchases);
+  **in this version it does not query the store** (the entry points are unreachable) and no product
+  data leaves your device.
+- When purchases are enabled in a later release, we will store only: which plan was bought
+  (monthly / yearly / lifetime), the store it came from (Apple / Google), the purchase time,
+  the expiry time and the store transaction id — plus a local billing-event log for support.
+- We **never store or handle** payment method (card number / bank account), name or billing address —
+  those are handled by the Apple / Google store and are not visible to us.
+- **Server-side receipt verification ships in a later release (M3)**; this version uploads no purchase
+  receipt and has no server-side entitlement.
+
 ---
 
 ## 3. Where the data lives and who receives it
@@ -324,6 +340,7 @@ centrally with their name, function, and how they handle personal information, s
 | `share_plus` | 13.3.0 | Hands a share card or backup file to the **system** share sheet | **No.** It only calls system APIs — you choose the destination in the sheet; we never touch it | BSD-3-Clause | [pub.dev](https://pub.dev/packages/share_plus) |
 | `gal` | 2.3.3 | Saves the share card into the **system photo library** | **No.** Write-only; it **never reads** your photos | BSD-3-Clause | [pub.dev](https://pub.dev/packages/gal) |
 | `cryptography` | 2.9.0 | End-to-end encryption for cloud backup (HKDF-SHA256 + AES-256-GCM) | **No.** Pure Dart, no network | Apache-2.0 | [pub.dev](https://pub.dev/packages/cryptography) |
+| `in_app_purchase` | 3.3.1 | **In-app purchases** (Apple / Google official stores): query products, start a purchase, restore purchases | **No active collection.** It only calls the system store; payment method, name and billing address are handled by the store and never touch us. **Purchases are not enabled in this release** | BSD-3-Clause | [pub.dev](https://pub.dev/packages/in_app_purchase) |
 
 One dependency is **not** third-party, and we state it here too:
 
@@ -334,7 +351,8 @@ One dependency is **not** third-party, and we state it here too:
 Three notes:
 
 - **No advertising SDK, no analytics SDK, no crash-reporting SDK.** None of the libraries above
-  sends anything to a third party.
+  sends anything to a third party; `in_app_purchase` only calls the **Apple / Google system store**
+  (payments are handled by the store).
 - Our own code goes online only when **you** enable cloud backup, or when "Help improve the product"
   is on **and** the build has an endpoint configured — see 3.1 (the current release has none).
 - **Development-only dependencies never ship**: `build_runner` / `drift_dev` (code generation) and
