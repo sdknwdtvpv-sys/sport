@@ -72,6 +72,20 @@ BACKEND_PORT=18790 COLLECTOR_PORT=18787 DOMAIN=api.example.com bash server/deplo
 `curl -s https://api.example.com/healthz` 应当多出 `binds` / `tokens` 两个字段
 （有账号体系才会有它们）。
 
+## 会员计费（M3，2026-11-05）
+
+* **数据库**：计费库是单独一个 sqlite 文件，默认落在 `DATA_DIR` 下的
+  `backend-billing.sqlite`（安装脚本会建好目录，后端首次启动自动建表）。**不需要手动配**。
+* **Apple 通知 URL**（要填进 App Store Connect → App 信息 → App Store Server Notifications V2）：
+  `https://<你的域名>/v1/billing/notifications/apple`。Caddy 的 `/v1/*` 已经转发到后端，
+  **不需要改反代**；也**不需要** App Store Server API Key（验签只用 JWS 自带的证书链）。
+* **运营兑换码**（在服务器上跑，不暴露 HTTP）：
+  `node /opt/lianleme/server/redeem-admin.mjs generate --kind year --count 100 --batch <批次> --out codes.csv --db /var/lib/lianleme/backend-billing.sqlite`
+* 验签用的 **Apple 根证书随代码入库**（`server/apple/AppleRootCA-G3.pem`，安装脚本会一起拷）。
+  换证书 = 改代码 + 迁移周期，不要在生产机上临时替换。
+* **沙盒交易默认不能换真权益**：`LIANLEME_ALLOW_SANDBOX=1` 才允许（**只有联调 / TestFlight
+  沙盒验证时才开**；生产不设 = 默认拒绝）。开时启动日志会打 `⚠️ 沙盒交易允许换权益（联调模式）`。
+
 ## 装完之后（我接手的部分）
 
 ```bash

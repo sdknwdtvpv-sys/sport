@@ -253,14 +253,20 @@ MAILENV
   fi
 fi
 
-step "3/7 拷代码（只拷服务端要用的 6 个文件）"
-# ⚠️ 这份白名单是**唯一**决定"哪些文件会到服务器上"的地方（`tool/check-deploy.mjs` 只看
-# ExecStart 的入口在仓库里存在，**不查它是否被拷过去**）。漏一个的后果不是部署报错，
-# 而是运行到那一步才崩：`backend.mjs` 是按需 `await import('./auth-store.mjs')` 的
-# （没配邮件通道就永远不 import）—— 少了它，症状是"启用账号体系后第一次请求 500"。
-for f in backend.mjs backend-store.mjs collector.mjs auth.mjs auth-store.mjs mailer.mjs; do
+step "3/7 拷代码（服务端 .mjs 白名单 + Apple 根证书）"
+# ⚠️ 这份白名单是**唯一**决定"哪些文件会到服务器上"的地方（`tool/check-deploy.mjs` 看
+# ExecStart 的入口在仓库里存在、并核对本白名单覆盖了 `server/*.mjs`（`*.selftest.mjs` 除外））。
+# 漏一个的后果不是部署报错，而是运行到那一步才崩：`backend.mjs` 是按需
+# `await import('./auth-store.mjs')` / `./billing.mjs` 的 —— 少了它，症状是
+# "启用账号体系/计费后第一次请求 500"。
+for f in backend.mjs backend-store.mjs collector.mjs auth.mjs auth-store.mjs mailer.mjs \
+         billing.mjs billing-store.mjs redeem-admin.mjs; do
   run "install -o root -g root -m 644 '$REPO_SERVER/$f' '$APP_DIR/server/$f'"
 done
+# Apple 根证书随代码入库（验签不联网）：**必须一起拷**，否则计费端点启动时读不到根证书。
+run "install -d -o root -g root -m 755 '$APP_DIR/server/apple'"
+run "install -o root -g root -m 644 '$REPO_SERVER/apple/AppleRootCA-G3.pem' '$APP_DIR/server/apple/AppleRootCA-G3.pem'"
+run "install -o root -g root -m 644 '$REPO_SERVER/apple/README.md' '$APP_DIR/server/apple/README.md'"
 say "库文件位置：$DATA_DIR/backend.sqlite（首次启动自动建）"
 
 step "4/7 装 systemd 单元"

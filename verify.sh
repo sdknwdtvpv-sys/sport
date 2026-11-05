@@ -279,6 +279,15 @@ else
   strip "$LOG"; echo "${RED}✗ 账号体系自检失败${OFF}"; fail=1
 fi
 
+# 计费自检（M3）：Apple JWS 验签（证书链 + 根钉死）/ V2 通知幂等与退款撤销 /
+# 权益只延长不缩短 / 自建兑换码原子核销与三类限速 / 日志不漏凭据。
+# 证书夹具用 openssl 现造（不依赖真 Apple、不联网）；CI 的 ubuntu 自带 openssl。
+if node server/billing.selftest.mjs >"$LOG" 2>&1; then
+  strip "$LOG" | tail -2; echo "${GREEN}✓${OFF} 计费自检通过"
+else
+  strip "$LOG"; echo "${RED}✗ 计费自检失败${OFF}"; fail=1
+fi
+
 # plist 读写库的**自检**：核 iOS 产物要读 Info.plist，macOS 上靠 /usr/bin/plutil，
 # 而 CI 是 ubuntu（**没有 plutil**）—— 那就得有一个自己的解析器，且它必须被验过
 # （解析/序列化互逆、坏输入会抛、与系统 plutil 结果一致）。

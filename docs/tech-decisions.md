@@ -30,7 +30,7 @@
 
 ## 服务端：一期做到极薄
 
-- 只做三件事：**账号、增量同步、云备份**
+- 只做**四**件事：**账号、增量同步、云备份、会员计费**（后者 2026-11-05 起的 M3 服务端第一批，见 `backend-design.md` §十；增量同步一期仍有意不做）
 - Postgres + REST，不做实时协同、不做服务端计算
   > ⚠️ 2026-09-30 核对：**一期实现用的是 `node:sqlite` + 零依赖 HTTP**（不是为了省事，
   > 是为了「本地就能跑通并自检」）。换 Postgres 时只改 `server/backend-store.mjs` 一个文件，
@@ -399,7 +399,7 @@ WHERE set_type='normal' AND deleted_at IS NULL`，**不改查询、不加列、�
 | Apple Watch 原生 Swift 扩展 | ⏸ MVP 就不做 | — |
 | **HealthKit 读写** | ✅ **2026-10-09 做了「只读」那一半**（体重/体脂率/身高 → 按天并进本机；**不写回**）。当年 2026-09-30 拍板推后，2026-10-08 用户说"准备做"，施工单在 `docs/plan-health-sync.md` | `your-todo.md` 第 5 条已结；上线材料里**不再出现"MVP 只做 HealthKit"**这种没实现的话 |
 | **Android 对接 Health Connect** | ✅ **同一版做了**（2026-10-09）—— 走**平台自带的** Health Connect（`android.health.connect.*`），**只有 Android 14+ 能读**；Jetpack 那个库要求 minSdk 26（= 放弃 Android 7 用户），所以没用它。见 `docs/plan-health-sync.md` §七 | 同上；`app/integration_test/health_entry_gate_test.dart` 在真安卓上验过入口的出现条件 |
-| 服务端只做三件事 | ✅（**增量同步一期有意不做**） | `backend-design.md` §五、§八 |
+| 服务端只做四件事（2026-11-05 起含会员计费） | ✅（**增量同步一期有意不做**；计费只记权益、不解密备份） | `backend-design.md` §五、§八、§十 |
 | Postgres + REST | ⚠️ 实现是 `node:sqlite` + 零依赖 HTTP | 见本节上方那处改动与 `backend-design.md` §七之五 |
 | 规则引擎跑在客户端 | ✅ | `engine/progression.mjs`；向量 + 场景级 eval + 变异测试都在门禁里 |
 | 合规 1：HealthKit 数据禁用于广告 | ✅ 已接（**只读**，2026-10-09 起两端都接了）；政策里明确健康数据**不用于广告** | `privacy-policy.md` §2.4 那段 |

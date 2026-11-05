@@ -7,7 +7,7 @@
  * 但把承诺违背了）。而配置文本是这个仓库里最容易悄悄漂的一类东西：
  * 端口改一处、域名换一行、脚本换个文件名，四份文件立刻互相矛盾，谁也不会发现。
  *
- * 它核六件事（每一条都对应一种"真会发生"的漂移）：
+ * 它核七件事（每一条都对应一种"真会发生"的漂移）：
  *   1. **端口一致**：`install.sh` 的默认端口 → 单元里的 `--port` → Caddyfile 的路由，
  *      三处必须是同一组数字（拿 install.sh 的默认值把模板渲染出来再比，不比字面量）；
  *   2. **入口存在**：单元里 `ExecStart` 指的 `.mjs` 在仓库里真的有（改名/搬家会红）；
@@ -20,6 +20,9 @@
  *   5. **不许开访问日志**：`Caddyfile` 里出现 `log` 指令就红 —— 政策写着"不做 IP 记录"，
  *      而 Caddy 的 access log 会把客户端 IP 写进磁盘（承诺与配置必须一致）；
  *   6. **安装脚本的底线**：`set -euo pipefail`、支持 `--dry-run`、没给域名就拒绝执行。
+ *   7. **拷贝白名单必须完整**：`server/*.mjs`（`*.selftest.mjs` 除外）每一个都要在
+ *      install.sh 的拷贝循环里，Apple 根证书也要一起拷 —— 白名单漏一个的后果不是部署
+ *      报错，而是**线上第一次用到那个模块时 500**（2026-11-05 加计费文件时补的判据）。
  *
  * 用法：
  *   node tool/check-deploy.mjs               # 核仓库里的部署包
@@ -169,6 +172,35 @@ function inspect(root) {
     if (!existsSync(join(root, 'server', rel.replace(/^server\//, '')))) {
       problems.push(`${name} 单元要跑 ${rel}，但仓库里没有这个文件`);
     }
+  }
+
+  // ── 2b. 拷贝白名单必须覆盖 server/*.mjs（*.selftest.mjs 除外）+ Apple 根证书
+  //
+  // 为什么单独一条：白名单是"唯一决定哪些文件会到服务器上"的地方，而上面第 2 条只看
+  // ExecStart 的入口在仓库里存在、**不查它有没有被拷过去**。漏一个的后果不是部署报错，
+  // 而是运行到那一步才崩：`backend.mjs` 按需 `await import('./billing.mjs')` ——
+  // 少了它，症状是"启用计费后第一次请求 500"（2026-11-05 加 M3 文件时补的判据）。
+  {
+    const serverDir = join(root, 'server');
+    const needed = readdirSync(serverDir)
+      .filter((f) => f.endsWith('.mjs') && !f.endsWith('.selftest.mjs'))
+      .sort();
+    const loop = install.match(/for f in ([\s\S]*?); do/);
+    const listed = new Set((loop?.[1] ?? '').replace(/\\\n/g, ' ').split(/\s+/).filter(Boolean));
+    for (const f of needed) {
+      if (!listed.has(f)) {
+        problems.push(`install.sh 的拷贝白名单漏了 server/${f} —— 它在仓库里有，但不会到服务器上；`
+          + '启动时不报错，第一次用到它才 500');
+      }
+    }
+    const appleRel = 'apple/AppleRootCA-G3.pem';
+    if (!install.includes(appleRel)) {
+      problems.push('install.sh 没把 Apple 根证书（server/apple/AppleRootCA-G3.pem）拷过去 —— '
+        + '计费验签在启动时读不到根证书');
+    } else if (!existsSync(join(serverDir, appleRel))) {
+      problems.push(`server/${appleRel} 不在仓库里 —— 验签不联网，根证书必须入库并随部署拷过去`);
+    }
+    facts.push(`拷贝白名单覆盖 server/*.mjs ${needed.length} 个（selftest 除外），含 Apple 根证书`);
   }
 
   // ── 4. 加固
@@ -417,9 +449,11 @@ function selftest() {
     // server/*.mjs 去搜 `LIANLEME_*` 的，夹具少拷一个，那条用例就会"因为没搜到而全绿"
     // ——自检当场抓到了这个（2026-10-06 加 auth.mjs / mailer.mjs 时）。
     for (const f of ['backend.mjs', 'backend-store.mjs', 'collector.mjs',
-      'auth.mjs', 'auth-store.mjs', 'mailer.mjs']) {
+      'auth.mjs', 'auth-store.mjs', 'mailer.mjs',
+      'billing.mjs', 'billing-store.mjs', 'redeem-admin.mjs']) {
       cpSync(join(ROOT, 'server', f), join(root, 'server', f));
     }
+    cpSync(join(ROOT, 'server', 'apple'), join(root, 'server', 'apple'), { recursive: true });
     for (const [rel, src] of Object.entries(realFiles)) {
       mkdirSync(dirname(join(root, rel)), { recursive: true });
       cpSync(src, join(root, rel));
@@ -452,6 +486,12 @@ function selftest() {
   // 每条都带"必须因为它自己那条而红"的判据：只验"红了"是不够的 ——
   // 变异体红了却红在别的原因上，等于那条守卫根本没被测到。
   const cases = [
+    ['拷贝白名单漏了 server/billing.mjs（线上第一次用到才 500）', (r) => {
+      const p = join(r, 'server/deploy/install.sh');
+      const t = readFileSync(p, 'utf8').replace(' billing.mjs', '');
+      if (t === readFileSync(p, 'utf8')) throw new Error('自检夹具失效：install.sh 拷贝循环里没有 billing.mjs');
+      writeFileSync(p, t);
+    }, false, '拷贝白名单'],
     ['好的部署包：全绿', null, true, null],
     // 2026-10-06：账号体系那 6 个环境变量必须写在部署文档里
     ['部署文档漏掉一个服务端环境变量', (r) => editAll(r, 'README.md',
@@ -560,7 +600,7 @@ if (process.argv.includes('--selftest')) {
     console.error(`\n✗ ${problems.length} 处不对 —— 配置文本的漂移只在部署那一刻才炸`);
     process.exit(1);
   }
-  console.log('\n✓ 端口一致、入口存在、与客户端的 dart-define 逐字对得上、'
+  console.log('\n✓ 端口一致、入口存在、拷贝白名单完整、与客户端的 dart-define 逐字对得上、'
     + '加固没被删、没开访问日志；\n'
     + '  反代片段与共存护栏那几条也各有一条负向用例（覆盖别人的配置 / 抢端口 / 暴露到 0.0.0.0 / access_log）');
 }

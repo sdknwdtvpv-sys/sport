@@ -390,8 +390,8 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 | 6 | 会员页过大字号 | `app/test/large_font_sweep_test.dart` **把「会员页」「兑换页」加进那一份清单**（现在 18 屏） |
 | 7 | 会员页视觉合规 | 既有 `theme_discipline_test` / `accent_budget_test` / `theme_contrast_test` / `icon_spec_test` 全过（ember 额度：会员页**只准 1**） |
 | 8 | 数据不被降级删掉 | 新 `downgrade_keeps_data_test.dart`：从 `active` 变 `expired` 后，本机数据与云端最新 1 份都还在 |
-| 9 | 服务端验签与通知 | `billing.selftest.mjs`（含"把根证书换掉必须失败""重放同一 transactionId 不重复延长"） |
-| 10 | 兑换码 | `redeem_code_test.dart`（熵/一次性/并发/限速/错码/过期）+ 服务端自检 |
+| 9 | 服务端验签与通知 | ✅ **已做（2026-11-05，M3 第一批）**：`server/billing.selftest.mjs`（改一位/换根/错 bundleId/错商品/缺 expiresDate/重放同一 transactionId 不重复延长/DID_RENEW 延长/REFUND·REVOKE 立即失效/EXPIRED 不缩短/通知重放只处理一次） |
+| 10 | 兑换码 | 🟡 **服务端已做（2026-11-05）**：`server/billing.selftest.mjs`（码形状/校验位/95bit 熵/一次性并发同码只成功一次/三类限速/错码/过期/批次作废）；客户端入口（iOS/Play 平台分支）在 M4 |
 | 11 | 政策与事实表对账 | `node tool/privacy-audit.mjs` 绿；`check-store-forms` 绿（「含内购」已改） |
 | 12 | 真机沙盒全路径 | 手跑并留证据图：购买 → 恢复 → 退款（沙盒可模拟）→ 到期降级 → **Offer Code 兑换**（沙盒码）→ 国内码核销；**证据图进 `docs/images/plan-membership-2026-10-10/`** |
 | 13 | **M1 的假开关不许进 release** | `debugGrantUltra()` 必须包在 `assert` 里（照 `debugWorkoutScreenBuilds` 的先例），并有一条测试**扫源码**：`grantUltra` 的调用点只在 `assert(...)` 内；另有一条断言"release 构建里搜不到该符号"（可用 `flutter build apk --release` 后 `strings` 复核，或退一步：源码级扫描 + 人工在包上核一次） |
@@ -468,6 +468,8 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 | **M4** 合规与上架材料 | 政策中英 + 事实表 + 商店表单 + 软著 + 审核备注 + 截图 | **2–3 人日** | 判据 11 + 上架清单里的内购条目全打勾 |
 
 **合计 15–21 人日**（不含"周期化计划"这个新功能；它单独再算 5–8 人日）。
+
+> **M3 进度（2026-11-05，第一批已完成）**：`billing-store.mjs` / `billing.mjs`（Apple JWS 验签 + V2 通知 + 权益下发 + 自建码核销/限速）/ `redeem-admin.mjs`（CLI）/ `billing.selftest.mjs`（判据 9/10 的服务端那一半）已落地并进六层门禁；Apple 根证书入库、`backend.mjs` 接线、部署白名单与 `check-deploy` 判据同步、`docs/backend-design.md` §十。**还差**：Google RTDN / purchaseToken 校验、备份多版本（Ultra 配额）、Apple offer code 客户端流程（M4）、可选 App Store Server API 主动查询（需用户 ASC API Key）、「删除账号」联动删除计费权益（**已做 2026-11-05**：与备份/账号一起删，失败整体 500）。
 
 ### M1 进度（2026-10-10 开工）
 

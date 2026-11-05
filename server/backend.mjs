@@ -2,7 +2,7 @@
 /**
  * 练了么 · 极薄后端（**零依赖**，只用 node:http + node:sqlite）
  *
- * 设计见 `docs/backend-design.md`。一句话：**只做账号、备份、删除**，
+ * 设计见 `docs/backend-design.md`。一句话：**账号、备份、删除 + 会员计费（M3）**，
  * 不做任何服务端计算 —— 渐进建议与 PR 判定永远在客户端算（健身房地下层没信号）。
  *
  * 接口：
@@ -14,6 +14,12 @@
  *   GET    /v1/backup         → 200 原始密文（原样还）
  *   DELETE /v1/account        → 200 {"deleted":N}  （账号+设备+备份一起删）
  *   GET    /healthz           → 200 {"ok":true,"accounts":N,"backups":N}
+ *
+ * 会员（Ultra）计费（M3，可选；见 server/billing.mjs）：
+ *   POST   /v1/billing/verify                   登录 · 体：{"signedTransaction":"<Apple JWS>"} → 写权益
+ *   POST   /v1/billing/notifications/apple      **不鉴权** · 体：{"signedPayload":"<Apple V2 JWS>"}（JWS 验签、幂等）
+ *   GET    /v1/billing/entitlement              登录 → 当前权益（过期/退款如实）
+ *   POST   /v1/billing/redeem                   登录 · 体：{"code":"LMU-…"} → 自建码核销
  *
  * 账号体系（**可选**，配了邮件通道才有；见 `docs/plan-account-login.md`）：
  *   POST   /v1/auth/salt            体：{"email"} → 200 {"salt","kdf"}（不存在的邮箱回**假盐**）
@@ -101,7 +107,7 @@ const bearer = (req) => {
   return m ? m[1].trim() : null;
 };
 
-export function createBackend({ store, log = console.log, auth = null }) {
+export function createBackend({ store, log = console.log, auth = null, billing = null }) {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
     const p = url.pathname;
@@ -114,7 +120,22 @@ export function createBackend({ store, log = console.log, auth = null }) {
       // ---- 健康检查（不需要鉴权）----
       if (req.method === 'GET' && p === '/healthz') {
         say(200);
-        return json(res, 200, { ok: true, ...store.stats(), ...(auth ? auth.store.stats() : {}) });
+        return json(res, 200, { ok: true, ...store.stats(), ...(auth ? auth.store.stats() : {}), ...(billing ? billing.store.stats() : {}) });
+      }
+
+      // ---- 计费通知：**不鉴权**（靠 signedPayload JWS 验签），必须在鉴权闸门之前 ----
+      // Apple 的回调不带我们的会话令牌；坏了/伪造的 JWS 由 billing 层回 4xx——
+      // 但**验签通过就回 200**（Apple 收到非 2xx 会一直重试）。
+      if (p === '/v1/billing/notifications/apple') {
+        if (!billing) {
+          say(404);
+          return json(res, 404, { error: '计费没有启用' });
+        }
+        return billing.handleAppleNotification({ req, res, readBody, say, json });
+      }
+      if (!billing && p.startsWith('/v1/billing/')) {
+        say(404);
+        return json(res, 404, { error: '计费没有启用（服务端没有加载 billing.mjs）' });
       }
 
       // ---- 账号体系没启用时，`/v1/auth/*` 要**明确**回 404 ----
@@ -163,6 +184,13 @@ export function createBackend({ store, log = console.log, auth = null }) {
         return json(res, 404, { error: '账号不存在（恢复码算错了？）' });
       }
 
+      // ---- 计费（验签 / 权益下发 / 自建码核销）：需要**会话令牌** ----
+      // ⚠️ 不认老的 `Bearer <account_id>`（那是设备凭据）：计费要把权益绑到一个真实账号上，
+      //    `authVia` 不是 'token' 时 billing 层会回 401。
+      if (billing && (await billing.tryHandle({
+        req, res, p, accountId, authVia: resolved?.via ?? null, say, json, readBody,
+      }))) return;
+
       if (req.method === 'GET' && p === '/v1/account/me') {
         say(200);
         return json(res, 200, { exists: true, ...store.accountInfo(accountId) });
@@ -199,10 +227,24 @@ export function createBackend({ store, log = console.log, auth = null }) {
       // ---- 注销：账号、设备、备份一起删；**加了账号体系之后，邮箱绑定与令牌也一起删** ----
       // 这一条是合规要求（应用内注销），少删任何一样，政策里那句"注销后不再保留"就是假话。
       if (req.method === 'DELETE' && p === '/v1/account') {
+        // ⚠️ 顺序刻意的：**先删计费数据**。它失败就整体 500、账号还留着，用户可以重试；
+        //    反过来的话（先删账号）计费库就再也找不到这个 account_id，留下一堆删不掉的
+        //    购买记录 —— 那正好是政策里"注销后不再保留"的反面。计费库还没删干净时，
+        //    绝不回 200（宁可是 500 让客户端重试，也不报"已删"）。
+        let billingDeleted = 0;
+        if (billing) {
+          try {
+            billingDeleted = billing.store.deleteByAccount(accountId).total;
+          } catch (e) {
+            console.error(`⚠️ 注销时删计费数据失败（账号保留，可重试）：${e?.message ?? e}`);
+            say(500);
+            return json(res, 500, { error: '注销没有完成（计费数据没删干净），请重试' });
+          }
+        }
         const n = store.deleteAccount(accountId);
         const a = auth ? auth.store.deleteByAccount(accountId) : 0;
         say(200);
-        return json(res, 200, { deleted: n + a });
+        return json(res, 200, { deleted: n + a + billingDeleted });
       }
 
       say(404);
@@ -268,7 +310,25 @@ if (isMain) {
       auth = null;
     }
   }
-  const { server } = createBackend({ store, auth });
+  // ---- 计费是**可选**的：库文件建不出来/根证书校验失败时照常启动备份与账号，
+  //      只是 /v1/billing/* 回 404（与账号体系同一条"配错不许拖垮服务"的纪律）。----
+  let billing = null;
+  const billingDbPath = argOf('--billing-db', dbPath.replace(/\.sqlite$/, '') + '-billing.sqlite');
+  try {
+    const { createBillingStore } = await import('./billing-store.mjs');
+    const { createBilling } = await import('./billing.mjs');
+    billing = createBilling({
+      store: createBillingStore({ path: billingDbPath }),
+      log: (m) => console.log(m),
+      // **默认拒绝沙盒交易换真权益**：只有联调/TestFlight 沙盒验证才显式开。
+      allowSandboxTransactions: process.env.LIANLEME_ALLOW_SANDBOX === '1',
+    });
+  } catch (e) {
+    console.error('⚠️  计费没能启用：' + (e?.message ?? e));
+    console.error('    服务会照常启动（备份与账号不受影响），/v1/billing/* 会明确返回 404。');
+    billing = null;
+  }
+  const { server } = createBackend({ store, auth, billing });
   // `--port 0` 让内核挑一个空闲端口；**必须把真实端口打出来**，
   // 否则自动化测试拿到 "0" 就没法连上（app/test/cloud_backup_test.dart 正靠这一行）。
   // ⚠️ **必须显式绑 127.0.0.1**（2026-10-04 真机上量到的）：只写 server.listen(port)
@@ -283,6 +343,10 @@ if (isMain) {
     console.log(auth
       ? `  账号：已开（库 ${authDbPath}）· POST /v1/auth/{salt,code,register,login,reset,logout,change-password} · GET /v1/auth/me`
       : '  账号：**没开**（没有 SMTP 或 --mail-out；接口 /v1/auth/* 会 404）');
+    console.log(billing
+      ? `  计费：已开（库 ${billingDbPath}）· POST /v1/billing/{verify,redeem} · GET /v1/billing/entitlement · Apple 通知已接收`
+        + (billing.allowSandboxTransactions ? ' · ⚠️ 沙盒交易**允许**换权益（联调模式）' : ' · 沙盒交易**不**换权益')
+      : '  计费：**没开**（/v1/billing/* 会 404）');
     console.log('  ⚠️ 服务端只存密文；生产必须走 HTTPS（凭据在 Authorization 头里）。');
   });
 }

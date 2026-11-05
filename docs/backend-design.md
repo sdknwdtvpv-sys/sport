@@ -1,4 +1,4 @@
-# 极薄后端 · 设计（账号 / 增量同步 / 云备份）
+# 极薄后端 · 设计（账号 / 增量同步 / 云备份 / 会员计费）
 
 > 状态：**设计稿 → 已实现一半**。依据是两条已定决策：
 > ①「双端先上」②「备份要账号」（见 `docs/tech-decisions.md` 的"服务端一期做到极薄"）。
@@ -8,7 +8,7 @@
 
 ---
 
-## 一、边界：只做三件事
+## 一、边界：只做四件事（2026-11-05 起多了会员计费）
 
 `docs/tech-decisions.md` 已经定了服务端的形态，这份文档把它落成可实现的规格：
 
@@ -17,6 +17,7 @@
 | **账号**（匿名，见第三节） | 不做账号体系之外的用户画像/推荐 |
 | **增量同步**（多端同一份数据） | **不做服务端计算**：规则引擎、渐进建议、PR 判定全在客户端 |
 | **云备份**（换机恢复） | 不做实时协同（有真实"教练-学员"场景再说） |
+| **会员计费**（M3，见 §十）：Apple 交易验签 / V2 通知 / 权益下发 / 自建兑换码 | 不做 App Store Server API 主动查询（可选，需用户 ASC API Key）；不做 Google RTDN（M3 之后）；**不解密备份** —— 计费与密文存储互不碰 |
 
 **规则引擎留在客户端**不是技术偏好，是被场景逼的：健身房地下层没信号，
 建议必须离线可算（这一点从一期就没变过，后端不能破坏它）。
@@ -135,6 +136,9 @@ sync_ops(account_id text, seq bigint,  -- 增量同步：客户端产生、服�
 鉴权：`Authorization: Bearer <account_id>`（因为 `account_id` 本身就是密钥的哈希，
 不额外发明 token）。**因此必须走 HTTPS**，且服务端日志**不得记录 Authorization 头**。
 
+> 会员计费的四个端点（`/v1/billing/verify` / `notifications/apple` / `entitlement` / `redeem`）
+> 不在上面这张草案表里 —— 它们的口径、鉴权、幂等与限速见 **§十（M3，2026-11-05）**。
+
 ### 六之二、账号体系（2026-10-06 起，**邮箱 + 口令**）
 
 > 这一节 2026-10-06 追加。它是那一轮用户拍板的结果（**做账号，且"必须先登录才能用"**），
@@ -160,6 +164,11 @@ sync_ops(account_id text, seq bigint,  -- 增量同步：客户端产生、服�
   残余风险（拿到库的一方可以离线爆破弱口令）写在方案 §三，不装作没有。
 * **服务端因此多存了一样可识别信息：邮箱**。政策、收集清单、两张商店表单都要跟着改（方案 §五）。
 * **注销**（`DELETE /v1/account`）现在会把**邮箱绑定与全部会话令牌**一起删 —— 合规要求。
+  **2026-11-05 起计费数据也一起删**（同一个事务，失败就整体 500、账号保留可重试）：
+  ① `entitlements` 里该账号的行；② `billing_events` 里所有属于这个人的键
+  （`key = accountId`、`key like accountId||'|%'`、该账号每一笔 `txn` 事件、`renew_pending` /
+  `refund_pending` / `revoke_pending`）；③ 兑换码只把 `used_by` 置空、**`used_at` 保留**
+  （码仍算已核销，别人不能再用）。
 * **账号体系是可选能力**：没配邮件通道（`LIANLEME_SMTP_HOST` / `--mail-out`）时
   `/v1/auth/*` 一律 404，服务仍然只做备份。
 
@@ -172,7 +181,7 @@ sync_ops(account_id text, seq bigint,  -- 增量同步：客户端产生、服�
 | 隐私政策 | §3.1/§3.2 重写（数据**会**离开设备了）+ 单独同意（健康数据属敏感个人信息） |
 | `docs/privacy-facts.json` | 新增上传字段（密文、字节数、时间）+ 权限（网络）→ `privacy-audit` 硬门禁 |
 | 埋点 | ⬜ **故意还没加**：`backup_enabled` / `backup_completed` / `restore_completed` / `backup_failed`。理由：当前发布配置下这个功能根本用不了（没配地址），加了就是四个永远发不出去的事件，还要占政策正文的位置。等真的配了服务器再一起做 —— 那时政策本来就要改 |
-| 删除全部数据 | ✅ 已实现（v1.22.0）：弹层里多一句「同时删除云端备份并注销」，**默认勾选**。顺序是刻意的 —— **先删云端、失败就整个中止**，再清本机。反过来（先清本机恢复码）云端那份就永远打不开了 |
+| 删除全部数据 | ✅ 已实现（v1.22.0）：弹层里多一句「同时删除云端备份并注销」，**默认勾选**。顺序是刻意的 —— **先删云端、失败就整个中止**，再清本机。反过来（先清本机恢复码）云端那份就永远打不开了（服务端侧 2026-11-05 起还会删计费权益与兑换码绑定，见 §十） |
 
 **已经落地的接缝**（阶段 2 前半段，2026-09-30）：
 
@@ -443,7 +452,7 @@ cd app && flutter drive --driver=test_driver/cloud_e2e_driver.dart \
 
 | 文件 | 干什么 |
 |---|---|
-| `install.sh` | 幂等安装：查 Node ≥ 22.5 → 建不可登录的系统用户 → 建目录 → 拷 3 个服务端文件 → 渲染并装两个 systemd 单元 → 装 Caddy 与反代 → **自己 curl 一次 /healthz** 再报成功。`--dry-run` 可以先看它要做什么（不需要 root） |
+| `install.sh` | 幂等安装：查 Node ≥ 22.5 → 建不可登录的系统用户 → 建目录 → 拷服务端 `.mjs` 白名单（含计费三个文件）+ **Apple 根证书** → 渲染并装两个 systemd 单元 → 装 Caddy 与反代 → **自己 curl 一次 /healthz** 再报成功。`--dry-run` 可以先看它要做什么（不需要 root） |
 | `lianleme-backend.service` / `lianleme-collector.service` | 开机自启、崩了重启；`ProtectSystem=strict` + `ReadWritePaths=<数据目录>` + `CapabilityBoundingSet=`，**只监听 127.0.0.1** |
 | `Caddyfile` | 一个域名对外：`/v1/events` → 收集端、其余 `/v1/*` → 备份服务；TLS 自动申请。⚠️ **故意没有 `log` 指令** —— 政策写着"不做 IP 记录"，而 access log 会记客户端 IP |
 | `README.md` | 你要给我哪三样（IP/SSH、域名、备案状态）、装完怎么验、客户端要编哪两个 `--dart-define` |
@@ -464,3 +473,95 @@ Caddyfile 没开访问日志。
 3. 一个诚实提醒：**引入后端会削弱现在最强的那句卖点**（"数据只在你手机里"）。
    建议的补救：默认关闭、开启时明确告知、端到端加密、服务端只有密文 —— 这三条都要
    写进商店描述与政策，别只写在代码注释里。
+
+---
+
+## 十、会员计费（M3，2026-11-05）
+
+> 这是服务端的**第四个**能力，也是唯一涉及"钱"的。施工图与判据在
+> `docs/plan-membership-2026-10-10.md` §五 / §六 / §九 判据 9/10。
+> 一句话：**验签与权益判定都在服务端做，但服务端仍然读不到训练数据**（计费库与备份库是两个文件）。
+
+### 10.1 四个端点
+
+| 方法 | 路径 | 鉴权 | 体 / 响应 | 幂等键 |
+|---|---|---|---|---|
+| POST | `/v1/billing/verify` | **会话令牌**（`/v1/auth/login` 发的；**不认**老的 `Bearer <account_id>`） | 体 `{"signedTransaction":"<Apple signedTransaction JWS>"}` → 200 `{ok, replayed, status, entitlement}` | `transactionId`（重放不重复延长） |
+| POST | `/v1/billing/notifications/apple` | **不鉴权**（靠 `signedPayload` 的 JWS） | 体 `{"signedPayload":"<App Store Server Notifications V2 JWS>"}` → 200 `{ok, duplicate}` | `notificationUUID`（处理过就回 200 + duplicate） |
+| GET | `/v1/billing/entitlement` | 会话令牌 | → 200 `{status, entitlement}`；`status ∈ none/active/expired/refunded/revoked` | — |
+| POST | `/v1/billing/redeem` | 会话令牌 | 体 `{"code":"LMU-…"}` → 200 `{ok, kind, days, status, entitlement}` | 码的 SHA-256（一次性） |
+
+失败码（都带 `{error, code}`，**不回证书/收据内容**）：
+`invalid_jws` / `wrong_alg` / `bad_x5c` / `bad_chain` / `untrusted_chain` / `cert_expired` /
+`invalid_signature` / `wrong_bundle` / `wrong_product` / `missing_transaction` /
+`missing_expiry` / `bad_expiry` / `bad_environment` / `login_required` /
+`invalid_code` / `not_found` / `used` / `expired` / `rate_limited`。
+
+### 10.2 Apple 验签（**不联网**）
+
+* 交易与通知都是 **JWS**：header `{alg:"ES256", x5c:[叶子,中间,根]}`；服务端用
+  `node:crypto` 的 `X509Certificate` 验证书链（叶子←中间←根），并**逐字节比对**根证书与
+  入库的 **Apple Root CA - G3**（`server/apple/AppleRootCA-G3.pem`，来源/下载日期/SHA-256
+  写在同目录 README）。根证书指纹在启动时**再核一次**（`APPLE_ROOT_SHA256`），文件被换会拒绝启用计费。
+* Claims 必核：`bundleId = com.sdknwdtvpv.lianleme`、`productId ∈ 三个 Ultra 商品`、
+  `transactionId` 非空、`environment ∈ {Sandbox, Production}`；订阅必须有 `expiresDate`，
+  终身版可以没有。**签名通过但 claims 不对** → 400（不是 500）。
+* **不做 App Store Server API 主动查询**（那要用户的 ASC API Key）：JWS 自带的信息足够判定本机权益；
+  之后若要做"跨设备实时对账"，再加可选 API 通道。
+* **沙盒交易默认不能换真权益**（2026-11-05 安全口径）：`createBilling` 的
+  `allowSandboxTransactions` 默认 **false** ——
+  * `POST /v1/billing/verify` 收到 `environment === 'Sandbox'` → **400 `sandbox_not_allowed`，不写权益**；
+  * Apple 通知里的沙盒交易：**照常回 200**（否则 Apple 会一直重试），但**不写权益**，
+    只记一条 `billing_events`（`kind='sandbox_ignored'`）并留一句日志；
+  * 只有联调 / TestFlight 沙盒验证才在启动时开 `LIANLEME_ALLOW_SANDBOX=1`（**生产默认不开**）。
+    能拿到沙盒 JWS 不等于能白拿正式会员 —— 这个边界不能靠"沙盒账号是开发者建的"来保证。
+* 通知类型处理：`DID_RENEW` / `SUBSCRIBED` / `OFFER_REDEEMED` → 延长；`EXPIRED` /
+  `GRACE_PERIOD_EXPIRED` → 只记到期（**不缩短**已有更晚到期）；`REFUND` / `REVOKE` → **立即失效**；
+  其它类型（`DID_CHANGE_RENEWAL_STATUS` / `DID_FAIL_TO_RENEW` …）记事件回 200，不影响判定。
+
+### 10.3 存储与幂等（`server/billing-store.mjs`）
+
+三张表，**只存哈希/交易号/时间，不存明文兑换码、不存收据原文**：
+
+| 表 | 关键字段 | 口径 |
+|---|---|---|
+| `entitlements` | `(account_id, original_txn)` 主键 · `product` · `source`(apple/google/redeem) · `expires_at`(null=终身) · `environment`(Sandbox/Production；兑换码为 null) · `revoked_at` · `refunded_at` · `last_txn_id` | 重放同一 `transactionId` → 不重复；新到期**只延长不缩短**；退款/撤销是**终态**，后续续订不会复活 |
+| `redeem_codes` | `code_hash` 主键 · `kind` · `days` · `batch` · `expire_at` · `used_by` · `used_at` | **只存 SHA-256**；一条 `UPDATE … WHERE used_at IS NULL` 原子核销（并发同码只成功一次）；已核销的码在批次作废时**不删** |
+| `billing_events` | `kind` · `key` · `at` | 通知/交易去重、限速计数、审计；默认保留 30 天后清理 |
+
+**通知先于 verify 到达**也安全：`REFUND/REVOKE` 记 `*_pending`、续订记 `renew_pending`，
+客户端 verify 落库时补上（更晚的到期/终态），不会因为"到达顺序"把权益判错。
+
+### 10.4 自建兑换码（`server/redeem-admin.mjs`）
+
+* 形状 `LMU-XXXXX-XXXXX-XXXXX-XXXXX`：Crockford Base32（无 `I/L/O/U`）+ 1 位校验位，
+  **19 个数据字符 = 95 bit 熵**（≥ 方案要求的 80 bit）；只存 SHA-256。
+* 核销限速（方案 §6.4）：**每 IP 20 次/小时、每账号 5 次/小时、连续 10 次失败锁 1 小时**；
+  IP 只存 `sha256(ip)[:16]`（**不记录、不打印明文 IP**）。429 带 `Retry-After`。
+* 运营 CLI（**不暴露 HTTP**）：`generate` / `revoke` / `lookup` / `batches`，见文件头用法。
+  生产上要显式指库：`node server/redeem-admin.mjs … --db /var/lib/lianleme/backend-billing.sqlite`
+  （默认只写在 `server` 目录的 `data` 子目录里，只适合本地）。明文码只出现在生成那一次的输出里；库里只有哈希。
+* **平台边界**（方案 §6.3）：iOS 与 Play 版**不提供自建码入口**；自建码只给国内安卓/官网/私域。
+  这个端点现在就有，但客户端入口要到 M4（按平台分支）才出现。
+
+### 10.5 部署与数据文件
+
+* 计费库是**单独一个 sqlite 文件**：默认 `backend.sqlite` 同目录的 `backend-billing.sqlite`
+  （`backend.mjs --billing-db` 可改）。它与备份库分开，但「删除账号」**已联动**
+  （2026-11-05）：先删计费数据（一个事务），成功后再删备份/账号/邮箱/令牌；
+  计费删除失败会整体 500、账号保留可重试（见 §七之六 的注销清单）。
+* 通知 URL（要填进 App Store Connect）：`https://<域名>/v1/billing/notifications/apple`；
+  **不需要用户的 ASC API Key**。Caddy 已把 `/v1/*` 转发到后端，无需改反代。
+* 部署白名单：`server/deploy/install.sh` 会拷 `billing.mjs` / `billing-store.mjs` /
+  `redeem-admin.mjs` **和 `server/apple/AppleRootCA-G3.pem`**；
+  `tool/check-deploy.mjs` 的判据会核"白名单覆盖了每个 `server/*.mjs`（selftest 除外）"。
+
+### 10.6 这一批**没做**（M3 后续 / M4）
+
+* Google Play：purchaseToken 校验 + RTDN（等 Android 内购接入时一起做）。
+* 备份多版本（`backup_versions` 表 + Ultra 配额）：等云备份配额要做时一起。
+* Apple Offer Code / 兑换面板的客户端流程（M4）、App Store Server API 主动查询（可选）。
+* ~~「删除账号」联动删除计费权益~~ —— **已做（2026-11-05）**：`billing-store.deleteByAccount`
+  在一个事务里删权益/事件、摘兑换码绑定；`DELETE /v1/account` 计费删除失败 → 整体 500；
+  `billing.selftest.mjs` 有并发/边界判据（别的账号数据不少、码不能因注销变可复用）。
+* 政策/隐私事实表：M4 开放购买时一起改（本批不动；`privacy-audit` 仍绿）。
