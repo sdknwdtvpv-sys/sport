@@ -37,6 +37,12 @@ PROXY_MODE="${PROXY_MODE:-caddy}"     # caddy | existing | none
 # 静态页的根目录（目前只有一份：隐私政策的公开页，商店审核会实际打开它）。
 # 页面是生成物：`store-assets/privacy/{index,en}.html`，由 `node tool/gen-privacy-page.mjs` 渲染。
 WEB_ROOT="${WEB_ROOT:-/var/www/lianleme}"
+# ⚠️ `HERE` 必须在**第一次被引用之前**定义（2026-11-06 真部署踩到的）：
+#    `set -u` 下，下一行 PRIVACY_SRC 的默认值引用了还没定义的 HERE，脚本当场
+#    "HERE: unbound variable" 退出。它只在"没显式给 PRIVACY_SRC"时触发 ——
+#    `--dry-run` / 自检 / CI 都不会跑这一句，所以一路绿灯到真服务器上才炸。
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo '')"
+REPO_SERVER="$(cd "$HERE/.." && pwd)"     # server/
 PRIVACY_SRC="${PRIVACY_SRC:-$HERE/../../store-assets/privacy}"
 NODE_BIN="${NODE_BIN:-}"              # 留空 = 用 PATH 里的 node
 DRY_RUN=0
@@ -60,8 +66,7 @@ esac
 
 # ⚠️ 用 `cat install.sh | bash` 喂进来时 `BASH_SOURCE[0]` 是未定义的（`set -u` 会当场报
 # "unbound variable"）—— 第一版就踩到了。`:-$0` 兜底，再在下面明确拒绝这种跑法。
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo '')"
-REPO_SERVER="$(cd "$HERE/.." && pwd)"     # server/
+# （HERE / REPO_SERVER 已在上面的参数区定义 —— 必须在第一次引用前，见那里的注释。）
 say() { printf '  %s\n' "$*"; }
 step() { printf '\n▶ %s\n' "$*"; }
 run() {
@@ -291,6 +296,12 @@ render "$HERE/lianleme-collector.service" /etc/systemd/system/lianleme-collector
 run "systemctl daemon-reload"
 run "systemctl enable --now lianleme-backend.service"
 run "systemctl enable --now lianleme-collector.service"
+# ⚠️ `enable --now` 对**已经在跑**的服务是 no-op：上面刚拷上去的 .mjs 不会生效，
+#    线上仍旧跑着旧进程（2026-11-06 真部署踩到：healthz 还是老字段、新接口 404，
+#    而脚本 6/7 的自检"两个服务都应答"照样绿）。必须显式 restart，并核对 MainPID 换了。
+PID_BEFORE_BACKEND="$(systemctl show -p MainPID --value lianleme-backend.service 2>/dev/null || echo 0)"
+PID_BEFORE_COLLECTOR="$(systemctl show -p MainPID --value lianleme-collector.service 2>/dev/null || echo 0)"
+run "systemctl restart lianleme-backend.service lianleme-collector.service"
 
 step "5/7 反向代理（PROXY_MODE=${PROXY_MODE}）"
 CADDY_CONF=/etc/caddy/Caddyfile
@@ -404,6 +415,17 @@ if [ "$DRY_RUN" = 1 ]; then
   say "[dry-run] curl -fsS http://127.0.0.1:$COLLECTOR_PORT/healthz"
 else
   sleep 2
+  # 6/7 的第一件事：**新代码真的在跑吗**（MainPID 必须换过）—— 只 curl 通不算数，
+  # 旧进程也通。2026-11-06 那次就是"自检绿、线上旧代码"。
+  PID_AFTER_BACKEND="$(systemctl show -p MainPID --value lianleme-backend.service 2>/dev/null || echo 0)"
+  PID_AFTER_COLLECTOR="$(systemctl show -p MainPID --value lianleme-collector.service 2>/dev/null || echo 0)"
+  if [ "$PID_AFTER_BACKEND" = "0" ] || [ "$PID_AFTER_BACKEND" = "$PID_BEFORE_BACKEND" ]; then
+    echo "✗ 后端没有被重启（MainPID 仍是 ${PID_BEFORE_BACKEND}）—— 线上还跑着旧代码" >&2; exit 1
+  fi
+  if [ "$PID_AFTER_COLLECTOR" = "0" ] || [ "$PID_AFTER_COLLECTOR" = "$PID_BEFORE_COLLECTOR" ]; then
+    echo "✗ 收集端没有被重启（MainPID 仍是 ${PID_BEFORE_COLLECTOR}）—— 线上还跑着旧代码" >&2; exit 1
+  fi
+  say "服务已重启（backend pid ${PID_BEFORE_BACKEND} → ${PID_AFTER_BACKEND}）"
   curl -fsS "http://127.0.0.1:$BACKEND_PORT/healthz" && echo
   curl -fsS "http://127.0.0.1:$COLLECTOR_PORT/healthz" && echo
   if [ "$PROXY_MODE" = "caddy" ]; then

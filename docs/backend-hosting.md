@@ -320,6 +320,42 @@ systemd 无限重启，而云备份、埋点跟着一起挂。现在改成**大�
 
 **只剩一步（要你的东西）**：填 SMTP 那五项。见下面。
 
+## 四之四、**2026-11-06 计费 + 云备份多版本上线**（两个 install.sh 的真坑）
+
+M3 的服务端权益（Apple 验签 / V2 通知 / 自建兑换码）与 M4b 的云备份多版本已经装到线上。
+数据一个字节没动（现有 3 个账号 / 1 份备份照旧），对外验收：
+
+| 验收项 | 结果 |
+|---|---|
+| `GET https://api.elliotli.work/healthz` | `{"ok":true,"accounts":3,"backups":1,"bytes":21551,"backupVersions":0,"binds":2,"tokens":2,"entitlements":0,"redeemUnused":0}` —— 后四个字段是这次新上的（计费/多版本） |
+| 启动日志 | `计费：已开（库 /var/lib/lianleme/backend-billing.sqlite）… Apple 通知已接收 · 沙盒交易**不**换权益`；`备份多版本：已开（免费 1 份 / 8MB；Ultra 10 份 / 32MB 单份 / 256MB 总量）` |
+| `GET /v1/billing/entitlement`（未登录） | **401** |
+| `POST /v1/billing/notifications/apple`（坏 JWS） | **400** |
+| `GET /v1/backup`（未登录） | **401**（旧接口语义不变） |
+| `GET /privacy` | **200**，正文含 M4a 新加的「购买与支付」一节 |
+| **不做 IP 记录** | `/var/log/nginx/access.log` 行数 **39 → 39**（发完上面这些请求后不变） |
+| 端口 | 两个服务都只监听 `127.0.0.1:8790 / 8787` |
+| 回滚点 | `/root/lianleme-backup-20261106/`（代码+单元+nginx 站点+`/var/lib/lianleme` 全部 sqlite 与邮件环境副本） |
+
+**Nginx 改了一处**：`lianleme-api` 站点里加 `client_max_body_size 32m;`（Ultra 单份备份上限；
+不设就是默认 1m —— 免费档 8MB 的备份也会在反代层被 413 挡掉，而客户端只会看到"上传失败"）。
+改前备份到回滚目录，`nginx -t` 通过后 `reload`。
+
+### ⚠️ 真部署当场踩到的两个 `install.sh` 坑（都已修 + 都加了负向用例）
+
+1. **`HERE` 在定义之前就被引用**：`PRIVACY_SRC="${PRIVACY_SRC:-$HERE/../../store-assets/privacy}"`
+   排在 `HERE="$(cd …)"` 前面，`set -u` 下真跑第一条就 `HERE: unbound variable` 退出。
+   为什么之前一直没发现：**`--dry-run` / 门禁 / CI 都不跑真安装**，只有真服务器才走到那一行 →
+   修法是把 `HERE` / `REPO_SERVER` 移到参数区最前面；守卫 `tool/check-deploy.mjs` 新增
+   "定义必须在首次引用之前"的判据 + 负向用例。
+2. **`systemctl enable --now` 对已经在跑的服务是 no-op**：新 `.mjs` 拷上去了，**进程还是旧的** ——
+   症状是 `healthz` 里没有新字段、`/v1/billing/*` 全 404，而脚本 6/7 的"两个服务都应答 /healthz"
+   **照样绿**（旧进程也应答）。修法：装完显式 `systemctl restart` 两个服务，并在 6/7
+   核对 `MainPID` 换过（实测 `10476 → 11463`）；守卫同样加了判据与负向用例。
+
+> 教训一句话：**"服务在跑"不等于"新代码在跑"** —— 部署脚本的自检必须证明"进程换过"，
+> 否则它只会证明"这台机器上有个服务"。
+
 ## 五、这件事我之前已经做完的部分（所以买完真的只剩一条命令）
 
 | 已经就绪 | 证据 |

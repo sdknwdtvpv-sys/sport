@@ -121,6 +121,27 @@ function inspect(root) {
   if (!/^if \[ -z "\$DOMAIN" \]/m.test(install)) {
     problems.push('install.sh 没有"没给域名就退出"那条 —— 猜域名会把 HTTPS 配成一半');
   }
+
+  // ── 两个"只会在真服务器上炸"的部署脚本坑（2026-11-06 真部署踩到，各配负向用例）
+  //
+  // ① `HERE` 必须在第一次引用**之前**定义：`set -u` 下，PRIVACY_SRC 的默认值
+  //    （`${PRIVACY_SRC:-$HERE/...}`）引用了还没定义的 HERE → "HERE: unbound variable"
+  //    当场退出。`--dry-run` / 自检 / CI 都不跑真安装，所以一路绿灯到服务器上才炸。
+  const hereDef = install.indexOf('HERE="$(cd ');
+  const firstUse = install.indexOf('$HERE');
+  if (hereDef < 0) {
+    problems.push('install.sh 里找不到 `HERE="$(cd …)"` 定义 —— 后面对仓库的相对路径全都会漂');
+  } else if (firstUse >= 0 && firstUse < hereDef) {
+    problems.push('install.sh 在定义 HERE **之前**就引用了 $HERE —— `set -u` 下会当场报 '
+      + '"HERE: unbound variable" 退出（2026-11-06 真部署踩到；--dry-run 与 CI 都测不出来）');
+  }
+
+  // ② `systemctl enable --now` 对**已经在跑**的服务是 no-op：不显式 restart，
+  //    刚拷上去的 .mjs 不会生效 —— 线上跑旧代码，而"两个服务都应答 /healthz"的自检照样绿。
+  if (!/systemctl restart lianleme-backend\.service/.test(install)) {
+    problems.push('install.sh 只有 `systemctl enable --now`、没有 restart —— 对已在跑的服务'
+      + '那一步是 no-op，新拷贝的 .mjs 不会生效（线上旧代码，自检仍绿；2026-11-06 真部署踩到）');
+  }
   try {
     execFileSync('bash', ['-n', join(deploy, 'install.sh')], { stdio: 'pipe' });
   } catch (e) {
@@ -486,6 +507,10 @@ function selftest() {
   // 每条都带"必须因为它自己那条而红"的判据：只验"红了"是不够的 ——
   // 变异体红了却红在别的原因上，等于那条守卫根本没被测到。
   const cases = [
+    ['install.sh 在定义 HERE 之前就引用它（真部署时 set -u 当场崩）', (r) => edit(r, 'install.sh',
+      'HERE="$(cd ', ': "$HERE"\nHERE="$(cd '), false, 'HERE'],
+    ['install.sh 只 enable --now、没有 restart（线上跑旧代码而自检全绿）', (r) => edit(r, 'install.sh',
+      'run "systemctl restart lianleme-backend.service lianleme-collector.service"', 'true'), false, 'restart'],
     ['拷贝白名单漏了 server/billing.mjs（线上第一次用到才 500）', (r) => {
       const p = join(r, 'server/deploy/install.sh');
       const t = readFileSync(p, 'utf8').replace(' billing.mjs', '');
