@@ -55,6 +55,7 @@ class DataToolsScreen extends StatefulWidget {
     this.cloudBackupAvailable,
     this.cloud,
     this.account,
+    this.onAccountChanged,
   });
 
   final LocalStore store;
@@ -90,6 +91,9 @@ class DataToolsScreen extends StatefulWidget {
   /// 登录会话（可选注入：测试用假传输；生产留空 → 按编译期配置造真身）。
   /// 与 [cloud] 同一个模式 —— 由调用方注入，屏幕自己不去读全局。
   final LoginSession? account;
+
+  /// 登录 / 注册 / 注销之后通知上层（M4a：上层静默同步服务端权益）
+  final VoidCallback? onAccountChanged;
 
   @override
   State<DataToolsScreen> createState() => _DataToolsScreenState();
@@ -267,7 +271,10 @@ class _DataToolsScreenState extends State<DataToolsScreen> {
         builder: (BuildContext ctx) => AccountScreen(
           session: session,
           profile: widget.profile,
-          onChanged: () => widget.onDataChanged?.call(),
+          onChanged: () {
+            widget.onDataChanged?.call();
+            widget.onAccountChanged?.call();
+          },
         ),
       ),
     );

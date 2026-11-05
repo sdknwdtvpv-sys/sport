@@ -18,6 +18,7 @@ import '../../analytics/analytics.dart';
 import '../../billing/entitlement.dart';
 import '../../billing/ultra_visibility.dart';
 import '../../billing/billing_client.dart';
+import '../../billing/billing_server.dart';
 import '../../billing/debug_grant.dart';
 import '../../billing/paywall_copy.dart';
 import '../../billing/paywall_screen.dart';
@@ -64,6 +65,7 @@ class SettingsHomeScreen extends StatelessWidget {
     this.cloud,
     this.account,
     this.entitlements,
+    this.onAccountChanged,
     this.showUltra = kUltraReleased,
     this.reminder = ReminderSettings.off,
     this.reminderHint,
@@ -106,6 +108,9 @@ class SettingsHomeScreen extends StatelessWidget {
   /// 会员权益仓储（可选：测试与"没有付费那一版"都可以不传，那时入口只给一句静态说明）
   final EntitlementRepository? entitlements;
 
+  /// 登录 / 注册 / 注销之后通知上层（M4a：上层据此静默拉一次服务端权益）
+  final VoidCallback? onAccountChanged;
+
   /// 这一版**上不上会员**（默认取 `kUltraReleased`，首版是 `false`）。
   /// 关着的时候设置页**不渲染**「练了么 Ultra」那一行 —— 理由见 `ultra_visibility.dart`。
   final bool showUltra;
@@ -125,7 +130,7 @@ class SettingsHomeScreen extends StatelessWidget {
           // 原因不是"藏起来"，而是 release 包里**买不了**（真内购在 M2）：
           // 摆一个开不了通的会员页 = Apple 2.1 / 3.1.1 的拒审面。
           if (showUltra) ...<Widget>[
-            UltraEntryTile(entitlements: entitlements),
+            UltraEntryTile(entitlements: entitlements, sessionStore: profile.authSessionStore()),
             const Divider(height: 1, color: Tokens.line),
           ],
           navTile(
@@ -216,6 +221,7 @@ class SettingsHomeScreen extends StatelessWidget {
           cloudBackupAvailable: cloudBackupAvailable,
           cloud: cloud,
           account: account,
+          onAccountChanged: onAccountChanged,
         ),
       ));
 
@@ -236,9 +242,13 @@ class SettingsHomeScreen extends StatelessWidget {
 /// 做成独立 `StatefulWidget` 而不是往设置页塞状态：这一屏本身是 `StatelessWidget`，
 /// 而"要读一次库才知道写什么"只影响这一行。
 class UltraEntryTile extends StatefulWidget {
-  const UltraEntryTile({super.key, this.entitlements, this.now});
+  const UltraEntryTile({super.key, this.entitlements, this.sessionStore, this.now});
 
   final EntitlementRepository? entitlements;
+
+  /// 会话令牌来源（M4a：有它 + 配了服务器地址时，会员页的购买/恢复会上送服务端）
+  final SessionStore? sessionStore;
+
   final DateTime Function()? now;
 
   @override
@@ -274,12 +284,16 @@ class _UltraEntryTileState extends State<UltraEntryTile> {
       onTap: () {
         final EntitlementRepository? repo = widget.entitlements;
         if (repo == null) return;
+        final SessionStore? sessions = widget.sessionStore;
+        final BillingServerClient? server = sessions == null
+            ? null
+            : billingServerClientFromConfig(repository: repo, sessionStore: sessions);
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => PaywallScreen(
             repository: repo,
             // debug 走查给假商品；release 里它是 null → 会员页从**真商店**拉商品。
             catalog: debugCatalogForWalkthrough(),
-            billing: BillingClient(gateway: InAppPurchaseGateway(), repository: repo),
+            billing: BillingClient(gateway: InAppPurchaseGateway(), repository: repo, server: server),
           ),
         ));
       },

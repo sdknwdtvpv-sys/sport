@@ -20,6 +20,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
 import '../core/icon_spec.dart';
@@ -29,8 +30,10 @@ import '../data/entitlement_repository.dart';
 import '../features/profile/privacy_policy_screen.dart';
 import '../features/profile/profile_widgets.dart';
 import 'billing_client.dart';
+import 'billing_server.dart';
 import 'entitlement.dart';
 import 'paywall_copy.dart';
+import 'redeem_screen.dart';
 import 'subscription_terms_screen.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -186,6 +189,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
               subtitle: PaywallCopy.manageHint,
               onTap: _manage,
             ),
+            // 兑换入口：**iOS 不渲染**（Apple 3.1.1 禁止自建码输入；Offer Code 面板在 M4b）。
+            // 这里只在"非 iOS 且注入了服务端客户端"时出现 —— 连不上服务器时摆一个
+            // 必然失败的入口比没有更糟。
+            if (defaultTargetPlatform != TargetPlatform.iOS && widget.billing?.server != null) ...<Widget>[
+              const Divider(height: 1, color: Tokens.line),
+              navTile(
+                key: const Key('open-redeem'),
+                title: '兑换码',
+                subtitle: '国内渠道购买后，在这里核销',
+                onTap: _openRedeem,
+              ),
+            ],
             const Divider(height: 1, color: Tokens.line),
             navTile(
               key: const Key('open-subscription-terms'),
@@ -407,6 +422,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() => _busy = false);
     _toast(result.message);
     if (result.ok) await _load();
+  }
+
+  Future<void> _openRedeem() async {
+    final BillingServerClient? server = widget.billing?.server;
+    if (server == null) return;
+    await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (_) => RedeemScreen(client: server, repository: widget.repository, now: widget.now),
+    ));
+    if (mounted) await _load();
   }
 
   bool _busy = false;

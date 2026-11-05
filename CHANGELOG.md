@@ -6,6 +6,78 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.68.4 · Ultra 客户端接入服务端验签/权益同步 + 兑换页（M4a）
+
+用户 2026-11-06 拍板：商品先不建，但 M4 其余五项全做，顺序是 **M4a 客户端接线 → 云备份多版本 →
+导出进阶 → 周期化计划**。本轮只做 M4a：**把 M3 的服务端权益接进客户端**，仍然
+**不翻 `kUltraReleased`、不改商店表单/政策、不做 iOS Offer Code 面板、不改服务端**。
+
+> **政策为什么本轮不用改**：这一版代码已经能上送购买凭据，但发版开关（`kUltraReleased == false`）
+> 仍然关着、用户买不到；且正式包没有配服务器地址（`cloudBackupBaseUrl == null`）→ 一个请求都不会发。
+> 政策 §2.5「本版本未开放购买 / 不上传购买凭据」仍然成立。
+> **M4c 开放购买时必须一起改政策、`privacy-facts.json` 的 `purchases` 与商店表单** —— 这条写在
+> `docs/plan-membership-2026-10-10.md` §十 M4 进度里，别漏。
+
+### 一、新 `billing_server.dart`：可注入的服务端计费客户端
+
+* **`BillingServerApi`** 抽象（`fetchEntitlement` / `verifyTransaction` / `redeemCode` / `close`）：
+  生产实现 `HttpBillingServerApi`（`dart:io`，零新依赖，8 秒超时）；测试用假实现（`test/fake_billing_server.dart`）。
+* **`BillingServerClient`** 负责三件事：
+  * **上送交易**：iOS 购买/恢复成功后，把 `PurchaseDetails.verificationData.serverVerificationData`
+    （StoreKit 2 JWS）发到 `POST /v1/billing/verify`；成功则**以服务端到期时间/环境为准**
+    （本地按商品周期估算的那份只是离线兜底）；
+  * **同步权益**：启动与登录后 `GET /v1/billing/entitlement`，合并进 `EntitlementRepository` ——
+    **只延长不缩短**；服务端说 refunded/revoked **立即降级**；服务端说 expired 以它为准；
+    离线/未登录/失败**保留本地**（离线可用是红线）；
+  * **自建兑换码**：`POST /v1/billing/redeem`，把 400/404/409/410/429 分别翻成
+    「格式不对 / 不存在 / 已用过 / 已过期 / 太频繁」并带上 `Retry-After`。
+* **服务端 `Sandbox` 交易默认换不到正式权益**：M3 已做（400 `sandbox_not_allowed`），
+  客户端把它当"服务端拒绝、购买仍按本地成功"处理，原因留在 `lastServerError`。
+
+### 二、`BillingClient`：本地先生效，服务端再校准
+
+* `BillingTransaction` 新增 `serverVerificationData`（从插件交易里取；Android 的 purchaseToken
+  不是 Apple JWS，**不上送**）。
+* 交付顺序：**本地写权益 → 上送服务端 → complete**。服务端失败/超时/未登录**不改变购买结果**
+  （已经扣款了，不能反过来说购买失败），只在 `server.lastServerError` 留一句可读原因。
+* 同一笔交易重放：只写一次权益、只 complete 一次、只上送一次（幂等）。
+
+### 三、兑换页（平台分支是硬的）
+
+* 新 `redeem_screen.dart`：**Android/国内渠道**显示输入框并在线核销；**iOS 不渲染输入框**
+  （只如实写"用 App Store 的兑换礼品卡或代码"）—— Apple 3.1.1 不允许自建码解锁内容；
+  Apple Offer Code 面板留 M4b，**这一版不做假的**。
+* 会员页在"非 iOS 且配了服务器"时多一行「兑换码」入口；其它情况不出现（连不上服务器时
+  摆一个必然失败的入口比没有更糟）。
+
+### 四、启动与登录后同步（静默）
+
+* `main.dart` 启动时静默拉一次服务端权益；设置 → 数据与备份 → 账号里**登录/注册/注销之后**
+  也拉一次（`onAccountChanged` 接线）。全部失败静默、本机权益保留。
+* 正式包没有服务器地址 → `billingServerClientFromConfig()` 返回 null，这一层完全不联网。
+
+### 五、测试（假商店 + 假服务端，28 条）
+
+* `billing_server_test.dart`：只延长不缩短 / 退款撤销立即降级 / 到期以服务端为准 /
+  服务端 none 不删本地 / 未登录不发请求 / 离线回退可读原因 / 401 / 上送 JWS 后服务端到期覆盖 /
+  沙盒被拒仍本地生效 / 兑换各状态码 / 本地估算兜底；
+* `billing_server_wiring_test.dart`：iOS 购买→上送→服务端到期为准；server 500→本地回退且购买成功；
+  未登录→纯本地不建会话；恢复购买同样上送；同笔交易幂等；登录后同步退款→降级；
+* `redeem_screen_test.dart`：iOS 无输入框（`debugDefaultTargetPlatformOverride`）/ Android 有输入框、
+  成功写权益、已用/限速原因准确、未登录不发请求；
+* 既有 `paywall_copy` / `ultra_release_gate`（`kUltraReleased == false` 三入口仍隐藏）/
+  `free_red_line` / `accent_budget` / `large_font_sweep` 全部照旧绿。
+
+### 六、本轮明确不做（M4b/M4c）
+
+不翻 `kUltraReleased`；不改商店表单/政策（开放购买时一起改）；不做 iOS Offer Code 兑换面板；
+不改服务端；不建商品、不出包/不部署（缺 keystore 与服务器访问）。
+
+### 验证与产物
+
+六层门禁「未发现失败」；`privacy-audit` / `check-store-forms` 仍绿（本版本仍未开放购买）。
+**本轮不重出 APK/AAB/截图/软著 PDF**（本机无 keystore、用户还没说部署；`dist/` 为空时守卫如实跳过）。
+
 ## v1.68.3 · 会员 Ultra 接入真内购（M2，客户端）
 
 用户 2026-11-05 拍板开始做会员 Ultra（先 Apple；付费开发者账号已有，商品尚未创建）。

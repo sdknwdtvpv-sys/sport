@@ -39,6 +39,7 @@ import 'data/day_plan_repository.dart';
 import 'data/drift_local_store.dart';
 import 'data/exercise_data_ext.dart';
 import 'billing/billing_client.dart';
+import 'billing/billing_server.dart';
 import 'billing/debug_grant.dart';
 import 'billing/paywall_screen.dart';
 import 'data/entitlement_repository.dart';
@@ -443,6 +444,31 @@ class _HomeShellState extends State<HomeShell> {
     _refreshHome();
     unawaited(_loadUnit());
     unawaited(_loadConsentThenStart());
+    // M4a：启动时静默拉一次服务端权益（没配服务器/没登录/没网都静默跳过，
+    // 本机权益保留 —— 离线可用是红线）。与"登录后同步"共用同一个方法。
+    unawaited(_syncUltraQuietly());
+  }
+
+  /// 静默拉一次服务端 Ultra 权益（M4a）。
+  ///
+  /// **不弹窗、不报错、不影响任何功能**：没配服务器地址（正式包）、没登录、
+  /// 没网、服务端挂了都只是"没同步成"，本机权益原样保留。
+  Future<void> _syncUltraQuietly() async {
+    try {
+      final EntitlementRepository repo = EntitlementRepository(_db);
+      final BillingServerClient? client = billingServerClientFromConfig(
+        repository: repo,
+        sessionStore: _profile.authSessionStore(),
+      );
+      if (client == null) return;
+      try {
+        await client.syncFromServer();
+      } finally {
+        client.close();
+      }
+    } catch (_) {
+      // 启动同步永远静默：它只是"校准"，不是功能门槛。
+    }
   }
 
   /// 先问"同意过吗"，再决定起不起埋点。
@@ -2065,6 +2091,8 @@ class _HomeShellState extends State<HomeShell> {
         reminder: _reminder,
         reminderHint: _reminderHint,
         onReminderChanged: _setReminder,
+        // M4a：登录/注册/注销之后拉一次服务端权益（失败静默，本机保留）
+        onAccountChanged: () => unawaited(_syncUltraQuietly()),
       ),
     ));
     if (mounted) await _refreshHome();
@@ -2094,18 +2122,26 @@ class _HomeShellState extends State<HomeShell> {
             entitlements: EntitlementRepository(_db),
             // 「看看 Ultra」→ 会员页（**它只在进步页那张卡的按钮上**，
             // 首页/训练屏那条路径上一个付费入口都没有 —— `free_red_line_test` 钉着这件事）
-            onOpenUltra: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => PaywallScreen(
-                    repository: EntitlementRepository(_db),
-                    // debug 走查给假商品（只在 debug 构建里存在）；release 里它是 null
-                    // → 会员页从**真商店**拉商品（M2 的真内购从这里接进来）。
-                    catalog: debugFakeCatalog,
-                    billing: BillingClient(
-                      gateway: InAppPurchaseGateway(),
-                      repository: EntitlementRepository(_db),
+            onOpenUltra: () {
+              // M4a：会员页的商店接线 + 服务端校准（没配服务器地址时 server = null → 纯本地）。
+              final EntitlementRepository repo = EntitlementRepository(_db);
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => PaywallScreen(
+                  repository: repo,
+                  // debug 走查给假商品（只在 debug 构建里存在）；release 里它是 null
+                  // → 会员页从**真商店**拉商品（M2 的真内购从这里接进来）。
+                  catalog: debugFakeCatalog,
+                  billing: BillingClient(
+                    gateway: InAppPurchaseGateway(),
+                    repository: repo,
+                    server: billingServerClientFromConfig(
+                      repository: repo,
+                      sessionStore: _profile.authSessionStore(),
                     ),
                   ),
-                )),
+                ),
+              ));
+            },
             // T3-2：进步页那处「还没有训练记录」的空态，下一步是回「开练」那一格
             onOpenToday: () => _selectTab(1),
           );      case 1:

@@ -16,19 +16,20 @@
 ///   3. **未登录也能买 / 恢复**：这一层只认 `EntitlementRepository`（本机库），
 ///      不依赖账号会话 —— Apple 5.1.1(v) 与方案 §7.1 第 4 条。
 ///
-/// ⚠️ **M2 的已知限制（M3 会替换，别当成永久实现）**：
-///   没有服务端验签（M3）。所以`到期时间`只能按商品周期**估算**（月 +1 自然月 / 年 +1 自然年 /
-///   终身 = null），`isTrial` 恒为 false、也**不显示"试用 N 天"** —— 试用信息不在
-///   `ProductDetails` 里（插件 3.3.1 不暴露 introductory offer），而编一个试用天数
-///   比不写更危险。M3 服务端验签后，用收据里的真实 `expires_date` 覆盖这一条。
+/// ⚠️ **M4a 起**：如果注入了 [BillingServerClient]，交易成功后会把它上送服务端，
+///   **以服务端返回的到期时间/环境为准**；服务端失败/超时/未登录则回退本地估算
+///   （离线可用是红线）。本地估算仍然是兜底：月 +1 自然月 / 年 +1 自然年 / 终身 = null。
+///   `isTrial` 恒为 false、**不显示"试用 N 天"** —— 试用信息不在 `ProductDetails` 里
+///   （插件 3.3.1 不暴露 introductory offer），编一个数字比不写更危险。
 library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show TargetPlatform, debugPrint, defaultTargetPlatform;
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../data/entitlement_repository.dart';
+import 'billing_server.dart';
 import 'entitlement.dart';
 import 'paywall_copy.dart';
 
@@ -98,6 +99,7 @@ class BillingTransaction {
     this.transactionDateMs,
     this.errorMessage,
     this.needsComplete = false,
+    this.serverVerificationData,
   });
 
   final String productId;
@@ -114,6 +116,10 @@ class BillingTransaction {
 
   /// 插件说"这笔交易需要调用 completePurchase"（iOS 必须；Android 由 isAcknowledged 推导）。
   final bool needsComplete;
+
+  /// StoreKit 2 的交易 JWS（`verificationData.serverVerificationData`）。
+  /// **只有 iOS 有**；Android 是 purchaseToken，服务端计费端点不吃它 → 客户端只走本地。
+  final String? serverVerificationData;
 
   /// 幂等键：同一笔交易第二次到达时，不许再写一遍权益、也不许再 complete 一次。
   String get key => '${purchaseId ?? productId}@${transactionDateMs ?? 0}';
@@ -271,6 +277,9 @@ class InAppPurchaseGateway implements BillingGateway {
         status: _statusOf(d.status),
         errorMessage: d.error == null ? null : _readableError(d.error!),
         needsComplete: d.pendingCompletePurchase,
+        serverVerificationData: d.verificationData.serverVerificationData.isEmpty
+            ? null
+            : d.verificationData.serverVerificationData,
       ));
     }
   }
@@ -361,6 +370,7 @@ class BillingClient {
   BillingClient({
     required this.gateway,
     required this.repository,
+    this.server,
     DateTime Function()? now,
     this.transactionTimeout = const Duration(minutes: 2),
     this.restoreQuietWindow = const Duration(milliseconds: 900),
@@ -368,6 +378,12 @@ class BillingClient {
 
   final BillingGateway gateway;
   final EntitlementRepository repository;
+
+  /// 服务端计费客户端（M4a）。null = 这个包没配服务器 / 测试只测本地。
+  ///
+  /// ⚠️ 它**不阻塞购买结果**：上送失败只影响到期时间是否被服务端校准，
+  /// 本地权益照常写、购买照常报成功（`lastServerError` 留一句可读原因）。
+  final BillingServerClient? server;
   final DateTime Function() _now;
 
   /// 购买后等交易流的最长时间（超时如实说，不假装成功）。
@@ -531,12 +547,32 @@ class BillingClient {
       lastVerifiedAtMs: _nowMs,
     );
     await repository.upsert(entitlement);
+    UltraEntitlement delivered = entitlement;
     _lastDelivered = entitlement;
     await repository.logEvent(
       tx.status == BillingTxStatus.restored ? 'restored' : 'purchased',
       detail: tx.productId,
       atMs: _nowMs,
     );
+
+    // ── 上送服务端校准（M4a）：失败/超时/未登录都**不影响**购买结果 ──
+    final BillingServerClient? server = this.server;
+    final String? jws = tx.serverVerificationData;
+    if (server != null &&
+        jws != null &&
+        jws.isNotEmpty &&
+        gateway.storeSource == UltraSource.apple) {
+      try {
+        final ServerSyncResult synced = await server.submitPurchase(jws);
+        if (synced.ok && synced.entitlement != null) {
+          delivered = synced.entitlement!;
+          _lastDelivered = delivered;
+        }
+      } catch (e) {
+        // 服务端这一层自己已经兜住大多数错误；这是最后一道保险（绝不反推购买失败）。
+        debugPrint('billing server sync failed: $e');
+      }
+    }
 
     // 先交付、再完成（插件要求：内容交付之后才能 complete）。
     if (tx.needsComplete) {
@@ -551,7 +587,7 @@ class BillingClient {
       _restoredCount += 1;
       _armRestoreTimer();
     }
-    _finishBuy(BillingResult.success(entitlement, '购买成功，Ultra 已开通。'));
+    _finishBuy(BillingResult.success(delivered, '购买成功，Ultra 已开通。'));
   }
 
   void _finishBuy(BillingResult result) {
@@ -579,6 +615,8 @@ class BillingClient {
     _sub = null;
     _finishBuy(BillingResult.failed('页面已关闭。'));
     _finishRestore(BillingResult.failed('页面已关闭。'));
+    // 谁建的 server 客户端谁关（HttpClient 不关会把测试进程挂住）。
+    server?.close();
   }
 
   UltraProductView? _viewOf(StoreProduct p) {

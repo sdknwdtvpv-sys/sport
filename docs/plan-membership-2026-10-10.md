@@ -384,7 +384,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 |---|---|---|
 | 1 | 状态机九态全部有测试 | 新 `entitlement_test.dart`（纯函数，含宽限/退款/离线过期） |
 | 2 | 3.1.2 的要素一条不落 | 新 `paywall_copy_test.dart`：断言页面含"标题/时长/价格/自动续费/条款/隐私政策"六要素，**且价格取自商品对象**（写死不通过） |
-| 3 | iOS 不出现自建码输入 | 新 `redeem_platform_test.dart`：`debugDefaultTargetPlatformOverride = iOS` 时 `find.byKey('redeem-code-field')` 为空；Android 时存在 |
+| 3 | iOS 不出现自建码输入 | ✅ **M4a 已做**（2026-11-06）：`app/test/redeem_screen_test.dart` 用 `debugDefaultTargetPlatformOverride` 钉住 —— iOS 无 `redeem-code-field`（只有一句「去 App Store 兑换」），Android 有输入框并能核销。Apple Offer Code 面板在 M4b。 |
 | 4 | 未登录也能买 / 恢复 | ✅ `app/test/billing_client_test.dart` 的「未登录也能买/恢复」：本机无登录会话时，假商店购买→权益 active；不建会话 |
 | 5 | 免费红线不可被绕过 | 新 `free_red_line_test.dart`：`export-csv` / `export-backup` 在无权益时**仍可用**；记录训练路径上无任何 Ultra 入口 |
 | 6 | 会员页过大字号 | `app/test/large_font_sweep_test.dart` **把「会员页」「兑换页」加进那一份清单**（现在 18 屏） |
@@ -393,7 +393,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 | 9 | 服务端验签与通知 | ✅ **已做（2026-11-05，M3 第一批）**：`server/billing.selftest.mjs`（改一位/换根/错 bundleId/错商品/缺 expiresDate/重放同一 transactionId 不重复延长/DID_RENEW 延长/REFUND·REVOKE 立即失效/EXPIRED 不缩短/通知重放只处理一次） |
 | 10 | 兑换码 | 🟡 **服务端已做（2026-11-05）**：`server/billing.selftest.mjs`（码形状/校验位/95bit 熵/一次性并发同码只成功一次/三类限速/错码/过期/批次作废）；客户端入口（iOS/Play 平台分支）在 M4 |
 | 11 | 政策与事实表对账 | `node tool/privacy-audit.mjs` 绿；`check-store-forms` 绿（「含内购」已改） |
-| 12 | 真机沙盒全路径 | 手跑并留证据图：购买 → 恢复 → 退款（沙盒可模拟）→ 到期降级 → **Offer Code 兑换**（沙盒码）→ 国内码核销；**证据图进 `docs/images/plan-membership-2026-10-10/`** |
+| 12 | 真机沙盒全路径 | 🟡 **M4a 代码就绪**（2026-11-06）：购买/恢复上送验签、启动/登录同步、服务端退款降级、兑换码客户端路径都已接好并用假商店/假服务端测过；**真机沙盒 + 证据图仍未做**（缺商品与服务器访问）。手跑并留证据图：购买 → 恢复 → 退款（沙盒可模拟）→ 到期降级 → **Offer Code 兑换**（沙盒码）→ 国内码核销；**证据图进 `docs/images/plan-membership-2026-10-10/`** |
 | 13 | **M1 的假开关不许进 release** | `debugGrantUltra()` 必须包在 `assert` 里（照 `debugWorkoutScreenBuilds` 的先例），并有一条测试**扫源码**：`grantUltra` 的调用点只在 `assert(...)` 内；另有一条断言"release 构建里搜不到该符号"（可用 `flutter build apk --release` 后 `strings` 复核，或退一步：源码级扫描 + 人工在包上核一次） |
 | 14 | 付费墙的"续期实务四条"在页面上 | `paywall_copy_test` 追加断言：24 小时取消、费用计入 Apple ID、未用试用作废、恢复购买**可见**（`find.byKey('restore-purchases')`） |
 
@@ -470,6 +470,15 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 **合计 15–21 人日**（不含"周期化计划"这个新功能；它单独再算 5–8 人日）。
 
 > **M3 进度（2026-11-05，第一批已完成）**：`billing-store.mjs` / `billing.mjs`（Apple JWS 验签 + V2 通知 + 权益下发 + 自建码核销/限速）/ `redeem-admin.mjs`（CLI）/ `billing.selftest.mjs`（判据 9/10 的服务端那一半）已落地并进六层门禁；Apple 根证书入库、`backend.mjs` 接线、部署白名单与 `check-deploy` 判据同步、`docs/backend-design.md` §十。**还差**：Google RTDN / purchaseToken 校验、备份多版本（Ultra 配额）、Apple offer code 客户端流程（M4）、可选 App Store Server API 主动查询（需用户 ASC API Key）、「删除账号」联动删除计费权益（**已做 2026-11-05**：与备份/账号一起删，失败整体 500）。
+
+> **M4 进度（2026-11-06，M4a 已完成；M4b/M4c 未做）**：客户端已接服务端权益 ——
+> `app/lib/billing/billing_server.dart`（可注入 API + 真实现 + 假实现）负责上送 StoreKit 2 JWS
+> （`POST /v1/billing/verify`，**服务端为准**）、启动/登录后 `GET /v1/billing/entitlement`
+> 合并（只延长不缩短；refunded/revoked 立即降级；离线保留本地）、`POST /v1/billing/redeem` 兑换；
+> `BillingClient` 本地先生效、服务端再校准（失败不阻挡购买结果）；`redeem_screen.dart` 平台分支
+> （iOS 不渲染输入框）。**M4b**（iOS Offer Code 面板）、**M4c**（翻 `kUltraReleased`、商城商品、
+> 政策/事实表/商店表单一起改、真机沙盒证据）仍未做；M4c 之前**政策 §2.5 不用改**：
+> 发版开关关着、正式包没配服务器地址 → 不会上传购买凭据。
 
 ### M1 进度（2026-10-10 开工）
 

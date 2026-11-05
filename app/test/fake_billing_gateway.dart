@@ -103,6 +103,7 @@ BillingTransaction purchasedTx({
   String purchaseId = 'tx_1',
   int atMs = 1760000000000,
   bool needsComplete = true,
+  String? serverVerificationData,
 }) =>
     BillingTransaction(
       productId: productId,
@@ -110,6 +111,7 @@ BillingTransaction purchasedTx({
       purchaseId: purchaseId,
       transactionDateMs: atMs,
       needsComplete: needsComplete,
+      serverVerificationData: serverVerificationData,
     );
 
 BillingTransaction restoredTx({
@@ -117,6 +119,7 @@ BillingTransaction restoredTx({
   String purchaseId = 'tx_restore_1',
   int atMs = 1760000000000,
   bool needsComplete = true,
+  String? serverVerificationData,
 }) =>
     BillingTransaction(
       productId: productId,
@@ -124,6 +127,7 @@ BillingTransaction restoredTx({
       purchaseId: purchaseId,
       transactionDateMs: atMs,
       needsComplete: needsComplete,
+      serverVerificationData: serverVerificationData,
     );
 
 BillingTransaction pendingTx({String productId = UltraProductIds.yearly}) =>
