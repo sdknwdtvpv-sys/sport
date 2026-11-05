@@ -19,12 +19,15 @@ import '../../core/app_tab_bar.dart';
 import '../../core/pills.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
+import '../../data/entitlement_repository.dart';
 import '../../data/exercise_repository.dart';
 import '../../data/local_store.dart';
+import '../../data/period_plan_repository.dart';
 import '../../data/routine_repository.dart';
 import '../../domain/models.dart' show SetRecord;
 import '../progress/progress_data.dart';
 import '../routine/routine_screen.dart';
+import '../plan/periodization_screen.dart';
 import '../today/today_planner.dart';
 import '../today/training_scenario.dart';
 
@@ -47,6 +50,10 @@ class PlanScreen extends StatefulWidget {
     this.now,
     this.onPlanWizard,
     this.onBack,
+    this.periodPlans,
+    this.entitlements,
+    this.planner,
+    this.onStartPeriodized,
   });
 
   final RoutineRepository repository;
@@ -96,6 +103,14 @@ class PlanScreen extends StatefulWidget {
   /// 可注入的"今天"，测试用。
   final DateTime? now;
 
+  /// 周期化计划（Ultra 权益 10）。**四个都给才显示入口**（缺一个就不放点了没反应的按钮）。
+  final PeriodPlanRepository? periodPlans;
+  final EntitlementRepository? entitlements;
+  final TodayPlanner? planner;
+
+  /// 从周期计划某一天开练：把动作交给外壳（复用现有训练屏与建议引擎）。
+  final ValueChanged<List<PlannedExercise>>? onStartPeriodized;
+
   @override
   State<PlanScreen> createState() => _PlanScreenState();
 }
@@ -116,9 +131,13 @@ class _PlanScreenState extends State<PlanScreen> {
 
   DateTime get _today => widget.now ?? DateTime.now();
 
+  /// 本机权益是否给 Ultra（决定周期计划入口渲不渲染；**没有权益整块不出现**）。
+  bool _periodUltraActive = false;
+
   @override
   void initState() {
     super.initState();
+    _loadPeriodEntitlement();
     debugPlanSegment = (int i) {
       if (mounted && i >= 0 && i < PlanView.values.length) {
         setState(() => _view = PlanView.values[i]);
@@ -190,6 +209,35 @@ class _PlanScreenState extends State<PlanScreen> {
 
   // ─────────────────────────────────────────────── 本周
 
+  Future<void> _loadPeriodEntitlement() async {
+    final EntitlementRepository? repo = widget.entitlements;
+    if (repo == null) return;
+    final bool active =
+        (await repo.access(_today.millisecondsSinceEpoch)).ultra;
+    if (!mounted) return;
+    setState(() => _periodUltraActive = active);
+  }
+
+  Future<void> _openPeriodization() async {
+    final PeriodPlanRepository? plans = widget.periodPlans;
+    final TodayPlanner? planner = widget.planner;
+    if (plans == null || planner == null) return;
+    final List<PlannedExercise>? picked =
+        await Navigator.of(context).push<List<PlannedExercise>>(MaterialPageRoute<List<PlannedExercise>>(
+      builder: (_) => PeriodizationScreen(
+        plans: plans,
+        planner: planner,
+        exercises: widget.exercises,
+        store: widget.store,
+        unit: widget.unit,
+        now: widget.now == null ? null : () => widget.now!,
+      ),
+    ));
+    if (picked != null && picked.isNotEmpty) {
+      widget.onStartPeriodized?.call(picked);
+    }
+  }
+
   Widget _weekView() {
     final List<DateTime> days = _weekDays;
     final DateTime today = _today;
@@ -224,6 +272,27 @@ class _PlanScreenState extends State<PlanScreen> {
                       style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
                 ),
                 const Text('›', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsBodyS)),
+              ],
+            ),
+          ),
+          const SizedBox(height: Tokens.s3),
+        ],
+        // ── 周期计划（Ultra 权益 10）：**只有权益 active 才渲染整块** ──
+        if (_periodUltraActive &&
+            widget.periodPlans != null &&
+            widget.planner != null) ...<Widget>[
+          ViCard(
+            key: const Key('plan-periodization'),
+            onTap: _openPeriodization,
+            child: Row(
+              children: <Widget>[
+                const Icon(Icons.event_repeat, color: Tokens.accent, size: IconSpec.m),
+                const SizedBox(width: Tokens.s3),
+                const Expanded(
+                  child: Text('周期计划（Ultra）',
+                      style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
+                ),
+                const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
               ],
             ),
           ),

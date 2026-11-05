@@ -682,6 +682,54 @@ class BillingEvent extends Table {
   TextColumn get detail => text().nullable()();
 }
 
+/// 周期化计划（Ultra 权益 10，v32）。一份计划 = 多周 × 每周 N 天。
+///
+/// **只加表**：老库升上来是空的 = "还没建过周期计划"，那正是准确的历史。
+class PeriodPlan extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+
+  /// 4 / 6 / 8（模板决定；导入时也按这个范围校验）
+  IntColumn get weeks => integer()();
+
+  /// 3 / 4（每周几天课表）
+  IntColumn get daysPerWeek => integer()();
+
+  /// 第 1 周第 1 天（本地日，`YYYY-MM-DD`；周窗以它为准）
+  TextColumn get startDate => text()();
+
+  /// 1..weeks；只有"本周练满"才会前进（`domain/periodization.dart`）
+  IntColumn get currentWeek => integer()();
+
+  /// active / completed / archived（见 `PeriodPlanStatus`）
+  TextColumn get status => text()();
+  IntColumn get createdAt => integer()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+/// 周期计划的一条课表项（某周某天某个动作的目标）。
+///
+/// `targetWeightKg` 为 null = 自重/按时长，**不加重**（不编重量）。
+class PeriodPlanSession extends Table {
+  TextColumn get id => text()();
+  TextColumn get planId => text()();
+  IntColumn get week => integer()();
+  IntColumn get day => integer()();
+  IntColumn get position => integer()();
+  TextColumn get exerciseId => text()();
+  IntColumn get targetSets => integer()();
+  IntColumn get repsLow => integer()();
+  IntColumn get repsHigh => integer()();
+  RealColumn get targetWeightKg => real().nullable()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 @DriftDatabase(tables: <Type>[
   Exercise,
   Workout,
@@ -704,6 +752,8 @@ class BillingEvent extends Table {
   DayPlanDay,
   Entitlement,
   BillingEvent,
+  PeriodPlan,
+  PeriodPlanSession,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -761,8 +811,11 @@ class AppDatabase extends _$AppDatabase {
   /// 所以这一版即使出问题，回滚也只是 `DROP INDEX`，数据没有迁移风险。
   /// 为什么加、为什么是"部分索引"、验证过它会用上：见
   /// `docs/performance-audit-2026-11-05.md` §1.1 的 v31 迁移方案。
+  /// v32（2026-11-06，会员权益 10）：新增 `period_plan` / `period_plan_session`
+  /// （周期化计划 v1）。**只加表、不动任何既有行/列** —— 老库升上来是空的 =
+  /// "这个功能出现之前，这台设备没有建过周期计划"，那正是准确的历史。
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -804,8 +857,29 @@ class AppDatabase extends _$AppDatabase {
             'CREATE INDEX IF NOT EXISTS idx_routine_item_routine '
             'ON routine_item (routine_id, position)',
           );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_period_plan_status '
+            'ON period_plan (status, updated_at DESC)',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_period_plan_session '
+            'ON period_plan_session (plan_id, week, day, position)',
+          );
         },
         onUpgrade: (Migrator m, int from, int to) async {
+          // v31 → v32：只加两张表（周期化计划）。老库升上来是空的 = 没建过计划。
+          if (from < 32) {
+            await m.createTable(periodPlan);
+            await m.createTable(periodPlanSession);
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_period_plan_status '
+              'ON period_plan (status, updated_at DESC)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_period_plan_session '
+              'ON period_plan_session (plan_id, week, day, position)',
+            );
+          }
           // v16 → v17：多一张"训练提醒"表。老库升上来时它是空的 ——
           // **准确的历史**：这个功能出现之前，谁也没开过提醒（也就是默认关）。
           if (from < 17) {

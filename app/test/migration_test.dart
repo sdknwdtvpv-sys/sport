@@ -21,6 +21,8 @@ import 'package:lianleme/data/exercise_repository.dart';
 import 'package:lianleme/data/analytics_meta_repository.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/notification_repository.dart';
+import 'package:lianleme/data/period_plan_repository.dart';
+import 'package:lianleme/domain/periodization.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/data/reminder_repository.dart';
 import 'package:lianleme/features/profile/reminder.dart';
@@ -810,12 +812,12 @@ void main() {
       expect(
         (await first.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        31,
-        reason: '打开之后应当已经是 v31',
+        32,
+        reason: '按当前代码打开之后应当已经是最新 schema（v32）',
       );
       await first.close();
 
-      // 第二次打开：user_version 已是 31 → 不再进 onUpgrade；索引只能有一条。
+      // 第二次打开：user_version 已是最新 → 不再进 onUpgrade；索引只能有一条。
       final AppDatabase second = AppDatabase(NativeDatabase(file));
       expect(await indexCount(second), 1, reason: '重复打开不许建第二条同名索引');
       expect(
@@ -833,9 +835,67 @@ void main() {
       expect(
         (await third.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        31,
+        32,
       );
       await third.close();
+    } finally {
+      driftRuntimeOptions.dontWarnAboutMultipleDatabases = dontWarnBefore;
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('v31 的库升到 v32：多出周期计划两张空表，写入后重复打开幂等', () async {
+    final Directory dir = await Directory.systemTemp.createTemp('lianleme-v32-');
+    final File file = File('${dir.path}/v32.sqlite');
+    final bool dontWarnBefore = driftRuntimeOptions.dontWarnAboutMultipleDatabases;
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    try {
+      final AppDatabase first = AppDatabase(NativeDatabase(file, setup: (dynamic raw) {
+        legacySetup(raw, version: 31);
+        raw.execute(legacySeedExerciseSql);
+      }));
+      // 打开即触发 v31 → v32。
+      expect(
+        (await first.customSelect('PRAGMA user_version').getSingle())
+            .read<int>('user_version'),
+        32,
+      );
+      expect(await first.customSelect('SELECT count(*) n FROM period_plan').getSingle().then((r) => r.read<int>('n')), 0);
+      expect(
+        await first.customSelect('SELECT count(*) n FROM period_plan_session').getSingle().then((r) => r.read<int>('n')),
+        0,
+        reason: '老库升上来是空的 = 这个功能出现之前没建过周期计划',
+      );
+      // 新表真的可用（走公开 API，不写裸 SQL）
+      final PeriodPlanSnapshot plan = await PeriodPlanRepository(first).createPlan(
+        name: '迁移测试周期',
+        weeks: 4,
+        daysPerWeek: 3,
+        startDate: DateTime(2026, 11, 2),
+        baseSessions: <PeriodSessionSpec>[
+          const PeriodSessionSpec(week: 1, day: 1, position: 0, exerciseId: 'ex_legacy_bench', targetWeightKg: 60),
+        ],
+        nowMs: 1000,
+      );
+      expect(plan.weeks, 4);
+      await first.close();
+
+      // 重复打开：不再进迁移、数据还在、不重复建行。
+      final AppDatabase second = AppDatabase(NativeDatabase(file));
+      final PeriodPlanSnapshot? again = await PeriodPlanRepository(second).activePlan();
+      expect(again, isNotNull);
+      expect(again!.name, '迁移测试周期');
+      expect(
+        (await second.customSelect('SELECT count(*) n FROM period_plan').getSingle()).read<int>('n'),
+        1,
+        reason: '重复打开不许把计划复制成两份',
+      );
+      expect(
+        (await second.customSelect('SELECT count(*) n FROM period_plan_session').getSingle()).read<int>('n'),
+        4, // 4 周 × 第 1 周模板 1 项
+        reason: 'createPlan 会按周展开（v1 模板每周同一套动作）',
+      );
+      await second.close();
     } finally {
       driftRuntimeOptions.dontWarnAboutMultipleDatabases = dontWarnBefore;
       await dir.delete(recursive: true);

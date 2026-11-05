@@ -366,6 +366,23 @@ WHERE set_type='normal' AND deleted_at IS NULL`，**不改查询、不加列、�
 **没做的事**（免得下次有人以为漏了）：回收站（`deleted_at is not null order by deleted_at desc`）
 与"单动作历史"（`idx_set_exercise` 已覆盖）这次都没动 —— 它们不在冷启动热路径上。
 
+## 周期化计划：只加两张表（2026-11-06 定，v32）
+
+用户点名做的 Ultra 权益 10。数据侧只有两件事：
+* `period_plan`（一份计划：几周 / 每周几天 / 第几周 / 状态）+ `period_plan_session`
+  （每一条课表项：周/天/动作/组数/次数区间/目标重量）；
+* **只加表、排在链尾**：老库升上来是空的 = 没建过计划。`onCreate` 与 `onUpgrade`
+  两处都建表 + 建索引（迁移只服务老库，漏了 `onCreate` 新装永远缺索引）。
+
+两条刻意的取舍：
+1. **建计划时按周展开写库**（纯函数 `targetWeightForWeek` 一次算好），训练/展示只读库 ——
+   避免"卡上 102.5、训练屏 100"这类两处各算一次的分叉；
+2. **推进只改 `current_week`**：完成判定（80% 计划项有正式组）是纯函数，
+   不把"完成了几项"存成第二处真相（那是可以从组记录重算出来的）。
+
+"删除全部数据"会连这两张表一起清（用户自建计划是用户数据）。
+
+
 ## MVP 之后的触发条件（不要提前做）
 
 | 能力 | 触发条件 |
@@ -387,7 +404,7 @@ WHERE set_type='normal' AND deleted_at IS NULL`，**不改查询、不加列、�
 | 决策 | 代码现状 | 证据 / 指针 |
 |---|---|---|
 | Flutter 一套代码双端 | ✅ | `app/` 是 Flutter；双端资源与依赖守卫在 `verify.sh` 六层里 |
-| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v31**） |
+| 本地优先：drift (SQLite) | ✅ | `app/lib/data/db.dart`（当前 schema **v32**） |
 | **只支持 iPhone**（不承诺 iPad） | ✅ 2026-09-30 拍板 | `app/ios/Runner.xcodeproj/project.pbxproj` 三处 `TARGETED_DEVICE_FAMILY = "1"`；`tool/check-ios-app.mjs` 把"产物含 iPad"判红；依据（iPad 上只是拉长的手机版）见 `release-admin.md` §二之四之四 |
 | **「我」页按"多久碰一次"分三个二级页** | ✅ 2026-10-01 拍板并落地 | 统计每天看；偏好与备份设一次就不管；隐私与关于是给别人看的。`app/test/profile_structure_test.dart` 钉住"第一屏不许再长回去"；政策入口 3 次点击（小米"四步之内"） |
 | **体重单位默认跟随训练单位**（可单独选「斤」） | ✅ 2026-10-01 | `ProfileRepository.setUnit` 的联动判据 + `app/test/units_test.dart`；此前全局选了磅、身体页还写 kg，两套口径各说各的 |

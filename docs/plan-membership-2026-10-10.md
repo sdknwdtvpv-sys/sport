@@ -66,7 +66,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 | 7 | **进阶分析**：分动作趋势、周/月/季对比、1RM 趋势 | 🟡 四张卡 + 容量趋势（已有） | ✅ **2026-10-10 已做**（见 §九-③） | 纯本地计算（`advanced_analysis.dart` 与 `progress_data.dart` 同一约定：无 IO） | ❌ |
 | 8 | **批量整理历史**：多选改动作 / 批量删到回收站 | ❌（今天「全部数据」是**只读**的） | ✅ **2026-10-10 已做**（见 §九-④；**改器械 / 合并重复动作还没做**，见那一段） | **净新增功能**（原先全仓无多选） | ❌ |
 | 9 | **导出进阶**：训练年报图（**复用分享卡的渲染管线**）、按动作拆分的 CSV、Excel(.xlsx) | ❌ | ✅ **已做（v1.70.0，2026-11-06）**：年报卡 `annual_report.dart` + `annual_report_card.dart`/`annual_report_screen.dart`（可分享/存相册）；按动作 CSV `buildPerExerciseCsv`（列与全量 CSV 一致）；**xlsx 不做**（方案 §十三 拍板项 4） | 年报卡复用分享卡的 `RepaintBoundary` 管线；纯本地计算 | ❌ |
-| 10 | **周期化计划**：多周计划、按周自动加重、计划导入导出 | ❌（今天是 5 套内置模板 + 简化编辑，`plan_templates.dart:88`，**没有** locked 字段） | ✅ | 新功能，工作量最大 | ❌ |
+| 10 | **周期化计划**：多周计划、按周自动加重、计划导入导出 | ❌（今天是 5 套内置模板 + 简化编辑） | ✅ **v1 已做（v1.71.0，2026-11-06）**：4/6/8 周 × 3/4 练模板、按周 +2.5%（2.5kg 步进）、每第 4 周 deload -10%、80% 周完成才进下一周、JSON 导入导出（版本化/拒未知字段）；设计与判据见 `docs/plan-periodization-2026-11-06.md` | 纯本地计算（无 AI、无服务端） | ❌ |
 | 11 | AI 动态调整建议 | ❌ | ⏳ **不在这一版** | 要算力 + 要动"数据不出设备" | ✅ 算力 |
 | 12 | 教练协作 | ❌ | ⏳ **不在这一版** | 要真实的人际功能 | ✅ |
 
@@ -471,7 +471,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 
 > **M3 进度（2026-11-05，第一批已完成）**：`billing-store.mjs` / `billing.mjs`（Apple JWS 验签 + V2 通知 + 权益下发 + 自建码核销/限速）/ `redeem-admin.mjs`（CLI）/ `billing.selftest.mjs`（判据 9/10 的服务端那一半）已落地并进六层门禁；Apple 根证书入库、`backend.mjs` 接线、部署白名单与 `check-deploy` 判据同步、`docs/backend-design.md` §十。**还差**（备份多版本 **已于 2026-11-06 在 M4b 做完**，见 §十 M4 进度）：Google RTDN / purchaseToken 校验、Apple offer code 客户端流程（M4）、可选 App Store Server API 主动查询（需用户 ASC API Key）、「删除账号」联动删除计费权益（**已做 2026-11-05**：与备份/账号一起删，失败整体 500）。
 
-> **M4 进度（2026-11-06，M4a + M4b + 导出进阶（权益 9）已完成；M4c 未做）**：客户端已接服务端权益 ——
+> **M4 进度（2026-11-06，M4a + M4b + 导出进阶（权益 9）+ 周期化计划 v1（权益 10）已完成；M4c 未做）**：客户端已接服务端权益 ——
 > `app/lib/billing/billing_server.dart`（可注入 API + 真实现 + 假实现）负责上送 StoreKit 2 JWS
 > （`POST /v1/billing/verify`，**服务端为准**）、启动/登录后 `GET /v1/billing/entitlement`
 > 合并（只延长不缩短；refunded/revoked 立即降级；离线保留本地）、`POST /v1/billing/redeem` 兑换；
@@ -483,6 +483,9 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 **导出进阶（权益 9）也于 2026-11-06 做完（v1.70.0）**：`annual_report.dart` 纯函数 +
 年报卡/预览屏（复用分享卡抓图管线）、`buildPerExerciseCsv`（列与全量 CSV 一致）、
 `data_tools_screen` 的「导出进阶（Ultra）」整组**只有 active 权益才渲染**。
+**周期化计划 v1 也于 2026-11-06 做完（v1.71.0）**：schema v32 两张表、纯函数
+`domain/periodization.dart`（加重/deload/周完成/JSON）、`periodization_screen.dart`
+（建模板/本周课表/从某天开练/导入导出）、`PlanScreen` 入口（只有 active 权益才渲染）。
 **M4c**（翻 `kUltraReleased`、商城商品、政策/事实表/商店表单一起改、真机沙盒证据）
 仍未做；M4c 之前**政策 §2.5 不用改**：发版开关关着、正式包没配服务器地址 →
 不会上传购买凭据。

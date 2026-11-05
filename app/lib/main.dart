@@ -48,6 +48,7 @@ import 'data/local_store.dart';
 import 'data/notification_repository.dart';
 import 'data/profile_repository.dart';
 import 'data/reminder_repository.dart';
+import 'data/period_plan_repository.dart';
 import 'data/routine_repository.dart';
 import 'data/sync_queue.dart';
 import 'domain/models.dart';
@@ -1654,6 +1655,26 @@ class _HomeShellState extends State<HomeShell> {
   ///
   /// 入口在首页那张「今天练 上肢」卡的右上角（`换一批 · 计划 ›`）。
   /// 这一屏原来是 tab body（没有返回键），所以推上来时给它一个 `onBack`。
+  /// 从周期计划某一天开练：**复用现有训练屏/建议引擎**，不另造一条训练路径。
+  ///
+  /// `source: 'periodized'` 只是既有 `workout_started` 的一个取值（**不是新事件**），
+  /// 用来回答"周期计划这条路有没有人真的开练"。
+  Future<void> _startPeriodizedPlan(List<PlannedExercise> plan) async {
+    if (plan.isEmpty || !mounted) return;
+    _analytics.countTap(TapKind.nav);
+    final String workoutId = 'w_${DateTime.now().millisecondsSinceEpoch}';
+    await _trainSession(
+      workoutId,
+      plan
+          .map((PlannedExercise p) => SessionEntry(exercise: p.exercise, plan: p.plan))
+          .toList(),
+      source: 'periodized',
+    );
+    if (!mounted) return;
+    await _showSummary(workoutId);
+    await _refreshHome();
+  }
+
   Future<void> _openPlanPage() async {
     await Navigator.of(context).push<void>(MaterialPageRoute<void>(
       builder: (BuildContext ctx) => Scaffold(
@@ -1674,6 +1695,10 @@ class _HomeShellState extends State<HomeShell> {
                 ? null
                 : staleSessionResumeLabel(_activeSession!, _nowForSession),
             onBack: () => Navigator.of(ctx).maybePop(),
+            periodPlans: PeriodPlanRepository(_db),
+            entitlements: EntitlementRepository(_db),
+            planner: _planner,
+            onStartPeriodized: _startPeriodizedPlan,
           ),
         ),
       ),

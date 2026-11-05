@@ -288,7 +288,7 @@ node tool/analytics-report.mjs --baseline 12  # 发布门禁：中位数高于 1
 | 事件 | 说明 |
 |---|---|
 | `app_open` | 含 `is_first_open` / `ms_since_launch` —— **北极星分母** |
-| `workout_started` | 含 `source`(home_button/suggestion/onboarding/picker/**light**) / `exercise_count` |
+| `workout_started` | 含 `source`(home_button/suggestion/onboarding/picker/light/**periodized**) / `exercise_count` |
 | `set_logged` | 本来就有的（含 `tap_count` / `tap_kinds` / `distance_m`） |
 | `workout_finished` | 含 `duration_sec` / `total_sets` / `total_volume_kg` / `exercise_count` —— **北极星分子** |
 | `rest_started` / `rest_skipped` / `rest_completed` | 本来就有的 |

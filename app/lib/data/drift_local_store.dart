@@ -425,6 +425,9 @@ class DriftLocalStore implements LocalStore {
       // 计划模板（S11）同样是用户数据
       await _db.delete(_db.routineItem).go();
       await _db.delete(_db.routine).go();
+      // 周期化计划（Ultra 权益 10，v32）：也是用户自己建的计划，一起清。
+      await _db.delete(_db.periodPlanSession).go();
+      await _db.delete(_db.periodPlan).go();
       // 埋点的本机身份（设备 ID / 会话 / 首启时间）也清掉。**这是有意的取舍**：
       // 留着它能让"90 天内重装"的排除规则生效、北极星分母更干净，
       // 但用户说"删除全部数据"时，一个能把他和过去关联起来的标识就不该留下。

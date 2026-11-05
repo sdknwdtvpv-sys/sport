@@ -24,6 +24,8 @@ import 'package:lianleme/data/analytics_meta_repository.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/day_plan_repository.dart';
+import 'package:lianleme/data/period_plan_repository.dart';
+import 'package:lianleme/domain/periodization.dart';
 import 'package:lianleme/data/drift_local_store.dart';
 import 'package:lianleme/data/streak_protection_repository.dart';
 import 'package:lianleme/data/exercise_repository.dart';
@@ -121,6 +123,23 @@ void main() {
     // v22：登录会话（账号体系）。这一行**非有不可** —— 表清单守门只强制你"表态"，
     // 真正证明"删掉了"的是下面逐表核行数那一条；而一张从没被塞过行的表
     // 是 0 → 0，删没删都看不出来。
+    // v32：周期化计划（Ultra 权益 10）—— 走公开 API，不写裸 SQL。
+    await PeriodPlanRepository(db).createPlan(
+      name: '测试周期',
+      weeks: 4,
+      daysPerWeek: 3,
+      startDate: DateTime(2026, 11, 2),
+      baseSessions: <PeriodSessionSpec>[
+        const PeriodSessionSpec(
+          week: 1,
+          day: 1,
+          position: 0,
+          exerciseId: 'ex_bb_bench_press',
+          targetWeightKg: 60,
+        ),
+      ],
+      nowMs: 1000,
+    );
     await AuthSessionRepository(db).write(StoredSession(
       token: 'lm1_${'0' * 64}',
       email: 'seed@example.com',
@@ -194,6 +213,8 @@ void main() {
       // 付费用户删完数据会暂时变成免费用户，直到点一次「恢复购买」。
       'entitlement',
       'billing_event',
+      'period_plan',
+      'period_plan_session',
     };
     expect(actual, equals(known),
         reason: '库里的表和这份清单对不上 —— 新增/改名一张表就要来改这里，'
