@@ -264,7 +264,6 @@ class TodayScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final DateTime now = debugToday ?? DateTime.now();
-    final String dateLabel = '${formatDateHuman(now)} · 周${'一二三四五六日'[now.weekday - 1]}';
     return ListView(
       padding: EdgeInsets.fromLTRB(
           Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s4 + AppTabBar.reservedSpaceFor(context)),
@@ -275,18 +274,9 @@ class TodayScreen extends StatelessWidget {
           _comebackCard(comebackNudge!),
         ],
         const SizedBox(height: Tokens.s4),
-        const Text('今天',
-            key: Key('home-title'),
-            style: TextStyle(
-                color: Tokens.text,
-                fontSize: Tokens.fsHero,
-                fontWeight: Tokens.fwBold,
-                letterSpacing: Tokens.lsTight)),
-        const SizedBox(height: Tokens.s1),
-        Text(dateLabel,
-            key: const Key('home-date'),
-            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
-        const SizedBox(height: Tokens.s4),
+        // ⚠️ v2.0.1：这里原来又画了一遍 34pt「今天 + 日期」—— 外壳顶栏
+        // （`AppTopBar` 的 title/subtitle）已经是同一行，两遍叠在真机上就是两个「今天」。
+        // 页面不再写自己的名字，标题只由顶栏那一处提供。
         _TodayPlanCard(
           plan: todayPlan,
           label: todayLabel,

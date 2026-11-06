@@ -325,15 +325,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
         // （用户 10.9 清单第 3 条截图抓的就是它）。页内不再写自己的名字，
         // 只留右边那个二级页入口（它才是"动作"）。
         Row(
+          // ⚠️ v2.0.1：页内的 28pt「进步」与外壳顶栏标题**完全重复**（v2.0.0 真机上
+          // 同一屏出现两个「进步」）。标题只由顶栏提供，这一行只留二级页入口。
+          mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
-            const Expanded(
-              child: Text('进步',
-                  style: TextStyle(
-                      color: Tokens.text,
-                      fontSize: Tokens.fsTitle,
-                      fontWeight: Tokens.fwBold,
-                      letterSpacing: Tokens.lsTight)),
-            ),
             TextButton(
             key: const Key('open-all-data'),
             // S9 的入口。二级页：这一屏回答"最近怎么样"，
