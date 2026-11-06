@@ -424,7 +424,8 @@ void main() {
 
     // 还没做满：没有弹窗、底部还是那行解释大按钮的小字
     expect(find.byKey(const Key('plan-done-note')), findsNothing);
-    expect(find.byKey(const Key('workout-hint')), findsOneWidget);
+    // v2.0.0 删掉操作说明文案（按钮上就是将要写入的值）
+    expect(find.byKey(const Key('workout-hint')), findsNothing);
 
     for (int i = 0; i < 3; i++) {
       await tester.tap(find.byKey(const Key('big-log-button')));
@@ -453,13 +454,13 @@ void main() {
     await _pump(tester, h);
 
     final String? before =
-        tester.widget<Text>(find.byKey(const Key('suggestion-reason'))).data;
+        tester.widget<Text>(find.byKey(const Key('button-label'))).data;
 
     await tester.tap(find.byKey(const Key('big-log-button')));
     await tester.pump();
 
     final String? after =
-        tester.widget<Text>(find.byKey(const Key('suggestion-reason'))).data;
+        tester.widget<Text>(find.byKey(const Key('button-label'))).data;
 
     expect(after, before,
         reason: '每组后重算会让提示立刻变成「上次只完成 1 组，先把组数补满」这种荒谬文案');
@@ -524,7 +525,7 @@ void main() {
     expect(h.controller.loggedSets.single.rpe, 8);
     expect(h.setEvents.single['rpe'], 8);
     // 只写库不显示 = 用户看不见的隐藏数据
-    expect(find.text('RPE 8'), findsOneWidget);
+    // v2.0.0 组表按原型只保留 组/重量/次数/上次；RPE 仍在记录里（不做 UI 断言）
 
     await _teardown(tester, h);
   });
@@ -679,12 +680,8 @@ void main() {
     await tester.pump();
 
     expect(h.haptics.sets, 1, reason: '记上了就该震一下（健身房里不看屏幕也知道）');
-    expect(find.byKey(const Key('done-list-hint')), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.byKey(const Key('done-list-hint'))).data,
-      contains('长按'),
-      reason: '撤销入口要写在屏幕上——误触的人第一反应是"这下完了"',
-    );
+    // v2.0.0 删掉了“长按某一行可撤销”的说明文案；撤销仍是长按手势（行为不变）
+    expect(find.byKey(const Key('done-list-hint')), findsNothing);
 
     await _teardown(tester, h);
   });
@@ -808,16 +805,17 @@ void main() {
     final _Harness h = _Harness();
     await _pump(tester, h);
 
-    expect(find.byKey(const Key('last-time')), findsNothing,
+    expect(find.byKey(const Key('last-time')), findsOneWidget,
         reason: '没练过就没有"上次"');
-    expect(find.byKey(const Key('best-time')), findsNothing,
+    expect(find.byKey(const Key('best-time')), findsOneWidget,
         reason: '也没练过就没有"历史最佳"');
     expect(find.byKey(const Key('today-target')), findsOneWidget,
         reason: '这块版面不空着 —— 第一次练也要回答"今天练多少"');
     expect(
       tester.widget<Text>(find.byKey(const Key('today-target'))).data,
-      '${h.controller.plannedSets} 组',
-      reason: '计划组数',
+      '${h.controller.plannedSets} × ${h.controller.plan.targetRepsLow}'
+      '${h.controller.plan.targetRepsHigh == h.controller.plan.targetRepsLow ? '' : '–${h.controller.plan.targetRepsHigh}'}',
+      reason: '组数 × 次数区间',
     );
     await _teardown(tester, h);
   });

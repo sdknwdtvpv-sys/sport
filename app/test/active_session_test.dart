@@ -217,7 +217,7 @@ void main() {
       // 文档与注释写着"摆在主按钮之前"，而实际渲染在主按钮**下面**。
       // 现在把它钉住：接着练是此刻该做的那件事，所以它排在主按钮上面。
       final double resume = tester.getCenter(find.byKey(const Key('resume-session'))).dy;
-      final double primary = tester.getCenter(find.text('开始今天的训练')).dy;
+      final double primary = tester.getCenter(find.text('开始训练')).dy;
       expect(resume, lessThan(primary),
           reason: '「继续上次的训练」必须在主按钮**之前**（不能在下面）');
     });
@@ -230,7 +230,7 @@ void main() {
   });
 
   group('5 分钟轻量活动', () {
-    testWidgets('首页有那条出口，而且它排在主按钮之下（不抢主路径）',
+    testWidgets('首页只留三块：轻量出口已移出（v2.0.0 首页精简）',
         (WidgetTester tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: buildAppTheme(),
@@ -239,15 +239,10 @@ void main() {
         ),
       ));
       await tester.pumpAndSettle();
-      // 2026-10-05：那条「今天不想练？…」的独立链接并进了**快速入口磁贴** ——
-      // 同一个动作不该有两个入口。判据（轻量出口在主动作之后）照旧。
-      expect(find.byKey(const Key('light-workout')), findsOneWidget);
-      expect(find.text('5 分钟活动'), findsOneWidget);
-
-      // 主按钮在它上面：一遍过（"点一下就开始记录"这条不能被这条活动挤下去）
-      final double primary = tester.getCenter(find.text('开始今天的训练')).dy;
-      final double light = tester.getCenter(find.byKey(const Key('light-workout'))).dy;
-      expect(light, greaterThan(primary), reason: '轻量出口必须在主按钮下面');
+      // v2.0.0 首页只回答“今天练什么”：工具格/轻量出口不再出现在首页，
+      // 但“开始训练”仍在（功能没删，只是入口搬家）。
+      expect(find.byKey(const Key('light-workout')), findsNothing);
+      expect(find.text('开始训练'), findsOneWidget);
     });
 
     test('清单里的动作在动作库里真的存在，而且都是按时长的（不会进容量/PR）', () async {

@@ -28,7 +28,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 空态的主操作，也是全产品唯一的入口
-    expect(find.text('开始今天的训练'), findsOneWidget);
+    expect(find.text('开始训练'), findsOneWidget);
     expect(find.byKey(const Key('start-workout')), findsOneWidget);
 
     // **三个 Tab**（2026-10-10 从五个收回来 —— `PRODUCT.md` §4 一直写着"3 个，上限"）。

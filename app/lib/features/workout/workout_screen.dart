@@ -107,6 +107,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   /// 大按钮现在是不是被按着（T2-2 的按压缩放）。手指滑出去要弹回来，所以三个回调都改它。
   bool _pressed = false;
+  bool _guideOpen = false;
   String get _planDoneKey => '${c.exercise.id}@${c.plannedSets}';
 
   @override
@@ -238,6 +239,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               child: Column(
                 children: <Widget>[
                   _header(),
+                  _progressDots(),
                   _compareBand(),
                   Expanded(child: _setsArea()),
                   _bigArea(),
@@ -280,6 +282,30 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   // ---------- 顶部 ----------
 
+  /// 4 段进度点：当前动作/总动作。训练屏顶部唯一的"我在第几个动作"的图形信号。
+  Widget _progressDots() {
+    final int total = widget.session.length;
+    final int index = widget.session.index;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+      child: Row(
+        children: <Widget>[
+          for (int i = 0; i < total; i += 1)
+            Expanded(
+              child: Container(
+                height: 3,
+                margin: EdgeInsets.only(right: i == total - 1 ? 0 : Tokens.s1),
+                decoration: BoxDecoration(
+                  color: i <= index ? Tokens.accentText : Tokens.line,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _header() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
@@ -313,22 +339,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           // ⚠️ 2026-10-10：从"一个 ⇄ 图标"改成**带字**的胶囊 —— 那个图标没有人认得出
           // 是"换动作"（真机走查里我自己都要想一想）。这一屏上每个入口都得一眼看懂。
           if (widget.onSwapExercise != null)
-            Padding(
-              padding: const EdgeInsets.only(left: Tokens.s2),
-              child: GestureDetector(
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: IconButton(
                 key: const Key('swap-exercise'),
-                onTap: () => unawaited(widget.onSwapExercise!()),
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: Tokens.s3, vertical: 6),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(Tokens.rPill),
-                    border: Border.all(color: Tokens.lineStrong),
-                  ),
-                  child: const Text('换动作',
-                      style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
-                ),
+                padding: EdgeInsets.zero,
+                tooltip: '换动作',
+                icon: const Icon(Icons.swap_horiz, color: Tokens.text2, size: IconSpec.m),
+                onPressed: () => unawaited(widget.onSwapExercise!()),
               ),
             ),
           // 动作详情入口。**必须看得见**：练到一半想确认"这个动作怎么做"的人
@@ -404,18 +423,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   /// 「上次 / 历史最佳」那条带（上下细线夹着，与「进步」页的数字带同一种语言）。
   ///
-  /// 两样都没有（第一次练这个动作）就整条不出现 —— 上半屏留给"本次"那几行。
+  /// 两样都没有（首次练这个动作）就整条不出现 —— 上半屏留给"本次"那几行。
   Widget _compareBand() {
     final String? lastMain = lastSetMainLabel(c.lastSession,
         unit: c.unit, trackType: c.exercise.trackType);
     final String? lastSub = lastSetSubLabel(c.lastSession);
     final BestSet? best = _best;
-    // 第一次练这个动作：两个"过去"都没有 —— 那就把**今天的目标**放进这条带子。
-    // 空着的话上半屏只剩一个标题（真机截图里那块黑占了近 60%，
-    // 而这条带子的位置本来就是回答"我今天要打什么"）。
-    final bool firstTime = lastMain == null && best == null;
+    final String targetReps = '${c.plan.targetRepsLow}'
+        '${c.plan.targetRepsHigh == c.plan.targetRepsLow ? '' : '–${c.plan.targetRepsHigh}'}';
+    final String target = '${c.plannedSets} × $targetReps'
+        '${c.exercise.isTime ? ' 秒' : ''}';
+    final String targetSub = c.plan.targetWeightKg == null
+        ? (c.isBodyweight ? '自重' : '—')
+        : formatWeight(c.plan.targetWeightKg, c.unit);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
+      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, 0),
       child: Container(
         key: const Key('compare-band'),
         padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
@@ -430,52 +452,39 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Expanded(
-                child: firstTime
-                    ? _compareCell(
-                        '今天的目标',
-                        '${c.plannedSets} 组',
-                        // ⚠️ 副标题**故意不写"每组 40 kg × 8"**：那句话就是下面大按钮上
-                        // 那一个，写两遍既啰嗦、又让 `find.textContaining('× 8')`
-                        // 这类断言多命中一个（time_exercise_test 当场抓到）。
-                        c.isDistance && c.targetDistanceM != null
-                            ? formatDistanceKm(c.targetDistanceM!)
-                            : null,
-                        Tokens.text,
-                        valueKey: const Key('today-target'),
-                        subKey: const Key('today-target-sub'),
-                      )
-                    : _compareCell(
-                        '上次',
-                        lastMain ?? '—',
-                        lastSub,
-                        Tokens.text,
-                        valueKey: const Key('last-time'),
-                        subKey: const Key('last-time-sub'),
-                      ),
-              ),
-              // ⚠️ 右半边**只在真的有"最佳"时才出现**：
-              // 有氧动作永远没有力量最佳（`bestSetOf` 对它返回 null），
-              // 摆一个「历史最佳 —」等于在说"你有个纪录还没打"——那是假话。
-              // 没有它就左半边独占整条（或者念"今天的目标"）。
-              if (best != null) ...<Widget>[
-                const SizedBox(width: Tokens.s3),
-                Container(width: 1, color: Tokens.line),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: Tokens.s4),
-                    child: _compareCell(
-                      '历史最佳',
-                      bestSetMainLabel(best,
-                          unit: c.unit, trackType: c.exercise.trackType),
-                      bestSetSubLabel(best, unit: c.unit),
-                      // 破纪录那个琥珀色只用在"纪录"上（`Tokens.pr` 的定义）
-                      Tokens.pr,
-                      valueKey: const Key('best-time'),
-                      subKey: const Key('best-time-sub'),
-                    ),
-                  ),
+                child: _compareCell(
+                  '上次',
+                  lastMain ?? '—',
+                  lastSub,
+                  Tokens.text,
+                  valueKey: const Key('last-time'),
+                  subKey: const Key('last-time-sub'),
                 ),
-              ],
+              ),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: _compareCell(
+                  '最佳',
+                  best == null
+                      ? '—'
+                      : bestSetMainLabel(best, unit: c.unit, trackType: c.exercise.trackType),
+                  best == null ? null : bestSetSubLabel(best, unit: c.unit),
+                  Tokens.pr,
+                  valueKey: const Key('best-time'),
+                  subKey: const Key('best-time-sub'),
+                ),
+              ),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: _compareCell(
+                  '目标',
+                  target,
+                  targetSub,
+                  Tokens.text,
+                  valueKey: const Key('today-target'),
+                  subKey: const Key('today-target-sub'),
+                ),
+              ),
             ],
           ),
         ),
@@ -521,6 +530,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Widget _setsArea() {
     final List<SetRecord> sets = c.loggedSets;
+    final int planned = c.plannedSets;
+    final int rows = sets.length > planned ? sets.length : planned;
+    final String? lastLabel = c.lastSession == null
+        ? null
+        : '${c.lastSession!.weightKg == null ? '自重' : formatWeight(c.lastSession!.weightKg!, c.unit)}'
+            ' × ${c.lastSession!.reps.isEmpty ? '—' : c.lastSession!.reps.last}';
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, 0),
       child: Column(
@@ -529,114 +544,217 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Text('本次 · ${sets.length} 组',
-                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              const Text('本次',
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
               const Spacer(),
-              // 撤销的**入口要看得见**（v1.53）。只在真的记过组时出现 ——
-              // 空列表上摆一句"长按可撤销"是废话。
-              //
-              // ⚠️ **必须是 `Flexible` + 省略号**（2026-10-10 在 2.0× 下抓到的那条溢出）：
-              // 这一行是「本次 · N 组」+ `Spacer` + 这句提示，三项在 2.0× 下合计 388pt >
-              // 屏宽 371pt。要缩的是**提示**那一句（"本次 · N 组"是信息，先保它）。
-              if (sets.isNotEmpty)
-                Flexible(
-                  child: Text(
-                    '长按某一行可撤销',
-                    key: const Key('done-list-hint'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhTight),
-                  ),
-                ),
+              Text('${sets.length} / $planned 组',
+                  key: const Key('set-count'),
+                  style: const TextStyle(
+                      color: Tokens.text2,
+                      fontSize: Tokens.fsCap,
+                      fontFeatures: Tokens.tabular)),
             ],
           ),
           const SizedBox(height: Tokens.s2),
-          // ⚠️ 放进 `Expanded` + 可滚列表（2026-10-10）：原来这几行是定高的，
-          // 组一多就把整屏挤爆（Expanded 的中部被压到 0）。现在它自己撑满、自己滚。
-          //
-          // ⚠️ **2026-10-11：不再"空就什么都不摆"** —— 用户看着这一屏说
-          // 「初始第一组的时候上边儿也太空了」。「动作要领」跟着已记的组后面：
-          //   * 一次都没记时，它就在那块空白的位置；
-          //   * 记了几组之后它顺延到列表末尾，组多了自己滚出去 —— **不会把大按钮顶走**
-          //     （大按钮的位置是这一屏最不能动的坐标）。
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
+            child: Container(
+            decoration: BoxDecoration(
+              color: Tokens.surface,
+              borderRadius: BorderRadius.circular(Tokens.rCard),
+              border: Border.all(color: Tokens.line),
+            ),
+            child: Column(
               children: <Widget>[
-                for (final SetRecord r in sets) _doneRow(r),
-                _howToCard(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Tokens.s3, vertical: Tokens.s2),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Tokens.line)),
+                  ),
+                  child: const Row(
+                    children: <Widget>[
+                      SizedBox(width: 24, child: Text('组', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                      Expanded(child: Text('重量', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                      SizedBox(width: 44, child: Text('次数', textAlign: TextAlign.right, style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                      SizedBox(width: 76, child: Text('上次', textAlign: TextAlign.right, style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                      SizedBox(width: 24),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: <Widget>[
+                      for (int i = 0; i < rows; i += 1)
+                        _setRow(
+                          index: i,
+                          logged: i < sets.length ? sets[i] : null,
+                          current: i == sets.length,
+                          planned: planned,
+                          lastLabel: lastLabel,
+                        ),
+                      _howToCard(),
+                    ],
+                  ),
+                ),
               ],
             ),
+          ),
           ),
         ],
       ),
     );
   }
 
-  /// **动作要领**（2026-10-11）：把"第一组之前那块空白"用起来。
-  ///
-  /// 三条口径：
-  ///   1. **数据用我们自己的**（动作库的 `instructions`，351 个动作全都有，中位 28 字）——
-  ///      零版权风险、零新增体积、离线可用。**不是**从网上抓的图；
-  ///   2. **文案一个字都不改写**：那句话本身就是"最容易错的点"（例：交叉箭步蹲 →
-  ///      「后腿斜向侧后方落脚，前脚站稳再起身；膝盖别内扣」）。界面只负责把它摆出来；
-  ///   3. **没有说明的动作就什么都不摆**（`instructions` 为空 → 不画一个空标题）：
-  ///      用户自建的动作很可能没有说明，摆一个空框比不摆更糟。
-  ///
-  /// 视觉上刻意**不做成卡片**：这一屏的语言是"大字 + 大按钮 + 细线"，插一张卡片进来
-  /// 会显得是另一个 App 的零件。就是一段安静的说明 + 一个通往完整说明的入口。
+  /// 组表一行：已完成（✓）/ 当前（橙左条 + 浅橙底）/ 待做（42% 透明）。
+  Widget _setRow({
+    required int index,
+    required SetRecord? logged,
+    required bool current,
+    required int planned,
+    required String? lastLabel,
+  }) {
+    final bool done = logged != null;
+    final bool pending = !done && !current;
+    final String weight = done
+        ? (logged.weightKg == null ? '自重' : formatWeight(logged.weightKg!, c.unit))
+        : (c.isBodyweight ? '自重' : formatWeight(c.weightKg, c.unit));
+    final String reps = done
+        ? (logged.hasDistance
+            ? formatDurationHms(logged.reps)
+            : '${logged.reps}${c.exercise.isTime ? ' 秒' : ''}')
+        : '${c.reps}${c.exercise.isTime ? ' 秒' : ''}';
+    Widget body = Container(
+      key: done ? Key('done-set-${logged.id}') : Key('set-row-$index'),
+      padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: Tokens.s3),
+      decoration: BoxDecoration(
+        color: current ? Tokens.accentLo.withValues(alpha: 0.12) : null,
+        border: Border(
+          left: BorderSide(
+              color: current ? Tokens.accentLo : Colors.transparent, width: 3),
+          bottom: index == planned - 1
+              ? BorderSide.none
+              : const BorderSide(color: Tokens.line),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          SizedBox(
+            width: 24,
+            child: Text('${index + 1}',
+                style: TextStyle(
+                    color: done ? Tokens.text3 : Tokens.text2,
+                    fontSize: Tokens.fsCap,
+                    fontFeatures: Tokens.tabular)),
+          ),
+          Expanded(
+            child: Text(weight,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: done ? Tokens.text : Tokens.text2,
+                    fontSize: Tokens.fsSub,
+                    fontWeight: Tokens.fwStrong,
+                    fontFeatures: Tokens.tabular)),
+          ),
+          SizedBox(
+            width: 44,
+            child: Text(reps,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                    color: done ? Tokens.text : Tokens.text2,
+                    fontSize: Tokens.fsSub,
+                    fontFeatures: Tokens.tabular)),
+          ),
+          SizedBox(
+            width: 76,
+            child: Text(lastLabel ?? '—',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          ),
+          SizedBox(
+            width: 24,
+            child: done
+                ? const Icon(Icons.check, color: Tokens.success, size: IconSpec.s)
+                : current
+                    ? Center(
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Tokens.accent, width: 2),
+                          ),
+                        ),
+                      )
+                    : const Text('—',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          ),
+        ],
+      ),
+    );
+    if (pending) body = Opacity(opacity: 0.42, child: body);
+    if (!done) return body;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () => c.undoSet(logged.id),
+      child: _popIn(key: 'done-row-fade-${logged.id}', child: body),
+    );
+  }
+
   Widget _howToCard() {
     final String? text = _dataFor(c.exercise.id)?.instructions?.trim();
     if (text == null || text.isEmpty) return const SizedBox.shrink();
+    final String firstLine = text.split('\n').first;
     return Padding(
-      padding: const EdgeInsets.only(top: Tokens.s5, bottom: Tokens.s4),
+      padding: const EdgeInsets.only(top: Tokens.s4, bottom: Tokens.s2),
       child: Column(
         key: const Key('howto-block'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(iconOf('info'), color: Tokens.text3, size: IconSpec.s),
-              const SizedBox(width: Tokens.s2),
-              const Text(
-                '动作要领',
-                style: TextStyle(
-                  color: Tokens.text3,
-                  fontSize: Tokens.fsMicro,
-                  letterSpacing: Tokens.lsWide,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: Tokens.s2),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Tokens.text2,
-              fontSize: Tokens.fsSub,
-              height: Tokens.lhLoose,
-            ),
-          ),
-          const SizedBox(height: Tokens.s2),
           GestureDetector(
-            key: const Key('howto-open-detail'),
+            key: const Key('howto-toggle'),
+            onTap: () => setState(() => _guideOpen = !_guideOpen),
             behavior: HitTestBehavior.opaque,
-            onTap: () => _openDetail(c.exercise.id),
-            child: const Text(
-              '看完整说明 ›',
-              // 橙色**文字**只许走 `accentText`（VI 计划 §3 冲突 5 的裁决，
-              // `accent_budget_test` 有一条机械扫描守着这件事）
-              style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap),
+            child: Row(
+              children: <Widget>[
+                const Text('动作要领',
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                const SizedBox(width: Tokens.s3),
+                Expanded(
+                  child: Text(_guideOpen ? '收起' : firstLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro)),
+                ),
+                Icon(_guideOpen ? Icons.expand_less : Icons.expand_more,
+                    color: Tokens.text3, size: IconSpec.s),
+              ],
             ),
           ),
+          if (_guideOpen) ...<Widget>[
+            const SizedBox(height: Tokens.s2),
+            Text(text,
+                style: const TextStyle(
+                    color: Tokens.text2, fontSize: Tokens.fsSub, height: Tokens.lhLoose)),
+            const SizedBox(height: Tokens.s2),
+            GestureDetector(
+              key: const Key('howto-open-detail'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _openDetail(c.exercise.id),
+              child: const Text('完整说明 ›',
+                  style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap)),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  /// 一行"已完成的组"。长按撤销（误触的后悔药）。
+  /// 一行"已完成的组"。  /// 一行"已完成的组"。长按撤销（误触的后悔药）。
   ///
   /// ⚠️ **2026-10-10（VI 计划 T2-2）**：新行要有**入场**（规格 §8 写的是"pop 入场 280ms"，
   /// 而它一直只写在纸上）。实现是这一行自己的 `TweenAnimationBuilder`，**不是 `AnimatedList`**：
@@ -645,6 +763,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   ///
   /// 时长用 `Motion.base`（260ms，令牌里离 280 最近的一档 —— T1-4 的裁决是"时长只许来自令牌"）。
   /// 减弱动态效果下直接给终值（不用等）。
+  // ignore: unused_element
   Widget _doneRow(SetRecord r) {
     return GestureDetector(
       key: Key('done-set-${r.id}'),
@@ -739,64 +858,33 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   // ---------- 大按钮区（屏幕下 1/3） ----------
 
   Widget _bigArea() {
-    final Suggestion? s = c.suggestion;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           _restStrip(),
-          if (s != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: Tokens.s2),
-              child: Text(
-                s.reasonText,
-                key: const Key('suggestion-reason'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
+          Row(
+            children: <Widget>[
+              Text(
+                c.warmup
+                    ? '热身组'
+                    : c.holding
+                        ? '第 ${c.setNumber} 组 · 计时中'
+                        : '第 ${c.setNumber} 组',
+                key: const Key('set-number'),
+                style: TextStyle(
+                  color: c.warmup ? Tokens.accent : Tokens.text2,
+                  fontSize: Tokens.fsHeadline,
+                  fontWeight: Tokens.fwBold,
+                  letterSpacing: Tokens.lsSnug,
+                ),
               ),
-            ),
-          // 距离动作**没有引擎建议**（有氧不给推进建议，见 engine/progression.mjs 第 0.5 步），
-          // 所以那一行由**处方**来占：告诉用户今天的目标是什么。
-          if (s == null && c.targetDistanceM != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: Tokens.s2),
-              child: Text(
-                '目标 ${c.plannedSets} 组 × ${formatDistanceKm(c.targetDistanceM!)}'
-                '（可长按改成你实际练的）',
-                key: const Key('plan-target'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhSnug),
-              ),
-            ),
-          Text(
-            // 热身状态是"粘住"的（见 WorkoutController._warmup），
-            // 所以标题必须换掉 —— 否则用户看到"第 1 组"却记进去一条热身，
-            // 完全不知道发生了什么。
-            c.warmup
-                ? '热身组'
-                : c.holding
-                    ? '第 ${c.setNumber} 组 · 计时中'
-                    : '第 ${c.setNumber} 组',
-            key: const Key('set-number'),
-            style: TextStyle(
-              color: c.warmup ? Tokens.accent : Tokens.text2,
-              fontSize: Tokens.fsHeadline,
-              fontWeight: Tokens.fwBold,
-              letterSpacing: Tokens.lsSnug,
-            ),
+              const Spacer(),
+              _editRow(),
+            ],
           ),
           const SizedBox(height: Tokens.s2),
-          // ⚠️ **2026-10-10（VI 计划 T2-2）**：`interaction-spec.md` §5 写着
-          // "按压缩放 0.975，时长 100ms ease"，而它一直**只写在纸上**——
-          // 这是全产品调用最频繁的一次交互（一次训练 12–25 次），
-          // 手指按下去有没有回应，直接决定"1 次点击 = 1 组"这句话的可信度。
-          //
-          // 三个回调缺一不可：`onTapDown` 按下去、`onTapUp` 抬手、
-          // `onTapCancel` **手指滑出按钮**（这才是最容易漏的那个 —— 滑出去手指就不该
-          // 回弹成"按过"的样子，更不该记组）。
           GestureDetector(
             key: const Key('big-log-button'),
             behavior: HitTestBehavior.opaque,
@@ -806,42 +894,35 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             onTapUp: (_) => setState(() => _pressed = false),
             onTapCancel: () => setState(() => _pressed = false),
             child: AnimatedScale(
-              // 目标值就是规格里的 0.975；时长走令牌（`Motion.instant` = 100ms）
               scale: _pressed ? 0.975 : 1.0,
               duration: reducedMotion(context) ? Duration.zero : Motion.instant,
               curve: Motion.press,
               child: Container(
-              height: Tokens.hPrimary,
-              width: double.infinity,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                // 距离动作还没设距离时**视觉上也不给点**（控制器里同样挡了一道）：
-                // 一次误触会写进"0 公里"的假记录。按钮变灰 + 下面那行提示，
-                // 是这块屏幕上唯一"按钮不是主角"的例外。
-                color: c.canLog ? Tokens.accent : Tokens.elevated,
-                borderRadius: BorderRadius.circular(Tokens.rPill),
-              ),
-              // ⚠️ `FittedBox`（v1.53）：系统字号调到 1.5× 时，"45 kg × 10" 在
-              // 30pt 字号下会把这一行撑爆（实测溢出 163px）。缩放兜底而不是换行 ——
-              // 大按钮上的字必须**一眼读完**，两行反而是灾难。
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: <Widget>[
-                    Text(
-                      c.primaryButtonLabel,
-                      key: const Key('button-label'),
-                      style: TextStyle(
-                        color: c.canLog ? Tokens.accentInk : Tokens.text3,
-                        fontSize: Tokens.fsHero,
-                        fontWeight: Tokens.fwBold,
-                        letterSpacing: Tokens.lsTight,
+                height: Tokens.hPrimary,
+                width: double.infinity,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: c.canLog ? Tokens.accent : Tokens.elevated,
+                  borderRadius: BorderRadius.circular(Tokens.rPill),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: <Widget>[
+                      Text(
+                        c.primaryButtonLabel,
+                        key: const Key('button-label'),
+                        style: TextStyle(
+                          color: c.canLog ? Tokens.accentInk : Tokens.text3,
+                          fontSize: Tokens.fsHero,
+                          fontWeight: Tokens.fwBold,
+                          letterSpacing: Tokens.lsTight,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: Tokens.s2),
+                      const SizedBox(width: Tokens.s2),
                       Text('✓',
                           style: TextStyle(
                               color: c.canLog ? Tokens.accentInk : Tokens.text3,
@@ -853,7 +934,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ),
             ),
           ),
-          _editRow(),
         ],
       ),
     );
@@ -865,46 +945,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   /// 现在它是一个看得见的胶囊（点它 = 长按那一下，走同一个 `onLongPress`），
   /// 提示语因此不再需要写"长按可以改重量"。
   Widget _editRow() {
-    return Padding(
-      padding: const EdgeInsets.only(top: Tokens.s2, bottom: Tokens.s2),
-      child: Row(
-        children: <Widget>[
-          GestureDetector(
-            key: const Key('edit-weight'),
-            onTap: c.onLongPress,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Tokens.s3, vertical: 5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(Tokens.rPill),
-                border: Border.all(color: Tokens.lineStrong),
-              ),
-              child: const Text('改重量',
-                  style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
-            ),
-          ),
-          const SizedBox(width: Tokens.s3),
-          Expanded(
-            child: Text(
-              c.hint ??
-                  (c.holding
-                      // 计时中：告诉用户"现在这一下会记下多少"，以及"什么时候会震"
-                      ? '计时中 · 点大按钮记下这一组（到 ${c.reps} 秒震一下）'
-                      : c.isDistance
-                          // 距离动作先说"怎么设距离" —— 首次进来它是 0，按钮是灰的
-                          ? '长按按钮设距离与时长 · 设好之后点一下记一组'
-                          : '点大按钮记录一组'),
-              key: const Key('workout-hint'),
-              textAlign: TextAlign.right,
-              maxLines: 2,
-              // ⚠️ 2026-10-10（P2）：11 → 12.5pt。健身房是"单手、屏幕有汗、
-              // 器械上"的场景，11pt 的提示等于没写（`docs/plan-ux-2026-10-10.md` §四）。
-              style: const TextStyle(
-                  color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhSnug),
-            ),
-          ),
-        ],
+    return GestureDetector(
+      key: const Key('edit-weight'),
+      onTap: c.onLongPress,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: 7),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(Tokens.rPill),
+          border: Border.all(color: Tokens.lineStrong),
+        ),
+        child: const Text('改重量',
+            style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
       ),
     );
   }

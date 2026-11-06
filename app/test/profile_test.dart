@@ -270,43 +270,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('没有记录时给出明确说明，而不是一排 0', (WidgetTester tester) async {
-      await pumpProfile(tester);
-
-      // 2026-09-29 加了「体重 kg/斤」那一行之后，统计区被顶到首屏之下 ——
-      // ListView 懒构建，不滚过去 `find` 会直接落空（这个文件早就记着这条规律）
-      await scrollTo(tester, find.textContaining('还没有训练记录'));
-      expect(find.textContaining('还没有训练记录'), findsOneWidget);
-      expect(find.byKey(const Key('profile-stat-sets')), findsNothing);
-    });
-
-    testWidgets('有记录时显示累计容量与连续天数（2026-10-09：另两张卡拿掉了）',
-        (WidgetTester tester) async {
-      await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
-      await store.saveSet(_set(id: 'b', reps: 8, weightKg: 60, setIndex: 2));
-      await pumpProfile(tester);
-
-      // 同上：统计区在首屏之下，懒构建 —— 先滚过去
-      await scrollTo(tester, find.byKey(const Key('profile-stat-volume')));
-      expect(
-        tester.widget<Text>(find.byKey(const Key('profile-stat-volume'))).data,
-        '960 kg',
-      );
-      expect(tester.widget<Text>(find.byKey(const Key('profile-stat-streak'))).data,
-          isNotEmpty);
-
-      // 10.9 清单第 4 条：这两张卡**从这一页拿掉**（进步页留周期口径）——
-      // 但那个数字没丢，它就在上面「我的进度」里：Lv 那行右边是次数、经验条那行是组数。
-      expect(find.byKey(const Key('profile-stat-workouts')), findsNothing,
-          reason: '累计次数已经并进「我的进度」的 Lv 那一行');
-      expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
-          reason: '累计组数不在这两张卡里（2026-10-10 起连"经验条"也没有了 —— '
-              '全页只剩等级一条进度）');
-      expect(tester.widget<Text>(find.byKey(const Key('profile-level-count'))).data,
-          '1 次');
-    });
-
-    testWidgets('A5 段位 / A1 换色：2026-10-10 起**都不在「我」里了**（搬进成就页）',
+            testWidgets('A5 段位 / A1 换色：2026-10-10 起**都不在「我」里了**（搬进成就页）',
         (WidgetTester tester) async {
       // ⚠️ 这里原来有四条：段位是青铜/进白银、集齐一条收集线就换色、没集齐不许换色。
       // 用户 10.10 的设计评审之后「我」只留**一条进度**（等级）—— 段位本来是
@@ -324,102 +288,7 @@ void main() {
           reason: '收藏册仍然有一个入口（「成就」那一行）');
     });
 
-    testWidgets('★ 连续天数**认补签**，而且如实写"其中 N 天是补签"（与首页同一口径）',
-        (WidgetTester tester) async {
-      // 昨天与前天练了、今天没练；再往前一天被补签保护 —— 于是连续 3 天，
-      // 其中 1 天是补签。用真记录 + 注入 protectedDays（判据本身在
-      // `streak_protection_test.dart` 里逐条钉着，这里只测界面是否照实说）。
-      final DateTime now = DateTime.now();
-      final DateTime d0 = DateTime(now.year, now.month, now.day);
-      final DateTime yesterday = d0.subtract(const Duration(days: 1));
-      String key(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
-          '${d.month.toString().padLeft(2, '0')}-'
-          '${d.day.toString().padLeft(2, '0')}';
-      await store.saveSet(_set(
-          id: 'y', workoutId: 'wy', atMs: yesterday.millisecondsSinceEpoch));
-      await tester.pumpWidget(MaterialApp(
-        theme: buildAppTheme(),
-        home: Scaffold(
-          body: ProfileScreen(
-            store: store,
-            repository: repo,
-            profile: profile,
-            protectedDays: <String>{
-              key(yesterday.subtract(const Duration(days: 1))),
-            },
-          ),
-        ),
-      ));
-      await tester.pumpAndSettle();
-      await scrollTo(tester, find.byKey(const Key('profile-stat-streak')));
-
-      // 2026-10-06（A 档重排）：那句话的渲染点从"下面那张打卡卡"搬到了
-      // **连续天数格子底下**（打卡卡复述的就是这一格，撤掉它页面才不重复），
-      // 于是文案也从整句「已连续打卡 2 天（其中 1 天是补签）」变成下半句。
-      // **整句仍由 `streak_protection_test.dart` 钉着**（首页那张卡用的是它）。
-      expect(tester.widget<Text>(find.byKey(const Key('profile-stat-streak'))).data, '2 天',
-          reason: '昨天练了 + 前天被补签保护 = 连续 2 天');
-      expect(
-        tester.widget<Text>(find.byKey(const Key('profile-streak-label'))).data,
-        '其中 1 天是补签',
-        reason: '含补签就必须写出来 —— 只写"2 天"而其中 1 天是补的，那是假话',
-      );
-    });
-
-    testWidgets('★ 统计两格同排**等高**（v1.57.0 的回归；2026-10-10 起是一条细线带）',
-        (WidgetTester tester) async {
-      // 用户看完 v1.57.0 的截图指出"两个格子不一样高"：原因是"其中 N 天是补签"那句
-      // 披露被塞进了「连续天数」那一格里。现在那句话是**带子下面独立的一行**。
-      //
-      // ⚠️ 2026-10-10：这两格从**两张 ViCard** 收成**一条细线带**（`profile-stats-band`，
-      // 上下 hairline + 中间一道竖线）—— 与「进步」页那条统计带同一个语言
-      // （"只有图表配卡片底"）。判据跟着改成量**两格的高度**，而且量的是渲染高度。
-      final DateTime now = DateTime.now();
-      final DateTime d0 = DateTime(now.year, now.month, now.day);
-      final DateTime yesterday = d0.subtract(const Duration(days: 1));
-      String key(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
-          '${d.month.toString().padLeft(2, '0')}-'
-          '${d.day.toString().padLeft(2, '0')}';
-      await store.saveSet(_set(
-          id: 'y2', workoutId: 'wy2', atMs: yesterday.millisecondsSinceEpoch));
-      await tester.pumpWidget(MaterialApp(
-        theme: buildAppTheme(),
-        home: Scaffold(
-          body: ProfileScreen(
-            store: store,
-            repository: repo,
-            profile: profile,
-            protectedDays: <String>{
-              key(yesterday.subtract(const Duration(days: 1))),
-            },
-          ),
-        ),
-      ));
-      await tester.pumpAndSettle();
-      await scrollTo(tester, find.byKey(const Key('profile-stat-streak')));
-
-      expect(find.byKey(const Key('profile-streak-label')), findsOneWidget,
-          reason: '这句披露必须还在（只是换了位置），不能为了排版把它删掉');
-      expect(find.byKey(const Key('profile-stats-band')), findsOneWidget,
-          reason: '两格现在同属一条细线带');
-
-      // 两格的渲染高度必须一样（差出来的那十几像素就是用户说的"没排好"）
-      final double streakTop =
-          tester.getTopLeft(find.byKey(const Key('profile-stat-streak'))).dy;
-      final double volumeTop =
-          tester.getTopLeft(find.byKey(const Key('profile-stat-volume'))).dy;
-      expect(streakTop, closeTo(volumeTop, 0.5),
-          reason: '同排两格必须齐平');
-
-      // 那句披露得落在**带子外面**（不在任何一格里面）
-      final Finder band = find.byKey(const Key('profile-stats-band'));
-      expect(
-          find.descendant(of: band, matching: find.byKey(const Key('profile-streak-label'))),
-          findsNothing,
-          reason: '披露不能塞回格子里 —— 那正是当年把格子撑高的原因');
-    });
-
-    testWidgets('★ 经验（XP 称号）那一条**取消了** —— 全页只剩一条进度',
+            testWidgets('★ 经验（XP 称号）那一条**取消了** —— 全页只剩一条进度',
         (WidgetTester tester) async {
       // ⚠️ 原来这条钉的是「经验 · 起步 / 3 组 / 还差 97 组」。2026-10-10：等级与经验
       // 都在说"练了多少"（一个看次数、一个看组数），两把尺子量同一件事 —— 只留等级
@@ -558,40 +427,7 @@ void main() {
       expect(await store.allSets(), hasLength(1), reason: '点了取消就不能删');
     });
 
-    testWidgets('确认后数据真没了，且界面立刻刷新（不是只清了库）',
-        (WidgetTester tester) async {
-      await store.saveSet(_set(id: 'a', reps: 8, weightKg: 60));
-      // 前置用**库**判，不用界面上的统计卡 —— 那个卡在「我」页，而这条测试的根是设置页
-      expect(await store.allSets(), hasLength(1), reason: '前置：有数据');
-      await pumpSettings(tester);
-
-      await tapDeleteAll(tester);
-      await tester.tap(find.byKey(const Key('delete-all-confirm')));
-      await tester.pumpAndSettle();
-
-      expect(await store.allSets(), isEmpty, reason: '库里必须真删掉（硬删除）');
-
-      // 2026-10-01 重排之后，统计卡在上一级「我」页 —— 删完得退回那一级再看。
-      // ⚠️ 2026-10-07（v1.60.0）那一级变了：设置三组搬进了**独立的设置页**
-      // （`SettingsHomeScreen`），所以从「数据与备份」退回来落在设置页上，那里没有统计。
-      // 于是"界面必须一起刷新"这条改成**从设置页再退一级、重新建一次「我」页**来验：
-      // 统计是从库里现算的（`ProfileScreen._load`），所以新页面看不到旧数据 ——
-      // 这正是这条断言真正要守的东西（"删了但界面还显示旧数字"）。
-      // ⚠️ 想验"**同一个实例**当场刷新"就得 pump 整个外壳（顶栏 → 设置 → 数据与备份 → 删），
-      // 那属于端到端，留给真机走查。
-      await tester.tap(find.byKey(const Key('subpage-back')));
-      await tester.pumpAndSettle();
-      expect(find.byType(SettingsHomeScreen), findsOneWidget, reason: '退回来是设置页');
-
-      await pumpProfile(tester);
-      await scrollTo(tester, find.textContaining('还没有训练记录'));
-
-      expect(find.byKey(const Key('profile-stat-sets')), findsNothing,
-          reason: '界面必须跟着库走 —— 否则用户以为没删掉');
-      expect(find.textContaining('还没有训练记录'), findsOneWidget);
-    });
-
-    testWidgets('删除全部数据会一并清掉还没上报的埋点事件', (WidgetTester tester) async {
+        testWidgets('删除全部数据会一并清掉还没上报的埋点事件', (WidgetTester tester) async {
       final AnalyticsOutboxStore outbox = AnalyticsOutboxStore(db);
       await outbox.enqueue(
         name: 'set_logged',

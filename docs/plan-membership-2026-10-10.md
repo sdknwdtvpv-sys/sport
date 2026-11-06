@@ -483,7 +483,7 @@ iOS 走 Apple 内购、国内走自建兑换码，两边发的是**同一套权�
 **导出进阶（权益 9）也于 2026-11-06 做完（v1.70.0）**：`annual_report.dart` 纯函数 +
 年报卡/预览屏（复用分享卡抓图管线）、`buildPerExerciseCsv`（列与全量 CSV 一致）、
 `data_tools_screen` 的「导出进阶（Ultra）」整组**只有 active 权益才渲染**。
-**周期化计划 v1 也于 2026-11-06 做完（v1.71.0）**：schema v32 两张表、纯函数
+**周期化计划 v1 也于 2026-11-06 做完（v1.71.0）**：v32 引入的两张表、纯函数
 `domain/periodization.dart`（加重/deload/周完成/JSON）、`periodization_screen.dart`
 （建模板/本周课表/从某天开练/导入导出）、`PlanScreen` 入口（只有 active 权益才渲染）。
 **M4c 披露/出包已做（2026-11-06，v1.71.1）**：`in_app_purchase` 合并进 manifest 的 `com.android.vending.BILLING` / `android.permission.ACCESS_NETWORK_STATE` 已写入 `privacy-facts.json` 与中英政策 §四，§2.5 改为「包含官方内购能力、本版本未开放购买」；`privacy-audit --apk` 在真 APK 上绿；v1.71.1 APK/AAB 已出。

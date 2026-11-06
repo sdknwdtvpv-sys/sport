@@ -166,7 +166,8 @@ void main() {
       await _pump(tester, h);
 
       expect(find.text('自重 × 30 秒'), findsOneWidget);
-      expect(find.textContaining('× 30'), findsOneWidget);
+      // 新组表的目标列也会出现 30 秒；按钮值本身仍然唯一
+      expect(find.descendant(of: find.byKey(const Key('big-log-button')), matching: find.textContaining('× 30')), findsOneWidget);
 
       await _teardown(tester, h);
     });
@@ -216,8 +217,8 @@ void main() {
           of: find.byKey(const Key('done-list')),
           matching: find.textContaining('秒'),
         ),
-        findsOneWidget,
-        reason: '不加"秒"会被读成"自重 × 30 次"',
+        findsWidgets,
+        reason: '组表里当前/待做行都写着秒（不加会被读成 30 次）',
       );
 
       await _teardown(tester, h);

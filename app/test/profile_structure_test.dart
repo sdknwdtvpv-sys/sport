@@ -122,7 +122,7 @@ void main() {
     }
   }
 
-  testWidgets('「我」页 = 身份 + 我的进度 + 统计 + 成就 + 版本行（设置入口不许回来）',
+  testWidgets('「我」页 = 身份 + 我的进度 + 成就 + 版本行（统计已收口到进步）',
       (WidgetTester tester) async {
     await store.saveSet(SetRecord(
       id: 's1',
@@ -142,11 +142,9 @@ void main() {
     expect(find.byKey(const Key('profile-id-line')), findsOneWidget);
     expect(find.text('还没设昵称'), findsOneWidget, reason: '没设过就如实写，不编默认名');
 
-    // 统计还在这一页（它是"每天看"的那一类）
-    await tester.dragUntilVisible(find.byKey(const Key('profile-stat-volume')),
-        find.byType(ListView), const Offset(0, -220));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('profile-stat-volume')), findsOneWidget);
+    // v2.0.0：训练统计已全部收口到「进步」，这一页不再有自己的统计带
+    expect(find.byKey(const Key('profile-stats-band')), findsNothing);
+    expect(find.byKey(const Key('profile-stat-volume')), findsNothing);
 
     // 成就入口也还在（它读的就是这一页刚算出来的数）
     await tester.dragUntilVisible(find.byKey(const Key('open-achievements')),

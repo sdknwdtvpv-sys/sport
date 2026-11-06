@@ -499,6 +499,12 @@ class DayPlanItem extends Table {
 /// 与"排了哪几个"分开（空清单也是一种排过的结果）。
 class DayPlanDay extends Table {
   TextColumn get date => text()();
+
+  /// 这一天是**上肢/下肢**（v33 加列）。null = 旧库没记过 → 恢复时按动作重算/回退。
+  /// 为什么必须存：冷启动恢复动作时标题曾用"现算的 nextTrainingDay"，
+  /// 而动作来自库里那一天 —— 于是标题写「下肢」、动作全是上肢（2026-11-07 修）。
+  TextColumn get dayWire => text().nullable()();
+
   IntColumn get generatedAt => integer()();
 
   @override
@@ -814,8 +820,10 @@ class AppDatabase extends _$AppDatabase {
   /// v32（2026-11-06，会员权益 10）：新增 `period_plan` / `period_plan_session`
   /// （周期化计划 v1）。**只加表、不动任何既有行/列** —— 老库升上来是空的 =
   /// "这个功能出现之前，这台设备没有建过周期计划"，那正是准确的历史。
+  /// v33（2026-11-07）：`day_plan_day` +`day_wire`（今日安排标题与动作同源）。
+  /// **加列**，老库升上来是 null = 没记过 → 恢复时回退到按动作现算（同旧行为）。
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -867,6 +875,16 @@ class AppDatabase extends _$AppDatabase {
           );
         },
         onUpgrade: (Migrator m, int from, int to) async {
+          // v32 → v33：`day_plan_day` 加 `day_wire`（只加列）。
+          // ⚠️ 从 <27 的库升上来时，v27 那一步的 createTable 已经带着新列，不能再 add。
+          if (from >= 27 && from < 33) {
+            // 有些测试夹具只建到 v29 之前的表（没有 day_plan_day）；真机从 v27
+            // 升上来的库才有。按"表在不在"判断，避免 ALTER 一个不存在的表。
+            final bool hasDayPlan = (await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='day_plan_day'",
+            ).getSingleOrNull()) != null;
+            if (hasDayPlan) await m.addColumn(dayPlanDay, dayPlanDay.dayWire);
+          }
           // v31 → v32：只加两张表（周期化计划）。老库升上来是空的 = 没建过计划。
           if (from < 32) {
             await m.createTable(periodPlan);

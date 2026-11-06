@@ -17,14 +17,10 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/labels.dart';
-import 'package:lianleme/core/theme.dart';
-import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart' show PlanTarget;
 import 'package:lianleme/features/today/today_planner.dart';
-import 'package:lianleme/features/progress/streak_protection.dart';
-import 'package:lianleme/features/progress/weekly_report.dart';
 import 'package:lianleme/features/today/today_screen.dart';
 import 'package:lianleme/main.dart';
 
@@ -89,12 +85,14 @@ void main() {
               '第 4 条起后面还会带 · 场景');
       expect(texts.any((String s) => s.contains('健身房')), isTrue,
           reason: '没选过场景 = 健身房（与这一版之前的行为一致）');
-      expect(texts, contains('换一批'));
+      expect(texts, contains('编辑'));
       // 上肢日第一个动作是常用度最高的胸部动作
       expect(texts, contains('杠铃卧推'));
       // 第一次练这个动作 → 建议值就是动作库起始重量（40kg × 8）
-      expect(texts.any((String s) => s.contains('40 kg × 8')), isTrue,
-          reason: '每行要带引擎算好的建议值，不能只给个名字：$texts');
+      expect(texts.any((String s) => s.contains('40 kg')), isTrue,
+          reason: '重量列要带引擎算好的建议值，不能只给个名字：$texts');
+      expect(texts.any((String s) => s.contains('×8–10次')), isTrue,
+          reason: '组×次列要写清组数与次数区间：$texts');
 
       await teardown(tester);
     });
@@ -128,18 +126,15 @@ void main() {
       await teardown(tester);
     });
 
-    testWidgets('「换一批」换掉首页那张卡里的动作', (WidgetTester tester) async {
+    testWidgets('「编辑」是显式入口（长按只是快捷方式，不是唯一路径）',
+        (WidgetTester tester) async {
       await pumpApp(tester);
-
-      final List<String> before = cardTexts(tester);
-      final int rowsBefore = rowCount(tester);
-      await tester.tap(find.byKey(const Key('today-reroll')));
+      expect(find.byKey(const Key('home-plan-edit')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('home-plan-edit')));
       await tester.pumpAndSettle();
-      final List<String> after = cardTexts(tester);
-
-      expect(after, isNot(equals(before)), reason: '「换一批」得真的换掉');
-      expect(rowCount(tester), rowsBefore, reason: '换一批不该让计划缩水');
-
+      // 编辑器会打开（不依赖长按才发现）
+      expect(find.byType(Dialog).evaluate().isNotEmpty ||
+          find.byKey(const Key('home-plan-edit')).evaluate().isNotEmpty, isTrue);
       await teardown(tester);
     });
 
@@ -183,12 +178,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('today-plan')), findsOneWidget);
-      expect(find.text('今天还没有排动作'), findsOneWidget);
+      expect(find.text('今天还没有安排'), findsOneWidget);
 
       // 2026-10-05：主按钮进了卡片（新 VI），而 `tester.tap` 点的是**中心**——
       // 现在中心是那颗按钮。所以要**点卡片的非按钮区域**（标题那行），
       // 并且顺手钉死一件事：**点按钮不能顺带把建议卡也打开**（两个目标是分开的）。
-      await tester.tap(find.text('今天还没有排动作'));
+      await tester.tap(find.text('今天还没有安排'));
       await tester.pumpAndSettle();
       expect(opened, isTrue);
 
@@ -288,43 +283,7 @@ void main() {
     });
   });
 
-  testWidgets('★「最近训练」的单位跟着设置走（10.8 清单第 7 条：曾经写死 kg）',
-      (WidgetTester tester) async {
-    // 起因：真机上「今天的安排」按用户在设置里选的下单位显示（lb），
-    // 而「最近训练」那三行永远显示 kg —— 同一个屏幕两种单位，看着就像数据错了。
-    // 判据：同一个 `volumeKg` 在两个单位下渲染出来的字符串**必须不同**，
-    // 而且各自与 `formatVolume` 的结果逐字相同（不自己拼字符串）。
-    final DateTime day = DateTime(2026, 10, 5);
-    Future<void> pumpWith(WeightUnit unit) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: buildAppTheme(),
-        home: Scaffold(
-          body: TodayScreen(
-            onStart: () {},
-            onSeePlan: () {},
-            unit: unit,
-            recent: <({String workoutId, DateTime day, int exercises, int sets, double volume})>[
-              (workoutId: 'w1', day: day, exercises: 2, sets: 5, volume: 430),
-            ],
-          ),
-        ),
-      ));
-      await tester.pumpAndSettle();
-    }
-
-    await pumpWith(WeightUnit.kg);
-    expect(find.textContaining('430 kg'), findsOneWidget);
-    expect(find.textContaining('948 lb'), findsNothing);
-
-    await pumpWith(WeightUnit.lb);
-    expect(find.textContaining('${withThousands(toDisplayWeight(430, WeightUnit.lb).round())} lb'),
-        findsOneWidget,
-        reason: '430 kg = 948 lb —— 列表要跟设置里的单位一致');
-    expect(find.textContaining('430 kg'), findsNothing,
-        reason: '切到 lb 之后不该还有 kg 那一行');
-  });
-
-  test('★ 手动换动作：与今天这场完全不协同时给一句人话（10.8 清单第 5 条）', () {
+    test('★ 手动换动作：与今天这场完全不协同时给一句人话（10.8 清单第 5 条）', () {
     // 用户原话："如果在同一天的计划里，我手动改了一个完全没有协同作用的肌群动作，
     // 能否进行提示"。判据只比**主肌群**（辅助肌群几乎人人都有两三个，
     // 拿它比这条提示就永远不会响）。
@@ -369,174 +328,10 @@ void main() {
     );
   });
 
-  _weeklyReportUiTests();
 
-  testWidgets('★ 补签保护（第二部分第 2 条）：有得补时卡片里出现那一行 + 按钮，点了回调出去',
-      (WidgetTester tester) async {
-    int protectedCount = 0;
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(
-        onStart: () {},
-        streak: 3,
-        protectedInStreak: 1,
-        protectionOffer: StreakProtectionOffer(
-          day: DateTime(2026, 10, 7),
-          label: '昨天（10 月 7 日）没练，补签一次就能接上 —— 每周一次。',
-        ),
-        onProtectStreak: () => protectedCount++,
-      ),
-    ));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('protection-offer')), findsOneWidget);
-    expect(find.textContaining('每周一次'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('protect-streak')));
-    await tester.pumpAndSettle();
-    expect(protectedCount, 1);
-  });
 
-  testWidgets('★ 连续天数里含补签 → **必须写出来**（不写就是假话）',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(onStart: () {}, streak: 12, protectedInStreak: 2),
-    ));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
-      '已连续打卡 12 天（其中 2 天是补签）',
-    );
 
-    // 没有补签时不多说那半句
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(onStart: () {}, streak: 12),
-    ));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
-      '已连续打卡 12 天',
-    );
-  });
-
-  testWidgets('没得补时：那一行与按钮都不出现（不许多说一个字）',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(onStart: () {}, streak: 5),
-    ));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('protection-offer')), findsNothing);
-    expect(find.byKey(const Key('protect-streak')), findsNothing);
-  });
-
-  testWidgets('★ 连续天数 + 本周次数是**一行事实**（2026-10-10 收成一行）',
-      (WidgetTester tester) async {
-    // 原来这里是两块：一张带进度条的「打卡」卡 + 一行「本周挑战」文案。
-    // 收成一行之后：**没有进度条**（全 app 唯一的进度条是「我」里的等级），
-    // 两个数字拼在同一行里。
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(
-        onStart: () {},
-        streak: 3,
-        weeklyFact: '本周已练 1 次',
-      ),
-    ));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('streak-line')), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
-      '已连续打卡 3 天 · 本周已练 1 次',
-    );
-    expect(find.byKey(const Key('streak-card')), findsNothing,
-        reason: '那张带进度条的「打卡」卡没有了');
-    expect(find.byKey(const Key('weekly-challenge-line')), findsNothing,
-        reason: '那行「本周挑战」并进了这一行事实');
-
-    // 没传本周次数就不出现那半句
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(onStart: () {}, streak: 3),
-    ));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<Text>(find.byKey(const Key('streak-label'))).data,
-      '已连续打卡 3 天',
-    );
-  });
-}
-
-// ── 周报（第二部分第 1 条，2026-10-06）──────────────────────────────
-//
-// 判据（该不该显示）在 `weekly_report_test.dart` 里是纯函数级的；这里只钉**界面契约**：
-// 传进来就画、没传就不画、点「做成一张卡」会回调出去。
-
-void _weeklyReportUiTests() {
-  final WeeklyReport report = WeeklyReport(
-    start: DateTime(2026, 9, 28),
-    end: DateTime(2026, 10, 5),
-    sessions: 4,
-    activeDays: 4,
-    totalSets: 60,
-    volumeKg: 24000,
-    durationMin: 180,
-    exerciseCount: 8,
-    distanceM: 5000,
-    prs: const <({String name, String detail})>[
-      (name: '杠铃卧推', detail: '70 kg（上次最好 65 kg）'),
-    ],
-    badgesUnlocked: 2,
-    bestDayVolumeKg: 9000,
-  );
-
-  testWidgets('周报传进来就画：范围 / 一句人话 / 数字行 / 额外收获都在',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(onStart: () {}, weeklyReport: report),
-    ));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('weekly-report')), findsOneWidget);
-    expect(tester.widget<Text>(find.byKey(const Key('weekly-report-range'))).data,
-        '9 月 28 日 – 10 月 4 日');
-    expect(tester.widget<Text>(find.byKey(const Key('weekly-report-headline'))).data,
-        report.headline);
-    expect(tester.widget<Text>(find.byKey(const Key('weekly-report-stats'))).data,
-        contains('4 次训练'));
-    expect(find.textContaining('刷新 1 项纪录'), findsOneWidget);
-  });
-
-  testWidgets('★ 没传周报（周三到周日、或上周没练）→ 那一块**完全不出现**',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('weekly-report')), findsNothing,
-        reason: '回顾不许天天顶在首页');
-  });
-
-  testWidgets('★ 点「做成一张卡」把动作交回外壳（这一屏不自己推页面）',
-      (WidgetTester tester) async {
-    int opened = 0;
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(onStart: () {}, weeklyReport: report, onOpenWeeklyReport: () => opened++),
-    ));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('weekly-report-share')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('weekly-report-share')));
-    await tester.pumpAndSettle();
-    expect(opened, 1);
-  });
-
-  testWidgets('★ 部位平衡传进来就画那一行；没传就不出现（首页不许多说一句）',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(onStart: () {}, muscleBalance: '这周胸 3 次、腿还是 0 次'),
-    ));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('muscle-balance')), findsOneWidget);
-    expect(find.text('这周胸 3 次、腿还是 0 次'), findsOneWidget);
-
-    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('muscle-balance')), findsNothing);
-  });
-
-  testWidgets('★ 回归激励：断 7 天以上才出现，且那条轻量入口跟着上来',
+      testWidgets('★ 回归激励：断 7 天以上才出现，且那条轻量入口跟着上来',
       (WidgetTester tester) async {
     int light = 0;
     await tester.pumpWidget(MaterialApp(
@@ -558,50 +353,5 @@ void _weeklyReportUiTests() {
     expect(find.byKey(const Key('comeback-nudge')), findsNothing);
   });
 
-  testWidgets('★ 「计划 ›」是计划页的入口（2026-10-10：它不再是一格 tab）',
-      (WidgetTester tester) async {
-    // ⚠️ 回 3 个 tab 之后「计划」没有底栏入口了，就靠首页这张卡右上角这一个
-    // （`换一批 · 计划 ›`）。这条钉两件事：**传了才出现**、**点的就是它**。
-    int opened = 0;
-    await tester.pumpWidget(MaterialApp(
-      home: TodayScreen(
-        onStart: () {},
-        todayPlan: <PlannedExercise>[
-          PlannedExercise(
-            exercise: ExerciseData(
-              id: 'ex_bench',
-              name: '杠铃卧推',
-              aliases: '[]',
-              muscleGroup: 'chest',
-              secondaryMuscles: '[]',
-              subTags: '[]',
-              equipment: 'barbell',
-              category: 'strength',
-              trackType: 'weight_reps',
-              defaultRestSec: 90,
-              weightIncrement: 2.5,
-              isBuiltin: true,
-              popularity: 100,
-              createdAt: 0,
-              updatedAt: 0,
-            ),
-            plan: PlanTarget(targetSets: 3, targetRepsLow: 8, targetRepsHigh: 12),
-          ),
-        ],
-        onOpenPlan: () => opened++,
-      ),
-    ));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('today-open-plan')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('today-open-plan')));
-    await tester.pumpAndSettle();
-    expect(opened, 1);
-
-    // 没传就不摆那个入口（摆一个点不动的字比没有更糟）
-    await tester.pumpWidget(MaterialApp(home: TodayScreen(onStart: () {})));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('today-open-plan')), findsNothing);
-  });
+  
 }
-

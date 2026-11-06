@@ -16,9 +16,15 @@ import 'package:flutter/material.dart';
 
 abstract final class Tokens {
   // 背景层级（暖黑：采样自界面稿，App 底 #0E0C0A / 卡片 #1A1714）
-  static const Color bg = Color(0xFF0E0C0A);
-  static const Color surface = Color(0xFF1A1714);
-  static const Color elevated = Color(0xFF24201C);
+  static const Color bg = Color(0xFF090706);
+
+  /// v2.0.0: 分区底 / 渐隐（对 bg 1.04，只做同页分区的底）。
+  static const Color bg2 = Color(0xFF0F0C09);
+  static const Color surface = Color(0xFF1B1610);
+  static const Color elevated = Color(0xFF261F18);
+
+  /// v2.0.0 的正式名字；`elevated` 是历史别名。
+  static const Color surfaceHi = elevated;
 
   /// **三级线**（2026-10-10，VI 计划 T0-4）。原来只有 `line`（白 6%）与 `lineStrong`（白 8%），
   /// 两者**只差 1.07:1**，而且都落在"绝对看不见"的区间里（对 `bg` 1.13 / 1.19）——
@@ -57,6 +63,29 @@ abstract final class Tokens {
   /// **成功色上的字**（那颗绿勾里的深墨）：`#06231A` 对 `success` `#0CAC78` = 5.0:1。
   static const Color inkOnSuccess = Color(0xFF06231A);
 
+  /// 卡片阴影（v2.0.0）：页面里不许再自己写 BoxShadow 字面量。
+  static const List<BoxShadow> shadowCard = <BoxShadow>[
+    BoxShadow(color: Color(0xE6000000), offset: Offset(0, 18), blurRadius: 36, spreadRadius: -28),
+  ];
+
+  /// 浮层 / 底栏阴影。
+  static const List<BoxShadow> shadowFloat = <BoxShadow>[
+    BoxShadow(color: Color(0xE6000000), offset: Offset(0, 18), blurRadius: 36, spreadRadius: -18),
+  ];
+
+  /// 卡片顶部 1px 内高光（6% 暖白）。
+  static const List<BoxShadow> edgeHighlight = <BoxShadow>[
+    BoxShadow(color: Color(0x0FFFFFF6), offset: Offset(0, 1), blurRadius: 0),
+  ];
+
+  /// 主按钮三段渐变 + 轻辉光。
+  static const LinearGradient accentButton = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: <Color>[Color(0xFFF08A5B), Color(0xFFE2663A), Color(0xFFD65B2D)],
+    stops: <double>[0.0, 0.42, 1.0],
+  );
+
   /// **一团彩色辉光**（破纪录、未读点、完成勾）—— 三处原来各写一份 `BoxShadow`，
   /// 于是同一个"发光"有三种模糊半径。统一到这里，半径按语义给。
   static List<BoxShadow> glow(Color c, {double radius = 18, double spread = 1}) =>
@@ -77,13 +106,13 @@ abstract final class Tokens {
   /// 边界用 [lineStrong]（对 `bg` 3.18:1 = 达标）**。`theme_contrast_test.dart` 两条都钉着。
   static const Color field = lift; // 别名：与 `lift` 是同一种材料（见上）
 
-  static const Color hair = Color(0xFF2A2622);
-  static const Color line = Color(0xFF3A342E);
-  static const Color lineStrong = Color(0xFF6A6055);
+  static const Color hair = Color(0xFF28221A);
+  static const Color line = Color(0xFF3B332B);
+  static const Color lineStrong = Color(0xFF74695C);
 
   // 前景层级（VI 的 neutral-50 / 300 / 500）
-  static const Color text = Color(0xFFF5F3F1);
-  static const Color text2 = Color(0xFFABA49A);
+  static const Color text = Color(0xFFF7F3ED);
+  static const Color text2 = Color(0xFFB6AC9F);
   /// ⚠️ **2026-10-10 提亮**（VI 计划 T0-3，`docs/plan-vi-2026-10-10.md`）：`#6B6157` → `#8A8176`。
   ///
   /// 旧值在 `surface` 上只有 **2.95:1**、在 `bg` 上 3.23:1，而 `docs/interaction-spec.md` §9
@@ -97,15 +126,19 @@ abstract final class Tokens {
   ///
   /// 配套（同一天做的）：凡是「用户读了要据此做动作」的标签**一律改 `text2`**，
   /// 不管字号 —— 未选中 tab、选动作页的筛选行标签与每行副标题、搜索 hint、RPE 未选中值都改了。
-  static const Color text3 = Color(0xFF8A8176);
+  static const Color text3 = Color(0xFF8D8478);
 
   // 强调色
   /// 唯一主操作色。**一屏之内只允许出现一次**，出现两次即说明主次不分。
   ///
   /// 名字从 `volt` 改成 `accent`：旧名字是"电压绿"的意思，颜色换成橙之后
   /// **名字本身就是一句假话**（这个仓库最防的就是这个）。
-  static const Color accent = Color(0xFFFF5C26);
-  static const Color accentPress = Color(0xFFE04A18);
+  static const Color accent = Color(0xFFE2663A);
+
+  /// v2.0.0: 主按钮渐变上端 / 按下端。
+  static const Color accentHi = Color(0xFFF1875C);
+  static const Color accentLo = Color(0xFFC44E24);
+  static const Color accentPress = accentLo;
 
   /// **橙色文字**（链接、弹层里的文字按钮、橙色的标签）。
   ///
@@ -117,16 +150,16 @@ abstract final class Tokens {
   /// 而它**在批次 1 漏掉了** —— 裁决写了 ✅、代码里没有这个常量，于是全 App 59 处
   /// `color: Tokens.accent` 里那 22 处**橙字**一直用的是实心块的颜色。
   /// 2026-10-10 收尾时补上（`accent_budget_test` 现在盯着"橙字不许再用 accent"）。
-  static const Color accentText = Color(0xFFFF8A5B);
+  static const Color accentText = Color(0xFFF29A72);
 
   /// 橙底上的字色。**必须用深色**：橙底 + 白字只有 3.08:1（AA 小字要 4.5），
   /// 深色是 6.06:1。界面稿里两种都出现过（训练首页那颗白胶囊是例外），这里按 6:1 那条来。
-  static const Color accentInk = Color(0xFF141210);
+  static const Color accentInk = Color(0xFF1A0F0A);
 
   /// **成功/完成**（训练完成页那个勾）。值量自界面稿（`vi/complete-library.html` 渲染出来的
   /// 绿色主体是 #0AA674–#0CAD79）。新 VI 之前这个语义色根本不存在 ——
   /// 完成页原来只有一行文字。
-  static const Color success = Color(0xFF0CAC78);
+  static const Color success = Color(0xFF3DBE8B);
 
   /// **稀有徽章的紫**（2026-10-05 加的，量自 `vi/achievement-badges.html` 的稀有度那三个圆：
   /// 普通 #EB5220 / 稀有 #8551F0 / 传说 #F0A71A）。
@@ -136,11 +169,11 @@ abstract final class Tokens {
 
   /// 仅用于破纪录，不用于普通成功态。**2026-10-05 跟着新 VI 换成更亮的琥珀**：
   /// 界面稿里那张 PR 卡是 #FBBF24（旧的 #F5C451 在暖黑底上偏灰，不够"奖杯"）。
-  static const Color pr = Color(0xFFFBBF24);
+  static const Color pr = Color(0xFFF2BE4B);
 
   /// 仅用于删除与不可逆操作。**新 VI 没给这个语义色** —— 保留旧的，
   /// 而不是"为了统一"把它也做成橙色（那样删除和主操作就分不出来了）。
-  static const Color danger = Color(0xFFFF5A5F);
+  static const Color danger = Color(0xFFFF6B6B);
 
   // 间距标尺（不允许出现奇数间距）
   // ══════════════════════════════════════════════════════════════════════
@@ -170,6 +203,8 @@ abstract final class Tokens {
   // ══════════════════════════════════════════════════════════════════════
 
   /// 字号（10 级，见上面那张表）。
+  /// v2.0.0 新增：一屏唯一的大数字。
+  static const double fsDisplay = 34;
   static const double fsHero = 30;
   static const double fsTitle = 28;
   static const double fsNumL = 24;

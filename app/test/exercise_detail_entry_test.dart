@@ -117,6 +117,8 @@ void main() {
       expect(find.text('动作要领'), findsOneWidget);
       expect(find.textContaining('下蹲到髋低于膝'), findsOneWidget);
 
+      await tester.tap(find.byKey(const Key('howto-toggle')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('howto-open-detail')));
       await tester.pumpAndSettle();
       expect(find.byType(ExerciseDetailScreen), findsOneWidget);

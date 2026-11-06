@@ -20,6 +20,7 @@ class ViAreaChart extends StatelessWidget {
     this.height = 132,
     this.labels = const <String>[],
     this.color,
+    this.previousPoints = const <double>[],
   });
 
   final List<double> points;
@@ -30,21 +31,27 @@ class ViAreaChart extends StatelessWidget {
 
   final Color? color;
 
+  /// 上一周期同点位（虚线对照）。空 = 不画。
+  final List<double> previousPoints;
+
   @override
   Widget build(BuildContext context) => SizedBox(
         height: height,
         width: double.infinity,
         child: CustomPaint(
-          painter: ViAreaChartPainter(points, color: color ?? Tokens.accent),
+          painter: ViAreaChartPainter(points,
+              color: color ?? Tokens.accent, previousPoints: previousPoints),
         ),
       );
 }
 
 class ViAreaChartPainter extends CustomPainter {
-  ViAreaChartPainter(this.points, {this.color = Tokens.accent});
+  ViAreaChartPainter(this.points,
+      {this.color = Tokens.accent, this.previousPoints = const <double>[]});
 
   final List<double> points;
   final Color color;
+  final List<double> previousPoints;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -67,6 +74,36 @@ class ViAreaChartPainter extends CustomPainter {
           baseline - (points[i].clamp(0.0, 1.0)) * (size.height - 8),
         ),
     ];
+
+    // 上一周期：虚线（本周实线 + 上周虚线）
+    if (previousPoints.isNotEmpty) {
+      final double pstep = previousPoints.length > 1
+          ? size.width / (previousPoints.length - 1)
+          : 0;
+      final Paint dashed = Paint()
+        ..color = Tokens.text3.withValues(alpha: 0.7)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+      Offset? prev;
+      for (int i = 0; i < previousPoints.length; i++) {
+        final Offset pt = Offset(
+          previousPoints.length > 1 ? i * pstep : size.width / 2,
+          baseline - previousPoints[i].clamp(0.0, 1.0) * (size.height - 8),
+        );
+        if (prev != null) {
+          // 手动虚线：每 6px 画 4px
+          final double dist = (pt - prev).distance;
+          final Offset dir = (pt - prev) / dist;
+          double d = 0;
+          while (d < dist) {
+            final double end = (d + 4).clamp(0, dist);
+            canvas.drawLine(prev + dir * d, prev + dir * end, dashed);
+            d += 10;
+          }
+        }
+        prev = pt;
+      }
+    }
 
     // 折线 + 填充
     final Path line = Path()..moveTo(pts.first.dx, pts.first.dy);
@@ -111,5 +148,5 @@ class ViAreaChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ViAreaChartPainter old) =>
-      old.points != points || old.color != color;
+      old.points != points || old.color != color || old.previousPoints != previousPoints;
 }

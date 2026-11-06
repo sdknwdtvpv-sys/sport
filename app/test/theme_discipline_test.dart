@@ -83,6 +83,7 @@ void main() {
         // 2026-10-10 加：Ultra「批量整理」里那个「移到回收站」——
         // 与回收站页同一件事（删除 / 可恢复但会退出统计），红字是对的
         'lib/features/progress/all_data_screen.dart',
+        'lib/features/progress/progress_screen.dart', // 周期 delta 的涨/跌方向色
         // —— 待收窄（批次 3）——
         'lib/core/vi_cards.dart',                        // `StatTile` 的"跌"：那是**方向色**，不是删除色
         'lib/features/progress/badges.dart',             // 「探索发现」那一档的**分类配色**（纯借用）

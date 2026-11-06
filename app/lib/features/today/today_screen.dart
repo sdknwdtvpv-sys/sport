@@ -15,6 +15,7 @@ import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
+import '../../domain/models.dart' show Suggestion, isTimeTrack;
 import '../progress/weekly_report.dart';
 import '../progress/streak_protection.dart';
 import 'today_planner.dart';
@@ -65,6 +66,7 @@ class TodayScreen extends StatelessWidget {
     this.weeklyFact,
     this.debugToday,
     this.onProtectStreak,
+    this.weekTrainedWeekdays = const <int>{},
   });
 
   /// **上一周的周报**（第二部分第 1 条，2026-10-06）。
@@ -151,6 +153,9 @@ class TodayScreen extends StatelessWidget {
 
   /// 点了「补签保护」。外壳负责写库 + 刷新（这一屏不碰数据层）。
   final VoidCallback? onProtectStreak;
+
+  /// 本周已练的星期几（1=周一 … 7=周日）——「本周节奏」7 个点用它。
+  final Set<int> weekTrainedWeekdays;
 
   /// **回归激励那一句**（第二部分第 9 条）。null = 不显示。
   ///
@@ -258,83 +263,105 @@ class TodayScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 2026-10-05：按新 VI 重做成**信息流**（打卡 / 今日训练 / 快速入口 / 最近训练）。
-    // 原来那套"标题贴顶 + Spacer + 按钮压底"没法容纳四块内容 ——
-    // 要么按钮被挤出拇指区、要么中间再长出一大片空白。
-    //
-    // ⚠️ **主按钮现在在「今日训练」卡里**（VI 就是这么放的），
-    // 位置从"屏幕底部"变成"第二块内容的下沿"。这是**刻意的取舍**：
-    // 首屏顶部到按钮约 1.5 屏高的 1/3，单手仍然够得着，而卡片把"练什么"与
-    // "开始"合成了一件事。`docs/screens.md` S1 记着这次改动。
+    final DateTime now = debugToday ?? DateTime.now();
+    final String dateLabel = '${formatDateHuman(now)} · 周${'一二三四五六日'[now.weekday - 1]}';
     return ListView(
-      // 底部多留出浮动底栏的位置（Android 上那一项是 0 —— 底栏在内容下面）
       padding: EdgeInsets.fromLTRB(
-          Tokens.s5,
-                    Tokens.s4,
-          Tokens.s5,
-          Tokens.s4 + AppTabBar.reservedSpaceFor(context)),
+          Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s4 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
-        // 「接着练」永远排最上面：此刻用户是"我刚才在练"，接着练是他唯一该做的事
         if (onResume != null) _resumeCard(),
-        // 回归激励（第二部分第 9 条）：**断 7 天以上才出现**，出现时把那条
-        // 轻量入口一起搬上来（见 `_comebackCard`）。
         if (comebackNudge != null) ...<Widget>[
           const SizedBox(height: Tokens.s4),
           _comebackCard(comebackNudge!),
         ],
         const SizedBox(height: Tokens.s4),
-        _streakFactLine(),
-        // 今日训练：**卡里只有清单与「换一批」**
+        const Text('今天',
+            key: Key('home-title'),
+            style: TextStyle(
+                color: Tokens.text,
+                fontSize: Tokens.fsHero,
+                fontWeight: Tokens.fwBold,
+                letterSpacing: Tokens.lsTight)),
+        const SizedBox(height: Tokens.s1),
+        Text(dateLabel,
+            key: const Key('home-date'),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+        const SizedBox(height: Tokens.s4),
         _TodayPlanCard(
           plan: todayPlan,
           label: todayLabel,
-          onReroll: onReroll,
-          onOpen: onSeePlan,
           onEdit: onEditPlan,
-          onOpenPlan: onOpenPlan,
+          onOpen: onSeePlan,
+          onStart: onStart,
         ),
-        // 主按钮是**卡外**的一颗大胶囊（用户 2026-10-06 的备忘条第 1 条：
-        // "开始今天的训练是一个大胶囊 放在训练计划的方框外"）。
-        // 2026-10-05 曾把它移进卡里（"练什么"和"开始"合成一件事），真机用下来
-        // 反倒是"它像清单的一部分"——`docs/screens.md` 当初就写了"觉得别扭就挪回来"。
-        const SizedBox(height: Tokens.s4),
-        _startButton(),
-
-        const SizedBox(height: Tokens.s4),
-        _quickEntries(),
-        // 周报（第二部分第 1 条，2026-10-06）：**只在周一 / 周二**出现，
-        // 而且上一周至少练过一次（判据在 `weekly_report.dart` 的 `shouldShowWeeklyReport`，
-        // 由外壳算好传进来）。位置在"快速入口"之后、"最近训练"之前：
-        // 它是"回顾"，不是"今天要做什么"。
-        if (weeklyReport != null && !weeklyReport!.isEmpty) ...<Widget>[
-          const SizedBox(height: Tokens.s4),
-          _weeklyReportCard(weeklyReport!),
-        ],
-        // 部位平衡提示（第二部分第 5 条）：**只陈述事实**的一行，
-        // 没有任何值得说的就不出现（判据在 `muscle_balance.dart`，纯函数）。
-        if (muscleBalance != null) ...<Widget>[
-          const SizedBox(height: Tokens.s3),
-          _muscleBalanceLine(muscleBalance!),
-        ],
-        // ⚠️ T3-2：原来这里只判 `recent.isNotEmpty` —— 于是**一次都没练过的人
-        // 在首页看到的是"最近训练"四个字下面的整片空黑**（那正是这一条要修的东西）。
-        // 现在没记录时也走 `_recentBlock()`，由它在"有记录 / 没记录"之间分叉，
-        // 没记录那一支是带下一步的空态。
-        if (recent.isNotEmpty || onOpenLibrary != null) ...<Widget>[
+        if (recent.isNotEmpty) ...<Widget>[
           const SizedBox(height: Tokens.s5),
-          _recentBlock(),
+          _recentLine(recent.first),
         ],
-        const SizedBox(height: Tokens.s4),
-        Center(
-          child: Text(
-            lastWeekSessions > 0 ? '我上周练了 $lastWeekSessions 次' : '还没有训练记录',
-            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
-          ),
-        ),
+        const SizedBox(height: Tokens.s5),
+        _weekRhythm(now),
       ],
     );
   }
 
+  Widget _recentLine(({String workoutId, DateTime day, int exercises, int sets, double volume}) r) {
+    final String when = formatDateAxis(r.day);
+    final String volume = formatVolume(r.volume, unit);
+    return GestureDetector(
+      key: const Key('home-recent'),
+      onTap: onOpenLibrary,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: <Widget>[
+          const Text('最近一次', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+          const SizedBox(width: Tokens.s3),
+          Expanded(
+            child: Text('$when · ${r.exercises} 个动作 · $volume',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
+          ),
+          if (onOpenLibrary != null)
+            const Icon(Icons.chevron_right, size: IconSpec.s, color: Tokens.text3),
+        ],
+      ),
+    );
+  }
+
+  Widget _weekRhythm(DateTime now) {
+    final int trained = weekTrainedWeekdays.length;
+    return Container(
+      key: const Key('home-week'),
+      padding: const EdgeInsets.only(top: Tokens.s3),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Tokens.hair)),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          children: <Widget>[
+            const Text('本周节奏', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+            const SizedBox(width: Tokens.s3),
+            for (int d = 1; d <= 7; d += 1)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(right: Tokens.s2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: weekTrainedWeekdays.contains(d) ? Tokens.accentText : Tokens.line,
+                ),
+              ),
+            const SizedBox(width: Tokens.s3),
+            Text('已练 $trained 天',
+                key: const Key('home-week-trained'),
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
+          ],
+        ),
+      ),
+    );
+  }
 
   /// **一行事实**：连续多少天 + 这周练了几次（2026-10-10）。
   ///
@@ -346,6 +373,7 @@ class TodayScreen extends StatelessWidget {
   ///   * **补签保护仍然留在这里**（`protection-offer` / `protect-streak`）——
   ///     它只在"昨天恰好断了 + 这周练过 + 这周还没补过"时出现，是要用户**动手**的一件事，
   ///     不是一条进度；藏起来等于把功能删了。
+  // ignore: unused_element
   Widget _streakFactLine() {
     // ⚠️ `streakLabelWithProtection` 里那句"其中 N 天是补签"**必须留着** ——
     // 只写"连续 12 天"而其中 2 天是补的，就是一句假话（有测试钉着）。
@@ -417,6 +445,7 @@ class TodayScreen extends StatelessWidget {
   ///
   /// "做成一张卡"走的是**现有那套分享卡**（抓成 PNG / 存相册 / 剪贴板），
   /// 不联网、不上传 —— 这是第二部分开头那三条红线的第 1 条与第 9 条。
+  // ignore: unused_element
   Widget _weeklyReportCard(WeeklyReport r) {
     final List<String> extras = <String>[
       if (r.prs.isNotEmpty) '刷新 ${r.prs.length} 项纪录',
@@ -481,6 +510,7 @@ class TodayScreen extends StatelessWidget {
   /// 刻意**做成一行小字**而不是一张卡：这是"看一眼就知道"的信息，
   /// 给它一张卡就等于把它抬成和"今天的安排"同级的事 —— 而它不配。
   /// 文案由 `muscleBalanceHint()` 给（纯函数，含"没练过的部位"那条判据）。
+  // ignore: unused_element
   Widget _muscleBalanceLine(String text) => Row(
         key: const Key('muscle-balance'),
         children: <Widget>[
@@ -501,6 +531,7 @@ class TodayScreen extends StatelessWidget {
   ///   2. 从四个各自为政的方块收成**一只卡里的三格**（图标 + 字 + 细线分隔）：
   ///      上一版缩成一行小灰字，用户反馈「太不显眼、完全没存在感」，所以保留存在感，
   ///      但不再是四个等权重的方块（`docs/plan-ux-2026-10-10.md` P1-5 记着这次返工）。
+  // ignore: unused_element
   Widget _quickEntries() {
     final List<({IconData icon, String label, VoidCallback? onTap, Key key})> items =
         <({IconData icon, String label, VoidCallback? onTap, Key key})>[
@@ -554,6 +585,7 @@ class TodayScreen extends StatelessWidget {
   }
 
   /// 最近训练（新 VI）。**最多三条** —— 首页不是历史页，看全量去「数据」。
+  // ignore: unused_element
   Widget _recentBlock() {
     String when(DateTime d) {
       final DateTime now = debugToday ?? DateTime.now();
@@ -649,6 +681,7 @@ class TodayScreen extends StatelessWidget {
       );
 
   /// 主按钮。**一跳直接进训练屏**（见构造函数里那段关于"3 次点击"的说明）。
+  // ignore: unused_element
   Widget _startButton() => SizedBox(
         height: Tokens.hPrimary,
         width: double.infinity,
@@ -670,58 +703,39 @@ class TodayScreen extends StatelessWidget {
       );
 }
 
-/// 「今天的安排」卡片（2026-10-04）。
+/// **今日训练卡**（v2.0.0）：表格化 + 显式「编辑」+ 卡内一体的大按钮。
 ///
-/// **它替掉了原来那个 `Spacer()`**：同样是屏幕中间那块地方，
-/// 与其空着（真机上越高的手机空得越多），不如摆用户此刻最想知道的东西 ——
-/// 今天练什么、每个动作做多重。
-///
-/// 三条纪律：
-///   * **点它不开练**（开练永远是大按钮的事）：整块点进建议卡，卡内只有「换一批」是另一个目标；
-///   * **与大按钮同一份计划**：内容是 `main.dart` 那份 `_todayPlan`，不是这里现算的；
-///   * 动作值用的是引擎已经算好的 `loadLabel`（"62.5 kg × 8"），不是动作库默认值。
+/// 只回答一次"今天练什么"：表头 `# / 动作 / 组×次 / 重量`、最多 4 行、
+/// 右上「编辑」（换动作/排序/删除/从模板载入/重新安排都进编辑页）。
+/// 主按钮在卡内底部（88pt），点击直接开练 —— 1 次点击 = 1 组不变。
 class _TodayPlanCard extends StatelessWidget {
-  const _TodayPlanCard(
-      {required this.plan,
-      this.label,
-      this.onReroll,
-      this.onOpen,
-      this.onEdit,
-      this.onOpenPlan});
+  const _TodayPlanCard({
+    required this.plan,
+    this.label,
+    this.onEdit,
+    this.onOpen,
+    this.onStart,
+  });
 
   final List<PlannedExercise> plan;
   final String? label;
-  final VoidCallback? onReroll;
-
-  /// 长按某一行 → 调整安排（排序 / 替换 / 删除）。为 null 时长按无效。
   final VoidCallback? onEdit;
-
-  /// 点整块卡片 → 进建议卡。为 null 时卡片**不可点**（老调用方 / 测试），
-  /// 也不摆那个 `›` —— 摆一个点不动的箭头比没有更糟。
   final VoidCallback? onOpen;
+  final VoidCallback? onStart;
 
-  /// 「计划 ›」—— 进「计划」页（本周 / 模板库 / 历史）。
-  ///
-  /// ⚠️ 2026-10-10：**「计划」不再是底栏的一格**（回 3 个 tab），所以它需要一个新入口，
-  /// 就是这一行 —— 原来首页有三处"今天练什么"（换一批 / 帮我定个计划 / 计划 tab），
-  /// 现在收成卡片右上的两个（`换一批 · 计划 ›`），而"计划"这一格管的是
-  /// **模板与历史**，不再是"今天练什么"的第三个答案。
-  final VoidCallback? onOpenPlan;
-
-  /// 卡片里最多列几个 —— 再多会把主按钮挤出屏幕（那正是这个改动要避免的）
-  static const int _maxRows = 6;
+  static const int _maxRows = 4;
 
   @override
   Widget build(BuildContext context) {
     final List<PlannedExercise> head = plan.take(_maxRows).toList();
     final Widget card = Container(
       key: const Key('today-plan'),
-      padding: const EdgeInsets.symmetric(
-          horizontal: Tokens.s4, vertical: Tokens.s3),
+      padding: const EdgeInsets.all(Tokens.s5),
       decoration: BoxDecoration(
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),
         border: Border.all(color: Tokens.line),
+        boxShadow: Tokens.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,107 +744,115 @@ class _TodayPlanCard extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  label == null ? '今天的安排' : '今天练 $label',
+                  label == null ? '今日训练' : '今天练 $label',
                   style: const TextStyle(
                       color: Tokens.text,
                       fontSize: Tokens.fsSub,
                       fontWeight: Tokens.fwStrong),
                 ),
               ),
-              if (onReroll != null)
+              if (onEdit != null)
                 GestureDetector(
-                  key: const Key('today-reroll'),
-                  onTap: onReroll,
+                  key: const Key('home-plan-edit'),
+                  onTap: onEdit,
                   behavior: HitTestBehavior.opaque,
                   child: const Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: Tokens.s2, vertical: Tokens.s1),
+                    padding: EdgeInsets.symmetric(horizontal: Tokens.s2, vertical: Tokens.s1),
                     child: Row(
                       children: <Widget>[
-                        Icon(Icons.refresh, size: IconSpec.s, color: Tokens.text3),
+                        Icon(Icons.edit_outlined, size: IconSpec.s, color: Tokens.text2),
                         SizedBox(width: 4),
-                        Text('换一批',
-                            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+                        Text('编辑',
+                            style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
                       ],
                     ),
                   ),
                 ),
-              if (onOpenPlan != null)
-                GestureDetector(
-                  key: const Key('today-open-plan'),
-                  onTap: onOpenPlan,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: Tokens.s2, vertical: Tokens.s1),
-                    child: Text('计划 ›',
-                        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
-                  ),
-                ),
-              // 「整块可点」必须**看得出来** —— 不然它就是一个装饰。
-              // ⚠️ 有「计划 ›」那个入口时**不再画这枚箭头**：两个箭头挨在一起
-              // 会读成"计划 ››"（2026-10-10 证据图里就是这么出来的）。
-              if (onOpen != null && onOpenPlan == null)
-                const Icon(Icons.chevron_right, size: IconSpec.m, color: Tokens.text3),
             ],
           ),
-          const SizedBox(height: Tokens.s2),
-          // 计划为空（算失败 / 动作库还没导入）时的样子：说清发生了什么，
-          // 并把"怎么练"指出去。**不显示一个空框**。
-          if (head.isEmpty) ...<Widget>[
-            const Text('今天还没有排动作',
-                style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
-            // 不可点时**不写"点这里"** —— 一句点不动的话比没有更糟
-            if (onOpen != null) ...<Widget>[
-              const SizedBox(height: 4),
-              const Text('点这里看看怎么练 ›',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
-            ],
-          ],
-          for (int i = 0; i < head.length; i++)
-            GestureDetector(
-              // 长按整行 → 调整安排（2026-10-09，10.9 清单第 6 条）。
-              // ⚠️ 外层整块还有一个 `onTap`（进建议卡）：`onLongPress` 与它不冲突，
-              // 但**不能**用 `onLongPressStart` 之类去抢手势，那会把手感弄坏。
-              onLongPress: onEdit,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                // 每行一个 key：测试要按**结构**数行，而不是猜"文字里有没有 kg"
-                // （自重动作念「自重 × 8」，按 ' kg ' 数会漏掉它们）
-                key: Key('today-plan-row-$i'),
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        head[i].exercise.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
-                      ),
-                    ),
-                    const SizedBox(width: Tokens.s2),
-                    Text(head[i].loadLabel,
-                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
-                  ],
-                ),
+          const SizedBox(height: Tokens.s3),
+          if (head.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: Tokens.s3),
+              child: Text('今天还没有安排',
+                  style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
+            )
+          else ...<Widget>[
+            const Padding(
+              padding: EdgeInsets.only(bottom: Tokens.s1),
+              child: Row(
+                children: <Widget>[
+                  SizedBox(width: 20, child: Text('#', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                  Expanded(child: Text('动作', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                  SizedBox(width: 64, child: Text('组×次', textAlign: TextAlign.right, style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                  SizedBox(width: 72, child: Text('重量', textAlign: TextAlign.right, style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
+                ],
               ),
             ),
-          if (plan.length > head.length)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text('…还有 ${plan.length - head.length} 个',
-                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+            for (int i = 0; i < head.length; i += 1)
+              GestureDetector(
+                onLongPress: onEdit,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  key: Key('today-plan-row-$i'),
+                  padding: const EdgeInsets.symmetric(vertical: Tokens.s2),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Tokens.hair)),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      SizedBox(
+                          width: 20,
+                          child: Text('${i + 1}',
+                              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap))),
+                      Expanded(
+                        child: Text(head[i].exercise.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub)),
+                      ),
+                      SizedBox(
+                        width: 64,
+                        child: Text(_setsReps(head[i]),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
+                      ),
+                      SizedBox(
+                        width: 72,
+                        child: Text(_weight(head[i]),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                                color: Tokens.text2,
+                                fontSize: Tokens.fsCap,
+                                fontFeatures: Tokens.tabular)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (plan.length > head.length)
+              Padding(
+                padding: const EdgeInsets.only(top: Tokens.s1),
+                child: Text('…还有 ${plan.length - head.length} 个动作',
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              ),
+          ],
+          const SizedBox(height: Tokens.s4),
+          SizedBox(
+            height: 66,
+            width: double.infinity,
+            child: TextButton(
+              key: const Key('start-workout'),
+              onPressed: onStart,
+              style: TextButton.styleFrom(
+                backgroundColor: Tokens.accent,
+                foregroundColor: Tokens.accentInk,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Tokens.rPill)),
+              ),
+              child: const Text('开始训练',
+                  style: TextStyle(fontSize: Tokens.fsBody, fontWeight: Tokens.fwBold)),
             ),
-          // 「能长按」这件事必须被看见 —— 一个只有长按才知道的入口等于没有
-          // （10.9 清单第 6 条。文案刻意用"长按调整"，与弹层里那句"长按一行可以拖动排序"同一口径）
-          if (onEdit != null && head.isNotEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 3),
-              child: Text('长按调整顺序 / 换动作 / 删掉',
-                  key: Key('today-plan-hint'),
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-            ),
+          ),
         ],
       ),
     );
@@ -841,5 +863,21 @@ class _TodayPlanCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: card,
     );
+  }
+
+  static String _setsReps(PlannedExercise p) {
+    final bool time = isTimeTrack(p.exercise.trackType);
+    final String unit = time ? '秒' : '次';
+    final String reps = p.plan.targetRepsLow == p.plan.targetRepsHigh
+        ? '${p.plan.targetRepsLow}$unit'
+        : '${p.plan.targetRepsLow}–${p.plan.targetRepsHigh}$unit';
+    return '${p.plan.targetSets}×$reps';
+  }
+
+  static String _weight(PlannedExercise p) {
+    final Suggestion? s = p.suggestion;
+    if (s == null) return p.plan.targetWeightKg == null ? '自重' : formatWeight(p.plan.targetWeightKg, p.unit);
+    if (s.isBodyweight) return '自重';
+    return formatWeight(s.weightKg, p.unit);
   }
 }

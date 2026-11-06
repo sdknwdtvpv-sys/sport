@@ -327,10 +327,8 @@ void main() {
           tester.widget<Text>(find.byKey(const Key('button-label')));
       expect(label.data, '0 米 · 00:00',
           reason: '时长也不该凭空给个 8 秒（那是"8 次"的处方落到了有氧上）');
-      expect(
-        tester.widget<Text>(find.byKey(const Key('workout-hint'))).data,
-        contains('长按'),
-      );
+      // v2.0.0 删掉了操作说明文案；距离为 0 时按钮置灰、点它能进设置弹层
+      expect(find.byKey(const Key('workout-hint')), findsNothing);
       await _teardown(tester, h);
     });
 

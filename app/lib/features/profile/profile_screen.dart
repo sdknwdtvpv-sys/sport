@@ -321,7 +321,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    final TrainingStats s = _stats!;
     // ⚠️ 这里原来还有一行 `final bool cloudOn = …`，只给页脚那句隐私说明用；
     // 那句话 2026-10-09 删掉了（10.9 清单第 5 条），所以这个局部变量也一并删 ——
     // 留着就是一个"算出来没人用"的值，而 `dart analyze --fatal-infos` 会红。
@@ -348,97 +347,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         profileSectionTitle('我的进度'),
         _progressCard(),
         const SizedBox(height: Tokens.s5),
-        profileSectionTitle('训练统计'),
-
-        // 2026-10-05 按新 VI 换成统计卡；**2026-10-09 收成两张**（10.9 清单第 4 条）。
-        //
-        // 原来这四张是「训练次数 / 连续天数 / 总组数 / 总容量」，而进步页那四张是
-        // 「区间容量 / 训练次数 / 总组数 / 个人纪录」—— 三项重名，用户的原话是
-        // "重复度太高"。分工写死：
-        //   * **进步页 = 周期口径**（本周/本月/全年 + 与上一周期对比 + 趋势 + 个人纪录）；
-        //   * **这一页 = 累计口径 + 连续天数**。
-        // 于是「训练次数」「总组数」两张卡**从这一页拿掉** —— 不是信息没了：
-        // 那两个累计数字就在上面那张「我的进度」里（Lv 那一行右边是「12 次」，
-        // 经验条那一行右边是「340 组」，key 是 `profile-level-count` / `experience-sets`）。
-        // 一张页面上同一个数字出现两遍，才是这一条要治的东西。
-        if (s.isEmpty)
-          settingsCard(<Widget>[
-            const Padding(
-              padding: EdgeInsets.all(Tokens.s5),
-              child: Text(
-                '还没有训练记录。练完第一次，这里就有数了。',
-                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub, height: Tokens.lhNormal),
-              ),
-            ),
-          ])
-        else ...<Widget>[
-          // ⚠️ 2026-10-10：这两格原来是**两张 ViCard**（与「进步」页那四张同款的大方块）。
-          // 按"只有图表配卡片底、纯数字用细线分节"这条规矩收成**一条细线带**
-          // （上下 hairline + 中间一道竖线），与「进步」页的统计带同一个语言。
-          IntrinsicHeight(
-            child: Container(
-              key: const Key('profile-stats-band'),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Tokens.hair),
-                  bottom: BorderSide(color: Tokens.hair),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  const SizedBox(width: 0),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
-                      child: StatTile(
-                        label: '连续天数',
-                        value: '$_streak 天',
-                        valueKey: const Key('profile-stat-streak'),
-                      ),
-                    ),
-                  ),
-                  Container(width: 1, color: Tokens.line),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                          left: Tokens.s4, top: Tokens.s4, bottom: Tokens.s4),
-                      child: StatTile(
-                        // 「累计容量」而不是「总容量」：与进步页那个「本周容量」对看时，
-                        // 口径写在标签上，用户不必去猜哪边是全部历史
-                        label: '累计容量',
-                        value: s.volumeLabel,
-                        valueKey: const Key('profile-stat-volume'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // **含补签时必须写出来**（与首页同一句文案，见 `streak_protection.dart`）——
-          // 只写"连续 12 天"而其中 1 天是补的，那就是一句假话。
-          //
-          // 这句话的位置改过两次，第二次是**回归修复**（用户看完 v1.57.0 截图指出
-          // "两个格子不一样高"）：A 档重排把打卡卡撤了（它复述的就是这一格），
-          // 这句披露不能跟着没，于是我先把它塞进了「连续天数」那张卡里 ——
-          // 结果那张卡比同排的「训练次数」高出一行。
-          // 现在它是**网格下面独立的一行**：格子只放数字，披露不占格子的高度；
-          // 靠右对齐，是为了让它在视觉上仍然归属右边那格（连续天数）。
-          if (_protectedInStreak > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: Tokens.s1),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  streakProtectionSuffix(_protectedInStreak),
-                  key: const Key('profile-streak-label'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
-                ),
-              ),
-            ),
-        ],
+        // v2.0.0：训练统计统一收口到「进步」；这一页只留等级（唯一进度条）与成就。
         const SizedBox(height: Tokens.s5),
         // 成就入口（2026-10-05）：**放统计下面、设置上面** ——
         // 它读的就是刚算出来的那些数，"我练了多少"与"我拿到了什么"挨着看才成立。

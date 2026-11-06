@@ -509,3 +509,37 @@ String? lastPrLabel(Map<String, int> daysSince, String exerciseId) {
   if (d < 365) return '${d ~/ 30} 个月前刷新';
   return '${d ~/ 365} 年前刷新';
 }
+
+
+/// 本周 / 上周同期两条曲线（0..1，共用同一个最大值，才有可比性）。
+({List<double> current, List<double> previous}) volumeSeriesPair(
+    List<SetRecord> sets, DateTime today, ProgressRange r) {
+  int bucketsFor(ProgressRange x) => switch (x) {
+        ProgressRange.week => 7,
+        ProgressRange.month => 30,
+        ProgressRange.year => 12,
+      };
+  ({DateTime from, DateTime to}) win(DateTime t, ProgressRange x) => rangeWindow(t, x);
+  List<double> rawFor(({DateTime from, DateTime to}) w) {
+    final int buckets = bucketsFor(r);
+    final List<double> raw = List<double>.filled(buckets, 0);
+    final int spanMs = w.to.difference(w.from).inMilliseconds;
+    for (final SetRecord s in sets) {
+      final DateTime t = DateTime.fromMillisecondsSinceEpoch(s.completedAtMs);
+      if (t.isBefore(w.from) || !t.isBefore(w.to)) continue;
+      final int i = ((t.difference(w.from).inMilliseconds / spanMs) * buckets)
+          .floor()
+          .clamp(0, buckets - 1);
+      raw[i] += s.volume;
+    }
+    return raw;
+  }
+
+  final ({DateTime from, DateTime to}) w = win(today, r);
+  final ({DateTime from, DateTime to}) p = previousRangeWindow(today, r);
+  final List<double> cur = rawFor(w);
+  final List<double> prev = rawFor(p);
+  final double maxV = <double>[...cur, ...prev].fold<double>(0, (double a, double b) => a > b ? a : b);
+  List<double> norm(List<double> xs) => maxV <= 0 ? xs : xs.map((double v) => v / maxV).toList();
+  return (current: norm(cur), previous: norm(prev));
+}

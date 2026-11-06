@@ -67,7 +67,7 @@ void main() {
     expect(find.byType(CheckboxListTile), findsNothing);
     // 主界面不该提前出现
     expect(find.byKey(const Key('start-workout')), findsNothing);
-    expect(find.text('开始今天的训练'), findsNothing);
+    expect(find.text('开始训练'), findsNothing);
 
     await teardown(tester);
   });

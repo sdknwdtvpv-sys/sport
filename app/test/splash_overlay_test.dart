@@ -109,6 +109,6 @@ void main() {
   test('画布底色与主题一致（启动屏不是"另一种黑"）', () {
     // 原生启动图的底色是 Assets 里的 launch_background，而 Flutter 这一侧用 Tokens.bg ——
     // 两处如果不是同一个黑，接力那一刻会看到一次轻微的跳色。
-    expect(Tokens.bg, const Color(0xFF0E0C0A));
+    expect(Tokens.bg, const Color(0xFF090706));
   });
 }

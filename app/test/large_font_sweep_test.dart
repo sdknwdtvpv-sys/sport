@@ -37,6 +37,7 @@ import 'package:lianleme/billing/paywall_screen.dart';
 import 'package:lianleme/data/entitlement_repository.dart';
 import 'package:lianleme/data/repdb_art.dart';
 import 'package:lianleme/features/exercise/exercise_detail_screen.dart';
+import 'package:lianleme/features/profile/profile_screen.dart';
 import 'package:lianleme/features/profile/repdb_credits_screen.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
 import 'package:lianleme/health/health_bridge.dart';
@@ -146,6 +147,11 @@ void main() {
           repository: repo,
           onOpenToday: () {},
           now: DateTime(2026, 10, 10),
+        ),
+    '我页': () async => ProfileScreen(
+          store: store,
+          repository: repo,
+          profile: ProfileRepository(db),
         ),
     '全部数据页': () async => AllDataScreen(
           store: store,

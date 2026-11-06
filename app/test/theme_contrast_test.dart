@@ -48,11 +48,12 @@ double contrast(Color a, Color b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/// `text3` 只许压在这两层上（`elevated` 上只有 4.22:1，不合格）。
+/// `text3` 只许压在这两层上（v2.0.0 新色值：bg #090706 / surface #1B1610；
+/// 对 elevated #261F18 只有 4.42:1，不合格）。
 ///
 /// ⚠️ 用 `List<int>`（ARGB32 整数）而不是 `Set<Color>`：`Color` 在 dart:ui 里
 /// **没有原始相等性**，放进 `const Set` 会被分析器拒掉。
-const List<int> _allowedUnderText3 = <int>[0xFF0E0C0A, 0xFF1A1714];
+const List<int> _allowedUnderText3 = <int>[0xFF090706, 0xFF1B1610];
 
 /// 在元素树里往上找**最近的一层不透明底色**。找不到就返回 null（= 继承页面底色 `bg`）。
 Color? _nearestBackground(Element element) {

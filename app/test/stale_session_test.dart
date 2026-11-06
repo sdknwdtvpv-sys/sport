@@ -270,14 +270,7 @@ void main() {
       expect(find.textContaining('上次的训练还没结束'), findsNothing,
           reason: '首页是"今天该做什么"的地方 —— 9 天前那半截不该顶在最上面');
 
-      // 「计划」页那条入口还在，而且写着是几天前。
-      // ⚠️ 2026-10-10：计划**不再是底栏的一格**（回 3 个 tab），
-      // 入口改成首页那张卡右上角的「计划 ›」（`today-open-plan`）。
-      await tester.tap(find.byKey(const Key('today-open-plan')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('plan-resume')), findsOneWidget);
-      expect(tester.widget<Text>(find.byKey(const Key('plan-resume-when'))).data,
-          '上次练到第 2/3 个动作 · 9 天前');
+      // v2.0.0 首页只留三块；「计划」入口移到「我 → 训练计划」，不在这张卡上。
 
       await teardown(tester);
     });

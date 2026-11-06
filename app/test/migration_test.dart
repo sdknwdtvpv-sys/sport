@@ -812,7 +812,7 @@ void main() {
       expect(
         (await first.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        32,
+        33,
         reason: '按当前代码打开之后应当已经是最新 schema（v32）',
       );
       await first.close();
@@ -835,7 +835,7 @@ void main() {
       expect(
         (await third.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        32,
+        33,
       );
       await third.close();
     } finally {
@@ -858,7 +858,7 @@ void main() {
       expect(
         (await first.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        32,
+        33,
       );
       expect(await first.customSelect('SELECT count(*) n FROM period_plan').getSingle().then((r) => r.read<int>('n')), 0);
       expect(
@@ -896,6 +896,33 @@ void main() {
         reason: 'createPlan 会按周展开（v1 模板每周同一套动作）',
       );
       await second.close();
+    } finally {
+      driftRuntimeOptions.dontWarnAboutMultipleDatabases = dontWarnBefore;
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('v32 的库升到 v33：day_plan_day 加 day_wire，旧行保留且为 null', () async {
+    final Directory dir = await Directory.systemTemp.createTemp('lianleme-v33-');
+    final File file = File('${dir.path}/v33.sqlite');
+    final bool dontWarnBefore = driftRuntimeOptions.dontWarnAboutMultipleDatabases;
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    try {
+      final AppDatabase first = AppDatabase(NativeDatabase(file, setup: (dynamic raw) {
+        legacySetup(raw, version: 32);
+        raw.execute('CREATE TABLE day_plan_day (date TEXT PRIMARY KEY, generated_at INTEGER NOT NULL)');
+        raw.execute("INSERT INTO day_plan_day (date, generated_at) VALUES ('2026-11-06', 1000)");
+      }));
+      final List<QueryRow> cols = await first.customSelect('PRAGMA table_info(day_plan_day)').get();
+      expect(cols.map((QueryRow r) => r.read<String>('name')), contains('day_wire'),
+          reason: 'v33 必须真的加列（不是只改 schemaVersion）');
+      final QueryRow row = await first
+          .customSelect("SELECT day_wire FROM day_plan_day WHERE date='2026-11-06'")
+          .getSingle();
+      expect(row.data['day_wire'], isNull, reason: '老行没有 wire = 没记过，回退旧行为');
+      expect((await first.customSelect('PRAGMA user_version').getSingle())
+          .read<int>('user_version'), 33);
+      await first.close();
     } finally {
       driftRuntimeOptions.dontWarnAboutMultipleDatabases = dontWarnBefore;
       await dir.delete(recursive: true);

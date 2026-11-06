@@ -47,6 +47,14 @@ class DayPlanRepository {
     return row != null;
   }
 
+  /// 这一天是上肢还是下肢（v33）。null = 老库没记过。
+  Future<String?> loadDayWire(String date) async {
+    final row = await (_db.select(_db.dayPlanDay)
+          ..where((t) => t.date.equals(date)))
+        .getSingleOrNull();
+    return row?.dayWire;
+  }
+
   /// 这一天排的是哪几个动作，**按用户看到的顺序**。
   ///
   /// 没排过 → 空列表（调用方据此决定"现算一份并落库"）。
@@ -74,7 +82,7 @@ class DayPlanRepository {
   ///
   /// **空列表也是合法的**：那表示"用户把今天的动作全删了"，标记行照样写，
   /// 于是下次打开不会又冒出一批动作来。
-  Future<void> save(String date, List<RoutineEntry> items, {int? nowMs}) async {
+  Future<void> save(String date, List<RoutineEntry> items, {int? nowMs, String? dayWire}) async {
     final int now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
     await _db.transaction(() async {
       await (_db.delete(_db.dayPlanItem)..where((t) => t.date.equals(date))).go();
@@ -91,7 +99,7 @@ class DayPlanRepository {
             ));
       }
       await _db.into(_db.dayPlanDay).insertOnConflictUpdate(
-            DayPlanDayData(date: date, generatedAt: now),
+            DayPlanDayData(date: date, generatedAt: now, dayWire: dayWire),
           );
     });
   }

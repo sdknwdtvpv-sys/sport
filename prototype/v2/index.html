@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1500">
+<title>练了么 · v2 视觉方向（三屏验证） · 2026-11-07</title>
+<style>
+:root{
+  --bg:#070504; --panel:#12100D; --panel-2:#171410; --line:#2C2620;
+  --text:#EDE7DE; --text-2:#B4AB9E; --text-3:#857C71;
+  --accent:#E2663A; --accent-text:#F29A72; --pr:#F2BE4B; --ok:#3DBE8B;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;padding:48px 56px 72px;background:
+    radial-gradient(120% 40% at 70% -10%,rgba(226,102,58,.08),rgba(226,102,58,0) 60%),
+    var(--bg);
+  color:var(--text);
+  font:400 14px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1500px;margin:0 auto}
+.kicker{font-size:12px;letter-spacing:2.4px;color:var(--accent-text);font-weight:600}
+h1{font-size:46px;line-height:1.1;letter-spacing:-1px;margin:14px 0 0;font-weight:700}
+h1 em{font-style:normal;color:var(--accent-text)}
+.lede{max-width:900px;margin:16px 0 0;color:var(--text-2);font-size:15px;line-height:1.7}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.chip{font-size:12px;color:var(--text-2);border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px}
+.chip b{color:var(--text);font-weight:600}
+h2{font-size:22px;letter-spacing:-.2px;margin:0 0 6px;font-weight:700}
+h2 .sub{font-size:12px;color:var(--text-3);font-weight:500;margin-left:10px;letter-spacing:.2px}
+h3{font-size:14px;margin:0 0 8px;font-weight:650;color:var(--text)}
+p{margin:0}
+.muted{color:var(--text-3)}
+.section{margin-top:56px;padding-top:28px;border-top:1px solid var(--line)}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:22px}
+.section-head p{font-size:13px;color:var(--text-3);max-width:720px}
+.frames{display:flex;gap:38px;align-items:flex-start;margin-top:34px}
+figure{flex:0 0 390px;margin:0}
+.bezel{
+  width:404px;height:858px;padding:7px;border-radius:46px;
+  background:linear-gradient(160deg,#2C241C 0%,#0E0B09 68%);
+  border:1px solid #3B332B;box-shadow:0 26px 60px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,246,234,.08);
+}
+iframe{display:block;width:390px;height:844px;border:0;border-radius:39px;background:#090706}
+figcaption{margin-top:18px;padding:0 2px}
+figcaption h3{font-size:16px;margin:0 0 8px;font-weight:700}
+figcaption h3 span{font-size:11px;color:var(--text-3);font-weight:500;margin-left:6px;letter-spacing:.3px}
+figcaption ul{list-style:none;margin:0;padding:0}
+figcaption li{position:relative;padding-left:14px;margin-bottom:5px;color:var(--text-2);font-size:12.5px;line-height:1.55}
+figcaption li::before{content:"";position:absolute;left:2px;top:7px;width:4px;height:4px;border-radius:2px;background:#4B4339}
+figcaption li b{color:var(--text);font-weight:600}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 24px}
+.panel p{color:var(--text-2);font-size:13px}
+.panel p + p{margin-top:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid #241F19;vertical-align:middle}
+th{color:var(--text-3);font-weight:600;font-size:11px;letter-spacing:.6px;text-transform:none}
+td{color:var(--text-2)}
+td b{color:var(--text);font-weight:600}
+tr:last-child td{border-bottom:0}
+.sw{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid rgba(255,255,255,.12);vertical-align:-4px;margin-right:8px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;background:#1E1914;border:1px solid #2E2822;border-radius:4px;padding:1px 5px;color:#E8C6AE}
+.pre{background:#0E0C0A;border:1px solid #241F19;border-radius:10px;padding:14px 16px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.7;color:#C9BFB2;white-space:pre}
+.options{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px}
+.opt{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--panel-2)}
+.opt .bar{height:42px;border-radius:8px;margin-bottom:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.opt h4{margin:0 0 4px;font-size:13px;font-weight:650;color:var(--text)}
+.opt p{font-size:11.5px;color:var(--text-3);line-height:1.5}
+.opt code{font-size:10.5px}
+.opt.default{border-color:#5A4335;box-shadow:0 0 0 1px rgba(226,102,58,.18)}
+.badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.4px;color:var(--accent-text);background:rgba(226,102,58,.12);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:2px}
+.legend-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.legend-row .lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3)}
+.legend-row .lg i{display:block;width:22px;height:10px;border-radius:4px}
+.notes{list-style:none;margin:0;padding:0;counter-reset:n}
+.notes li{counter-increment:n;position:relative;padding:10px 0 10px 38px;border-bottom:1px solid #241F19;color:var(--text-2);font-size:13px}
+.notes li:last-child{border-bottom:0}
+.notes li::before{content:counter(n);position:absolute;left:0;top:11px;width:24px;height:24px;border-radius:50%;background:#241D16;color:var(--text);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.notes li b{color:var(--text);font-weight:600}
+.notes li em{font-style:normal;color:var(--accent-text)}
+.footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--text-3);font-size:12px;line-height:1.8}
+.footer b{color:var(--text-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">练了么 · 视觉方向验证 · 2026-11-07</div>
+  <h1>A 的结构，<em>B 的细节</em></h1>
+  <p class="lede">
+    三屏验证：<b>开练 / 训练 / 进步</b>。结构走紧凑训练工具（表格化、少留白、信息密度优先），
+    质感走 Apple Fitness 那一路（暖黑层次、1px 高光边、克制的圆角、大数字与留白节奏）。
+    这一版<strong>不改 app/</strong>，只回答"值不值得按这个方向重做"。
+  </p>
+  <div class="chips">
+    <span class="chip"><b>390 × 844</b> · 深色</span>
+    <span class="chip">真实中文文案 + 真实数据</span>
+    <span class="chip">内联 SVG 线性图标 · 1.6px</span>
+    <span class="chip">底栏 <b>3 Tab</b>：进步 / 开练 / 我</span>
+    <span class="chip">静态稿 · 不作为商店截图</span>
+  </div>
+
+  <div class="frames">
+    <figure>
+      <div class="bezel"><iframe src="home.html" title="首页 / 开练"></iframe></div>
+      <figcaption>
+        <h3>① 首页「开练」<span>只回答一次"今天练什么"</span></h3>
+        <ul>
+          <li><b>只留三块</b>：今日训练卡 · 最近一次 · 一条周节奏。</li>
+          <li>动作<b>表格化</b>（动作 / 组×次 / 重量），"长按调整顺序"这类说明全部删除。</li>
+          <li><b>编辑</b>是看得见的按钮；开始按钮与卡一体。</li>
+          <li>打卡连续、部位分布、最近列表、工具格子、周挑战<b>全部移出</b>。</li>
+        </ul>
+      </figcaption>
+    </figure>
+    <figure>
+      <div class="bezel"><iframe src="workout.html" title="训练屏"></iframe></div>
+      <figcaption>
+        <h3>② 训练屏<span>组间 60 秒，纵向空间给组表</span></h3>
+        <ul>
+          <li>组表：已完成 / 当前组 / 上次对照 / 目标，一行一组。</li>
+          <li>「动作要领」收成一行可展开；说教文案删除。</li>
+          <li>保留 <b>动作 2 / 4</b>、上一个 / 下一个；底部大按钮仍在拇指区。</li>
+          <li>休息条压成一条细进度，记录仍是 <b>1 次点击 = 1 组</b>；训练态不画底栏（沉浸态）。</li>
+        </ul>
+      </figcaption>
+    </figure>
+    <figure>
+      <div class="bezel"><iframe src="progress.html" title="进步"></iframe></div>
+      <figcaption>
+        <h3>③ 进步<span>一屏讲完"练得怎么样"</span></h3>
+        <ul>
+          <li>周期切换（周 / 月 / 年）统管全页；容量大数字 + 连续 / 本周摘要。</li>
+          <li>趋势图：本周累计 + 上周同期虚线对照。</li>
+          <li>部位分布（含 12–20 组循证刻度）、PR、最近训练，分区不堆段落。</li>
+          <li>统计统一收口到这一屏；首页只留一条轻量节奏。</li>
+        </ul>
+      </figcaption>
+    </figure>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>三个产品逻辑决定<span class="sub">与现在 v1.71.1 的差异</span></h2>
+      <p>先解决"信息架构"再谈"好不好看"：底栏数量、计划心智、统计归属，是这次评审里最贵的三件事。</p>
+    </div>
+    <div class="facts">
+      <div class="panel">
+        <h3>1 · 底栏收成 3 个</h3>
+        <p><b>进步 / 开练 / 我</b>。数据回到「进步 → 全部数据」，计划从「今日训练 → 编辑 / 我 → 训练计划」进。</p>
+        <p class="muted">现有 v1.71.1 真机其实已经是 3 个；但 <code>docs/screens.md</code> 第 14 行仍写着 5 个 Tab，需要改文档而不是改设计。iOS 原生 UITabBar 与这套玻璃胶囊的取舍见下。</p>
+      </div>
+      <div class="panel">
+        <h3>2 · 计划只有一个心智</h3>
+        <p>「今日安排」就是计划本身：<b>编辑</b>打开调整（换动作 / 排序 / 从模板载入 / 重新安排），「我 → 训练计划」管模板与历史。</p>
+        <p class="muted">不再有"自动计划 / 我的计划 / 换一批"三个入口同时回答今天练什么；自动生成只是编辑页里的一个动作，不是第二套概念。</p>
+      </div>
+      <div class="panel">
+        <h3>3 · 统计归「进步」</h3>
+        <p>连续天数、本周次数、容量、部位分布、PR、最近训练，全部收进「进步」。首页只留一条<b>不承载数字</b>的周节奏。</p>
+        <p class="muted">「我」只剩等级（唯一进度条）、成就、身体数据、计划管理、设置与数据备份。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>设计令牌（建议值）<span class="sub">先加层，不急着换字阶</span></h2>
+      <p>色板 5 层暖黑 + 3 级实色线；字阶沿用现有 10 级（另建议 1 个 34px 大数字）；间距 / 圆角沿用 4pt 栅格与 12 / 20 / 999。</p>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <h3>颜色：暖黑 5 层 + 语义色</h3>
+        <table>
+          <tr><th>令牌</th><th>值</th><th>用途 / 对比度</th></tr>
+          <tr><td><span class="sw" style="background:#090706"></span><b>bg</b></td><td><code>#090706</code></td><td>页面底 · 比现在的 #0E0C0A 更深</td></tr>
+          <tr><td><span class="sw" style="background:#0F0C09"></span><b>bg-2</b></td><td><code>#0F0C09</code></td><td>分区底 / 渐隐 · 对 bg 1.04</td></tr>
+          <tr><td><span class="sw" style="background:#1B1610"></span><b>surface</b></td><td><code>#1B1610</code></td><td>卡片 · 对 bg 1.12（现 1.10）</td></tr>
+          <tr><td><span class="sw" style="background:#261F18"></span><b>surface-hi</b></td><td><code>#261F18</code></td><td>抬升 / 选中 / 输入底 · 对 surface 1.11</td></tr>
+          <tr><td><span class="sw" style="background:#30271E"></span><b>sheet</b></td><td><code>#30271E</code></td><td>弹层 · 对 surface 1.23</td></tr>
+          <tr><td><span class="sw" style="background:#28221A"></span><b>hair</b></td><td><code>#28221A</code></td><td>页面级长分隔 · 对 bg 1.28</td></tr>
+          <tr><td><span class="sw" style="background:#3B332B"></span><b>line</b></td><td><code>#3B332B</code></td><td>卡片描边 / 卡内行分隔 · 对 bg 1.62</td></tr>
+          <tr><td><span class="sw" style="background:#74695C"></span><b>line-strong</b></td><td><code>#74695C</code></td><td>功能边界 · 对 surface 3.35（≥3:1）</td></tr>
+          <tr><td><span class="sw" style="background:#F7F3ED"></span><b>text</b></td><td><code>#F7F3ED</code></td><td>正文 · 对 bg 18.19</td></tr>
+          <tr><td><span class="sw" style="background:#B6AC9F"></span><b>text-2</b></td><td><code>#B6AC9F</code></td><td>次要 · 对 bg 8.99</td></tr>
+          <tr><td><span class="sw" style="background:#8D8478"></span><b>text-3</b></td><td><code>#8D8478</code></td><td>非关键 · 对 surface 4.88（只许 bg/surface）</td></tr>
+          <tr><td><span class="sw" style="background:#E2663A"></span><b>accent</b></td><td><code>#E2663A</code></td><td>唯一主操作 · 对 bg 5.93</td></tr>
+          <tr><td><span class="sw" style="background:#F29A72"></span><b>accent-text</b></td><td><code>#F29A72</code></td><td>橙字 / 链接 / 选中态 · 对 bg 9.23</td></tr>
+          <tr><td><span class="sw" style="background:#1A0F0A"></span><b>accent-ink</b></td><td><code>#1A0F0A</code></td><td>橙底上的字 · 对 accent 5.55</td></tr>
+          <tr><td><span class="sw" style="background:#3DBE8B"></span><b>success</b></td><td><code>#3DBE8B</code></td><td>完成 / 正向 · 对 bg 8.55</td></tr>
+          <tr><td><span class="sw" style="background:#F2BE4B"></span><b>pr</b></td><td><code>#F2BE4B</code></td><td>仅破纪录 · 对 bg 11.72</td></tr>
+        </table>
+      </div>
+      <div class="panel">
+        <h3>强调色三选（默认保留橙的精修版）</h3>
+        <div class="options">
+          <div class="opt default">
+            <div class="bar" style="background:linear-gradient(180deg,#F08A5B,#E2663A 45%,#D65B2D)"></div>
+            <h4>保留橙<span class="badge">默认</span></h4>
+            <p>降饱和 + 三段渐变。<br><code>#E2663A → #D65B2D</code><br>橙字 <code>#F29A72</code> · 字 <code>#1A0F0A</code></p>
+          </div>
+          <div class="opt">
+            <div class="bar" style="background:linear-gradient(180deg,#E7B25A,#D69A3F 45%,#B47C24)"></div>
+            <h4>换琥珀</h4>
+            <p>更"训练 / 奖杯"，和 PR 的琥珀色系接近，需要把 PR 再提亮一档。<br><code>#D69A3F</code> · 字 <code>#1B1206</code></p>
+          </div>
+          <div class="opt">
+            <div class="bar" style="background:linear-gradient(180deg,#CBDF72,#B6D24E 45%,#93AF2F)"></div>
+            <h4>换青柠</h4>
+            <p>更年轻、在暗光里最扎眼；但会回到旧 VI 的绿系记忆，且与 success 绿需要重新分工。<br><code>#B6D24E</code> · 字 <code>#121806</code></p>
+          </div>
+        </div>
+        <p style="margin-top:14px" class="muted">三选只换主色，不改语义色（success / pr / danger 仍各自独立）。默认方案不需要动「橙 = 练了么」的品牌记忆。</p>
+        <div class="legend-row">
+          <span class="lg"><i style="background:linear-gradient(180deg,#F08A5B,#E2663A 45%,#D65B2D)"></i>主按钮 / 主操作</span>
+          <span class="lg"><i style="background:#F29A72"></i>链接 / 选中态（accent-text）</span>
+          <span class="lg"><i style="background:#F2BE4B"></i>PR（仅破纪录）</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="two" style="margin-top:18px">
+      <div class="panel">
+        <h3>字阶（沿用现有 10 级 + 1 个建议新增）</h3>
+        <table>
+          <tr><th>令牌</th><th>字号 / 行高</th><th>字重</th><th>这一版用在哪</th></tr>
+          <tr><td>fsHero</td><td>30 / 36</td><td>700</td><td>页面大标题「今天 / 进步」</td></tr>
+          <tr><td>fsTitle</td><td>28 / 34</td><td>700</td><td>（本轮未用，保留给完成页）</td></tr>
+          <tr><td>fsNumL</td><td>24 / 30</td><td>600</td><td>（本轮未用）</td></tr>
+          <tr><td>fsNum</td><td>22 / 28</td><td>600</td><td>今日训练标题「下肢 · 健身房」</td></tr>
+          <tr><td>fsHeadline</td><td>20 / 26</td><td>600</td><td>动作名 / 训练屏标题</td></tr>
+          <tr><td>fsBody</td><td>17 / 24</td><td>500–700</td><td>CTA、关键值、动作行</td></tr>
+          <tr><td>fsBodyS</td><td>16 / 22</td><td>500</td><td>组表重量 / 次数</td></tr>
+          <tr><td>fsSub</td><td>15 / 21</td><td>600</td><td>表格里的重量、PR 值</td></tr>
+          <tr><td>fsCap</td><td>13 / 18</td><td>400–600</td><td>说明、部位名、日期</td></tr>
+          <tr><td>fsMicro</td><td>12 / 16</td><td>400–600</td><td>表头、小标签、周节奏</td></tr>
+          <tr><td><b>fsDisplay</b> <span class="badge">建议新增</span></td><td><b>34 / 38</b></td><td>700</td><td>「12,480」这种一屏唯一的大数字</td></tr>
+        </table>
+        <p class="muted" style="margin-top:10px">中文走系统字体（PingFang SC）；数字一律 tabular-nums，落地继续用 Tokens.display（Oswald）。</p>
+      </div>
+      <div class="panel">
+        <h3>间距 / 圆角 / 阴影 / 图标</h3>
+        <table>
+          <tr><th>项</th><th>建议值</th><th>说明</th></tr>
+          <tr><td>间距</td><td>4 / 8 / 12 / 16 / 20 / 24 / 32</td><td>沿用现有 s1–s8，不新增档位</td></tr>
+          <tr><td>卡片圆角</td><td><code>12</code></td><td>沿用 rCard；不改成 16，避免全站截图与规格重做</td></tr>
+          <tr><td>弹层 / 胶囊</td><td><code>20 / 999</code></td><td>沿用 rSheet / rPill</td></tr>
+          <tr><td>卡片描边</td><td>1px <code>#3B332B</code></td><td>+ 顶部 1px 内高光 <code>rgba(255,246,234,.06)</code></td></tr>
+          <tr><td>卡片阴影</td><td><code>0 18px 36px -28px rgba(0,0,0,.95)</code></td><td>深色下只做"压暗"，不做大投影</td></tr>
+          <tr><td>浮层 / 底栏</td><td><code>0 18px 36px -18px rgba(0,0,0,.9)</code></td><td>+ 内高光 12%</td></tr>
+          <tr><td>主按钮</td><td>高 88 · 胶囊</td><td>训练屏记录键；首页「开始训练」66（不是记录键）</td></tr>
+          <tr><td>图标</td><td>24 grid · 1.6px · round</td><td>只用内联 SVG；16 / 20 / 24 三档，Tab 22</td></tr>
+          <tr><td>数字</td><td>tabular-nums</td><td>重量 / 次数 / 倒计时不抖动</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>与现有 theme.dart / 守卫测试的迁移风险<span class="sub">改令牌会牵动什么</span></h2>
+      <p>颜色和字阶都有机械守卫。建议分两步：先加"层 + 高光 + 阴影"的**加法改动**，再逐步替换；不要一次把 22 屏全翻。</p>
+    </div>
+    <div class="panel">
+      <table>
+        <tr><th>守卫 / 文件</th><th>会怎样红</th><th>建议动作</th></tr>
+        <tr><td><code>theme_contrast_test.dart</code></td><td>text3 对 surface 从 4.66 → 4.88 反而更安全；但 text3 对 surface-hi 只有 4.42，不能把 text3 放到抬升层；line-strong 对 surface 需 ≥3.0（新值 3.35）</td><td>保留"text3 只许 bg / surface"的规则；surface-hi 上只用 text2</td></tr>
+        <tr><td><code>theme_discipline_test.dart</code></td><td>新阴影 / 高光不能写 <code>BoxShadow(</code> 字面量；hair 不能做 <code>Border.all</code>；语义色白名单要补</td><td>把高光 / 阴影收进 <code>Tokens</code>（如 <code>shadowCard</code> / <code>edgeHighlight</code>），页面只引用令牌</td></tr>
+        <tr><td><code>typography_scale_test.dart</code></td><td>新增 34px 会红（只许 10 级）；现有 10 级不得出现字面量</td><td>若要 <code>fsDisplay 34</code>：同时改 theme.dart、测试的 scale 列表、并使用点限制在 3 处大数字</td></tr>
+        <tr><td><code>spacing_grid_test.dart</code></td><td>2px 只可作为描边 / 进度条，不可作为 SizedBox 间距；卡片 padding 仍须 s5</td><td>表格内边距 14 / 16 写成局部容器内边距（不是 SizedBox），并复核 s5 规则</td></tr>
+        <tr><td><code>accent_budget_test.dart</code></td><td>首页额度 1、训练屏 2；新增选中态 / 链接会占额度</td><td>底栏与链接一律走 accent-text；分段控件选中用暖白；训练屏额度 = 大按钮 + 休息条</td></tr>
+        <tr><td><code>large_font_sweep_test.dart</code></td><td>固定行高（组表 58、头部 58）在 1.5×–2× 会溢出</td><td>行高改 min-height + 内边距；表格允许纵向滚动；本轮原型只验 1.0×</td></tr>
+        <tr><td><code>icon_spec_test.dart</code></td><td>新增 SVG / 语义图标必须进 kIconSemantics，尺寸只用 16/20/24/40</td><td>Tab 22 是现状例外；新图标先补规范再落地</td></tr>
+        <tr><td>iOS <code>UITabBar</code></td><td>v1.71.1 的底栏是原生 UITabBar；原型这套浮起玻璃胶囊原生控件表达不出来</td><td>要么退回 Flutter 自绘底栏（用户 2026-10-09 曾要求原生），要么只做浅色 Material 近似 —— 需拍板</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>待用户拍板<span class="sub">不影响继续细化，但会影响落地成本</span></h2>
+      <p>默认建议已写在括号里；不拍板也能按默认继续，但进入 app/ 施工前需要定。</p>
+    </div>
+    <div class="panel">
+      <ol class="notes">
+        <li><b>强调色</b>：保留橙的精修版（<em>默认</em>）/ 琥珀 / 青柠。三套都算了对比度，换色不影响结构。</li>
+        <li><b>底栏材质</b>：这套浮起玻璃胶囊（<em>推荐，和 B 的质感一致</em>）vs 继续用 iOS 原生 UITabBar（会失去中间强调的那一格）。</li>
+        <li><b>分段控件选中态</b>：暖白（<em>本稿</em>，让橙色只留给图表 / 主操作）vs 橙色（与现有 App 一致）。</li>
+        <li><b>训练屏是否显示未完成组</b>：本稿显示（表格 + 目标）；现有 spec 是"只显示已完成"。需要在"计划感压迫"与"看一眼就知道还剩几组"之间选一个。</li>
+        <li><b>首页是否彻底删掉「5 分钟活动 / 动作库 / 记录体重」三格</b>：本稿删掉（分别进训练屏换动作 / 我 / 进步）。</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2>怎么复核<span class="sub">文件与渲染命令</span></h2>
+      <p>三屏各自 390×844，自包含（无字体 / 图片 / CDN 外链）；index 只通过同目录 iframe 嵌入。</p>
+    </div>
+    <div class="panel">
+      <div class="pre">cd prototype/v2
+# 单屏（2x，780x1688）
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu \
+  --hide-scrollbars --force-device-scale-factor=2 --window-size=390,844 \
+  --screenshot=v2-home.png "file://$PWD/home.html"
+# 三屏已生成：v2-home.png / v2-workout.png / v2-progress.png（同目录）
+# 溢出检查：每个页面 load 后把 fit-check meta 写成 FIT / OVERFLOW[…]</div>
+      <p class="muted" style="margin-top:12px">文件：<code>index.html</code> · <code>home.html</code> · <code>workout.html</code> · <code>progress.html</code> · <code>v2-home.png</code> / <code>v2-workout.png</code> / <code>v2-progress.png</code>。完整设计说明在 <code>docs/design-direction-2026-11-07.md</code>。</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <b>练了么 v2 · 视觉方向验证</b> · 2026-11-07 · 静态原型，不参与构建，不作为商店截图。<br>
+    数据是样例但内部自洽：3 次 / 3 天连续 / 12,480 kg / 48 组 / PR 2 项，三屏与训练屏的"上次 100 kg × 8"对得上。<br>
+    App 代码一个字节没改；落地前先过 <code>docs/design-direction-2026-11-07.md</code> 的迁移清单。
+  </div>
+
+</div>
+</body>
+</html>

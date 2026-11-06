@@ -46,6 +46,17 @@ const List<String> kLowerGroups = <String>['legs', 'core'];
 /// 还有一条算术事实：6 块肌肉 × 12 组 = 72 组/周，3 练/周就是 24 组/次（≈8 个动作）。
 /// 所以每周 3 练的人**不可能**把所有肌群都练进区间 —— 必须按复合动作聚集、
 /// 让协同肌群靠间接量搭便车。这正是上下肢分化存在的原因。
+/// 冷启动恢复标题用：库里有 wire 就以它为准，没有才回退到现算的日类型。
+///
+/// v33 之前 `day_plan_day` 没存这个字段，所以老库必须能回退（同旧行为）；
+/// 一旦存过，「今天练下肢」的标题就不会被现算的 `nextTrainingDay()` 改成上肢。
+TrainingDay resolveStoredDay(String? wire, TrainingDay fallback) {
+  for (final TrainingDay d in TrainingDay.values) {
+    if (d.wire == wire) return d;
+  }
+  return fallback;
+}
+
 enum TrainingDay {
   upper('上肢', 'upper'),
   lower('下肢', 'lower');

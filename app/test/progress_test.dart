@@ -362,6 +362,7 @@ void main() {
           when: DateTime(2026, 9, 26, 10)));
       await pumpProgress(tester);
 
+      await tester.scrollUntilVisible(find.byKey(const Key('progress-muscles')), 300, scrollable: find.byType(Scrollable).first);
       expect(find.byKey(const Key('progress-muscles')), findsOneWidget,
           reason: '并进 S8、不新开屏 —— 这一块就在「进步」页上');
       expect(tester.widget<Text>(find.byKey(const Key('muscle-chest'))).data, '2 组');
@@ -387,22 +388,26 @@ void main() {
       expect(tester.widget<Text>(find.byKey(const Key('progress-delta-volume'))).data,
           '较上期 +100%',
           reason: '这一行不再是静态的"最近 7 天"——它是这一期与上一期比出来的变化');
-      expect(tester.widget<Text>(find.byKey(const Key('progress-delta-workouts'))).data,
-          '与上期持平',
-          reason: '两期都是 1 次训练 —— 次数没变、容量翻倍，正是"这一期练得更重"的样子');
-      expect(tester.widget<Text>(find.byKey(const Key('progress-delta-sets'))).data,
-          '较上期 +100%',
-          reason: '2 组 vs 1 组');
+      // v2.0.0：hero 只保留容量 delta；训练次数/组数收进 facts 行（不再各带 delta）
     });
 
-    testWidgets('上期没练时如实说"上期没练"，不编一个百分比',
+    testWidgets('没有上期数据时不显示 delta（不编百分比，也不说"上期没练"）',
         (WidgetTester tester) async {
       await store.saveSet(_set(id: 'a', when: DateTime(2026, 9, 27, 10)));
       await pumpProgress(tester);
 
-      expect(tester.widget<Text>(find.byKey(const Key('progress-delta-volume'))).data,
-          '上期没练',
-          reason: '除零没有百分比可写 —— 硬写 +100% 就是编一个数（见 periodDeltaLabel）');
+      expect(find.byKey(const Key('progress-delta-volume')), findsNothing,
+          reason: '无上期数据 → 直接不显示对比（2026-11-07 设计口径）');
+    });
+
+    testWidgets('★ 本期只练自重/有氧（容量为 0）也算练了，不说「还没练」',
+        (WidgetTester tester) async {
+      // 一条自重组：weightKg = null → volume 0；旧实现按"容量全 0"会误判成没练
+      await store.saveSet(_set(id: 'bw', when: DateTime(2026, 9, 27, 10), weightKg: null));
+      await pumpProgress(tester);
+
+      expect(find.textContaining('还没练'), findsNothing);
+      expect(find.byKey(const Key('progress-no-weight')), findsOneWidget);
     });
 
     testWidgets('窗口外的记录不显示（本周为空但历史有记录）',
@@ -414,8 +419,8 @@ void main() {
       // ⚠️ 2026-10-09 起页面上的「—」不止一个了：容量那张卡的值是「—」，
       // 而它下面那行周期对比也是「—」（上期也没练）。所以按 key 断言。
       expect(tester.widget<Text>(find.byKey(const Key('progress-week-volume'))).data, '—');
-      expect(tester.widget<Text>(find.byKey(const Key('progress-delta-volume'))).data, '—',
-          reason: '两期都没有数据时不给百分比（"上期没练"也是编的）');
+      expect(find.byKey(const Key('progress-delta-volume')), findsNothing,
+          reason: '两期都没有数据时不给百分比、也不摆"上期没练"占位');
       expect(find.textContaining('最近 7 天还没练'), findsOneWidget);
       // 同上：滚下去才有 PR 墙（懒构建）
       await tester.scrollUntilVisible(

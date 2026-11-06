@@ -292,7 +292,7 @@ void main() {
         (WidgetTester tester) async {
       // 2026-10-09 真机冒烟抓到的：冷启动时 `_importSeedQuietly()` 与这一趟是并行的，
       // `planToday` 可能返回空 —— 而"空"一旦被记成"今天排过了"，首页就永远停在
-      // 「今天还没有排动作」，直到用户自己去点「换一批」。
+      // 「今天还没有安排」，直到用户自己去点「换一批」。
       final String key = dayPlanKey(DateTime.now());
       // 造出那个现场：**动作库是空的**（种子还没进来）
       await pumpApp(tester, seed: '{"exercises": []}');
@@ -325,7 +325,7 @@ void main() {
 
       await pumpApp(tester);
 
-      expect(find.text('今天还没有排动作'), findsOneWidget);
+      expect(find.text('今天还没有安排'), findsOneWidget);
       expect(find.byKey(const Key('today-plan-row-0')), findsNothing);
 
       await teardown(tester);
@@ -340,7 +340,7 @@ void main() {
       ], nowMs: 1000);
 
       await pumpApp(tester);
-      expect(find.byKey(const Key('today-plan-hint')), findsOneWidget,
+      expect(find.byKey(const Key('home-plan-edit')), findsOneWidget,
           reason: '"能长按"这件事必须被看见');
 
       await tester.longPress(find.byKey(const Key('today-plan-row-0')));

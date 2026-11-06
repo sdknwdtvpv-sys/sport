@@ -376,7 +376,7 @@ CREATE INDEX idx_exercise_muscle   ON exercise(muscle_group, popularity DESC);
 
 ### 迁移历史
 
-**当前 `schemaVersion = 32`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
+**当前 `schemaVersion = 33`**（真源是 `app/lib/data/db.dart`；文档里这个数字由
 `tool/check-doc-facts.mjs` 每次对着代码核，写旧了会判红 —— 包括这种 `schemaVersion = 20`
 的写法，2026-10-05 之前它只认 `schema v20`，而本文档恰好用的是前者，于是**只有这份文档
 逃过了检查**：规则补上 `=` 之后当场抓到它写着 15）。

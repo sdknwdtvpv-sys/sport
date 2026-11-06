@@ -352,6 +352,9 @@ class _HomeShellState extends State<HomeShell> {
 
   /// 未读消息数（首页铃铛上那个点）。
   int _unreadNotifications = 0;
+  /// 本周已练的星期几（1=周一..7=周日），首页「本周节奏」7 个点用。
+  Set<int> _weekTrainedDays = const <int>{};
+
   List<({String workoutId, DateTime day, int exercises, int sets, double volume})> _recent =
       const <({String workoutId, DateTime day, int exercises, int sets, double volume})>[];
 
@@ -709,6 +712,15 @@ class _HomeShellState extends State<HomeShell> {
       _protectedInStreak = protectedDaysInStreak(sets, protected, now);
       _totalWorkouts = totalWorkouts(sets);
       _recent = recentWorkouts(sets);
+      final DateTime nowDay = now;
+      final DateTime monday = DateTime(nowDay.year, nowDay.month, nowDay.day)
+          .subtract(Duration(days: nowDay.weekday - 1));
+      _weekTrainedDays = <int>{
+        for (final SetRecord r in sets)
+          if (r.completedAtMs >= monday.millisecondsSinceEpoch &&
+              r.completedAtMs < monday.add(const Duration(days: 7)).millisecondsSinceEpoch)
+            DateTime.fromMillisecondsSinceEpoch(r.completedAtMs).weekday,
+      };
       _allSets = sets; // 首页周报要算"上周"的完整统计，见字段注释
       // `_setsSnapshot` 在上面读完 allSets 时就已记下（要赶在 importSeed 之前），这里不再重复。
       _muscleBalance = balance?.text;
@@ -814,9 +826,12 @@ class _HomeShellState extends State<HomeShell> {
           entries: await _dayPlan.load(date),
           unit: _unit,
         );
+        // 标题以**库里那一天**为准（v33）：旧库没有 dayWire 时才回退到现算的值。
+        final String? savedWire = await _dayPlan.loadDayWire(date);
+        final TrainingDay storedDay = resolveStoredDay(savedWire, resolvedDay);
         if (!mounted) return;
         setState(() {
-          _todayDay = resolvedDay;
+          _todayDay = storedDay;
           // ⚠️ 库里有几个动作就是几个：用户**删光了**也是一种结果（空清单），
           // 不能在这里"看着像是空的就补一份" —— 那删除按钮就成了摆设。
           _todayPlan = saved;
@@ -838,7 +853,7 @@ class _HomeShellState extends State<HomeShell> {
       // 而"空"一旦被记成"今天排过了"，首页就永远停在「今天还没有排动作」，
       // 直到用户自己去点「换一批」。所以只有**真的排出了动作**才算排过。
       // （用户把动作删光那条路走的是编辑器，它照样会写下"排过了"这个标记 —— 两件事不冲突。）
-      if (plan.isNotEmpty) await _saveTodayPlan(plan: plan, date: date);
+      if (plan.isNotEmpty) await _saveTodayPlan(plan: plan, date: date, dayWire: resolvedDay.wire);
       if (!mounted) return;
       setState(() {
         _todayDay = resolvedDay;
@@ -854,7 +869,7 @@ class _HomeShellState extends State<HomeShell> {
   ///
   /// ⚠️ 存的是**动作 + 处方 + 顺序**这三样用户能改的东西，不是整个 `PlannedExercise`
   /// —— 建议值/上次成绩是"每次打开现算"的（见 `day_plan_repository.dart` 的文件头）。
-  Future<void> _saveTodayPlan({List<PlannedExercise>? plan, String? date}) async {
+  Future<void> _saveTodayPlan({List<PlannedExercise>? plan, String? date, String? dayWire}) async {
     final List<PlannedExercise> items = plan ?? _todayPlan;
     await _dayPlan.save(
       date ?? dayPlanKey(DateTime.now()),
@@ -862,6 +877,7 @@ class _HomeShellState extends State<HomeShell> {
         for (final PlannedExercise p in items)
           RoutineEntry(exerciseId: p.exercise.id, plan: p.plan),
       ],
+      dayWire: dayWire ?? _todayDay?.wire,
     );
   }
 
@@ -2139,6 +2155,8 @@ class _HomeShellState extends State<HomeShell> {
             analytics: _analytics,
             unit: _unit,
             bodyUnit: _bodyUnit,
+            streak: _streak,
+            protectedInStreak: _protectedInStreak,
             // 身体数据页里切了体重单位 → 整棵树按新单位重建
             onBodyUnitChanged: (BodyWeightUnit u) {
               setState(() => _bodyUnit = u);
@@ -2202,6 +2220,7 @@ class _HomeShellState extends State<HomeShell> {
             streak: _streak,
             streakCopy: streakCopy(_streak),
             recent: _recent,
+            weekTrainedWeekdays: _weekTrainedDays,
             // 同一个屏幕上**只能有一种单位**：上面「今天的安排」用 `_unit`，
             // 「最近训练」那三行也必须用它（10.8 清单第 7 条：单位不一致）
             unit: _unit,

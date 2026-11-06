@@ -22,6 +22,6 @@ void main() {
 
   test('完成标记的颜色**不是**主色（"完成"与"主操作"必须能分开）', () {
     // 直接对着 `_doneMark` 的取值断言：它必须用 success
-    expect(Tokens.success.toARGB32(), 0xFF0CAC78);
+    expect(Tokens.success.toARGB32(), 0xFF3DBE8B);
   });
 }

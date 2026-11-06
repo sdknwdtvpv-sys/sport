@@ -105,19 +105,19 @@ void main() {
     // 先看到同意门：引导页与主界面都还不该出现
     expect(find.textContaining('隐私政策'), findsWidgets);
     expect(find.byType(IntroCarouselScreen), findsNothing);
-    expect(find.text('开始今天的训练'), findsNothing);
+    expect(find.text('开始训练'), findsNothing);
 
     // 点「同意并继续」
     await tester.tap(find.text('同意并继续'));
     await tester.pumpAndSettle();
     expect(find.byType(IntroCarouselScreen), findsOneWidget, reason: '同意之后紧接着就是引导页');
-    expect(find.text('开始今天的训练'), findsNothing, reason: '引导页在主界面之前');
+    expect(find.text('开始训练'), findsNothing, reason: '引导页在主界面之前');
 
     // 跳过 → 落到主界面
     await tester.tap(find.byKey(const Key('intro-skip')));
     await tester.pumpAndSettle();
     expect(find.byType(IntroCarouselScreen), findsNothing);
-    expect(find.text('开始今天的训练'), findsOneWidget);
+    expect(find.text('开始训练'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -137,7 +137,7 @@ void main() {
 
     expect(find.byType(IntroCarouselScreen), findsNothing,
         reason: '同意门本身就是"每次安装只出现一次"的标记 —— 引导页不该再来一次');
-    expect(find.text('开始今天的训练'), findsOneWidget);
+    expect(find.text('开始训练'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
