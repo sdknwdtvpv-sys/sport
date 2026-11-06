@@ -137,11 +137,11 @@
 </ul>
 <h3 id="2-5-购买与支付-本版本未开放">2.5 购买与支付（<strong>本版本未开放</strong>）</h3>
 <ul>
-<li><strong>本版本（1.68.3）没有任何商品在卖</strong>：会员 Ultra 的入口全部关闭，App Store / Google Play 里也还没有创建商品 —— 所以<strong>你不会在这里发生任何购买或付款</strong>。</li>
-<li>客户端代码已经接入 <strong>Apple / Google 官方的内购能力</strong>（<code>in_app_purchase</code>），供将来开放时 查询商品、发起购买、恢复购买；<strong>这个版本里它不会向商店查询商品</strong>（入口不可达）， 商品数据也不会离开你的设备。</li>
+<li><strong>本版本（1.71.1）没有任何商品在卖</strong>：会员 Ultra 的入口全部关闭，App Store / Google Play 里也还没有创建商品 —— 所以<strong>你不会在这里发生任何购买或付款</strong>。</li>
+<li>这个包里<strong>已经包含 Apple / Google 官方的内购能力</strong>（<code>in_app_purchase</code>）：它只用于将来开放时 查询商品、发起购买、恢复购买；<strong>本版本不会向商店查询商品</strong>（入口不可达），商品数据也不会离开你的设备。</li>
 <li>将来开放购买时，我们<strong>只存</strong>：买到哪一档（月 / 年 / 终身）、权益来源（Apple / Google）、 购买时间、到期时间、商店交易号；以及一条本机的计费事件流水（排障与客服用）。</li>
 <li>我们<strong>不存、也不经手</strong>：支付方式（卡号 / 银行账户）、姓名、账单地址 —— 这些由 Apple / Google 的商店处理，我们看不到。</li>
-<li><strong>服务端核验收据是之后的版本</strong>（M3）才做；本版本没有上传任何购买凭据，也没有&quot;服务端权益&quot;。</li>
+<li>本版本<strong>不会上传任何购买凭据</strong>；服务端权益同步（M4a 代码已就绪）在正式开放购买时才启用。</li>
 </ul>
 <hr>
 <h2 id="三-数据在哪-传给谁">三、数据在哪、传给谁</h2>
@@ -221,7 +221,7 @@
 <li><strong>上表只是&quot;直接依赖&quot;</strong>。它们还会带入一堆传递依赖（Flutter 框架、Skia、ICU…）。 完整清单在应用内可查：<strong>「我 → 隐私与关于 → 开源许可」</strong>（Flutter 的许可页会列出随包分发的全部组件 及其许可）。&quot;某个库会不会收集信息&quot;这种说明是逐个人工写的，所以只覆盖我们自己挑的那几个； 传递依赖没有一条会收集信息（整个包不上报），但<strong>&quot;完整清单&quot;的准确答案在那个页面</strong>， 不是这张表 —— 这一点此前写成&quot;全部第三方代码&quot;，与事实不符，2026-09-30 改。</li>
 </ul>
 <h2 id="四-权限">四、权限</h2>
-<p>应用声明<strong>六项</strong>系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项<strong>只在老系统上生效</strong>，第三项<strong>默认关闭、只有你主动打开才会被请求</strong>，最后三项（<code>android.permission.health.*</code>）是<strong>从系统健康库读体成分</strong>用的 —— 见 2.4，<strong>只有 Android 14 及以上才会用到，而且只读</strong>：</p>
+<p>应用声明<strong>八项</strong>系统权限（其中 <code>com.android.vending.BILLING</code> 与 <code>android.permission.ACCESS_NETWORK_STATE</code> <strong>由官方内购插件 <code>in_app_purchase</code> 合并进打包后的 manifest，源码 manifest 不声明</strong>；打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里）。其中第二项<strong>只在老系统上生效</strong>，第三项<strong>默认关闭、只有你主动打开才会被请求</strong>，中间三项（<code>android.permission.health.*</code>）是<strong>从系统健康库读体成分</strong>用的 —— 见 2.4，<strong>只有 Android 14 及以上才会用到，而且只读</strong>；最后两项只服务内购能力（<strong>本版本未开放购买</strong>）：</p>
 <table>
 <thead><tr><th>权限</th><th>为什么</th><th>适用范围</th></tr></thead>
 <tbody>
@@ -231,6 +231,8 @@
 <tr><td><code>android.permission.health.READ_WEIGHT</code></td><td>从系统健康库（Android 14+ 自带的 Health Connect）读<strong>体重</strong>，按天并进本机「身体数据」（见 2.4）</td><td><strong>仅 Android 14 及以上</strong>；默认不读，<strong>要你先单独同意</strong>；<strong>只读</strong></td></tr>
 <tr><td><code>android.permission.health.READ_BODY_FAT</code></td><td>同上，读<strong>体脂率</strong></td><td>同上</td></tr>
 <tr><td><code>android.permission.health.READ_HEIGHT</code></td><td>同上，读<strong>身高</strong>（只用来算 BMI）</td><td>同上</td></tr>
+<tr><td><code>com.android.vending.BILLING</code></td><td>调系统商店（Google Play Billing）查询商品 / 发起购买 / 恢复购买。<strong>本版本未开放购买</strong>（入口关闭、商品未创建），不会发起任何计费；支付方式与账单地址由商店处理</td><td>全部 Android；<strong>由 <code>in_app_purchase</code> 插件合并进打包后的 manifest</strong>（源码 manifest 不声明）</td></tr>
+<tr><td><code>android.permission.ACCESS_NETWORK_STATE</code></td><td><strong>只判断网络是否可用</strong>（商店 / 账号请求前的可达性判断），不读取网络内容、不记录网络信息、不上报</td><td>全部 Android；<strong>同样由 <code>in_app_purchase</code> 插件合并进打包后的 manifest</strong></td></tr>
 </tbody>
 </table>
 <p><strong>关于第三项（通知权限）</strong>，说明六点：</p>

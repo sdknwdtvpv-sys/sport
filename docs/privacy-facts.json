@@ -311,6 +311,18 @@
       "maxSdkVersion": null,
       "why": "同上，读的是**身高**（只用来算 BMI）",
       "policyPhrase": "android.permission.health.READ_HEIGHT"
+    },
+    {
+      "name": "com.android.vending.BILLING",
+      "maxSdkVersion": null,
+      "why": "**内购能力**：调系统商店（Google Play Billing）查询商品/发起购买/恢复购买。⚠️ 这条**由 `in_app_purchase` 插件的 AAR 合并进打包后的 manifest**（源码 `AndroidManifest.xml` 不声明，所以只有 `privacy-audit --apk` 看得到）。**本版本未开放购买**（入口关闭、商品未创建），不会发起任何计费；支付方式与账单地址由商店处理，我们不经手",
+      "policyPhrase": "com.android.vending.BILLING"
+    },
+    {
+      "name": "android.permission.ACCESS_NETWORK_STATE",
+      "maxSdkVersion": null,
+      "why": "**只判断网络是否可用**（商店/账号请求前的可达性判断），不读取网络内容、不记录网络信息、不上报。⚠️ 同样**由 `in_app_purchase` 插件的 AAR 合并进打包后的 manifest**（源码 manifest 不声明）。本版本未开放购买，正常使用不会触发任何计费相关请求",
+      "policyPhrase": "android.permission.ACCESS_NETWORK_STATE"
     }
   ],
   "injectedPermissions": [

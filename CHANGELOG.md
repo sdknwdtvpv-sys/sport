@@ -6,6 +6,49 @@
 >
 > 这条策略原先只剩引用、正文已丢（见 `v1.2.0` 的「文档」一节），本次一并补回。
 
+## v1.71.1 · 内购披露补齐 + 正式出包（M4c 第一步）
+
+服务端已上线（M3 计费 + M4b 备份多版本）之后的本轮：**只补披露、不改功能**，
+仍**不翻 `kUltraReleased`**、不新增权限/埋点、不重出商店截图（无 UI 变化）。
+
+### 一、披露：`in_app_purchase` 往合并 manifest 注入的两条权限
+
+`privacy-audit --apk` 在真 APK 上抓到两条源码 manifest 里没有的权限：
+
+| 权限 | 来源 | 如实口径 |
+|---|---|---|
+| `com.android.vending.BILLING` | `in_app_purchase` 的 AAR 合并进打包后的 manifest | 只用于调系统商店（Google Play Billing）查询商品/发起购买/恢复购买；**本版本未开放购买**（入口关闭、商品未创建），不会发起任何计费；支付方式与账单地址由商店处理 |
+| `android.permission.ACCESS_NETWORK_STATE` | 同上 | 只判断网络是否可用（商店/账号请求前的可达性判断），不读取网络内容、不记录网络信息、不上报 |
+
+* `docs/privacy-facts.json` 的 `permissions` 加两条（带 `maxSdkVersion: null`、`why`、`policyPhrase`），
+  并在 `why` 里写明"由插件合并进来、源码 manifest 不声明"；
+* 政策**中英 §四**各加两行（结构一致），开头"六项"改成"八项"并说明这两项来自插件；
+* 政策**中英 §2.5** 改为：包含 Apple/Google 官方内购能力、**本版本未开放购买**；
+  开放时只存档位/来源/时间/到期/交易号，支付方式与账单地址由商店处理；
+* 商店材料各加一段"内购能力说明"：本版**买不到**、开放购买时才改「是否含内购」/App Privacy
+  的 Purchases 与截图（**没有提前把"已含内购"抄进变体 B**）；
+* 重新生成 `app/assets/privacy-policy.txt` / `collection-list.txt` / `store-assets/privacy/{index,en}.html`。
+
+### 二、出包 v1.71.1
+
+* 版本：`app_info.dart` = 1.71.1、`pubspec.yaml` = 1.71.1+91（app/assets 里的政策文本变了 → 按
+  v1.68.1 的口径切版）；
+* 用本机真 keystore（`app/android/key.properties` + `upload-keystore.p12`，不入库）按
+  `docs/release-checklist.md` §9 的正式命令构建（三个 `--dart-define` 齐全）：
+  `dist/练了么-v1.71.1.apk` / `dist/练了么-v1.71.1.aab`；
+* 重出软著 PDF（`dist/copyright/`，V1.71.1，owner 李松）；
+* 校验：`check-dist` / `check-aab` / `privacy-audit --apk` / `check-dist-variant` /
+  `apksigner verify --print-certs`（`CN=李松, C=CN`）。
+
+### 三、没做
+
+不翻 `kUltraReleased`；不开放购买；不改商店表单的「价格/含内购」结论（这一版仍买不到）；
+不重出截图；不改 app 业务逻辑；不部署（服务端上一轮已上线）。
+
+### 验证
+
+`./verify.sh` 六层「未发现失败」；`privacy-audit --apk` 绿；签名与产物见 release-checklist 当前状态行。
+
 ## v1.71.0 · 周期化计划 v1（Ultra 权益 10）
 
 用户点名的最后一项：**周期化计划 v1**。纯本地、不需要服务端/商店，仍

@@ -136,11 +136,11 @@
 </ul>
 <h3 id="2-5-purchases-and-payments-not-enabled-in-this-release">2.5 Purchases and payments (<strong>not enabled in this release</strong>)</h3>
 <ul>
-<li><strong>Nothing is for sale in this release (1.68.3)</strong>: every Ultra entry point is off, and no products have been created in App Store Connect / Google Play — so <strong>you cannot make any purchase or payment here</strong>.</li>
-<li>The client already integrates the <strong>official Apple / Google in-app purchase capability</strong> (<code>in_app_purchase</code>) for a future release (query products, start a purchase, restore purchases); <strong>in this version it does not query the store</strong> (the entry points are unreachable) and no product data leaves your device.</li>
+<li><strong>Nothing is for sale in this release (1.71.1)</strong>: every Ultra entry point is off, and no products have been created in App Store Connect / Google Play — so <strong>you cannot make any purchase or payment here</strong>.</li>
+<li>This build <strong>already includes the official Apple / Google in-app purchase capability</strong> (<code>in_app_purchase</code>). It is only there for a future release (query products, start a purchase, restore purchases); <strong>in this version it does not query the store</strong> (the entry points are unreachable) and no product data leaves your device.</li>
 <li>When purchases are enabled in a later release, we will store only: which plan was bought (monthly / yearly / lifetime), the store it came from (Apple / Google), the purchase time, the expiry time and the store transaction id — plus a local billing-event log for support.</li>
 <li>We <strong>never store or handle</strong> payment method (card number / bank account), name or billing address — those are handled by the Apple / Google store and are not visible to us.</li>
-<li><strong>Server-side receipt verification ships in a later release (M3)</strong>; this version uploads no purchase receipt and has no server-side entitlement.</li>
+<li>This version <strong>uploads no purchase receipt</strong>; server-side entitlement sync (the M4a client code is ready) is only enabled when purchases are actually opened.</li>
 </ul>
 <hr>
 <h2 id="3-where-the-data-lives-and-who-receives-it">3. Where the data lives and who receives it</h2>
@@ -220,7 +220,7 @@
 <li><strong>The table above lists direct dependencies only.</strong> They pull in further transitive libraries (the Flutter framework, Skia, ICU, …). The complete list is available <strong>inside the app</strong> at &quot;Me → Open-source licences&quot; (Flutter's licence page enumerates every component shipped in the package). The per-library &quot;does it collect anything&quot; notes are hand-written for the libraries we chose; the authoritative answer for &quot;what is in the package&quot; is that page, not this table.</li>
 </ul>
 <h2 id="4-permissions">4. Permissions</h2>
-<p>The app declares six permissions; the second <strong>only takes effect on old systems</strong>, the third is <strong>off by default</strong> — it is only ever requested if you turn it on yourself — and the last three (<code>android.permission.health.*</code>) are used for <strong>reading body composition from the system health store</strong> (see 2.4): <strong>only on Android 14 and above, and read-only</strong>:</p>
+<p>The app declares eight permissions. Two of them (<code>com.android.vending.BILLING</code> and <code>android.permission.ACCESS_NETWORK_STATE</code>) are <strong>merged into the packaged manifest by the official in-app purchase plugin <code>in_app_purchase</code>; the source manifest does not declare them</strong>. The second <strong>only takes effect on old systems</strong>, the third is <strong>off by default</strong> — it is only ever requested if you turn it on yourself — the next three (<code>android.permission.health.*</code>) are used for <strong>reading body composition from the system health store</strong> (see 2.4): <strong>only on Android 14 and above, and read-only</strong>; the last two only serve the in-app purchase capability (<strong>purchases are not enabled in this release</strong>):</p>
 <table>
 <thead><tr><th>Permission</th><th>Why</th><th>Applies to</th></tr></thead>
 <tbody>
@@ -230,6 +230,8 @@
 <tr><td><code>android.permission.health.READ_WEIGHT</code></td><td>Reading <strong>body weight</strong> from the system health store (the Health Connect built into Android 14+) into the on-device body-data page (see 2.4)</td><td><strong>Android 14 and above only</strong>; never read by default, needs your <strong>separate consent</strong>; <strong>read-only</strong></td></tr>
 <tr><td><code>android.permission.health.READ_BODY_FAT</code></td><td>Same, for <strong>body fat percentage</strong></td><td>Same</td></tr>
 <tr><td><code>android.permission.health.READ_HEIGHT</code></td><td>Same, for <strong>height</strong> (used only to compute BMI)</td><td>Same</td></tr>
+<tr><td><code>com.android.vending.BILLING</code></td><td>Calling the system store (Google Play Billing) to query products, start a purchase and restore purchases. <strong>Purchases are not enabled in this release</strong> (entry points off, no products created), so no billing is ever started; payment method and billing address are handled by the store</td><td>All Android versions; <strong>merged into the packaged manifest by <code>in_app_purchase</code></strong> (not declared in the source manifest)</td></tr>
+<tr><td><code>android.permission.ACCESS_NETWORK_STATE</code></td><td><strong>Only checking whether the network is available</strong> (a reachability check before store/account requests); it does not read network content, record network information or report anything</td><td>All Android versions; <strong>also merged into the packaged manifest by <code>in_app_purchase</code></strong></td></tr>
 </tbody>
 </table>
 <p>Six notes on the third one (the notification permission):</p>

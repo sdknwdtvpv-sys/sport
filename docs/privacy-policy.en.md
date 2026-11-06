@@ -201,19 +201,19 @@ across by hand.
 
 ### 2.5 Purchases and payments (**not enabled in this release**)
 
-- **Nothing is for sale in this release (1.68.3)**: every Ultra entry point is off, and no products
+- **Nothing is for sale in this release (1.71.1)**: every Ultra entry point is off, and no products
   have been created in App Store Connect / Google Play — so **you cannot make any purchase or payment here**.
-- The client already integrates the **official Apple / Google in-app purchase capability**
-  (`in_app_purchase`) for a future release (query products, start a purchase, restore purchases);
-  **in this version it does not query the store** (the entry points are unreachable) and no product
-  data leaves your device.
+- This build **already includes the official Apple / Google in-app purchase capability**
+  (`in_app_purchase`). It is only there for a future release (query products, start a purchase,
+  restore purchases); **in this version it does not query the store** (the entry points are unreachable)
+  and no product data leaves your device.
 - When purchases are enabled in a later release, we will store only: which plan was bought
   (monthly / yearly / lifetime), the store it came from (Apple / Google), the purchase time,
   the expiry time and the store transaction id — plus a local billing-event log for support.
 - We **never store or handle** payment method (card number / bank account), name or billing address —
   those are handled by the Apple / Google store and are not visible to us.
-- **Server-side receipt verification ships in a later release (M3)**; this version uploads no purchase
-  receipt and has no server-side entitlement.
+- This version **uploads no purchase receipt**; server-side entitlement sync (the M4a client code is
+  ready) is only enabled when purchases are actually opened.
 
 ---
 
@@ -365,10 +365,13 @@ Three notes:
 
 ## 4. Permissions
 
-The app declares six permissions; the second **only takes effect on old systems**, the third is
-**off by default** — it is only ever requested if you turn it on yourself — and the last three
-(`android.permission.health.*`) are used for **reading body composition from the system health
-store** (see 2.4): **only on Android 14 and above, and read-only**:
+The app declares eight permissions. Two of them (`com.android.vending.BILLING` and
+`android.permission.ACCESS_NETWORK_STATE`) are **merged into the packaged manifest by the official
+in-app purchase plugin `in_app_purchase`; the source manifest does not declare them**. The second
+**only takes effect on old systems**, the third is **off by default** — it is only ever requested if
+you turn it on yourself — the next three (`android.permission.health.*`) are used for **reading body
+composition from the system health store** (see 2.4): **only on Android 14 and above, and read-only**;
+the last two only serve the in-app purchase capability (**purchases are not enabled in this release**):
 
 | Permission | Why | Applies to |
 |---|---|---|
@@ -378,6 +381,8 @@ store** (see 2.4): **only on Android 14 and above, and read-only**:
 | `android.permission.health.READ_WEIGHT` | Reading **body weight** from the system health store (the Health Connect built into Android 14+) into the on-device body-data page (see 2.4) | **Android 14 and above only**; never read by default, needs your **separate consent**; **read-only** |
 | `android.permission.health.READ_BODY_FAT` | Same, for **body fat percentage** | Same |
 | `android.permission.health.READ_HEIGHT` | Same, for **height** (used only to compute BMI) | Same |
+| `com.android.vending.BILLING` | Calling the system store (Google Play Billing) to query products, start a purchase and restore purchases. **Purchases are not enabled in this release** (entry points off, no products created), so no billing is ever started; payment method and billing address are handled by the store | All Android versions; **merged into the packaged manifest by `in_app_purchase`** (not declared in the source manifest) |
+| `android.permission.ACCESS_NETWORK_STATE` | **Only checking whether the network is available** (a reachability check before store/account requests); it does not read network content, record network information or report anything | All Android versions; **also merged into the packaged manifest by `in_app_purchase`** |
 
 Six notes on the third one (the notification permission):
 

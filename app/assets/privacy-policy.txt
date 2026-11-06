@@ -145,16 +145,15 @@ iPhone 的「健康」里可能已经有你的体重、体脂率、身高、腰�
 
 2.5 购买与支付（本版本未开放）
 
-- 本版本（1.68.3）没有任何商品在卖：会员 Ultra 的入口全部关闭，App Store / Google Play
+- 本版本（1.71.1）没有任何商品在卖：会员 Ultra 的入口全部关闭，App Store / Google Play
   里也还没有创建商品 —— 所以你不会在这里发生任何购买或付款。
-- 客户端代码已经接入 Apple / Google 官方的内购能力（in_app_purchase），供将来开放时
-  查询商品、发起购买、恢复购买；这个版本里它不会向商店查询商品（入口不可达），
-  商品数据也不会离开你的设备。
+- 这个包里已经包含 Apple / Google 官方的内购能力（in_app_purchase）：它只用于将来开放时
+  查询商品、发起购买、恢复购买；本版本不会向商店查询商品（入口不可达），商品数据也不会离开你的设备。
 - 将来开放购买时，我们只存：买到哪一档（月 / 年 / 终身）、权益来源（Apple / Google）、
   购买时间、到期时间、商店交易号；以及一条本机的计费事件流水（排障与客服用）。
 - 我们不存、也不经手：支付方式（卡号 / 银行账户）、姓名、账单地址 ——
   这些由 Apple / Google 的商店处理，我们看不到。
-- 服务端核验收据是之后的版本（M3）才做；本版本没有上传任何购买凭据，也没有"服务端权益"。
+- 本版本不会上传任何购买凭据；服务端权益同步（M4a 代码已就绪）在正式开放购买时才启用。
 
 三、数据在哪、传给谁
 
@@ -277,7 +276,7 @@ in_app_purchase　3.3.1　内购（Apple / Google 官方商店）：查询商品
 
 四、权限
 
-应用声明六项系统权限（打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里），其中第二项只在老系统上生效，第三项默认关闭、只有你主动打开才会被请求，最后三项（android.permission.health.*）是从系统健康库读体成分用的 —— 见 2.4，只有 Android 14 及以上才会用到，而且只读：
+应用声明八项系统权限（其中 com.android.vending.BILLING 与 android.permission.ACCESS_NETWORK_STATE 由官方内购插件 in_app_purchase 合并进打包后的 manifest，源码 manifest 不声明；打包后另有 1 条 AndroidX 自动加的签名级自有权限，不涉及用户数据、也不会出现在系统的权限列表里）。其中第二项只在老系统上生效，第三项默认关闭、只有你主动打开才会被请求，中间三项（android.permission.health.*）是从系统健康库读体成分用的 —— 见 2.4，只有 Android 14 及以上才会用到，而且只读；最后两项只服务内购能力（本版本未开放购买）：
 
 权限　为什么　适用范围
 android.permission.INTERNET　仅用于 2.2 的匿名使用统计（开关打开时）　全部
@@ -286,6 +285,8 @@ android.permission.POST_NOTIFICATIONS　三条本地通知：①「训练提醒�
 android.permission.health.READ_WEIGHT　从系统健康库（Android 14+ 自带的 Health Connect）读体重，按天并进本机「身体数据」（见 2.4）　仅 Android 14 及以上；默认不读，要你先单独同意；只读
 android.permission.health.READ_BODY_FAT　同上，读体脂率　同上
 android.permission.health.READ_HEIGHT　同上，读身高（只用来算 BMI）　同上
+com.android.vending.BILLING　调系统商店（Google Play Billing）查询商品 / 发起购买 / 恢复购买。本版本未开放购买（入口关闭、商品未创建），不会发起任何计费；支付方式与账单地址由商店处理　全部 Android；由 in_app_purchase 插件合并进打包后的 manifest（源码 manifest 不声明）
+android.permission.ACCESS_NETWORK_STATE　只判断网络是否可用（商店 / 账号请求前的可达性判断），不读取网络内容、不记录网络信息、不上报　全部 Android；同样由 in_app_purchase 插件合并进打包后的 manifest
 
 关于第三项（通知权限），说明六点：
 
