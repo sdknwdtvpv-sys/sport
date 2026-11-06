@@ -182,7 +182,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     // 里面写 `await` 编译不过（而且那样也会让"先改状态再等 IO"的语义变得可疑）
     final bool ultra = widget.entitlements == null
         ? false
-        : (await widget.entitlements!.access(_today.millisecondsSinceEpoch)).ultra;
+        : (await widget.entitlements!.access(_today.millisecondsSinceEpoch))
+            .ultra;
     if (!mounted) return;
     setState(() {
       _sets = sets;
@@ -225,7 +226,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
             child: w == null
                 ? const Text(
                     '还没记录过体重',
-                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub),
+                    style:
+                        TextStyle(color: Tokens.text3, fontSize: Tokens.fsSub),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +240,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         key: const Key('progress-weight'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Tokens.display(24, weight: 700, letterSpacing: Tokens.lsSnug),
+                        style: Tokens.display(24,
+                            weight: 700, letterSpacing: Tokens.lsSnug),
                       ),
                       const SizedBox(height: Tokens.s1),
                       // ⚠️ 大字号下这一行会很长（日期 + 用户自己写的备注）→ 允许省略号
@@ -250,7 +253,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         ].join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
+                        style: const TextStyle(
+                            color: Tokens.text3, fontSize: Tokens.fsCap),
                       ),
                     ],
                   ),
@@ -306,7 +310,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     await _load();
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -315,49 +318,32 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final ProgressData d = _data!;
 
     return ListView(
-            padding: EdgeInsets.fromLTRB(
-          Tokens.s5,
-          Tokens.s4,
-          Tokens.s5,
+      padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
           Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         // ⚠️ 这里原来还画了一个 28pt 的「进步」大字 —— 与外壳顶栏那个标题**完全重复**
         // （用户 10.9 清单第 3 条截图抓的就是它）。页内不再写自己的名字，
-        // 只留右边那个二级页入口（它才是"动作"）。
-        Row(
-          // ⚠️ v2.0.1：页内的 28pt「进步」与外壳顶栏标题**完全重复**（v2.0.0 真机上
-          // 同一屏出现两个「进步」）。标题只由顶栏提供，这一行只留二级页入口。
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            TextButton(
-            key: const Key('open-all-data'),
-            // S9 的入口。二级页：这一屏回答"最近怎么样"，
-            // 那一屏回答"某个动作/某段时间到底怎么样"。
-            style: TextButton.styleFrom(foregroundColor: Tokens.accent),
-            onPressed: _openAllData,
-            child: const Text('全部数据 ›', style: TextStyle(fontSize: Tokens.fsSub)),
-          ),
-          ],
-        ),
-        const SizedBox(height: Tokens.s3),
+        // ⚠️ v2.0.1 真机：这里原来单独一行放「全部数据 ›」，删掉页内标题之后它就
+        // 孤零零挂在半空（离下面的内容还有一大段空白）。入口挪到「本周 · 较上期同期」
+        // 那一行的右侧 —— 离它要打开的「全部数据页」最近，也不再占一整行。
         // 空态**不再提前 return** —— 否则"只记了体重、还没练过"的人
         // 看不到自己刚记的体重。体重和训练是两件独立的事。
         if (d.isEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: Tokens.s5),
             child: EmptyState(
-                    key: const Key('empty-progress'),
-                    art: EmptyArt.dashedRing,
-                    title: '还没有训练记录。',
-                    body: '练完第一次，这里就会长出曲线和纪录。',
-                    action: '去开练',
-                    onAction: widget.onOpenToday,
-                  ),
+              key: const Key('empty-progress'),
+              art: EmptyArt.dashedRing,
+              title: '还没有训练记录。',
+              body: '练完第一次，这里就会长出曲线和纪录。',
+              action: '去开练',
+              onAction: widget.onOpenToday,
+            ),
           )
         else ...<Widget>[
-          _statsBlock(),          // 四张统计卡（按区间现算）
+          _statsBlock(), // 四张统计卡（按区间现算）
           const SizedBox(height: Tokens.s3),
-          _trendCard(),           // 容量趋势（周 / 月 / 年）
+          _trendCard(), // 容量趋势（周 / 月 / 年）
           const SizedBox(height: Tokens.s5),
           // 本周每部位组数（2026-10-04）：**并进 S8、不新开屏**。
           // 它回答的是"我这周练均衡了吗"—— 这一屏原来只有容量/PR/体重三块，
@@ -408,7 +394,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
       key: const Key('progress-muscles'),
       padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Tokens.hair), bottom: BorderSide(color: Tokens.hair)),
+        border: Border(
+            top: BorderSide(color: Tokens.hair),
+            bottom: BorderSide(color: Tokens.hair)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,10 +406,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
               const Expanded(
                 child: Text('部位分布',
                     style: TextStyle(
-                        color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
+                        color: Tokens.text,
+                        fontSize: Tokens.fsSub,
+                        fontWeight: Tokens.fwStrong)),
               ),
               const Text('12–20 组 / 周',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                  style:
+                      TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             ],
           ),
           const SizedBox(height: Tokens.s3),
@@ -430,7 +421,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
               padding: const EdgeInsets.only(bottom: Tokens.s3),
               child: Row(
                 children: <Widget>[
-                  Expanded(child: _muscleChip(rows[i].muscleGroup, rows[i].sets)),
+                  Expanded(
+                      child: _muscleChip(rows[i].muscleGroup, rows[i].sets)),
                   const SizedBox(width: Tokens.s4),
                   Expanded(
                     child: i + 1 < rows.length
@@ -454,12 +446,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
           children: <Widget>[
             Expanded(
               child: Text(muscleLabel(group),
-                  style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
+                  style: const TextStyle(
+                      color: Tokens.text2, fontSize: Tokens.fsCap)),
             ),
             Text('$sets 组',
                 key: Key('muscle-$group'),
                 style: TextStyle(
-                  color: sets == 0 ? Tokens.text3 : (sets >= 12 ? Tokens.accent : Tokens.text),
+                  color: sets == 0
+                      ? Tokens.text3
+                      : (sets >= 12 ? Tokens.accent : Tokens.text),
                   fontSize: Tokens.fsCap,
                   fontWeight: Tokens.fwStrong,
                 )),
@@ -518,7 +513,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   /// 数字直接落在页面上。判据：**只有图表还配卡片底**，纯数字用细线分节。
   Widget _statsBlock() {
     final ({DateTime from, DateTime to}) w = rangeWindow(_today, _range);
-    final ({DateTime from, DateTime to}) prev = previousRangeWindow(_today, _range);
+    final ({DateTime from, DateTime to}) prev =
+        previousRangeWindow(_today, _range);
     final double volume = volumeIn(_sets, w.from, w.to);
     final int workouts = workoutCountIn(_sets, w.from, w.to);
     final double prevVolume = volumeIn(_sets, prev.from, prev.to);
@@ -536,28 +532,34 @@ class _ProgressScreenState extends State<ProgressScreen> {
       ms.sort();
       totalSec += ((ms.last - ms.first) / 1000).round();
     }
+    // ⚠️ v2.0.1 真机：两次训练、8 组，却显示「总时长 0 分钟」——
+    // 因为组记录跨度可能只有几十秒，`round()` 把它抹成 0。不足 1 分钟如实写「<1 分钟」。
     final String duration = totalSec <= 0
         ? '—'
-        : '${(totalSec / 60).round()} 分钟';
+        : (totalSec < 60 ? '<1 分钟' : '${(totalSec / 60).round()} 分钟');
     return Container(
       key: const Key('progress-stats'),
       padding: const EdgeInsets.only(top: Tokens.s3, bottom: Tokens.s2),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Tokens.hair), bottom: BorderSide(color: Tokens.hair)),
+        border: Border(
+            top: BorderSide(color: Tokens.hair),
+            bottom: BorderSide(color: Tokens.hair)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Expanded(
-                child: Text('训练容量',
-                    style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
+              Expanded(
+                child: Text('${range}容量',
+                    style: const TextStyle(
+                        color: Tokens.text2, fontSize: Tokens.fsCap)),
               ),
               ViSegmented(
                 labels: const <String>['周', '月', '年'],
                 current: _range.index,
-                onChanged: (int i) => setState(() => _range = ProgressRange.values[i]),
+                onChanged: (int i) =>
+                    setState(() => _range = ProgressRange.values[i]),
               ),
             ],
           ),
@@ -583,7 +585,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     periodDeltaLabel(volume, prevVolume),
                     key: const Key('progress-delta-volume'),
                     style: TextStyle(
-                      color: volume >= prevVolume ? Tokens.success : Tokens.danger,
+                      color:
+                          volume >= prevVolume ? Tokens.success : Tokens.danger,
                       fontSize: Tokens.fsCap,
                       fontWeight: Tokens.fwStrong,
                     ),
@@ -593,8 +596,29 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ],
           ),
           const SizedBox(height: Tokens.s1),
-          Text('$range · 较上期同期',
-              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text('$range · 较上期同期',
+                    style: const TextStyle(
+                        color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              ),
+              TextButton(
+                key: const Key('open-all-data'),
+                // S9 的入口。二级页：这一屏回答"最近怎么样"，
+                // 那一屏回答"某个动作/某段时间到底怎么样"。
+                style: TextButton.styleFrom(
+                  foregroundColor: Tokens.accentText,
+                  padding: const EdgeInsets.symmetric(horizontal: Tokens.s2),
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: _openAllData,
+                child: const Text('全部数据 ›',
+                    style: TextStyle(fontSize: Tokens.fsCap)),
+              ),
+            ],
+          ),
           const SizedBox(height: Tokens.s3),
           Row(
             children: <Widget>[
@@ -604,7 +628,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         ? '含 ${widget.protectedInStreak} 天补签'
                         : null),
               ),
-              Expanded(child: _fact('${range}训练', '$workouts 次', 'progress-workouts')),
+              Expanded(
+                  child:
+                      _fact('${range}训练', '$workouts 次', 'progress-workouts')),
               Expanded(child: _fact('总时长', duration, 'progress-duration')),
             ],
           ),
@@ -616,14 +642,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget _fact(String label, String value, String key, {String? sub}) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(label, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          Text(label,
+              style: const TextStyle(
+                  color: Tokens.text3, fontSize: Tokens.fsMicro)),
           const SizedBox(height: Tokens.s1),
           Text(value,
               key: Key(key),
-              style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
+              style: const TextStyle(
+                  color: Tokens.text,
+                  fontSize: Tokens.fsBody,
+                  fontWeight: Tokens.fwStrong)),
           if (sub != null)
             Text(sub,
-                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                style: const TextStyle(
+                    color: Tokens.text3, fontSize: Tokens.fsMicro)),
         ],
       );
 
@@ -678,7 +710,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                const Icon(Icons.insights_outlined, color: Tokens.text2, size: IconSpec.m),
+                const Icon(Icons.insights_outlined,
+                    color: Tokens.text2, size: IconSpec.m),
                 const SizedBox(width: Tokens.s3),
                 Expanded(
                   child: Text('进阶分析',
@@ -694,7 +727,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
               '分动作趋势（单个动作是涨了还是原地）与周 / 月 / 季对比。Ultra 里的一份能力，'
               '免费版已有的曲线与纪录不受影响。',
               key: Key('advanced-locked-note'),
-              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
+              style: TextStyle(
+                  color: Tokens.text3,
+                  fontSize: Tokens.fsCap,
+                  height: Tokens.lhNormal),
             ),
             if (widget.onOpenUltra != null) ...<Widget>[
               const SizedBox(height: Tokens.s3),
@@ -711,7 +747,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     ),
                   ),
                   onPressed: widget.onOpenUltra,
-                  child: const Text('看看 Ultra', style: TextStyle(fontSize: Tokens.fsSub)),
+                  child: const Text('看看 Ultra',
+                      style: TextStyle(fontSize: Tokens.fsSub)),
                 ),
               ),
             ],
@@ -732,22 +769,29 @@ class _ProgressScreenState extends State<ProgressScreen> {
               Expanded(
                 child: Text('进阶分析',
                     style: const TextStyle(
-                        color: Tokens.text, fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
+                        color: Tokens.text,
+                        fontSize: Tokens.fsBodyS,
+                        fontWeight: Tokens.fwStrong)),
               ),
               Text('Ultra',
-                  style: const TextStyle(color: Tokens.accentText, fontSize: Tokens.fsMicro)),
+                  style: const TextStyle(
+                      color: Tokens.accentText, fontSize: Tokens.fsMicro)),
             ],
           ),
           const SizedBox(height: Tokens.s2),
           const Text(
             '点一个动作，看它自己的趋势与周 / 月 / 季对比。',
-            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
+            style: TextStyle(
+                color: Tokens.text3,
+                fontSize: Tokens.fsCap,
+                height: Tokens.lhNormal),
           ),
           if (ids.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: Tokens.s3),
               child: Text('最近 90 天还没有记录。练几次之后这里会有动作可选。',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+                  style:
+                      TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
             )
           else
             for (final String id in ids.take(6))
@@ -764,10 +808,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           _exerciseName(d, id),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
+                          style: const TextStyle(
+                              color: Tokens.text2, fontSize: Tokens.fsSub),
                         ),
                       ),
-                      const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
+                      const Icon(Icons.chevron_right,
+                          color: Tokens.text3, size: IconSpec.m),
                     ],
                   ),
                 ),
@@ -809,84 +855,104 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return RepaintBoundary(
       // 硬切那一帧只让这一块脏：外面是四张统计卡 + 周历，它们与曲线无关。
       child: ViCard(
-      key: const Key('progress-trend-card'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Expanded(
-                child: Text('训练容量',
-                    style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
-              ),
-              _LegendDot(color: Tokens.accent, label: _range == ProgressRange.week ? '本周' : '本期'),
-              const SizedBox(width: Tokens.s3),
-              _LegendDot(color: Tokens.text3, label: _range == ProgressRange.week ? '上周' : '上期', dashed: true),
-            ],
-          ),
-          const SizedBox(height: Tokens.s3),
-          ViAreaChart(
-            key: const Key('progress-sparkline'),
-            points: series,
-            previousPoints: pair.previous,
-            height: 120,
-          ),
-          const SizedBox(height: Tokens.s2),
-          // ⚠️ 三个轴标签都要能缩（2026-10-10 扫描：2.0× 下这一行 360pt > 329pt）——
-          // 它们是**刻度**，被省略号截掉一个字符也比"整块被裁"好。
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Flexible(
-                child: Text(ends.first,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              ),
-              Flexible(
-                child: Text(rangeHint(_range),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              ),
-              Flexible(
-                child: Text(ends.last,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              ),
-            ],
-          ),
-          // 这个区间一条训练记录都没有才说「还没练」。
-          // ⚠️ **不能拿"容量全 0"判空**（2026-11-07 修）：自重/只记有氧的人
-          // 容量恒为 0，但确实练了 —— 旧文案会把"练了"说成"没练"。
-          if (workoutCountIn(_sets, rangeWindow(_today, _range).from, rangeWindow(_today, _range).to) == 0)
-            Padding(
-              padding: const EdgeInsets.only(top: Tokens.s2),
-              child: Text(
-                '${rangeHint(_range)}还没练',
-                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
-              ),
-            )
-          else if (series.every((double v) => v == 0))
-            Padding(
-              padding: const EdgeInsets.only(top: Tokens.s2),
-              child: Text(
-                '${rangeHint(_range)}没有重量记录',
-                key: const Key('progress-no-weight'),
-                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
-              ),
+        key: const Key('progress-trend-card'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Expanded(
+                  child: Text('训练容量',
+                      style: TextStyle(
+                          color: Tokens.text,
+                          fontSize: Tokens.fsSub,
+                          fontWeight: Tokens.fwStrong)),
+                ),
+                _LegendDot(
+                    color: Tokens.accent,
+                    label: _range == ProgressRange.week ? '本周' : '本期'),
+                const SizedBox(width: Tokens.s3),
+                _LegendDot(
+                    color: Tokens.text3,
+                    label: _range == ProgressRange.week ? '上周' : '上期',
+                    dashed: true),
+              ],
             ),
-        ],
-      ),
+            const SizedBox(height: Tokens.s3),
+            ViAreaChart(
+              key: const Key('progress-sparkline'),
+              points: series,
+              previousPoints: pair.previous,
+              height: 120,
+            ),
+            const SizedBox(height: Tokens.s2),
+            // ⚠️ 三个轴标签都要能缩（2026-10-10 扫描：2.0× 下这一行 360pt > 329pt）——
+            // 它们是**刻度**，被省略号截掉一个字符也比"整块被裁"好。
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Flexible(
+                  child: Text(ends.first,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                ),
+                Flexible(
+                  child: Text(rangeHint(_range),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                ),
+                Flexible(
+                  child: Text(ends.last,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                          color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                ),
+              ],
+            ),
+            // 这个区间一条训练记录都没有才说「还没练」。
+            // ⚠️ **不能拿"容量全 0"判空**（2026-11-07 修）：自重/只记有氧的人
+            // 容量恒为 0，但确实练了 —— 旧文案会把"练了"说成"没练"。
+            if (workoutCountIn(_sets, rangeWindow(_today, _range).from,
+                    rangeWindow(_today, _range).to) ==
+                0)
+              Padding(
+                padding: const EdgeInsets.only(top: Tokens.s2),
+                child: Text(
+                  '${rangeHint(_range)}还没练',
+                  style: const TextStyle(
+                      color: Tokens.text3, fontSize: Tokens.fsMicro),
+                ),
+              )
+            else if (series.every((double v) => v == 0))
+              Padding(
+                padding: const EdgeInsets.only(top: Tokens.s2),
+                child: Text(
+                  '${rangeHint(_range)}没有重量记录',
+                  key: const Key('progress-no-weight'),
+                  style: const TextStyle(
+                      color: Tokens.text3, fontSize: Tokens.fsMicro),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _recentLine() {
-    final ({String workoutId, DateTime day, int exercises, int sets, double volume}) r =
-        recentWorkouts(_sets, limit: 1).first;
+    final ({
+      String workoutId,
+      DateTime day,
+      int exercises,
+      int sets,
+      double volume
+    }) r = recentWorkouts(_sets, limit: 1).first;
     return GestureDetector(
       key: const Key('progress-recent'),
       onTap: _openAllData,
@@ -905,10 +971,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 key: const Key('progress-recent-label'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
+                style: const TextStyle(
+                    color: Tokens.text2, fontSize: Tokens.fsCap),
               ),
             ),
-            const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.s),
+            const Icon(Icons.chevron_right,
+                color: Tokens.text3, size: IconSpec.s),
           ],
         ),
       ),
@@ -946,7 +1014,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       children: <Widget>[
                         Text(
                           d.prs[i].name,
-                          style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsSub),
+                          style: const TextStyle(
+                              color: Tokens.text, fontSize: Tokens.fsSub),
                         ),
                         // 预估 1RM（2026-10-04）。**只在算得出来时显示** ——
                         // 自重 / 按时长 / 次数超过 12 的动作没有可信的 1RM
@@ -958,21 +1027,26 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               '预估 1RM ${formatWeight(d.prs[i].oneRm!, d.unit)}',
                               key: Key('pr-1rm-${d.prs[i].exerciseId}'),
                               style: const TextStyle(
-                                  color: Tokens.text3, fontSize: Tokens.fsMicro),
+                                  color: Tokens.text3,
+                                  fontSize: Tokens.fsMicro),
                             ),
                           ),
                         // 距上次破纪录多少天（第二部分第 4 条，2026-10-06）。
                         // "68 kg"是上周刚破的还是半年前破的，是完全不同的两件事：
                         // 前者说明还在涨，后者说明该换计划了。**从没破过就不显示这一行**
                         // （显示"0 天前"会是假话）。
-                        if (lastPrLabel(d.daysSinceLastPr, d.prs[i].exerciseId) != null)
+                        if (lastPrLabel(
+                                d.daysSinceLastPr, d.prs[i].exerciseId) !=
+                            null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              lastPrLabel(d.daysSinceLastPr, d.prs[i].exerciseId)!,
+                              lastPrLabel(
+                                  d.daysSinceLastPr, d.prs[i].exerciseId)!,
                               key: Key('pr-age-${d.prs[i].exerciseId}'),
                               style: const TextStyle(
-                                  color: Tokens.text3, fontSize: Tokens.fsMicro),
+                                  color: Tokens.text3,
+                                  fontSize: Tokens.fsMicro),
                             ),
                           ),
                       ],
@@ -996,15 +1070,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   Widget _sectionTitle(String t) => Padding(
         padding: const EdgeInsets.only(left: Tokens.s1, bottom: Tokens.s2),
-        child: Text(t, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+        child: Text(t,
+            style:
+                const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
       );
-
 }
-
 
 /// 图例：实线 = 本周，虚线 = 上周。
 class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label, this.dashed = false});
+  const _LegendDot(
+      {required this.color, required this.label, this.dashed = false});
 
   final Color color;
   final String label;
@@ -1026,7 +1101,9 @@ class _LegendDot extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          Text(label,
+              style: const TextStyle(
+                  color: Tokens.text3, fontSize: Tokens.fsMicro)),
         ],
       );
 }

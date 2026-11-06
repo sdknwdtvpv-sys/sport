@@ -82,12 +82,12 @@ class WorkoutScreen extends StatefulWidget {
   /// 为什么由调用方实现（与 [onSwapExercise] 同一个理由）：写库要用 `ExerciseRepository`，
   /// 而训练屏只拿得到瘦身过的控制器；外壳手里才有仓库。
   /// 不传就没有"改步进"这个入口（测试与"单独打开这一屏"的场景）。
-  final Future<void> Function(String exerciseId, double kg)? onWeightStepChanged;
+  final Future<void> Function(String exerciseId, double kg)?
+      onWeightStepChanged;
 
   /// **把步进铺到所有动作**（同一条清单里的那个"所有动作都改"）。
   /// 与 [onWeightStepChanged] 一样由外壳实现：它要动整个动作库，还要把值记成"你设的默认"。
   final Future<void> Function(double kg)? onWeightStepAll;
-
 
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
@@ -176,20 +176,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             context: context,
             builder: (BuildContext ctx) => AlertDialog(
               backgroundColor: Tokens.surface,
-              title: const Text('计划组数做完了',
-                  style: TextStyle(color: Tokens.text)),
+              title:
+                  const Text('计划组数做完了', style: TextStyle(color: Tokens.text)),
               content: Text(
                 last
                     ? '这是最后一个动作。加一组接着练，或者收工。'
                     : '加一组接着练，或者去下一个：${widget.session.nextName ?? '下一个动作'}。',
                 key: const Key('plan-done-note'),
-                style: const TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
+                style: const TextStyle(
+                    color: Tokens.text2, height: Tokens.lhNormal),
               ),
               actions: <Widget>[
                 TextButton(
                   key: const Key('plan-done-more'),
                   onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('再加一组', style: TextStyle(color: Tokens.accentText)),
+                  child: const Text('再加一组',
+                      style: TextStyle(color: Tokens.accentText)),
                 ),
                 TextButton(
                   key: const Key('plan-done-next'),
@@ -269,7 +271,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     // 而 WorkoutScreen 本身不持有单位（它只持有会话）。
     WeightUnit unit = WeightUnit.kg;
     for (final WorkoutController c in widget.session.controllers) {
-      if (c.exercise.id == exerciseId) { unit = c.unit; break; }
+      if (c.exercise.id == exerciseId) {
+        unit = c.unit;
+        break;
+      }
     }
     Navigator.of(context).push<void>(MaterialPageRoute<void>(
       builder: (_) => ExerciseDetailScreen(
@@ -346,7 +351,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 key: const Key('swap-exercise'),
                 padding: EdgeInsets.zero,
                 tooltip: '换动作',
-                icon: const Icon(Icons.swap_horiz, color: Tokens.text2, size: IconSpec.m),
+                icon: const Icon(Icons.swap_horiz,
+                    color: Tokens.text2, size: IconSpec.m),
                 onPressed: () => unawaited(widget.onSwapExercise!()),
               ),
             ),
@@ -359,7 +365,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               child: IconButton(
                 key: const Key('exercise-info'),
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.info_outline, color: Tokens.text2, size: IconSpec.m),
+                icon: const Icon(Icons.info_outline,
+                    color: Tokens.text2, size: IconSpec.m),
                 onPressed: () => _openDetail(c.exercise.id),
               ),
             ),
@@ -367,24 +374,30 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             Container(
               key: const Key('offline-chip'),
               margin: const EdgeInsets.only(right: Tokens.s2),
-              padding: const EdgeInsets.symmetric(horizontal: Tokens.s2, vertical: 3),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Tokens.s2, vertical: 3),
               decoration: BoxDecoration(
                 color: Tokens.elevated,
                 borderRadius: BorderRadius.circular(Tokens.rPill),
               ),
               child: const Text('离线',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro, height: Tokens.lhTight)),
+                  style: TextStyle(
+                      color: Tokens.text3,
+                      fontSize: Tokens.fsMicro,
+                      height: Tokens.lhTight)),
             ),
           // 动作在整场里的位置（**从底部切换条搬上来的**）：底部那条只留"上一个/下一个"
           // 的名字。key 与文案都没变（`1 / 3`），只是换了地方 —— 而屏幕上原来有两个
           // 含义不同的 x/y（"第 3 组 / 共 4 组" 与 "1 / 4"）隔了大半屏，是真会读错的。
           if (widget.session.hasMultiple) ...<Widget>[
             const Text('动作 ',
-                style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                style:
+                    TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
             Text(
               '${widget.session.index + 1} / ${widget.session.length}',
               key: const Key('exercise-position'),
-              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+              style: const TextStyle(
+                  color: Tokens.text3, fontSize: Tokens.fsMicro),
             ),
           ],
         ],
@@ -467,7 +480,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   '最佳',
                   best == null
                       ? '—'
-                      : bestSetMainLabel(best, unit: c.unit, trackType: c.exercise.trackType),
+                      : bestSetMainLabel(best,
+                          unit: c.unit, trackType: c.exercise.trackType),
                   best == null ? null : bestSetSubLabel(best, unit: c.unit),
                   Tokens.pr,
                   valueKey: const Key('best-time'),
@@ -504,7 +518,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(label, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+        Text(label,
+            style:
+                const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
         const SizedBox(height: 4),
         Text(
           value,
@@ -520,7 +536,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           const SizedBox(height: 4),
           Text(sub,
               key: subKey,
-              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              style: const TextStyle(
+                  color: Tokens.text3, fontSize: Tokens.fsMicro)),
         ],
       ],
     );
@@ -545,7 +562,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           Row(
             children: <Widget>[
               const Text('本次',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                  style:
+                      TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
               const Spacer(),
               Text('${sets.length} / $planned 组',
                   key: const Key('set-count'),
@@ -556,50 +574,80 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ],
           ),
           const SizedBox(height: Tokens.s2),
-          Expanded(
+          // ⚠️ v2.0.1 真机：这张卡原来是 `Expanded` 撑满剩余高度，于是 4 行组表下面
+          // 留了一大片空卡底（动作要领孤零零吊在中间，像"加载失败"）。改成**卡随内容收口**：
+          // 组表 + 要领排完就结束卡片，剩下的呼吸空间留给下面「第 N 组 / 记录键」。
+          // `Flexible` 是关键：内容超过可用高度时（2.0× 字号 / 5 组 + 展开要领）卡内 ListView
+          // 自己滚，而不是让外层 Column 溢出 —— 否则 `rest_zero_frame_test` 会当场红。
+          Flexible(
             child: Container(
-            decoration: BoxDecoration(
-              color: Tokens.surface,
-              borderRadius: BorderRadius.circular(Tokens.rCard),
-              border: Border.all(color: Tokens.line),
+              decoration: BoxDecoration(
+                color: Tokens.surface,
+                borderRadius: BorderRadius.circular(Tokens.rCard),
+                border: Border.all(color: Tokens.line),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: Tokens.s3, vertical: Tokens.s2),
+                    decoration: const BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Tokens.line)),
+                    ),
+                    child: const Row(
+                      children: <Widget>[
+                        SizedBox(
+                            width: 24,
+                            child: Text('组',
+                                style: TextStyle(
+                                    color: Tokens.text3,
+                                    fontSize: Tokens.fsMicro))),
+                        Expanded(
+                            child: Text('重量',
+                                style: TextStyle(
+                                    color: Tokens.text3,
+                                    fontSize: Tokens.fsMicro))),
+                        SizedBox(
+                            width: 44,
+                            child: Text('次数',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                    color: Tokens.text3,
+                                    fontSize: Tokens.fsMicro))),
+                        SizedBox(
+                            width: 76,
+                            child: Text('上次',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                    color: Tokens.text3,
+                                    fontSize: Tokens.fsMicro))),
+                        SizedBox(width: 24),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView(
+                      // 卡随内容长高；内容超过可用高度时自己滚（不在卡里留空白）。
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      children: <Widget>[
+                        for (int i = 0; i < rows; i += 1)
+                          _setRow(
+                            index: i,
+                            logged: i < sets.length ? sets[i] : null,
+                            current: i == sets.length,
+                            planned: planned,
+                            lastLabel: lastLabel,
+                          ),
+                        _howToCard(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: Tokens.s3, vertical: Tokens.s2),
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Tokens.line)),
-                  ),
-                  child: const Row(
-                    children: <Widget>[
-                      SizedBox(width: 24, child: Text('组', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                      Expanded(child: Text('重量', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                      SizedBox(width: 44, child: Text('次数', textAlign: TextAlign.right, style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                      SizedBox(width: 76, child: Text('上次', textAlign: TextAlign.right, style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                      SizedBox(width: 24),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: <Widget>[
-                      for (int i = 0; i < rows; i += 1)
-                        _setRow(
-                          index: i,
-                          logged: i < sets.length ? sets[i] : null,
-                          current: i == sets.length,
-                          planned: planned,
-                          lastLabel: lastLabel,
-                        ),
-                      _howToCard(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
           ),
         ],
       ),
@@ -617,7 +665,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final bool done = logged != null;
     final bool pending = !done && !current;
     final String weight = done
-        ? (logged.weightKg == null ? '自重' : formatWeight(logged.weightKg!, c.unit))
+        ? (logged.weightKg == null
+            ? '自重'
+            : formatWeight(logged.weightKg!, c.unit))
         : (c.isBodyweight ? '自重' : formatWeight(c.weightKg, c.unit));
     final String reps = done
         ? (logged.hasDistance
@@ -626,7 +676,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         : '${c.reps}${c.exercise.isTime ? ' 秒' : ''}';
     Widget body = Container(
       key: done ? Key('done-set-${logged.id}') : Key('set-row-$index'),
-      padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: Tokens.s3),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Tokens.s3, vertical: Tokens.s3),
       decoration: BoxDecoration(
         color: current ? Tokens.accentLo.withValues(alpha: 0.12) : null,
         border: Border(
@@ -672,12 +723,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
-                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                style: const TextStyle(
+                    color: Tokens.text3, fontSize: Tokens.fsMicro)),
           ),
           SizedBox(
             width: 24,
             child: done
-                ? const Icon(Icons.check, color: Tokens.success, size: IconSpec.s)
+                ? const Icon(Icons.check,
+                    color: Tokens.success, size: IconSpec.s)
                 : current
                     ? Center(
                         child: Container(
@@ -691,7 +744,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       )
                     : const Text('—',
                         textAlign: TextAlign.right,
-                        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                        style: TextStyle(
+                            color: Tokens.text3, fontSize: Tokens.fsMicro)),
           ),
         ],
       ),
@@ -722,13 +776,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             child: Row(
               children: <Widget>[
                 const Text('动作要领',
-                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                    style: TextStyle(
+                        color: Tokens.text3, fontSize: Tokens.fsMicro)),
                 const SizedBox(width: Tokens.s3),
                 Expanded(
                   child: Text(_guideOpen ? '收起' : firstLine,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro)),
+                      style: const TextStyle(
+                          color: Tokens.text2, fontSize: Tokens.fsMicro)),
                 ),
                 Icon(_guideOpen ? Icons.expand_less : Icons.expand_more,
                     color: Tokens.text3, size: IconSpec.s),
@@ -739,14 +795,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             const SizedBox(height: Tokens.s2),
             Text(text,
                 style: const TextStyle(
-                    color: Tokens.text2, fontSize: Tokens.fsSub, height: Tokens.lhLoose)),
+                    color: Tokens.text2,
+                    fontSize: Tokens.fsSub,
+                    height: Tokens.lhLoose)),
             const SizedBox(height: Tokens.s2),
             GestureDetector(
               key: const Key('howto-open-detail'),
               behavior: HitTestBehavior.opaque,
               onTap: () => _openDetail(c.exercise.id),
               child: const Text('完整说明 ›',
-                  style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap)),
+                  style: TextStyle(
+                      color: Tokens.accentText, fontSize: Tokens.fsCap)),
             ),
           ],
         ],
@@ -796,21 +855,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Widget _doneRowBody(SetRecord r) {
     return Padding(
-        padding: const EdgeInsets.only(bottom: Tokens.s2),
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              width: 16,
-              child: Text('${r.setIndex}',
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
-            ),
-            const SizedBox(width: Tokens.s3),
-            // ⚠️ **这一格必须是 `Expanded`**（2026-10-10 在 2.0× 系统字号下抓到的）：
-            // 它原来是裸 `Text`，而"助力 30 kg × 8 秒"这种组合在 2.0× 下会把这一行撑爆
-            // （实测溢出 17px）。主数字要能缩，右侧那几个标记（RPE / 热身 / ✓）先保。
-            Expanded(
-              child: Text(
+      padding: const EdgeInsets.only(bottom: Tokens.s2),
+      child: Row(
+        children: <Widget>[
+          SizedBox(
+            width: 16,
+            child: Text('${r.setIndex}',
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                    color: Tokens.text3, fontSize: Tokens.fsCap)),
+          ),
+          const SizedBox(width: Tokens.s3),
+          // ⚠️ **这一格必须是 `Expanded`**（2026-10-10 在 2.0× 系统字号下抓到的）：
+          // 它原来是裸 `Text`，而"助力 30 kg × 8 秒"这种组合在 2.0× 下会把这一行撑爆
+          // （实测溢出 17px）。主数字要能缩，右侧那几个标记（RPE / 热身 / ✓）先保。
+          Expanded(
+            child: Text(
               // 距离动作念「5.00 公里 · 30:00」—— 既没有"自重 × 1800"，
               // 也没有把秒读成次。
               r.hasDistance
@@ -825,33 +885,36 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               style: TextStyle(
                 // 热身组用次级色：和正式组混在一起分不出来，用户就不知道
                 // 哪些算进了计划进度
-                color: r.setType == SetType.warmup ? Tokens.text3 : Tokens.text2,
+                color:
+                    r.setType == SetType.warmup ? Tokens.text3 : Tokens.text2,
                 fontSize: Tokens.fsSub,
                 fontWeight: Tokens.fwStrong,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              ),
             ),
-            // RPE 记了就必须显示 —— 只写库不显示就成了用户看不见的隐藏数据
-            if (r.rpe != null) ...<Widget>[
-              const SizedBox(width: Tokens.s2),
-              Text('RPE ${r.rpe!.toInt()}',
-                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-            ],
-            if (r.setType == SetType.warmup) ...<Widget>[
-              const SizedBox(width: Tokens.s2),
-              const Text('热身',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-            ],
+          ),
+          // RPE 记了就必须显示 —— 只写库不显示就成了用户看不见的隐藏数据
+          if (r.rpe != null) ...<Widget>[
             const SizedBox(width: Tokens.s2),
-            const Text('✓',
-                style: TextStyle(
-                    color: Tokens.accentText,
-                    fontSize: Tokens.fsSub,
-                    fontWeight: Tokens.fwBold)),
+            Text('RPE ${r.rpe!.toInt()}',
+                style: const TextStyle(
+                    color: Tokens.text3, fontSize: Tokens.fsMicro)),
           ],
-        ),
+          if (r.setType == SetType.warmup) ...<Widget>[
+            const SizedBox(width: Tokens.s2),
+            const Text('热身',
+                style:
+                    TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          ],
+          const SizedBox(width: Tokens.s2),
+          const Text('✓',
+              style: TextStyle(
+                  color: Tokens.accentText,
+                  fontSize: Tokens.fsSub,
+                  fontWeight: Tokens.fwBold)),
+        ],
+      ),
     );
   }
 
@@ -1014,7 +1077,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   child: Row(
                     children: <Widget>[
                       const Text('休息',
-                          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+                          style: TextStyle(
+                              color: Tokens.text3, fontSize: Tokens.fsCap)),
                       const SizedBox(width: Tokens.s3),
                       Text(
                         _restText(),
@@ -1047,9 +1111,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               // 摆着就是骗人（`adjustRest` 里也挡了一道）。
               if (c.restRunning) ...<Widget>[
                 _restAdjust(
-                    key: 'rest-minus', label: '−15', onTap: () => c.adjustRest(-15)),
+                    key: 'rest-minus',
+                    label: '−15',
+                    onTap: () => c.adjustRest(-15)),
                 _restAdjust(
-                    key: 'rest-plus', label: '+15', onTap: () => c.adjustRest(15)),
+                    key: 'rest-plus',
+                    label: '+15',
+                    onTap: () => c.adjustRest(15)),
                 const SizedBox(width: Tokens.s1),
               ],
               _restAdjust(key: 'skip-rest', label: '跳过', onTap: c.skipRest),
@@ -1089,7 +1157,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           padding: const EdgeInsets.symmetric(horizontal: Tokens.s2),
           child: Text(label,
               style: const TextStyle(
-                  color: Tokens.text2, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
+                  color: Tokens.text2,
+                  fontSize: Tokens.fsSub,
+                  fontWeight: Tokens.fwStrong)),
         ),
       );
 
@@ -1186,7 +1256,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   Tokens.s5, Tokens.s3, Tokens.s5, Tokens.s6),
               decoration: const BoxDecoration(
                 color: Tokens.elevated,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.rSheet)),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(Tokens.rSheet)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1206,7 +1277,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   //   · 没有重量的（跑步机等）→ 距离 + 时长，不显示重量行
                   if (c.isDistance && !c.isBodyweight)
                     _stepperRow(
-                      value: trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
+                      value: trimNumber(
+                          round1(toDisplayWeight(c.weightKg, c.unit))),
                       unit: c.unit.wire,
                       // ⚠️ 步进按显示单位念，但**不许舍成一位小数**：
                       // 用户输进去的 1.25 要原样写在这个按钮上（`formatStep`）
@@ -1221,7 +1293,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       onMinus: () => c.onStepper(deltaWeight: -c.weightStep),
                       onPlus: () => c.onStepper(deltaWeight: c.weightStep),
                     ),
-                  if (c.isDistance && !c.isBodyweight) const SizedBox(height: Tokens.s5),
+                  if (c.isDistance && !c.isBodyweight)
+                    const SizedBox(height: Tokens.s5),
                   if (c.isDistance)
                     _stepperRow(
                       value: trimNumber(round1(c.distanceM)),
@@ -1229,8 +1302,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       step: '${c.distanceStepM.toInt()}',
                       keyMinus: 'step-distance-down',
                       keyPlus: 'step-distance-up',
-                      onMinus: () => c.onStepper(deltaDistanceM: -c.distanceStepM),
-                      onPlus: () => c.onStepper(deltaDistanceM: c.distanceStepM),
+                      onMinus: () =>
+                          c.onStepper(deltaDistanceM: -c.distanceStepM),
+                      onPlus: () =>
+                          c.onStepper(deltaDistanceM: c.distanceStepM),
                     ),
                   if (!c.isDistance)
                     _stepperRow(
@@ -1238,7 +1313,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       // （lb 原生步进会让重量脱离杠铃片网格，见 core/units.dart）
                       value: c.isBodyweight
                           ? '自重'
-                          : trimNumber(round1(toDisplayWeight(c.weightKg, c.unit))),
+                          : trimNumber(
+                              round1(toDisplayWeight(c.weightKg, c.unit))),
                       // 辅助自重的单位里必须带"助力"：这个数越大越轻松
                       unit: c.isBodyweight
                           ? ''
@@ -1259,9 +1335,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   const SizedBox(height: Tokens.s5),
                   _stepperRow(
                     // 距离动作把秒念成 30:00（1800 秒没人这么念），其余照旧
-                    value: c.isDistance
-                        ? formatDurationHms(c.reps)
-                        : '${c.reps}',
+                    value:
+                        c.isDistance ? formatDurationHms(c.reps) : '${c.reps}',
                     // 按时长动作这里是**秒**，步进也变成 ±5 秒；
                     // 距离动作是 ±60 秒（1 分钟）
                     unit: c.isDistance ? '' : c.repsUnit,
@@ -1290,7 +1365,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         ),
                         onPressed: c.startHold,
                         child: const Text('开始计时',
-                            style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
+                            style: TextStyle(
+                                fontSize: Tokens.fsBodyS,
+                                fontWeight: Tokens.fwStrong)),
                       ),
                     ),
                   ],
@@ -1303,7 +1380,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       key: const Key('sheet-warmup'),
                       onPressed: c.toggleWarmup,
                       style: TextButton.styleFrom(
-                        foregroundColor: c.warmup ? Tokens.accent : Tokens.text3,
+                        foregroundColor:
+                            c.warmup ? Tokens.accent : Tokens.text3,
                         padding: const EdgeInsets.symmetric(
                           horizontal: Tokens.s3,
                           vertical: Tokens.s2,
@@ -1323,7 +1401,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     child: Row(
                       children: <Widget>[
                         const Text('RPE',
-                            style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+                            style: TextStyle(
+                                color: Tokens.text3, fontSize: Tokens.fsCap)),
                         const SizedBox(width: Tokens.s3),
                         for (final double v in _rpeChoices) _rpeChip(v),
                       ],
@@ -1344,7 +1423,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ),
                       onPressed: c.onSheetConfirm,
                       child: const Text('确定',
-                          style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
+                          style: TextStyle(
+                              fontSize: Tokens.fsHeadline,
+                              fontWeight: Tokens.fwBold)),
                     ),
                   ),
                 ],
@@ -1373,7 +1454,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               horizontal: Tokens.s3, vertical: Tokens.s2),
           decoration: BoxDecoration(
             color: active ? Tokens.accent : Colors.transparent,
-            border: Border.all(color: active ? Tokens.accent : Tokens.lineStrong),
+            border:
+                Border.all(color: active ? Tokens.accent : Tokens.lineStrong),
             borderRadius: BorderRadius.circular(Tokens.rPill),
           ),
           child: Text(
@@ -1426,6 +1508,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget _stepperRow({
     required String value,
     required String unit,
+
     /// 这一步的幅度，直接印在按钮上。
     ///
     /// 以前两个按钮上的字是**硬编码的 ±2.5** —— 于是次数那一行明明在 ±1，
@@ -1435,18 +1518,23 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     required String keyPlus,
     required VoidCallback onMinus,
     required VoidCallback onPlus,
+
     /// 传了就把中间的步进做成**可点**的（点开改步进）。只有重量那一行传。
     VoidCallback? onEditStep,
   }) {
     return Row(
       children: <Widget>[
-        Text(value, style: Tokens.display(36, weight: 700, letterSpacing: Tokens.lsTight)),
+        Text(value,
+            style:
+                Tokens.display(36, weight: 700, letterSpacing: Tokens.lsTight)),
         if (unit.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(left: Tokens.s1),
             child: Text(unit,
                 style: const TextStyle(
-                    color: Tokens.text3, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
+                    color: Tokens.text3,
+                    fontSize: Tokens.fsBody,
+                    fontWeight: Tokens.fwStrong)),
           ),
         const Spacer(),
         if (onEditStep != null) ...<Widget>[
@@ -1456,7 +1544,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             onTap: onEditStep,
             behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Tokens.s3, vertical: 6),
               decoration: BoxDecoration(
                 color: Tokens.surface,
                 borderRadius: BorderRadius.circular(Tokens.rPill),
@@ -1467,7 +1556,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 children: <Widget>[
                   Text('±$step',
                       style: const TextStyle(
-                          color: Tokens.text2, fontSize: Tokens.fsCap, fontWeight: Tokens.fwStrong)),
+                          color: Tokens.text2,
+                          fontSize: Tokens.fsCap,
+                          fontWeight: Tokens.fwStrong)),
                   const SizedBox(width: 4),
                   const Icon(Icons.tune, size: IconSpec.s, color: Tokens.text3),
                 ],
@@ -1492,13 +1583,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         style: OutlinedButton.styleFrom(
           backgroundColor: Tokens.surface,
           side: const BorderSide(color: Tokens.lineStrong),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Tokens.rCard)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Tokens.rCard)),
           padding: EdgeInsets.zero,
         ),
         onPressed: onPressed,
         child: Text(label,
             style: const TextStyle(
-                color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
+                color: Tokens.text,
+                fontSize: Tokens.fsSub,
+                fontWeight: Tokens.fwStrong)),
       ),
     );
   }
