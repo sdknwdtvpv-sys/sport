@@ -8,6 +8,7 @@ library;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/accent_button.dart';
 import 'package:lianleme/core/units.dart';
 import 'package:lianleme/data/body_metric_repository.dart';
 import 'package:lianleme/data/db.dart';
@@ -286,12 +287,12 @@ void main() {
 
       await tester.enterText(find.byKey(const Key('body-weight')), '900');
       await tester.pumpAndSettle();
-      expect(tester.widget<FilledButton>(save).onPressed, isNull,
+      expect(tester.widget<AccentButton>(save).onPressed, isNull,
           reason: '900 斤 = 450 kg，超出上限');
 
       await tester.enterText(find.byKey(const Key('body-weight')), '170');
       await tester.pumpAndSettle();
-      expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
+      expect(tester.widget<AccentButton>(save).onPressed, isNotNull);
     });
 
     testWidgets('补录时把已有值按**当前单位**填回来（不是把 kg 塞进斤的框）',
@@ -309,21 +310,21 @@ void main() {
       await pump(tester);
 
       final Finder save = find.byKey(const Key('body-save'));
-      expect(tester.widget<FilledButton>(save).onPressed, isNull);
+      expect(tester.widget<AccentButton>(save).onPressed, isNull);
 
       await tester.enterText(find.byKey(const Key('body-weight')), 'abc');
       await tester.pumpAndSettle();
-      expect(tester.widget<FilledButton>(save).onPressed, isNull,
+      expect(tester.widget<AccentButton>(save).onPressed, isNull,
           reason: '非数字不算填了');
 
       // 明显不合理的值也不接受，避免把 720kg 存进去
       await tester.enterText(find.byKey(const Key('body-weight')), '720');
       await tester.pumpAndSettle();
-      expect(tester.widget<FilledButton>(save).onPressed, isNull);
+      expect(tester.widget<AccentButton>(save).onPressed, isNull);
 
       await tester.enterText(find.byKey(const Key('body-weight')), '72.5');
       await tester.pumpAndSettle();
-      expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
+      expect(tester.widget<AccentButton>(save).onPressed, isNotNull);
     });
 
     testWidgets('填体重 + 备注 → 保存 → 落库', (WidgetTester tester) async {

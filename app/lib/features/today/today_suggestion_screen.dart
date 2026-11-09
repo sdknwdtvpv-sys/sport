@@ -12,6 +12,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/accent_button.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/db.dart' hide Exercise, SetRecord, UserProfile, Workout, WorkoutItem;
@@ -431,7 +432,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               // 红线：解释不了的建议不许出现
               p.suggestion!.reasonText,
               style: const TextStyle(
-                color: Tokens.accent,
+                color: Tokens.text2,
                 fontSize: Tokens.fsCap,
                 height: Tokens.lhSnug,
               ),
@@ -462,24 +463,12 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, Tokens.s5),
       child: Column(
         children: <Widget>[
-          SizedBox(
+          AccentButton(
+            key: const Key('start-session'),
+            label: '开始训练',
+            labelSize: Tokens.fsHeadline,
             height: Tokens.hPrimary,
-            width: double.infinity,
-            child: FilledButton(
-              key: const Key('start-session'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Tokens.accent,
-                foregroundColor: Tokens.accentInk,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Tokens.rPill),
-                ),
-              ),
-              onPressed: _plan.isEmpty ? null : _start,
-              child: const Text(
-                '开始训练',
-                style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold),
-              ),
-            ),
+            onPressed: _plan.isEmpty ? null : _start,
           ),
           const SizedBox(height: Tokens.s2),
           Row(

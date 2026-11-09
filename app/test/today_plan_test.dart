@@ -20,6 +20,8 @@ import 'package:lianleme/core/labels.dart';
 import 'package:lianleme/data/db.dart';
 import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart' show PlanTarget;
+import 'package:lianleme/core/app_tab_bar.dart';
+import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/features/today/today_planner.dart';
 import 'package:lianleme/features/today/today_screen.dart';
 import 'package:lianleme/main.dart';
@@ -79,10 +81,9 @@ void main() {
       final List<String> texts = cardTexts(tester);
       // ⚠️ 2026-10-09（第二份 docx 第 4 条）起表头还带着**在哪儿练**：
       // 用户不看着"健身房/家里/徒手"这三个字，就会奇怪"我明明选了家里怎么还推这个"。
-      expect(texts.any((String s) => s.startsWith('今天练 上肢')),
-          isTrue,
-          reason: '从没练过 → 上肢；2026-10-04 起不再是"今天练 胸"；'
-              '第 4 条起后面还会带 · 场景');
+      expect(texts, contains('今日训练'));
+      expect(texts.any((String s) => s.startsWith('上肢 · 健身房')), isTrue,
+          reason: 'v2.2 卡片标题=22pt 的「部位 · 场景」，eyebrow 另起一行');
       expect(texts.any((String s) => s.contains('健身房')), isTrue,
           reason: '没选过场景 = 健身房（与这一版之前的行为一致）');
       expect(texts, contains('编辑'));
@@ -354,4 +355,19 @@ void main() {
   });
 
   
+
+  testWidgets('★ 高屏（≥900pt）首页有呼吸留白，不把内容全贴顶（审计 O1）',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(440 * 3, 956 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: TodayScreen(onStart: () {}))));
+    await tester.pumpAndSettle();
+    final ListView list = tester.widget<ListView>(find.byType(ListView).first);
+    final EdgeInsets pad = list.padding! as EdgeInsets;
+    expect(pad.top, greaterThan(Tokens.s4),
+        reason: '高屏顶部加呼吸（24pt）');
+    expect(pad.bottom, greaterThan(Tokens.s4 + AppTabBar.reservedSpaceFor(tester.element(find.byType(ListView)))),
+        reason: '高屏底部多留 70pt，内容尾不贴底栏');
+  });
 }

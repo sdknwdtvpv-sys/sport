@@ -652,9 +652,20 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                   style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro)),
             ),
             Expanded(
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: chips,
+              // 右侧 24pt 渐隐：横向滚动不在右边缘"硬裁"（审计 O9/Q2）。
+              child: ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (Rect bounds) => const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: <Color>[Colors.white, Colors.white, Colors.transparent],
+                  stops: <double>[0.0, 0.90, 1.0],
+                ).createShader(bounds),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(right: Tokens.s6),
+                  children: chips,
+                ),
               ),
             ),
           ],

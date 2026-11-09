@@ -17,6 +17,7 @@ import '../../core/last_time.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/motion.dart';
+import '../../core/accent_button.dart';
 import '../../core/reduced_motion.dart';
 import '../../core/units.dart';
 import '../../core/weight_step_dialog.dart';
@@ -106,7 +107,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   final Set<String> _askedPlanDone = <String>{};
 
   /// 大按钮现在是不是被按着（T2-2 的按压缩放）。手指滑出去要弹回来，所以三个回调都改它。
-  bool _pressed = false;
   bool _guideOpen = false;
   String get _planDoneKey => '${c.exercise.id}@${c.plannedSets}';
 
@@ -447,53 +447,83 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final String target = '${c.plannedSets} × $targetReps'
         '${c.exercise.isTime ? ' 秒' : ''}';
     final String targetSub = c.plan.targetWeightKg == null
-        ? (c.isBodyweight ? '自重' : '—')
+        ? (c.isBodyweight ? '自重' : '')
         : formatWeight(c.plan.targetWeightKg, c.unit);
+    final bool hasLast = lastMain != null;
+    final bool hasBest = best != null;
+    // 首练：没有过去、没有纪录 → 只摆一行"今天的目标"，不渲染两格破折号（O6）。
+    if (!hasLast && !hasBest) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, 0),
+        child: Container(
+          key: const Key('compare-band'),
+          padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: Tokens.hair), bottom: BorderSide(color: Tokens.hair)),
+          ),
+          child: Row(
+            children: <Widget>[
+              const Text('今天的目标',
+                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: Text(
+                  targetSub.isEmpty ? target : '$target · $targetSub',
+                  key: const Key('today-target'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Tokens.text,
+                      fontSize: Tokens.fsBody,
+                      fontWeight: Tokens.fwBold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s3, Tokens.s5, 0),
       child: Container(
         key: const Key('compare-band'),
-        padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+        padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
         decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: Tokens.hair),
-            bottom: BorderSide(color: Tokens.hair),
-          ),
+          border: Border(top: BorderSide(color: Tokens.hair), bottom: BorderSide(color: Tokens.hair)),
         ),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Expanded(
-                child: _compareCell(
-                  '上次',
-                  lastMain ?? '—',
-                  lastSub,
-                  Tokens.text,
-                  valueKey: const Key('last-time'),
-                  subKey: const Key('last-time-sub'),
+              if (hasLast)
+                Expanded(
+                  child: _compareCell(
+                    '上次',
+                    lastMain,
+                    lastSub,
+                    Tokens.text,
+                    valueKey: const Key('last-time'),
+                    subKey: const Key('last-time-sub'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: Tokens.s3),
-              Expanded(
-                child: _compareCell(
-                  '最佳',
-                  best == null
-                      ? '—'
-                      : bestSetMainLabel(best,
-                          unit: c.unit, trackType: c.exercise.trackType),
-                  best == null ? null : bestSetSubLabel(best, unit: c.unit),
-                  Tokens.pr,
-                  valueKey: const Key('best-time'),
-                  subKey: const Key('best-time-sub'),
+              if (hasLast) const SizedBox(width: Tokens.s3),
+              if (hasBest)
+                Expanded(
+                  child: _compareCell(
+                    '最佳',
+                    bestSetMainLabel(best, unit: c.unit, trackType: c.exercise.trackType),
+                    bestSetSubLabel(best, unit: c.unit),
+                    Tokens.pr,
+                    valueKey: const Key('best-time'),
+                    subKey: const Key('best-time-sub'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: Tokens.s3),
+              if (hasBest) const SizedBox(width: Tokens.s3),
               Expanded(
                 child: _compareCell(
                   '目标',
                   target,
-                  targetSub,
+                  targetSub.isEmpty ? null : targetSub,
                   Tokens.text,
                   valueKey: const Key('today-target'),
                   subKey: const Key('today-target-sub'),
@@ -549,6 +579,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final List<SetRecord> sets = c.loggedSets;
     final int planned = c.plannedSets;
     final int rows = sets.length > planned ? sets.length : planned;
+    final bool showLast = c.lastSession != null;
     final String? lastLabel = c.lastSession == null
         ? null
         : '${c.lastSession!.weightKg == null ? '自重' : formatWeight(c.lastSession!.weightKg!, c.unit)}'
@@ -595,7 +626,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     decoration: const BoxDecoration(
                       border: Border(bottom: BorderSide(color: Tokens.line)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: <Widget>[
                         SizedBox(
                             width: 24,
@@ -615,13 +646,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                 style: TextStyle(
                                     color: Tokens.text3,
                                     fontSize: Tokens.fsMicro))),
-                        SizedBox(
-                            width: 76,
-                            child: Text('上次',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                    color: Tokens.text3,
-                                    fontSize: Tokens.fsMicro))),
+                        if (c.lastSession != null)
+                          SizedBox(
+                              width: 76,
+                              child: Text('上次',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                      color: Tokens.text3,
+                                      fontSize: Tokens.fsMicro))),
                         SizedBox(width: 24),
                       ],
                     ),
@@ -640,6 +672,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             current: i == sets.length,
                             planned: planned,
                             lastLabel: lastLabel,
+                            showLast: showLast,
                           ),
                         _howToCard(),
                       ],
@@ -648,6 +681,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ],
               ),
             ),
+          ),
+          const Spacer(),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  '本场 ${sets.length} / '
+                  '${widget.session.controllers.fold<int>(0, (int a, WorkoutController x) => a + x.plannedSets)} 组'
+                  ' · 已练 ${formatDurationHms(c.elapsedSec)}',
+                  key: const Key('session-summary'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -661,6 +710,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     required bool current,
     required int planned,
     required String? lastLabel,
+    required bool showLast,
   }) {
     final bool done = logged != null;
     final bool pending = !done && !current;
@@ -677,7 +727,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     Widget body = Container(
       key: done ? Key('done-set-${logged.id}') : Key('set-row-$index'),
       padding: const EdgeInsets.symmetric(
-          horizontal: Tokens.s3, vertical: Tokens.s3),
+          horizontal: Tokens.s3, vertical: Tokens.s4),
       decoration: BoxDecoration(
         color: current ? Tokens.accentLo.withValues(alpha: 0.12) : null,
         border: Border(
@@ -717,15 +767,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     fontSize: Tokens.fsSub,
                     fontFeatures: Tokens.tabular)),
           ),
-          SizedBox(
-            width: 76,
-            child: Text(lastLabel ?? '—',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    color: Tokens.text3, fontSize: Tokens.fsMicro)),
-          ),
+          if (showLast)
+            SizedBox(
+              width: 76,
+              child: Text(lastLabel ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                      color: Tokens.text3, fontSize: Tokens.fsMicro)),
+            ),
           SizedBox(
             width: 24,
             child: done
@@ -742,10 +793,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           ),
                         ),
                       )
-                    : const Text('—',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                            color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                    : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -948,54 +996,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ],
           ),
           const SizedBox(height: Tokens.s2),
-          GestureDetector(
+          AccentButton(
             key: const Key('big-log-button'),
-            behavior: HitTestBehavior.opaque,
-            onTap: c.onBigButtonTap,
+            label: c.primaryButtonLabel,
+            labelKey: const Key('button-label'),
+            height: Tokens.hPrimary,
+            onPressed: c.canLog ? c.onBigButtonTap : null,
             onLongPress: c.onLongPress,
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapUp: (_) => setState(() => _pressed = false),
-            onTapCancel: () => setState(() => _pressed = false),
-            child: AnimatedScale(
-              scale: _pressed ? 0.975 : 1.0,
-              duration: reducedMotion(context) ? Duration.zero : Motion.instant,
-              curve: Motion.press,
-              child: Container(
-                height: Tokens.hPrimary,
-                width: double.infinity,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: c.canLog ? Tokens.accent : Tokens.elevated,
-                  borderRadius: BorderRadius.circular(Tokens.rPill),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: <Widget>[
-                      Text(
-                        c.primaryButtonLabel,
-                        key: const Key('button-label'),
-                        style: TextStyle(
-                          color: c.canLog ? Tokens.accentInk : Tokens.text3,
-                          fontSize: Tokens.fsHero,
-                          fontWeight: Tokens.fwBold,
-                          letterSpacing: Tokens.lsTight,
-                        ),
-                      ),
-                      const SizedBox(width: Tokens.s2),
-                      Text('✓',
-                          style: TextStyle(
-                              color: c.canLog ? Tokens.accentInk : Tokens.text3,
-                              fontSize: Tokens.fsNumL,
-                              fontWeight: Tokens.fwBold)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ),
         ],
       ),

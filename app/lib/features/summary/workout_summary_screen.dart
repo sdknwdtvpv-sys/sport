@@ -15,6 +15,7 @@ import '../../analytics/analytics.dart';
 import '../../core/check_painter.dart';
 import '../../core/motion.dart';
 import '../../core/reduced_motion.dart';
+import '../../core/accent_button.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
@@ -213,7 +214,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
       children: <Widget>[
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s6, Tokens.s5, Tokens.s4),
+            padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s6, Tokens.s5, Tokens.s6),
             children: <Widget>[
               // 2026-10-05 按新 VI 重做：一个**成功的绿勾** + 「训练完成！」 + 一句人话。
               // 旧版只有一行「训练完成」四个字 —— 刚练完那一刻值得给一个明确的完成感。
@@ -252,6 +253,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
             ],
           ),
         ),
+        const SizedBox(height: Tokens.s4),
         _shareButton(s),
         // 完成键 1100→1400ms：**最后**出现 —— 它是这一屏的"结束"，
         // 提前抢眼会让人没看完三个数就按下去。
@@ -450,7 +452,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
               color: Tokens.success,
               shape: BoxShape.circle,
               // 完成那颗绿勾的辉光：半径最大的那一档（它是全 App 唯一"庆祝"的光）
-              boxShadow: Tokens.glow(Tokens.success, radius: 28, spread: 2),
+              boxShadow: Tokens.glow(Tokens.success, radius: 18),
             ),
             // ⚠️ **T2-3**：勾是**画出来**的（`CheckPainter` + `PathMetric`），不是字形淡入 ——
             // 0→420ms 写完整笔。`RepaintBoundary` 把每帧重绘关在这 76pt 里。
@@ -824,30 +826,18 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
   Widget _doneButton() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, Tokens.s5),
-      child: SizedBox(
+      child: AccentButton(
+        key: const Key('summary-done'),
+        label: '完成',
+        labelSize: Tokens.fsHeadline,
         height: Tokens.hPrimary,
-        width: double.infinity,
-        child: FilledButton(
-          key: const Key('summary-done'),
-          style: FilledButton.styleFrom(
-            backgroundColor: Tokens.accent,
-            foregroundColor: Tokens.accentInk,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Tokens.rPill),
-            ),
-          ),
-          // 先落库再退：总结页是"训练结束"这条路上的最后一屏，
-          // 用户在这里写的那句话不该因为退出的方式不同而丢掉。
-          onPressed: () async {
-            await _saveNote();
-            if (!context.mounted) return;
-            Navigator.of(context).pop();
-          },
-          child: const Text(
-            '完成',
-            style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold),
-          ),
-        ),
+        // 先落库再退：总结页是"训练结束"这条路上的最后一屏，
+        // 用户在这里写的那句话不该因为退出的方式不同而丢掉。
+        onPressed: () async {
+          await _saveNote();
+          if (!context.mounted) return;
+          Navigator.of(context).pop();
+        },
       ),
     );
   }

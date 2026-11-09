@@ -747,4 +747,13 @@ void main() {
       expect(find.byKey(const Key('basis-ex_bb_bench_press')), findsNothing);
     });
   });
+
+  testWidgets('★ 筛选行右侧是渐隐，不是硬裁（审计 O9）', (WidgetTester tester) async {
+    await pumpPicker(tester);
+    expect(find.byType(ShaderMask), findsWidgets,
+        reason: '三条筛选行的横向列表都包了右侧渐隐');
+    final ListView list = tester.widget<ListView>(find.byType(ListView).first);
+    expect(list.padding, const EdgeInsets.only(right: Tokens.s6),
+        reason: '渐隐之外还要给右侧内边距，最后一枚 chip 才有完整收口');
+  });
 }

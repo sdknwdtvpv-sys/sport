@@ -84,7 +84,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
               const Text(
                 '练了么',
                 style: TextStyle(
-                  color: Tokens.accent,
+                  color: Tokens.accentText,
                   fontSize: Tokens.fsTitle,
                   fontWeight: Tokens.fwBold,
                 ),

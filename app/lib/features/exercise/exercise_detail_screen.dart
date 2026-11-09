@@ -204,7 +204,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           const Text(
             '怎么做',
             style: TextStyle(
-              color: Tokens.accent,
+              color: Tokens.accentText,
               fontSize: Tokens.fsCap,
               fontWeight: Tokens.fwBold,
             ),

@@ -65,7 +65,7 @@ abstract final class Tokens {
 
   /// 卡片阴影（v2.0.0）：页面里不许再自己写 BoxShadow 字面量。
   static const List<BoxShadow> shadowCard = <BoxShadow>[
-    BoxShadow(color: Color(0xE6000000), offset: Offset(0, 18), blurRadius: 36, spreadRadius: -28),
+    BoxShadow(color: Color(0xD1000000), offset: Offset(0, 10), blurRadius: 24, spreadRadius: -16),
   ];
 
   /// 浮层 / 底栏阴影。
@@ -75,7 +75,7 @@ abstract final class Tokens {
 
   /// 卡片顶部 1px 内高光（6% 暖白）。
   static const List<BoxShadow> edgeHighlight = <BoxShadow>[
-    BoxShadow(color: Color(0x0FFFFFF6), offset: Offset(0, 1), blurRadius: 0),
+    BoxShadow(color: Color(0x14FFF6EC), offset: Offset(0, 1), blurRadius: 0),
   ];
 
   /// 主按钮三段渐变 + 轻辉光。
@@ -85,6 +85,21 @@ abstract final class Tokens {
     colors: <Color>[Color(0xFFF08A5B), Color(0xFFE2663A), Color(0xFFD65B2D)],
     stops: <double>[0.0, 0.42, 1.0],
   );
+
+  /// 主按钮紧辉光（v2.2.0）：只给 `accentButton`，页面不许自己写 BoxShadow。
+  static const List<BoxShadow> ctaGlow = <BoxShadow>[
+    BoxShadow(color: Color(0x59E2663A), offset: Offset(0, 10), blurRadius: 24, spreadRadius: -12),
+  ];
+
+  /// 主按钮内的 1px 高光/暗边（BoxShadow 不能 inset，用 border 表达）。
+  static const Color ctaHighlightLine = Color(0x47FFF6EC);
+  static const Color ctaBottomLine = Color(0x29000000);
+  static const BorderSide ctaTopHighlight = BorderSide(color: ctaHighlightLine);
+  static const BorderSide ctaBottomShade = BorderSide(color: ctaBottomLine);
+
+  /// 卡片内主 CTA 高度（首页 / 身体数据）；训练/总结/建议仍是 hPrimary=88。
+  static const double hCardCta = 64;
+  static const double hSecondary = 56;
 
   /// **一团彩色辉光**（破纪录、未读点、完成勾）—— 三处原来各写一份 `BoxShadow`，
   /// 于是同一个"发光"有三种模糊半径。统一到这里，半径按语义给。
@@ -107,7 +122,7 @@ abstract final class Tokens {
   static const Color field = lift; // 别名：与 `lift` 是同一种材料（见上）
 
   static const Color hair = Color(0xFF28221A);
-  static const Color line = Color(0xFF3B332B);
+  static const Color line = Color(0xFF463D33);
   static const Color lineStrong = Color(0xFF74695C);
 
   // 前景层级（VI 的 neutral-50 / 300 / 500）

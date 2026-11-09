@@ -307,13 +307,13 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                   key: Key('template-tag-${t.id}-$i'),
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Tokens.accent.withValues(alpha: 0.14),
+                    color: Tokens.surfaceHi,
                     borderRadius: BorderRadius.circular(Tokens.rPill),
                   ),
                   child: Text(
                     t.tags[i],
                     style: const TextStyle(
-                        color: Tokens.accent, fontSize: Tokens.fsMicro, fontWeight: Tokens.fwStrong),
+                        color: Tokens.text2, fontSize: Tokens.fsMicro, fontWeight: Tokens.fwStrong),
                   ),
                 ),
           ],

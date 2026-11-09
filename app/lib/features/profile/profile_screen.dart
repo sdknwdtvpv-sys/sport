@@ -368,6 +368,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // 2026-10-07（v1.60.0）按用户的要求搬进了**独立设置页**（`settings_home_screen.dart`），
         // 入口是外壳顶栏右上角那枚齿轮 —— 与你在哪一屏无关，五个 tab 都点得到。
         // 三个入口的 key 一个都没改。
+        // 高屏（≥900pt）在内容尾与版本行之间留呼吸，避免整页贴顶（审计 O1）。
+        if (MediaQuery.sizeOf(context).height >= 900)
+          const SizedBox(height: 70),
         const SizedBox(height: Tokens.s5),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Tokens.s1),

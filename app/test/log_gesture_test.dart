@@ -2,7 +2,7 @@
 ///
 /// 这是**全产品调用最频繁的一次交互**（一次训练 12–25 次），
 /// 而它原来是"一行字瞬间出现 + 手机震一下"。规格书里其实写着两条
-/// （§5 按压缩放 0.975 / 100ms、§8 新行 pop 入场 280ms）——**两条都只写在纸上**。
+/// （§5 按压缩放 0.98 / 100ms、§8 新行 pop 入场 280ms）——**两条都只写在纸上**。
 ///
 /// 在"组间 60 秒、屏幕有汗、注意力在器械上"的场景里，这直接对应 `PRODUCT.md` §5
 /// 那条硬约束「1 次点击 = 1 组」的**可信度**：按下去没有回应，用户就会再点一次 —— 那是两组。
@@ -89,7 +89,7 @@ double _buttonScale(WidgetTester tester) => tester
     .scale;
 
 void main() {
-  testWidgets('按下 → 缩到 0.975；抬手 → 回 1.0，并记上一组', (WidgetTester tester) async {
+  testWidgets('按下 → 缩到 0.98；抬手 → 回 1.0，并记上一组', (WidgetTester tester) async {
     final _Harness h = _Harness();
     await _pump(tester, h);
     expect(_buttonScale(tester), 1.0);
@@ -99,7 +99,7 @@ void main() {
     // ⚠️ 要 `pump` 过 `kPressTimeout`（100ms）：`onTapDown` 不是在指针按下的那一刻
     // 就回调的（手势竞技场里还有长按那一位在争），Flutter 给它 100ms 的判定窗口。
     await tester.pump(const Duration(milliseconds: 120));
-    expect(_buttonScale(tester), 0.975, reason: '手指按下去必须有回应（规格 §5）');
+    expect(_buttonScale(tester), 0.98, reason: '手指按下去必须有回应（规格 §5）');
 
     await g.up();
     await tester.pumpAndSettle();
@@ -116,7 +116,7 @@ void main() {
     final TestGesture g =
         await tester.startGesture(tester.getCenter(find.byKey(const Key('big-log-button'))));
     await tester.pump(const Duration(milliseconds: 120));
-    expect(_buttonScale(tester), 0.975);
+    expect(_buttonScale(tester), 0.98);
 
     // 手指滑出按钮（`onTapCancel`）—— 这是最容易漏的那条路
     await g.moveBy(const Offset(0, 200));
@@ -221,7 +221,9 @@ void main() {
   test('时长来自令牌：按压 100ms、入场 260ms（不是字面量）', () {
     final String src =
         File('lib/features/workout/workout_screen.dart').readAsStringSync();
-    expect(src.contains('Motion.instant'), isTrue, reason: '按压缩放走 Motion.instant（100ms）');
+    final String button = File('lib/core/accent_button.dart').readAsStringSync();
+    expect(button.contains('Motion.instant'), isTrue,
+        reason: '按压缩放走 Motion.instant（100ms）—— 主按钮已收口到 AccentButton');
     expect(src.contains('Motion.base'), isTrue,
         reason: '新行入场走 Motion.base（260ms）—— 规格写 280ms，令牌里最近的一档是它（T1-4 的裁决）');
   });

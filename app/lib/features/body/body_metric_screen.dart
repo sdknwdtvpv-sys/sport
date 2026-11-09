@@ -21,6 +21,7 @@ import 'package:flutter/services.dart';
 
 
 import '../../core/fields.dart';
+import '../../core/accent_button.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/vi_area_chart.dart';
@@ -912,8 +913,9 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
                       '身体数据',
                       style: TextStyle(
                         color: Tokens.text,
-                        fontSize: Tokens.fsHeadline,
+                        fontSize: Tokens.fsTitle,
                         fontWeight: Tokens.fwBold,
+                        letterSpacing: Tokens.lsTight,
                       ),
                     ),
                   ),
@@ -1050,23 +1052,13 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(Tokens.s5, 0, Tokens.s5, Tokens.s4),
-              child: SizedBox(
-                width: double.infinity,
-                height: 64,
-                child: FilledButton(
-                  key: const Key('body-save'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _canSave ? Tokens.accent : Tokens.line,
-                    foregroundColor: _canSave ? Tokens.accentInk : Tokens.text3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Tokens.rPill),
-                    ),
-                  ),
-                  // 没填有效体重就不能存：存一条空的身体数据没有意义
-                  onPressed: _canSave ? _save : null,
-                  child: const Text('保存',
-                      style: TextStyle(fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
-                ),
+              child: AccentButton(
+                key: const Key('body-save'),
+                label: '保存',
+                labelSize: Tokens.fsHeadline,
+                height: Tokens.hCardCta,
+                // 没填有效体重就不能存：存一条空的身体数据没有意义
+                onPressed: _canSave ? _save : null,
               ),
             ),
           ],

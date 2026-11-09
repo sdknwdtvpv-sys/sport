@@ -21,6 +21,7 @@ class ViAreaChart extends StatelessWidget {
     this.labels = const <String>[],
     this.color,
     this.previousPoints = const <double>[],
+    this.yMaxLabel,
   });
 
   final List<double> points;
@@ -34,24 +35,32 @@ class ViAreaChart extends StatelessWidget {
   /// 上一周期同点位（虚线对照）。空 = 不画。
   final List<double> previousPoints;
 
+  /// 右上角 y 轴上限文案（null = 不画 y 轴标签）。
+  final String? yMaxLabel;
+
   @override
   Widget build(BuildContext context) => SizedBox(
         height: height,
         width: double.infinity,
         child: CustomPaint(
           painter: ViAreaChartPainter(points,
-              color: color ?? Tokens.accent, previousPoints: previousPoints),
+              color: color ?? Tokens.accent,
+              previousPoints: previousPoints,
+              yMaxLabel: yMaxLabel),
         ),
       );
 }
 
 class ViAreaChartPainter extends CustomPainter {
   ViAreaChartPainter(this.points,
-      {this.color = Tokens.accent, this.previousPoints = const <double>[]});
+      {this.color = Tokens.accent,
+      this.previousPoints = const <double>[],
+      this.yMaxLabel});
 
   final List<double> points;
   final Color color;
   final List<double> previousPoints;
+  final String? yMaxLabel;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -64,6 +73,19 @@ class ViAreaChartPainter extends CustomPainter {
         ..color = Tokens.line
         ..strokeWidth = 1,
     );
+    // 25 / 50 / 75% 网格（v2.2.0，O7）+ y 轴标签；不改变折线数据
+    for (final double f in <double>[0.25, 0.5, 0.75]) {
+      final double y = baseline - f * (size.height - 8);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y),
+          Paint()..color = Tokens.line.withValues(alpha: 0.55)..strokeWidth = 1);
+    }
+    if (yMaxLabel != null) {
+      final TextPainter tp = TextPainter(
+        text: TextSpan(text: yMaxLabel, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(size.width - tp.width, 0));
+    }
     if (points.isEmpty || size.width <= 0) return;
 
     final double step = points.length > 1 ? size.width / (points.length - 1) : 0;
@@ -148,5 +170,5 @@ class ViAreaChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ViAreaChartPainter old) =>
-      old.points != points || old.color != color || old.previousPoints != previousPoints;
+      old.points != points || old.color != color || old.previousPoints != previousPoints || old.yMaxLabel != yMaxLabel;
 }

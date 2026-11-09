@@ -805,18 +805,13 @@ void main() {
     final _Harness h = _Harness();
     await _pump(tester, h);
 
-    expect(find.byKey(const Key('last-time')), findsOneWidget,
-        reason: '没练过就没有"上次"');
-    expect(find.byKey(const Key('best-time')), findsOneWidget,
-        reason: '也没练过就没有"历史最佳"');
-    expect(find.byKey(const Key('today-target')), findsOneWidget,
-        reason: '这块版面不空着 —— 第一次练也要回答"今天练多少"');
-    expect(
-      tester.widget<Text>(find.byKey(const Key('today-target'))).data,
-      '${h.controller.plannedSets} × ${h.controller.plan.targetRepsLow}'
-      '${h.controller.plan.targetRepsHigh == h.controller.plan.targetRepsLow ? '' : '–${h.controller.plan.targetRepsHigh}'}',
-      reason: '组数 × 次数区间',
-    );
+    // v2.2.0（O6）：首练不再摆两格破折号，只摆一行「今天的目标」。
+    expect(find.byKey(const Key('last-time')), findsNothing);
+    expect(find.byKey(const Key('best-time')), findsNothing);
+    expect(find.byKey(const Key('today-target')), findsOneWidget);
+    expect(find.text('今天的目标'), findsOneWidget);
+    expect(find.textContaining('${h.controller.plannedSets} × ${h.controller.plan.targetRepsLow}'), findsOneWidget);
+    expect(find.text('—'), findsNothing, reason: '首练不渲染任何破折号');
     await _teardown(tester, h);
   });
 
@@ -855,6 +850,18 @@ void main() {
     // 1.5× 与 `xxxLarge`（≈1.35×）都没问题。**没有硬修**：不确定是哪一行时动布局，
     // 等于拿真机观感赌一把；留给下一版或真机实测。
 
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 组表下方有「本场 n / N 组 · 已练 mm:ss」摘要（审计 O5）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+    final Finder summary = find.byKey(const Key('session-summary'));
+    expect(summary, findsOneWidget);
+    final String text = tester.widget<Text>(summary).data!;
+    expect(text, startsWith('本场 0 / '));
+    expect(text, contains(' · 已练 '));
     await _teardown(tester, h);
   });
 }

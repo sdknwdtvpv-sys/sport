@@ -648,7 +648,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               child: RefreshIndicator.adaptive(
                 key: const Key('cloud-pull-refresh'),
                 onRefresh: _load,
-                color: Tokens.accent,
+                color: Tokens.accentText,
                 backgroundColor: Tokens.elevated,
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s8),
@@ -723,7 +723,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: Tokens.accent, shape: BoxShape.circle),
+                decoration: const BoxDecoration(color: Tokens.accentText, shape: BoxShape.circle),
               ),
               const SizedBox(width: Tokens.s2),
               const Text('已开启',
@@ -809,7 +809,7 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
             formatRecoveryCode(account.recoveryCode),
             key: const Key('cloud-code'),
             style: const TextStyle(
-              color: Tokens.accent,
+              color: Tokens.accentText,
               fontSize: Tokens.fsSub,
               height: Tokens.lhNormal,
               fontFeatures: Tokens.tabular,
@@ -1056,7 +1056,7 @@ class _RecoveryCodeDialogState extends State<_RecoveryCodeDialog> {
             widget.account.displayCode,
             key: const Key('cloud-new-code'),
             style: const TextStyle(
-              color: Tokens.accent,
+              color: Tokens.accentText,
               fontSize: Tokens.fsBodyS,
               height: Tokens.lhNormal,
               fontFeatures: Tokens.tabular,

@@ -319,6 +319,10 @@ class WorkoutController extends ChangeNotifier {
   int get normalSets => _normalSets;
 
   int get setNumber => _normalSets + 1;
+
+  /// 这一场从开始到现在的秒数（首练摘要行用）。
+  int get elapsedSec =>
+      ((_clock() - workout.startedAtMs) / 1000).round().clamp(0, 86400);
   int get plannedSets => plan.targetSets;
   String? get hint => _hint;
   List<SetRecord> get loggedSets => List<SetRecord>.unmodifiable(workout.sets);

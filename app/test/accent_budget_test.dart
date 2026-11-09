@@ -220,24 +220,55 @@ void main() {
     c.dispose();
   });
 
-  test('位移白名单：橙色文字只许走 accentText（冲突 5 的裁决）', () {
-    // 这一条是"拆令牌"那半边的守：`Text(color: Tokens.accent)` 出现在 lib 里 → 红。
-    // 例外：`accentInk` 是橙**底上的字**（深墨），不在此列；这里只抓"橙色的字"。
+  test('位移白名单：橙色文字只许走 accentText（跨行扫描，含负向自检）', () {
+    // ⚠️ 2026-11-10：旧版只按**单行**扫 `TextStyle(... color: Tokens.accent)`，
+    // 跨行写法完全抓不到（审计 §7.2 的盲点）。现在逐个 `TextStyle(` 做**括号配对**，
+    // 只看这个 TextStyle 自己内部；并加负向自检，防止又退化成"跨到下一个 Widget"。
+    String codeOf(String text) => text
+        .split('\n')
+        .map((String l) {
+          final int i = l.indexOf('//');
+          return i < 0 ? l : l.substring(0, i);
+        })
+        .join('\n');
+
+    /// 返回文件里所有"TextStyle 内部把颜色写成 accent"的起始偏移。
+    List<int> orangeTextOffsets(String code) {
+      final List<int> out = <int>[];
+      for (final RegExpMatch m in RegExp(r'TextStyle\(').allMatches(code)) {
+        int depth = 1;
+        int i = m.end;
+        while (i < code.length && depth > 0) {
+          if (code[i] == '(') depth++;
+          if (code[i] == ')') depth--;
+          i++;
+        }
+        final String inside = code.substring(m.end, i - 1);
+        if (RegExp(r'color:\s*Tokens\.accent\b').hasMatch(inside)) {
+          out.add(m.start);
+        }
+      }
+      return out;
+    }
+
     final List<String> bad = <String>[];
     for (final FileSystemEntity e in Directory('lib').listSync(recursive: true)) {
       if (e is! File || !e.path.endsWith('.dart')) continue;
-      final List<String> lines = e.readAsLinesSync();
-      for (int i = 0; i < lines.length; i++) {
-        final int c = lines[i].indexOf('//');
-        final String code = c < 0 ? lines[i] : lines[i].substring(0, c);
-        // `style: TextStyle(color: Tokens.accent` 这种"橙字"就是越界
-        if (RegExp(r'TextStyle\([^)]*color:\s*Tokens\.accent\b').hasMatch(code)) {
-          bad.add('${e.path}:${i + 1}');
-        }
+      final String code = codeOf(e.readAsStringSync());
+      for (final int off in orangeTextOffsets(code)) {
+        final int line = '\n'.allMatches(code.substring(0, off)).length + 1;
+        bad.add('${e.path}:$line');
       }
     }
     expect(bad, isEmpty,
         reason: '橙色文字要用 `Tokens.accentText`（对 bg 8.40:1）：\n${bad.join('\n')}');
+    expect(
+      orangeTextOffsets('TextStyle(\n  color: Tokens.accent,\n)'),
+      isNotEmpty,
+      reason: '跨行 TextStyle 的橙字必须被扫描到',
+    );
+    expect(orangeTextOffsets('icon(color: Tokens.accent)'), isEmpty,
+        reason: '不能把相邻 Widget 的 accent 误判成 TextStyle 内的橙字');
   });
 }
 

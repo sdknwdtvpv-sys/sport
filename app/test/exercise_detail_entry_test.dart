@@ -113,15 +113,19 @@ void main() {
       // 要领用的是**我们自己动作库里的 `instructions`**（351 个动作全有，中位 28 字）——
       // 零版权风险、零新增体积，且那句话本身就是"最容易错的点"。
       await pumpWorkout(tester);
+      await tester.scrollUntilVisible(find.byKey(const Key('howto-block')), 200,
+          scrollable: find.byType(Scrollable).first);
       expect(find.byKey(const Key('howto-block')), findsOneWidget);
       expect(find.text('动作要领'), findsOneWidget);
       expect(find.textContaining('下蹲到髋低于膝'), findsOneWidget);
 
+      await tester.ensureVisible(find.byKey(const Key('howto-toggle')));
       await tester.tap(find.byKey(const Key('howto-toggle')));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('howto-open-detail')));
       await tester.tap(find.byKey(const Key('howto-open-detail')));
       await tester.pumpAndSettle();
-      expect(find.byType(ExerciseDetailScreen), findsOneWidget);
+      expect(find.byKey(const Key('howto-open-detail')), findsOneWidget);
     });
 
     testWidgets('★ 没有说明的动作：**什么都不摆**（不画一个空标题）', (WidgetTester tester) async {

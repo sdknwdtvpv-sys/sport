@@ -69,6 +69,16 @@ void main() {
         final int c = lines[i].indexOf('//');
         final String code = c < 0 ? lines[i] : lines[i].substring(0, c);
         if (RegExp(r'fromLTRB\(Tokens\.(s3|s4|s6)').hasMatch(code)) {
+          // v2.2.0 例外（审计 O7）：**图表卡**的内边距是 16（s4），比普通卡片紧 4pt。
+          // 只允许 `progress-trend-card` 这一张；其余卡片仍只许 s5。
+          final String context = <String>[
+            if (i > 0) lines[i - 1],
+            if (i > 1) lines[i - 2],
+          ].join(' ');
+          if (e.path.endsWith('progress_screen.dart') &&
+              context.contains('progress-trend-card')) {
+            continue;
+          }
           ltrb.add('${e.path}:${i + 1}: ${lines[i].trim()}');
         }
       }

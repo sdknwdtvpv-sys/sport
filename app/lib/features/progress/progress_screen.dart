@@ -319,7 +319,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
     return ListView(
       padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
-          Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
+          Tokens.s5 + AppTabBar.reservedSpaceFor(context) + Tokens.s4),
       children: <Widget>[
         // ⚠️ 这里原来还画了一个 28pt 的「进步」大字 —— 与外壳顶栏那个标题**完全重复**
         // （用户 10.9 清单第 3 条截图抓的就是它）。页内不再写自己的名字，
@@ -344,15 +344,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
           _statsBlock(), // 四张统计卡（按区间现算）
           const SizedBox(height: Tokens.s3),
           _trendCard(), // 容量趋势（周 / 月 / 年）
-          const SizedBox(height: Tokens.s5),
+          const SizedBox(height: Tokens.s4),
           // 本周每部位组数（2026-10-04）：**并进 S8、不新开屏**。
           // 它回答的是"我这周练均衡了吗"—— 这一屏原来只有容量/PR/体重三块，
           // 而容量是"总量"，看不出哪块肌肉被漏掉了。
           if (d.weekSetsByMuscle.isNotEmpty) _muscleCard(d),
-          const SizedBox(height: Tokens.s5),
+          const SizedBox(height: Tokens.s4),
           _sectionTitle('个人纪录'),
           _prCard(d),
-          const SizedBox(height: Tokens.s5),
+          const SizedBox(height: Tokens.s4),
           if (recentWorkouts(_sets, limit: 1).isNotEmpty) _recentLine(),
           const SizedBox(height: Tokens.s5),
           // 进阶分析（Ultra 权益 7，2026-10-10 做成真功能）。
@@ -599,7 +599,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           Row(
             children: <Widget>[
               Expanded(
-                child: Text('$range · 较上期同期',
+                child: Text(prevVolume > 0 ? '$range · 较上期同期' : '$range · 第一次记录',
                     style: const TextStyle(
                         color: Tokens.text3, fontSize: Tokens.fsMicro)),
               ),
@@ -852,10 +852,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
         volumeSeriesPair(_sets, _today, _range);
     final List<double> series = pair.current;
     final List<String> ends = seriesEndLabels(_today, _range);
+    final ({DateTime from, DateTime to}) w = rangeWindow(_today, _range);
+    final ({DateTime from, DateTime to}) prev = previousRangeWindow(_today, _range);
+    final int workouts = workoutCountIn(_sets, w.from, w.to);
+    final bool sparse = workouts < 2;
+    final bool hasCompare = pair.previous.any((double v) => v > 0);
+    final double maxV = volumeIn(_sets, w.from, w.to) > volumeIn(_sets, prev.from, prev.to)
+        ? volumeIn(_sets, w.from, w.to)
+        : volumeIn(_sets, prev.from, prev.to);
     return RepaintBoundary(
       // 硬切那一帧只让这一块脏：外面是四张统计卡 + 周历，它们与曲线无关。
       child: ViCard(
         key: const Key('progress-trend-card'),
+        padding: const EdgeInsets.fromLTRB(Tokens.s4, Tokens.s4, Tokens.s4, Tokens.s3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -869,7 +878,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           fontWeight: Tokens.fwStrong)),
                 ),
                 _LegendDot(
-                    color: Tokens.accent,
+                    color: Tokens.accentText,
                     label: _range == ProgressRange.week ? '本周' : '本期'),
                 const SizedBox(width: Tokens.s3),
                 _LegendDot(
@@ -882,9 +891,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ViAreaChart(
               key: const Key('progress-sparkline'),
               points: series,
-              previousPoints: pair.previous,
-              height: 120,
+              previousPoints: hasCompare ? pair.previous : const <double>[],
+              height: sparse ? 72 : 96,
+              yMaxLabel: maxV <= 0 ? null : formatVolume(maxV, widget.unit),
             ),
+            if (sparse)
+              const Padding(
+                padding: EdgeInsets.only(top: Tokens.s2),
+                child: Text('第 2 次训练后出现趋势',
+                    key: Key('progress-sparse-hint'),
+                    style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              ),
             const SizedBox(height: Tokens.s2),
             // ⚠️ 三个轴标签都要能缩（2026-10-10 扫描：2.0× 下这一行 360pt > 329pt）——
             // 它们是**刻度**，被省略号截掉一个字符也比"整块被裁"好。

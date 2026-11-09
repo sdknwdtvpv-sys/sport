@@ -212,7 +212,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         onTap: () => Navigator.of(ctx).pop(_RestPick(sec)),
         title: Text(label,
             style: TextStyle(
-                color: _rest == sec ? Tokens.accent : Tokens.text, fontSize: Tokens.fsSub)),
+                color: _rest == sec ? Tokens.accentText : Tokens.text, fontSize: Tokens.fsSub)),
         trailing: _rest == sec
             ? const Icon(Icons.check, size: IconSpec.m, color: Tokens.accent)
             : null,
@@ -336,7 +336,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               _restLabel,
               key: const Key('rest-current'),
               style: const TextStyle(
-                  color: Tokens.accent, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
+                  color: Tokens.accentText, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
             ),
             // 副标题只在**真的需要解释**的时候出现（2026-10-04 文案审计）：
             //   选「跟随动作」时，「跟随动作」这四个字本身看不出是什么 → 留一句解释；
@@ -403,7 +403,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               _stepLabel,
               key: const Key('step-current'),
               style: const TextStyle(
-                  color: Tokens.accent, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
+                  color: Tokens.accentText, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong),
             ),
             // 副标题只在**真的需要解释**的时候出现（同「休息时长」那条规矩）：
             // 「跟随动作」四个字看不出是什么意思，所以要一句；选了具体数值时
@@ -486,7 +486,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     _reminder.label,
                     key: const Key('reminder-time-label'),
                     style: const TextStyle(
-                        color: Tokens.accent,
+                        color: Tokens.accentText,
                         fontSize: Tokens.fsSub,
                         fontWeight: Tokens.fwStrong),
                   ),
