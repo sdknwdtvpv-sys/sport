@@ -4,7 +4,7 @@
 ///   1. 只在全新安装出现一次（"出现过就不再出现"由同意门本身保证，见下面那条集成判据）；
 ///   2. 每屏可跳过；
 ///   3. 放在同意门之后；
-///   4. 末屏按钮是「开始第一次训练」，不是「完成」。
+///   4. 末屏按钮是「开始训练」，不是「完成」。
 library;
 
 import 'package:drift/native.dart';
@@ -63,7 +63,7 @@ void main() {
     expect(find.byKey(const Key('intro-start')), findsOneWidget);
   });
 
-  testWidgets('约束 4：末屏按钮写的是「开始第一次训练」，**不是「完成」**',
+  testWidgets('约束 4：末屏按钮写的是「开始训练」，**不是「完成」**',
       (WidgetTester tester) async {
     await _pumpIntro(tester, onSkip: () {}, onStartFirst: () {});
     await tester.tap(find.byKey(const Key('intro-next')));
@@ -71,7 +71,7 @@ void main() {
     await tester.tap(find.byKey(const Key('intro-next')));
     await tester.pumpAndSettle();
 
-    expect(find.text('开始第一次训练'), findsOneWidget);
+    expect(find.text('开始训练'), findsOneWidget);
     expect(find.text('完成'), findsNothing, reason: '「完成」是个终点，这一屏的唯一出口是开练');
   });
 

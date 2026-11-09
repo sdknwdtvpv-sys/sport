@@ -46,6 +46,22 @@
 > 重出办法就是下面这条命令（真机已解锁、脚本本来就走这条路）——
 > 出完记得同步 `docs/release-checklist.md` 里"商店截图三套"那一行的版本与日期。
 
+## ✅ 2026-11-10（v2.1.0）：三套**已按 v2 视觉语言全部重出**
+
+v2.0/v2.1 换了全 App 的视觉语言（令牌、卡片语义、标题/文案），旧图还是 v1.x 界面 ——
+三套一起重出，跑法与判据完全沿用下面「怎么跑」那一段：
+
+| 那套 | 结果 |
+|---|---|
+| `store-assets/screenshots/` | **16 张 1080×2400**（15 张由 `flutter drive` 出 + `01b-home-fresh-install` 整屏 `adb screencap` 补） |
+| `store-assets/screenshots-play/` | **15 张 1080×1920**（`wm size 1080x1920` 后跑，跑完已复位） |
+| `store-assets/screenshots-ios/` | **15 张 1320×2868**（iOS 模拟器 iPhone 18 Pro Max 出图 → `flatten-png.mjs` 压成 8 位无 alpha） |
+
+三跑 `LIANLEME-SHOT-SUMMARY` 都是 **`失败 0 步`**，`node tool/check-screenshots.mjs` 绿。
+⚠️ 这次复现了一条老坑：**`00-intro` 只在干净安装那一跑拍得到** —— 安卓那两套重跑前要先
+`adb shell pm uninstall com.sdknwdtvpv.lianleme`，否则那一步会被跳过（张数从 15 变 14）。
+另外这台新 Mac 原本没装 Android 模拟器，本轮补装了 `emulator` + `system-images;android-36;google_apis;arm64-v8a`。
+
 ## 三套图，别拿错
 
 | 目录 | 尺寸 | 给谁用 |
@@ -183,7 +199,7 @@ flutter drive --driver=test_driver/screenshot_driver.dart \
 > 原因是标题那一段与 `Spacer` 抢自由空间，改成 `Expanded` 之后才拿满宽度。
 > **图比测试更早发现它**，所以"重出截图"不只是走流程。
 >
-> ⚠️ **上一次是 2026-10-05 在 v1.46.0 上重出**（新 VI 的五个 Tab 与四屏重做之后）。
+> ⚠️ **上一次是 2026-10-05 在 v1.46.0 上重出**（新 VI 的旧版底栏与四屏重做之后）。
 > 触发原因是**换 VI**（旧图还是 volt 绿那一版，与现在的界面不是同一个 App）。
 > ⚠️ 同一次重出还撞见一个真问题：`screenshots_test` 等三个 integration test 还在点
 > `Key('tab-我')`，而 Tab 已经改名成「我的」—— 它们会**静默失败到「找不到控件」**。

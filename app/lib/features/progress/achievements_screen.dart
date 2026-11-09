@@ -78,7 +78,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 const SizedBox(width: Tokens.s3),
                 const Text('我的成就',
                     style: TextStyle(
-                        color: Tokens.text, fontSize: Tokens.fsHeadline, fontWeight: Tokens.fwBold)),
+                        color: Tokens.text, fontSize: Tokens.fsTitle, fontWeight: Tokens.fwBold)),
               ],
             ),
             const SizedBox(height: Tokens.s3),

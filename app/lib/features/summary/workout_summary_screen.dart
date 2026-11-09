@@ -482,11 +482,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
               ),
             ),
           ),
-          const SizedBox(height: Tokens.s2),
-          const Text(
-            '干得漂亮，又变强了一点',
-            style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
-          ),
+
         ],
       );
 
@@ -525,7 +521,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
                   '✦ 新解锁 ${widget.newBadges.length} 枚',
                   key: const Key('summary-unlock-title'),
                   style: const TextStyle(
-                      color: Tokens.accent,
+                      color: Tokens.accentText,
                       fontSize: Tokens.fsCap,
                       fontWeight: Tokens.fwBold),
                 ),

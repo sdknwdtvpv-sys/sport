@@ -13,11 +13,14 @@ import 'package:lianleme/features/progress/achievements_screen.dart';
 import 'package:lianleme/features/progress/badges.dart';
 import 'package:lianleme/features/progress/weekly_challenge.dart';
 
-SetRecord _set(String workout, DateTime at, {double weight = 60}) => SetRecord(
+SetRecord _set(String workout, DateTime at,
+        {double weight = 60, String exerciseId = 'bench', double? distanceM}) =>
+    SetRecord(
       id: '$workout-${at.millisecondsSinceEpoch}',
       workoutId: workout,
-      exerciseId: 'bench',
+      exerciseId: exerciseId,
       setIndex: 0,
+      distanceM: distanceM,
       weightKg: weight,
       reps: 8,
       completedAtMs: at.millisecondsSinceEpoch,
@@ -222,7 +225,14 @@ void main() {
     final List<SetRecord> sets = <SetRecord>[
       for (int d = 0; d < 4; d++)
         for (int i = 0; i < 12; i++)
-          _set('w$d', monday.add(Duration(days: d, hours: 19, minutes: i))),
+          _set('w$d', monday.add(Duration(days: d, hours: 19, minutes: i)),
+              exerciseId: <String>[
+                'ex_bb_bench_press',
+                'ex_bb_squat',
+                'ex_deadlift',
+                'ex_treadmill',
+              ][d],
+              distanceM: d == 3 ? 100 : null),
     ];
     await _pump(tester, sets);
     expect(weeklyChallenge(sets, now).done, isTrue, reason: '这一周的挑战应当已完成');

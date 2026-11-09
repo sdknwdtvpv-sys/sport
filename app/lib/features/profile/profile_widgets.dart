@@ -34,14 +34,20 @@ Widget profileSectionTitle(String t) => Padding(
 /// 中间隔一层带背景色的 DecoratedBox 会把它盖住 ——
 /// Flutter 在 debug 下会直接抛断言（`ListTile background color or ink splashes may be invisible`）。
 /// 边框用 `shape` 画，不引入额外的 DecoratedBox。
-Widget settingsCard(List<Widget> children) => Material(
-      color: Tokens.surface,
-      shape: RoundedRectangleBorder(
+Widget settingsCard(List<Widget> children) => Container(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(Tokens.rCard),
-        side: const BorderSide(color: Tokens.line),
+        boxShadow: <BoxShadow>[...Tokens.shadowCard, ...Tokens.edgeHighlight],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
+      child: Material(
+        color: Tokens.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Tokens.rCard),
+          side: const BorderSide(color: Tokens.line),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(children: children),
+      ),
     );
 
 /// 一行「标题 + 说明 + 右箭头」的导航行（二级页入口）。
@@ -65,6 +71,7 @@ Widget navTile({
         title,
         style: TextStyle(color: titleColor ?? Tokens.text, fontSize: Tokens.fsSub),
       ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: Tokens.s5, vertical: Tokens.s1),
       subtitle: subtitle == null
           ? null
           : Text(
@@ -120,9 +127,9 @@ class ProfileSubPage extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: Tokens.text,
-                        fontSize: Tokens.fsNum,
+                        fontSize: Tokens.fsTitle,
                         fontWeight: Tokens.fwBold,
-                        letterSpacing: Tokens.lsSnug,
+                        letterSpacing: Tokens.lsTight,
                       ),
                     ),
                   ),

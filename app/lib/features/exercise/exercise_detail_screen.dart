@@ -160,7 +160,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                 e.name,
                 style: const TextStyle(
                   color: Tokens.text,
-                  fontSize: Tokens.fsNum,
+                  fontSize: Tokens.fsTitle,
                   fontWeight: Tokens.fwBold,
                 ),
               ),

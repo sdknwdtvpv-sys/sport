@@ -265,7 +265,7 @@ class _PlanScreenState extends State<PlanScreen> {
             onTap: widget.onPlanWizard,
             child: Row(
               children: <Widget>[
-                const Icon(Icons.auto_awesome, color: Tokens.accent, size: IconSpec.m),
+                const Icon(Icons.auto_awesome, color: Tokens.accentText, size: IconSpec.m),
                 const SizedBox(width: Tokens.s3),
                 const Expanded(
                   child: Text('不知道从哪开始？帮我定个计划',
@@ -286,7 +286,7 @@ class _PlanScreenState extends State<PlanScreen> {
             onTap: _openPeriodization,
             child: Row(
               children: <Widget>[
-                const Icon(Icons.event_repeat, color: Tokens.accent, size: IconSpec.m),
+                const Icon(Icons.event_repeat, color: Tokens.accentText, size: IconSpec.m),
                 const SizedBox(width: Tokens.s3),
                 const Expanded(
                   child: Text('周期计划（Ultra）',
@@ -326,7 +326,7 @@ class _PlanScreenState extends State<PlanScreen> {
             onTap: widget.onResume,
             child: Row(
               children: <Widget>[
-                const Icon(Icons.play_circle_outline, color: Tokens.accent, size: IconSpec.m),
+                const Icon(Icons.play_circle_outline, color: Tokens.accentText, size: IconSpec.m),
                 const SizedBox(width: Tokens.s3),
                 Expanded(
                   child: Column(
@@ -357,7 +357,7 @@ class _PlanScreenState extends State<PlanScreen> {
             style: TextStyle(color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
         const SizedBox(height: Tokens.s2),
         if (widget.todayPlan.isEmpty)
-          const Text('今天还没有排动作 —— 回首页点「开始今天的训练」会自动生成。',
+          const Text('今天还没有安排。',
               style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal))
         else
           ViCard(

@@ -44,6 +44,8 @@ class ViCard extends StatelessWidget {
         color: Tokens.surface,
         borderRadius: BorderRadius.circular(Tokens.rCard),
         border: Border.all(color: Tokens.line),
+        // v2.1：卡片统一带轻阴影 + 顶部 1px 内高光（页面里不再各写一份）
+        boxShadow: <BoxShadow>[...Tokens.shadowCard, ...Tokens.edgeHighlight],
       ),
       child: glow
           ? Stack(

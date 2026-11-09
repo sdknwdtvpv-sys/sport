@@ -135,7 +135,7 @@ class _IntroCarouselScreenState extends State<IntroCarouselScreen> {
                           ),
                         ),
                         onPressed: widget.onStartFirst,
-                        child: const Text('开始第一次训练',
+                        child: const Text('开始训练',
                             style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwBold)),
                       ),
                     )

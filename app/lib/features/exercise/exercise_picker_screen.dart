@@ -290,7 +290,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                         '选动作',
                         style: TextStyle(
                           color: Tokens.text,
-                          fontSize: Tokens.fsHeadline,
+                          fontSize: Tokens.fsTitle,
                           fontWeight: Tokens.fwBold,
                         ),
                       ),
@@ -307,7 +307,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                     key: const Key('picker-new-custom'),
                     onPressed: _newCustom,
                     style: TextButton.styleFrom(
-                      foregroundColor: Tokens.accent,
+                      foregroundColor: Tokens.accentText,
                       padding: const EdgeInsets.symmetric(horizontal: Tokens.s3),
                       minimumSize: const Size(0, 36),
                     ),
