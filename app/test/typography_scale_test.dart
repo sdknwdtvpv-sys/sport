@@ -14,8 +14,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// 11 级字阶（与 `Tokens.fs*` 一一对应）。**再加一级要同时改这里**，否则测试会红。
+/// 13 级字阶（v3.0 新增 fsGrand/fsMetric；与 `Tokens.fs*` 一一对应）。
+/// **再加一级要同时改这里**，否则测试会红。
 const List<String> scale = <String>[
+  'fsGrand', // 40 页面「今天」大标题
+  'fsMetric', // 54 休息计时/唯一大数字
   'fsDisplay', // 34 一屏唯一的大数字（进步 hero / 完成页容量）
   'fsHero', // 30 训练屏大按钮上的值 / 引导页大标题
   'fsTitle', // 28 页面标题
@@ -74,13 +77,13 @@ List<String> _scan(bool Function(String line) test,
 }
 
 void main() {
-  test('★ 全站字号只用令牌里的 11 级（不许再写字面量）', () {
+  test('★ 全站字号只用令牌里的 13 级（不许再写字面量）', () {
     final List<String> bad = _scan(hasTypeLiteral);
     expect(bad, isEmpty,
         reason: '这些地方还在自己写字号/行高/字重/字距，改用 `Tokens.fs*/lh*/fw*/ls*`：\n${bad.join('\n')}');
   });
 
-  test('★ 11 级**每一级都有人在用**（没有死档，也没有第 12 级）', () {
+  test('★ 13 级**每一级都有人在用**（没有死档，也没有第 14 级）', () {
     final List<String> used = <String>[];
     _scan((String _) => false, collect: used);
     final Set<String> distinct = used.toSet();
@@ -134,7 +137,7 @@ void main() {
     // 这一条额外钉住"档位只有 5 个"（黑名单抓不到 `Tokens.lsNew` 这种新档）。
   });
 
-  test('★ `theme.dart` 里的 11 级就是这 11 个名字', () {
+  test('★ `theme.dart` 里的 13 级就是这 13 个名字', () {
     final String theme = File('lib/core/theme.dart').readAsStringSync();
     for (final String name in scale) {
       expect(theme.contains('double $name ='), isTrue,

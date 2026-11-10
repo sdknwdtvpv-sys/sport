@@ -17,7 +17,6 @@ import '../../core/last_time.dart';
 import '../../core/theme.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/motion.dart';
-import '../../core/accent_button.dart';
 import '../../core/reduced_motion.dart';
 import '../../core/units.dart';
 import '../../core/weight_step_dialog.dart';
@@ -46,6 +45,7 @@ class WorkoutScreen extends StatefulWidget {
     this.catalog = const <ExerciseData>[],
     this.store,
     this.screenAwake = const MethodChannelScreenAwake(),
+    this.sessionLabel = '训练',
     this.onSwapExercise,
     this.onWeightStepChanged,
     this.onWeightStepAll,
@@ -56,6 +56,9 @@ class WorkoutScreen extends StatefulWidget {
   /// **会话与它内部的控制器都由调用方持有并负责 dispose** ——
   /// 这样测试可以在页面销毁后继续断言控制器状态。
   final WorkoutSession session;
+
+  /// v3.0.0：顶栏「上肢 · 进行中」的上肢；由外壳从今日计划传入。
+  final String sessionLabel;
 
   /// 训练屏期间**别让屏幕熄掉**（v1.53）。默认走平台通道；
   /// 测试传一个记账的替身 —— "进训练屏开、走的时候关"是逻辑，必须能断言。
@@ -108,6 +111,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   /// 大按钮现在是不是被按着（T2-2 的按压缩放）。手指滑出去要弹回来，所以三个回调都改它。
   bool _guideOpen = false;
+  bool _rowPressed = false;
   String get _planDoneKey => '${c.exercise.id}@${c.plannedSets}';
 
   @override
@@ -241,7 +245,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               child: Column(
                 children: <Widget>[
                   _header(),
-                  Expanded(child: _setsArea()),
+                  Expanded(
+                    child: c.loggedSets.isEmpty ? _emptySession() : _setsArea(),
+                  ),
+                  // 当前行(88) + 页脚(52) 固定贴底，不随日志内容浮动
                   _bigArea(),
                   _switcher(),
                 ],
@@ -313,79 +320,139 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget _header() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s2, Tokens.s6, 0),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
-            width: 44,
-            height: 44,
-            child: IconButton(
-              key: const Key('back-button'),
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.chevron_left, color: Tokens.text2),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-          ),
-          const SizedBox(width: Tokens.s2),
-          Expanded(
-            child: Text(
-              c.exercise.name.isEmpty ? c.exercise.id : c.exercise.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Tokens.text,
-                fontSize: Tokens.fsHeadline,
-                fontWeight: Tokens.fwBold,
-              ),
-            ),
-          ),
-          if (c.isOffline)
-            Container(
-              key: const Key('offline-chip'),
-              margin: const EdgeInsets.only(right: Tokens.s2),
-              padding: const EdgeInsets.symmetric(horizontal: Tokens.s2, vertical: 2),
-              decoration: BoxDecoration(
-                color: Tokens.surfaceHi,
-                borderRadius: BorderRadius.circular(Tokens.rPill),
-              ),
-              child: const Text('离线',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-            ),
-          if (widget.session.hasMultiple) ...<Widget>[
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '动作 ${widget.session.index + 1} / ${widget.session.length}',
-                  key: const Key('exercise-position'),
-                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+          Row(
+            children: <Widget>[
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                  key: const Key('back-button'),
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.chevron_left, color: Tokens.text2),
+                  onPressed: () => Navigator.of(context).maybePop(),
                 ),
               ),
-            ),
-            const SizedBox(width: Tokens.s2),
-          ],
-          // 一个 `⋯` 收掉换动作 / 说明 / 改重量（v2.3.0）；不再占三个 36pt 触区。
-          PopupMenuButton<String>(
-            key: const Key('workout-more'),
-            tooltip: '更多',
-            color: Tokens.elevated,
-            icon: const Icon(Icons.more_horiz, color: Tokens.text2, size: IconSpec.m),
-            onSelected: (String v) {
-              switch (v) {
-                case 'swap':
-                  if (widget.onSwapExercise != null) unawaited(widget.onSwapExercise!());
-                case 'info':
-                  _openDetail(c.exercise.id);
-                case 'weight':
-                  c.onLongPress();
-              }
-            },
-            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(value: 'swap', child: Text('换动作')),
-              const PopupMenuItem<String>(value: 'info', child: Text('动作说明')),
-              const PopupMenuItem<String>(value: 'weight', child: Text('改重量')),
+              const Text('退出',
+                  style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('${widget.sessionLabel} · 进行中',
+                        style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
+                  ),
+                ),
+              ),
+              TextButton(
+                key: const Key('finish-session'),
+                onPressed: () => Navigator.of(context).maybePop(),
+                child: const Text('结束',
+                    style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap)),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  c.exercise.name.isEmpty ? c.exercise.id : c.exercise.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Tokens.text,
+                    fontSize: Tokens.fsHeadline,
+                    fontWeight: Tokens.fwBold,
+                  ),
+                ),
+              ),
+              if (widget.session.hasMultiple) ...<Widget>[
+                Text('动作 ${widget.session.index + 1} / ${widget.session.length}',
+                    key: const Key('exercise-position'),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                const SizedBox(width: Tokens.s3),
+              ],
+              if (c.isOffline) ...<Widget>[
+                Container(
+                  key: const Key('offline-chip'),
+                  margin: const EdgeInsets.only(right: Tokens.s2),
+                  padding: const EdgeInsets.symmetric(horizontal: Tokens.s2, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: Tokens.surfaceHi,
+                      borderRadius: BorderRadius.circular(Tokens.rPill)),
+                  child: const Text('离线',
+                      style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                ),
+              ],
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('第 ${c.setNumber} / ${c.plannedSets} 组',
+                      key: const Key('set-progress'),
+                      style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                ),
+              ),
+              PopupMenuButton<String>(
+                key: const Key('workout-more'),
+                tooltip: '更多',
+                color: Tokens.elevated,
+                icon: const Icon(Icons.more_horiz, color: Tokens.text2, size: IconSpec.m),
+                onSelected: (String v) {
+                  switch (v) {
+                    case 'swap':
+                      if (widget.onSwapExercise != null) unawaited(widget.onSwapExercise!());
+                    case 'info':
+                      _openDetail(c.exercise.id);
+                    case 'guide':
+                      _openGuideSheet();
+                    case 'weight':
+                      c.onLongPress();
+                    case 'finish':
+                      Navigator.of(context).maybePop();
+                  }
+                },
+                itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(value: 'swap', child: Text('换动作')),
+                  const PopupMenuItem<String>(value: 'info', child: Text('动作说明')),
+                  const PopupMenuItem<String>(value: 'guide', child: Text('动作要领')),
+                  const PopupMenuItem<String>(value: 'weight', child: Text('改重量')),
+                  const PopupMenuItem<String>(value: 'finish', child: Text('结束训练')),
+                ],
+              ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _openGuideSheet() {
+    final String? text = _dataFor(c.exercise.id)?.instructions?.trim();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Tokens.sheet,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.rSheet)),
+      ),
+      builder: (BuildContext ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s5, Tokens.s6, Tokens.s6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text('动作要领',
+                style: TextStyle(color: Tokens.text, fontSize: Tokens.fsNum, fontWeight: Tokens.fwBold)),
+            const SizedBox(height: Tokens.s3),
+            Text(
+              text == null || text.isEmpty ? '这个动作没有说明。' : text,
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub, height: Tokens.lhLoose),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -561,130 +628,44 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   // ---------- 本次（撑满中间那块曾经的空黑） ----------
 
-  Widget _setsArea() {
-    final List<SetRecord> sets = c.loggedSets;
-    final int planned = c.plannedSets;
-    final int rows = sets.length > planned ? sets.length : planned;
-    final bool showLast = c.lastSession != null;
-    final String? lastLabel = c.lastSession == null
-        ? null
-        : '${c.lastSession!.weightKg == null ? '自重' : formatWeight(c.lastSession!.weightKg!, c.unit)}'
-            ' × ${c.lastSession!.reps.isEmpty ? '—' : c.lastSession!.reps.last}';
+  /// 首练锚点：没有组记录时日志区收起，只留一条 80pt 轴 + 说明；
+  /// 当前行紧跟其后，空区 < 屏高 20%。
+  Widget _emptySession() {
+    final int totalSets =
+        widget.session.controllers.fold<int>(0, (int a, WorkoutController x) => a + x.plannedSets);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s7, Tokens.s6, 0),
+      padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s4, Tokens.s6, 0),
       child: Column(
-        key: const Key('done-list'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Text('本次',
-                  style:
-                      TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              const SizedBox(width: Tokens.s2),
-              Text(
-                c.warmup ? '热身组' : '第 ${c.setNumber} 组',
-                key: const Key('set-number'),
-                style: TextStyle(
-                    color: c.warmup ? Tokens.accentText : Tokens.text3,
-                    fontSize: Tokens.fsMicro),
-              ),
-              const Spacer(),
-              Text('${sets.length} / $planned 组',
-                  key: const Key('set-count'),
-                  style: const TextStyle(
-                      color: Tokens.text2,
-                      fontSize: Tokens.fsCap,
-                      fontFeatures: Tokens.tabular)),
-            ],
+          Text(
+            '目标 ${c.plannedSets}×${c.plan.targetRepsLow}'
+            '${c.plan.targetRepsHigh == c.plan.targetRepsLow ? '' : '–${c.plan.targetRepsHigh}'}'
+            ' · 已练 ${formatDurationHms(c.elapsedSec)} · 本场 0/$totalSets 组',
+            key: const Key('table-target'),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
           ),
-          const SizedBox(height: Tokens.s2),
-          // ⚠️ v2.0.1 真机：这张卡原来是 `Expanded` 撑满剩余高度，于是 4 行组表下面
-          // 留了一大片空卡底（动作要领孤零零吊在中间，像"加载失败"）。改成**卡随内容收口**：
-          // 组表 + 要领排完就结束卡片，剩下的呼吸空间留给下面「第 N 组 / 记录键」。
-          // `Flexible` 是关键：内容超过可用高度时（2.0× 字号 / 5 组 + 展开要领）卡内 ListView
-          // 自己滚，而不是让外层 Column 溢出 —— 否则 `rest_zero_frame_test` 会当场红。
-          Flexible(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Tokens.surface,
-                borderRadius: BorderRadius.circular(Tokens.rCard),
-                border: Border.all(color: Tokens.line),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: Tokens.s3, vertical: Tokens.s2),
-                    decoration: const BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Tokens.line)),
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        SizedBox(
-                            width: 24,
-                            child: Text('组',
-                                style: TextStyle(
-                                    color: Tokens.text3,
-                                    fontSize: Tokens.fsMicro))),
-                        Expanded(
-                            child: Text('重量',
-                                style: TextStyle(
-                                    color: Tokens.text3,
-                                    fontSize: Tokens.fsMicro))),
-                        SizedBox(
-                            width: 44,
-                            child: Text('次数',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                    color: Tokens.text3,
-                                    fontSize: Tokens.fsMicro))),
-                        if (c.lastSession != null)
-                          SizedBox(
-                              width: 76,
-                              child: Text('上次',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                      color: Tokens.text3,
-                                      fontSize: Tokens.fsMicro))),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              '目标 ${c.plannedSets}×${c.plan.targetRepsLow}'
-                              '${c.plan.targetRepsHigh == c.plan.targetRepsLow ? '' : '–${c.plan.targetRepsHigh}'}',
-                              key: const Key('table-target'),
-                              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 24),
-                      ],
-                    ),
+          const SizedBox(height: Tokens.s3),
+          // 轴贯穿整个滚动区：从表头下方一直画到当前行上沿（不是 80pt 短划）
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Container(
+                  key: const Key('session-axis'),
+                  width: Tokens.timelineStroke,
+                  color: Tokens.line,
+                ),
+                const SizedBox(width: Tokens.s3),
+                const Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: Tokens.s2),
+                    child: Text('会话日志 · 记下第一组会出现在这里',
+                        key: Key('session-anchor'),
+                        style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
                   ),
-                  Flexible(
-                    child: ListView(
-                      // 卡随内容长高；内容超过可用高度时自己滚（不在卡里留空白）。
-                      shrinkWrap: true,
-                      physics: const ClampingScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      children: <Widget>[
-                        for (int i = 0; i < rows; i += 1)
-                          _setRow(
-                            index: i,
-                            logged: i < sets.length ? sets[i] : null,
-                            current: i == sets.length,
-                            planned: planned,
-                            lastLabel: lastLabel,
-                            showLast: showLast,
-                          ),
-                        _howToCard(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -692,7 +673,118 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
+  Widget _setsArea() {
+    final List<SetRecord> sets = c.loggedSets;
+    final int totalSets =
+        widget.session.controllers.fold<int>(0, (int a, WorkoutController x) => a + x.plannedSets);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s4, Tokens.s6, 0),
+      child: Column(
+        key: const Key('session-log-area'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          // 目标 / 已练 / 本场：只留 3 项，统一 s3 + 中点（v3.0.0 修版）
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: <Widget>[
+                Text('目标 ${c.plannedSets}×${c.plan.targetRepsLow}'
+                    '${c.plan.targetRepsHigh == c.plan.targetRepsLow ? '' : '–${c.plan.targetRepsHigh}'}',
+                    key: const Key('table-target'),
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                const SizedBox(width: Tokens.s3),
+                const Text('·', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                const SizedBox(width: Tokens.s3),
+                Text('已练 ${formatDurationHms(c.elapsedSec)}',
+                    style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro)),
+                const SizedBox(width: Tokens.s3),
+                const Text('·', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                const SizedBox(width: Tokens.s3),
+                Text('本场 ${sets.length}/$totalSets 组',
+                    key: const Key('session-count'),
+                    style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsMicro)),
+              ],
+            ),
+          ),
+          const SizedBox(height: Tokens.s3),
+          Expanded(
+            child: Stack(
+              children: <Widget>[
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    key: const Key('session-axis'),
+                    width: Tokens.timelineStroke,
+                    color: Tokens.line,
+                  ),
+                ),
+                ListView(
+                  key: const Key('session-log'),
+                  padding: const EdgeInsets.only(left: Tokens.s4),
+                  children: <Widget>[
+                    for (final SetRecord r in sets) _logRow(r),
+                    _restStrip(),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 一条会话日志：`18:31 ✓ 第 1 组 40 kg × 8`，完成勾用 success。
+  Widget _logRow(SetRecord r) {
+    final DateTime t = DateTime.fromMillisecondsSinceEpoch(r.completedAtMs);
+    final String clock = '${t.hour.toString().padLeft(2, '0')}:'
+        '${t.minute.toString().padLeft(2, '0')}';
+    final String value = r.hasDistance
+        ? '${formatDistanceKm(r.distanceM!)} · ${formatDurationHms(r.reps)}'
+        : r.weightKg == null
+            ? '自重 × ${r.reps}${c.exercise.isTime ? ' 秒' : ''}'
+            : '${c.isAssisted ? '助力 ' : ''}'
+                '${formatWeight(r.weightKg!, c.unit)} × ${r.reps}'
+                '${c.exercise.isTime ? ' 秒' : ''}';
+    final Widget body = Container(
+      key: Key('done-set-${r.id}'),
+      padding: const EdgeInsets.symmetric(vertical: Tokens.s2),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Tokens.line)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Text(clock,
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          const SizedBox(width: Tokens.s3),
+          const Icon(Icons.check, color: Tokens.success, size: IconSpec.s),
+          const SizedBox(width: Tokens.s2),
+          Expanded(
+            child: Text(
+              '第 ${r.setIndex} 组  $value',
+              key: Key('log-set-${r.id}'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
+            ),
+          ),
+          if (r.setType == SetType.warmup)
+            const Text('热身', style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+        ],
+      ),
+    );
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () => c.undoSet(r.id),
+      child: _popIn(key: 'done-row-fade-${r.id}', child: body),
+    );
+  }
+
   /// 组表一行：已完成（✓）/ 当前（橙左条 + 浅橙底）/ 待做（42% 透明）。
+  // ignore: unused_element
   Widget _setRow({
     required int index,
     required SetRecord? logged,
@@ -796,6 +888,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _howToCard() {
     final String? text = _dataFor(c.exercise.id)?.instructions?.trim();
     if (text == null || text.isEmpty) return const SizedBox.shrink();
@@ -963,14 +1056,66 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          _restStrip(),
-          AccentButton(
+          GestureDetector(
             key: const Key('big-log-button'),
-            label: c.primaryButtonLabel,
-            labelKey: const Key('button-label'),
-            height: Tokens.hPrimary,
-            onPressed: c.canLog ? c.onBigButtonTap : null,
+            behavior: HitTestBehavior.opaque,
+            onTap: c.canLog ? c.onBigButtonTap : null,
             onLongPress: c.onLongPress,
+            onTapDown: (_) => setState(() => _rowPressed = true),
+            onTapUp: (_) => setState(() => _rowPressed = false),
+            onTapCancel: () => setState(() => _rowPressed = false),
+            child: AnimatedScale(
+              scale: _rowPressed ? 0.98 : 1.0,
+              duration: reducedMotion(context) ? Duration.zero : Motion.instant,
+              curve: Motion.press,
+              child: Container(
+              height: Tokens.hNowRow,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: Tokens.s5),
+              decoration: BoxDecoration(
+                color: Tokens.surfaceHi,
+                borderRadius: BorderRadius.circular(Tokens.rCard),
+                border: Border.all(color: Tokens.line),
+                boxShadow: Tokens.shadowCard,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                        color: Tokens.accent, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: Tokens.s3),
+                  const Text('现在',
+                      style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+                  const SizedBox(width: Tokens.s2),
+                  Text(c.warmup ? '热身组' : '第 ${c.setNumber} 组',
+                      key: const Key('set-number'),
+                      style: const TextStyle(
+                          color: Tokens.text3,
+                          fontSize: Tokens.fsMicro,
+                          fontFeatures: Tokens.tabular)),
+                  Expanded(
+                    child: Text(
+                      c.primaryButtonLabel,
+                      key: const Key('button-label'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Tokens.text,
+                          fontSize: Tokens.fsBody,
+                          fontWeight: Tokens.fwBold,
+                          fontFeatures: Tokens.tabular),
+                    ),
+                  ),
+                  Icon(c.canLog ? Icons.radio_button_unchecked : Icons.check_circle_outline,
+                      color: c.canLog ? Tokens.accentText : Tokens.success,
+                      size: IconSpec.m),
+                ],
+              ),
+            ),
+            ),
           ),
         ],
       ),
@@ -1068,7 +1213,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               : (c.restRunning && c.restRemainingSec <= 3
                                   ? Tokens.accent
                                   : Tokens.text),
-                          fontSize: c.restDone ? 17 : 20,
+                          fontSize: c.restDone ? Tokens.fsSub : Tokens.fsMetric,
                           fontWeight: Tokens.fwBold,
                           fontFeatures: Tokens.tabular,
                         ),
@@ -1169,6 +1314,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             name: s.previousName,
             leading: true,
             onTap: s.previous,
+          ),
+          Flexible(
+            child: TextButton(
+              key: const Key('edit-weight'),
+              onPressed: c.onLongPress,
+              child: const Text('改重量',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
+            ),
           ),
           // 中间那个「1 / 3」**搬到了顶栏**（`exercise-position` 的 key 跟着走）——
           // 屏幕上原来有两个含义不同的 x/y 隔了大半屏，是真会读错的。

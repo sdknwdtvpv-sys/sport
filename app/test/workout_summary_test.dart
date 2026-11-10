@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lianleme/core/theme.dart';
 import 'package:lianleme/core/check_painter.dart';
 import 'package:lianleme/data/db.dart' hide Exercise, SetRecord, Workout, WorkoutItem;
 import 'package:lianleme/data/drift_local_store.dart';
@@ -255,7 +256,7 @@ void main() {
       expect(find.byKey(const Key('summary-duration')), findsOneWidget);
       expect(find.byKey(const Key('summary-sets')), findsOneWidget);
       expect(tester.widget<Text>(find.byKey(const Key('summary-sets'))).data, '3 组');
-      expect(find.text('训练完成！'), findsOneWidget);
+      expect(find.text('训练完成'), findsOneWidget);
       // 2026-10-05 新 VI：完成标记是**绿色实心圆 + 白勾**，且用的是语义色 success
       expect(find.byKey(const Key('summary-done-title')), findsOneWidget);
       expect(
@@ -264,7 +265,7 @@ void main() {
         (tester.widget<CustomPaint>(find.byKey(const Key('summary-check'))).painter!
                 as CheckPainter)
             .color,
-        const Color(0xFF06231A),
+        Tokens.success,
         reason: '勾的颜色变了就是换皮肤时被顺手改掉了',
       );
     });
@@ -347,11 +348,11 @@ void main() {
       ));
       await tester.tap(find.text('看总结'));
       await tester.pumpAndSettle();
-      expect(find.text('训练完成！'), findsOneWidget);
+      expect(find.text('训练完成'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('summary-done')));
       await tester.pumpAndSettle();
-      expect(find.text('训练完成！'), findsNothing);
+      expect(find.text('训练完成'), findsNothing);
     });
 
     testWidgets('练完给拉伸建议：有动作就显示，带做法', (WidgetTester tester) async {

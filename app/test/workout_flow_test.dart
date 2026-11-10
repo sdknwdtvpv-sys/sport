@@ -737,8 +737,10 @@ void main() {
     final double screen = tester.getSize(find.byType(WorkoutScreen)).height;
     final Rect btn = tester.getRect(find.byKey(const Key('big-log-button')));
     expect(btn.height, greaterThanOrEqualTo(88), reason: '高度 ≥ 88pt');
-    expect(btn.top, greaterThan(screen * 0.55),
-        reason: '主按钮的**上沿**也要落在下半屏（实测 ${btn.top} / 屏高 $screen）');
+    // v3.0.0 修版：首练无日志时把当前行上移、消灭 64% 空屏；
+    // 记下第一组后日志展开，当前行回到屏幕下半（下面那条仍钉住）。
+    expect(btn.top, greaterThan(screen * 0.40),
+        reason: '首练当前行也不能贴顶（实测 ${btn.top} / 屏高 $screen）');
     expect(btn.bottom, lessThanOrEqualTo(screen),
         reason: '不许被挤出屏幕');
 
@@ -845,6 +847,57 @@ void main() {
     expect(find.byKey(const Key('session-summary')), findsNothing,
         reason: 'v2.3.0 已删除本场摘要（低频信息收进组表/按钮）');
     expect(find.byKey(const Key('table-target')), findsOneWidget);
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 会话日志：时间戳 + 勾 + 休息条在日志内（v3.0.0）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const Key('big-log-button')));
+    await tester.pump();
+
+    final Finder log = find.byKey(const Key('session-log'));
+    expect(log, findsOneWidget);
+    expect(find.descendant(of: log, matching: find.textContaining(':')), findsWidgets,
+        reason: '日志行必须带 HH:MM 时间戳');
+    expect(find.descendant(of: log, matching: find.byIcon(Icons.check)), findsWidgets);
+    // 休息条紧跟日志列表内部（不是吊在底部大按钮区）
+    expect(find.descendant(of: log, matching: find.byKey(const Key('rest-bar'))), findsOneWidget);
+    // 动作要领不在主流程
+    expect(find.byKey(const Key('howto-block')), findsNothing);
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 首练有锚点：无日志时不空屏，当前行紧跟锚点（v3.0.0 修版）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+    expect(find.byKey(const Key('session-anchor')), findsOneWidget);
+    final double screen = tester.getSize(find.byType(WorkoutScreen)).height;
+    final double anchorBottom = tester.getRect(find.byKey(const Key('session-anchor'))).bottom;
+    final double buttonTop = tester.getRect(find.byKey(const Key('big-log-button'))).top;
+    expect(buttonTop - anchorBottom, lessThan(screen * 0.20),
+        reason: '锚点到当前行的空区必须小于屏高 20%');
+    await _teardown(tester, h);
+  });
+
+  testWidgets('★ 当前行/页脚贴底，轴贯穿滚动区（v3.0.0 修版 3）',
+      (WidgetTester tester) async {
+    final _Harness h = _Harness();
+    await _pump(tester, h);
+    final double screen = tester.getSize(find.byType(WorkoutScreen)).height;
+    final Rect current = tester.getRect(find.byKey(const Key('big-log-button')));
+    final Rect axis = tester.getRect(find.byKey(const Key('session-axis')));
+    // 单动作时页脚按既有规则隐藏；当前行就是底部主操作，底边必须贴底
+    expect(current.bottom, greaterThan(screen * 0.90), reason: '当前行贴底');
+    if (find.byKey(const Key('next-exercise')).evaluate().isNotEmpty) {
+      final Rect footer = tester.getRect(find.byKey(const Key('next-exercise')));
+      expect(footer.bottom, greaterThan(screen * 0.90), reason: '页脚贴底');
+      expect(current.bottom, lessThanOrEqualTo(footer.top + 1), reason: '当前行在页脚上方');
+    }
+    expect(axis.height, greaterThan(screen * 0.20),
+        reason: '轴贯穿滚动区，不是 80pt 短划');
     await _teardown(tester, h);
   });
 }

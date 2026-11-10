@@ -1,0 +1,156 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=390, initial-scale=1"><title>练了么 · B 整块剧场 · 进步</title><style>
+:root{
+  --bg:#090706; --surface:#1B1610; --surface-hi:#261F18; --surface-hi2:#2B231B;
+  --line:#3B332B; --hair:#28221A; --text:#F7F3ED; --text2:#B6AC9F; --text3:#8D8478;
+  --accent:#E2663A; --accent-hi:#F1875C; --accent-lo:#C44E24; --accent-ink:#1A0F0A;
+  --accent-text:#F29A72;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:390px;height:844px;overflow:hidden;background:var(--bg)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif;
+  -webkit-font-smoothing:antialiased;color:var(--text);
+}
+.stage{position:relative;width:390px;height:844px;overflow:hidden;background:var(--bg)}
+.sb{height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 7px 28px;color:var(--text);font-size:14px;font-weight:600;letter-spacing:.15px}
+.sb-right{display:flex;align-items:center;gap:6px}
+.sb svg{display:block}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.ic{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+.content{position:absolute;top:46px;left:var(--pad);right:var(--pad);bottom:0;padding-bottom:96px;display:flex;flex-direction:column}
+.a{--pad:32px;--gap:40px;--title:40px}
+.b{--pad:28px;--gap:40px;--title:34px}
+
+.head{position:relative;display:flex;align-items:flex-start;gap:12px;flex:0 0 auto}
+.head .date{font-size:12px;line-height:16px;color:var(--text3);letter-spacing:.3px;padding-top:4px}
+.a .head{flex-direction:column;gap:0}
+.a .head .date{order:0;padding-top:0}
+.a .h1{font-size:40px;line-height:46px;font-weight:800;letter-spacing:-1px;margin-top:6px;color:var(--text)}
+.b .head{flex-direction:column;gap:0}
+.b .head .date{order:0;padding-top:0}
+.b .h1{font-size:40px;line-height:46px;font-weight:800;letter-spacing:-1px;margin-top:6px;color:var(--text)}
+.bell{position:absolute;right:0;top:4px;color:var(--text2)}
+.bell svg{width:21px;height:21px}
+
+/* ── A：编辑大字 ───────────────────────────── */
+.a .top-rule{height:1px;background:var(--hair);margin-top:24px;flex:0 0 auto}
+.a .kicker{font-size:12px;line-height:16px;color:var(--text3);letter-spacing:1.2px;margin-top:var(--gap);font-weight:600}
+.a .plan-title{font-size:34px;line-height:40px;font-weight:800;letter-spacing:-.6px;margin-top:6px;color:var(--text)}
+.a .plan-meta{font-size:15px;line-height:21px;color:var(--text2);margin-top:8px;letter-spacing:.2px}
+.a .plan-meta b{color:var(--text);font-weight:600}
+.a .edit{margin-left:auto;color:var(--text3);font-size:12px;display:flex;align-items:center;gap:4px;font-weight:500}
+.a .edit svg{width:14px;height:14px}
+.a .meta-row{display:flex;align-items:center;margin-top:8px}
+.a .list{margin-top:var(--gap);border-top:1px solid var(--hair)}
+.a .row{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;height:56px}
+.a .row .idx{font-size:12px;color:var(--text3)}
+.a .row .name{font-size:22px;line-height:28px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.3px}
+.a .row .right{display:flex;align-items:baseline;gap:12px;justify-content:flex-end;min-width:0}
+.a .row .sets{font-size:18px;color:var(--text2);text-align:right;white-space:nowrap}
+.a .row .wt{font-size:20px;color:var(--text2);text-align:right;white-space:nowrap;font-weight:600}
+.a .row .wt i{font-style:normal;font-size:11px;color:var(--text3);margin-left:2px}
+.a .cta{width:100%;height:72px;margin-top:var(--gap);border:0;border-radius:999px;background:linear-gradient(180deg,#F08A5B 0%,#E2663A 42%,#D65B2D 100%);color:var(--accent-ink);font-family:inherit;font-size:20px;font-weight:800;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:10px}
+.a .cta svg{width:18px;height:18px}
+.a .fact{margin-top:auto;height:52px;display:flex;align-items:center;border-top:1px solid var(--hair);color:var(--text2);font-size:17px;letter-spacing:.2px}
+.a .fact .chev{margin-left:auto;width:16px;height:16px;color:var(--text3)}
+.a .fact .quiet{color:var(--text3);margin-left:8px;font-size:15px}
+.a .period{display:flex;gap:22px;align-items:center;margin-top:var(--gap)}
+.a .period b{font-size:15px;color:var(--text3);font-weight:500;position:relative}
+.a .period b.on{color:var(--text);font-weight:700}
+.a .period b.on::after{content:"";position:absolute;left:0;right:0;bottom:-7px;height:2px;border-radius:1px;background:var(--accent)}
+.a .hero-label{font-size:12px;color:var(--text3);letter-spacing:1.2px;margin-top:34px;font-weight:600}
+.a .metric{font-size:56px;line-height:60px;font-weight:800;letter-spacing:-2px;color:var(--text);margin-top:8px}
+.a .metric i{font-style:normal;font-size:18px;font-weight:500;color:var(--text3);letter-spacing:.2px;margin-left:8px}
+.a .sub{font-size:15px;color:var(--text3);margin-top:4px}
+.a .p-fact{font-size:17px;color:var(--text2);margin-top:20px;letter-spacing:.2px}
+.a .p-fact b{color:var(--text);font-weight:600}
+.a .chart-wrap{margin-top:34px;margin-left:calc(-1 * var(--pad));margin-right:calc(-1 * var(--pad));height:210px;flex:0 0 auto}
+.a .chart-wrap svg{width:390px;height:210px;display:block}
+.a .all{margin-top:auto;height:52px;display:flex;align-items:center;border-top:1px solid var(--hair);color:var(--accent-text);font-size:17px;font-weight:600}
+.a .all svg{margin-left:auto;width:16px;height:16px;color:var(--text3)}
+
+/* ── B：整块剧场 ───────────────────────────── */
+.b .block{
+  margin-top:var(--gap);padding:20px;border-radius:20px;min-height:520px;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#2B231B 0%,#241D16 58%,#1D1812 100%);
+}
+.b .eyebrow{font-size:12px;line-height:16px;color:var(--text2);letter-spacing:1.1px;font-weight:600}
+.b .block-title{font-size:30px;line-height:36px;font-weight:800;letter-spacing:-.6px;margin-top:6px;color:var(--text)}
+.b .block-meta{font-size:15px;line-height:21px;color:var(--text2);margin-top:6px}
+.b .block-meta b{color:var(--text);font-weight:600}
+.b .block-top{display:flex;align-items:center;justify-content:space-between}
+.b .edit{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.b .edit svg{width:14px;height:14px}
+.b .rows{margin-top:22px}
+.b .row{display:grid;grid-template-columns:16px 1fr auto;gap:8px;align-items:center;height:56px}
+.b .row .idx{font-size:12px;color:var(--text2)}
+.b .row .name{font-size:22px;line-height:28px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.3px}
+.b .row .right{display:flex;align-items:baseline;gap:10px;justify-content:flex-end;min-width:0}
+.b .row .sets{font-size:16px;color:var(--text2);text-align:right;white-space:nowrap}
+.b .row .wt{font-size:18px;color:var(--text2);text-align:right;white-space:nowrap;font-weight:600}
+.b .row .wt i{font-style:normal;font-size:11px;color:var(--text3);margin-left:2px}
+.b .cta{width:100%;height:72px;margin-top:auto;border:0;border-radius:999px;background:linear-gradient(180deg,#F08A5B 0%,#E2663A 42%,#D65B2D 100%);color:var(--accent-ink);font-family:inherit;font-size:20px;font-weight:800;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:10px}
+.b .cta svg{width:18px;height:18px}
+.b .fact{margin-top:auto;height:52px;display:flex;align-items:center;color:var(--text2);font-size:15px;letter-spacing:.2px}
+.b .fact .chev{margin-left:auto;width:16px;height:16px;color:var(--text3)}
+.b .fact .quiet{color:var(--text3);margin-left:8px}
+.b .progress-block{min-height:0}
+.b .p-top{display:flex;align-items:center;justify-content:space-between}
+.b .period{display:flex;gap:18px}
+.b .period b{font-size:13px;color:var(--text2);font-weight:500}
+.b .period b.on{color:var(--text);font-weight:700}
+.b .hero-label{font-size:12px;color:var(--text2);letter-spacing:1.1px;margin-top:30px;font-weight:600}
+.b .metric{font-size:56px;line-height:60px;font-weight:800;letter-spacing:-2px;color:var(--text);margin-top:6px}
+.b .metric i{font-style:normal;font-size:18px;font-weight:500;color:var(--text3);letter-spacing:.2px;margin-left:8px}
+.b .sub{font-size:15px;color:var(--text2);margin-top:4px}
+.b .p-fact{font-size:17px;color:var(--text2);margin-top:20px}
+.b .p-fact b{color:var(--text);font-weight:600}
+.b .chart-wrap{margin-top:32px;height:210px}
+.b .chart-wrap svg{width:100%;height:200px;display:block}
+.b .all{margin-top:auto;height:44px;display:flex;align-items:center;color:var(--text2);font-size:15px;letter-spacing:.2px}
+.b .all svg{margin-left:auto;width:16px;height:16px;color:var(--text3)}
+
+/* ── flat tab bar（不用玻璃/阴影） ─────────── */
+.tabbar{position:absolute;left:24px;right:24px;bottom:18px;height:58px;border-radius:18px;background:#12100D;border:1px solid #2E2822;display:flex;align-items:center;justify-content:space-around;padding:0 6px;z-index:5}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:92px;height:46px;color:var(--text3);font-size:11px;font-weight:500}
+.tab svg{width:22px;height:22px}
+.tab.on{color:var(--accent-text);font-weight:600}
+.home-indicator{position:absolute;left:50%;bottom:7px;width:134px;height:5px;border-radius:3px;transform:translateX(-50%);background:rgba(247,243,237,.24);z-index:6}
+</style></head><body><div class="stage b">
+<div class="sb"><div>9:41</div><div class="sb-right">
+<svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1" fill="currentColor"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="currentColor"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="currentColor"/></svg>
+<svg width="15" height="11" viewBox="0 0 15 11"><path d="M1 4.2C2.7 2.3 4.8 1.3 7.5 1.3s4.8 1 6.5 2.9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3.4 6.8c1.1-1.1 2.5-1.7 4.1-1.7s3 .6 4.1 1.7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="7.5" cy="9.6" r="1.2" fill="currentColor"/></svg>
+<svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.6" y="1.2" width="21" height="9.6" rx="2.8" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2"/><rect x="2.6" y="3.2" width="14.5" height="5.6" rx="1.6" fill="currentColor"/><path d="M23.2 4.3v3.4" stroke="currentColor" stroke-opacity=".45" stroke-width="1.4" stroke-linecap="round"/></svg>
+</div></div>
+<main class="content">
+  <header class="head"><div class="h1">进步</div><div class="bell"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 9h16c0-2-2-2-2-9"/><path d="M10.5 21a2 2 0 0 0 3 0"/></svg></div></header>
+  <section class="block progress-block">
+    <div class="p-top"><span class="hero-label" style="margin-top:0">本周容量</span><div class="period"><b class="on">周</b><b>月</b><b>年</b></div></div>
+    <div class="metric num">640<i>kg</i></div>
+    <div class="sub">第一次记录</div>
+    <div class="p-fact"><b>1 天</b>连续 · <b>1 次</b> · <b>&lt;1 分钟</b></div>
+    <div class="chart-wrap">
+      <svg viewBox="0 0 286 200" preserveAspectRatio="none" aria-hidden="true">
+        <defs><linearGradient id="gb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E2663A" stop-opacity=".16"/><stop offset="1" stop-color="#E2663A" stop-opacity="0"/></linearGradient></defs>
+        <line x1="0" y1="180" x2="286" y2="180" stroke="#3B332B" stroke-width="1"/>
+        <line x1="0" y1="130" x2="286" y2="130" stroke="#28221A" stroke-width="1"/>
+        <line x1="0" y1="80" x2="286" y2="80" stroke="#28221A" stroke-width="1"/>
+        <path d="M0 180 L228 180 L286 32 L286 180 Z" fill="url(#gb)"/>
+        <path d="M0 180 L228 180 L286 32" fill="none" stroke="#E2663A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="286" cy="32" r="4" fill="#F7F3ED" stroke="#E2663A" stroke-width="2"/>
+      </svg>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#8D8478;margin-top:4px"><span>11/5</span><span>最近 7 天</span><span>11/11</span></div>
+  </section>
+  <a class="all">全部数据 <span style="color:#8D8478;margin-left:8px">· 部位 / PR</span><svg class="ic" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></a>
+</main>
+<nav class="tabbar">
+<div class="tab on"><svg class="ic" viewBox="0 0 24 24"><path d="M3.5 18.5l5.6-7 4.4 3.5 6.9-8.5"/><path d="M15.2 6.5H20.5V12"/></svg>进步</div>
+<div class="tab"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8.5v7M7 6.5v11M17 6.5v11M20 8.5v7M7 12h10"/></svg>开练</div>
+<div class="tab"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20.5c.6-3.7 3.4-5.8 7-5.8s6.4 2.1 7 5.8"/></svg>我</div>
+</nav><div class="home-indicator"></div>
+</div>
+<script>
+(function(){function check(){var bad=[];var els=document.querySelectorAll('body *');for(var i=0;i<els.length;i++){var el=els[i];var r=el.getBoundingClientRect();if(r.width===0&&r.height===0)continue;if(r.right>390.6||r.left<-0.6||r.bottom>844.6||r.top<-0.6){var c=el.getAttribute('class')||el.tagName.toLowerCase();bad.push(el.tagName.toLowerCase()+'.'+String(c).split(' ')[0]);}}document.title=(bad.length?('OVERFLOW['+bad.slice(0,8).join(' ')+']'):'FIT')+' · 练了么 grand';var m=document.createElement('meta');m.name='fit-check';m.content=document.title;document.head.appendChild(m);}if(document.readyState==='complete')check();else window.addEventListener('load',check);})();
+</script></body></html>

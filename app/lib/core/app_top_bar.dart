@@ -29,6 +29,7 @@ class AppTopBar extends StatelessWidget {
     this.unread = 0,
     this.onOpenSettings,
     this.onOpenNotifications,
+    this.onOpenProfile,
     this.showSettings = true,
   });
 
@@ -53,6 +54,9 @@ class AppTopBar extends StatelessWidget {
   /// 它只是收敛到「我」那一格。想改回去：把 `showSettings` 恒为 true 即可。
   final bool showSettings;
   final VoidCallback? onOpenNotifications;
+
+  /// v3.0.0：「我」从头像进入（右上角，与铃铛并列）。
+  final VoidCallback? onOpenProfile;
 
   /// 一排动作的触区（与首页原来那枚铃铛同规格：40×40，好按）。
   static const double actionSize = 40;
@@ -114,6 +118,15 @@ class AppTopBar extends StatelessWidget {
             label: '设置',
             onTap: onOpenSettings!,
           ),
+          if (onOpenProfile != null)
+            IconButton(
+              key: const Key('top-bar-profile'),
+              tooltip: '我',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: actionSize, minHeight: actionSize),
+              icon: const Icon(Icons.account_circle_outlined, color: Tokens.text2, size: IconSpec.m),
+              onPressed: onOpenProfile,
+            ),
           if (onOpenNotifications != null) _bell(),
         ],
       ),

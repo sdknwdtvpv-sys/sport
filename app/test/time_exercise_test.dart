@@ -214,7 +214,7 @@ void main() {
 
       expect(
         find.descendant(
-          of: find.byKey(const Key('done-list')),
+          of: find.byKey(const Key('session-log')),
           matching: find.textContaining('秒'),
         ),
         findsWidgets,

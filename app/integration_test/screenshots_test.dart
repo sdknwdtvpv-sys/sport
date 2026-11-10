@@ -239,7 +239,8 @@ void main() {
     });
 
     await step('08-progress', () async {
-      await switchTab(tester, 0, '进步');
+      // v3.0.0 会话流：进步并入「日志」Tab（下标 2）。
+      await switchTab(tester, 2, '日志');
       await settle(2000);
       await capture('08-progress');
     });
@@ -256,7 +257,8 @@ void main() {
     });
 
     await step('10-profile', () async {
-      await switchTab(tester, 2, '我');
+      // v3.0.0：没有「我」Tab 了，从头像进（顶栏 `top-bar-profile`）。
+      await tester.tap(find.byKey(const Key('top-bar-profile')));
       await settle(1800);
       await capture('10-profile');
     });

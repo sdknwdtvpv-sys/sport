@@ -455,48 +455,53 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
   ///
   /// **不只靠颜色**：勾的图形本身就在表达"完成"，色盲用户读到的信息一样
   /// （`docs/interaction-spec.md` 的第二条硬约束）。
-  Widget _doneMark() => Column(
+  Widget _doneMark() => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              color: Tokens.success,
-              shape: BoxShape.circle,
-              // 完成那颗绿勾的辉光：半径最大的那一档（它是全 App 唯一"庆祝"的光）
-              boxShadow: Tokens.glow(Tokens.success, radius: 18),
-            ),
-            // ⚠️ **T2-3**：勾是**画出来**的（`CheckPainter` + `PathMetric`），不是字形淡入 ——
-            // 0→420ms 写完整笔。`RepaintBoundary` 把每帧重绘关在这 76pt 里。
-            child: RepaintBoundary(
-              child: CustomPaint(
-                key: const Key('summary-check'),
-                painter: CheckPainter(
-                  progress: _phase(0, 420),
-                  color: CheckPainter.defaultColor,
-                  strokeWidth: 5,
+          // 2px 橙轴：完成感来自「一条轴 + 大字」，不是绿色发光圆盘。
+          Container(width: Tokens.timelineStroke, height: 56, color: Tokens.accent),
+          const SizedBox(width: Tokens.s4),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CustomPaint(
+                      key: const Key('summary-check'),
+                      painter: CheckPainter(
+                        progress: _phase(0, 420),
+                        color: Tokens.success,
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Tokens.s2),
+                  const Text('已完成',
+                      style: TextStyle(color: Tokens.success, fontSize: Tokens.fsMicro)),
+                ],
+              ),
+              const SizedBox(height: Tokens.s1),
+              Opacity(
+                key: const Key('summary-title-opacity'),
+                opacity: _phase(300, 700),
+                child: const Text(
+                  '训练完成',
+                  key: Key('summary-done-title'),
+                  style: TextStyle(
+                    color: Tokens.text,
+                    fontSize: Tokens.fsGrand,
+                    fontWeight: Tokens.fwBold,
+                    letterSpacing: Tokens.lsTight,
+                    height: Tokens.lhTight,
+                  ),
                 ),
-                child: const SizedBox.expand(),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: Tokens.s4),
-          Opacity(
-            key: const Key('summary-title-opacity'),
-            // 标题 300→700ms：比勾**晚一点**起（眼睛先看到勾写下去，再读到那行字）
-            opacity: _phase(300, 700),
-            child: const Text(
-              '训练完成！',
-              key: Key('summary-done-title'),
-              style: TextStyle(
-                color: Tokens.text,
-                fontSize: Tokens.fsTitle,
-                fontWeight: Tokens.fwBold,
-                letterSpacing: Tokens.lsTight,
-              ),
-            ),
-          ),
-
         ],
       );
 

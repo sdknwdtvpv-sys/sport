@@ -25,7 +25,7 @@ void main() {
     // 「计划」从首页那张卡片进。中间那格从「训练」改名「**开练**」（动词）。
     // 用户 10.7 那条"训练在正中"的意图继续成立。
     expect(AppTabBar.tabs.map((({IconData icon, String label}) t) => t.label),
-        <String>['进步', '开练', '我']);
+        <String>['今天', '现在', '日志']);
   });
 
   testWidgets('★ 正中那格**完全在栏内**：只有图标垫一颗强调圆，三格仍等宽',
@@ -47,8 +47,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final Rect bar = tester.getRect(find.byKey(const Key('tab-bar')));
-    final Finder center = find.byKey(const Key('tab-开练'));
-    expect(center, findsOneWidget, reason: '正中那格叫 tab-开练（key 与另外两格同一套）');
+    final Finder center = find.byKey(const Key('tab-现在'));
+    expect(center, findsOneWidget, reason: '正中那格叫 tab-现在（key 与另外两格同一套）');
 
     // ① 整格都在栏内 —— 上沿不许高过底栏上沿（这条就是"不要突出去"）
     final Rect centerRect = tester.getRect(center);
@@ -71,7 +71,7 @@ void main() {
         reason: '图标也要在栏内 —— 这才是"所有内容都包进来"');
     expect(
       find.descendant(
-        of: find.byKey(const Key('tab-开练')),
+        of: find.byKey(const Key('tab-现在')),
         matching: find.byType(Container),
       ),
       findsNothing,
@@ -79,11 +79,11 @@ void main() {
     );
     // 文字照旧（底栏不许少一个词）
     expect(find.byKey(const Key('tab-center-label')), findsOneWidget);
-    expect(find.text('开练'), findsOneWidget);
+    expect(find.text('现在'), findsOneWidget);
 
     // ③ **三格**仍然等宽（留空/换画法都不许改变等分）
-    final double slot = tester.getSize(find.byKey(const Key('tab-进步'))).width;
-    for (final String label in <String>['我']) {
+    final double slot = tester.getSize(find.byKey(const Key('tab-今天'))).width;
+    for (final String label in <String>['日志']) {
       expect(tester.getSize(find.byKey(Key('tab-$label'))).width,
           moreOrLessEquals(slot, epsilon: 0.5));
     }

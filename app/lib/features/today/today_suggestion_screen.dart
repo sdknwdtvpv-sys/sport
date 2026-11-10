@@ -47,6 +47,7 @@ class TodaySuggestionScreen extends StatefulWidget {
     this.routines,
     this.exercises,
     this.store,
+    this.onEditPlan,
   });
 
   final TodayPlanner planner;
@@ -60,6 +61,9 @@ class TodaySuggestionScreen extends StatefulWidget {
   /// 缺一个就宁可不显示，也不放一个点不动的按钮。
   final RoutineRepository? routines;
   final ExerciseRepository? exercises;
+
+  /// v3.0.0：会话详情里的「编辑」（动作清单 + 换一批都在这一屏）。
+  final VoidCallback? onEditPlan;
 
   /// 显示单位（建议卡上那行「62.5 kg × 8」）
   final WeightUnit unit;
@@ -260,6 +264,13 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
               ),
             ),
           ),
+          if (widget.onEditPlan != null)
+            TextButton(
+              key: const Key('suggestion-edit'),
+              onPressed: widget.onEditPlan,
+              child: const Text('编辑',
+                  style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap)),
+            ),
         ],
       ),
     );

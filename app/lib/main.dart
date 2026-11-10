@@ -251,7 +251,7 @@ class _HomeShellState extends State<HomeShell> {
   /// 当前 Tab。**2026-10-10 起只有三个**（进步 / 开练 / 我，见 docs/screens.md）：
   /// 「数据」降回「进步」的二级页、「计划」从首页那颗卡片进 —— `PRODUCT.md` §4 一直
   /// 写着"3 个 Tab，上限"。初始落在正中那格（开练 = 今天）。
-  int _tab = 1;
+  int _tab = 0;
 
   /// iOS 的外壳用 `PageView`（**可以左右拖着换 tab**）+ 这个控制器。
   /// Android 不用它（那边仍然是"直接换一屏"，见 `build` 里那条平台判据）。
@@ -264,7 +264,7 @@ class _HomeShellState extends State<HomeShell> {
   /// 而且底栏高亮是对的，`flutter test` 全绿（测试走的是安卓那条路）。
   /// **证据图当场抓到的**：跑 `home_evidence_test` 拍出来的"首页"是「我」。
   /// 对应的判据见 `test/widget_test.dart` 里那条"冷启动落在开练"。
-  final PageController _pages = PageController(initialPage: 1);
+  final PageController _pages = PageController(initialPage: 0);
 
   /// 手指拖到哪儿了（小数页号）—— 底栏那颗玻璃**跟着手指滑**就是靠它喂。
   /// `-1` = 没人在拖（胶囊停在整格上）。
@@ -275,6 +275,15 @@ class _HomeShellState extends State<HomeShell> {
   /// 点底栏换 tab：图标颜色**立刻**变（不然要等动画跑完，手感会钝），
   /// 页面滑过去，玻璃由原生弹簧接管。
   void _selectTab(int i) {
+    // v3.0.0：中间那格不是 Tab，是「现在」动作胶囊 —— 直接开始/回到会话。
+    if (i == 1) {
+      if (_activeSession != null) {
+        unawaited(_resumeOrAsk());
+      } else {
+        unawaited(_startNow());
+      }
+      return;
+    }
     if (i == _tab) return;
     setState(() => _tab = i);
     // ⚠️ 2026-10-10（VI 计划 **T2-5**）：这里原来有一句
@@ -1198,6 +1207,7 @@ class _HomeShellState extends State<HomeShell> {
       MaterialPageRoute<void>(
         builder: (_) => WorkoutScreen(
           session: session,
+          sessionLabel: _todayDay?.label ?? '训练',
           // 完整动作库行：控制器只有瘦身过的 ExerciseSpec，而详情页要说明/部位/器械
           catalog: <ExerciseData>[
             for (final SessionEntry e in entries) e.exercise,
@@ -1809,6 +1819,7 @@ class _HomeShellState extends State<HomeShell> {
             routines: _routines,
             exercises: _repo,
             store: _store,
+            onEditPlan: _editTodayPlan,
           ),
       ),
     );
@@ -2010,8 +2021,10 @@ class _HomeShellState extends State<HomeShell> {
       // ⚠️ 齿轮**只在「我」那一格**出现（2026-10-10 的设计评审）：那一屏本身就是
       // 设置集散地，另外两格再挂一个齿轮只是"每屏顶栏一模一样"的噪音。
       // 铃铛（通知）是全局的，仍然每格都在。
-      showSettings: _tab == 2,
+      // v3.0.0：设置只从「我」头像页进入；三个主 Tab 顶栏图标数一致。
+      showSettings: false,
       onOpenNotifications: _openNotifications,
+      onOpenProfile: _openProfileRoute,
     );
     return Scaffold(
       backgroundColor: Tokens.bg,
@@ -2089,18 +2102,50 @@ class _HomeShellState extends State<HomeShell> {
   /// 顶栏标题：就是当前 tab 的名字；**「开练」那一屏写"今天"**
   /// （那一屏回答的是"今天练什么"，tab 名字叫开练，进了门就是今天）。
   String get _topBarTitle => switch (_tab) {
-        0 => '进步',
-        1 => '今天',
-        _ => '我的',
+        // v3.0.0：今天页自带 40pt 大标题，顶栏不再重复；日志页由外壳给「日志」。
+        0 => '',
+        _ => '日志',
       };
 
   /// 顶栏副标题：只有「今天」那一屏给日期（原来它挤在首页标题旁边，
   /// 与 34pt 大字、40×40 铃铛三种高度混在一行 —— 那正是用户说的"布局不协调"）。
-  String? get _topBarSubtitle {
-    if (_tab != 1) return null;
-    const List<String> weekdays = <String>['一', '二', '三', '四', '五', '六', '日'];
-    final DateTime now = DateTime.now();
-    return '${formatDateHuman(now)} · 周${weekdays[now.weekday - 1]}';
+  String? get _topBarSubtitle => null;
+
+  /// v3.0.0：右上角头像 → 「我」（从任何 Tab 都能进，带返回）。
+  Future<void> _openProfileRoute() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (BuildContext ctx) => Scaffold(
+        backgroundColor: Tokens.bg,
+        body: SafeArea(
+          child: Stack(
+            children: <Widget>[
+              Column(
+                children: <Widget>[
+                  AppTopBar(
+                    title: '我',
+                    unread: _unreadNotifications,
+                    showSettings: true,
+                    onOpenSettings: _openSettings,
+                    onOpenNotifications: _openNotifications,
+                  ),
+                  Expanded(child: _bodyFor(3)),
+                ],
+              ),
+              Positioned(
+                left: Tokens.s2,
+                top: Tokens.s2,
+                child: IconButton(
+                  key: const Key('profile-back'),
+                  icon: const Icon(Icons.chevron_left, color: Tokens.text2),
+                  onPressed: () => Navigator.of(ctx).maybePop(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+    if (mounted) await _refreshHome();
   }
 
   /// 齿轮 → 「设置」那一屏（三组设置从「我」页搬过去了）。
@@ -2146,47 +2191,65 @@ class _HomeShellState extends State<HomeShell> {
   /// 「数据」与「计划」**不在这里了**：它们不再是 tab（数据从「进步」页的
   /// 「全部数据 ›」进，计划从首页那张卡进）。
   Widget _bodyFor(int tab) {
-    switch (tab) {      case 0:
-        return ProgressScreen(
-            store: _store,
-            repository: _repo,
-            bodyMetrics: _bodyMetrics,
-            profile: _profile,
-            analytics: _analytics,
-            unit: _unit,
-            bodyUnit: _bodyUnit,
+    switch (tab) {
+      case 0:
+        return TodayScreen(
+            // 大按钮一跳直开练；想先看看的人走下面那个入口
+            onStart: _startNow,
+            onSeePlan: _openSuggestion,
+            // 「计划 ›」：计划页（本周 / 模板库 / 历史）。2026-10-10 起它不再是一格 tab
+            onOpenPlan: _openPlanPage,
+            lastWeekSessions: _weekSessions,
+            // 「今天不想练」的轻量出口：4 个按时长的活动，1 组就走完
+            onLightWorkout: _startLight,
+            // 上次没练完 → 先把这条摆在最上面（"接着练"是此刻唯一该做的事）
+            //
+            // ⚠️ **超过 7 天的那条不上首页**（10.9 清单第 1 条，用户拍板"只在计划页留入口"）：
+            // 一条两周前的半截训练顶在首屏喊"接着练"，正是他截图抱怨的那个东西。
+            onResume: _showHomeResume ? _resumeOrAsk : null,
+            resumeLabel: _showHomeResume
+                ? staleSessionResumeLabel(_activeSession!, _nowForSession)
+                : null,
+            // 首页中间那一块：今天的安排（2026-10-04 替掉原来那个 Spacer）
+            todayPlan: _todayPlan,
+            // 「今天练 上肢 · 家里」—— 场景要写在卡片上，
+            // 否则用户会奇怪"我明明选了家里，怎么还推这个"（第 4 条）
+            todayLabel: _todayDay == null
+                ? null
+                : '${_todayDay!.label} · ${_scenario.label}',
+            // ⚠️ 空清单时「换一批」要**留着**（2026-10-09）：用户可能刚把今天的动作
+            // 全删掉，那个按钮就是他"重新给我排一份"的出路。
+            onReroll: _rerollTodayPlan,
+            onEditPlan: _editTodayPlan,
+            // 新 VI 的首页三块（2026-10-05）：打卡 / 快速入口 / 最近训练
             streak: _streak,
+            streakCopy: streakCopy(_streak),
+            recent: _recent,
+            weekTrainedWeekdays: _weekTrainedDays,
+            // 同一个屏幕上**只能有一种单位**：上面「今天的安排」用 `_unit`，
+            // 「最近训练」那三行也必须用它（10.8 清单第 7 条：单位不一致）
+            unit: _unit,
+            onOpenLibrary: _openLibrary,
+            onLogWeight: _openBodyMetric,
+            onOpenAchievements: _openAchievements,
+            // 铃铛与未读点**搬去外壳顶栏**了（v1.60.0）：通知中心是全局的，
+            // 不该只在首页点得到。`_openNotifications` 现在挂在顶栏上。
+            // 周报（第二部分第 1 条）：**只在周一 / 周二 + 上周练过**才给看。
+            // 判据是纯函数（`shouldShowWeeklyReport`），所以"周三不给看"这件事有测试钉着。
+            weeklyReport: shouldShowWeeklyReport(_allSets, DateTime.now())
+                ? weeklyReportFor(_allSets, DateTime.now())
+                : null,
+            onOpenWeeklyReport: _openWeeklyReport,
+            muscleBalance: _muscleBalance,
+            comebackNudge: _comebackNudge,
             protectedInStreak: _protectedInStreak,
-            // 身体数据页里切了体重单位 → 整棵树按新单位重建
-            onBodyUnitChanged: (BodyWeightUnit u) {
-              setState(() => _bodyUnit = u);
-            },
-            // 会员权益（M1）：进步页的「进阶分析」卡据此决定显示真功能还是预览态
-            entitlements: EntitlementRepository(_db),
-            // 「看看 Ultra」→ 会员页（**它只在进步页那张卡的按钮上**，
-            // 首页/训练屏那条路径上一个付费入口都没有 —— `free_red_line_test` 钉着这件事）
-            onOpenUltra: () {
-              // M4a：会员页的商店接线 + 服务端校准（没配服务器地址时 server = null → 纯本地）。
-              final EntitlementRepository repo = EntitlementRepository(_db);
-              Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => PaywallScreen(
-                  repository: repo,
-                  // debug 走查给假商品（只在 debug 构建里存在）；release 里它是 null
-                  // → 会员页从**真商店**拉商品（M2 的真内购从这里接进来）。
-                  catalog: debugFakeCatalog,
-                  billing: BillingClient(
-                    gateway: InAppPurchaseGateway(),
-                    repository: repo,
-                    server: billingServerClientFromConfig(
-                      repository: repo,
-                      sessionStore: _profile.authSessionStore(),
-                    ),
-                  ),
-                ),
-              ));
-            },
-            // T3-2：进步页那处「还没有训练记录」的空态，下一步是回「开练」那一格
-            onOpenToday: () => _selectTab(1),
+            protectionOffer: _protectionOffer,
+            // 首页那行事实的右半边（2026-10-10）：**本周已练几次**。
+            // ⚠️ 刻意**不用** `WeeklyChallenge.current` —— 那是"当周那条挑战做到多少"，
+            // 口径跟着挑战走（可能是"练过 4 个不同动作"），拿来当"本周练了几次"是错的。
+            weeklyFact: _weekWorkoutFact(),
+            onProtectStreak:
+                _protectionOffer == null ? null : _protectStreak,
           );      case 1:
         return TodayScreen(
             // 大按钮一跳直开练；想先看看的人走下面那个入口
@@ -2245,7 +2308,49 @@ class _HomeShellState extends State<HomeShell> {
             weeklyFact: _weekWorkoutFact(),
             onProtectStreak:
                 _protectionOffer == null ? null : _protectStreak,
-          );      default:
+          );      case 2:
+        return ProgressScreen(
+            store: _store,
+            repository: _repo,
+            bodyMetrics: _bodyMetrics,
+            profile: _profile,
+            analytics: _analytics,
+            unit: _unit,
+            bodyUnit: _bodyUnit,
+            streak: _streak,
+            protectedInStreak: _protectedInStreak,
+            // 身体数据页里切了体重单位 → 整棵树按新单位重建
+            onBodyUnitChanged: (BodyWeightUnit u) {
+              setState(() => _bodyUnit = u);
+            },
+            // 会员权益（M1）：进步页的「进阶分析」卡据此决定显示真功能还是预览态
+            entitlements: EntitlementRepository(_db),
+            // 「看看 Ultra」→ 会员页（**它只在进步页那张卡的按钮上**，
+            // 首页/训练屏那条路径上一个付费入口都没有 —— `free_red_line_test` 钉着这件事）
+            onOpenUltra: () {
+              // M4a：会员页的商店接线 + 服务端校准（没配服务器地址时 server = null → 纯本地）。
+              final EntitlementRepository repo = EntitlementRepository(_db);
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => PaywallScreen(
+                  repository: repo,
+                  // debug 走查给假商品（只在 debug 构建里存在）；release 里它是 null
+                  // → 会员页从**真商店**拉商品（M2 的真内购从这里接进来）。
+                  catalog: debugFakeCatalog,
+                  billing: BillingClient(
+                    gateway: InAppPurchaseGateway(),
+                    repository: repo,
+                    server: billingServerClientFromConfig(
+                      repository: repo,
+                      sessionStore: _profile.authSessionStore(),
+                    ),
+                  ),
+                ),
+              ));
+            },
+            // T3-2：进步页那处「还没有训练记录」的空态，下一步是回「开练」那一格
+            onOpenToday: () => _selectTab(1),
+          );
+      default:
         return ProfileScreen(
           store: _store,
           repository: _repo,

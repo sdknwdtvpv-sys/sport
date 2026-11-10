@@ -282,8 +282,8 @@ void main() {
 
       final List<RoutineEntry> saved = await DayPlanRepository(db).load(key);
       expect(saved, isNotEmpty, reason: '首页显示的那份必须存下来，否则"改了没法存"');
-      // 首页那块至少有 1 行 —— 而且它显示的就是库里那一份（同一次生成的）
-      expect(find.byKey(const Key('today-plan-row-0')), findsOneWidget);
+      // v3.0.0：首页只显示会话块摘要，不列动作行；摘要来自库里那一份
+      expect(find.byKey(const Key('home-plan-summary')), findsOneWidget);
 
       await teardown(tester);
     });
@@ -310,10 +310,10 @@ void main() {
 
       await pumpApp(tester);
 
-      // 首页那块只该有 1 行（现算的话会是 4–6 个动作）
-      expect(find.byKey(const Key('today-plan-row-0')), findsOneWidget);
-      expect(find.byKey(const Key('today-plan-row-1')), findsNothing,
-          reason: '库里只有一个动作，就只显示一个 —— 现算会把它撑成 4–6 行');
+      // v3.0.0：摘要必须读库里那一份（1 个动作），不是现算的 4–6 个
+      await tester.scrollUntilVisible(find.byKey(const Key('home-plan-summary')), 100,
+          scrollable: find.byType(Scrollable).first);
+      expect(find.textContaining('1 个动作'), findsOneWidget);
 
       await teardown(tester);
     });
@@ -340,10 +340,10 @@ void main() {
       ], nowMs: 1000);
 
       await pumpApp(tester);
-      expect(find.byKey(const Key('home-plan-edit')), findsOneWidget,
-          reason: '"能长按"这件事必须被看见');
-
-      await tester.longPress(find.byKey(const Key('today-plan-row-0')));
+      // v3.0.0：编辑在会话详情里，不在首页
+      await tester.tap(find.byKey(const Key('open-plan')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('suggestion-edit')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('plan-editor')), findsOneWidget);
 

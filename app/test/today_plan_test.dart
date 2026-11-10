@@ -71,73 +71,56 @@ void main() {
   }
 
   group('首页「今天的安排」', () {
-    testWidgets('中间那块不再是空白：有表头、有动作、有建议值',
+    testWidgets('首页是时间轴会话块：无动作表、有标题/摘要/目标/上次',
         (WidgetTester tester) async {
       await pumpApp(tester);
 
-      expect(find.byKey(const Key('today-plan')), findsOneWidget,
-          reason: '首页中间现在该摆今天的安排（以前是一个 Spacer）');
-
-      final List<String> texts = cardTexts(tester);
-      // ⚠️ 2026-10-09（第二份 docx 第 4 条）起表头还带着**在哪儿练**：
-      // 用户不看着"健身房/家里/徒手"这三个字，就会奇怪"我明明选了家里怎么还推这个"。
-      expect(texts, contains('今日训练'));
-      expect(texts.any((String s) => s.startsWith('上肢 · 健身房')), isTrue,
-          reason: 'v2.2 卡片标题=22pt 的「部位 · 场景」，eyebrow 另起一行');
-      expect(texts.any((String s) => s.contains('健身房')), isTrue,
-          reason: '没选过场景 = 健身房（与这一版之前的行为一致）');
-      expect(texts, contains('编辑'));
-      // 上肢日第一个动作是常用度最高的胸部动作
-      expect(texts, contains('杠铃卧推'));
-      // 第一次练这个动作 → 建议值就是动作库起始重量（40kg × 8）
-      expect(texts.any((String s) => s.contains('40 kg')), isTrue,
-          reason: '重量列要带引擎算好的建议值，不能只给个名字：$texts');
-      expect(texts.any((String s) => s.contains('×8–10次')), isTrue,
-          reason: '组×次列要写清组数与次数区间：$texts');
-
-      await teardown(tester);
-    });
-
-    testWidgets('★ 第一次只列 3 个动作（v2.3.0 首页减负）',
-        (WidgetTester tester) async {
-      await pumpApp(tester);
-
-      final int rows = rowCount(tester);
-      expect(rows, 3, reason: 'v2.3.0 首页只列 3 行（第 4+ 进编辑）');
+      expect(find.byKey(const Key('today-timeline')), findsOneWidget);
+      expect(find.byKey(const Key('home-session-time')), findsOneWidget);
+      expect(find.byKey(const Key('today-plan')), findsOneWidget);
+      expect(find.byKey(const Key('home-session-title')), findsOneWidget);
       expect(find.byKey(const Key('home-plan-summary')), findsOneWidget);
-      expect(find.textContaining('个动作'), findsWidgets,
-          reason: '卡头副标题交代总数，不丢信息');
+      expect(find.byKey(const Key('home-session-goal')), findsOneWidget);
+      expect(find.byKey(const Key('today-plan-row-0')), findsNothing,
+          reason: 'v3.0.0：首页不再渲染动作清单表格，动作进会话详情');
+      expect(find.text('今晚 · 计划'), findsOneWidget);
+
+      final List<String> texts = cardTexts(tester);
+      expect(texts.any((String s) => s.startsWith('上肢 · 健身房')), isTrue);
+      expect(texts.any((String s) => s.contains('个动作')), isTrue);
+      expect(texts.any((String s) => s.contains('目标')), isTrue);
 
       await teardown(tester);
     });
 
-    testWidgets('★ 大按钮开练的，就是首页列出来的那一个动作',
+    testWidgets('★ 首页只留会话块摘要，不列动作表（v3.0.0）',
         (WidgetTester tester) async {
       await pumpApp(tester);
+      expect(rowCount(tester), 0, reason: '没有任何动作行');
+      expect(find.byKey(const Key('home-plan-summary')), findsOneWidget);
+      expect(find.textContaining('个动作'), findsWidgets);
 
-      final List<String> texts = cardTexts(tester);
-      expect(texts, contains('杠铃卧推'));
+      await teardown(tester);
+    });
 
+    testWidgets('★ 主按钮仍可一跳到训练屏（key 稳定）',
+        (WidgetTester tester) async {
+      await pumpApp(tester);
       await tester.tap(find.byKey(const Key('start-workout')));
       await tester.pumpAndSettle();
-
-      // 训练屏顶部那个动作名 —— 首页列的是杠铃卧推，那进去就该是它
-      expect(find.text('杠铃卧推'), findsWidgets,
-          reason: '首页显示的计划与真正开练的必须是同一份（显示了 A 却练 B 更糟）');
       expect(find.byKey(const Key('big-log-button')), findsOneWidget);
-
       await teardown(tester);
     });
 
-    testWidgets('「编辑」是显式入口（长按只是快捷方式，不是唯一路径）',
+    testWidgets('★ 编辑不在首页：点会话块进详情再编辑（v3.0.0）',
         (WidgetTester tester) async {
       await pumpApp(tester);
-      expect(find.byKey(const Key('home-plan-edit')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('home-plan-edit')));
+      expect(find.byKey(const Key('home-plan-edit')), findsNothing);
+      expect(find.byKey(const Key('open-plan')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('open-plan')));
       await tester.pumpAndSettle();
-      // 编辑器会打开（不依赖长按才发现）
-      expect(find.byType(Dialog).evaluate().isNotEmpty ||
-          find.byKey(const Key('home-plan-edit')).evaluate().isNotEmpty, isTrue);
+      expect(find.byKey(const Key('today-title')), findsOneWidget,
+          reason: '进了会话/建议详情，编辑入口在那里');
       await teardown(tester);
     });
 

@@ -84,9 +84,9 @@ class AppTabBar extends StatelessWidget {
   /// 底栏那三个名字与表里的 `progress` / `today` / `profile` 一一对应。
   static const List<({IconData icon, String label})> tabs =
       <({IconData icon, String label})>[
-    (icon: Icons.trending_up, label: '进步'),
-    (icon: Icons.fitness_center, label: '开练'),
-    (icon: Icons.person, label: '我'),
+    (icon: Icons.calendar_today_outlined, label: '今天'),
+    (icon: Icons.radio_button_checked, label: '现在'),
+    (icon: Icons.history, label: '日志'),
   ];
 
   /// 正中那一格（Flutter 那一支会把它画得大一号 + 强调色）。
@@ -100,9 +100,9 @@ class AppTabBar extends StatelessWidget {
   /// 语义错位没有任何东西会发现。它们都写在 `core/icon_spec.dart` 的
   /// 语义映射表里（`progress` / `today` / `profile`），这里只做一次投影。
   static const List<String> _sfSymbols = <String>[
-    'chart.line.uptrend.xyaxis', // progress
-    'dumbbell.fill', // today
-    'person', // profile
+    'calendar', // today
+    'record.circle.fill', // now
+    'clock.arrow.circlepath', // log
   ];
 
   /// 正中那一格（**完全在栏内**）：一个**大一号的强调色图标** + 文字。

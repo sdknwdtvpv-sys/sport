@@ -347,6 +347,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
           const SizedBox(height: Tokens.s7),
           // v2.3.0：部位/PR/最近训练已下沉「全部数据」；入口在 hero 行右侧。
           const SizedBox(height: Tokens.s7),
+          const Text('会话日志',
+              style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
+          const SizedBox(height: Tokens.s2),
+          _sessionLog(),
+          const SizedBox(height: Tokens.s7),
           // 进阶分析（Ultra 权益 7，2026-10-10 做成真功能）。
           // ⚠️ **放在这一屏的最下面**（免费的四张卡 / 容量趋势 / 部位平衡 / PR 墙之后）：
           // 先让免费用户看完他已经有的东西，再问他要不要更多 —— 顺序反了就是一进门撞付费墙
@@ -945,6 +950,65 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _sessionLog() {
+    final List<({String workoutId, DateTime day, int exercises, int sets, double volume})>
+        rows = recentWorkouts(_sets, limit: 30);
+    if (rows.isEmpty) {
+      return const Text('还没有会话。',
+          style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap));
+    }
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+      key: const Key('session-log-list'),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Tokens.hair)),
+      ),
+      child: Column(
+        children: <Widget>[
+          for (final ({String workoutId, DateTime day, int exercises, int sets, double volume}) r
+              in rows)
+            ExpansionTile(
+              key: Key('session-${r.workoutId}'),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 0),
+              childrenPadding: const EdgeInsets.only(bottom: Tokens.s3),
+              title: Text(
+                '${formatDateAxis(r.day)} · ${r.exercises} 个动作 · ${r.sets} 组',
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
+              ),
+              subtitle: Text(formatVolume(r.volume, widget.unit),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+              children: <Widget>[
+                for (final SetRecord set in _sets.where((SetRecord s) => s.workoutId == r.workoutId))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: <Widget>[
+                        Text(
+                          '${DateTime.fromMillisecondsSinceEpoch(set.completedAtMs).hour.toString().padLeft(2, '0')}:'
+                          '${DateTime.fromMillisecondsSinceEpoch(set.completedAtMs).minute.toString().padLeft(2, '0')}',
+                          style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+                        ),
+                        const SizedBox(width: Tokens.s3),
+                        Expanded(
+                          child: Text(
+                            '${_exerciseName(_data!, set.exerciseId)}  ${set.weightKg == null ? '自重' : formatWeight(set.weightKg!, widget.unit)} × ${set.reps}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
       ),
     );
   }

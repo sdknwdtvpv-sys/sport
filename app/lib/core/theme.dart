@@ -218,6 +218,16 @@ abstract final class Tokens {
   // ══════════════════════════════════════════════════════════════════════
 
   /// 字号（10 级，见上面那张表）。
+  /// v3.0.0：页面「今天」大标题（40 / 800）与训练屏计时数字（54）。
+  static const double fsGrand = 40;
+  static const double fsMetric = 54;
+
+  /// v3.0.0：进行中会话的吸底「当前行」高度。
+  static const double hNowRow = 88;
+
+  /// 时间轴竖线宽度（2px，只能用这个值）。
+  static const double timelineStroke = 2;
+
   /// v2.0.0 新增：一屏唯一的大数字。
   static const double fsDisplay = 34;
   static const double fsHero = 30;

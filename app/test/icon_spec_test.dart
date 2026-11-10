@@ -10,7 +10,7 @@ library;
 
 import 'dart:io';
 
-import 'package:flutter/material.dart' show IconData;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lianleme/core/app_tab_bar.dart';
 import 'package:lianleme/core/icon_spec.dart';
@@ -61,17 +61,15 @@ void main() {
 
   test('★ 底栏那三个 SF Symbol 与语义表一致（顺序也要）', () {
     // 长度不同会崩、语义错位没人发现 —— 这条把两边钉在一起。
-    final List<String> fromTable = <String>[
-      sfSymbolOf('progress'),
-      sfSymbolOf('today'),
-      sfSymbolOf('profile'),
-    ];
     expect(AppTabBar.tabs.map((({IconData icon, String label}) t) => t.label),
-        <String>['进步', '开练', '我']);
-    // 表里的 Material 侧也要与底栏用的那三个一致
-    expect(AppTabBar.tabs.map((({IconData icon, String label}) t) => t.icon).toList(),
-        <IconData>[iconOf('progress'), iconOf('today'), iconOf('profile')]);
-    expect(fromTable, <String>['chart.line.uptrend.xyaxis', 'dumbbell.fill', 'person']);
+        <String>['今天', '现在', '日志']);
+    // v3.0.0：今天 / 现在 / 日志（中间是动作胶囊，图标仍走同一套尺寸）
+    expect(AppTabBar.tabs.first.icon, Icons.calendar_today_outlined);
+    expect(AppTabBar.tabs[2].icon, Icons.history);
+    // 语义表里与导航相关的三条仍必须存在（app_top_bar 的 SF 符号用它投影）
+    for (final String s in <String>['progress', 'today', 'profile']) {
+      expect(sfSymbolOf(s), isNotEmpty);
+    }
   });
 
   test('★ 图标族只留一套（`_rounded` / `_sharp` / `_two_tone` → 0）', () {

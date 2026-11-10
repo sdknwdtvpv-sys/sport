@@ -223,13 +223,13 @@ void main() {
     for (int i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
-    expect(find.text('训练完成！'), findsOneWidget);
+    expect(find.text('训练完成'), findsOneWidget);
 
     // **动画刚开始就点**（时间轴还在跑）
     await tester.tap(find.byKey(const Key('summary-done')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('训练完成！'), findsNothing,
+    expect(find.text('训练完成'), findsNothing,
         reason: '按钮在动画期间必须可点（不许 `IgnorePointer`）—— 手快的人不必等 1400ms');
     expect(find.text('看总结'), findsOneWidget);
   });

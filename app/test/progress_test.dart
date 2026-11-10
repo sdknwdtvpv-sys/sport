@@ -338,6 +338,8 @@ void main() {
       expect(find.byKey(const Key('progress-sparkline')), findsOneWidget);
       // v2.3.0：PR/部位/最近下沉「全部数据」；首屏只留 hero/趋势/入口。
       expect(find.byKey(const Key('open-all-data')), findsOneWidget);
+      expect(find.byKey(const Key('session-log-list')), findsOneWidget,
+          reason: 'v3.0.0：日志页首屏下方按时间排列会话');
       expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsNothing);
     });
 

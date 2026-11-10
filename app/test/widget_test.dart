@@ -33,9 +33,11 @@ void main() {
 
     // **三个 Tab**（2026-10-10 从五个收回来 —— `PRODUCT.md` §4 一直写着"3 个，上限"）。
     // 「数据」降回「进步」的二级页、「计划」从首页那张卡片进（见 docs/screens.md S0）。
-    expect(find.text('开练'), findsOneWidget);
-    expect(find.text('进步'), findsOneWidget);
-    expect(find.text('我'), findsOneWidget);
+    // v3.0.0：底栏「今天 / 现在 / 日志」；「我」从头像进。
+    expect(find.text('今天'), findsWidgets);
+    expect(find.text('现在'), findsOneWidget);
+    expect(find.text('日志'), findsOneWidget);
+    expect(find.byKey(const Key('top-bar-profile')), findsOneWidget);
 
     // 必须销毁页面：外壳里有两个埋点上报定时器（冷启动 5 秒 + 前台每 60 秒），
     // 不销毁的话 testWidgets 会因 pending timer 直接判失败。
@@ -55,21 +57,24 @@ void main() {
 
     // 顶栏：标题 + 铃铛（+ 只在「我」那格的齿轮）
     expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
-    expect(find.text('今天'), findsWidgets, reason: '「开练」那一屏的顶栏标题是"今天"');
+    expect(find.byKey(const Key('today-grand-title')), findsOneWidget,
+        reason: '今天页用 40pt 页内大标题，顶栏不重复');
     expect(find.byKey(const Key('open-notifications')), findsOneWidget,
         reason: '铃铛是全局的（通知与你在哪一屏无关）');
+    expect(find.byKey(const Key('top-bar-profile')), findsOneWidget,
+        reason: '我 from 头像');
     // ⚠️ 2026-10-10：齿轮**不在这一格** —— 「我」本身就是设置集散地，
     // 另外两格再挂一个齿轮只是"每屏顶栏一模一样"的噪音（用户 10.10 的设计评审）。
     expect(find.byKey(const Key('top-bar-settings')), findsNothing,
         reason: '「开练」那一格的顶栏没有齿轮');
 
-    // 换到「我」那一格：齿轮出现，而且点得开
-    await tester.tap(find.byKey(const Key('tab-我')));
+    // v3.0.0：头像 → 「我」；齿轮出现在头像页顶栏
+    await tester.tap(find.byKey(const Key('top-bar-profile')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('app-top-bar')), findsOneWidget);
-    expect(find.text('我的'), findsWidgets, reason: '顶栏标题跟着当前 tab 走');
+    expect(find.text('我'), findsWidgets);
     expect(find.byKey(const Key('top-bar-settings')), findsOneWidget,
-        reason: '齿轮只在这一格');
+        reason: '设置入口在头像页');
     await tester.tap(find.byKey(const Key('top-bar-settings')));
     await tester.pumpAndSettle();
     expect(find.text('设置'), findsWidgets);

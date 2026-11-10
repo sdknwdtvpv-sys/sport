@@ -16,7 +16,6 @@ import '../../core/accent_button.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/units.dart';
 import '../../core/vi_cards.dart';
-import '../../domain/models.dart' show Suggestion, isTimeTrack;
 import '../progress/weekly_report.dart';
 import '../progress/streak_protection.dart';
 import 'today_planner.dart';
@@ -293,22 +292,104 @@ class TodayScreen extends StatelessWidget {
           const SizedBox(height: Tokens.s4),
           _comebackCard(comebackNudge!),
         ],
-        const SizedBox(height: Tokens.s7),
+        const SizedBox(height: Tokens.s4),
+        // v3.0.0：页面大标题（40/800）+ 日期；顶栏只留头像/铃铛。
+        Padding(
+          padding: const EdgeInsets.only(bottom: Tokens.s4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('今天',
+                  key: const Key('today-grand-title'),
+                  style: const TextStyle(
+                      color: Tokens.text,
+                      fontSize: Tokens.fsGrand,
+                      fontWeight: Tokens.fwBold,
+                      letterSpacing: Tokens.lsTight,
+                      height: Tokens.lhTight)),
+              const SizedBox(height: Tokens.s1),
+              Text(
+                '${formatDateHuman(now)} · 周${'一二三四五六日'[now.weekday - 1]}',
+                key: const Key('today-date'),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap),
+              ),
+            ],
+          ),
+        ),
         // ⚠️ v2.0.1：这里原来又画了一遍 34pt「今天 + 日期」—— 外壳顶栏
         // （`AppTopBar` 的 title/subtitle）已经是同一行，两遍叠在真机上就是两个「今天」。
         // 页面不再写自己的名字，标题只由顶栏那一处提供。
-        _TodayPlanCard(
-          plan: todayPlan,
-          label: todayLabel,
-          onEdit: onEditPlan,
-          onOpen: onSeePlan,
-          onStart: onStart,
+        IntrinsicHeight(
+          key: const Key('today-timeline'),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              // 2px 时间轴（从会话块贯穿到最近一行）
+              SizedBox(
+                width: 52,
+                child: Column(
+                  children: <Widget>[
+                    Text('未定时间',
+                        key: const Key('home-session-time'),
+                        style: const TextStyle(
+                            color: Tokens.text3,
+                            fontSize: Tokens.fsMicro,
+                            fontFeatures: Tokens.tabular)),
+                    const SizedBox(height: Tokens.s1),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                          color: Tokens.accentText, shape: BoxShape.circle),
+                    ),
+                    Expanded(
+                      child: Container(
+                        width: Tokens.timelineStroke,
+                        color: Tokens.line,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _TodayPlanCard(
+                      plan: todayPlan,
+                      label: todayLabel,
+                      lastLabel: recent.isEmpty
+                          ? null
+                          : formatDateAxis(recent.first.day),
+                      onOpen: onSeePlan,
+                    ),
+                    const SizedBox(height: Tokens.s4),
+                    SizedBox(
+                      height: 72,
+                      width: double.infinity,
+                      child: AccentButton(
+                        key: const Key('start-workout'),
+                        label: '开始训练',
+                        labelSize: Tokens.fsBody,
+                        height: 72,
+                        onPressed: onStart,
+                      ),
+                    ),
+                    const SizedBox(height: Tokens.s3),
+                    _factLine(now),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: Tokens.s7),
-        _factLine(now),
       ],
     );
   }
+
+  // ignore: unused_element
+  String _clockLabel(DateTime now) =>
+      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
   /// 首页唯一的辅助行（v2.3.0）：最近一次 + 本周节奏合并成一行。
   Widget _factLine(DateTime now) {
@@ -815,22 +896,22 @@ class _TodayPlanCard extends StatelessWidget {
   const _TodayPlanCard({
     required this.plan,
     this.label,
-    this.onEdit,
+    this.lastLabel,
     this.onOpen,
-    this.onStart,
   });
 
   final List<PlannedExercise> plan;
   final String? label;
-  final VoidCallback? onEdit;
+  final String? lastLabel;
   final VoidCallback? onOpen;
-  final VoidCallback? onStart;
-
-  static const int _maxRows = 3;
 
   @override
   Widget build(BuildContext context) {
-    final List<PlannedExercise> head = plan.take(_maxRows).toList();
+    final PlannedExercise? first = plan.isEmpty ? null : plan.first;
+    final String goal = first == null
+        ? ''
+        : '目标 ${first.plan.targetSets} × ${first.plan.targetRepsLow}'
+            '${first.plan.targetRepsHigh == first.plan.targetRepsLow ? '' : '–${first.plan.targetRepsHigh}'}';
     final Widget card = Container(
       key: const Key('today-plan'),
       padding: const EdgeInsets.all(Tokens.s5),
@@ -843,200 +924,54 @@ class _TodayPlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Text('今日训练',
-                        style: TextStyle(
-                            color: Tokens.text3, fontSize: Tokens.fsMicro)),
-                    const SizedBox(height: Tokens.s1),
-                    Text(
-                      label ?? '未安排',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: Tokens.text,
-                          fontSize: Tokens.fsNum,
-                          fontWeight: Tokens.fwBold,
-                          letterSpacing: Tokens.lsSnug),
-                    ),
-                    const SizedBox(height: Tokens.s1),
-                    Text(_planSummary(plan),
-                        key: const Key('home-plan-summary'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Tokens.text3, fontSize: Tokens.fsMicro)),
-                  ],
-                ),
-              ),
-              if (onEdit != null)
-                GestureDetector(
-                  key: const Key('home-plan-edit'),
-                  onTap: onEdit,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: Tokens.s2, vertical: Tokens.s1),
-                    child: Row(
-                      children: <Widget>[
-                        Icon(Icons.edit_outlined,
-                            size: IconSpec.s, color: Tokens.text2),
-                        SizedBox(width: 4),
-                        Text('编辑',
-                            style: TextStyle(
-                                color: Tokens.text2, fontSize: Tokens.fsCap)),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
+          const Text('今晚 · 计划',
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          const SizedBox(height: Tokens.s1),
+          Text(
+            plan.isEmpty ? '今天还没有安排' : (label ?? '今天还没有安排'),
+            key: const Key('home-session-title'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                color: Tokens.text,
+                fontSize: Tokens.fsNum,
+                fontWeight: Tokens.fwBold,
+                letterSpacing: Tokens.lsSnug),
           ),
-          const SizedBox(height: Tokens.s3),
-          if (head.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: Tokens.s3),
-              child: Text('今天还没有安排',
-                  style:
-                      TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
-            )
-          else ...<Widget>[
-            const Padding(
-              padding: EdgeInsets.only(bottom: Tokens.s1),
-              child: Row(
-                children: <Widget>[
-                  SizedBox(
-                      width: 20,
-                      child: Text('#',
-                          style: TextStyle(
-                              color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                  Expanded(
-                      child: Text('动作',
-                          style: TextStyle(
-                              color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                  SizedBox(
-                      width: 92,
-                      child: Text('组×次',
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                              color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                  SizedBox(
-                      width: 72,
-                      child: Text('重量',
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                              color: Tokens.text3, fontSize: Tokens.fsMicro))),
-                ],
-              ),
+          const SizedBox(height: Tokens.s2),
+          Text(
+            plan.isEmpty ? '点开安排今天的训练' : _planSummary(plan),
+            key: const Key('home-plan-summary'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
+          ),
+          if (goal.isNotEmpty) ...<Widget>[
+            const SizedBox(height: Tokens.s1),
+            Text(
+              lastLabel == null ? goal : '$goal · 上次 $lastLabel',
+              key: const Key('home-session-goal'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
             ),
-            for (int i = 0; i < head.length; i += 1)
-              GestureDetector(
-                onLongPress: onEdit,
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  key: Key('today-plan-row-$i'),
-                  padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Tokens.hair)),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      SizedBox(
-                          width: 20,
-                          child: Text('${i + 1}',
-                              style: const TextStyle(
-                                  color: Tokens.text3,
-                                  fontSize: Tokens.fsCap))),
-                      Expanded(
-                        child: Text(head[i].exercise.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Tokens.text, fontSize: Tokens.fsBody)),
-                      ),
-                      SizedBox(
-                        width: 92,
-                        // ⚠️ v2.2.0 真机：`4×8–10次` 在 fsSub 15 下比原 64pt 列宽，
-                        // 会折成两行（`4×8–10` / `次`）。加宽到 92 并用 FittedBox：
-                        // 正常字号不缩，2.0× 字号下等比缩小而不是折行。
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(_setsReps(head[i]),
-                              maxLines: 1,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                  color: Tokens.text2, fontSize: Tokens.fsSub)),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 72,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(_weight(head[i]),
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                  color: Tokens.text2,
-                                  fontSize: Tokens.fsSub,
-                                  fontFeatures: Tokens.tabular)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            // v2.3.0 结构减负：**不渲染「…还有 N 个动作」** —— 卡头副标题已经写了
-            // 「N 个动作 · M 组 · 约 X 分钟」，第 4+ 个动作从「编辑」看；多一行尾巴
-            // 反而把卡片撑高、把主按钮往下推（真机验收抓到的漏改）。
           ],
-          const SizedBox(height: Tokens.s4),
-          AccentButton(
-            key: const Key('start-workout'),
-            label: '开始训练',
-            labelSize: Tokens.fsBody,
-            height: Tokens.hCardCta,
-            onPressed: onStart,
-          ),
         ],
       ),
     );
     if (onOpen == null) return card;
     return GestureDetector(
       key: const Key('open-plan'),
-      onTap: onOpen,
       behavior: HitTestBehavior.opaque,
+      onTap: onOpen,
       child: card,
     );
   }
 
   static String _planSummary(List<PlannedExercise> plan) {
     if (plan.isEmpty) return '';
-    final int sets =
-        plan.fold<int>(0, (int a, PlannedExercise p) => a + p.plan.targetSets);
+    final int sets = plan.fold<int>(0, (int a, PlannedExercise p) => a + p.plan.targetSets);
     final int minutes = (sets * 2.5).round().clamp(5, 120);
     return '${plan.length} 个动作 · $sets 组 · 约 $minutes 分钟';
-  }
-
-  static String _setsReps(PlannedExercise p) {
-    final bool time = isTimeTrack(p.exercise.trackType);
-    final String unit = time ? '秒' : '次';
-    final String reps = p.plan.targetRepsLow == p.plan.targetRepsHigh
-        ? '${p.plan.targetRepsLow}$unit'
-        : '${p.plan.targetRepsLow}–${p.plan.targetRepsHigh}$unit';
-    return '${p.plan.targetSets}×$reps';
-  }
-
-  static String _weight(PlannedExercise p) {
-    final Suggestion? s = p.suggestion;
-    if (s == null)
-      return p.plan.targetWeightKg == null
-          ? '自重'
-          : formatWeight(p.plan.targetWeightKg, p.unit);
-    if (s.isBodyweight) return '自重';
-    return formatWeight(s.weightKg, p.unit);
   }
 }
