@@ -334,26 +334,15 @@ void main() {
         '960 kg',
       );
       // 2026-10-05 改版：那句"这 7 天练了 N 次"并进「训练次数」统计卡
-      expect(find.text('1 次'), findsOneWidget);
+      expect(find.textContaining('1 次'), findsOneWidget);
       expect(find.byKey(const Key('progress-sparkline')), findsOneWidget);
-      // 2026-10-05 改版：顶部多了四张统计卡，PR 墙被推到首屏之外 ——
-      // ListView 是懒构建的，**不滚下去它根本不存在**，所以要滚一次再断言。
-      await tester.scrollUntilVisible(
-        find.byKey(const Key('pr-ex_bb_bench_press')), 300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsOneWidget);
-      expect(find.text('杠铃卧推'), findsOneWidget);
-      expect(find.text('60 kg'), findsOneWidget);
-      // 1RM（2026-10-04）：60 kg × 8 → Epley 76.0，摆在动作名下面
-      expect(find.byKey(const Key('pr-1rm-ex_bb_bench_press')), findsOneWidget);
-      expect(find.text('预估 1RM 76 kg'), findsOneWidget);
+      // v2.3.0：PR/部位/最近下沉「全部数据」；首屏只留 hero/趋势/入口。
+      expect(find.byKey(const Key('open-all-data')), findsOneWidget);
+      expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsNothing);
     });
 
-    testWidgets('★ 本周各部位组数：摆出这一行，六个部位都在（2026-10-04）',
+    testWidgets('★ 部位分布已下沉「全部数据」（v2.3.0）',
         (WidgetTester tester) async {
-      // 胸 2 组 + 腿 1 组；背/肩/臂/核心没练 → 0
       await store.saveSet(_set(id: 'a', when: DateTime(2026, 9, 27, 10)));
       await store.saveSet(_set(id: 'b', setIndex: 2, when: DateTime(2026, 9, 27, 10)));
       await store.saveSet(_set(
@@ -362,15 +351,10 @@ void main() {
           when: DateTime(2026, 9, 26, 10)));
       await pumpProgress(tester);
 
-      await tester.scrollUntilVisible(find.byKey(const Key('progress-muscles')), 300, scrollable: find.byType(Scrollable).first);
-      expect(find.byKey(const Key('progress-muscles')), findsOneWidget,
-          reason: '并进 S8、不新开屏 —— 这一块就在「进步」页上');
-      expect(tester.widget<Text>(find.byKey(const Key('muscle-chest'))).data, '2 组');
-      expect(tester.widget<Text>(find.byKey(const Key('muscle-legs'))).data, '1 组');
-      expect(tester.widget<Text>(find.byKey(const Key('muscle-back'))).data, '0 组',
-          reason: '没练的部位也要摆出来 —— "这周背 0 组"正是最该被看见的一句');
-      expect(find.textContaining('12–20 组'), findsOneWidget,
-          reason: '要写清循证区间，否则这些数字没有参照');
+      expect(find.byKey(const Key('progress-muscles')), findsNothing,
+          reason: 'v2.3.0 首屏不再摆部位分布');
+      expect(find.byKey(const Key('open-all-data')), findsOneWidget,
+          reason: '下沉后必须有一条可达入口');
     });
 
     testWidgets('★ 周期对比：与**紧挨着的上一个 7 天**比，而不是与自然周比（10.9 清单第 4 条）',
@@ -422,13 +406,8 @@ void main() {
       expect(find.byKey(const Key('progress-delta-volume')), findsNothing,
           reason: '两期都没有数据时不给百分比、也不摆"上期没练"占位');
       expect(find.textContaining('最近 7 天还没练'), findsOneWidget);
-      // 同上：滚下去才有 PR 墙（懒构建）
-      await tester.scrollUntilVisible(
-        find.byKey(const Key('pr-ex_bb_bench_press')), 300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsOneWidget);
+      expect(find.byKey(const Key('pr-ex_bb_bench_press')), findsNothing,
+          reason: 'PR 已下沉全部数据');
     });
 
     // ---------- S8 的第三块：体重（原先注释写着"等有了再加回来"）----------

@@ -166,12 +166,12 @@ void main() {
       final _Harness h = _Harness();
       await _pump(tester, h);
 
-      expect(tester.widget<Text>(find.byKey(const Key('exercise-position'))).data, '1 / 3');
+      expect(tester.widget<Text>(find.byKey(const Key('exercise-position'))).data, '动作 1 / 3');
       expect(find.textContaining('杠铃深蹲'), findsWidgets, reason: '右侧显示下一个是谁');
 
       h.session.next();
       await tester.pumpAndSettle();
-      expect(tester.widget<Text>(find.byKey(const Key('exercise-position'))).data, '2 / 3');
+      expect(tester.widget<Text>(find.byKey(const Key('exercise-position'))).data, '动作 2 / 3');
       expect(find.textContaining('杠铃卧推'), findsWidgets, reason: '左侧显示上一个是谁');
 
       h.dispose();

@@ -314,10 +314,9 @@ void main() {
       await pumpProfile(tester);
       await scrollTo(tester, find.byKey(const Key('profile-level-label')));
 
-      expect(find.text('我的进度'), findsOneWidget);
       expect(find.byKey(const Key('profile-level-label')), findsOneWidget);
-      expect(find.byKey(const Key('profile-fact-line')), findsOneWidget,
-          reason: '连续天数与本周次数是**一行事实**');
+      expect(find.byKey(const Key('profile-fact-label')), findsOneWidget,
+          reason: '身份与等级合并成一张卡，事实行在卡内');
       expect(find.byKey(const Key('rank-name')), findsNothing);
       expect(find.byKey(const Key('experience-title')), findsNothing);
 

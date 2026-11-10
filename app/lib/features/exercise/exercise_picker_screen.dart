@@ -317,7 +317,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, 0),
+              padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s4, Tokens.s6, 0),
               child: TextField(
                 key: const Key('exercise-search'),
                 controller: _query,
@@ -337,66 +337,44 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 ),
               ),
             ),
-            _filterRow('部位', <Widget>[
-                    // ⚠️ 2026-10-10：未筛选时这一格是**中性色**，不再是强调橙 ——
-                    // 原来四行里的"全部××"全是橙色选中态，一屏四处强调色，
-                    // 把主操作都没了的地方（`interaction-spec` §4：一屏 accent ≤ 1）。
-                    _chip('全部', _muscleGroup == null, () {
-                      _muscleGroup = null;
-                      // 部位清掉了，挂在它下面的细分标签也必须跟着清
-                      _subTag = null;
-                      _load();
-                    }, neutralWhenActive: true),
-                    for (final String k in kPrimaryMuscleGroups)
-                      _chip(muscleLabel(k), _muscleGroup == k, () {
-                        _muscleGroup = k;
-                        _subTag = null;
-                        _load();
-                      }, key: 'muscle-$k'),
-            ]),
-            // **细分标签这一行**（2026-10-09，10.9 清单第 7 条）：选了部位才出现 ——
-            // 用户点「胸」之后最想问的下一句就是"上胸还是中缝"。
-            // 不选部位时这一行不存在（6 个部位的标签混在一起会长到看不懂）。
-            if (_muscleGroup != null && subTagsFor(_muscleGroup!).isNotEmpty)
-              _filterRow('细分', <Widget>[
-                      _chip('全部', _subTag == null, () {
-                        _subTag = null;
-                        _load();
-                      }, key: 'subtag-all'),
-                      for (final String t in subTagsFor(_muscleGroup!))
-                        _chip(t, _subTag == t, () {
-                          _subTag = t;
-                          _load();
-                        }, key: 'subtag-$t'),
-              ]),
-            // 器械这一行：给"家里只有哑铃 / 只有自重"的人一条能走通的路。
-            _filterRow('器械', <Widget>[
-                    _chip('全部', _equipment == null, () {
-                      _equipment = null;
-                      _load();
-                    }, key: 'equip-all', neutralWhenActive: true),
-                    for (final MapEntry<String, String> e
-                        in kEquipmentLabels.entries)
-                      _chip(e.value, _equipment == e.key, () {
-                        _equipment = e.key;
-                        _load();
-                      }, key: 'equip-${e.key}'),
-            ]),
-            // 类别这一行：热身与拉伸是**另外的使用时机**（练前 / 练后），
-            // 不给入口的话它们就是 500 条列表的最后几条 —— 等于没有。
-            _filterRow('类型', <Widget>[
-                    _chip('全部', _category == null, () {
-                      _category = null;
-                      _load();
-                    }, key: 'cat-all', neutralWhenActive: true),
-                    // strength 不单独给 chip：它是这个 App 的默认语境，
-                    // 「全部类型」减去热身与拉伸就是它。
-                    for (final String c in const <String>['warmup', 'cardio', 'stretch'])
-                      _chip(categoryLabel(c), _category == c, () {
-                        _category = c;
-                        _load();
-                      }, key: 'cat-$c'),
-            ]),
+            // v2.3.0：三/四行 chip 收成一条「筛选」入口；全部筛选能力在底部弹层里。
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s4, Tokens.s6, 0),
+              child: Row(
+                children: <Widget>[
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                    key: const Key('picker-filter'),
+                    onPressed: _openFilterSheet,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Tokens.text2,
+                      side: const BorderSide(color: Tokens.lineStrong),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(Tokens.rPill)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Tokens.s4, vertical: Tokens.s2),
+                    ),
+                    icon: const Icon(Icons.tune, size: IconSpec.s),
+                    label: Text(_activeFilterCount == 0
+                        ? '筛选 · 部位 / 器械 / 类型'
+                        : '筛选 · 已选 $_activeFilterCount 项'),
+                  ),
+                  ),
+                  ),
+                  if (_activeFilterCount > 0) ...<Widget>[
+                    const SizedBox(width: Tokens.s3),
+                    TextButton(
+                      key: const Key('filter-clear'),
+                      onPressed: _clearFilters,
+                      child: const Text('清空'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -411,6 +389,149 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       ),
     );
   }
+
+  int get _activeFilterCount =>
+      (_muscleGroup == null ? 0 : 1) +
+      (_equipment == null ? 0 : 1) +
+      (_category == null ? 0 : 1) +
+      (_subTag == null ? 0 : 1);
+
+  void _clearFilters() {
+    setState(() {
+      _muscleGroup = null;
+      _subTag = null;
+      _equipment = null;
+      _category = null;
+    });
+    _load();
+  }
+
+  Future<void> _openFilterSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Tokens.sheet,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.rSheet)),
+      ),
+      builder: (BuildContext ctx) => StatefulBuilder(
+        builder: (BuildContext ctx, StateSetter setSheet) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s5, Tokens.s6, Tokens.s5),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      const Expanded(
+                        child: Text('筛选',
+                            style: TextStyle(
+                                color: Tokens.text,
+                                fontSize: Tokens.fsNum,
+                                fontWeight: Tokens.fwBold)),
+                      ),
+                      TextButton(
+                        key: const Key('filter-clear-sheet'),
+                        onPressed: () {
+                          setState(_clearFilters);
+                          setSheet(() {});
+                          _load();
+                        },
+                        child: const Text('清空'),
+                      ),
+                    ],
+                  ),
+                  _sheetSection('部位', <Widget>[
+                    _chip('全部', _muscleGroup == null, () {
+                      setSheet(() => setState(() {
+                            _muscleGroup = null;
+                            _subTag = null;
+                          }));
+                      _load();
+                    }, neutralWhenActive: true),
+                    for (final String k in kPrimaryMuscleGroups)
+                      _chip(muscleLabel(k), _muscleGroup == k, () {
+                        setSheet(() => setState(() {
+                              _muscleGroup = k;
+                              _subTag = null;
+                            }));
+                        _load();
+                      }, key: 'muscle-$k'),
+                  ]),
+                  if (_muscleGroup != null && subTagsFor(_muscleGroup!).isNotEmpty)
+                    _sheetSection('细分', <Widget>[
+                      _chip('全部', _subTag == null, () {
+                        setSheet(() => setState(() => _subTag = null));
+                        _load();
+                      }, key: 'subtag-all'),
+                      for (final String t in subTagsFor(_muscleGroup!))
+                        _chip(t, _subTag == t, () {
+                          setSheet(() => setState(() => _subTag = t));
+                          _load();
+                        }, key: 'subtag-$t'),
+                    ]),
+                  _sheetSection('器械', <Widget>[
+                    _chip('全部', _equipment == null, () {
+                      setSheet(() => setState(() => _equipment = null));
+                      _load();
+                    }, key: 'equip-all', neutralWhenActive: true),
+                    for (final MapEntry<String, String> e in kEquipmentLabels.entries)
+                      _chip(e.value, _equipment == e.key, () {
+                        setSheet(() => setState(() => _equipment = e.key));
+                        _load();
+                      }, key: 'equip-${e.key}'),
+                  ]),
+                  _sheetSection('类型', <Widget>[
+                    _chip('全部', _category == null, () {
+                      setSheet(() => setState(() => _category = null));
+                      _load();
+                    }, key: 'cat-all', neutralWhenActive: true),
+                    for (final String c in const <String>['warmup', 'cardio', 'stretch'])
+                      _chip(categoryLabel(c), _category == c, () {
+                        setSheet(() => setState(() => _category = c));
+                        _load();
+                      }, key: 'cat-$c'),
+                  ]),
+                  const SizedBox(height: Tokens.s4),
+                  SizedBox(
+                    width: double.infinity,
+                    height: Tokens.hSecondary,
+                    child: FilledButton(
+                      key: const Key('filter-done'),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Tokens.accent,
+                        foregroundColor: Tokens.accentInk,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(Tokens.rPill)),
+                      ),
+                      child: const Text('完成'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetSection(String label, List<Widget> chips) => Padding(
+        padding: const EdgeInsets.only(top: Tokens.s4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(label,
+                key: Key('filter-label-$label'),
+                style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+            const SizedBox(height: Tokens.s2),
+            Wrap(spacing: Tokens.s2, runSpacing: Tokens.s2, children: chips),
+          ],
+        ),
+      );
 
   /// 搜不到时的空态（T3-2）：原来只有两行灰字，**没有下一步** ——
   /// 而"搜不到"这件事的下一步非常明确：把关键词清掉再找一次。
@@ -637,6 +758,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   ///
   /// ⚠️ 2026-10-10：标签是**新加的**。原来四行胶囊一个标签都没有，只能靠第一格
   /// "全部器械""全部类型"这种名字去猜这行是什么 —— 用户 10.10 评审点名了这条。
+  // ignore: unused_element
   Widget _filterRow(String label, List<Widget> chips) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),

@@ -98,13 +98,15 @@ void main() {
       await teardown(tester);
     });
 
-    testWidgets('★ 第一次只列 4 个动作（12 组，压在「单次 ≥ 12 组」护栏上）',
+    testWidgets('★ 第一次只列 3 个动作（v2.3.0 首页减负）',
         (WidgetTester tester) async {
       await pumpApp(tester);
 
       final int rows = rowCount(tester);
-      expect(rows, kFirstSessionExercises);
-      expect(rows * 3, 12, reason: '3 组/动作 → 正好 12 组');
+      expect(rows, 3, reason: 'v2.3.0 首页只列 3 行（第 4+ 进编辑）');
+      expect(find.byKey(const Key('home-plan-summary')), findsOneWidget);
+      expect(find.textContaining('个动作'), findsWidgets,
+          reason: '卡头副标题交代总数，不丢信息');
 
       await teardown(tester);
     });

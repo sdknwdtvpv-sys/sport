@@ -283,17 +283,17 @@ class TodayScreen extends StatelessWidget {
     final bool tall = MediaQuery.sizeOf(context).height >= 900;
     return ListView(
       padding: EdgeInsets.fromLTRB(
-          Tokens.s5,
-          Tokens.s4 + (tall ? 24 : 0),
-          Tokens.s5,
-          Tokens.s4 + AppTabBar.reservedSpaceFor(context) + (tall ? 70 : 0)),
+          Tokens.s6,
+          Tokens.s6 + (tall ? 24 : 0),
+          Tokens.s6,
+          Tokens.s8 + AppTabBar.reservedSpaceFor(context) + (tall ? 70 : 0)),
       children: <Widget>[
         if (onResume != null) _resumeCard(),
         if (comebackNudge != null) ...<Widget>[
           const SizedBox(height: Tokens.s4),
           _comebackCard(comebackNudge!),
         ],
-        const SizedBox(height: Tokens.s4),
+        const SizedBox(height: Tokens.s7),
         // ⚠️ v2.0.1：这里原来又画了一遍 34pt「今天 + 日期」—— 外壳顶栏
         // （`AppTopBar` 的 title/subtitle）已经是同一行，两遍叠在真机上就是两个「今天」。
         // 页面不再写自己的名字，标题只由顶栏那一处提供。
@@ -304,16 +304,44 @@ class TodayScreen extends StatelessWidget {
           onOpen: onSeePlan,
           onStart: onStart,
         ),
-        if (recent.isNotEmpty) ...<Widget>[
-          const SizedBox(height: Tokens.s5),
-          _recentLine(recent.first),
-        ],
-        const SizedBox(height: Tokens.s5),
-        _weekRhythm(now),
+        const SizedBox(height: Tokens.s7),
+        _factLine(now),
       ],
     );
   }
 
+  /// 首页唯一的辅助行（v2.3.0）：最近一次 + 本周节奏合并成一行。
+  Widget _factLine(DateTime now) {
+    final int trained = weekTrainedWeekdays.length;
+    final String recentPart =
+        recent.isEmpty ? '还没有训练记录' : '最近 ${formatDateAxis(recent.first.day)}';
+    return GestureDetector(
+      key: const Key('home-fact-line'),
+      onTap: onOpenLibrary,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Tokens.hair)),
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text('$recentPart · 本周 $trained 天',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Tokens.text2, fontSize: Tokens.fsSub)),
+            ),
+            const Icon(Icons.chevron_right,
+                size: IconSpec.s, color: Tokens.text3),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ignore: unused_element
   Widget _recentLine(
       ({
         String workoutId,
@@ -348,6 +376,7 @@ class TodayScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _weekRhythm(DateTime now) {
     final int trained = weekTrainedWeekdays.length;
     return Container(
@@ -797,7 +826,7 @@ class _TodayPlanCard extends StatelessWidget {
   final VoidCallback? onOpen;
   final VoidCallback? onStart;
 
-  static const int _maxRows = 4;
+  static const int _maxRows = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -834,6 +863,13 @@ class _TodayPlanCard extends StatelessWidget {
                           fontWeight: Tokens.fwBold,
                           letterSpacing: Tokens.lsSnug),
                     ),
+                    const SizedBox(height: Tokens.s1),
+                    Text(_planSummary(plan),
+                        key: const Key('home-plan-summary'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Tokens.text3, fontSize: Tokens.fsMicro)),
                   ],
                 ),
               ),
@@ -953,13 +989,9 @@ class _TodayPlanCard extends StatelessWidget {
                   ),
                 ),
               ),
-            if (plan.length > head.length)
-              Padding(
-                padding: const EdgeInsets.only(top: Tokens.s1),
-                child: Text('…还有 ${plan.length - head.length} 个动作',
-                    style: const TextStyle(
-                        color: Tokens.text3, fontSize: Tokens.fsMicro)),
-              ),
+            // v2.3.0 结构减负：**不渲染「…还有 N 个动作」** —— 卡头副标题已经写了
+            // 「N 个动作 · M 组 · 约 X 分钟」，第 4+ 个动作从「编辑」看；多一行尾巴
+            // 反而把卡片撑高、把主按钮往下推（真机验收抓到的漏改）。
           ],
           const SizedBox(height: Tokens.s4),
           AccentButton(
@@ -979,6 +1011,14 @@ class _TodayPlanCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: card,
     );
+  }
+
+  static String _planSummary(List<PlannedExercise> plan) {
+    if (plan.isEmpty) return '';
+    final int sets =
+        plan.fold<int>(0, (int a, PlannedExercise p) => a + p.plan.targetSets);
+    final int minutes = (sets * 2.5).round().clamp(5, 120);
+    return '${plan.length} 个动作 · $sets 组 · 约 $minutes 分钟';
   }
 
   static String _setsReps(PlannedExercise p) {

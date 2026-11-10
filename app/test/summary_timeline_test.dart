@@ -183,7 +183,7 @@ void main() {
     expect(tester.widget<Text>(find.byKey(const Key('summary-duration'))).data,
         s.durationLabel);
     expect(tester.widget<Text>(find.byKey(const Key('summary-sets'))).data,
-        '${s.totalSets}');
+        '${s.totalSets} 组');
   });
 
   testWidgets('减弱动态效果下 t=0 就能看到画满的勾与三个终值',
@@ -194,7 +194,7 @@ void main() {
     final WorkoutSummary s = (await service.build('w1'))!;
     final List<String> now = sample(tester);
     expect(double.parse(now[0]), 1.0, reason: '减弱动态效果 → 勾直接是画满的');
-    expect(now[1], <String>[s.volumeLabel, s.durationLabel, '${s.totalSets}'].join(' | '));
+    expect(now[1], <String>[s.volumeLabel, s.durationLabel, '${s.totalSets} 组'].join(' | '));
     expect(double.parse(now[3]), 1.0, reason: '完成键也直接到位');
   });
 

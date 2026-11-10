@@ -245,3 +245,6 @@
 - [ ] VoiceOver 走通"记录一组"全流程
 - [ ] `prefers-reduced-motion` 下无动效残留
 - [ ] 埋点 `set_logged.tap_count` 中位数**不高于 `docs/analytics.md` §3 的门槛**（门槛由熟人短测标定；"仍为 1"是旧窄口径，端到端口径下不成立）
+
+
+<!-- v2.3.0（2026-11-11）：结构减负落地说明见 docs/structure-slimming-2026-11-11.md §7。 -->

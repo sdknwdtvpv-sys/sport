@@ -13,6 +13,7 @@ import '../../billing/debug_grant.dart';
 import '../../billing/ultra_visibility.dart';
 import '../../core/glass_overlay.dart';
 import '../../core/icon_spec.dart';
+import '../../core/labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,6 +31,7 @@ import '../../domain/models.dart';
 import '../exercise/exercise_picker_screen.dart';
 import '../profile/training_stats.dart';
 import 'all_data.dart';
+import 'progress_data.dart';
 
 enum _Mode { byExercise, byTime }
 
@@ -88,6 +90,9 @@ class _AllDataScreenState extends State<AllDataScreen> {
   ExerciseStats? _stats;
   List<SetRecord> _records = const <SetRecord>[];
 
+  /// 现算的进步数据（v2.3.0：承接从进步页下沉的部位/PR）。
+  ProgressData? _progress;
+
   /// **批量整理**（Ultra 权益 8，2026-10-10）：多选态与已选集合。
   /// 退出多选、或任何一次批量动作之后都要清空 —— 留着会让"下一次点"带着上一次的选择。
   bool _selecting = false;
@@ -139,8 +144,25 @@ class _AllDataScreenState extends State<AllDataScreen> {
         ? false
         : (await widget.entitlements!.access(_today.millisecondsSinceEpoch)).ultra;
     if (!mounted) return;
+    final List<ExerciseData> catalog = await widget.repository.search(limit: 500);
+    final Map<String, String> names = <String, String>{
+      for (final ExerciseData e in catalog) e.id: e.name,
+    };
+    final Map<String, String> muscleOf = <String, String>{
+      for (final ExerciseData e in catalog)
+        if (e.muscleGroup.trim().isNotEmpty) e.id: e.muscleGroup,
+    };
+    final ProgressData progress = buildProgress(
+      sets: all,
+      exerciseNames: names,
+      today: _today,
+      unit: widget.unit,
+      muscleOf: muscleOf,
+    );
+    if (!mounted) return;
     setState(() {
       _ultra = debugUltraGranted || ultra;
+      _progress = progress;
       _exercise = exercise;
       _stats = stats;
       _records = records;
@@ -653,6 +675,27 @@ class _AllDataScreenState extends State<AllDataScreen> {
         if (m != null) ...<Widget>[
           _sectionTitle('本月'),
           _periodCard(m, const Key('all-data-month')),
+        ],
+        if (_progress != null && _progress!.weekSetsByMuscle.isNotEmpty) ...<Widget>[
+          _sectionTitle('部位分布'),
+          _card(<Widget>[
+            for (final ({String muscleGroup, int sets}) m in _progress!.weekSetsByMuscle)
+              _statRow('${muscleLabel(m.muscleGroup)}', '${m.sets} 组',
+                  Key('all-data-muscle-${m.muscleGroup}')),
+          ]),
+        ],
+        if (_progress != null && _progress!.prs.isNotEmpty) ...<Widget>[
+          _sectionTitle('个人纪录'),
+          _card(<Widget>[
+            for (final ExercisePr pr in _progress!.prs.take(10))
+              _statRow(
+                pr.name,
+                pr.weightKg == null
+                    ? '${pr.reps} ${pr.isTime ? '秒' : '次'}'
+                    : '${formatWeight(pr.weightKg!, widget.unit)} × ${pr.reps}',
+                Key('all-data-pr-${pr.exerciseId}'),
+              ),
+          ]),
         ],
         _sectionTitle('最近 6 个月容量'),
         _card(<Widget>[

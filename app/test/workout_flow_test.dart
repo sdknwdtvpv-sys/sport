@@ -715,26 +715,14 @@ void main() {
     await _teardown(tester, h);
   });
 
-  testWidgets('★ 「上次 / 历史最佳」对照带（2026-10-10 重排后它在上半屏）',
+  testWidgets('★ 目标进组表表头（v2.3.0：独立对照带已删除）',
       (WidgetTester tester) async {
-    // ⚠️ 这一条原来是"大按钮上方有一行 `上次 3 组 · 45 kg × 10 次`"。
-    // 重排之后那句话拆成了**两行**（大字 `45 kg × 10`、小字 `3 组 · 今天`），
-    // 因为一句话塞不进对照带的左半边 —— 而右半边是这一屏从来没有过的「历史最佳」。
     final _Harness h = _Harness(
       lastSession: const LastSession(weightKg: 45, reps: <int>[10, 10, 10]),
     );
     await _pump(tester, h);
-
-    expect(find.byKey(const Key('compare-band')), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.byKey(const Key('last-time'))).data,
-      '45 kg × 10',
-      reason: '与建议页那条证据链同源（`core/last_time.dart` 拆成两行）',
-    );
-    expect(
-      tester.widget<Text>(find.byKey(const Key('last-time-sub'))).data,
-      '3 组 · 今天',
-    );
+    expect(find.byKey(const Key('compare-band')), findsNothing);
+    expect(find.byKey(const Key('table-target')), findsOneWidget);
     await _teardown(tester, h);
   });
 
@@ -764,20 +752,20 @@ void main() {
     await _teardown(tester, h);
   });
 
-  testWidgets('★ 「改重量」是一个**看得见**的入口（长按仍然是隐形的备选）',
+  testWidgets('★ 「改重量」在 ⋯ 菜单里，点开就是改重量弹层（v2.3.0）',
       (WidgetTester tester) async {
     final _Harness h = _Harness();
     await _pump(tester, h);
 
-    expect(find.byKey(const Key('edit-weight')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('workout-more')));
+    await tester.pumpAndSettle();
+    expect(find.text('换动作'), findsOneWidget);
+    expect(find.text('动作说明'), findsOneWidget);
     expect(find.text('改重量'), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('edit-weight')));
-    await tester.pump();
-
-    expect(find.byKey(const Key('sheet')), findsOneWidget, reason: '点它 = 长按那一下');
+    await tester.tap(find.text('改重量'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('sheet')), findsOneWidget);
     expect(h.controller.loggedSets, isEmpty, reason: '进修改层绝不能顺手记一组');
-    expect(h.controller.sheetOpen, isTrue);
 
     await _teardown(tester, h);
   });
@@ -805,12 +793,9 @@ void main() {
     final _Harness h = _Harness();
     await _pump(tester, h);
 
-    // v2.2.0（O6）：首练不再摆两格破折号，只摆一行「今天的目标」。
-    expect(find.byKey(const Key('last-time')), findsNothing);
-    expect(find.byKey(const Key('best-time')), findsNothing);
-    expect(find.byKey(const Key('today-target')), findsOneWidget);
-    expect(find.text('今天的目标'), findsOneWidget);
-    expect(find.textContaining('${h.controller.plannedSets} × ${h.controller.plan.targetRepsLow}'), findsOneWidget);
+    // v2.3.0：独立目标带删除，目标在组表表头；首练不渲染破折号。
+    expect(find.byKey(const Key('compare-band')), findsNothing);
+    expect(find.byKey(const Key('table-target')), findsOneWidget);
     expect(find.text('—'), findsNothing, reason: '首练不渲染任何破折号');
     await _teardown(tester, h);
   });
@@ -835,7 +820,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('big-log-button')), findsOneWidget);
     expect(find.byKey(const Key('rest-bar')), findsOneWidget);
-    expect(find.byKey(const Key('compare-band')), findsOneWidget);
+    expect(find.byKey(const Key('table-target')), findsOneWidget);
 
     // ⚠️ VI 计划 §7 E 组那条"`xxxLarge` 下主按钮文字降到 17pt 且**高度不变**"
     // （`hspPrimary = 88` 不变）—— 这里钉的是"高度"那一半：
@@ -853,15 +838,13 @@ void main() {
     await _teardown(tester, h);
   });
 
-  testWidgets('★ 组表下方有「本场 n / N 组 · 已练 mm:ss」摘要（审计 O5）',
+  testWidgets('本场摘要已删除，目标进表头（v2.3.0）',
       (WidgetTester tester) async {
     final _Harness h = _Harness();
     await _pump(tester, h);
-    final Finder summary = find.byKey(const Key('session-summary'));
-    expect(summary, findsOneWidget);
-    final String text = tester.widget<Text>(summary).data!;
-    expect(text, startsWith('本场 0 / '));
-    expect(text, contains(' · 已练 '));
+    expect(find.byKey(const Key('session-summary')), findsNothing,
+        reason: 'v2.3.0 已删除本场摘要（低频信息收进组表/按钮）');
+    expect(find.byKey(const Key('table-target')), findsOneWidget);
     await _teardown(tester, h);
   });
 }

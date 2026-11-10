@@ -273,6 +273,9 @@ abstract final class Tokens {
   static const double s4 = 16;
   static const double s5 = 20;
   static const double s6 = 24;
+
+  /// 区块间距（v2.3.0，结构减负）：28 与 s8=32 两档。
+  static const double s7 = 28;
   static const double s8 = 32;
 
   // 圆角（VI：--radius-sm 8 / --radius-md 12 / 底部弹层 20 / 胶囊全圆）

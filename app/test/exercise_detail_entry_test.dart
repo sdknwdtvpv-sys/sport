@@ -99,9 +99,9 @@ void main() {
 
     testWidgets('训练屏有看得见的详情入口，点开就是动作详情', (WidgetTester tester) async {
       await pumpWorkout(tester);
-      expect(find.byKey(const Key('exercise-info')), findsOneWidget);
-
-      await tester.tap(find.byKey(const Key('exercise-info')));
+      await tester.tap(find.byKey(const Key('workout-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('动作说明'));
       await tester.pumpAndSettle();
 
       expect(find.byType(ExerciseDetailScreen), findsOneWidget);
@@ -121,9 +121,6 @@ void main() {
 
       await tester.ensureVisible(find.byKey(const Key('howto-toggle')));
       await tester.tap(find.byKey(const Key('howto-toggle')));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('howto-open-detail')));
-      await tester.tap(find.byKey(const Key('howto-open-detail')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('howto-open-detail')), findsOneWidget);
     });
@@ -146,7 +143,7 @@ void main() {
 
     testWidgets('没带动作库时不显示入口，但训练屏照常能用', (WidgetTester tester) async {
       await pumpWorkout(tester, withCatalog: false);
-      expect(find.byKey(const Key('exercise-info')), findsNothing);
+      expect(find.text('动作说明'), findsNothing);
       expect(find.byKey(const Key('howto-block')), findsNothing,
           reason: '没有动作库就没有说明可摆 —— 别画一个空块');
       // 大按钮还在 = 这个可选入口没有影响训练本身

@@ -254,7 +254,7 @@ void main() {
       expect(find.byKey(const Key('summary-volume')), findsOneWidget);
       expect(find.byKey(const Key('summary-duration')), findsOneWidget);
       expect(find.byKey(const Key('summary-sets')), findsOneWidget);
-      expect(tester.widget<Text>(find.byKey(const Key('summary-sets'))).data, '3');
+      expect(tester.widget<Text>(find.byKey(const Key('summary-sets'))).data, '3 组');
       expect(find.text('训练完成！'), findsOneWidget);
       // 2026-10-05 新 VI：完成标记是**绿色实心圆 + 白勾**，且用的是语义色 success
       expect(find.byKey(const Key('summary-done-title')), findsOneWidget);
@@ -290,11 +290,11 @@ void main() {
         expect(t.maxLines, 1, reason: '$key 的大数必须单行');
       }
 
-      // 三个标签的纵向中心必须一致 —— 这才是"对齐"的可观测判据
-      final double y1 = tester.getCenter(find.text('容量')).dy;
-      final double y2 = tester.getCenter(find.text('时长')).dy;
-      final double y3 = tester.getCenter(find.text('组数')).dy;
-      expect(y2, closeTo(y1, 0.5), reason: '「时长」标签被换行顶下去了');
+      // v2.3.0：三格并成一行，用三个值本身的纵向中心做对齐判据
+      final double y1 = tester.getCenter(find.byKey(const Key('summary-volume'))).dy;
+      final double y2 = tester.getCenter(find.byKey(const Key('summary-duration'))).dy;
+      final double y3 = tester.getCenter(find.byKey(const Key('summary-sets'))).dy;
+      expect(y2, closeTo(y1, 0.5));
       expect(y3, closeTo(y1, 0.5));
     });
 
@@ -360,6 +360,8 @@ void main() {
       await pumpSummary(tester, 'w1', stretches: <ExerciseData>[
         stretch('ex_doorway_chest_stretch', '门框胸部拉伸', '小臂贴在门框上、身体往前送。'),
       ]);
+      await tester.tap(find.byKey(const Key('summary-details')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('summary-stretch')), findsOneWidget);
       expect(find.text('练完拉伸一下'), findsOneWidget);
       expect(find.text('门框胸部拉伸'), findsOneWidget);

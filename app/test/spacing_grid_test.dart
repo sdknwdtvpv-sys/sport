@@ -68,7 +68,7 @@ void main() {
       for (int i = 0; i < lines.length; i++) {
         final int c = lines[i].indexOf('//');
         final String code = c < 0 ? lines[i] : lines[i].substring(0, c);
-        if (RegExp(r'fromLTRB\(Tokens\.(s3|s4|s6)').hasMatch(code)) {
+        if (RegExp(r'fromLTRB\(Tokens\.(s3|s4)').hasMatch(code)) {
           // v2.2.0 例外（审计 O7）：**图表卡**的内边距是 16（s4），比普通卡片紧 4pt。
           // 只允许 `progress-trend-card` 这一张；其余卡片仍只许 s5。
           final String context = <String>[
@@ -83,7 +83,7 @@ void main() {
         }
       }
     }
-    expect(ltrb, isEmpty, reason: '整屏/卡片边距只许从 `Tokens.s5` 起：\n${ltrb.join('\n')}');
+    expect(ltrb, isEmpty, reason: '整屏/卡片边距只许从 `Tokens.s5`（页面级允许 `s6=24`，v2.3.0）起：\n${ltrb.join('\n')}');
   });
 
   test('反向自检：扫描器真的抓得住', () {

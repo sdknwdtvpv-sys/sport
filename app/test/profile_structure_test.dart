@@ -154,8 +154,8 @@ void main() {
 
     await scrollThroughAndCheck(tester);
 
-    // 版本行也留着：它是"这一页是什么版本"的唯一出口
-    expect(find.textContaining('版本 '), findsOneWidget);
+    // v2.3.0：版本号移到设置/关于，这一页不再显示
+    expect(find.textContaining('版本 '), findsNothing);
   });
 
   testWidgets('「设置」页 = 三个入口 + 一行实话（原来的「我」页入口搬到这里）',

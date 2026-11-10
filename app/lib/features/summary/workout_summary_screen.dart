@@ -214,13 +214,13 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
       children: <Widget>[
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s6, Tokens.s5, Tokens.s6),
+            padding: const EdgeInsets.fromLTRB(Tokens.s6, Tokens.s6, Tokens.s6, Tokens.s6),
             children: <Widget>[
               // 2026-10-05 按新 VI 重做：一个**成功的绿勾** + 「训练完成！」 + 一句人话。
               // 旧版只有一行「训练完成」四个字 —— 刚练完那一刻值得给一个明确的完成感。
               _doneMark(),
               const SizedBox(height: Tokens.s5),
-              _stats(s),
+              _statsLine(s),
               if (widget.newBadges.isNotEmpty) ...<Widget>[
                 const SizedBox(height: Tokens.s4),
                 // 解锁横条 900→1200ms：它比三个数**晚**，因为它讲的是"额外收获"，
@@ -236,20 +236,32 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
                 const SizedBox(height: Tokens.s5),
                 _prBlock(s),
               ],
-              const SizedBox(height: Tokens.s5),
-              // 一句话笔记（2026-10-04）：列早就有、界面也一直在显示，但没有写入路径。
-              // 放这里是因为**刚练完是唯一还记得"今天为什么这样"的时刻**。
-              _noteField(s),
-              // 「下一次」放在最上面（刚练完最愿意看），拉伸建议跟在后面
-              if (widget.nextLine != null) _nextBlock(),
-              if (widget.stretches.isNotEmpty) ...<Widget>[
-                const SizedBox(height: Tokens.s5),
-                _stretchBlock(),
-              ],
-              // 练后小知识（第二部分第 8 条）：**每次一条，由 workoutId 纯函数挑**
-              // （同一屏刷新两次看到的是同一条 —— 见 `tips.dart`）。
-              const SizedBox(height: Tokens.s5),
-              _tipBlock(),
+              const SizedBox(height: Tokens.s7),
+              // v2.3.0：笔记 / 下一次 / 拉伸 / 小知识默认收进「训练小结」；
+              // 笔记控件仍然挂载 → 自动保存逻辑不变，只是首屏不占位。
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  key: const Key('summary-details'),
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 0),
+                  childrenPadding: const EdgeInsets.only(bottom: Tokens.s4),
+                  title: const Text('训练小结',
+                      style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
+                  children: <Widget>[
+                    _noteField(s),
+                    if (widget.nextLine != null) ...<Widget>[
+                      const SizedBox(height: Tokens.s5),
+                      _nextBlock(),
+                    ],
+                    if (widget.stretches.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: Tokens.s5),
+                      _stretchBlock(),
+                    ],
+                    const SizedBox(height: Tokens.s5),
+                    _tipBlock(),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -576,6 +588,46 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
   }
 
 
+  /// v2.3.0：三张统计卡 → 一行（容量 · 组数 · 时长）。
+  Widget _statsLine(WorkoutSummary s) {
+    final double seconds = (s.duration?.inSeconds ?? 0).toDouble();
+    return Container(
+      key: const Key('summary-stats-line'),
+      padding: const EdgeInsets.symmetric(vertical: Tokens.s3),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Tokens.hair), bottom: BorderSide(color: Tokens.hair)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(s.volumeLabel,
+                key: const Key('summary-volume'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Tokens.text, fontSize: Tokens.fsBody, fontWeight: Tokens.fwStrong)),
+          ),
+          Expanded(
+            child: Text('${s.totalSets} 组',
+                key: const Key('summary-sets'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
+          ),
+          Expanded(
+            child: Text(WorkoutSummary.durationLabelOf(seconds.round()),
+                key: const Key('summary-duration'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ignore: unused_element
   Widget _stats(WorkoutSummary s) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: Tokens.s5, horizontal: Tokens.s4),

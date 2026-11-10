@@ -16,6 +16,21 @@ import 'package:lianleme/data/profile_repository.dart';
 import 'package:lianleme/domain/models.dart';
 import 'package:lianleme/features/exercise/exercise_picker_screen.dart';
 
+/// v2.3.0：筛选收进底部弹层；点 chip 前先打开它（已打开则不重复点）。
+Future<void> openFilter(WidgetTester tester) async {
+  if (find.byKey(const Key('equip-all')).evaluate().isEmpty) {
+    await tester.tap(find.byKey(const Key('picker-filter')));
+    await tester.pumpAndSettle();
+  }
+}
+
+Future<void> tapFilterKey(WidgetTester tester, Key key) async {
+  final Finder f = find.byKey(key);
+  await tester.ensureVisible(f);
+  await tester.tap(f);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late AppDatabase db;
   late ExerciseRepository repo;
@@ -105,18 +120,30 @@ void main() {
       await pumpPicker(tester);
       expect(find.text('杠铃卧推'), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('cat-stretch')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('cat-stretch'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
 
       expect(find.text('杠铃卧推'), findsNothing);
       expect(find.text('腘绳肌拉伸'), findsOneWidget);
-      expect(find.text('拉伸'), findsWidgets, reason: '标题里要标出类别，否则用户不知道自己筛了什么');
+      expect(find.textContaining('已选 1 项'), findsOneWidget, reason: '筛选入口显示已选数量');
     });
 
     testWidgets('筛「热身」→ 开合跳在，拉伸不在', (WidgetTester tester) async {
       await pumpPicker(tester);
 
-      await tester.tap(find.byKey(const Key('cat-warmup')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('cat-warmup'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
 
       expect(find.text('开合跳'), findsOneWidget);
@@ -127,7 +154,13 @@ void main() {
         (WidgetTester tester) async {
       await pumpPicker(tester);
 
-      await tester.tap(find.byKey(const Key('cat-cardio')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('cat-cardio'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
 
       // ⚠️ **不按具体动作名断言**：有氧有 13 个，一屏放不下，
@@ -146,11 +179,23 @@ void main() {
         (WidgetTester tester) async {
       await pumpPicker(tester);
 
-      await tester.tap(find.byKey(const Key('cat-warmup')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('cat-warmup'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
       expect(find.text('杠铃卧推'), findsNothing);
 
-      await tester.tap(find.byKey(const Key('cat-all')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('cat-all'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
       expect(find.text('杠铃卧推'), findsOneWidget, reason: '退回全部类型');
     });
@@ -158,9 +203,17 @@ void main() {
     testWidgets('类别与部位可以叠加（"腿部的拉伸"）', (WidgetTester tester) async {
       await pumpPicker(tester);
 
-      await tester.tap(find.byKey(const Key('cat-stretch')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('cat-stretch'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('腿'));
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
+      await tester.pumpAndSettle();
+      await openFilter(tester);
+      await tapFilterKey(tester, const Key('muscle-legs'));
+      await tapFilterKey(tester, const Key('filter-done'));
       await tester.pumpAndSettle();
 
       expect(find.text('腘绳肌拉伸'), findsOneWidget);
@@ -173,7 +226,13 @@ void main() {
       await pumpPicker(tester);
       expect(find.text('杠铃卧推'), findsOneWidget, reason: '不筛的时候它在最前面');
 
-      await tester.tap(find.byKey(const Key('equip-dumbbell')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('equip-dumbbell'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
 
       expect(find.text('杠铃卧推'), findsNothing);
@@ -184,7 +243,13 @@ void main() {
         (WidgetTester tester) async {
       await pumpPicker(tester);
 
-      await tester.tap(find.byKey(const Key('equip-bodyweight')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('equip-bodyweight'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
 
       expect(find.text('杠铃卧推'), findsNothing);
@@ -195,7 +260,13 @@ void main() {
     testWidgets('器械与搜索可以叠加', (WidgetTester tester) async {
       await pumpPicker(tester);
 
-      await tester.tap(find.byKey(const Key('equip-dumbbell')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('equip-dumbbell'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('exercise-search')), '卧推');
       await tester.pumpAndSettle();
@@ -208,11 +279,23 @@ void main() {
         (WidgetTester tester) async {
       await pumpPicker(tester);
 
-      await tester.tap(find.byKey(const Key('equip-bodyweight')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('equip-bodyweight'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
       expect(find.text('杠铃卧推'), findsNothing);
 
-      await tester.tap(find.byKey(const Key('equip-all')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('equip-all'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
       expect(find.text('杠铃卧推'), findsOneWidget, reason: '退回全部');
     });
@@ -230,16 +313,25 @@ void main() {
     testWidgets('选了「胸」→ 出现上胸/下胸/中缝三个 chip；换到「背」→ 换成背的词表',
         (WidgetTester tester) async {
       await pumpPicker(tester);
-      await tester.tap(find.byKey(const Key('muscle-chest')));
+      await openFilter(tester);
+      await tapFilterKey(tester, const Key('muscle-chest'));
       await tester.pumpAndSettle();
+      await tapFilterKey(tester, const Key('filter-done'));
+      await tester.pumpAndSettle();
+      await openFilter(tester);
 
       for (final String t in <String>['上胸', '下胸', '中缝']) {
         expect(find.byKey(Key('subtag-$t')), findsOneWidget, reason: '$t 应该在');
       }
       expect(find.byKey(const Key('subtag-背阔')), findsNothing);
 
-      await tester.tap(find.byKey(const Key('muscle-back')));
+      await tapFilterKey(tester, const Key('muscle-back'));
       await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
+      await tester.pumpAndSettle();
+      await openFilter(tester);
       expect(find.byKey(const Key('subtag-背阔')), findsOneWidget);
       expect(find.byKey(const Key('subtag-上胸')), findsNothing,
           reason: '换了部位，上一个部位的标签必须跟着清掉（否则"背 + 上胸"筛不出东西）');
@@ -248,9 +340,15 @@ void main() {
     testWidgets('★ 点「上胸」→ 只剩上胸的动作，且行里写着"上胸"',
         (WidgetTester tester) async {
       await pumpPicker(tester);
-      await tester.tap(find.byKey(const Key('muscle-chest')));
+      await openFilter(tester);
+      await tapFilterKey(tester, const Key('muscle-chest'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('subtag-上胸')));
+      await tapFilterKey(tester, const Key('filter-done'));
+      await tester.pumpAndSettle();
+      await openFilter(tester);
+      await tapFilterKey(tester, const Key('subtag-上胸'));
+      await tester.pumpAndSettle();
+      await tapFilterKey(tester, const Key('filter-done'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('exercise-ex_bb_incline_bench_press')), findsOneWidget,
@@ -264,13 +362,25 @@ void main() {
     testWidgets('「全部」能把细分标签退回去（还在"胸"里，不是回到全部动作）',
         (WidgetTester tester) async {
       await pumpPicker(tester);
-      await tester.tap(find.byKey(const Key('muscle-chest')));
+      await openFilter(tester);
+      await tapFilterKey(tester, const Key('muscle-chest'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('subtag-上胸')));
+      await tapFilterKey(tester, const Key('filter-done'));
+      await tester.pumpAndSettle();
+      await openFilter(tester);
+      await tapFilterKey(tester, const Key('subtag-上胸'));
+      await tester.pumpAndSettle();
+      await tapFilterKey(tester, const Key('filter-done'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('exercise-ex_bb_bench_press')), findsNothing);
 
-      await tester.tap(find.byKey(const Key('subtag-all')));
+      await openFilter(tester);
+
+      await tapFilterKey(tester, const Key('subtag-all'));
+      await tester.pumpAndSettle();
+
+      await tapFilterKey(tester, const Key('filter-done'));
+
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('exercise-ex_bb_bench_press')), findsOneWidget,
           reason: '退回"这个部位的全部"');
@@ -691,6 +801,7 @@ void main() {
   testWidgets('部位筛选只有 6 个主部位（辅助肌群不是可选部位）',
       (WidgetTester tester) async {
     await pumpPicker(tester);
+    await openFilter(tester);
     // 这条守着 2026-09-30 的回归：给详情页补中文标签时改了 kMuscleLabels，
     // 而筛选行当时遍历的是它 —— 于是部位 chips 从 6 个变成 24 个。
     for (final String k in kPrimaryMuscleGroups) {
@@ -709,6 +820,7 @@ void main() {
       // ⚠️ 用户 10.10 评审：「三行筛选胶囊每行第一个"全部××"都是橙色选中态
       // （一屏四处强调色），而且三行没有行标签，只能靠名字猜」。
       await pumpPicker(tester);
+      await openFilter(tester);
 
       expect(find.byKey(const Key('filter-label-部位')), findsOneWidget);
       expect(find.byKey(const Key('filter-label-器械')), findsOneWidget);
@@ -748,12 +860,14 @@ void main() {
     });
   });
 
-  testWidgets('★ 筛选行右侧是渐隐，不是硬裁（审计 O9）', (WidgetTester tester) async {
+  testWidgets('★ 三行筛选收进一个入口 + 底部弹层（v2.3.0）', (WidgetTester tester) async {
     await pumpPicker(tester);
-    expect(find.byType(ShaderMask), findsWidgets,
-        reason: '三条筛选行的横向列表都包了右侧渐隐');
-    final ListView list = tester.widget<ListView>(find.byType(ListView).first);
-    expect(list.padding, const EdgeInsets.only(right: Tokens.s6),
-        reason: '渐隐之外还要给右侧内边距，最后一枚 chip 才有完整收口');
+    expect(find.byKey(const Key('picker-filter')), findsOneWidget);
+    expect(find.text('部位'), findsNothing, reason: '首屏不再常驻三行筛选');
+    await openFilter(tester);
+    expect(find.byKey(const Key('equip-all')), findsOneWidget);
+    expect(find.byKey(const Key('filter-clear-sheet')), findsOneWidget);
+    await tapFilterKey(tester, const Key('filter-done'));
+    await tester.pumpAndSettle();
   });
 }

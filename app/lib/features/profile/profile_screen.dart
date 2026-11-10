@@ -26,7 +26,6 @@ library;
 import '../../core/icon_spec.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/app_info.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
 import '../../core/vi_cards.dart';
@@ -47,7 +46,6 @@ import '../../backup/login_session.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/models.dart';
 import 'backup_exporter.dart';
-import 'profile_widgets.dart';
 import 'reminder.dart';
 import 'identity_screen.dart';
 import 'training_stats.dart';
@@ -201,6 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ///
   /// 它和 [_unlockedBadges] 是同一次计算的两个结果：集齐一条线 = 那条线上每一枚都解锁，
   /// 所以**不能**另存一份状态（那就会和徽章本身不一致）。
+  // ignore: unused_field
   List<BadgeLine> _completeLines = const <BadgeLine>[];
 
   @override
@@ -262,6 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// ⚠️ 两行字的口气不一样，是因为两件事的性质不一样：
   ///   * 昵称没设过 → 如实写「还没设昵称」（**不编默认名**）；
   ///   * 没登录 → 写「还没登录」，**不显示 ID**（凭空编号 = 假身份）。
+  // ignore: unused_element
   Widget _identityCard() => ViCard(
         key: const Key('profile-identity'),
         onTap: _openIdentity,
@@ -296,6 +296,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
 
+  /// v2.3.0：身份 + 等级/事实合成**一张**资料卡（本页最多 1 卡）。
+  Widget _mergedCard() {
+    final LevelInfo lv = levelFor(_stats?.workoutCount ?? 0);
+    return ViCard(
+      key: const Key('profile-identity'),
+      padding: const EdgeInsets.all(Tokens.s5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          GestureDetector(
+            key: const Key('profile-identity-row'),
+            behavior: HitTestBehavior.opaque,
+            onTap: _openIdentity,
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(_nickname ?? '还没设昵称',
+                          key: const Key('profile-nickname'),
+                          style: TextStyle(
+                              color: _nickname == null ? Tokens.text3 : Tokens.text,
+                              fontSize: Tokens.fsNum,
+                              fontWeight: Tokens.fwBold)),
+                      const SizedBox(height: Tokens.s1),
+                      Text(
+                        _accountId == null
+                            ? '还没登录 · 点一下设昵称'
+                            : 'ID ${IdentityScreen.shortId(_accountId!)}',
+                        key: const Key('profile-id-line'),
+                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
+              ],
+            ),
+          ),
+          const SizedBox(height: Tokens.s4),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 26,
+                height: 26,
+                decoration: const BoxDecoration(color: Tokens.accent, shape: BoxShape.circle),
+                child: Center(
+                  child: Text('${lv.level}',
+                      key: const Key('profile-level-number'),
+                      style: Tokens.display(13, weight: 700, color: Tokens.accentInk)),
+                ),
+              ),
+              const SizedBox(width: Tokens.s3),
+              Expanded(
+                child: Text(levelLabel(lv),
+                    key: const Key('profile-level-label'),
+                    style: const TextStyle(
+                        color: Tokens.text, fontSize: Tokens.fsSub, fontWeight: Tokens.fwStrong)),
+              ),
+              Text('${_stats?.workoutCount ?? 0} 次',
+                  key: const Key('profile-level-count'),
+                  style: Tokens.display(13, weight: 700, color: Tokens.text2)),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          ViProgressBar(value: lv.progress),
+          const SizedBox(height: Tokens.s1),
+          Text(levelHint(lv),
+              key: const Key('profile-level-hint'),
+              style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+          const SizedBox(height: Tokens.s1),
+          Text(
+            <String>[
+              _streak > 0
+                  ? streakLabelWithProtection(_streak, _protectedInStreak)
+                  : '还没开始记连续天数',
+              if (_weekWorkoutFact != null) _weekWorkoutFact!,
+            ].join(' · '),
+            key: const Key('profile-fact-label'),
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openIdentity() async {
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => IdentityScreen(
@@ -329,64 +416,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return ListView(
             padding: EdgeInsets.fromLTRB(
-          Tokens.s5,
-          Tokens.s4,
-          Tokens.s5,
-          Tokens.s5 + AppTabBar.reservedSpaceFor(context)),
+          Tokens.s6,
+          Tokens.s6,
+          Tokens.s6,
+          Tokens.s8 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
-        // 身份块（2026-10-07，10.7 清单第 7 条）：昵称 + 账号 ID。
-        // ⚠️ 页面的标题（「我的」）不在这里了 —— v1.60.0 起它在外壳顶栏上
-        // （`core/app_top_bar.dart`），五个 tab 共用一条；这一页从身份开始。
-        _identityCard(),
-        const SizedBox(height: Tokens.s5),
-        // 「我的进度」（2026-10-06，A 档重排）：**等级 / 段位 / 经验收成一张卡三行**。
-        // 起因是用户看完训记「我的」页拆解之后说"我们这一屏太乱了"，诊断见
-        // `docs/plan-profile-ia.md` §三：三张并列的大卡各带一条进度条、视觉权重一样，
-        // 用户读不出"哪个才是主线"；而它们本来就是同一件事的三种说法
-        // （Lv 看次数、段位看徽章数、经验看组数）。**数据口径一个都没动**。
-        profileSectionTitle('我的进度'),
-        _progressCard(),
-        const SizedBox(height: Tokens.s5),
-        // v2.0.0：训练统计统一收口到「进步」；这一页只留等级（唯一进度条）与成就。
-        const SizedBox(height: Tokens.s5),
-        // 成就入口（2026-10-05）：**放统计下面、设置上面** ——
-        // 它读的就是刚算出来的那些数，"我练了多少"与"我拿到了什么"挨着看才成立。
-        profileSectionTitle('成就'),
-        settingsCard(<Widget>[
-          navTile(
-            key: const Key('open-achievements'),
-            title: '成就',
-            // ⚠️ 2026-10-10：这一行现在是**收藏册的唯一入口**，所以把"我拿到几枚"
-            // 直接写在右边（`12 / 73`）—— 原来那句"徽章与收集进度 · 再坚持 4 天解锁…"
-            // 把**下一个目标**塞在这里，而目标属于首页那行事实、不该再占一行。
-            subtitle: '已解锁 $_unlockedBadges / $_totalBadges 枚'
-                '${_completeLines.isEmpty ? '' : ' · 集齐 ${_completeLines.length} 条收集线'}',
-            onTap: _openAchievements,
-          ),
-        ]),
-        // ⚠️ 这里原来有三组设置入口（偏好设置 / 数据与备份 / 隐私与关于）。
-        // 2026-10-07（v1.60.0）按用户的要求搬进了**独立设置页**（`settings_home_screen.dart`），
-        // 入口是外壳顶栏右上角那枚齿轮 —— 与你在哪一屏无关，五个 tab 都点得到。
-        // 三个入口的 key 一个都没改。
-        // 高屏（≥900pt）在内容尾与版本行之间留呼吸，避免整页贴顶（审计 O1）。
-        if (MediaQuery.sizeOf(context).height >= 900)
-          const SizedBox(height: 70),
-        const SizedBox(height: Tokens.s5),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Tokens.s1),
-          child: Text(
-            // ⚠️ **只剩版本号了**（2026-10-09，用户 10.9 清单第 5 条）：
-            // 这里原来还跟着一句"数据默认只在本机 / 不上传任何人"——用户问"真的有必要吗"，
-            // 结论是**不必要**：那是**去向**承诺，而它已经在三处说得更正式
-            // （「我 → 隐私与关于」、两道单独同意门、隐私政策正文）；写在页脚像小字免责声明。
-            //
-            // ⚠️ 删掉它顺带**取消了那条"跟着配置走"的规则**（`cloudOn` 曾在这里分叉：
-            // 配了备份服务器就不能说"不上传"）。那句话不在了，这条规则也就没有对象 ——
-            // 所以守着它的测试一并删掉，别留一条永远为真的空规则。
-            // 版本号仍然来自 core/app_info.dart，由 app_version_test 与 pubspec 对齐
-            // （以前这里写死 '1.0.0'，两次切版后界面上的版本号就错了两个版本）。
-            '版本 $kAppVersion',
-            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap, height: Tokens.lhNormal),
+        // v2.3.0：身份 + 等级合成一张资料卡；首页/进步已经承接事实数字。
+        _mergedCard(),
+        const SizedBox(height: Tokens.s7),
+        // 成就只留一行（v2.3.0）：`成就 · 已解锁 4/73 ›`
+        GestureDetector(
+          key: const Key('open-achievements'),
+          behavior: HitTestBehavior.opaque,
+          onTap: _openAchievements,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: Tokens.s4),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Tokens.hair), bottom: BorderSide(color: Tokens.hair)),
+            ),
+            child: Row(
+              children: <Widget>[
+                const Expanded(
+                  child: Text('成就',
+                      style: TextStyle(color: Tokens.text, fontSize: Tokens.fsBody)),
+                ),
+                Text('已解锁 $_unlockedBadges / $_totalBadges',
+                    style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
+                const SizedBox(width: Tokens.s2),
+                const Icon(Icons.chevron_right, color: Tokens.text3, size: IconSpec.m),
+              ],
+            ),
           ),
         ),
       ],
@@ -405,6 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ///
   /// 留下的 key：`profile-level-number` / `profile-level-label` / `profile-level-count` /
   /// `profile-level-hint`（原来那四行里钉着它们的测试一条没改）。
+  // ignore: unused_element
   Widget _progressCard() {
     final LevelInfo lv = levelFor(_stats?.workoutCount ?? 0);
     return ViCard(

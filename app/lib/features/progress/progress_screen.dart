@@ -318,8 +318,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final ProgressData d = _data!;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5,
-          Tokens.s5 + AppTabBar.reservedSpaceFor(context) + Tokens.s4),
+      padding: EdgeInsets.fromLTRB(Tokens.s6, Tokens.s6, Tokens.s6,
+          Tokens.s8 + AppTabBar.reservedSpaceFor(context)),
       children: <Widget>[
         // ⚠️ 这里原来还画了一个 28pt 的「进步」大字 —— 与外壳顶栏那个标题**完全重复**
         // （用户 10.9 清单第 3 条截图抓的就是它）。页内不再写自己的名字，
@@ -341,20 +341,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
           )
         else ...<Widget>[
-          _statsBlock(), // 四张统计卡（按区间现算）
-          const SizedBox(height: Tokens.s3),
+          _statsBlock(), // hero + 一行事实
+          const SizedBox(height: Tokens.s7),
           _trendCard(), // 容量趋势（周 / 月 / 年）
-          const SizedBox(height: Tokens.s4),
-          // 本周每部位组数（2026-10-04）：**并进 S8、不新开屏**。
-          // 它回答的是"我这周练均衡了吗"—— 这一屏原来只有容量/PR/体重三块，
-          // 而容量是"总量"，看不出哪块肌肉被漏掉了。
-          if (d.weekSetsByMuscle.isNotEmpty) _muscleCard(d),
-          const SizedBox(height: Tokens.s4),
-          _sectionTitle('个人纪录'),
-          _prCard(d),
-          const SizedBox(height: Tokens.s4),
-          if (recentWorkouts(_sets, limit: 1).isNotEmpty) _recentLine(),
-          const SizedBox(height: Tokens.s5),
+          const SizedBox(height: Tokens.s7),
+          // v2.3.0：部位/PR/最近训练已下沉「全部数据」；入口在 hero 行右侧。
+          const SizedBox(height: Tokens.s7),
           // 进阶分析（Ultra 权益 7，2026-10-10 做成真功能）。
           // ⚠️ **放在这一屏的最下面**（免费的四张卡 / 容量趋势 / 部位平衡 / PR 墙之后）：
           // 先让免费用户看完他已经有的东西，再问他要不要更多 —— 顺序反了就是一进门撞付费墙
@@ -388,6 +380,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   ///
   /// ⚠️ 只按主肌群算（卧推只记进"胸"）—— 所以显示的数字**低估**协同肌群的量，
   /// 这是已知简化，不在这里假装精确。
+  // ignore: unused_element
   Widget _muscleCard(ProgressData d) {
     final List<({String muscleGroup, int sets})> rows = d.weekSetsByMuscle;
     return Container(
@@ -620,25 +613,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ],
           ),
           const SizedBox(height: Tokens.s3),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: _fact('连续天数', '${widget.streak} 天', 'progress-streak',
-                    sub: widget.protectedInStreak > 0
-                        ? '含 ${widget.protectedInStreak} 天补签'
-                        : null),
-              ),
-              Expanded(
-                  child:
-                      _fact('${range}训练', '$workouts 次', 'progress-workouts')),
-              Expanded(child: _fact('总时长', duration, 'progress-duration')),
-            ],
+          Text(
+            '${widget.streak} 天连续 · $workouts 次 · $duration',
+            key: const Key('progress-facts-line'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub),
           ),
         ],
       ),
     );
   }
 
+  // ignore: unused_element
   Widget _fact(String label, String value, String key, {String? sub}) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -962,6 +949,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _recentLine() {
     final ({
       String workoutId,
@@ -1000,6 +988,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _prCard(ProgressData d) {
     // ⚠️ 2026-10-10：与上面那条统计带同一条规矩 —— **纯文字用细线分节，只有图表配卡片底**。
     // 原来是 surface 底 + 圆角 + 四边描边的一只方块（与另外四张卡同款），
