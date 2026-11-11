@@ -116,12 +116,11 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('all-data-best-weight'))).data,
       '80 kg',
     );
-    expect(find.byKey(const Key('all-data-volume-trend')), findsOneWidget);
-    // ⚠️ 2026-10-01：维度切换换成"更多"菜单之后首屏高度变了一点，
-    // 1RM 那张卡就落到了懒构建的视口之外 —— 不是没渲染，是**没被建出来**。
-    // 这条规矩这个文件里早就写着（ListView 懒构建），照它做：先滚到目标再断言。
-    await scrollTo(tester, find.byKey(const Key('all-data-1rm-trend')));
-    expect(find.byKey(const Key('all-data-1rm-trend')), findsOneWidget);
+    expect(find.byKey(const Key('all-data-merged-card')), findsOneWidget);
+    expect(find.byKey(const Key('all-data-trend-volume')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('all-data-trend-1rm')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('all-data-merged-trend')), findsOneWidget);
     await scrollTo(tester, find.byKey(const Key('all-data-set-count')));
     expect(tester.widget<Text>(find.byKey(const Key('all-data-set-count'))).data, '2 组');
   });
@@ -148,8 +147,7 @@ void main() {
     expect(find.byKey(const Key('all-data-best-1rm')), findsNothing);
     expect(find.byKey(const Key('all-data-total-volume')), findsNothing,
         reason: '容量 = 重量 × 次数，自重动作算不出来');
-    expect(find.byKey(const Key('all-data-volume-trend')), findsNothing);
-    expect(find.byKey(const Key('all-data-1rm-trend')), findsNothing);
+    expect(find.byKey(const Key('all-data-merged-card')), findsNothing);
 
     // 该显示的是次数：最佳 + 一条次数趋势
     expect(

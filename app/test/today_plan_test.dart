@@ -355,4 +355,16 @@ void main() {
     expect(pad.bottom, greaterThan(Tokens.s4 + AppTabBar.reservedSpaceFor(tester.element(find.byType(ListView)))),
         reason: '高屏底部多留 70pt，内容尾不贴底栏');
   });
+
+  testWidgets('★ 计划页真实可达：首页→建议→「我的计划」（2 次点击）',
+      (WidgetTester tester) async {
+    await pumpApp(tester);
+    await tester.tap(find.byKey(const Key('open-plan')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('open-plan-page')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plan-back')), findsOneWidget,
+        reason: '计划页（模板/历史/周期）必须能从建议页进入');
+    await teardown(tester);
+  });
 }

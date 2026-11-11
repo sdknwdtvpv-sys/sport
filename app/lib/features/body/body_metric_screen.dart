@@ -211,45 +211,46 @@ class _BodyMetricScreenState extends State<BodyMetricScreen> {
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: Tokens.surface,
-        title: const Text('身体数据是敏感个人信息，要先单独征得你同意',
-            style: TextStyle(color: Tokens.text)),
-        content: const Text(
-          // ⚠️ 这里**不能**写 markdown 的 `**`：`Text` 不渲染 markdown，
-          // 用户会直接看到星号（v1.31.0 真机截图时抓到过一次）。
-          // test/body_consent_test.dart 里有一条断言专门守着这件事。
-          //
-          // v1.52：这一页不止记体重了（还记体脂率 / 腰围 / 肌肉量 / 身高），
-          // 所以说明里的"记的是体重"必须跟着改 —— 只写体重就变成"收集了没说"。
-          // 它们共用**这一次**同意（同一类数据、同一个页面、同一个用途），
-          // 不是每加一个字段就再弹一次窗。
-          //
-          // ⚠️ 2026-10-05：这一句原来写的是「不会上传（云备份里也不含身体数据）」，
-          // 而身体数据那天起**会进备份** —— 那句话就成了假话。改法不是把它删掉
-          // （"去向"是这道门最要紧的一句），而是把真实条件写出来：
-          // **只有你自己打开云备份**，它才会以密文离开这台手机。
-          // 撤回同意之后连备份里也不会再有（判据在 backup_source.dart）。
-          '「身体数据」记的是你的体重、体脂率、腰围、肌肉量和身高 —— '
-          '按《个人信息保护法》，这类健康数据属于'
-          '敏感个人信息，需要我们单独征求你的同意（首次启动时那次是政策总同意，'
-          '不等于这一条）。\n\n'
-          '· 它们默认只存在这台手机上。只有你自己在「数据与备份 → 云备份」里'
-          '开启云备份时，它们才会和训练记录一起以密文上传（端到端加密，服务端读不出来）；'
-          '云备份默认是关的，你不开就不上传。\n'
-          '· 用途只有一个：给你自己看长期变化（身高只用来算 BMI）；\n'
-          '· 你可以随时在「全部数据」里改或删掉它们，也可以随时撤回这次同意。',
-          key: Key('body-consent'),
-          style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
+        title: const Text('身体数据要先单独征得同意',
+            key: Key('body-consent-title'),
+            style: TextStyle(color: Tokens.text, fontSize: Tokens.fsNum, fontWeight: Tokens.fwStrong)),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              '「身体数据」属于敏感个人信息：记的是体重、体脂率、腰围、肌肉量和身高，默认只存在这台手机上。\n\n'
+              '只有你自己在「数据与备份 → 云备份」里开启云备份时，它们才会和训练记录一起以密文上传（端到端加密，服务端读不出来）；你不开就不上传。\n\n'
+              '你可以随时在「全部数据」里改或删掉它们，也可以随时撤回这次同意。',
+              key: Key('body-consent'),
+              style: TextStyle(color: Tokens.text2, height: Tokens.lhNormal),
+            ),
+            SizedBox(height: Tokens.s3),
+            Text(
+              '依据：《个人信息保护法》第 29 条（敏感个人信息单独同意）',
+              style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+            ),
+          ],
         ),
         actions: <Widget>[
-          TextButton(
-            key: const Key('body-consent-decline'),
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('先不用', style: TextStyle(color: Tokens.text2)),
+          SizedBox(
+            height: 44,
+            child: TextButton(
+              key: const Key('body-consent-decline'),
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('先不用', style: TextStyle(color: Tokens.text2)),
+            ),
           ),
-          TextButton(
-            key: const Key('body-consent-agree'),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('同意并记录', style: TextStyle(color: Tokens.accentText)),
+          SizedBox(
+            height: 48,
+            width: 150,
+            child: AccentButton(
+              key: const Key('body-consent-agree'),
+              label: '同意并记录',
+              labelSize: Tokens.fsSub,
+              height: 48,
+              onPressed: () => Navigator.of(ctx).pop(true),
+            ),
           ),
         ],
       ),

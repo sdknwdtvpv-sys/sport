@@ -198,58 +198,39 @@ void main() {
       expect(find.byKey(const Key('use-routine')), findsNothing);
     });
 
-    testWidgets('给了就显示入口', (WidgetTester tester) async {
+    testWidgets('「我的计划」不再从建议页进（v3.1.0 并入计划页）',
+        (WidgetTester tester) async {
       await pumpWithRoutines(tester);
-
-      expect(find.byKey(const Key('use-routine')), findsOneWidget);
+      expect(find.byKey(const Key('use-routine')), findsNothing);
     });
 
-    testWidgets('选一份计划 → 返回 startPlanned，且处方来自计划而不是默认值',
+    testWidgets('建议页底部只留三动作，不再有「存成我的计划」',
         (WidgetTester tester) async {
-      final RoutineData r = await routines.create('推日', nowMs: 1000);
-      await routines.addItem(r.id, 'ex_bb_bench_press',
-          targetSets: 5, targetRepsLow: 3, targetRepsHigh: 5, nowMs: 1001);
-
-      TodayResult? result;
+      await pumpWithRoutines(tester);
+      expect(find.byKey(const Key('start-session')), findsOneWidget);
+      expect(find.byKey(const Key('reroll')), findsOneWidget);
+      expect(find.byKey(const Key('pick-myself')), findsOneWidget);
+      expect(find.byKey(const Key('use-routine')), findsNothing);
+      expect(find.byKey(const Key('save-as-routine')), findsNothing);
+    });
+    testWidgets('★ 计划页入口可达：建议页有低权重「我的计划 ›」（v3.1.0 回归）',
+        (WidgetTester tester) async {
+      bool tapped = false;
       await tester.pumpWidget(MaterialApp(
-        home: Builder(
-          builder: (BuildContext ctx) => Scaffold(
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () async {
-                  result = await Navigator.of(ctx).push<TodayResult>(
-                    MaterialPageRoute<TodayResult>(
-                      builder: (_) => TodaySuggestionScreen(
-                        planner: planner,
-                        routines: routines,
-                        exercises: repo,
-                      ),
-                    ),
-                  );
-                },
-                child: const Text('开始'),
-              ),
-            ),
-          ),
+        home: TodaySuggestionScreen(
+          planner: planner,
+          onOpenPlan: () => tapped = true,
         ),
       ));
-      await tester.tap(find.text('开始'));
       await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('use-routine')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(Key('routine-start-${r.id}')));
-      await tester.pumpAndSettle();
-
-      expect(result, isNotNull);
-      expect(result!.choice, TodayChoice.startPlanned);
-      expect(result!.plan, hasLength(1));
-      expect(result!.plan.single.exercise.id, 'ex_bb_bench_press');
-      // 关键：处方必须是计划里那份，不能被 kDefaultPlan 顶掉
-      expect(result!.plan.single.plan.targetSets, 5);
-      expect(result!.plan.single.plan.targetRepsLow, 3);
-      expect(result!.plan.single.plan.targetRepsHigh, 5);
+      expect(find.byKey(const Key('open-plan-page')), findsOneWidget);
+      expect(find.byKey(const Key('use-routine')), findsNothing,
+          reason: '不再依赖旧 key');
+      await tester.tap(find.byKey(const Key('open-plan-page')));
+      await tester.pump();
+      expect(tapped, isTrue);
     });
+
   });
 
   group('今日热身卡', () {

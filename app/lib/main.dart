@@ -1820,6 +1820,7 @@ class _HomeShellState extends State<HomeShell> {
             exercises: _repo,
             store: _store,
             onEditPlan: _editTodayPlan,
+            onOpenPlan: _openPlanPage,
           ),
       ),
     );

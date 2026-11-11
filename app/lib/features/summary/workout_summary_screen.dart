@@ -218,7 +218,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
             children: <Widget>[
               // 2026-10-05 按新 VI 重做：一个**成功的绿勾** + 「训练完成！」 + 一句人话。
               // 旧版只有一行「训练完成」四个字 —— 刚练完那一刻值得给一个明确的完成感。
-              _doneMark(),
+              _doneMark(s),
               const SizedBox(height: Tokens.s5),
               _statsLine(s),
               if (widget.newBadges.isNotEmpty) ...<Widget>[
@@ -236,6 +236,10 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
                 const SizedBox(height: Tokens.s5),
                 _prBlock(s),
               ],
+              if (widget.nextLine != null) ...<Widget>[
+                const SizedBox(height: Tokens.s5),
+                _nextBlock(),
+              ],
               const SizedBox(height: Tokens.s7),
               // v2.3.0：笔记 / 下一次 / 拉伸 / 小知识默认收进「训练小结」；
               // 笔记控件仍然挂载 → 自动保存逻辑不变，只是首屏不占位。
@@ -249,10 +253,6 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
                       style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
                   children: <Widget>[
                     _noteField(s),
-                    if (widget.nextLine != null) ...<Widget>[
-                      const SizedBox(height: Tokens.s5),
-                      _nextBlock(),
-                    ],
                     if (widget.stretches.isNotEmpty) ...<Widget>[
                       const SizedBox(height: Tokens.s5),
                       _stretchBlock(),
@@ -265,8 +265,6 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
             ],
           ),
         ),
-        const SizedBox(height: Tokens.s4),
-        _shareButton(s),
         // 完成键 1100→1400ms：**最后**出现 —— 它是这一屏的"结束"，
         // 提前抢眼会让人没看完三个数就按下去。
         // ⚠️ 透明度不是"能不能点"：两个按钮**从 t0 起就可点**（不加 `IgnorePointer`），
@@ -455,14 +453,15 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
   ///
   /// **不只靠颜色**：勾的图形本身就在表达"完成"，色盲用户读到的信息一样
   /// （`docs/interaction-spec.md` 的第二条硬约束）。
-  Widget _doneMark() => Row(
+  Widget _doneMark(WorkoutSummary s) => Row(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           // 2px 橙轴：完成感来自「一条轴 + 大字」，不是绿色发光圆盘。
-          Container(width: Tokens.timelineStroke, height: 56, color: Tokens.accent),
+          Container(width: Tokens.timelineStroke, height: 112, color: Tokens.accent),
           const SizedBox(width: Tokens.s4),
-          Column(
+          Expanded(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Row(
@@ -502,8 +501,30 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
               ),
             ],
           ),
+          ),
+          if (s.totalVolumeKg > 0 || s.totalSets > 0)
+            TextButton(
+              key: const Key('summary-share'),
+              onPressed: () => _openShare(s),
+              child: const Text('分享训练卡',
+                  style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsCap)),
+            ),
         ],
       );
+
+  void _openShare(WorkoutSummary s) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ShareCardPreviewScreen(
+          summary: s,
+          exporter: widget.exporter,
+          analytics: widget.analytics,
+          streak: widget.streak,
+          ordinal: widget.ordinal,
+        ),
+      ),
+    );
+  }
 
   /// **「新解锁 N 枚」**（2026-10-10）。
   ///
@@ -843,51 +864,14 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen>
     );
   }
 
-  /// 分享训练卡。**只在真的有记录时才出现** —— 一次都没练的总结页
-  /// 没有可分享的东西，给个按钮只会误导。
-  Widget _shareButton(WorkoutSummary s) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, 0),
-      child: SizedBox(
-        height: 56,
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          key: const Key('summary-share'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Tokens.text,
-            side: const BorderSide(color: Tokens.lineStrong),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Tokens.rPill),
-            ),
-          ),
-          icon: const Icon(Icons.ios_share, size: IconSpec.m),
-          label: const Text('分享训练卡',
-              style: TextStyle(fontSize: Tokens.fsBodyS, fontWeight: Tokens.fwStrong)),
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ShareCardPreviewScreen(
-                summary: s,
-                exporter: widget.exporter,
-                analytics: widget.analytics,
-                // 打卡版要用：连续天数与"第几次训练"都由外壳算好传进来
-                streak: widget.streak,
-                ordinal: widget.ordinal,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _doneButton() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, Tokens.s5),
+      padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s4, Tokens.s5, Tokens.s5),
       child: AccentButton(
         key: const Key('summary-done'),
         label: '完成',
         labelSize: Tokens.fsHeadline,
-        height: Tokens.hPrimary,
+        height: 72,
         // 先落库再退：总结页是"训练结束"这条路上的最后一屏，
         // 用户在这里写的那句话不该因为退出的方式不同而丢掉。
         onPressed: () async {

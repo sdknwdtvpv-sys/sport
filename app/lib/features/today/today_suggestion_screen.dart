@@ -48,6 +48,7 @@ class TodaySuggestionScreen extends StatefulWidget {
     this.exercises,
     this.store,
     this.onEditPlan,
+    this.onOpenPlan,
   });
 
   final TodayPlanner planner;
@@ -64,6 +65,9 @@ class TodaySuggestionScreen extends StatefulWidget {
 
   /// v3.0.0：会话详情里的「编辑」（动作清单 + 换一批都在这一屏）。
   final VoidCallback? onEditPlan;
+
+  /// v3.1.0 回归修复：低权重「我的计划 ›」入口（计划页/模板/历史/周期计划）。
+  final VoidCallback? onOpenPlan;
 
   /// 显示单位（建议卡上那行「62.5 kg × 8」）
   final WeightUnit unit;
@@ -145,6 +149,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
   /// 为什么值得做：建议卡回答的是"今天练什么"，计划回答的是"以后照着练" ——
   /// 用户摇出一套顺眼的组合，原先只能今天用一次，明天还得重新摇。
   /// 存下来之后它出现在「我的计划」里，`source='suggested'` 记住它是从建议来的。
+  // ignore: unused_element
   Future<void> _saveAsRoutine() async {
     final RoutineRepository? repo = widget.routines;
     if (repo == null || _plan.isEmpty) return;
@@ -177,6 +182,7 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
     );
   }
 
+  // ignore: unused_element
   Future<void> _useRoutine() async {
     final RoutineStart? start = await Navigator.of(context).push<RoutineStart>(
       MaterialPageRoute<RoutineStart>(
@@ -228,7 +234,31 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
         child: Column(
           children: <Widget>[
             _header(),
-            Expanded(child: _body()),
+            Expanded(
+              child: Stack(
+                children: <Widget>[
+                  _body(),
+                  // 固定底栏前渐隐：滚动内容不被切半字
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      child: Container(
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: <Color>[Colors.transparent, Tokens.bg],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             _footer(),
           ],
         ),
@@ -474,6 +504,16 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
       padding: const EdgeInsets.fromLTRB(Tokens.s5, Tokens.s2, Tokens.s5, Tokens.s5),
       child: Column(
         children: <Widget>[
+          if (widget.onOpenPlan != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const Key('open-plan-page'),
+                onPressed: widget.onOpenPlan,
+                child: const Text('我的计划 ›',
+                    style: TextStyle(color: Tokens.accentText, fontSize: Tokens.fsSub)),
+              ),
+            ),
           AccentButton(
             key: const Key('start-session'),
             label: '开始训练',
@@ -500,26 +540,8 @@ class _TodaySuggestionScreenState extends State<TodaySuggestionScreen> {
                       style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
                 ),
               ),
-              if (widget.routines != null && widget.exercises != null)
-                Expanded(
-                  child: TextButton(
-                    key: const Key('use-routine'),
-                    onPressed: _useRoutine,
-                    child: const Text('我的计划',
-                        style: TextStyle(color: Tokens.text2, fontSize: Tokens.fsSub)),
-                  ),
-                ),
             ],
           ),
-          // 「存成我的计划」单独一行：三个次要入口已经排满，再挤进去就是四个等宽按钮
-          // （每一个都点到让人怀疑自己点错了）。
-          if (widget.routines != null && _plan.isNotEmpty)
-            TextButton(
-              key: const Key('save-as-routine'),
-              onPressed: _loading ? null : _saveAsRoutine,
-              child: const Text('存成我的计划 ›',
-                  style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
-            ),
         ],
       ),
     );

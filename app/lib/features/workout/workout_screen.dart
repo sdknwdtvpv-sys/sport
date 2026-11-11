@@ -1096,6 +1096,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           color: Tokens.text3,
                           fontSize: Tokens.fsMicro,
                           fontFeatures: Tokens.tabular)),
+                  const Text(' · ',
+                      style: TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
                   Expanded(
                     child: Text(
                       c.primaryButtonLabel,

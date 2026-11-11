@@ -872,18 +872,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 _LegendDot(
                     color: Tokens.accentText,
                     label: _range == ProgressRange.week ? '本周' : '本期'),
-                const SizedBox(width: Tokens.s3),
-                _LegendDot(
-                    color: Tokens.text3,
-                    label: _range == ProgressRange.week ? '上周' : '上期',
-                    dashed: true),
+                if (hasCompare) ...<Widget>[
+                  const SizedBox(width: Tokens.s3),
+                  _LegendDot(
+                      color: Tokens.text3,
+                      label: _range == ProgressRange.week ? '上周' : '上期',
+                      dashed: true),
+                ],
               ],
             ),
             const SizedBox(height: Tokens.s3),
             ViAreaChart(
               key: const Key('progress-sparkline'),
-              points: series,
-              previousPoints: hasCompare ? pair.previous : const <double>[],
+              // sparse（<2 次训练）：只画基线 + 一句提示，不同时画线
+              points: sparse ? const <double>[] : series,
+              previousPoints: hasCompare && !sparse ? pair.previous : const <double>[],
               height: sparse ? 72 : 96,
               yMaxLabel: maxV <= 0 ? null : formatVolume(maxV, widget.unit),
             ),
@@ -970,10 +973,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
       ),
       child: Column(
         children: <Widget>[
-          for (final ({String workoutId, DateTime day, int exercises, int sets, double volume}) r
-              in rows)
-            ExpansionTile(
+          for (int i = 0; i < rows.length; i += 1)
+            Builder(builder: (BuildContext ctx) {
+              final ({String workoutId, DateTime day, int exercises, int sets, double volume}) r =
+                  rows[i];
+              return ExpansionTile(
               key: Key('session-${r.workoutId}'),
+              initiallyExpanded: i == 0,
               tilePadding: const EdgeInsets.symmetric(horizontal: 0),
               childrenPadding: const EdgeInsets.only(bottom: Tokens.s3),
               title: Text(
@@ -983,33 +989,61 @@ class _ProgressScreenState extends State<ProgressScreen> {
               subtitle: Text(formatVolume(r.volume, widget.unit),
                   style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsCap)),
               children: <Widget>[
-                for (final SetRecord set in _sets.where((SetRecord s) => s.workoutId == r.workoutId))
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      children: <Widget>[
-                        Text(
-                          '${DateTime.fromMillisecondsSinceEpoch(set.completedAtMs).hour.toString().padLeft(2, '0')}:'
-                          '${DateTime.fromMillisecondsSinceEpoch(set.completedAtMs).minute.toString().padLeft(2, '0')}',
-                          style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
-                        ),
-                        const SizedBox(width: Tokens.s3),
-                        Expanded(
-                          child: Text(
-                            '${_exerciseName(_data!, set.exerciseId)}  ${set.weightKg == null ? '自重' : formatWeight(set.weightKg!, widget.unit)} × ${set.reps}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                _sessionSetRows(r.workoutId),
               ],
-            ),
+            );
+            }),
         ],
       ),
+
       ),
+    );
+  }
+
+  Widget _sessionSetRows(String workoutId) {
+    final List<SetRecord> sets =
+        _sets.where((SetRecord s) => s.workoutId == workoutId).toList();
+    return Stack(
+      children: <Widget>[
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: Container(width: Tokens.timelineStroke, color: Tokens.line),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: Tokens.s4),
+          child: Column(
+            children: <Widget>[
+              for (final SetRecord set in sets)
+                Padding(
+                  key: Key('session-set-${set.id}'),
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: <Widget>[
+                      Text(
+                        '${DateTime.fromMillisecondsSinceEpoch(set.completedAtMs).hour.toString().padLeft(2, '0')}:'
+                        '${DateTime.fromMillisecondsSinceEpoch(set.completedAtMs).minute.toString().padLeft(2, '0')}',
+                        style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro),
+                      ),
+                      const SizedBox(width: Tokens.s2),
+                      const Icon(Icons.check, color: Tokens.success, size: IconSpec.s),
+                      const SizedBox(width: Tokens.s2),
+                      Expanded(
+                        child: Text(
+                          '第 ${set.setIndex} 组  ${set.weightKg == null ? '自重' : formatWeight(set.weightKg!, widget.unit)} × ${set.reps}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Tokens.text2, fontSize: Tokens.fsCap),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

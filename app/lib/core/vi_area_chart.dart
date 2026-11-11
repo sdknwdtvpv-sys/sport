@@ -22,6 +22,7 @@ class ViAreaChart extends StatelessWidget {
     this.color,
     this.previousPoints = const <double>[],
     this.yMaxLabel,
+    this.showEndDot = true,
   });
 
   final List<double> points;
@@ -38,6 +39,9 @@ class ViAreaChart extends StatelessWidget {
   /// 右上角 y 轴上限文案（null = 不画 y 轴标签）。
   final String? yMaxLabel;
 
+  /// v3.1.0：全部数据合并图不要末端大点（0 值日不画点）。
+  final bool showEndDot;
+
   @override
   Widget build(BuildContext context) => SizedBox(
         height: height,
@@ -46,7 +50,8 @@ class ViAreaChart extends StatelessWidget {
           painter: ViAreaChartPainter(points,
               color: color ?? Tokens.accent,
               previousPoints: previousPoints,
-              yMaxLabel: yMaxLabel),
+              yMaxLabel: yMaxLabel,
+              showEndDot: showEndDot),
         ),
       );
 }
@@ -55,16 +60,22 @@ class ViAreaChartPainter extends CustomPainter {
   ViAreaChartPainter(this.points,
       {this.color = Tokens.accent,
       this.previousPoints = const <double>[],
-      this.yMaxLabel});
+      this.yMaxLabel,
+      this.showEndDot = true});
 
   final List<double> points;
   final Color color;
   final List<double> previousPoints;
   final String? yMaxLabel;
+  final bool showEndDot;
 
   @override
   void paint(Canvas canvas, Size size) {
+    // v3.1.0：顶部留 24pt 给最大值标签，左右各留 6pt 防末点被裁。
+    const double topPad = 24;
+    const double sidePad = 6;
     final double baseline = size.height - 1;
+    final double plotH = baseline - topPad;
     // 基线：任何情况下都在，哪怕是空数据 —— 空图也不该是一片纯黑
     canvas.drawLine(
       Offset(0, baseline),
@@ -75,7 +86,7 @@ class ViAreaChartPainter extends CustomPainter {
     );
     // 25 / 50 / 75% 网格（v2.2.0，O7）+ y 轴标签；不改变折线数据
     for (final double f in <double>[0.25, 0.5, 0.75]) {
-      final double y = baseline - f * (size.height - 8);
+      final double y = baseline - f * plotH;
       canvas.drawLine(Offset(0, y), Offset(size.width, y),
           Paint()..color = Tokens.line.withValues(alpha: 0.55)..strokeWidth = 1);
     }
@@ -84,23 +95,25 @@ class ViAreaChartPainter extends CustomPainter {
         text: TextSpan(text: yMaxLabel, style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(size.width - tp.width, 0));
+      // 左上角：不压末点
+      tp.paint(canvas, const Offset(0, 0));
     }
     if (points.isEmpty || size.width <= 0) return;
 
-    final double step = points.length > 1 ? size.width / (points.length - 1) : 0;
+    final double plotW = size.width - sidePad * 2;
+    final double step = points.length > 1 ? plotW / (points.length - 1) : 0;
     final List<Offset> pts = <Offset>[
       for (int i = 0; i < points.length; i++)
         Offset(
-          points.length > 1 ? i * step : size.width / 2,
-          baseline - (points[i].clamp(0.0, 1.0)) * (size.height - 8),
+          sidePad + (points.length > 1 ? i * step : plotW / 2),
+          baseline - (points[i].clamp(0.0, 1.0)) * plotH,
         ),
     ];
 
     // 上一周期：虚线（本周实线 + 上周虚线）
     if (previousPoints.isNotEmpty) {
       final double pstep = previousPoints.length > 1
-          ? size.width / (previousPoints.length - 1)
+          ? plotW / (previousPoints.length - 1)
           : 0;
       final Paint dashed = Paint()
         ..color = Tokens.text3.withValues(alpha: 0.7)
@@ -109,8 +122,8 @@ class ViAreaChartPainter extends CustomPainter {
       Offset? prev;
       for (int i = 0; i < previousPoints.length; i++) {
         final Offset pt = Offset(
-          previousPoints.length > 1 ? i * pstep : size.width / 2,
-          baseline - previousPoints[i].clamp(0.0, 1.0) * (size.height - 8),
+          sidePad + (previousPoints.length > 1 ? i * pstep : plotW / 2),
+          baseline - previousPoints[i].clamp(0.0, 1.0) * plotH,
         );
         if (prev != null) {
           // 手动虚线：每 6px 画 4px
@@ -157,18 +170,21 @@ class ViAreaChartPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round
         ..strokeCap = StrokeCap.round,
     );
-    // 最后一个点强调一下（"今天"）
-    canvas.drawCircle(pts.last, 3.5, Paint()..color = color);
-    canvas.drawCircle(
-      pts.last,
-      6,
-      Paint()
-        ..color = color.withValues(alpha: 0.25)
-        ..style = PaintingStyle.fill,
-    );
+    // 最后一个点强调一下（"今天"）；合并图/0 值关闭
+    if (showEndDot) {
+      canvas.drawCircle(pts.last, 3.5, Paint()..color = color);
+      canvas.drawCircle(
+        pts.last,
+        6,
+        Paint()
+          ..color = color.withValues(alpha: 0.25)
+          ..style = PaintingStyle.fill,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(ViAreaChartPainter old) =>
-      old.points != points || old.color != color || old.previousPoints != previousPoints || old.yMaxLabel != yMaxLabel;
+      old.points != points || old.color != color || old.previousPoints != previousPoints || old.yMaxLabel != yMaxLabel
+      || old.showEndDot != showEndDot;
 }

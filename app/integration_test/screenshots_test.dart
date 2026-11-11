@@ -163,7 +163,7 @@ void main() {
     });
 
     await step('03-routine', () async {
-      await tester.tap(find.byKey(const Key('use-routine')));
+      await tester.tap(find.byKey(const Key('open-plan-page')));
       await settle(1500);
       await capture('03-routine');
     });

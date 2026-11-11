@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/sparkline.dart';
+import '../../core/vi_area_chart.dart';
 import '../../core/empty_state.dart';
 import '../../core/theme.dart';
 import '../../core/app_tab_bar.dart';
@@ -85,6 +86,7 @@ class AllDataScreen extends StatefulWidget {
 class _AllDataScreenState extends State<AllDataScreen> {
   _Mode _mode = _Mode.byExercise;
   bool _loading = true;
+  bool _showOneRm = false;
 
   ExerciseData? _exercise;
   ExerciseStats? _stats;
@@ -419,10 +421,8 @@ class _AllDataScreenState extends State<AllDataScreen> {
             _statRow('总组数', '${s.setCount} 组', const Key('all-data-set-count')),
           ]),
           if (s.tracksWeight) ...<Widget>[
-            _sectionTitle('容量趋势（最近 30 天）'),
-            _trendCard(s.volumeTrend, const Key('all-data-volume-trend')),
-            _sectionTitle('1RM 趋势（最近 30 天）'),
-            _trendCard(s.oneRmTrend, const Key('all-data-1rm-trend')),
+            _sectionTitle('容量 / 1RM 趋势（最近 30 天）'),
+            _mergedTrendCard(s),
           ] else ...<Widget>[
             // 自重 / 按时长动作：容量与 1RM 恒为 0，画出来只是贴着底的平线。
             // 它们真正会变的是次数（按时长动作是秒数），所以只画这一条。
@@ -453,6 +453,127 @@ class _AllDataScreenState extends State<AllDataScreen> {
           ]),
         ],
       ],
+    );
+  }
+
+  /// v3.1.0：容量 / 1RM 合并成一张卡，卡内切换、3 个 y 刻度、首尾日期。
+  Widget _mergedTrendCard(ExerciseStats s) {
+    final bool oneRm = _showOneRm;
+    final List<double> values = oneRm ? s.oneRmTrend : s.volumeTrend;
+    final double maxRaw = oneRm
+        ? (s.oneRmByDay.isEmpty ? 0 : s.oneRmByDay.reduce((double a, double b) => a > b ? a : b))
+        : (s.volumeByDay.isEmpty
+            ? 0
+            : s.volumeByDay.map((DailyVolume d) => d.volumeKg).reduce((double a, double b) => a > b ? a : b));
+    String fmt(double v) => oneRm
+        ? (v <= 0 ? '0' : formatWeight(v, widget.unit))
+        : (v <= 0 ? '0' : formatVolume(v, widget.unit));
+    final DateTime end = DateTime.now();
+    final DateTime start = end.subtract(const Duration(days: 29));
+    return Container(
+      key: const Key('all-data-merged-card'),
+      padding: const EdgeInsets.all(Tokens.s3),
+      decoration: BoxDecoration(
+        color: Tokens.surface,
+        borderRadius: BorderRadius.circular(Tokens.rCard),
+      ),
+      child: Column(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              _trendPill(
+                key: 'all-data-trend-volume',
+                label: '容量',
+                selected: !oneRm,
+                onTap: () => setState(() => _showOneRm = false),
+              ),
+              const SizedBox(width: Tokens.s2),
+              _trendPill(
+                key: 'all-data-trend-1rm',
+                label: '1RM',
+                selected: oneRm,
+                onTap: () => setState(() => _showOneRm = true),
+              ),
+            ],
+          ),
+          const SizedBox(height: Tokens.s2),
+          SizedBox(
+            height: 118,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SizedBox(
+                  width: 62,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _axisLabel(fmt(maxRaw)),
+                        _axisLabel(fmt(maxRaw / 2)),
+                        _axisLabel('0'),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ViAreaChart(
+                    key: const Key('all-data-merged-trend'),
+                    points: values,
+                    height: 100,
+                    showEndDot: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Tokens.s1),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(formatDateAxis(start),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+              Text(formatDateAxis(end),
+                  style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _axisLabel(String text) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(text,
+            maxLines: 1,
+            style: const TextStyle(color: Tokens.text3, fontSize: Tokens.fsMicro)),
+      );
+
+  Widget _trendPill({
+    required String key,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: Key(key),
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Tokens.s3, vertical: Tokens.s1),
+        decoration: BoxDecoration(
+          color: selected ? Tokens.surfaceHi : Colors.transparent,
+          borderRadius: BorderRadius.circular(Tokens.rPill),
+          border: Border.all(color: selected ? Tokens.lineStrong : Tokens.line),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: selected ? Tokens.text : Tokens.text3,
+                fontSize: Tokens.fsMicro,
+                fontWeight: selected ? Tokens.fwStrong : null)),
+      ),
     );
   }
 
